@@ -35,8 +35,8 @@ func (s *SimpleScenario) Play(serverAddress string, repoName string, stopCh chan
 			}
 			out <- targetGenerator.GenerateCommitTarget(repoName, branchName, commitMsg)
 			out <- targetGenerator.GenerateMergeToMasterTarget(repoName, branchName)
-			out <- targetGenerator.GenerateListTarget(repoName, "main", 100)  //nolint: gomnd
-			out <- targetGenerator.GenerateListTarget(repoName, "main", 1000) //nolint: gomnd
+			out <- targetGenerator.GenerateListTarget(repoName, "main", 100)  //nolint: mnd
+			out <- targetGenerator.GenerateListTarget(repoName, "main", 1000) //nolint: mnd
 			out <- targetGenerator.GenerateDiffTarget(repoName, "main")
 
 			select {

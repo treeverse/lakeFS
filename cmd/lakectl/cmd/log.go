@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const commitsTemplate = `{{ range $val := .Commits }}
@@ -45,7 +48,7 @@ func (d *dotWriter) End() {
 	_, _ = fmt.Fprint(d.w, "\n}\n")
 }
 
-func (d *dotWriter) Write(commits []api.Commit) {
+func (d *dotWriter) Write(commits []apigen.Commit) {
 	repoID := url.PathEscape(d.repositoryID)
 	for _, commit := range commits {
 		isMerge := len(commit.Parents) > 1
@@ -54,7 +57,7 @@ func (d *dotWriter) Write(commits []api.Commit) {
 			label = fmt.Sprintf("<b>%s</b>", label)
 		}
 		baseURL := strings.TrimSuffix(strings.TrimSuffix(
-			cfg.Values.Server.EndpointURL, "/api/v1"), "/")
+			string(cfg.Server.EndpointURL), apiutil.BaseURL), "/")
 		_, _ = fmt.Fprintf(d.w, "\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
 			commit.Id, baseURL, repoID, commit.Id, label)
 		for _, parent := range commit.Parents {
@@ -63,60 +66,97 @@ func (d *dotWriter) Write(commits []api.Commit) {
 	}
 }
 
+// filter merge commits, used for --no-merges flag
+func filterMergeCommits(commits []apigen.Commit) []apigen.Commit {
+	filteredCommits := make([]apigen.Commit, 0, len(commits))
+
+	// iterating through data.Commit, appending every instance with 1 or less parents.
+	for _, commit := range commits {
+		if len(commit.Parents) <= 1 {
+			filteredCommits = append(filteredCommits, commit)
+		}
+	}
+	return filteredCommits
+}
+
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:               "log <branch uri>",
+	Use:               "log <ref URI>",
 	Short:             "Show log of commits",
-	Long:              "Show log of commits for a given branch",
+	Long:              "Show log of commits for a given reference",
 	Example:           "lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		limit := MustBool(cmd.Flags().GetBool("limit"))
-		dot := MustBool(cmd.Flags().GetBool("dot"))
-		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
-		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
+		limit := Must(cmd.Flags().GetBool("limit"))
+		since := Must(cmd.Flags().GetString("since"))
+		dot := Must(cmd.Flags().GetBool("dot"))
+		noMerges := Must(cmd.Flags().GetBool("no-merges"))
+		firstParent := Must(cmd.Flags().GetBool("first-parent"))
+		objects := Must(cmd.Flags().GetStringSlice("objects"))
+		prefixes := Must(cmd.Flags().GetStringSlice("prefixes"))
+		stopAt := Must(cmd.Flags().GetString("stop-at"))
 
-		pagination := api.Pagination{HasMore: true}
-		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
+		if slices.Contains(objects, "") {
+			Die("Objects list contains empty string!", 1)
+		}
+		if slices.Contains(prefixes, "") {
+			Die("Prefixes list contains empty string!", 1)
+		}
+
+		pagination := apigen.Pagination{HasMore: true}
+		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
-		branchURI := MustParseRefURI("branch", args[0])
+		refURI := MustParseRefURI("ref URI", args[0])
 		amountForPagination := amount
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize
 		}
-		logCommitsParams := &api.LogCommitsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amountForPagination),
-			Limit:  &limit,
+		// case --no-merges & --amount, ask for more results since some will filter out
+		if noMerges && amountForPagination < maxAmountNoMerges {
+			amountForPagination *= noMergesHeuristic
 		}
-		if len(objectsList) > 0 {
-			logCommitsParams.Objects = &objectsList
+		logCommitsParams := &apigen.LogCommitsParams{
+			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount:      apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
+			Limit:       &limit,
+			FirstParent: &firstParent,
+			StopAt:      &stopAt,
 		}
-		if len(prefixesList) > 0 {
-			logCommitsParams.Prefixes = &prefixesList
+		if len(objects) > 0 {
+			logCommitsParams.Objects = &objects
+		}
+		if len(prefixes) > 0 {
+			logCommitsParams.Prefixes = &prefixes
+		}
+		if since != "" {
+			sinceParsed, err := time.Parse(time.RFC3339, since)
+			if err != nil {
+				DieFmt("Failed to parse 'since' - %s", err)
+			}
+			logCommitsParams.Since = &sinceParsed
 		}
 
 		graph := &dotWriter{
 			w:            os.Stdout,
-			repositoryID: branchURI.Ref,
+			repositoryID: refURI.Repository,
 		}
 		if dot {
 			graph.Start()
 		}
 
 		for pagination.HasMore {
-			resp, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
+			resp, err := client.LogCommitsWithResponse(cmd.Context(), refURI.Repository, refURI.Ref, logCommitsParams)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
 				Die("Bad response from server", 1)
 			}
 			pagination = resp.JSON200.Pagination
-			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
+			logCommitsParams.After = apiutil.Ptr(apigen.PaginationAfter(pagination.NextOffset))
 			data := struct {
-				Commits         []api.Commit
+				Commits         []apigen.Commit
 				Pagination      *Pagination
 				ShowMetaRangeID bool
 			}{
@@ -129,13 +169,23 @@ var logCmd = &cobra.Command{
 				},
 			}
 
+			// case --no-merges, filter commits and subtract that amount from amount desired
+			if noMerges {
+				data.Commits = filterMergeCommits(data.Commits)
+				// case user asked for a specified amount
+				if amount > 0 {
+					data.Commits = data.Commits[:amount]
+				}
+			}
+			amount -= len(data.Commits)
+
 			if dot {
 				graph.Write(data.Commits)
 			} else {
 				Write(commitsTemplate, data)
 			}
 
-			if amount != 0 {
+			if amount <= 0 {
 				// user request only one page
 				break
 			}
@@ -154,7 +204,11 @@ func init() {
 	logCmd.Flags().Bool("limit", false, "limit result just to amount. By default, returns whether more items are available.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("dot", false, "return results in a dotgraph format")
+	logCmd.Flags().Bool("first-parent", false, "follow only the first parent commit upon seeing a merge commit")
+	logCmd.Flags().Bool("no-merges", false, "skip merge commits")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
+	logCmd.Flags().String("since", "", "show results since this date-time (RFC3339 format)")
+	logCmd.Flags().String("stop-at", "", "a Ref to stop at (included in results)")
 }

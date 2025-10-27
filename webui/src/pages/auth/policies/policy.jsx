@@ -1,10 +1,9 @@
-import React, {useState} from "react";
-
+import React, {useEffect, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import {PencilIcon} from "@primer/octicons-react";
 
-import {AuthLayout} from "../../../lib/components/auth/layout";
 import {PolicyHeader} from "../../../lib/components/auth/nav";
 import {useAPI} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
@@ -13,7 +12,7 @@ import {
     ActionGroup,
     ActionsBar,
     Loading,
-    Error,
+    AlertError,
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 
@@ -31,7 +30,7 @@ const PolicyView = ({ policyId }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content=  <Error error={error}/>;
+    else if (error) content=  <AlertError error={error}/>;
     else content = (
         <PolicyDisplay policy={policy} asJSON={jsonView}/>
     );
@@ -84,11 +83,9 @@ const PolicyContainer = () => {
 }
 
 const PolicyPage = () => {
-    return (
-        <AuthLayout activeTab="policies">
-            <PolicyContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab("policies"), [setActiveTab]);
+    return <PolicyContainer/>;
 }
 
 export default PolicyPage;

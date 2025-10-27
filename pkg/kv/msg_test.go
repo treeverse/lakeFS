@@ -9,9 +9,9 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"google.golang.org/protobuf/proto"
@@ -146,7 +146,10 @@ func BenchmarkDrivers(b *testing.B) {
 	defer closer()
 
 	dynamoStore := testutil.GetDynamoDBProd(ctx, b)
-	postgresStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.Config{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(b, ctx)
+	postgresStore, err := kv.Open(ctx, kvparams.Config{Type: postgres.DriverName, Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
+	if err != nil {
+		b.Fatal("failed to open postgres store", err)
+	}
 	defer postgresStore.Close()
 
 	tests := []struct {

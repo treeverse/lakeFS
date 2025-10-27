@@ -1,6 +1,5 @@
-import React from "react";
-
-import {AuthLayout} from "../../../../lib/components/auth/layout";
+import React, {useEffect} from "react";
+import {useOutletContext} from "react-router-dom";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
@@ -8,7 +7,7 @@ import {
     DataTable,
     FormattedDate,
     Loading,
-    Error,
+    AlertError,
     RefreshButton
 } from "../../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
@@ -20,6 +19,7 @@ import {AttachModal} from "../../../../lib/components/auth/forms";
 import {ConfirmationButton} from "../../../../lib/components/modals";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
+import {PageSize} from "../../../../constants";
 
 
 const UserPoliciesList = ({ userId, after, onPaginate }) => {
@@ -33,10 +33,10 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content=  <Error error={error}/>;
+    else if (error) content=  <AlertError error={error}/>;
     else content = (
             <>
-                {attachError && <Error error={attachError}/>}
+                {attachError && <AlertError error={attachError}/>}
                 <DataTable
                     keyFn={policy => policy.id}
                     rowFn={policy => [
@@ -72,10 +72,10 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                     filterPlaceholder={'Find Policy...'}
                     modalTitle={'Attach Policies'}
                     addText={'Attach Policies'}
-                    searchFn={prefix => auth.listPolicies(prefix, "", 5).then(res => res.results)}
+                    searchFn={(prefix,after) => auth.listPolicies(prefix, after, PageSize)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
-                        Promise.all(selected.map(policyId => auth.attachPolicyToUser(userId, policyId)))
+                        Promise.all(selected.map(policy => auth.attachPolicyToUser(userId, policy.id)))
                             .then(() => { setRefresh(!refresh); setAttachError(null) })
                             .catch(error => { setAttachError(error) })
                             .finally(() => { setShowAddModal(false) });
@@ -117,11 +117,9 @@ const UserPoliciesContainer = () => {
 };
 
 const UserPoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="users">
-            <UserPoliciesContainer />
-        </AuthLayout>
-    );
+    const {setActiveTab} = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    return <UserPoliciesContainer/>;
 };
 
 export default UserPoliciesPage;

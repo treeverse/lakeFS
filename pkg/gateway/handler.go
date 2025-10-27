@@ -6,10 +6,10 @@ import (
 	gohttputil "net/http/httputil"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -21,13 +21,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
-	"golang.org/x/exp/slices"
 )
 
 type contextKey string
 
 const (
-	ContextKeyUser         contextKey = "user"
 	ContextKeyRepositoryID contextKey = "repository_id"
 	ContextKeyRepository   contextKey = "repository"
 	ContextKeyAuthContext  contextKey = "auth_context"
@@ -39,10 +37,12 @@ const (
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
 
-var (
+const (
 	contentTypeApplicationXML = "application/xml"
 	contentTypeTextXML        = "text/xml"
 )
+
+var usageCounter = stats.NewUsageCounter()
 
 type handler struct {
 	sc                 *ServerContext
@@ -51,17 +51,18 @@ type handler struct {
 }
 
 type ServerContext struct {
-	region           string
-	bareDomains      []string
-	catalog          catalog.Interface
-	multipartTracker multipart.Tracker
-	blockStore       block.Adapter
-	authService      auth.GatewayService
-	stats            stats.Collector
-	pathProvider     upload.PathProvider
+	region            string
+	bareDomains       []string
+	catalog           *catalog.Catalog
+	multipartTracker  multipart.Tracker
+	blockStore        block.Adapter
+	authService       auth.GatewayService
+	stats             stats.Collector
+	pathProvider      upload.PathProvider
+	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog catalog.Interface, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool, middleware func(http.Handler) http.Handler) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -77,14 +78,15 @@ func NewHandler(region string, catalog catalog.Interface, multipartTracker multi
 		})
 	}
 	sc := &ServerContext{
-		catalog:          catalog,
-		multipartTracker: multipartTracker,
-		region:           region,
-		bareDomains:      bareDomains,
-		blockStore:       blockStore,
-		authService:      authService,
-		stats:            stats,
-		pathProvider:     pathProvider,
+		catalog:           catalog,
+		multipartTracker:  multipartTracker,
+		region:            region,
+		bareDomains:       bareDomains,
+		blockStore:        blockStore,
+		authService:       authService,
+		stats:             stats,
+		pathProvider:      pathProvider,
+		verifyUnsupported: verifyUnsupported,
 	}
 
 	// setup routes
@@ -110,17 +112,21 @@ func NewHandler(region string, catalog catalog.Interface, multipartTracker multi
 		"X-Amz-Request-Id",
 		logging.Fields{"service_name": "s3_gateway"},
 		auditLogLevel,
-		traceRequestHeaders)
+		traceRequestHeaders,
+		isAdvancedAuth)
 
 	h = loggingMiddleware(h)
 
+	if middleware != nil {
+		h = middleware(h)
+	}
+
 	h = EnrichWithOperation(sc,
-		DurationHandler(
+		MetricsMiddleware(
 			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
-				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
-					OperationLookupHandler(
-						h))))))
-	logging.Default().WithFields(logging.Fields{
+				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler, h)))))
+
+	logging.ContextUnavailable().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomains,
 		"s3_region":      region,
 	}).Info("initialized S3 Gateway handler")
@@ -136,6 +142,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	usageCounter.Add(1)
 	operationHandler.ServeHTTP(w, req)
 }
 
@@ -154,7 +161,7 @@ func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperati
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req)
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := authorize(w, req, sc.authService, perms)
@@ -173,7 +180,7 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name)
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := authorize(w, req, sc.authService, perms)
@@ -204,9 +211,9 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
 		if err != nil {
 			if errors.Is(err, gatewayerrors.ErrInvalidCopySource) {
-				_ = o.EncodeError(w, req, gatewayerrors.ErrInvalidCopySource.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrInvalidCopySource.ToAPIErr())
 			} else {
-				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			return
 		}
@@ -241,8 +248,17 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 func authorize(w http.ResponseWriter, req *http.Request, authService auth.GatewayService, perms permissions.Node) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-	username := ctx.Value(ContextKeyUser).(*model.User).Username
-	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		o.Log(req).WithError(err).Error("failed to authorize, get user")
+		_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
+		return nil
+	}
+	username := user.Username
+	var accessKeyID string
+	if authContext, ok := ctx.Value(ContextKeyAuthContext).(sig.SigContext); ok {
+		accessKeyID = authContext.GetAccessKeyID()
+	}
 
 	if len(perms.Nodes) == 0 && len(perms.Permission.Action) == 0 {
 		// has not provided required permissions
@@ -258,12 +274,16 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 	})
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to authorize")
-		_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+		_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
 		return nil
 	}
 	if authResp.Error != nil || !authResp.Allowed {
-		o.Log(req).WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
-		_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+		l := o.Log(req).WithError(authResp.Error)
+		if accessKeyID != "" {
+			l = l.WithField("key", accessKeyID)
+		}
+		l.Warn("no permission")
+		_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 		return nil
 	}
 	return &operations.AuthorizedOperation{
@@ -304,6 +324,6 @@ func setDefaultContentType(w http.ResponseWriter, req *http.Request) {
 func unsupportedOperationHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := &operations.Operation{}
-		_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+		_ = o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 	})
 }

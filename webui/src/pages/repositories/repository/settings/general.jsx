@@ -1,18 +1,17 @@
-import React, {useRef, useState} from "react";
-
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import React, {useEffect, useRef, useState} from "react";
+import { useOutletContext } from "react-router-dom";
+import {useRefs} from "../../../../lib/hooks/repo";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import {TrashIcon} from "@primer/octicons-react";
 import Col from "react-bootstrap/Col";
-import {Error, Loading} from "../../../../lib/components/controls";
+import {AlertError, Loading} from "../../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
 import {repositories} from "../../../../lib/api";
 import {useRouter} from "../../../../lib/hooks/router";
-import {SettingsLayout} from "./layout";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
+import {ReadOnlyBadge} from "../../../../lib/components/badges";
 
 const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
     const [isDisabled, setIsDisabled] = useState(true);
@@ -60,8 +59,8 @@ const SettingsContainer = () => {
     const [ deletionError, setDeletionError ] = useState(null);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
-    if (deletionError) return <Error error={deletionError}/>;
+    if (error) return <AlertError error={error}/>;
+    if (deletionError) return <AlertError error={deletionError}/>;
 
     return (
         <div className="mt-3 mb-5">
@@ -73,12 +72,30 @@ const SettingsContainer = () => {
             <Container>
                 <Row>
                     <Form.Label column md={{span:3}} className="mb-3">
+                        &nbsp;
+                    </Form.Label>
+                    <Col md={{span:4}}>
+                        <ReadOnlyBadge readOnly={repo?.read_only} style={{marginTop: 7}} />
+                    </Col>
+                </Row>
+                <Row>
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Repository name
                     </Form.Label>
                     <Col md={{span:4}}>
                         <Form.Control readOnly value={repo.id} type="text"/>
                     </Col>
                 </Row>
+                {repo.storage_id && repo.storage_id.length &&
+                    <Row>
+                        <Form.Label column md={{span:3}} className="mb-3">
+                            Storage
+                        </Form.Label>
+                        <Col md={{span:4}}>
+                            <Form.Control readOnly value={repo.storage_id} type="text"/>
+                        </Col>
+                    </Row>
+                }
                 <Row>
                     <Form.Label column md={{span:3}} className="mb-3">
                         Storage namespace
@@ -97,7 +114,7 @@ const SettingsContainer = () => {
                 </Row>
             </Container>
 
-            <Button variant="danger" className="mt-3" onClick={() => setShowDeleteModal(!showingDeleteModal)}>
+            <Button variant="danger" className="mt-3" disabled={repo?.read_only} onClick={() => setShowDeleteModal(!showingDeleteModal)}>
                 <TrashIcon/> Delete Repository
             </Button>
 
@@ -105,10 +122,11 @@ const SettingsContainer = () => {
                 repo={repo}
                 onCancel={() => { setShowDeleteModal(false) }}
                 onSubmit={() => {
-                    repositories.delete(repo.id).catch(err => {
-                        setDeletionError(err)
-                    }).then(() => {
+                    repositories.delete(repo.id).then(() => {
                         return router.push('/repositories')
+                    }).catch(err => {
+                        setDeletionError(err)
+                        setShowDeleteModal(true)
                     })
                 }}
                 show={showingDeleteModal}/>
@@ -118,15 +136,9 @@ const SettingsContainer = () => {
 
 
 const RepositoryGeneralSettingsPage = () => {
-    return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'settings'}>
-                <SettingsLayout activeTab={"general"}>
-                    <SettingsContainer/>
-                </SettingsLayout>
-            </RepositoryPageLayout>
-        </RefContextProvider>
-    )
+  const [setActiveTab] = useOutletContext();
+  useEffect(() => setActiveTab("general"), [setActiveTab]);
+  return <SettingsContainer />;
 }
 
 

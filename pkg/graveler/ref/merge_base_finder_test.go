@@ -25,7 +25,7 @@ func (g *MockCommitGetter) GetCommit(_ context.Context, _ *graveler.RepositoryRe
 
 func computeGeneration(byCommitID map[graveler.CommitID]*graveler.Commit, commit *graveler.Commit) int {
 	if commit.Generation > 0 {
-		return commit.Generation
+		return int(commit.Generation)
 	}
 	if len(commit.Parents) == 0 {
 		return 1
@@ -38,13 +38,13 @@ func computeGeneration(byCommitID map[graveler.CommitID]*graveler.Commit, commit
 			maxGeneration = parentGeneration
 		}
 	}
-	commit.Generation = maxGeneration + 1
-	return commit.Generation
+	commit.Generation = graveler.CommitGeneration(maxGeneration + 1)
+	return int(commit.Generation)
 }
 
 func newReader(kv map[graveler.CommitID]*graveler.Commit) *MockCommitGetter {
 	for _, v := range kv {
-		v.Generation = computeGeneration(kv, v)
+		v.Generation = graveler.CommitGeneration(computeGeneration(kv, v))
 	}
 
 	return &MockCommitGetter{

@@ -15,6 +15,7 @@ type GeneralMetaRangeWriter struct {
 	ctx              context.Context
 	metadata         graveler.Metadata
 	params           *Params // for breaking ranges
+	storageID        StorageID
 	namespace        Namespace
 	metaRangeManager RangeManager
 	rangeManager     RangeManager
@@ -35,7 +36,7 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, storageID StorageID, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
 		ctx:              ctx,
 		metadata:         md,
@@ -43,6 +44,7 @@ func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManag
 		metaRangeManager: metaRangeManager,
 		batchWriteCloser: NewBatchCloser(params.MaxUploaders),
 		params:           params,
+		storageID:        storageID,
 		namespace:        namespace,
 	}
 }
@@ -122,7 +124,7 @@ func (w *GeneralMetaRangeWriter) WriteRange(rng Range) error {
 	return nil
 }
 
-func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
+func (w *GeneralMetaRangeWriter) Close(ctx context.Context) (*graveler.MetaRangeID, error) {
 	if err := w.closeCurrentRange(); err != nil {
 		return nil, err
 	}
@@ -135,7 +137,7 @@ func (w *GeneralMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
 		return bytes.Compare(ranges[i].MaxKey, ranges[j].MaxKey) < 0
 	})
 	w.ranges = ranges
-	return w.writeRangesToMetaRange()
+	return w.writeRangesToMetaRange(ctx)
 }
 
 // shouldBreakAtKey returns true if should break range after the given key
@@ -144,7 +146,7 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
 }
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
-func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID, error) {
+func (w *GeneralMetaRangeWriter) writeRangesToMetaRange(ctx context.Context) (*graveler.MetaRangeID, error) {
 	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.ctx, w.namespace, w.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
@@ -159,7 +161,7 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange() (*graveler.MetaRangeID
 
 	defer func() {
 		if abortErr := metaRangeWriter.Abort(); abortErr != nil {
-			logging.Default().WithError(err).WithField("namespace", w.namespace).Error("failed aborting metarange writer")
+			logging.FromContext(ctx).WithError(err).WithField("namespace", w.namespace).Error("failed aborting metarange writer")
 		}
 	}()
 	for _, p := range w.ranges {

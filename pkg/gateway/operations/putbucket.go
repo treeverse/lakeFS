@@ -25,11 +25,12 @@ func (controller *PutBucket) RequiredPermissions(_ *http.Request, repoID string)
 }
 
 func (controller *PutBucket) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	o.Incr("put_repo", o.Principal, o.Repository.Name, "")
-	if o.Repository == nil {
-		// No repo, would have to create it, but not enough
-		// information -- so not supported.
-		o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+	if o.HandleUnsupported(w, req, "cors", "metrics", "website", "logging", "accelerate",
+		"requestPayment", "acl", "publicAccessBlock", "ownershipControls", "intelligent-tiering", "analytics",
+		"lifecycle", "replication", "encryption", "policy", "object-lock", "tagging", "versioning") {
+		return
 	}
-	o.EncodeError(w, req, gatewayerrors.ErrBucketAlreadyExists.ToAPIErr())
+
+	o.Incr("put_repo", o.Principal, o.Repository.Name, "")
+	o.EncodeError(w, req, nil, gatewayerrors.ErrBucketAlreadyExists.ToAPIErr())
 }

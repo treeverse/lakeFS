@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
-var (
-	ErrValidationError = errors.New("validation error")
-)
+var ErrValidationError = errors.New("validation error")
 
 func ValidateAuthEntityID(name string) error {
 	if len(name) == 0 {
@@ -25,7 +23,11 @@ func ValidateAuthEntityID(name string) error {
 }
 
 func ValidateActionName(name string) error {
-	return permissions.IsValidAction(name)
+	err := permissions.IsValidAction(name)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrValidationError, err)
+	}
+	return nil
 }
 
 func ValidateArn(name string) error {

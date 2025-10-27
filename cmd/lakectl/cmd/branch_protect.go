@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"net/http"
+	"slices"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
@@ -19,14 +21,14 @@ var branchProtectCmd = &cobra.Command{
 }
 
 var branchProtectListCmd = &cobra.Command{
-	Use:               "list <repo uri>",
+	Use:               "list <repository URI>",
 	Short:             "List all branch protection rules",
-	Example:           "lakectl branch-protect list lakefs://<repository>",
+	Example:           "lakectl branch-protect list " + myRepoExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -36,7 +38,7 @@ var branchProtectListCmd = &cobra.Command{
 		for i, rule := range *resp.JSON200 {
 			patterns[i] = []interface{}{rule.Pattern}
 		}
-		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &api.Pagination{
+		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &apigen.Pagination{
 			HasMore: false,
 			Results: len(patterns),
 		}, len(patterns))
@@ -44,36 +46,59 @@ var branchProtectListCmd = &cobra.Command{
 }
 
 var branchProtectAddCmd = &cobra.Command{
-	Use:               "add <repo uri> <pattern>",
+	Use:               "add <repository URI> <pattern>",
 	Short:             "Add a branch protection rule",
 	Long:              "Add a branch protection rule for a given branch name pattern",
-	Example:           "lakectl branch-protect add lakefs://<repository> 'stable_*'",
+	Example:           "lakectl branch-protect add " + myRepoExample + " 'stable_*'",
 	Args:              cobra.ExactArgs(branchProtectAddCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
-		resp, err := client.CreateBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.CreateBranchProtectionRuleJSONRequestBody{
+		u := MustParseRepoURI("repository URI", args[0])
+		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
+
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		rules := *resp.JSON200
+		rules = append(rules, apigen.BranchProtectionRule{
 			Pattern: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		params := &apigen.SetBranchProtectionRulesParams{}
+		etag := swag.String(resp.HTTPResponse.Header.Get("ETag"))
+		if etag != nil && *etag != "" {
+			params.IfMatch = etag
+		}
+		setResp, err := client.SetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository, params, rules)
+		DieOnErrorOrUnexpectedStatusCode(setResp, err, http.StatusNoContent)
 	},
 }
 
 var branchProtectDeleteCmd = &cobra.Command{
-	Use:               "delete <repo uri> <pattern>",
+	Use:               "delete <repository URI> <pattern>",
 	Short:             "Delete a branch protection rule",
 	Long:              "Delete a branch protection rule for a given branch name pattern",
-	Example:           "lakectl branch-protect delete lakefs://<repository> stable_*",
+	Example:           "lakectl branch-protect delete " + myRepoExample + " stable_*",
 	Args:              cobra.ExactArgs(branchProtectDeleteCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
-		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.DeleteBranchProtectionRuleJSONRequestBody{
-			Pattern: args[1],
+		u := MustParseRepoURI("repository URI", args[0])
+		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		found := false
+		rules := slices.DeleteFunc(*resp.JSON200, func(rule apigen.BranchProtectionRule) bool {
+			if rule.Pattern == args[1] {
+				found = true
+				return true
+			}
+			return false
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		if !found {
+			Die("Branch protection rule not found", 1)
+		}
+		setResp, err := client.SetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository, &apigen.SetBranchProtectionRulesParams{
+			IfMatch: swag.String(resp.HTTPResponse.Header.Get("ETag")),
+		}, rules)
+		DieOnErrorOrUnexpectedStatusCode(setResp, err, http.StatusNoContent)
 	},
 }
 

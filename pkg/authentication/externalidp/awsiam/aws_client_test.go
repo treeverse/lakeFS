@@ -1,0 +1,82 @@
+package awsiam_test
+
+import (
+	"context"
+	"fmt"
+	"net/url"
+	"testing"
+	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
+)
+
+type mockCredentialsProvider struct {
+	creds aws.Credentials
+	err   error
+}
+
+func (m mockCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
+	return m.creds, m.err
+}
+
+func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
+	numSeconds := 360
+	validCreds := aws.Credentials{
+		AccessKeyID:     "accesKey",
+		SecretAccessKey: "secretKey",
+		SessionToken:    "securityToken",
+	}
+	cfg := aws.Config{
+		Region: "us-east-1",
+		Credentials: mockCredentialsProvider{
+			creds: validCreds,
+			err:   nil,
+		},
+	}
+	stsClient := sts.NewFromConfig(cfg)
+
+	params := &awsiam.IAMAuthParams{
+		TokenRequestHeaders: map[string]string{
+			"X-Custom-Test": "true",
+			"a-nice-header": "yes-please",
+		},
+		URLPresignTTL: time.Duration(numSeconds) * time.Second,
+	}
+
+	presignedURL, err := awsiam.PresignGetCallerIdentityFromAuthParams(context.Background(), params, stsClient)
+	require.NoError(t, err)
+	u, err := url.Parse(presignedURL)
+	require.NoError(t, err)
+
+	q := u.Query()
+	expectedTime := time.Now().UTC().Format("20060102")
+
+	require.Equal(t, fmt.Sprintf("%d", numSeconds), q.Get("X-Amz-Expires"))
+	require.Equal(t, "AWS4-HMAC-SHA256", q.Get("X-Amz-Algorithm"))
+	require.NotEmpty(t, q.Get("X-Amz-Signature"))
+	require.Equal(t, fmt.Sprintf("accesKey/%s/us-east-1/sts/aws4_request", expectedTime), q.Get("X-Amz-Credential"))
+	require.NotEmpty(t, q.Get("X-Amz-Date"))
+	require.Equal(t, "a-nice-header;host;x-custom-test", q.Get("X-Amz-SignedHeaders"))
+	require.Contains(t, q.Get("X-Amz-Security-Token"), "securityToken")
+	require.Equal(t, "sts.us-east-1.amazonaws.com", u.Host)
+
+}
+
+func TestNewIAMAuthParams(t *testing.T) {
+	thirteenM := 13 * time.Minute
+	nineM := 9 * time.Minute
+	params := awsiam.NewIAMAuthParams("")
+	require.Equal(t, params.TokenTTL, awsiam.DefaultTokenTTL)
+	require.Equal(t, params.RefreshInterval, awsiam.DefaultRefreshInterval)
+	require.Equal(t, params.TokenRequestHeaders[awsiam.HostServerIDHeader], "")
+
+	newheaders := map[string]string{"header": "hallo"}
+	newparams := awsiam.NewIAMAuthParams("host", awsiam.WithRefreshInterval(thirteenM), awsiam.WithTokenTTL(nineM), awsiam.WithTokenRequestHeaders(newheaders))
+	require.Equal(t, newparams.TokenTTL, nineM)
+	require.Equal(t, newparams.RefreshInterval, thirteenM)
+	require.NotContains(t, newparams.TokenRequestHeaders[awsiam.HostServerIDHeader], "host")
+	require.Equal(t, newparams.TokenRequestHeaders["header"], "hallo")
+}

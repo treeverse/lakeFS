@@ -1,16 +1,4 @@
-<!-- 
-Hello Axolotl!
-Thank you for contributing to the lakeFS project.
-We appreciate the time invested in this pull request and created this template to help make this process easier.
-It's really important to have all the information and context, to ensure we can properly address this PR 
-Please use the following references to fill out the pull request.
---> 
-
-### Linked Issue
-
 Closes #(Insert issue number closed by this PR)
-
----
 
 ## Change Description
 
@@ -20,30 +8,27 @@ Share context and relevant information for the PR: offline discussions, consider
 
 ### Bug Fix
 
+If this PR is a bug fix, please let us know about:
+
 1. Problem - The reason for opening the bug
 2. Root cause - Discovered root cause after investigation
-3. solution - How was the bug fixed
+3. Solution - How the bug was fixed
       
 ### New Feature
 
-Description of new feature
+If this PR introduces a new feature, describe it here.
 
 ### Testing Details
 
 How were the changes tested?
-Added new unit tests / integration tests
 
 ### Breaking Change?
 
 Does this change break any existing functionality? (API, CLI, Clients)
 
----
-
 ## Additional info
 
 Logs, outputs, screenshots of changes if applicable (CLI / GUI changes)
-
----
 
 ### Contact Details
 

@@ -17,7 +17,7 @@ var dbCmd = &cobra.Command{
 	Short: "Load test database actions",
 }
 
-//nolint:gochecknoinits,gomnd
+//nolint:gochecknoinits,mnd
 func init() {
 	rootCmd.AddCommand(dbCmd)
 	dbCmd.PersistentFlags().String("db", "postgres://127.0.0.1:5432/postgres?sslmode=disable", "Database connection string")

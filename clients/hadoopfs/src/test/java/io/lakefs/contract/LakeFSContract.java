@@ -1,5 +1,6 @@
 package io.lakefs.contract;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.contract.AbstractBondedFSContract;
@@ -13,6 +14,9 @@ public class LakeFSContract extends AbstractBondedFSContract {
 
     public LakeFSContract(Configuration conf) {
         super(conf);
+        if (StringUtils.isNotBlank(System.getProperty("lakefs.access_mode"))) {
+            conf.set("fs.lakefs.access.mode", System.getProperty("lakefs.access_mode"));
+        }
         //insert the base features
         addConfResource(CONTRACT_XML);
     }

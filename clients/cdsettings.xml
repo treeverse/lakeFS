@@ -1,0 +1,10 @@
+<settings>
+  <servers>
+    <server>
+      <id>central</id>
+      <username>${env.MAVEN_USERNAME}</username>
+      <password>${env.MAVEN_PASSWORD}</password>
+      <url>https://central.sonatype.com</url>
+    </server>
+  </servers>
+</settings>

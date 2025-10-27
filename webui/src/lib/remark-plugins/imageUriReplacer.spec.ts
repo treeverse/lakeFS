@@ -20,13 +20,15 @@ Text and whatever and hey look at this image:
     const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME)})
+![lakefs://image.png](${await getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME, false)})
 `;
 
     const result = await remark()
       .use(imageUriReplacer, {
         repo: TEST_REPO,
         ref: TEST_REF,
+        path: "",
+        presign: false,
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);
@@ -42,21 +44,22 @@ Text and whatever and hey look at this image:
     const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${getImageUrl(
+![lakefs://image.png](${await getImageUrl(
       TEST_REPO,
       TEST_REF,
-      `${ADDITIONAL_PATH}/${TEST_FILE_NAME}`
+      `${ADDITIONAL_PATH}/${TEST_FILE_NAME}`,
+      false,
     )})
 `;
 
     const result = await remark()
-      .use([
-        imageUriReplacer,
+      .use(imageUriReplacer,
         {
           repo: TEST_REPO,
           ref: TEST_REF,
-        },
-      ])
+          path: "",
+          presign: false,
+        })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);
   });
@@ -71,13 +74,15 @@ Text and whatever and hey look at this image:
     const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME)})
+![lakefs://image.png](${await getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME, false)})
 `;
 
     const result = await remark()
       .use(imageUriReplacer, {
         repo: TEST_REPO,
         ref: TEST_REF,
+        path: "",
+        presign: false,
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);
@@ -93,13 +98,45 @@ Text and whatever and hey look at this image:
     const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME)})
+![lakefs://image.png](${await getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME, false)})
 `;
 
     const result = await remark()
       .use(imageUriReplacer, {
         repo: TEST_REPO,
         ref: TEST_REF,
+        path: "",
+        presign: false,
+      })
+      .process(markdown);
+    expect(result.toString()).toEqual(markdownWithReplacedImage);
+  });
+
+  test("Supports relative paths ./", async () => {
+    const markdownFilePath = "test";
+    const markdown = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](./${TEST_FILE_NAME})
+`;
+
+    const markdownWithReplacedImage = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](${await getImageUrl(
+      TEST_REPO,
+      TEST_REF,
+      `${markdownFilePath}/${TEST_FILE_NAME}`,
+      false,
+    )})
+`;
+
+    const result = await remark()
+      .use(imageUriReplacer, {
+        repo: TEST_REPO,
+        ref: TEST_REF,
+        path: `${markdownFilePath}/test.md`,
+        presign: false,
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);

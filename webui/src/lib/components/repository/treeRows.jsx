@@ -35,7 +35,7 @@ class RowAction {
 const ChangeRowActions = ({actions}) => <>
     {
         actions.map(action => (
-            <><OverlayTrigger placement="bottom" overlay={<Tooltip hidden={!action.tooltip}>{action.tooltip}</Tooltip>}>
+            <OverlayTrigger key={action.text} placement="bottom" overlay={<Tooltip hidden={!action.tooltip}>{action.tooltip}</Tooltip>}>
                 <Button variant="link" disabled={false}
                         onClick={(e) => {
                             e.preventDefault();
@@ -45,7 +45,7 @@ const ChangeRowActions = ({actions}) => <>
                         ? action.icon
                         : action.text}
                 </Button>
-            </OverlayTrigger>&#160;&#160;</>
+            </OverlayTrigger>
         ))}
 </>;
 
@@ -96,29 +96,8 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
         />
     );
 };
-
-export const TableTreeEntryRow = ({entry, relativeTo = "", onClickExpandDiff, depth = 0, loading = false, onRevert}) => {
-    const [showRevertConfirm, setShowRevertConfirm] = useState(false)
-    let rowClass = 'tree-entry-row ' + diffType(entry);
-    let pathSection = extractTableName(entry, relativeTo);
-    const diffIndicator = <DiffIndicationIcon entry={entry} rowType={TreeRowType.Table}/>
-
-    const rowActions = []
-    rowActions.push(new RowAction(null, null, "Show table changes", onClickExpandDiff))
-    if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
-            setShowRevertConfirm(true)
-        }))
-    }
-    return (
-        <TableRow className={rowClass} entry={entry} diffIndicator={diffIndicator} rowActions={rowActions}
-                  onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection}
-                  showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}/>
-    );
-};
-
 const PrefixExpansionSection = ({dirExpanded, onClick}) => {
-    return (<span onClick={onClick}>
+    return (<span onClick={onClick} className="prefix-expand-icon">
                 {dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
             </span>)
 }
@@ -168,18 +147,6 @@ function diffType(entry) {
             return '';
     }
 }
-
-function extractTableName(entry, relativeTo) {
-    let pathText = entry.path;
-    if (pathText.startsWith(relativeTo)) {
-        pathText = pathText.substr(relativeTo.length);
-    }
-    if (pathText.endsWith("/")) {
-        pathText = pathText.slice(0,-1)
-    }
-    return pathText;
-}
-
 export const DiffIndicationIcon = ({entry, rowType}) => {
     let diffIcon;
     let tooltipId;

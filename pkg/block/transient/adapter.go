@@ -5,44 +5,49 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-var ErrInventoryNotImplemented = errors.New("inventory feature not implemented for transient storage adapter")
+const (
+	DefaultReaderSize = 1024 * 1024
+)
 
 type Adapter struct{}
 
-func New() *Adapter {
+func New(_ context.Context) *Adapter {
 	return &Adapter{}
 }
 
-func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
+func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) (*block.PutResponse, error) {
 	_, err := io.Copy(io.Discard, reader)
-	return err
-}
-
-func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
-	if expectedSize < 0 {
-		return nil, io.ErrUnexpectedEOF
+	if err != nil {
+		return nil, err
 	}
-	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
+	return &block.PutResponse{}, nil
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, error) {
-	return "", block.ErrOperationNotSupported
+func (a *Adapter) Get(_ context.Context, _ block.ObjectPointer) (io.ReadCloser, error) {
+	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: DefaultReaderSize}), nil
 }
 
-func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
+func (a *Adapter) GetWalker(_ string, _ block.WalkerOptions) (block.Walker, error) {
+	return nil, block.ErrOperationNotSupported
+}
+
+func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode, _ string) (string, time.Time, error) {
+	return "", time.Time{}, block.ErrOperationNotSupported
+}
+
+func (a *Adapter) Exists(_ context.Context, _ block.ObjectPointer) (bool, error) {
 	return true, nil
 }
 
-func (a *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+func (a *Adapter) GetRange(_ context.Context, _ block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	n := endPosition - startPosition
 	if n < 0 {
 		return nil, io.ErrUnexpectedEOF
@@ -66,7 +71,7 @@ func (a *Adapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(_ context.Context, _, _ block.ObjectPointer, _ string, _ int) (*block.UploadPartResponse, error) {
 	h := sha256.New()
 	code := h.Sum(nil)
 	etag := hex.EncodeToString(code)
@@ -75,7 +80,7 @@ func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj bl
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointer, _ string, _ int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	n := endPosition - startPosition
 	if n < 0 {
 		return nil, io.ErrUnexpectedEOF
@@ -88,7 +93,7 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationO
 	}, nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	uid := uuid.New()
 	uploadID := hex.EncodeToString(uid[:])
 	return &block.CreateMultiPartUploadResponse{
@@ -96,7 +101,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int) (*block.UploadPartResponse, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
@@ -137,21 +142,41 @@ func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, 
 	}, nil
 }
 
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, ErrInventoryNotImplemented
-}
-
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeTransient
 }
 
-func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
+	return nil, block.ErrOperationNotSupported
+}
+
+func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeTransient)
 	info.PreSignSupport = false
+	info.PreSignSupportUI = false
 	info.ImportSupport = false
-	return info
+	return &info
+}
+
+func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
+}
+
+func (a *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
 	return nil
+}
+
+func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
+	return "", block.ErrOperationNotSupported
+}
+
+func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
+	return nil, block.ErrOperationNotSupported
+}
+func (a *Adapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer, _ block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
+	return nil, block.ErrOperationNotSupported
 }

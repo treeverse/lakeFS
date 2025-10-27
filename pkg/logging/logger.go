@@ -7,8 +7,10 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -21,6 +23,10 @@ const (
 
 	ProjectDirectoryName = "lakefs"
 	ModuleName           = "github.com/treeverse/lakefs"
+
+	// durationStr is the suffix for the field holding a Duration as a
+	// string.
+	durationStr = "_str"
 )
 
 // log_fields keys
@@ -58,6 +64,8 @@ const (
 var (
 	formatterInitOnce sync.Once
 	defaultLogger     = logrus.New()
+	openLoggers       []io.Closer
+	syslogOnce        sync.Once
 )
 
 func Level() string {
@@ -100,8 +108,21 @@ func SetLevel(level string) {
 	}
 }
 
-func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
+func CloseWriters() error {
+	for _, c := range openLoggers {
+		if err := c.Close(); err != nil {
+			return fmt.Errorf("close log writer: %w", err)
+		}
+	}
+	openLoggers = nil
+	return nil
+}
+
+func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) error {
 	var writers []io.Writer
+	if err := CloseWriters(); err != nil {
+		return fmt.Errorf("close previous log writers: %w", err)
+	}
 	for _, output := range outputs {
 		var w io.Writer
 		switch output {
@@ -112,11 +133,13 @@ func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
 		case "=":
 			w = os.Stderr
 		default:
-			w = &lumberjack.Logger{
+			l := &lumberjack.Logger{
 				Filename:   output,
 				MaxSize:    fileMaxSizeMB,
 				MaxBackups: filesKeep,
 			}
+			w = l
+			openLoggers = append(openLoggers, l)
 		}
 		writers = append(writers, w)
 	}
@@ -125,22 +148,58 @@ func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
 	} else if len(writers) > 1 {
 		defaultLogger.SetOutput(io.MultiWriter(writers...))
 	}
+	return nil
 }
 
-func SetOutputFormat(format string) {
+func HasLogFileOutput(outputs []string) bool {
+	return slices.ContainsFunc(outputs, func(e string) bool {
+		return e != "" && e != "-" && e != "="
+	})
+}
+
+func GetLogFileOutputPath(outputs []string) string {
+	outFileIdx := slices.IndexFunc(outputs, func(e string) bool {
+		return e != "" && e != "-" && e != "="
+	})
+	return outputs[outFileIdx]
+}
+
+type OutputFormatOptions struct {
+	CallerPrettyfier func(*runtime.Frame) (function string, file string)
+}
+
+type OutputFormatOptionFunc func(options *OutputFormatOptions)
+
+func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
+	// setup options
+	var options OutputFormatOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	if options.CallerPrettyfier == nil {
+		options.CallerPrettyfier = logCallerTrimmer
+	}
+
+	// setup formatter
 	var formatter logrus.Formatter
 	switch strings.ToLower(format) {
 	case "text":
+		disableColors := false
+		noColor := os.Getenv("NO_COLOR")
+		if noColor != "" && noColor != "0" {
+			disableColors = true
+		}
 		formatter = &logrus.TextFormatter{
 			FullTimestamp:          true,
 			DisableLevelTruncation: true,
 			PadLevelText:           true,
 			QuoteEmptyFields:       true,
-			CallerPrettyfier:       logCallerTrimmer,
+			CallerPrettyfier:       options.CallerPrettyfier,
+			DisableColors:          disableColors,
 		}
 	case "json":
 		formatter = &logrus.JSONFormatter{
-			CallerPrettyfier: logCallerTrimmer,
+			CallerPrettyfier: options.CallerPrettyfier,
 			PrettyPrint:      false,
 		}
 	default:
@@ -192,12 +251,29 @@ func (l *logrusEntryWrapper) WithContext(ctx context.Context) Logger {
 	)
 }
 
-func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {
-	return &logrusEntryWrapper{l.e.WithField(key, value)}
+var durationType = reflect.TypeOf(time.Duration(0))
+
+// splitDurationFields modifies fields to split every field of type
+// time.Duration into 2 fields, one "_nsecs" and one "_str".
+func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
+	var durationKeys []string
+	for key, value := range fields {
+		if value != nil && reflect.TypeOf(value).AssignableTo(durationType) {
+			durationKeys = append(durationKeys, key)
+		}
+	}
+
+	for _, key := range durationKeys {
+		duration := fields[key].(time.Duration)
+		fields[key] = duration.Nanoseconds()
+		fields[key+durationStr] = duration.String()
+	}
+
+	return &logrusEntryWrapper{l.e.WithFields(logrus.Fields(fields))}
 }
 
-func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
-	return &logrusEntryWrapper{l.e.WithFields(logrus.Fields(fields))}
+func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {
+	return l.WithFields(Fields{key: value})
 }
 
 func (l *logrusEntryWrapper) WithError(err error) Logger {
@@ -305,7 +381,10 @@ func (lf logrusCallerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 	return lf.f.Format(e)
 }
 
-func Default() Logger {
+// ContextUnavailable returns a Logger when no context is available.  It
+// should be used only in code during startup, teardown, or tests.  Prefer
+// to use Default().
+func ContextUnavailable() Logger {
 	// wrap formatter with our own formatter that overrides caller
 	formatterInitOnce.Do(func() {
 		defaultLogger.SetReportCaller(true)
@@ -317,17 +396,24 @@ func Default() Logger {
 	}
 }
 
-func addFromContext(log Logger, ctx context.Context) Logger {
+// GetFieldsFromContext returns the logging fields on ctx or nil.
+func GetFieldsFromContext(ctx context.Context) Fields {
 	fields := ctx.Value(LogFieldsContextKey)
 	if fields == nil {
-		return log
+		return nil
 	}
-	loggerFields := fields.(Fields)
+	return fields.(Fields)
+}
+
+func addFromContext(log Logger, ctx context.Context) Logger {
+	loggerFields := GetFieldsFromContext(ctx)
 	return log.WithFields(loggerFields)
 }
 
+// FromContext returns a Logger for reporting logs during ctx.  This logger
+// will typically include request IDs from the context.
 func FromContext(ctx context.Context) Logger {
-	return addFromContext(Default(), ctx)
+	return addFromContext(ContextUnavailable(), ctx)
 }
 
 func AddFields(ctx context.Context, fields Fields) context.Context {

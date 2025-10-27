@@ -124,16 +124,16 @@ func TestResolvePathTime(t *testing.T) {
 	)
 
 	t.Run("sanity", func(t *testing.T) {
-		time := time.Now()
-		id := xid.NewWithTime(time).String()
+		now := time.Now()
+		id := xid.NewWithTime(now).String()
 
 		idTime, err := provider.ResolvePathTime(id)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
-		if time.Equal(idTime) {
-			t.Errorf("time doesn't match: '%s' '%s'", idTime, time)
+		if now.Equal(idTime) {
+			t.Errorf("time doesn't match: '%s' '%s'", idTime, now)
 		}
 	})
 

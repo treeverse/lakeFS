@@ -1,7 +1,7 @@
 package permissions_test
 
 import (
-	"golang.org/x/exp/slices"
+	"slices"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/permissions"

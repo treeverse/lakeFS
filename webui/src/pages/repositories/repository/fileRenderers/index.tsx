@@ -1,8 +1,9 @@
-import React, {FC} from "react";
+import React, { FC } from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
-import {FileType, RendererComponent} from "./types";
-import {DuckDBRenderer} from "./data";
+import { FileType, RendererComponent } from "./types";
+import { DuckDBRenderer } from "./data";
 import {
+    GeoJSONRenderer,
     ImageRenderer,
     IpynbRenderer,
     MarkdownRenderer,
@@ -12,19 +13,20 @@ import {
     TextRenderer,
     UnsupportedFileType
 } from "./simple";
+import { usePluginManager } from "../../../../extendable/plugins/pluginsContext";
 
 
 const MAX_FILE_SIZE = 20971520; // 20MiB
 
 
-export const Renderers: {[fileType in FileType] : FC<RendererComponent> } = {
+export const Renderers: { [fileType in FileType]: FC<RendererComponent> } = {
     [FileType.DATA]: props => (
         <DuckDBRenderer {...props}/>
     ),
     [FileType.MARKDOWN]: props => (
         <TextDownloader {...props} onReady={text =>
             <MarkdownRenderer {...props} text={text}/>
-        } />
+        }/>
     ),
     [FileType.IPYNB]: props => (
         <TextDownloader {...props} onReady={text =>
@@ -48,9 +50,26 @@ export const Renderers: {[fileType in FileType] : FC<RendererComponent> } = {
     [FileType.TOO_LARGE]: props => (
         <ObjectTooLarge {...props}/>
     ),
+    [FileType.GEOJSON]: props => (
+        <TextDownloader {...props} onReady={text =>
+            <GeoJSONRenderer {...props} text={text}/>
+        }/>
+    ),
 }
 
-export const guessLanguage =  (extension: string | null, contentType: string | null) => {
+export const guessLanguage = (extension?: string, contentType?: string) => {
+    switch (extension) {
+        case 'py':
+            extension = 'python'
+            break;
+        case 'ts':
+            extension = 'typescript'
+            break;
+        case 'js':
+        case 'jsx':
+            extension = 'javascript'
+            break;
+    }
     if (extension && SyntaxHighlighter.supportedLanguages.includes(extension)) {
         return extension;
     }
@@ -91,7 +110,7 @@ export const guessLanguage =  (extension: string | null, contentType: string | n
 }
 
 
-export function guessType(contentType: string | null, fileExtension: string | null): FileType {
+export function guessType(contentType?: string, fileExtension?: string): FileType {
     switch (contentType) {
         case 'application/x-yaml':
         case 'application/yaml':
@@ -102,6 +121,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'application/x-toml':
         case 'application/toml':
             return FileType.TEXT
+        case 'application/geo+json':
+            return FileType.GEOJSON;
         case 'application/x-ipynb+json':
         case 'application/x-ipynb':
         case 'application/ipynb':
@@ -113,6 +134,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'image/png':
         case 'image/gif':
         case 'image/webm':
+        case 'image/bmp':
+        case 'image/webp':
             return FileType.IMAGE
         case 'application/pdf':
         case 'application/x-pdf':
@@ -133,11 +156,22 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'jpg':
         case 'webm':
         case 'gif':
+        case 'bmp':
+        case 'webp':
             return FileType.IMAGE
         case 'pdf':
             return FileType.PDF
         case 'txt':
+        case 'text':
+        case 'yaml':
+        case 'py':
+        case 'yml':
+        case 'json':
+        case 'jsonl':
+        case 'ndjson':
             return FileType.TEXT
+        case 'geojson':
+            return FileType.GEOJSON
     }
     if (guessLanguage(fileExtension, contentType))
         return FileType.TEXT
@@ -145,7 +179,14 @@ export function guessType(contentType: string | null, fileExtension: string | nu
 }
 
 export const ObjectRenderer: FC<RendererComponent> = (props: RendererComponent) => {
-   const fileType = guessType(props.contentType, props.fileExtension)
+    const pluginManager = usePluginManager();
+
+    const customRenderer = pluginManager.customObjectRenderers.get(props.contentType, props.fileExtension)
+    if (customRenderer) {
+        return customRenderer(props)
+    }
+
+    const fileType = guessType(props.contentType, props.fileExtension)
     if (fileType !== FileType.DATA && props.sizeBytes > MAX_FILE_SIZE)
         return Renderers[FileType.TOO_LARGE](props)
     return Renderers[fileType](props)

@@ -81,7 +81,7 @@ type SigContext interface {
 
 type SigAuthenticator interface {
 	Parse() (SigContext, error)
-	Verify(*model.Credential, string) error
+	Verify(*model.Credential) error
 }
 
 type chainedAuthenticator struct {
@@ -95,10 +95,10 @@ func ChainedAuthenticator(methods ...SigAuthenticator) SigAuthenticator {
 
 func (c *chainedAuthenticator) Parse() (SigContext, error) {
 	for _, method := range c.methods {
-		ctx, err := method.Parse()
+		sigContext, err := method.Parse()
 		if err == nil {
 			c.chosen = method
-			return ctx, nil
+			return sigContext, nil
 		}
 	}
 	return nil, gwErrors.ErrMissingFields
@@ -108,8 +108,8 @@ func Equal(sig1, sig2 []byte) bool {
 	return hmac.Equal(sig1, sig2)
 }
 
-func (c *chainedAuthenticator) Verify(creds *model.Credential, fqdn string) error {
-	return c.chosen.Verify(creds, fqdn)
+func (c *chainedAuthenticator) Verify(creds *model.Credential) error {
+	return c.chosen.Verify(creds)
 }
 
 func (c *chainedAuthenticator) String() string {

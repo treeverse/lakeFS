@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	kv "github.com/treeverse/lakefs/pkg/kv"
-	params "github.com/treeverse/lakefs/pkg/kv/params"
+	kvparams "github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 // MockDriver is a mock of Driver interface.
@@ -37,7 +37,7 @@ func (m *MockDriver) EXPECT() *MockDriverMockRecorder {
 }
 
 // Open mocks base method.
-func (m *MockDriver) Open(ctx context.Context, params params.Config) (kv.Store, error) {
+func (m *MockDriver) Open(ctx context.Context, params kvparams.Config) (kv.Store, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Open", ctx, params)
 	ret0, _ := ret[0].(kv.Store)
@@ -256,4 +256,16 @@ func (m *MockEntriesIterator) Next() bool {
 func (mr *MockEntriesIteratorMockRecorder) Next() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockEntriesIterator)(nil).Next))
+}
+
+// SeekGE mocks base method.
+func (m *MockEntriesIterator) SeekGE(key []byte) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SeekGE", key)
+}
+
+// SeekGE indicates an expected call of SeekGE.
+func (mr *MockEntriesIteratorMockRecorder) SeekGE(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockEntriesIterator)(nil).SeekGE), key)
 }

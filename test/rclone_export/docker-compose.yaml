@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   postgres:
     image: "postgres:11"
@@ -9,7 +8,7 @@ services:
       POSTGRES_PASSWORD: lakefs
 
   lakefs:
-    image: "${REPO:-treeverse}/lakefs:${LAKEFS_TAG:-latest}"
+    image: "${REGISTRY:-treeverse}/lakefs:${LAKEFS_TAG:-latest}"
     container_name: lakefs
     ports:
       - "8000:8000"
@@ -33,10 +32,7 @@ services:
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
 
   lakefs-export:
-    image: "${REPO:-treeverse}/lakefs-rclone-export:${EXPORT_TAG:-latest}"
-    depends_on:
-      - "lakefs"
-      - "postgres"
+    image: "${REGISTRY:-treeverse}/lakefs-rclone-export:${EXPORT_TAG:-latest}"
     profiles: ["client"]
     environment:
       - LAKEFS_ENDPOINT=http://lakefs:8000
@@ -47,7 +43,3 @@ services:
       - LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
       - LAKEFS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - LAKEFS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-
-
-
-

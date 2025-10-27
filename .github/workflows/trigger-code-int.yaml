@@ -1,0 +1,21 @@
+name: Trigger Code Integration
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-code-int:
+    name: Trigger Code Integration
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Trigger code-int workflow
+        env:
+          GH_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          gh workflow run code-int.yaml --repo treeverse/lakeFS-Enterprise --field ref='${{ github.ref }}'

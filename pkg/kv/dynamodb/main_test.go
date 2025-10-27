@@ -5,27 +5,20 @@ import (
 	"os"
 	"testing"
 
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 var testParams *kvparams.DynamoDB
+var databaseURI string
 
 func TestMain(m *testing.M) {
-	databaseURI, cleanupFunc, err := testutil.GetDynamoDBInstance()
+	var err error
+	var cleanupFunc func()
+	databaseURI, cleanupFunc, err = testutil.GetDynamoDBInstance()
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
-
-	testParams = &kvparams.DynamoDB{
-		TableName:          testutil.UniqueKVTableName(),
-		ScanLimit:          10,
-		Endpoint:           databaseURI,
-		AwsRegion:          "us-east-1",
-		AwsAccessKeyID:     "fakeMyKeyId",
-		AwsSecretAccessKey: "fakeSecretAccessKey",
-	}
-
 	code := m.Run()
 	cleanupFunc()
 	os.Exit(code)

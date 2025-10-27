@@ -4,7 +4,7 @@ All URIs are relative to */api/v1*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**cherryPick**](BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch |
+| [**cherryPick**](BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch |
 | [**createBranch**](BranchesApi.md#createBranch) | **POST** /repositories/{repository}/branches | create branch |
 | [**deleteBranch**](BranchesApi.md#deleteBranch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch |
 | [**diffBranch**](BranchesApi.md#diffBranch) | **GET** /repositories/{repository}/branches/{branch}/diff | diff branch |
@@ -14,21 +14,21 @@ All URIs are relative to */api/v1*
 | [**revertBranch**](BranchesApi.md#revertBranch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert |
 
 
-<a name="cherryPick"></a>
+<a id="cherryPick"></a>
 # **cherryPick**
-> Commit cherryPick(repository, branch, cherryPickCreation)
+> Commit cherryPick(repository, branch, cherryPickCreation).execute();
 
-Cherry-Pick the given reference commit into the given branch
+Replay the changes from the given commit on the branch
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -67,7 +67,8 @@ public class Example {
     String branch = "branch_example"; // String | 
     CherryPickCreation cherryPickCreation = new CherryPickCreation(); // CherryPickCreation | 
     try {
-      Commit result = apiInstance.cherryPick(repository, branch, cherryPickCreation);
+      Commit result = apiInstance.cherryPick(repository, branch, cherryPickCreation)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#cherryPick");
@@ -107,25 +108,27 @@ public class Example {
 | **201** | the cherry-pick commit |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="createBranch"></a>
+<a id="createBranch"></a>
 # **createBranch**
-> String createBranch(repository, branchCreation)
+> String createBranch(repository, branchCreation).execute();
 
 create branch
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -163,7 +166,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     BranchCreation branchCreation = new BranchCreation(); // BranchCreation | 
     try {
-      String result = apiInstance.createBranch(repository, branchCreation);
+      String result = apiInstance.createBranch(repository, branchCreation)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#createBranch");
@@ -202,25 +206,27 @@ public class Example {
 | **201** | reference |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="deleteBranch"></a>
+<a id="deleteBranch"></a>
 # **deleteBranch**
-> deleteBranch(repository, branch)
+> deleteBranch(repository, branch).force(force).execute();
 
 delete branch
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -257,8 +263,11 @@ public class Example {
     BranchesApi apiInstance = new BranchesApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
+    Boolean force = false; // Boolean | 
     try {
-      apiInstance.deleteBranch(repository, branch);
+      apiInstance.deleteBranch(repository, branch)
+            .force(force)
+            .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#deleteBranch");
       System.err.println("Status code: " + e.getCode());
@@ -276,6 +285,7 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
 | **branch** | **String**|  | |
+| **force** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 
@@ -297,23 +307,24 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="diffBranch"></a>
+<a id="diffBranch"></a>
 # **diffBranch**
-> DiffList diffBranch(repository, branch, after, amount, prefix, delimiter)
+> DiffList diffBranch(repository, branch).after(after).amount(amount).prefix(prefix).delimiter(delimiter).execute();
 
 diff branch
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -355,7 +366,12 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     try {
-      DiffList result = apiInstance.diffBranch(repository, branch, after, amount, prefix, delimiter);
+      DiffList result = apiInstance.diffBranch(repository, branch)
+            .after(after)
+            .amount(amount)
+            .prefix(prefix)
+            .delimiter(delimiter)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#diffBranch");
@@ -398,23 +414,24 @@ public class Example {
 | **200** | diff of branch uncommitted changes |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="getBranch"></a>
+<a id="getBranch"></a>
 # **getBranch**
-> Ref getBranch(repository, branch)
+> Ref getBranch(repository, branch).execute();
 
 get branch
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -452,7 +469,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     try {
-      Ref result = apiInstance.getBranch(repository, branch);
+      Ref result = apiInstance.getBranch(repository, branch)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#getBranch");
@@ -491,23 +509,24 @@ public class Example {
 | **200** | branch |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="listBranches"></a>
+<a id="listBranches"></a>
 # **listBranches**
-> RefList listBranches(repository, prefix, after, amount)
+> RefList listBranches(repository).prefix(prefix).after(after).amount(amount).showHidden(showHidden).execute();
 
 list branches
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -546,8 +565,14 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    Boolean showHidden = false; // Boolean | 
     try {
-      RefList result = apiInstance.listBranches(repository, prefix, after, amount);
+      RefList result = apiInstance.listBranches(repository)
+            .prefix(prefix)
+            .after(after)
+            .amount(amount)
+            .showHidden(showHidden)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#listBranches");
@@ -568,6 +593,7 @@ public class Example {
 | **prefix** | **String**| return items prefixed with this value | [optional] |
 | **after** | **String**| return items after this value | [optional] |
 | **amount** | **Integer**| how many items to return | [optional] [default to 100] |
+| **showHidden** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 
@@ -588,23 +614,24 @@ public class Example {
 | **200** | branch list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="resetBranch"></a>
+<a id="resetBranch"></a>
 # **resetBranch**
-> resetBranch(repository, branch, resetCreation)
+> resetBranch(repository, branch, resetCreation).execute();
 
 reset branch
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -643,7 +670,8 @@ public class Example {
     String branch = "branch_example"; // String | 
     ResetCreation resetCreation = new ResetCreation(); // ResetCreation | 
     try {
-      apiInstance.resetBranch(repository, branch, resetCreation);
+      apiInstance.resetBranch(repository, branch, resetCreation)
+            .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#resetBranch");
       System.err.println("Status code: " + e.getCode());
@@ -680,25 +708,28 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | reset successful |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="revertBranch"></a>
+<a id="revertBranch"></a>
 # **revertBranch**
-> revertBranch(repository, branch, revertCreation)
+> revertBranch(repository, branch, revertCreation).execute();
 
 revert
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.BranchesApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -737,7 +768,8 @@ public class Example {
     String branch = "branch_example"; // String | 
     RevertCreation revertCreation = new RevertCreation(); // RevertCreation | 
     try {
-      apiInstance.revertBranch(repository, branch, revertCreation);
+      apiInstance.revertBranch(repository, branch, revertCreation)
+            .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#revertBranch");
       System.err.println("Status code: " + e.getCode());
@@ -776,7 +808,9 @@ null (empty response body)
 | **204** | revert successful |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

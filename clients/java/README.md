@@ -1,7 +1,7 @@
-# api-client
+# sdk
 
 lakeFS API
-- API version: 0.1.0
+- API version: 1.0.0
 
 lakeFS HTTP API
 
@@ -38,7 +38,7 @@ Add this dependency to your project's POM:
 ```xml
 <dependency>
   <groupId>io.lakefs</groupId>
-  <artifactId>api-client</artifactId>
+  <artifactId>sdk</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <scope>compile</scope>
 </dependency>
@@ -50,12 +50,12 @@ Add this dependency to your project's build file:
 
 ```groovy
   repositories {
-    mavenCentral()     // Needed if the 'api-client' jar has been published to maven central.
-    mavenLocal()       // Needed if the 'api-client' jar has been published to the local maven repo.
+    mavenCentral()     // Needed if the 'sdk' jar has been published to maven central.
+    mavenLocal()       // Needed if the 'sdk' jar has been published to the local maven repo.
   }
 
   dependencies {
-     implementation "io.lakefs:api-client:0.1.0-SNAPSHOT"
+     implementation "io.lakefs:sdk:0.1.0-SNAPSHOT"
   }
 ```
 
@@ -69,7 +69,7 @@ mvn clean package
 
 Then manually install the following JARs:
 
-* `target/api-client-0.1.0-SNAPSHOT.jar`
+* `target/sdk-0.1.0-SNAPSHOT.jar`
 * `target/lib/*.jar`
 
 ## Getting Started
@@ -79,12 +79,12 @@ Please follow the [installation](#installation) instruction and execute the foll
 ```java
 
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -122,7 +122,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     String runId = "runId_example"; // String | 
     try {
-      ActionRun result = apiInstance.getRun(repository, runId);
+      ActionRun result = apiInstance.getRun(repository, runId)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ActionsApi#getRun");
@@ -153,18 +154,21 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**createGroup**](docs/AuthApi.md#createGroup) | **POST** /auth/groups | create group
 *AuthApi* | [**createPolicy**](docs/AuthApi.md#createPolicy) | **POST** /auth/policies | create policy
 *AuthApi* | [**createUser**](docs/AuthApi.md#createUser) | **POST** /auth/users | create user
+*AuthApi* | [**createUserExternalPrincipal**](docs/AuthApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *AuthApi* | [**deleteCredentials**](docs/AuthApi.md#deleteCredentials) | **DELETE** /auth/users/{userId}/credentials/{accessKeyId} | delete credentials
 *AuthApi* | [**deleteGroup**](docs/AuthApi.md#deleteGroup) | **DELETE** /auth/groups/{groupId} | delete group
 *AuthApi* | [**deleteGroupMembership**](docs/AuthApi.md#deleteGroupMembership) | **DELETE** /auth/groups/{groupId}/members/{userId} | delete group membership
 *AuthApi* | [**deletePolicy**](docs/AuthApi.md#deletePolicy) | **DELETE** /auth/policies/{policyId} | delete policy
 *AuthApi* | [**deleteUser**](docs/AuthApi.md#deleteUser) | **DELETE** /auth/users/{userId} | delete user
+*AuthApi* | [**deleteUserExternalPrincipal**](docs/AuthApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *AuthApi* | [**detachPolicyFromGroup**](docs/AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detachPolicyFromUser**](docs/AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
-*AuthApi* | [**forgotPassword**](docs/AuthApi.md#forgotPassword) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
-*AuthApi* | [**getAuthCapabilities**](docs/AuthApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
+*AuthApi* | [**externalPrincipalLogin**](docs/AuthApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 *AuthApi* | [**getCredentials**](docs/AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**getCurrentUser**](docs/AuthApi.md#getCurrentUser) | **GET** /user | get current user
+*AuthApi* | [**getExternalPrincipal**](docs/AuthApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
 *AuthApi* | [**getGroup**](docs/AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
+*AuthApi* | [**getGroupACL**](docs/AuthApi.md#getGroupACL) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**getPolicy**](docs/AuthApi.md#getPolicy) | **GET** /auth/policies/{policyId} | get policy
 *AuthApi* | [**getUser**](docs/AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user
 *AuthApi* | [**listGroupMembers**](docs/AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members
@@ -172,13 +176,15 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listGroups**](docs/AuthApi.md#listGroups) | **GET** /auth/groups | list groups
 *AuthApi* | [**listPolicies**](docs/AuthApi.md#listPolicies) | **GET** /auth/policies | list policies
 *AuthApi* | [**listUserCredentials**](docs/AuthApi.md#listUserCredentials) | **GET** /auth/users/{userId}/credentials | list user credentials
+*AuthApi* | [**listUserExternalPrincipals**](docs/AuthApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 *AuthApi* | [**listUserGroups**](docs/AuthApi.md#listUserGroups) | **GET** /auth/users/{userId}/groups | list user groups
 *AuthApi* | [**listUserPolicies**](docs/AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
-*AuthApi* | [**updatePassword**](docs/AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
+*AuthApi* | [**oauthCallback**](docs/AuthApi.md#oauthCallback) | **GET** /oidc/callback | 
+*AuthApi* | [**setGroupACL**](docs/AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
-*BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch
+*BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
 *BranchesApi* | [**createBranch**](docs/BranchesApi.md#createBranch) | **POST** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**deleteBranch**](docs/BranchesApi.md#deleteBranch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch
 *BranchesApi* | [**diffBranch**](docs/BranchesApi.md#diffBranch) | **GET** /repositories/{repository}/branches/{branch}/diff | diff branch
@@ -188,18 +194,64 @@ Class | Method | HTTP request | Description
 *BranchesApi* | [**revertBranch**](docs/BranchesApi.md#revertBranch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 *CommitsApi* | [**getCommit**](docs/CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
-*CommitsApi* | [**logBranchCommits**](docs/CommitsApi.md#logBranchCommits) | **GET** /repositories/{repository}/branches/{branch}/commits | get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
-*ConfigApi* | [**getGarbageCollectionConfig**](docs/ConfigApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
-*ConfigApi* | [**getLakeFSVersion**](docs/ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
-*ConfigApi* | [**getSetupState**](docs/ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
-*ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
-*ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
-*ConfigApi* | [**setupCommPrefs**](docs/ConfigApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
-*ExperimentalApi* | [**otfDiff**](docs/ExperimentalApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
+*ConfigApi* | [**getConfig**](docs/ConfigApi.md#getConfig) | **GET** /config | 
+*ExperimentalApi* | [**abortPresignMultipartUpload**](docs/ExperimentalApi.md#abortPresignMultipartUpload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
+*ExperimentalApi* | [**completePresignMultipartUpload**](docs/ExperimentalApi.md#completePresignMultipartUpload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
+*ExperimentalApi* | [**createPresignMultipartUpload**](docs/ExperimentalApi.md#createPresignMultipartUpload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
+*ExperimentalApi* | [**createPullRequest**](docs/ExperimentalApi.md#createPullRequest) | **POST** /repositories/{repository}/pulls | create pull request
+*ExperimentalApi* | [**createUserExternalPrincipal**](docs/ExperimentalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
+*ExperimentalApi* | [**deleteUserExternalPrincipal**](docs/ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
+*ExperimentalApi* | [**externalPrincipalLogin**](docs/ExperimentalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
+*ExperimentalApi* | [**getExternalPrincipal**](docs/ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
+*ExperimentalApi* | [**getLicense**](docs/ExperimentalApi.md#getLicense) | **GET** /license | 
+*ExperimentalApi* | [**getPullRequest**](docs/ExperimentalApi.md#getPullRequest) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
+*ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
+*ExperimentalApi* | [**listPullRequests**](docs/ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests
+*ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+*ExperimentalApi* | [**mergePullRequest**](docs/ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
+*ExperimentalApi* | [**stsLogin**](docs/ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS
+*ExperimentalApi* | [**updateObjectUserMetadata**](docs/ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
+*ExperimentalApi* | [**updatePullRequest**](docs/ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
+*ExperimentalApi* | [**uploadPart**](docs/ExperimentalApi.md#uploadPart) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber} | 
+*ExperimentalApi* | [**uploadPartCopy**](docs/ExperimentalApi.md#uploadPartCopy) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy | 
+*ExternalApi* | [**createUserExternalPrincipal**](docs/ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
+*ExternalApi* | [**deleteUserExternalPrincipal**](docs/ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
+*ExternalApi* | [**externalPrincipalLogin**](docs/ExternalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
+*ExternalApi* | [**getExternalPrincipal**](docs/ExternalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
+*ExternalApi* | [**listUserExternalPrincipals**](docs/ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
-*ImportApi* | [**createMetaRange**](docs/ImportApi.md#createMetaRange) | **POST** /repositories/{repository}/branches/metaranges | create a lakeFS metarange file from the given ranges
-*ImportApi* | [**ingestRange**](docs/ImportApi.md#ingestRange) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
-*MetadataApi* | [**createSymlinkFile**](docs/MetadataApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
+*ImportApi* | [**importCancel**](docs/ImportApi.md#importCancel) | **DELETE** /repositories/{repository}/branches/{branch}/import | cancel ongoing import
+*ImportApi* | [**importStart**](docs/ImportApi.md#importStart) | **POST** /repositories/{repository}/branches/{branch}/import | import data from object store
+*ImportApi* | [**importStatus**](docs/ImportApi.md#importStatus) | **GET** /repositories/{repository}/branches/{branch}/import | get import status
+*InternalApi* | [**createBranchProtectionRulePreflight**](docs/InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
+*InternalApi* | [**createCommitRecord**](docs/InternalApi.md#createCommitRecord) | **POST** /repositories/{repository}/commits | create commit record
+*InternalApi* | [**createSymlinkFile**](docs/InternalApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
+*InternalApi* | [**deleteRepositoryMetadata**](docs/InternalApi.md#deleteRepositoryMetadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata
+*InternalApi* | [**dumpRefs**](docs/InternalApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
+*InternalApi* | [**getAuthCapabilities**](docs/InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
+*InternalApi* | [**getGarbageCollectionConfig**](docs/InternalApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
+*InternalApi* | [**getLakeFSVersion**](docs/InternalApi.md#getLakeFSVersion) | **GET** /config/version | 
+*InternalApi* | [**getMetadataObject**](docs/InternalApi.md#getMetadataObject) | **GET** /repositories/{repository}/metadata/object/{type}/{object_id} | return a lakeFS metadata object by ID
+*InternalApi* | [**getSetupState**](docs/InternalApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
+*InternalApi* | [**getStorageConfig**](docs/InternalApi.md#getStorageConfig) | **GET** /config/storage | 
+*InternalApi* | [**getUsageReportSummary**](docs/InternalApi.md#getUsageReportSummary) | **GET** /usage-report/summary | get usage report summary
+*InternalApi* | [**internalCreateBranchProtectionRule**](docs/InternalApi.md#internalCreateBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
+*InternalApi* | [**internalDeleteBranchProtectionRule**](docs/InternalApi.md#internalDeleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
+*InternalApi* | [**internalDeleteGarbageCollectionRules**](docs/InternalApi.md#internalDeleteGarbageCollectionRules) | **DELETE** /repositories/{repository}/gc/rules | 
+*InternalApi* | [**internalGetBranchProtectionRules**](docs/InternalApi.md#internalGetBranchProtectionRules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
+*InternalApi* | [**internalGetGarbageCollectionRules**](docs/InternalApi.md#internalGetGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
+*InternalApi* | [**internalSetGarbageCollectionRules**](docs/InternalApi.md#internalSetGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
+*InternalApi* | [**postStatsEvents**](docs/InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+*InternalApi* | [**prepareGarbageCollectionCommits**](docs/InternalApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+*InternalApi* | [**prepareGarbageCollectionUncommitted**](docs/InternalApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
+*InternalApi* | [**restoreRefs**](docs/InternalApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
+*InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
+*InternalApi* | [**setRepositoryMetadata**](docs/InternalApi.md#setRepositoryMetadata) | **POST** /repositories/{repository}/metadata | set repository metadata
+*InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+*InternalApi* | [**setupCommPrefs**](docs/InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
+*InternalApi* | [**stageObject**](docs/InternalApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
+*InternalApi* | [**uploadObjectPreflight**](docs/InternalApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
+*LicenseApi* | [**getLicense**](docs/LicenseApi.md#getLicense) | **GET** /license | 
 *MetadataApi* | [**getMetaRange**](docs/MetadataApi.md#getMetaRange) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**getRange**](docs/MetadataApi.md#getRange) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
 *ObjectsApi* | [**copyObject**](docs/ObjectsApi.md#copyObject) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
@@ -209,40 +261,44 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**getUnderlyingProperties**](docs/ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 *ObjectsApi* | [**headObject**](docs/ObjectsApi.md#headObject) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
 *ObjectsApi* | [**listObjects**](docs/ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
-*ObjectsApi* | [**stageObject**](docs/ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**statObject**](docs/ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
+*ObjectsApi* | [**updateObjectUserMetadata**](docs/ObjectsApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
-*OtfDiffApi* | [**otfDiff**](docs/OtfDiffApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
+*PullsApi* | [**createPullRequest**](docs/PullsApi.md#createPullRequest) | **POST** /repositories/{repository}/pulls | create pull request
+*PullsApi* | [**getPullRequest**](docs/PullsApi.md#getPullRequest) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
+*PullsApi* | [**listPullRequests**](docs/PullsApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests
+*PullsApi* | [**mergePullRequest**](docs/PullsApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
+*PullsApi* | [**updatePullRequest**](docs/PullsApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
 *RefsApi* | [**diffRefs**](docs/RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
-*RefsApi* | [**dumpRefs**](docs/RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
 *RefsApi* | [**findMergeBase**](docs/RefsApi.md#findMergeBase) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 *RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
-*RefsApi* | [**restoreRefs**](docs/RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
-*RepositoriesApi* | [**createBranchProtectionRule**](docs/RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
-*RepositoriesApi* | [**deleteBranchProtectionRule**](docs/RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
+*RepositoriesApi* | [**deleteGCRules**](docs/RepositoriesApi.md#deleteGCRules) | **DELETE** /repositories/{repository}/settings/gc_rules | 
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
-*RepositoriesApi* | [**getBranchProtectionRules**](docs/RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
+*RepositoriesApi* | [**dumpStatus**](docs/RepositoriesApi.md#dumpStatus) | **GET** /repositories/{repository}/dump | Status of a repository dump task
+*RepositoriesApi* | [**dumpSubmit**](docs/RepositoriesApi.md#dumpSubmit) | **POST** /repositories/{repository}/dump | Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
+*RepositoriesApi* | [**getBranchProtectionRules**](docs/RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/settings/branch_protection | get branch protection rules
+*RepositoriesApi* | [**getGCRules**](docs/RepositoriesApi.md#getGCRules) | **GET** /repositories/{repository}/settings/gc_rules | get repository GC rules
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
+*RepositoriesApi* | [**getRepositoryMetadata**](docs/RepositoriesApi.md#getRepositoryMetadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
-*RetentionApi* | [**deleteGarbageCollectionRules**](docs/RetentionApi.md#deleteGarbageCollectionRules) | **DELETE** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**getGarbageCollectionRules**](docs/RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
-*RetentionApi* | [**prepareGarbageCollectionUncommitted**](docs/RetentionApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
-*RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
-*StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
+*RepositoriesApi* | [**restoreStatus**](docs/RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Status of a restore request
+*RepositoriesApi* | [**restoreSubmit**](docs/RepositoriesApi.md#restoreSubmit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
+*RepositoriesApi* | [**setBranchProtectionRules**](docs/RepositoriesApi.md#setBranchProtectionRules) | **PUT** /repositories/{repository}/settings/branch_protection | 
+*RepositoriesApi* | [**setGCRules**](docs/RepositoriesApi.md#setGCRules) | **PUT** /repositories/{repository}/settings/gc_rules | 
+*StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | generate an address to which the client can upload an object
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-*StatisticsApi* | [**postStatsEvents**](docs/StatisticsApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *TagsApi* | [**createTag**](docs/TagsApi.md#createTag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**deleteTag**](docs/TagsApi.md#deleteTag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
 *TagsApi* | [**getTag**](docs/TagsApi.md#getTag) | **GET** /repositories/{repository}/tags/{tag} | get tag
 *TagsApi* | [**listTags**](docs/TagsApi.md#listTags) | **GET** /repositories/{repository}/tags | list tags
-*TemplatesApi* | [**expandTemplate**](docs/TemplatesApi.md#expandTemplate) | **GET** /templates/{template_location} | 
 
 
 ## Documentation for Models
 
+ - [ACL](docs/ACL.md)
+ - [AbortPresignMultipartUpload](docs/AbortPresignMultipartUpload.md)
  - [AccessKeyCredentials](docs/AccessKeyCredentials.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
@@ -255,18 +311,27 @@ Class | Method | HTTP request | Description
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
+ - [CommitOverrides](docs/CommitOverrides.md)
+ - [CommitRecordCreation](docs/CommitRecordCreation.md)
+ - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
+ - [Config](docs/Config.md)
+ - [CopyPartSource](docs/CopyPartSource.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)
  - [CurrentUser](docs/CurrentUser.md)
- - [DeleteBranchProtectionRuleRequest](docs/DeleteBranchProtectionRuleRequest.md)
+ - [CustomViewer](docs/CustomViewer.md)
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
+ - [DiffObjectStat](docs/DiffObjectStat.md)
  - [Error](docs/Error.md)
+ - [ErrorNoACL](docs/ErrorNoACL.md)
+ - [ExternalLoginInformation](docs/ExternalLoginInformation.md)
+ - [ExternalPrincipal](docs/ExternalPrincipal.md)
+ - [ExternalPrincipalCreation](docs/ExternalPrincipalCreation.md)
+ - [ExternalPrincipalList](docs/ExternalPrincipalList.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
- - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)
  - [GarbageCollectionConfig](docs/GarbageCollectionConfig.md)
- - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
  - [GarbageCollectionPrepareResponse](docs/GarbageCollectionPrepareResponse.md)
  - [GarbageCollectionRule](docs/GarbageCollectionRule.md)
  - [GarbageCollectionRules](docs/GarbageCollectionRules.md)
@@ -275,42 +340,53 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
- - [ImportPagination](docs/ImportPagination.md)
- - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
+ - [ImportCreation](docs/ImportCreation.md)
+ - [ImportCreationResponse](docs/ImportCreationResponse.md)
+ - [ImportLocation](docs/ImportLocation.md)
+ - [ImportStatus](docs/ImportStatus.md)
+ - [InstallationUsageReport](docs/InstallationUsageReport.md)
+ - [InternalDeleteBranchProtectionRuleRequest](docs/InternalDeleteBranchProtectionRuleRequest.md)
+ - [License](docs/License.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)
- - [MergeResultSummary](docs/MergeResultSummary.md)
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
- - [NextStep](docs/NextStep.md)
  - [ObjectCopyCreation](docs/ObjectCopyCreation.md)
  - [ObjectError](docs/ObjectError.md)
  - [ObjectErrorList](docs/ObjectErrorList.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)
- - [OtfDiffEntry](docs/OtfDiffEntry.md)
- - [OtfDiffList](docs/OtfDiffList.md)
  - [Pagination](docs/Pagination.md)
  - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)
  - [PrepareGCUncommittedRequest](docs/PrepareGCUncommittedRequest.md)
  - [PrepareGCUncommittedResponse](docs/PrepareGCUncommittedResponse.md)
+ - [PresignMultipartUpload](docs/PresignMultipartUpload.md)
+ - [PullRequest](docs/PullRequest.md)
+ - [PullRequestBasic](docs/PullRequestBasic.md)
+ - [PullRequestCreation](docs/PullRequestCreation.md)
+ - [PullRequestCreationResponse](docs/PullRequestCreationResponse.md)
+ - [PullRequestsList](docs/PullRequestsList.md)
  - [RangeMetadata](docs/RangeMetadata.md)
  - [Ref](docs/Ref.md)
  - [RefList](docs/RefList.md)
  - [RefsDump](docs/RefsDump.md)
+ - [RefsRestore](docs/RefsRestore.md)
  - [Repository](docs/Repository.md)
  - [RepositoryCreation](docs/RepositoryCreation.md)
+ - [RepositoryDumpStatus](docs/RepositoryDumpStatus.md)
  - [RepositoryList](docs/RepositoryList.md)
+ - [RepositoryMetadataKeys](docs/RepositoryMetadataKeys.md)
+ - [RepositoryMetadataSet](docs/RepositoryMetadataSet.md)
+ - [RepositoryRestoreStatus](docs/RepositoryRestoreStatus.md)
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)
  - [SetupState](docs/SetupState.md)
- - [StageRangeCreation](docs/StageRangeCreation.md)
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)
@@ -318,38 +394,54 @@ Class | Method | HTTP request | Description
  - [StatsEventsList](docs/StatsEventsList.md)
  - [StorageConfig](docs/StorageConfig.md)
  - [StorageURI](docs/StorageURI.md)
+ - [StsAuthRequest](docs/StsAuthRequest.md)
  - [TagCreation](docs/TagCreation.md)
+ - [TaskInfo](docs/TaskInfo.md)
+ - [UIConfig](docs/UIConfig.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
- - [UpdatePasswordByToken](docs/UpdatePasswordByToken.md)
+ - [UpdateObjectUserMetadata](docs/UpdateObjectUserMetadata.md)
+ - [UpdateToken](docs/UpdateToken.md)
+ - [UploadPart](docs/UploadPart.md)
+ - [UploadPartCopyFrom](docs/UploadPartCopyFrom.md)
+ - [UploadPartFrom](docs/UploadPartFrom.md)
+ - [UploadTo](docs/UploadTo.md)
+ - [UsageReport](docs/UsageReport.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)
  - [VersionConfig](docs/VersionConfig.md)
 
 
+<a id="documentation-for-authorization"></a>
 ## Documentation for Authorization
 
+
 Authentication schemes defined for the API:
+<a id="basic_auth"></a>
 ### basic_auth
 
 - **Type**: HTTP basic authentication
 
+<a id="jwt_token"></a>
 ### jwt_token
 
-- **Type**: HTTP basic authentication
+- **Type**: HTTP Bearer Token authentication (JWT)
 
+<a id="cookie_auth"></a>
 ### cookie_auth
 
 - **Type**: API key
 - **API key parameter name**: internal_auth_session
 - **Location**: 
 
+<a id="oidc_auth"></a>
 ### oidc_auth
 
 - **Type**: API key
 - **API key parameter name**: oidc_auth_session
 - **Location**: 
 
+<a id="saml_auth"></a>
 ### saml_auth
 
 - **Type**: API key

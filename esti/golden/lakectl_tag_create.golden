@@ -1,2 +1,1 @@
-Tag ref: lakefs://${REPO}/${TAG}
 Created tag '${TAG}' ({<COMMIT_ID> ${TAG}})

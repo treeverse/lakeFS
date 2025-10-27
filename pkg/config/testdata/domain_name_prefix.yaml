@@ -5,6 +5,10 @@ database:
 blockstore:
   type: local
 
+auth:
+  encrypt:
+    secret_key: "required in config"
+
 gateways:
   s3:
     domain_name:

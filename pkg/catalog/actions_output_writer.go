@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 type ActionsOutputWriter struct {
@@ -17,10 +18,12 @@ func NewActionsOutputWriter(blockAdapter block.Adapter) *ActionsOutputWriter {
 	}
 }
 
-func (o *ActionsOutputWriter) OutputWrite(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
-	return o.adapter.Put(ctx, block.ObjectPointer{
-		StorageNamespace: storageNamespace,
+func (o *ActionsOutputWriter) OutputWrite(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
+	_, err := o.adapter.Put(ctx, block.ObjectPointer{
+		StorageID:        repository.StorageID.String(),
+		StorageNamespace: repository.StorageNamespace.String(),
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       name,
 	}, size, reader, block.PutOpts{})
+	return err
 }

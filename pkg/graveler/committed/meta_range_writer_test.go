@@ -52,8 +52,9 @@ func TestWriter_WriteRecords(t *testing.T) {
 
 	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
 	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeMetaWriter, nil)
+	storageID := committed.StorageID("sid")
 	namespace := committed.Namespace("ns")
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, namespace, nil)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, storageID, namespace, nil)
 
 	// Add first record
 	firstRecord := graveler.ValueRecord{
@@ -89,7 +90,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 		t.Errorf("expected ErrUnsorted got = %s", err)
 	}
 
-	_, err = w.Close()
+	_, err = w.Close(ctx)
 	if err != nil {
 		t.Errorf("failed to close: %s", err)
 	}
@@ -101,10 +102,11 @@ func TestWriter_OverlappingRanges(t *testing.T) {
 	defer ctrl.Finish()
 
 	rangeManager := mock.NewMockRangeManager(ctrl)
+	storageID := committed.StorageID("sid")
 	namespace := committed.Namespace("ns")
 	rng := committed.Range{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
 	rng2 := committed.Range{MinKey: committed.Key("c"), MaxKey: committed.Key("l")}
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, &params, namespace, nil)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManager, &params, storageID, namespace, nil)
 	err := w.WriteRange(rng)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
@@ -131,6 +133,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
 	fakeMetaWriter := NewFakeRangeWriter(&committed.WriteResult{}, nil)
 
+	storageID := committed.StorageID("sid")
 	namespace := committed.Namespace("ns")
 	record := graveler.ValueRecord{Key: nil, Value: &graveler.Value{}}
 	rng := committed.Range{ID: "rng2-id", MinKey: committed.Key("a"), MaxKey: committed.Key("g"), Count: 4}
@@ -164,7 +167,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 		},
 	}))
 
-	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, namespace, nil)
+	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, storageID, namespace, nil)
 	err := w.WriteRecord(record)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
@@ -174,7 +177,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 		t.Fatalf("unexpected error %s", err)
 	}
 
-	_, err = w.Close()
+	_, err = w.Close(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}

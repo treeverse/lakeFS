@@ -1,12 +1,12 @@
 import Layout from "../../../lib/components/layout";
 import React, {useRef, useState} from "react";
-import {Navigate, Route} from "react-router-dom";
+import {Navigate} from "react-router-dom";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import {auth} from "../../../lib/api";
-import {ActionGroup, ActionsBar, Error} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, AlertError} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import {useRouter} from "../../../lib/hooks/router";
 
@@ -75,7 +75,7 @@ const CreateUserWithPasswordForm = ({token, email}) => {
                                 }
                             </Form.Group>
 
-                            {(!!reqActivateUserError) && <Error error={reqActivateUserError}/>}
+                            {(!!reqActivateUserError) && <AlertError error={reqActivateUserError}/>}
                         </Form>
                     </Card.Body>
                 </Card>
@@ -103,7 +103,7 @@ export const ActivateInvitedUserPage = () => {
             {
                 token ?
                     <CreateUserWithPasswordForm token={token} email={invitedUserEmail}/> :
-                    <Route element={<Navigate to="/auth/login"/>} />
+                    <Navigate to="/auth/login"/>
             }
         </Layout>
     );

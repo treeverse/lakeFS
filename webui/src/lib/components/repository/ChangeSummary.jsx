@@ -1,11 +1,10 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {
     ClockIcon,
     DiffAddedIcon,
     DiffIgnoredIcon,
     DiffModifiedIcon,
     DiffRemovedIcon,
-    XCircleIcon
 } from "@primer/octicons-react";
 import {OverlayTrigger, Tooltip} from "react-bootstrap";
 import {humanSize} from "./tree";
@@ -41,13 +40,13 @@ class SummaryData {
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore - function to use to get the change entries.
  */
 export default ({prefix, getMore}) => {
-    const [resultsState, setResultsState] = useState({results: [], pagination: {}, tooManyPages: false});
+    const [pullMore, setPullMore] = useState(false);
+    const [resultsState, setResultsState] = useState({results: [], pagination: {}});
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const calculateChanges = async () => {
             // get pages until reaching the max change size
-            if (resultsState.results && resultsState.results.length >= MAX_NUM_OBJECTS) {
-                setResultsState({results: null, pagination: {}, tooManyPages: true})
+            if (resultsState.results && resultsState.results.length >= MAX_NUM_OBJECTS && !pullMore) {
                 setLoading(false)
                 return
             }
@@ -58,19 +57,25 @@ export default ({prefix, getMore}) => {
             if (!pagination.has_more) {
                 setLoading(false)
             }
-            setResultsState({results: resultsState.results.concat(results), pagination: pagination, tooManyPages: false})
+            setResultsState({results: resultsState.results.concat(results), pagination: pagination})
         }
 
         calculateChanges()
             .catch(e => {
                 alert(e.toString());
-                setResultsState({results: [], pagination: {}, tooManyPages: false})
+                setResultsState({results: [], pagination: {}})
                 setLoading(false)
             })
-    }, [resultsState.results, loading])
+    }, [resultsState.results, loading, pullMore])
 
-    if (loading) return <ClockIcon/>
-    if (resultsState.tooManyPages) {
+    const onLoadAll = useCallback((e) => {
+        e.preventDefault()
+        setLoading(true)
+        setPullMore(true)
+    }, [setLoading, setPullMore])
+
+    if (loading || !resultsState || !resultsState.results) return <ClockIcon/>
+    if (resultsState.results && resultsState.results.length >= MAX_NUM_OBJECTS && !pullMore) {
         return (
             <OverlayTrigger placement="bottom"
                             overlay={
@@ -80,7 +85,9 @@ export default ({prefix, getMore}) => {
                                    </span>
                                 </Tooltip>
                             }>
-                <span><XCircleIcon className="text-danger"/></span>
+                <small>
+                    &gt;= {MAX_NUM_OBJECTS.toLocaleString()} results, <a href="#" onClick={onLoadAll}>load more?</a>
+                </small>
             </OverlayTrigger>
         )
     }
@@ -91,26 +98,26 @@ export default ({prefix, getMore}) => {
     const detailsTooltip = <Tooltip>
         <div className="m-1 small text-start">
             {summaryData.added.count > 0 &&
-                <><span className={"color-fg-added"}>{summaryData.added.count}</span> objects added (total {humanSize(summaryData.added.sizeBytes)})<br/></>}
+                <><span className={"color-fg-added"}>{summaryData.added.count.toLocaleString()}</span> objects added (total {humanSize(summaryData.added.sizeBytes)})<br/></>}
             {summaryData.removed.count > 0 &&
-                <><span className={"color-fg-removed"}>{summaryData.removed.count}</span> objects removed (total {humanSize(summaryData.removed.sizeBytes)})<br/></>}
+                <><span className={"color-fg-removed"}>{summaryData.removed.count.toLocaleString()}</span> objects removed (total {humanSize(summaryData.removed.sizeBytes)})<br/></>}
             {summaryData.changed.count > 0 &&
-                <><span className={"color-fg-changed"}>{summaryData.changed.count}</span> objects changed<br/></>}
+                <><span className={"color-fg-changed"}>{summaryData.changed.count.toLocaleString()}</span> objects changed<br/></>}
             {summaryData.conflict.count > 0 &&
-                <><span className={"color-fg-conflict"}>{summaryData.conflict.count}</span> conflicts<br/></>}
+                <><span className={"color-fg-conflict"}>{summaryData.conflict.count.toLocaleString()}</span> conflicts<br/></>}
         </div>
     </Tooltip>
     return (
         <OverlayTrigger placement="left" overlay={detailsTooltip}>
             <div className={"m-1 small float-end"}>
                 {summaryData.added.count > 0 &&
-                    <span className={"color-fg-added"}><DiffAddedIcon className={"change-summary-icon"}/>{summaryData.added.count}</span>}
+                    <span className={"color-fg-added"}><DiffAddedIcon className={"change-summary-icon"}/>{summaryData.added.count.toLocaleString()}</span>}
                 {summaryData.removed.count > 0 &&
-                    <span className={"color-fg-removed"}><DiffRemovedIcon className={"change-summary-icon"}/>{summaryData.removed.count}</span>}
+                    <span className={"color-fg-removed"}><DiffRemovedIcon className={"change-summary-icon"}/>{summaryData.removed.count.toLocaleString()}</span>}
                 {summaryData.changed.count > 0 &&
-                    <span className={"font-weight-bold"}><DiffModifiedIcon className={"change-summary-icon"}/>{summaryData.changed.count}</span>}
+                    <span className={"font-weight-bold"}><DiffModifiedIcon className={"change-summary-icon"}/>{summaryData.changed.count.toLocaleString()}</span>}
                 {summaryData.conflict.count > 0 &&
-                    <span className={"color-fg-conflict"}><DiffIgnoredIcon className={"change-summary-icon"}/>{summaryData.conflict.count}</span>}
+                    <span className={"color-fg-conflict"}><DiffIgnoredIcon className={"change-summary-icon"}/>{summaryData.conflict.count.toLocaleString()}</span>}
             </div>
         </OverlayTrigger>
     )

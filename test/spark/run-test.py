@@ -24,8 +24,8 @@ def get_spark_submit_cmd(submit_flags, spark_config, jar_name, jar_args):
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(7))
 def wait_for_setup(lfs_client):
-    setup_state = lfs_client.config.get_setup_state()
-    assert setup_state.state == 'initialized'
+    repositories = lfs_client.repositories.list_repositories()
+    assert len(repositories.results) >= 0
 
 def main():
     parser = argparse.ArgumentParser()
@@ -35,8 +35,9 @@ def main():
     parser.add_argument("--client_version")
     parser.add_argument("--aws_access_key")
     parser.add_argument("--aws_secret_key")
-    parser.add_argument("--region")
-    parser.add_argument("--direct_access", action="store_true")
+    parser.add_argument("--redirect", action='store_true')
+    parser.add_argument("--access_mode", choices=["s3_gateway", "hadoopfs", "hadoopfs_presigned"], default="s3_gateway")
+    parser.add_argument("--region",)
     lakefs_access_key = 'AKIAIOSFODNN7EXAMPLE'
     lakefs_secret_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 
@@ -58,19 +59,29 @@ def main():
 
     with open('./app/data-sets/sonnets.txt', 'rb') as f:
         lfs_client.objects.upload_object(repository=args.repository, branch="main", path="sonnets.txt", content=f)
+    base_hadoopfs_config = {
+        "spark.hadoop.fs.lakefs.impl": "io.lakefs.LakeFSFileSystem",
+        "spark.driver.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
+        "spark.executor.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
+        "spark.hadoop.fs.lakefs.endpoint": "http://lakefs:8000/api/v1",
+        "spark.hadoop.fs.lakefs.access.key": lakefs_access_key,
+        "spark.hadoop.fs.lakefs.secret.key": lakefs_secret_key,
+    }
 
-    if args.direct_access:
+    if args.access_mode == 'hadoopfs':
         scheme = "lakefs"
         spark_configs = {
-            "spark.hadoop.fs.lakefs.impl": "io.lakefs.LakeFSFileSystem",
-            "spark.driver.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
-            "spark.executor.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
-            "spark.hadoop.fs.lakefs.endpoint": "http://lakefs:8000/api/v1",
-            "spark.hadoop.fs.lakefs.access.key": lakefs_access_key,
-            "spark.hadoop.fs.lakefs.secret.key": lakefs_secret_key,
+            **base_hadoopfs_config,
             "spark.hadoop.fs.s3a.access.key": args.aws_access_key,
             "spark.hadoop.fs.s3a.secret.key": args.aws_secret_key,
             "spark.hadoop.fs.s3a.region": args.region,
+        }
+
+    elif args.access_mode == 'hadoopfs_presigned':
+        scheme = "lakefs"
+        spark_configs = {
+            **base_hadoopfs_config,
+            "spark.hadoop.fs.lakefs.access.mode": "presigned",
         }
     else:
         scheme = "s3a"
@@ -78,6 +89,10 @@ def main():
                          "spark.hadoop.fs.s3a.secret.key": lakefs_secret_key,
                          "spark.hadoop.fs.s3a.endpoint": "s3.docker.lakefs.io:8000",
                          "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"}
+        if args.redirect:
+            spark_configs["spark.hadoop.fs.s3a.path.style.access"] = "true"
+            spark_configs[f"spark.hadoop.fs.s3a.signing-algorithm"] = "QueryStringSignerType"
+            spark_configs[f"spark.hadoop.fs.s3a.user.agent.prefix"] = "s3RedirectionSupport"
 
     generator = docker.compose.run("spark-submit",
                                    get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar,

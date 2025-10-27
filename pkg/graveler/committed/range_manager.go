@@ -2,7 +2,6 @@ package committed
 
 import (
 	"context"
-	"errors"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
@@ -11,6 +10,9 @@ import (
 
 // ID is an identifier for a Range
 type ID string
+
+// StorageID is id for object storage
+type StorageID string
 
 // Namespace is namespace for ID ranges
 type Namespace string
@@ -40,13 +42,13 @@ type ValueIterator interface {
 	Close()
 }
 
-var ErrNotFound = errors.New("not found")
+var ErrNotFound = graveler.ErrNotFound
 
 type RangeManager interface {
 	// Exists returns true if id references a Range.
 	Exists(ctx context.Context, ns Namespace, id ID) (bool, error)
 
-	// GetValue returns the value matching key in the Range referenced by id.  If id not
+	// GetValue returns the value matching key in the Range referenced by id. If id not
 	// found, it return (nil, ErrNotFound).
 	GetValue(ctx context.Context, ns Namespace, id ID, key Key) (*Record, error)
 
@@ -62,7 +64,7 @@ type RangeManager interface {
 
 	// GetURI returns a URI from which to read the contents of id.  If id does not exist
 	// it may return a URI that resolves nowhere rather than an error.
-	GetURI(ctx context.Context, ns Namespace, id ID) (string, error)
+	GetURI(ctx context.Context, id ID) (string, error)
 }
 
 // WriteResult is the result of a completed write of a Range

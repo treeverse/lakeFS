@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/diff"
+	"github.com/treeverse/lakefs/pkg/uri"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -19,11 +22,11 @@ const (
 	maxDiffPageSize = 1000
 
 	twoWayFlagName = "two-way"
-	diffTypeTwoDot = "two_dot"
+	prefixFlagName = "prefix"
 )
 
 var diffCmd = &cobra.Command{
-	Use:   `diff <ref uri> [ref uri]`,
+	Use:   `diff <ref URI> [ref URI]`,
 	Short: "Show changes between two commits, or the currently uncommitted changes",
 	Example: fmt.Sprintf(`
 	lakectl diff lakefs://example-repo/example-branch
@@ -40,7 +43,10 @@ var diffCmd = &cobra.Command{
 	Uncommitted changes are not shown.
 
 	lakectl diff --%s lakefs://example-repo/main lakefs://example-repo/dev$
-	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.`, twoWayFlagName, twoWayFlagName),
+	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
+	
+	lakectl diff --%s some/path lakefs://example-repo/main lakefs://example-repo/dev
+	Show changes of objects prefixed with 'some/path' between the tips of the main and dev branches.`, twoWayFlagName, twoWayFlagName, prefixFlagName),
 
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -53,20 +59,21 @@ var diffCmd = &cobra.Command{
 		client := getClient()
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
-			branchURI := MustParseRefURI("ref", args[0])
-			Fmt("Ref: %s\n", branchURI.String())
+			branchURI := MustParseBranchURI("branch URI", args[0])
+			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
 		}
 
-		twoWay, _ := cmd.Flags().GetBool(twoWayFlagName)
+		twoWay := Must(cmd.Flags().GetBool(twoWayFlagName))
+		prefix := Must(cmd.Flags().GetString(prefixFlagName))
 		leftRefURI := MustParseRefURI("left ref", args[0])
 		rightRefURI := MustParseRefURI("right ref", args[1])
-		Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
+		fmt.Printf("Left ref: %s\nRight ref: %s\n", leftRefURI, rightRefURI)
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
-		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoWay)
+		printDiffRefs(cmd.Context(), client, leftRefURI, rightRefURI, twoWay, prefix)
 	},
 }
 
@@ -82,13 +89,13 @@ func (p *pageSize) Next() int {
 	return p.Value()
 }
 
-func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterface, repository string, branch string) {
+func printDiffBranch(ctx context.Context, client apigen.ClientWithResponsesInterface, repository string, branch string) {
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
-		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &api.DiffBranchParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(int(pageSize)),
+		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &apigen.DiffBranchParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -107,71 +114,37 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 	}
 }
 
-func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string, twoDot bool) {
-	var diffType *string
-	if twoDot {
-		diffType = api.StringPtr(diffTypeTwoDot)
+func printDiffRefs(ctx context.Context, client apigen.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool, prefix string) {
+	diffs := make(chan apigen.Diff, maxDiffPageSize)
+	var wg errgroup.Group
+	wg.Go(func() error {
+		return diff.StreamRepositoryDiffs(ctx, client, left, right, prefix, diffs, twoDot)
+	})
+	for d := range diffs {
+		FmtDiff(d, true)
 	}
-	var after string
-	pageSize := pageSize(minDiffPageSize)
-	for {
-		amount := int(pageSize)
-		resp, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
-			Type:   diffType,
-		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-
-		for _, line := range resp.JSON200.Results {
-			FmtDiff(line, true)
-		}
-		pagination := resp.JSON200.Pagination
-		if !pagination.HasMore {
-			break
-		}
-		after = pagination.NextOffset
-		pageSize.Next()
+	if err := wg.Wait(); err != nil {
+		DieErr(err)
 	}
 }
 
-func FmtDiff(diff api.Diff, withDirection bool) {
-	var color text.Color
-	var action string
-
-	switch diff.Type {
-	case "added":
-		color = text.FgGreen
-		action = "+ added"
-	case "removed":
-		color = text.FgRed
-		action = "- removed"
-	case "changed":
-		color = text.FgYellow
-		action = "~ modified"
-	case "conflict":
-		color = text.FgHiYellow
-		action = "* conflict"
-	default:
-	}
+func FmtDiff(d apigen.Diff, withDirection bool) {
+	action, color := diff.Fmt(d.Type)
 
 	if !withDirection {
 		_, _ = os.Stdout.WriteString(
-			color.Sprintf("%s %s\n", action, diff.Path),
+			color.Sprintf("%s %s\n", action, d.Path),
 		)
 		return
 	}
-
 	_, _ = os.Stdout.WriteString(
-		color.Sprintf("%s %s\n", action, diff.Path),
+		color.Sprintf("%s %s\n", action, d.Path),
 	)
 }
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(diffCmd)
 	diffCmd.Flags().Bool(twoWayFlagName, false, "Use two-way diff: show difference between the given refs, regardless of a common ancestor.")
+	diffCmd.Flags().String(prefixFlagName, "", "Show only changes in the given prefix.")
+	rootCmd.AddCommand(diffCmd)
 }

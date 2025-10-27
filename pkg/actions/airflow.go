@@ -13,6 +13,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type Airflow struct {
@@ -55,11 +56,12 @@ var (
 	errAirflowHookDAGFailed     = errors.New("airflow hook DAG failed")
 )
 
-func NewAirflowHook(h ActionHook, action *Action, endpoint *http.Server) (Hook, error) {
+func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Server, _ string, _ stats.Collector) (Hook, error) {
 	airflowHook := Airflow{
 		HookBase: HookBase{
 			ID:         h.ID,
 			ActionName: action.Name,
+			Config:     cfg,
 			Endpoint:   endpoint,
 		},
 		DAGConf: map[string]interface{}{},
@@ -84,7 +86,8 @@ func NewAirflowHook(h ActionHook, action *Action, endpoint *http.Server) (Hook, 
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
-	airflowHook.Password, err = NewSecureString(rawPass)
+	envGetter := NewEnvironmentVariableGetter(cfg.Env.Enabled, cfg.Env.Prefix)
+	airflowHook.Password, err = NewSecureString(rawPass, envGetter)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}

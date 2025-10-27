@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
+import {useOutletContext} from "react-router-dom";
 
-import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth} from "../../../../lib/api";
@@ -11,7 +11,7 @@ import {
     DataTable,
     FormattedDate,
     Loading,
-    Error,
+    AlertError,
     RefreshButton
 } from "../../../../lib/components/controls";
 import {Link} from "../../../../lib/components/nav";
@@ -28,7 +28,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content=  <Error error={error}/>;
+    else if (error) content=  <AlertError error={error}/>;
     else content = (
             <>
                <DataTable
@@ -85,11 +85,9 @@ const UserEffectivePoliciesContainer = () => {
 };
 
 const UserEffectivePoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="users">
-            <UserEffectivePoliciesContainer/>
-        </AuthLayout>
-    );
+    const {setActiveTab} = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    return <UserEffectivePoliciesContainer/>;
 };
 
 export default UserEffectivePoliciesPage;

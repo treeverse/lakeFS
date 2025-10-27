@@ -5,14 +5,14 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/block"
 	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type walkEntryIterator struct {
 	entries chan EntryWithMarker
-	walker  *store.WalkerWrapper
+	walker  *block.WalkerWrapper
 
 	done   chan bool
 	closed *atomic.Bool
@@ -23,7 +23,10 @@ type walkEntryIterator struct {
 
 // Mark stands for pagination information when listing objects from the blockstore.
 // It is used for server-client communication on the status of range ingestion.
-type Mark store.Mark
+type Mark struct {
+	block.Mark
+	StagingToken string
+}
 
 type EntryWithMarker struct {
 	EntryRecord
@@ -33,12 +36,8 @@ type EntryWithMarker struct {
 // bufferSize - buffer size of the buffer between reading entries from the blockstore Walk and passing it on
 const bufferSize = 100
 
-// WalkerFactory provides an abstraction for creating Walker
-type WalkerFactory interface {
-	GetWalker(ctx context.Context, opts store.WalkerOptions) (*store.WalkerWrapper, error)
-}
-
-func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prepend, after, continuationToken string) (*walkEntryIterator, error) {
+func NewWalkEntryIterator(ctx context.Context, walker *block.WalkerWrapper, sourceType ImportPathType, destination, after, continuationToken string) (*walkEntryIterator, error) {
+	prepend := destination
 	if prepend != "" && !strings.HasSuffix(prepend, "/") {
 		prepend += "/"
 	}
@@ -54,26 +53,23 @@ func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prep
 		defer close(it.done)
 		defer close(it.entries)
 
-		err := it.walker.Walk(ctx, store.WalkOptions{
+		err := it.walker.Walk(ctx, block.WalkOptions{
 			After:             after,
 			ContinuationToken: continuationToken,
-		}, func(e store.ObjectStoreEntry) error {
+		}, func(e block.ObjectStoreEntry) error {
 			if it.closed.Load() {
 				return ErrItClosed
 			}
-
+			p := prepend + e.RelativeKey
+			if sourceType == ImportPathTypeObject {
+				p = destination
+			}
+			record := objectStoreEntryToEntryRecord(e, p)
 			it.entries <- EntryWithMarker{
-				EntryRecord: EntryRecord{
-					Path: Path(prepend + e.RelativeKey),
-					Entry: &Entry{
-						Address:      e.Address,
-						LastModified: timestamppb.New(e.Mtime),
-						Size:         e.Size,
-						ETag:         e.ETag,
-						AddressType:  Entry_FULL,
-					},
+				EntryRecord: record,
+				Mark: Mark{
+					Mark: it.walker.Marker(),
 				},
-				Mark: Mark(it.walker.Marker()),
 			}
 			return nil
 		})
@@ -100,8 +96,10 @@ func (it *walkEntryIterator) Next() bool {
 		if !ok {
 			// entries were exhausted
 			it.curr.Mark = Mark{
-				LastKey: it.curr.LastKey,
-				HasMore: false,
+				Mark: block.Mark{
+					LastKey: it.curr.LastKey,
+					HasMore: false,
+				},
 			}
 		}
 	}
@@ -138,4 +136,21 @@ func (it *walkEntryIterator) Close() {
 
 func (it *walkEntryIterator) Marker() Mark {
 	return it.curr.Mark
+}
+
+func (it *walkEntryIterator) GetSkippedEntries() []block.ObjectStoreEntry {
+	return it.walker.GetSkippedEntries()
+}
+
+func objectStoreEntryToEntryRecord(e block.ObjectStoreEntry, path string) EntryRecord {
+	return EntryRecord{
+		Path: Path(path),
+		Entry: &Entry{
+			Address:      e.Address,
+			LastModified: timestamppb.New(e.Mtime),
+			Size:         e.Size,
+			ETag:         e.ETag,
+			AddressType:  Entry_FULL,
+		},
+	}
 }

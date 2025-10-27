@@ -8,7 +8,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
-import {CheckIcon, PasteIcon, SearchIcon, SyncIcon} from "@primer/octicons-react";
+import {CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
 import {
     Box,
@@ -63,9 +63,25 @@ export const DebouncedFormControl = React.forwardRef((props, ref) => {
 });
 DebouncedFormControl.displayName = "DebouncedFormControl";
 
-export const Loading = () => {
+
+export const Spinner = () => {
     return (
-        <Alert variant={"info"}>Loading...</Alert>
+        <div className="loading-spinner mb-3">
+            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                <span className="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    );
+};
+
+export const Loading = ({message = "Loading..."}) => {
+    return (
+        <div className="loading-container d-flex flex-column align-items-center justify-content-center py-5">
+            <Spinner />
+            <div className="loading-text text-center text-muted">
+                {message}
+            </div>
+        </div>
     );
 };
 
@@ -75,21 +91,30 @@ export const Na = () => {
     );
 };
 
-export const Error = ({error, onDismiss = null, className = null}) => {
+export const AlertError = ({error, onDismiss = null, className = null}) => {
     let content = React.isValidElement(error) ? error : error.toString();
     // handle wrapped errors
     let err = error;
     while (err.error) err = err.error;
     if (err.message) content = err.message;
-    if (onDismiss !== null) {
-        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
-    }
-    if (err.stack) {
-        content = `${content}: ${err.stack}`
-    }
+
+    const alertClassName = `${className} text-wrap text-break shadow-sm`.trim();
+
     return (
-        <Alert className={className} variant="danger">{content}</Alert>
-    );
+        <Alert 
+            className={alertClassName} 
+            variant="danger" 
+            dismissible={onDismiss !== null}
+            onClose={onDismiss}
+        >
+            <div className="alert-error-body">
+                <div className="me-3">
+                    <AlertFillIcon size={24} />
+                </div>
+                <div>{content}</div>
+            </div>
+        </Alert>
+    );    
 };
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
@@ -107,10 +132,10 @@ export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => 
 };
 
 
-export const ActionGroup = ({ children, orientation = "left" }) => {
+export const ActionGroup = ({ children, orientation = "left", className = "" }) => {
     const side = (orientation === 'right') ? 'ms-auto' : '';
     return (
-        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation}`}>
+        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation} ${className}`}>
             {children}
         </div>
     );
@@ -295,14 +320,15 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
 
     if (expanded) {
         return (
-            <Form onSubmit={handleSubmit}>
-                <InputGroup>
+            <Form onSubmit={handleSubmit} className="prefix-search-form">
+                <InputGroup className="prefix-search-input-group">
                     <Form.Control
                         ref={ref}
                         autoFocus
                         defaultValue={defaultValue}
                         placeholder={text}
                         aria-label={text}
+                        className="prefix-search-expanded"
                     />
                     <Button variant="light" onClick={toggle}>
                         <SearchIcon/>
@@ -337,18 +363,26 @@ export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip
     );
 };
 
-export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [], emptyState = null }) => {
+export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [],
+                              emptyState = null, firstFixedCol = false }) => {
 
     if ((!results || results.length === 0) && emptyState !== null) {
         return <Alert variant="warning">{emptyState}</Alert>;
     }
 
     return (
-        <Table>
+        <Table className="w-100" style={{ tableLayout: "fixed" }}>
             <thead>
                 <tr>
-                {headers.map(header => (
-                    <th key={header}>{header}</th>
+                {headers.map((header, i) => (
+                    <th
+                        key={header}
+                        title={header}
+                        style={firstFixedCol && i === 0 ? { width: "30px" } : {}}
+                        className="text-nowrap overflow-hidden text-truncate align-middle"
+                    >
+                        {header}
+                    </th>
                 ))}
                 {(!!actions && actions.length > 0) && <th/>}
                 </tr>
@@ -357,7 +391,11 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
             {results.map(row => (
                 <tr key={keyFn(row)}>
                     {rowFn(row).map((cell, i) => (
-                        <td key={`${keyFn(row)}-${i}`}>
+                        <td
+                            key={`${keyFn(row)}-${i}`}
+                            title={keyFn(row)}
+                            className="text-nowrap overflow-hidden text-truncate align-middle"
+                        >
                             {cell}
                         </td>
                     ))}
@@ -369,7 +407,7 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                                         {action.buttonFn(row)}
                                     </span>
                                 ))}
-                            </span>
+                             </span>
                         </td>
                     )}
                 </tr>
@@ -408,8 +446,13 @@ export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
 
 export const Warning = (props) =>
 <>
-    <Alert variant="warning">
-    &#x26A0; { props.children }
+    <Alert variant="warning" className="shadow-sm">
+        <div className="d-flex align-items-center">
+            <div className="me-3">
+                <AlertIcon size={24} />
+            </div>
+            <div>{ props.children }</div>
+        </div>
     </Alert>
 </>;
 
@@ -456,7 +499,7 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
                 </MuiButton>
             </DialogActions>
         </Dialog>
-    )
+    );
 };
 
 
@@ -473,5 +516,33 @@ export const ExperimentalOverlayTooltip = ({children, show = true, placement="au
         >
             {children}
         </OverlayTrigger>
-    ) : <></>
-}
+    ) : <></>;
+};
+
+export const GrayOut = ({children}) =>
+    <div style={{position: 'relative'}}>
+               <div>
+                   <div className={'gray-out overlay'}/>
+                   {children}
+               </div>
+           </div>;
+
+
+export const WrapIf = ({enabled, Component, children}) => (
+    enabled ? <Component>{children}</Component> : children);
+
+export const SearchInput = ({searchPrefix, setSearchPrefix, placeholder}) => {
+    return (
+        <InputGroup>
+            <Form.Control
+                autoFocus
+                placeholder={placeholder}
+                value={searchPrefix}
+                onChange={(e) => setSearchPrefix(e.target.value)}
+            />
+            <InputGroup.Text>
+                <SearchIcon />
+            </InputGroup.Text>
+        </InputGroup>
+    );
+};

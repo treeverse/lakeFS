@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -18,22 +16,15 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/pflag"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/term"
 )
 
-var (
-	isTerminal       = true
-	noColorRequested = false
-	verboseMode      = false
-)
-
-// ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
-var ErrInvalidValueInList = errors.New("empty string in list")
-
-var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
+var isTerminal = true
 
 const (
 	PathDelimiter = "/"
@@ -43,21 +34,33 @@ const (
 	LakectlInteractive     = "LAKECTL_INTERACTIVE"
 	DeathMessage           = "{{.Error|red}}\nError executing command.\n"
 	DeathMessageWithFields = "{{.Message|red}}\n{{.Status}}\n"
+	WarnMessage            = "{{.Warning|yellow}}\n\n"
 )
 
 const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+
+	// when using --no-merges & amount, this const is the upper limit to use heuristic.
+	// The heuristic asks for 3*amount results since some will filter out
+	maxAmountNoMerges = 333
+	noMergesHeuristic = 3
+
+	defaultPollInterval = 3 * time.Second // default interval while pulling tasks status
+	minimumPollInterval = time.Second     // minimum interval while pulling tasks status
+	defaultPollTimeout  = time.Hour       // default expiry for pull status with no update
 )
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
 
+var ErrTaskNotCompleted = errors.New("task not completed")
+
 //nolint:gochecknoinits
 func init() {
 	// disable colors if we're not attached to interactive TTY.
-	// when environment variable is set we use it to control interactive mode
+	// when an environment variable is set, we use it to control interactive mode
 	// otherwise we will try to detect based on the standard output
 	interactiveVal := os.Getenv(LakectlInteractive)
 	if interactiveVal != "" {
@@ -96,6 +99,9 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 		},
 		"green": func(arg interface{}) string {
 			return text.FgHiGreen.Sprint(arg)
+		},
+		"blue": func(arg interface{}) string {
+			return text.FgHiBlue.Sprint(arg)
 		},
 		"bold": func(arg interface{}) string {
 			return text.Bold.Sprint(arg)
@@ -151,8 +157,7 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 			var b strings.Builder
 			for _, row := range tab.Rows {
 				for ic, cell := range row {
-					callValue := fmt.Sprintf("%s", cell)
-					b.WriteString(callValue)
+					b.WriteString(fmt.Sprint(cell))
 					if ic < len(row)-1 {
 						b.WriteString("\t")
 					}
@@ -179,17 +184,22 @@ func WriteIfVerbose(tpl string, data interface{}) {
 	}
 }
 
-func Die(err string, code int) {
-	WriteTo(DeathMessage, struct{ Error string }{err}, os.Stderr)
+func Warning(message string) {
+	WriteTo(WarnMessage, struct{ Warning string }{Warning: "Warning: " + message}, os.Stderr)
+}
+
+func Die(errMsg string, code int) {
+	WriteTo(DeathMessage, struct{ Error string }{Error: errMsg}, os.Stderr)
 	os.Exit(code)
 }
 
 func DieFmt(msg string, args ...interface{}) {
-	Die(fmt.Sprintf(msg, args...), 1)
+	errMsg := fmt.Sprintf(msg, args...)
+	Die(errMsg, 1)
 }
 
 type APIError interface {
-	GetPayload() *api.Error
+	GetPayload() *apigen.Error
 }
 
 func DieErr(err error) {
@@ -210,10 +220,6 @@ func DieErr(err error) {
 		WriteTo(DeathMessage, ErrData{Error: err.Error()}, os.Stderr)
 	}
 	os.Exit(1)
-}
-
-type StatusCoder interface {
-	StatusCode() int
 }
 
 func RetrieveError(response interface{}, err error) error {
@@ -259,11 +265,7 @@ func DieOnHTTPError(httpResponse *http.Response) {
 	}
 }
 
-func Fmt(msg string, args ...interface{}) {
-	fmt.Printf(msg, args...)
-}
-
-func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagination, amount int) {
+func PrintTable(rows [][]interface{}, headers []interface{}, paginator *apigen.Pagination, amount int) {
 	ctx := struct {
 		Table      *Table
 		Pagination *Pagination
@@ -287,10 +289,10 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagi
 func MustParseRepoURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsRepository() {
-		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidRepoURI)
+	if err = u.ValidateRepository(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
@@ -298,10 +300,10 @@ func MustParseRepoURI(name, s string) *uri.URI {
 func MustParseRefURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsRef() {
-		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+	if err = u.ValidateRef(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
@@ -309,10 +311,10 @@ func MustParseRefURI(name, s string) *uri.URI {
 func MustParseBranchURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsBranch() {
-		DieFmt("Invalid %s: %s", name, uri.ErrInvalidBranchURI)
+	if err = u.ValidateBranch(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
@@ -320,23 +322,103 @@ func MustParseBranchURI(name, s string) *uri.URI {
 func MustParsePathURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsFullyQualified() {
-		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
+	if err = u.ValidateFullyQualified(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
 
-func IsValidAccessKeyID(accessKeyID string) bool {
-	return accessKeyRegexp.MatchString(accessKeyID)
+const (
+	AutoConfirmFlagName     = "yes"
+	AutoConfigFlagShortName = "y"
+	AutoConfirmFlagHelp     = "Automatically say yes to all confirmations"
+
+	StdinFileName = "-"
+)
+
+func AssignAutoConfirmFlag(flags *pflag.FlagSet) {
+	flags.BoolP(AutoConfirmFlagName, AutoConfigFlagShortName, false, AutoConfirmFlagHelp)
 }
 
-func IsValidSecretAccessKey(secretAccessKey string) bool {
-	return IsBase64(secretAccessKey) && len(secretAccessKey) == 40
+func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
+	yes, err := flags.GetBool(AutoConfirmFlagName)
+	if err == nil && yes {
+		// got auto confirm flag
+		return true, nil
+	}
+	prm := promptui.Prompt{
+		Label:     question,
+		IsConfirm: true,
+	}
+	_, err = prm.Run()
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-func IsBase64(s string) bool {
-	_, err := base64.StdEncoding.DecodeString(s)
-	return err == nil
+// nopCloser wraps a ReadSeekCloser to ignore calls to Close().  It is io.NopCloser (or
+// ioutils.NopCloser) for Seeks.
+type nopCloser struct {
+	io.ReadSeekCloser
+}
+
+func (nc *nopCloser) Close() error {
+	return nil
+}
+
+// deleteOnClose wraps a File to be a ReadSeekCloser that deletes itself when closed.
+type deleteOnClose struct {
+	*os.File
+}
+
+func (d *deleteOnClose) Close() error {
+	if err := os.Remove(d.Name()); err != nil {
+		_ = d.File.Close() // "Only" file descriptor leak if close fails (but data might stay).
+		return fmt.Errorf("delete on close: %w", err)
+	}
+	return d.File.Close()
+}
+
+// OpenByPath returns a reader from the given path.
+// If the path is "-", it consumes Stdin and
+// opens a readable copy that is either deleted (POSIX) or will delete itself on close
+// (non-POSIX, notably WINs).
+func OpenByPath(path string) (io.ReadSeekCloser, error) {
+	if path != StdinFileName {
+		return os.Open(path)
+	}
+
+	// check if stdin is seekable
+	_, err := os.Stdin.Seek(0, io.SeekCurrent)
+	if err == nil {
+		return &nopCloser{ReadSeekCloser: os.Stdin}, nil
+	}
+
+	temp, err := os.CreateTemp("", "lakectl-stdin")
+	if err != nil {
+		return nil, fmt.Errorf("create temporary file to buffer stdin: %w", err)
+	}
+	if _, err = io.Copy(temp, os.Stdin); err != nil {
+		return nil, fmt.Errorf("copy stdin to temporary file: %w", err)
+	}
+	if _, err = temp.Seek(0, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("rewind temporary copied file: %w", err)
+	}
+	// Try to delete the file.  This will fail on Windows, we shall try to
+	// delete on close anyway.
+	if os.Remove(temp.Name()) != nil {
+		return &deleteOnClose{File: temp}, nil
+	}
+	return temp, nil
+}
+
+// Must return the call value or die with error if err is not nil
+func Must[T any](v T, err error) T {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
 }

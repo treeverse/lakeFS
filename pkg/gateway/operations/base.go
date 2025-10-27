@@ -3,17 +3,20 @@ package operations
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -42,16 +45,17 @@ const (
 type ActionIncr func(action, userID, repository, ref string)
 
 type Operation struct {
-	OperationID      OperationID
-	Region           string
-	FQDN             string
-	Catalog          catalog.Interface
-	MultipartTracker multipart.Tracker
-	BlockStore       block.Adapter
-	Auth             auth.GatewayService
-	Incr             ActionIncr
-	MatchedHost      bool
-	PathProvider     upload.PathProvider
+	OperationID       OperationID
+	Region            string
+	FQDN              string
+	Catalog           *catalog.Catalog
+	MultipartTracker  multipart.Tracker
+	BlockStore        block.Adapter
+	Auth              auth.GatewayService
+	Incr              ActionIncr
+	MatchedHost       bool
+	PathProvider      upload.PathProvider
+	VerifyUnsupported bool
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -80,6 +84,18 @@ func (o *Operation) EncodeXMLBytes(w http.ResponseWriter, req *http.Request, t [
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to encode XML to response")
 	}
+}
+
+func (o *Operation) HandleUnsupported(w http.ResponseWriter, req *http.Request, keys ...string) bool {
+	if !o.VerifyUnsupported {
+		return false
+	}
+	query := req.URL.Query()
+	if slices.ContainsFunc(keys, query.Has) {
+		_ = o.EncodeError(w, req, nil, gwerrors.ERRLakeFSNotSupported.ToAPIErr())
+		return true
+	}
+	return false
 }
 
 func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) error {
@@ -132,20 +148,24 @@ func (o *Operation) SetHeaders(w http.ResponseWriter, headers http.Header) {
 	}
 }
 
-func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, e errors.APIError) *http.Request {
+func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	err := fallbackError
+	if errors.Is(originalError, kv.ErrSlowDown) {
+		err = gwerrors.ErrSlowDown.ToAPIErr()
+	}
 	req, rid := httputil.RequestID(req)
-	err := EncodeResponse(w, errors.APIErrorResponse{
-		Code:       e.Code,
-		Message:    e.Description,
+	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
+		Code:       err.Code,
+		Message:    err.Description,
 		BucketName: "",
 		Key:        "",
 		Resource:   "",
 		Region:     o.Region,
 		RequestID:  rid,
 		HostID:     generateHostID(), // just for compatibility, meaningless in our case
-	}, e.HTTPStatusCode)
-	if err != nil {
-		o.Log(req).WithError(err).Error("encoding response failed")
+	}, err.HTTPStatusCode)
+	if writeErr != nil {
+		o.Log(req).WithError(writeErr).Error("encoding response failed")
 	}
 	return req
 }
@@ -166,9 +186,13 @@ type RepoOperation struct {
 	MatchedHost bool
 }
 
-func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	err := fallbackError
+	if errors.Is(originalError, kv.ErrSlowDown) {
+		err = gwerrors.ErrSlowDown.ToAPIErr()
+	}
 	req, rid := httputil.RequestID(req)
-	writeErr := EncodeResponse(w, errors.APIErrorResponse{
+	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,
@@ -194,9 +218,13 @@ type PathOperation struct {
 	Path string
 }
 
-func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	err := fallbackError
+	if errors.Is(originalError, kv.ErrSlowDown) {
+		err = gwerrors.ErrSlowDown.ToAPIErr()
+	}
 	req, rid := httputil.RequestID(req)
-	writeErr := EncodeResponse(w, errors.APIErrorResponse{
+	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,

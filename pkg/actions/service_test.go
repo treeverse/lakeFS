@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -32,12 +34,12 @@ const (
 )
 
 type ActionStatsMockCollector struct {
-	Hits map[string]int
+	Hits map[string]uint64
 }
 
 func NewActionStatsMockCollector() ActionStatsMockCollector {
 	return ActionStatsMockCollector{
-		Hits: make(map[string]int),
+		Hits: make(map[string]uint64),
 	}
 }
 
@@ -46,20 +48,23 @@ func (c *ActionStatsMockCollector) CollectEvent(ev stats.Event) {
 }
 
 func (c *ActionStatsMockCollector) CollectEvents(ev stats.Event, count uint64) {
-	c.Hits[ev.Name] += int(count)
+	c.Hits[ev.Name] += count
 }
 
-func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)       {}
-func (c *ActionStatsMockCollector) SetInstallationID(_ string)              {}
-func (c *ActionStatsMockCollector) CollectCommPrefs(_, _ string, _, _ bool) {}
-func (c *ActionStatsMockCollector) Close()                                  {}
+func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)  {}
+func (c *ActionStatsMockCollector) SetInstallationID(_ string)         {}
+func (c *ActionStatsMockCollector) CollectCommPrefs(_ stats.CommPrefs) {}
+func (c *ActionStatsMockCollector) Close()                             {}
 
 type getService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
 
 func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, runHooks)
+	cfg := actions.Config{Enabled: runHooks}
+	cfg.Lua.NetHTTPEnabled = true
+	cfg.Env.Enabled = true
+	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, cfg, "")
 }
 
 func TestServiceRun(t *testing.T) {
@@ -109,40 +114,37 @@ hooks:
 		name           string
 		actionsService getService
 	}{
-		{
-			name:           "KV service test",
-			actionsService: GetKVService,
-		},
+		{name: "KV service test", actionsService: GetKVService},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedWebhookRunID), gomock.Any(), gomock.Any()).
+				OutputWrite(ctx, record.Repository, actions.FormatHookOutputPath(record.RunID, expectedWebhookRunID), gomock.Any(), gomock.Any()).
 				Return(nil).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					var err error
 					writerBytes, err = io.ReadAll(reader)
 					return err
 				})
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithConf), gomock.Any(), gomock.Any()).
+				OutputWrite(ctx, record.Repository, actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithConf), gomock.Any(), gomock.Any()).
 				Return(nil).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					var err error
 					writerBytes, err = io.ReadAll(reader)
 					return err
 				})
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithoutConf), gomock.Any(), gomock.Any()).
+				OutputWrite(ctx, record.Repository, actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithoutConf), gomock.Any(), gomock.Any()).
 				Return(nil).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					var err error
 					writerBytes, err = io.ReadAll(reader)
 					return err
 				})
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				OutputWrite(ctx, record.Repository, actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					data, err := io.ReadAll(reader)
 					if err != nil {
 						return err
@@ -183,12 +185,12 @@ hooks:
 				t.Errorf("Run() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
 			}
 			if lastManifest.Run.CommitID != "" {
-				t.Errorf("Run() manifest CommitID %s, expected empty", lastManifest.Run.CommitID)
+				t.Errorf("Run() manifest MergedCommitID %s, expected empty", lastManifest.Run.CommitID)
 			}
 			lastManifest = nil
 
 			// update commit using post event record
-			err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
+			err = actionsService.UpdateCommitID(ctx, record.Repository, record.RunID, "commit1")
 			if err != nil {
 				t.Fatalf("UpdateCommitID() failed with err=%s", err)
 			}
@@ -199,11 +201,11 @@ hooks:
 				t.Errorf("UpdateCommitID() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
 			}
 			if lastManifest.Run.CommitID != "commit1" {
-				t.Errorf("UpdateCommitID() manifest CommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
+				t.Errorf("UpdateCommitID() manifest MergedCommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
 			}
 
 			// get run result
-			runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
+			runResult, err := actionsService.GetRunResult(ctx, record.Repository.RepositoryID.String(), record.RunID)
 			if err != nil {
 				t.Fatal("GetRunResult() get run result", err)
 			}
@@ -231,13 +233,13 @@ hooks:
 			}
 			const expectedCommitID = "commit1"
 			if runResult.CommitID != expectedCommitID {
-				t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
+				t.Errorf("GetRunResult() result MergedCommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 			}
 
-			require.Equal(t, 3, mockStatsCollector.Hits["pre-commit"])
+			require.Equal(t, uint64(3), mockStatsCollector.Hits["pre-commit"])
 
 			// get run - not found
-			runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
+			runResult, err = actionsService.GetRunResult(ctx, record.Repository.RepositoryID.String(), "not-run-id")
 			expectedErr := actions.ErrNotFound
 			if !errors.Is(err, expectedErr) {
 				t.Errorf("GetRunResult() err=%v, expected=%v", err, expectedErr)
@@ -280,11 +282,11 @@ func TestDisableHooksRun(t *testing.T) {
 			}
 
 			// get run result
-			runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
+			runResult, err := actionsService.GetRunResult(ctx, record.Repository.RepositoryID.String(), record.RunID)
 			if !errors.Is(err, actions.ErrNotFound) || runResult != nil {
 				t.Fatal("GetRunResult() shouldn't get run result", err, runResult)
 			}
-			require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+			require.Equal(t, uint64(0), mockStatsCollector.Hits["pre-commit"])
 		})
 	}
 }
@@ -333,7 +335,161 @@ hooks:
 			defer actionsService.Stop()
 
 			require.Error(t, actionsService.Run(ctx, record))
-			require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+			require.Equal(t, uint64(0), mockStatsCollector.Hits["pre-commit"])
+		})
+	}
+}
+
+func TestHookIf(t *testing.T) {
+	ctx := context.Background()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		if statusCode, err := strconv.Atoi(code); err == nil {
+			w.WriteHeader(statusCode)
+		}
+		_, _ = fmt.Fprintln(w, "Hi, hook")
+	}))
+	defer ts.Close()
+
+	tests := []struct {
+		Name                string
+		Action              string
+		ExpectedErr         bool
+		ExpectedHookIndexes []int
+	}{
+		{
+			Name: "run",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    properties:
+      url: ` + ts.URL + `
+`,
+			ExpectedHookIndexes: []int{0},
+		},
+		{
+			Name: "skip_using_false",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    if: false
+    properties:
+      url: ` + ts.URL + `
+  - id: id2
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{1},
+		},
+		{
+			Name: "fail_run_always",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    properties:
+      url: ` + ts.URL + `?code=500
+  - id: id2
+    if: failure()
+    type: webhook
+    properties:
+      url: ` + ts.URL + `
+  - id: id3
+    if: true
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{0, 1, 2},
+			ExpectedErr:         true,
+		},
+		{
+			Name: "fail_skip_always",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    properties:
+      url: ` + ts.URL + `?code=500
+  - id: id2
+    type: webhook
+    properties:
+      url: ` + ts.URL + `
+  - id: id3
+    if: true
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{0, 2},
+			ExpectedErr:         true,
+		},
+		{
+			Name: "invalid_if_expression",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    if: looks_bad
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{0},
+			ExpectedErr:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			testOutputWriter, ctrl, _, record := setupTest(t)
+			defer ctrl.Finish()
+			outputWriteReturn := func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
+				_, err := io.ReadAll(reader)
+				return err
+			}
+			for _, idx := range tt.ExpectedHookIndexes {
+				hookRunID := actions.NewHookRunID(0, idx)
+				testOutputWriter.EXPECT().
+					OutputWrite(gomock.Any(), record.Repository, actions.FormatHookOutputPath(record.RunID, hookRunID), gomock.Any(), gomock.Any()).
+					Return(nil).
+					DoAndReturn(outputWriteReturn)
+			}
+			testOutputWriter.EXPECT().
+				OutputWrite(gomock.Any(), record.Repository, actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+				Return(nil).
+				DoAndReturn(outputWriteReturn)
+
+			testSource := mock.NewMockSource(ctrl)
+			testSource.EXPECT().List(ctx, record).Return([]string{"act.yaml"}, nil)
+			testSource.EXPECT().Load(ctx, record, "act.yaml").Return([]byte(tt.Action), nil)
+
+			mockStatsCollector := NewActionStatsMockCollector()
+			actionsService := GetKVService(t, ctx, testSource, testOutputWriter, &mockStatsCollector, true)
+			defer actionsService.Stop()
+
+			err := actionsService.Run(ctx, record)
+			if tt.ExpectedErr {
+				if err == nil {
+					t.Fatal("Expected run to fail with an error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Run failed with error: %s", err)
+			}
 		})
 	}
 }
@@ -349,14 +505,17 @@ func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInf
 	if event.HookID != hookID {
 		t.Errorf("Webhook post HookID=%s, expected=%s", event.HookID, hookID)
 	}
-	if event.RepositoryID != record.RepositoryID.String() {
-		t.Errorf("Webhook post RepositoryID=%s, expected=%s", event.RepositoryID, record.RepositoryID)
+	if event.RepositoryID != record.Repository.RepositoryID.String() {
+		t.Errorf("Webhook post RepositoryID=%s, expected=%s", event.RepositoryID, record.Repository.RepositoryID)
 	}
 	if event.BranchID != record.BranchID.String() {
 		t.Errorf("Webhook post BranchID=%s, expected=%s", event.BranchID, record.BranchID)
 	}
 	if event.SourceRef != record.SourceRef.String() {
 		t.Errorf("Webhook post SourceRef=%s, expected=%s", event.SourceRef, record.SourceRef)
+	}
+	if event.MergeSource != record.MergeSource.String() {
+		t.Errorf("Webhook post MergeSource=%s, expected=%s", event.MergeSource, record.MergeSource)
 	}
 	if event.CommitMessage != record.Commit.Message {
 		t.Errorf("Webhook post CommitMessage=%s, expected=%s", event.CommitMessage, record.Commit.Message)
@@ -373,12 +532,16 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 	t.Helper()
 	hooks := graveler.HooksNoOp{}
 	record := graveler.HookRecord{
-		RunID:            hooks.NewRunID(),
-		EventType:        graveler.EventTypePreCommit,
-		StorageNamespace: "storageNamespace",
-		RepositoryID:     "repoID",
-		BranchID:         "branchID",
-		SourceRef:        "sourceRef",
+		RunID:     hooks.NewRunID(),
+		EventType: graveler.EventTypePreCommit,
+		Repository: &graveler.RepositoryRecord{
+			RepositoryID: "repoID",
+			Repository: &graveler.Repository{
+				StorageNamespace: "storageNamespace",
+			},
+		},
+		BranchID:  "branchID",
+		SourceRef: "sourceRef",
 		Commit: graveler.Commit{
 			Message:   "commitMessage",
 			Committer: "committer",
@@ -395,7 +558,8 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 			return
 		}
 
-		if r.URL.Path == "/webhook" {
+		switch r.URL.Path {
+		case "/webhook":
 			queryParams := map[string][]string(r.URL.Query())
 			require.Len(t, queryParams["prefix"], 1)
 			require.Equal(t, "public/", queryParams["prefix"][0])
@@ -411,7 +575,7 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 			}
 
 			checkEvent(t, record, eventInfo, testActionName, testWebhookID)
-		} else if r.URL.Path == "/airflow/api/v1/dags/some_dag_id/dagRuns" {
+		case "/airflow/api/v1/dags/some_dag_id/dagRuns":
 			var req actions.DagRunReq
 
 			withConf := r.URL.Query().Get("conf") == "true"
@@ -441,7 +605,7 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 			require.NoError(t, json.Unmarshal(b, &event))
 
 			checkEvent(t, record, event, testActionName, expectedID)
-		} else {
+		default:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

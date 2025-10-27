@@ -36,7 +36,6 @@ func TestSecretStore_Encrypt(t *testing.T) {
 			if !bytes.Equal(cas.Data, decrypted) {
 				t.Fatalf("expected decrypted data to equal original data %s, instead got %s", cas.Data, decrypted)
 			}
-
 		})
 	}
 }

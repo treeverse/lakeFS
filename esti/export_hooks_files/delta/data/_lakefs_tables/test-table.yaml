@@ -1,0 +1,4 @@
+name: test_table
+type: delta
+catalog: my-catalog
+path: tables/test-table

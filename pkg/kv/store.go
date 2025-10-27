@@ -10,13 +10,21 @@ import (
 	"strings"
 	"sync"
 
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
+)
+
+// KV Schema versions
+const (
+	InitialMigrateVersion = iota + 1
+	ACLMigrateVersion
+	ACLNoReposMigrateVersion
+	ACLImportMigrateVersion
+	NextSchemaVersion
 )
 
 const (
-	InitialMigrateVersion = 1
-	PathDelimiter         = "/"
-	MetadataPartitionKey  = "kv-internal-metadata"
+	PathDelimiter        = "/"
+	MetadataPartitionKey = "kv-internal-metadata"
 )
 
 var (
@@ -24,6 +32,7 @@ var (
 	ErrConnectFailed       = errors.New("connect failed")
 	ErrDriverConfiguration = errors.New("driver configuration")
 	ErrMissingPartitionKey = errors.New("missing partition key")
+	ErrBatchSizeTooBig     = errors.New("batch size too big")
 	ErrMissingKey          = errors.New("missing key")
 	ErrMissingValue        = errors.New("missing value")
 	ErrNotFound            = errors.New("not found")
@@ -31,6 +40,8 @@ var (
 	ErrSetupFailed         = errors.New("setup failed")
 	ErrUnknownDriver       = errors.New("unknown driver")
 	ErrTableNotActive      = errors.New("table not active")
+	ErrSlowDown            = errors.New("slow down")
+	ErrUnsupported         = errors.New("unsupported")
 )
 
 // Precond Type for special conditionals provided as predicates for the SetIf method
@@ -91,8 +102,7 @@ type Store interface {
 	// Delete will delete the key, no error in if key doesn't exist
 	Delete(ctx context.Context, partitionKey, key []byte) error
 
-	// Scan returns entries that can be read by key order
-	// partitionKey is optional, passing it might increase performance.
+	// Scan returns entries of partitionKey, by key order.
 	// 'options' holds optional parameters to control the batch size and the key to start the scan with.
 	Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error)
 
@@ -103,8 +113,12 @@ type Store interface {
 // EntriesIterator used to enumerate over Scan results
 type EntriesIterator interface {
 	// Next should be called first before access Entry.
-	// it will process the next entry and return true if it was successful, and false when none or error.
+	// it will process the next entry and return true if there is one.
 	Next() bool
+
+	// SeekGE moves the iterator to the first Entry with a key equal or greater to the given key.
+	// A call to Next is required after calling this method.
+	SeekGE(key []byte)
 
 	// Entry current entry read after calling Next, set to nil in case of an error or no more entries.
 	Entry() *Entry
@@ -209,4 +223,8 @@ func SetDBSchemaVersion(ctx context.Context, store Store, version uint) error {
 
 func dbSchemaPath() []byte {
 	return []byte(FormatPath("kv", "schema", "version"))
+}
+
+func IsLatestSchemaVersion(version int) bool {
+	return version == NextSchemaVersion-1
 }

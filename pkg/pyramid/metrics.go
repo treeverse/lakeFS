@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// nolint: gomnd
+// nolint: mnd
 const (
 	kb                = float64(1024)
 	fsNameLabel       = "fsName"
@@ -29,7 +29,7 @@ var evictionHistograms = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name:    "tier_fs_eviction_bytes",
 		Help:    "TierFS evicted object size by bytes",
-		Buckets: prometheus.ExponentialBuckets(kb, 4, 7), //nolint: gomnd
+		Buckets: prometheus.ExponentialBuckets(kb, 4, 7), //nolint: mnd
 	},
 	[]string{fsNameLabel})
 
@@ -37,6 +37,6 @@ var downloadHistograms = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name:    "tier_fs_download_bytes",
 		Help:    "TierFS download from block-store object size by bytes",
-		Buckets: prometheus.ExponentialBuckets(kb, 4, 7), //nolint: gomnd
+		Buckets: prometheus.ExponentialBuckets(kb, 4, 7), //nolint: mnd
 	},
 	[]string{fsNameLabel})

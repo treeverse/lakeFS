@@ -1,14 +1,14 @@
-import React, {useState} from "react";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
+import React, {useEffect, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {
     ActionGroup,
     ActionsBar,
-    Error,
+    AlertError,
     FormattedDate,
     Loading, Na, RefreshButton,
     TooltipButton
 } from "../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {actions} from "../../../../lib/api";
 import {
@@ -18,13 +18,10 @@ import {
 import {Table} from "react-bootstrap";
 import {Paginator} from "../../../../lib/components/pagination";
 import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
-import {Route, Routes} from "react-router-dom";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
-import RepositoryActionPage from "./run";
-import Alert from "react-bootstrap/Alert";
 import {RepoError} from "../error";
-
+import { EmptyActionsState } from "./empty";
 
 const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
     return (
@@ -123,10 +120,10 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     const doRefresh = () => setRefresh(!refresh)
 
     let content;
-    if (error) content = <Error error={error}/>
+    if (error) content = <AlertError error={error}/>
 
     else if (loading) content = <Loading/>
-    else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No action runs have been logged yet.</Alert>
+    else if (results.length === 0 && !nextPage) content = <EmptyActionsState />
     else content = (
             <RunTable
                 repo={repo}
@@ -163,10 +160,12 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
                 </ActionGroup>
             </ActionsBar>
             {content}
-            <div>
-                {/* eslint-disable-next-line react/jsx-no-target-blank */}
-                Actions can be configured to run when predefined events occur. <a href="https://docs.lakefs.io/setup/hooks.html" target="_blank">Learn more.</a>
-            </div>
+            {results.length > 0 && (
+                <div>
+                    {/* eslint-disable-next-line react/jsx-no-target-blank */}
+                    Actions can be configured to run when predefined events occur. <a href="https://docs.lakefs.io/howto/hooks/" target="_blank">Learn more.</a>
+                </div>
+            )}
         </div>
     )
 }
@@ -211,23 +210,10 @@ const ActionsContainer = () => {
     );
 };
 
-const RepositoryActionsPage = () => {
-    return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'actions'}>
-                <ActionsContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
-    );
+export const RepositoryActionsPage = () => {
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("actions"), [setActivePage]);
+  return <ActionsContainer/>;
 };
 
-const RepositoryActionsIndexPage = () => {
-    return (
-        <Routes>
-            <Route path="" element={<RepositoryActionsPage/>} />
-            <Route path=":runId" element={<RepositoryActionPage/>} />
-        </Routes>
-    );
-};
-
-export default RepositoryActionsIndexPage;
+export default RepositoryActionsPage;

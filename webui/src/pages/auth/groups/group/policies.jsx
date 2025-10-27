@@ -1,8 +1,7 @@
 import React, {useEffect, useState} from "react";
-
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 
-import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {GroupHeader} from "../../../../lib/components/auth/nav";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth} from "../../../../lib/api";
@@ -15,11 +14,12 @@ import {
     DataTable,
     FormattedDate,
     Loading,
-    Error,
+    AlertError,
     RefreshButton
 } from "../../../../lib/components/controls";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
+import {PageSize} from "../../../../constants";
 
 
 const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
@@ -35,10 +35,10 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content=  <Error error={error}/>;
+    else if (error) content=  <AlertError error={error}/>;
     else content = (
             <>
-                {attachError && <Error error={attachError}/>}
+                {attachError && <AlertError error={attachError}/>}
 
                 <DataTable
                     keyFn={policy => policy.id}
@@ -75,10 +75,10 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                     filterPlaceholder={'Find Policy...'}
                     modalTitle={'Attach Policies'}
                     addText={'Attach Policies'}
-                    searchFn={prefix => auth.listPolicies(prefix, "", 5).then(res => res.results)}
+                    searchFn={(prefix, after) => auth.listPolicies(prefix, after, PageSize)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
-                        Promise.all(selected.map(policyId => auth.attachPolicyToGroup(groupId, policyId)))
+                        Promise.all(selected.map(policy => auth.attachPolicyToGroup(groupId, policy.id)))
                             .then(() => { setRefresh(!refresh); setAttachError(null) })
                             .catch(error => { setAttachError(error) })
                             .finally(() => { setShowAddModal(false) })
@@ -120,11 +120,9 @@ const GroupPoliciesContainer = () => {
 };
 
 const GroupPoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="groups">
-            <GroupPoliciesContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab('groups'), [setActiveTab]);
+    return <GroupPoliciesContainer/>;
 };
 
 export default GroupPoliciesPage;

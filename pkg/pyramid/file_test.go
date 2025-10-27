@@ -29,7 +29,7 @@ func TestPyramidWriteFile(t *testing.T) {
 	var storeCtx context.Context
 	sut := WRFile{
 		File:   fh,
-		logger: logging.Default(),
+		logger: logging.ContextUnavailable(),
 		store: func(innerCtx context.Context, _ string) error {
 			storeCalled = true
 			storeCtx = innerCtx
@@ -77,7 +77,7 @@ func TestWriteValidate(t *testing.T) {
 
 	sut := WRFile{
 		File:   fh,
-		logger: logging.Default(),
+		logger: logging.ContextUnavailable(),
 		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
@@ -111,7 +111,7 @@ func TestMultipleWriteCalls(t *testing.T) {
 
 	sut := WRFile{
 		File:   fh,
-		logger: logging.Default(),
+		logger: logging.ContextUnavailable(),
 		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil
@@ -146,7 +146,7 @@ func TestAbort(t *testing.T) {
 
 	sut := WRFile{
 		File:   fh,
-		logger: logging.Default(),
+		logger: logging.ContextUnavailable(),
 		store: func(context.Context, string) error {
 			storeCalled = true
 			return nil

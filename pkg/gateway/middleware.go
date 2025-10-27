@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
@@ -26,45 +26,53 @@ import (
 func AuthenticationHandler(authService auth.GatewayService, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
+		user, err := auth.GetUser(ctx)
+		if err == nil {
+			ctx = logging.AddFields(ctx, logging.Fields{logging.UserFieldKey: user.Username})
+			req = req.WithContext(auth.WithUser(ctx, user))
+			next.ServeHTTP(w, req)
+			return
+		}
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		authenticator := sig.ChainedAuthenticator(
 			sig.NewV4Authenticator(req),
-			sig.NewV2SigAuthenticator(req))
+			sig.NewV2SigAuthenticator(req, o.FQDN),
+			sig.NewJavaV2SigAuthenticator(req, o.FQDN),
+		)
 		authContext, err := authenticator.Parse()
 		if err != nil {
 			o.Log(req).WithError(err).Warn("failed to parse signature")
-			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 		accessKeyID := authContext.GetAccessKeyID()
 		creds, err := authService.GetCredentials(ctx, accessKeyID)
-		logger := o.Log(req).WithField("key", accessKeyID)
+		logger := o.Log(req)
 		if err != nil {
 			if !errors.Is(err, auth.ErrNotFound) {
 				logger.WithError(err).Warn("error getting access key")
-				_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
 			} else {
 				logger.WithError(err).Warn("could not find access key")
-				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			return
 		}
-		err = authenticator.Verify(creds, o.FQDN)
-		logger = logger.WithField("authenticator", authenticator)
+		err = authenticator.Verify(creds)
 		if err != nil {
 			logger.WithError(err).Warn("error verifying credentials for key")
-			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 
-		user, err := authService.GetUser(ctx, creds.Username)
+		user, err = authService.GetUser(ctx, creds.Username)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		ctx = logging.AddFields(ctx, logging.Fields{logging.UserFieldKey: user.Username})
-		ctx = context.WithValue(ctx, ContextKeyUser, user)
+		ctx = auth.WithUser(ctx, user)
 		ctx = context.WithValue(ctx, ContextKeyAuthContext, authContext)
 		req = req.WithContext(ctx)
 		next.ServeHTTP(w, req)
@@ -106,12 +114,13 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 		ctx := req.Context()
 		client := httputil.GetRequestLakeFSClient(req)
 		o := &operations.Operation{
-			Region:           sc.region,
-			FQDN:             getBareDomain(stripPort(req.Host), sc.bareDomains),
-			Catalog:          sc.catalog,
-			MultipartTracker: sc.multipartTracker,
-			BlockStore:       sc.blockStore,
-			Auth:             sc.authService,
+			Region:            sc.region,
+			FQDN:              getBareDomain(stripPort(req.Host), sc.bareDomains),
+			Catalog:           sc.catalog,
+			MultipartTracker:  sc.multipartTracker,
+			BlockStore:        sc.blockStore,
+			Auth:              sc.authService,
+			VerifyUnsupported: sc.verifyUnsupported,
 			Incr: func(action, userID, repository, ref string) {
 				logging.FromContext(ctx).
 					WithFields(logging.Fields{
@@ -133,29 +142,52 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 			},
 			PathProvider: sc.pathProvider,
 		}
-		next.ServeHTTP(w, req.WithContext(context.WithValue(ctx, ContextKeyOperation, o)))
+
+		// Parse URL to determine operation ID
+		parts := ParseRequestParts(req.Host, req.URL.Path, sc.bareDomains)
+
+		switch {
+		case parts.Repository == "":
+			o.OperationID = rootBasedOperationID(req.Method)
+		case parts.Ref != "" && parts.Path != "":
+			o.OperationID = pathBasedOperationID(req.Method)
+		case parts.Ref == "" && parts.Path == "":
+			o.OperationID = repositoryBasedOperationID(req.Method)
+		default:
+			o.OperationID = operations.OperationIDOperationNotFound
+		}
+
+		ctx = context.WithValue(ctx, ContextKeyOperation, o)
+		ctx = logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID})
+		next.ServeHTTP(w, req.WithContext(ctx))
 	})
 }
 
-func DurationHandler(next http.Handler) http.Handler {
+func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
+
+		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
+		operationID := string(o.OperationID)
+
+		httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Inc()
+		defer httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Dec()
 		next.ServeHTTP(mrw, req)
-		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
+		requestHistograms.WithLabelValues(operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
 
-func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.GatewayService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.GatewayService, fallbackProxy http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		username := ctx.Value(ContextKeyUser).(*model.User).Username
+		user, _ := auth.GetUser(ctx)
+		username := user.Username
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		if repoID == "" {
-			// action without repo
+			// action without a repo
 			next.ServeHTTP(w, req)
 			return
 		}
@@ -168,18 +200,26 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 				},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
-				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 				return
 			}
 			if fallbackProxy != nil {
 				fallbackProxy.ServeHTTP(w, req)
 				return
 			}
-			_ = o.EncodeError(w, req, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+
+			// users often set the gateway endpoint in the clients with /api/v1/ which is the openAPI endpoint.
+			// returning a more informative error in such case.
+			if strings.HasPrefix(req.RequestURI, apiutil.BaseURL) {
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucketPossibleAPIEndpoint.ToAPIErr())
+				return
+			}
+
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
 		if repo == nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
 			return
 		}
 		req = req.WithContext(context.WithValue(ctx, ContextKeyRepository, repo))
@@ -187,39 +227,7 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 	})
 }
 
-func OperationLookupHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
-		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		o.OperationID = operations.OperationIDOperationNotFound
-		if repoID == "" {
-			if req.Method == http.MethodGet {
-				o.OperationID = operations.OperationIDListBuckets
-			} else {
-				_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
-				return
-			}
-		} else {
-			ref := ctx.Value(ContextKeyRef).(string)
-			pth := ctx.Value(ContextKeyPath).(string)
-			switch {
-			case ref != "" && pth != "":
-				req = req.WithContext(ctx)
-				o.OperationID = pathBasedOperationID(req.Method)
-			case ref == "" && pth == "":
-				o.OperationID = repositoryBasedOperationID(req.Method)
-			default:
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-		}
-		req = req.WithContext(logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID}))
-		next.ServeHTTP(w, req)
-	})
-}
-
-// memberFold returns true if 'a' is equal case-folded to a member of bs.
+// memberFold returns true if 'a' is an equal case-folded to a member of bs.
 func memberFold(a string, bs []string) bool {
 	for _, b := range bs {
 		if strings.EqualFold(a, b) {
@@ -248,7 +256,7 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 	// 3. none of the above, path based
 	if memberFold(httputil.HostOnly(host), ourHosts) {
 		// path style: extract repo from first part
-		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: mnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]
@@ -265,13 +273,13 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 			}
 		}
 		if parts.MatchedHost {
-			p = strings.SplitN(urlPath, path.Separator, 2) //nolint: gomnd
+			p = strings.SplitN(urlPath, path.Separator, 2) //nolint: mnd
 		}
 	}
 
 	if !parts.MatchedHost {
-		// assume path based for domains we don't explicitly know
-		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
+		// assume path-based for domains we don't explicitly know
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: mnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]
@@ -286,6 +294,13 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 		parts.Path = p[1]
 	}
 	return parts
+}
+
+func rootBasedOperationID(method string) operations.OperationID {
+	if method == http.MethodGet {
+		return operations.OperationIDListBuckets
+	}
+	return operations.OperationIDOperationNotFound
 }
 
 func pathBasedOperationID(method string) operations.OperationID {

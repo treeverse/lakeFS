@@ -54,6 +54,7 @@ type ActionHook struct {
 	ID          string     `yaml:"id"`
 	Type        HookType   `yaml:"type"`
 	Description string     `yaml:"description"`
+	If          string     `yaml:"if"`
 	Properties  Properties `yaml:"properties"`
 }
 
@@ -65,29 +66,7 @@ type MatchSpec struct {
 var (
 	reName   = regexp.MustCompile(`^\w[\w\-. ]+$`)
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
-
-	ErrInvalidAction         = errors.New("invalid action")
-	ErrInvalidEventParameter = errors.New("invalid event parameter")
 )
-
-func isEventSupported(event graveler.EventType) bool {
-	switch event {
-	case graveler.EventTypePreCommit,
-		graveler.EventTypePostMerge,
-		graveler.EventTypePreMerge,
-		graveler.EventTypePostCommit,
-		graveler.EventTypePreCreateBranch,
-		graveler.EventTypePostCreateBranch,
-		graveler.EventTypePreDeleteBranch,
-		graveler.EventTypePostDeleteBranch,
-		graveler.EventTypePreCreateTag,
-		graveler.EventTypePostCreateTag,
-		graveler.EventTypePreDeleteTag,
-		graveler.EventTypePostDeleteTag:
-		return true
-	}
-	return false
-}
 
 func (a *Action) Validate() error {
 	if a.Name == "" {
@@ -122,7 +101,7 @@ func (a *Action) Validate() error {
 }
 
 func validateEvent(event graveler.EventType, on *ActionOn) error {
-	if !isEventSupported(event) {
+	if !event.IsValid() {
 		return fmt.Errorf("event '%s' is not supported: %w", event, ErrInvalidAction)
 	}
 	if on != nil {

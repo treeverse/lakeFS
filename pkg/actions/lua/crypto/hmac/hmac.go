@@ -19,15 +19,15 @@ func Open(l *lua.State) {
 }
 
 var hmacLibrary = []lua.RegistryFunction{
-	{Name: "sign_sha256", Function: signsha256},
-	{Name: "sign_sha1", Function: signsha1},
+	{Name: "sign_sha256", Function: signSHA256},
+	{Name: "sign_sha1", Function: signSHA1},
 }
 
-func signsha256(l *lua.State) int {
+func signSHA256(l *lua.State) int {
 	return encode(l, sha256.New)
 }
 
-func signsha1(l *lua.State) int {
+func signSHA1(l *lua.State) int {
 	return encode(l, sha1.New)
 }
 

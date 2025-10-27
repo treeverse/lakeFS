@@ -1,29 +1,33 @@
 package dynamodb
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"sort"
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Driver struct{}
 
 type Store struct {
-	svc    *dynamodb.DynamoDB
+	svc    *dynamodb.Client
 	params *kvparams.DynamoDB
 	wg     sync.WaitGroup
 	logger logging.Logger
@@ -31,15 +35,17 @@ type Store struct {
 }
 
 type EntriesIterator struct {
-	scanCtx                   context.Context
-	entry                     *kv.Entry
-	err                       error
-	store                     *Store
-	queryResult               *dynamodb.QueryOutput
-	currEntryIdx              int64
-	keyConditionExpression    string
-	expressionAttributeValues map[string]*dynamodb.AttributeValue
-	limit                     int64
+	partitionKey      []byte
+	startKey          []byte
+	exclusiveStartKey map[string]types.AttributeValue
+
+	scanCtx      context.Context
+	entry        *kv.Entry
+	err          error
+	store        *Store
+	queryResult  *dynamodb.QueryOutput
+	currEntryIdx int
+	limit        int
 }
 
 type DynKVItem struct {
@@ -69,35 +75,57 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		Profile:           params.AwsProfile,
-	})
+	var opts []func(*config.LoadOptions) error
+	if params.AwsRegion != "" {
+		opts = append(opts, config.WithRegion(params.AwsRegion))
+	}
+	if params.AwsProfile != "" {
+		opts = append(opts,
+			config.WithSharedConfigProfile(params.AwsProfile))
+	}
+	if params.AwsAccessKeyID != "" {
+		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			params.AwsAccessKeyID,
+			params.AwsSecretAccessKey,
+			"",
+		)))
+	}
+	opts = append(opts, config.WithHTTPClient(
+		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
+			transport.MaxConnsPerHost = params.MaxConnectionsPerHost
+		})),
+		config.WithRetryer(func() aws.Retryer {
+			return retry.NewStandard(func(so *retry.StandardOptions) {
+				so.RateLimiter = &NopRateLimiter{}
+				so.MaxAttempts = params.MaxAttempts
+			})
+		}),
+		config.WithCredentialsCacheOptions(func(options *aws.CredentialsCacheOptions) {
+			options.ExpiryWindow = params.CredentialsCacheExpiryWindow
+			options.ExpiryWindowJitterFrac = params.CredentialsCacheExpiryWindowJitterFraction
+		}),
+	)
+
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := aws.NewConfig()
-	if params.Endpoint != "" {
-		cfg.Endpoint = aws.String(params.Endpoint)
-	}
-	if params.AwsRegion != "" {
-		cfg = cfg.WithRegion(params.AwsRegion)
-	}
-	if params.AwsAccessKeyID != "" {
-		cfg = cfg.WithCredentials(credentials.NewCredentials(
-			&credentials.StaticProvider{
-				Value: credentials.Value{
-					AccessKeyID:     params.AwsAccessKeyID,
-					SecretAccessKey: params.AwsSecretAccessKey,
-				},
-			}))
-	}
 	// Create DynamoDB client
-	svc := dynamodb.New(sess, cfg)
-	err = setupKeyValueDatabase(ctx, svc, params)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
+	svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
+		if params.Endpoint != "" {
+			o.BaseEndpoint = &params.Endpoint
+		}
+	})
+
+	// Create table if not exists.
+	// To avoid potential errors in restricted environments, we confirmed the existence of the table beforehand.
+	success, _ := isTableExist(ctx, svc, params.TableName)
+	if !success {
+		err := setupKeyValueDatabase(ctx, svc, params)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
+		}
 	}
 
 	logger := logging.FromContext(ctx).WithField("store", DriverName)
@@ -113,90 +141,89 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 }
 
 // isTableExist will try to describeTable and return bool status, error is returned only in case err != ResourceNotFoundException
-func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bool, error) {
-	_, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
+func isTableExist(ctx context.Context, svc *dynamodb.Client, table string) (bool, error) {
+	_, err := svc.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(table),
 	})
-	const operation = "DescribeTable"
 	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
+		var errResNotFound *types.ResourceNotFoundException
+		if errors.As(err, &errResNotFound) {
 			return false, nil
 		}
-		dynamoFailures.WithLabelValues(operation).Inc()
 		return false, err
 	}
 	return true, nil
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *kvparams.DynamoDB) error {
-	// main kv table
-	exist, err := isTableExist(ctx, svc, params.TableName)
-	if exist || err != nil {
-		return err
-	}
+func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.Client, params *kvparams.DynamoDB) error {
+	log := logging.FromContext(ctx).WithField("table_name", params.TableName)
+	start := time.Now()
+	defer func() {
+		log.WithField("took", fmt.Sprint(time.Since(start))).Info("Setup time")
+	}()
 
-	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
+	// main kv table
+	_, err := svc.CreateTable(ctx, &dynamodb.CreateTableInput{
 		TableName:   aws.String(params.TableName),
-		BillingMode: aws.String(dynamodb.BillingModePayPerRequest), // On-Demand
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+		BillingMode: types.BillingModePayPerRequest, // On-Demand
+		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String(PartitionKey),
-				AttributeType: aws.String("B"),
+				AttributeType: types.ScalarAttributeTypeB,
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				AttributeType: aws.String("B"),
+				AttributeType: types.ScalarAttributeTypeB,
 			},
 		},
-		KeySchema: []*dynamodb.KeySchemaElement{
+		KeySchema: []types.KeySchemaElement{
 			{
 				AttributeName: aws.String(PartitionKey),
-				KeyType:       aws.String("HASH"),
+				KeyType:       types.KeyTypeHash,
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				KeyType:       aws.String("RANGE"),
+				KeyType:       types.KeyTypeRange,
 			},
 		},
 	})
 	if err != nil {
-		if _, ok := err.(*dynamodb.ResourceInUseException); ok {
+		var errResInUse *types.ResourceInUseException
+		if errors.As(err, &errResInUse) {
+			log.Info("KV table exists")
 			return nil
 		}
+		log.WithError(err).Warn("Failed to create or detect KV table")
 		return err
 	}
-	bo := backoff.NewExponentialBackOff()
+
 	const (
-		maxInterval = 5
-		maxElapsed  = 30
+		// Wait for ~30 seconds, at a nearly constant rate
+		minDelay = 750 * time.Millisecond
+		maxDelay = 3 * time.Second
+		maxWait  = 30 * time.Second
 	)
 
-	bo.MaxInterval = maxInterval * time.Second
-	bo.MaxElapsedTime = maxElapsed * time.Second
-	err = backoff.Retry(func() error {
-		desc, err := svc.DescribeTable(&dynamodb.DescribeTableInput{
-			TableName: table.TableDescription.TableName,
-		})
-		if err != nil {
-			// we shouldn't retry on anything but kv.ErrTableNotActive
-			return backoff.Permanent(err)
-		}
-		if *desc.Table.TableStatus != dynamodb.TableStatusActive {
-			return fmt.Errorf("table status(%s): %w", *desc.Table.TableStatus, kv.ErrTableNotActive)
-		}
-		return nil
-	}, bo)
+	waiter := dynamodb.NewTableExistsWaiter(svc, func(o *dynamodb.TableExistsWaiterOptions) {
+		// override minimum delay to 10 seconds
+		o.MinDelay = minDelay
+		o.MaxDelay = maxDelay
+	})
+
+	input := &dynamodb.DescribeTableInput{TableName: aws.String(params.TableName)}
+	err = waiter.Wait(ctx, input, maxWait)
+
 	return err
 }
 
-func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
-		PartitionKey: {
-			B: partitionKey,
+func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{
+		PartitionKey: &types.AttributeValueMemberB{
+			Value: partitionKey,
 		},
-		ItemKey: {
-			B: key,
+		ItemKey: &types.AttributeValueMemberB{
+			Value: key,
 		},
 	}
 }
@@ -208,19 +235,20 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
-
-	start := time.Now()
-	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
+	result, err := s.svc.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
 		ConsistentRead:         aws.Bool(true),
-		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
 	})
 	const operation = "GetItem"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("get item: %w", handleClientError(err))
+		if s.isSlowDownErr(err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("get item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
+		}
+		return nil, fmt.Errorf("get item: %w", err)
 	}
 	if result.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*result.ConsumedCapacity.CapacityUnits)
@@ -231,7 +259,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 
 	var item DynKVItem
-	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
+	err = attributevalue.UnmarshalMap(result.Item, &item)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal map: %w", err)
 	}
@@ -267,7 +295,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		ItemValue:    value,
 	}
 
-	marshaledItem, err := dynamodbattribute.MarshalMap(item)
+	marshaledItem, err := attributevalue.MarshalMap(item)
 	if err != nil {
 		return fmt.Errorf("marshal map: %w", err)
 	}
@@ -275,7 +303,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 	input := &dynamodb.PutItemInput{
 		Item:                   marshaledItem,
 		TableName:              &s.params.TableName,
-		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
 	}
 	if usePredicate {
 		switch valuePredicate {
@@ -285,7 +313,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		case kv.PrecondConditionalExists: // update only if exists
 			input.ConditionExpression = aws.String("attribute_exists(" + ItemValue + ")")
 
-		default: // update only if predicate matches current stored value
+		default: // update only if predicate matches the current stored value
 			predicateCondition := expression.Name(ItemValue).Equal(expression.Value(valuePredicate.([]byte)))
 			conditionExpression, err := expression.NewBuilder().WithCondition(predicateCondition).Build()
 			if err != nil {
@@ -297,17 +325,19 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		}
 	}
 
-	start := time.Now()
-	resp, err := s.svc.PutItemWithContext(ctx, input)
+	resp, err := s.svc.PutItem(ctx, input)
 	const operation = "PutItem"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
-		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
+		var errConditionalCheckFailed *types.ConditionalCheckFailedException
+		if usePredicate && errors.As(err, &errConditionalCheckFailed) {
 			return kv.ErrPredicateFailed
 		}
-
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("put item: %w", handleClientError(err))
+		if s.isSlowDownErr(err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("put item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
+		}
+		return fmt.Errorf("put item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -323,17 +353,19 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		return kv.ErrMissingKey
 	}
 
-	start := time.Now()
-	resp, err := s.svc.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
+	resp, err := s.svc.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
-		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
 	})
 	const operation = "DeleteItem"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("delete item: %w", handleClientError(err))
+		if s.isSlowDownErr(err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("delete item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
+		}
+		return fmt.Errorf("delete item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -345,80 +377,33 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
-
 	// limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
-	limit := s.params.ScanLimit
+	firstScanLimit := s.params.ScanLimit
 	batchSize := int64(options.BatchSize)
-	if batchSize != 0 && limit != 0 && batchSize < limit {
-		limit = batchSize
-	}
-
-	// format key and attribute expressions
-	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
-		":partitionkey": {
-			B: partitionKey,
-		},
-	}
-	keyConditionExpression := PartitionKey + " = :partitionkey"
-	if len(options.KeyStart) > 0 {
-		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
-		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			B: options.KeyStart,
-		}
-	}
-
-	queryResult, err := s.scanInternal(ctx, keyConditionExpression, expressionAttributeValues, limit, nil)
-	if err != nil {
-		return nil, err
+	if batchSize != 0 && firstScanLimit != 0 && batchSize < firstScanLimit {
+		firstScanLimit = batchSize
 	}
 	it := &EntriesIterator{
-		scanCtx:                   ctx,
-		store:                     s,
-		keyConditionExpression:    keyConditionExpression,
-		expressionAttributeValues: expressionAttributeValues,
-		limit:                     limit,
-		queryResult:               queryResult,
+		partitionKey: partitionKey,
+		startKey:     options.KeyStart,
+		scanCtx:      ctx,
+		store:        s,
+		limit:        int(firstScanLimit),
+	}
+
+	// Setting the limit just for the first scan to avoid issues like
+	// https://github.com/treeverse/lakeFS/issues/7864
+	it.runQuery(it.limit)
+	if it.err != nil {
+		err := it.err
+		if s.isSlowDownErr(it.err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("scan: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues("Scan").Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
+		}
+		return nil, err
 	}
 	return it, nil
-}
-
-func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
-	expressionAttributeValues map[string]*dynamodb.AttributeValue,
-	limit int64,
-	exclusiveStartKey map[string]*dynamodb.AttributeValue,
-) (*dynamodb.QueryOutput, error) {
-	queryInput := &dynamodb.QueryInput{
-		TableName:                 aws.String(s.params.TableName),
-		KeyConditionExpression:    aws.String(keyConditionExpression),
-		ExpressionAttributeValues: expressionAttributeValues,
-		ConsistentRead:            aws.Bool(true),
-		ScanIndexForward:          aws.Bool(true),
-		ExclusiveStartKey:         exclusiveStartKey,
-		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
-	}
-	if limit != 0 {
-		queryInput.SetLimit(limit)
-	}
-
-	start := time.Now()
-	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
-	const operation = "Query"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
-	if err != nil {
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("query: %w ", handleClientError(err))
-	}
-	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
-
-	return queryOutput, nil
-}
-
-func handleClientError(err error) error {
-	var reqErr awserr.Error
-	if errors.As(err, &reqErr) && errors.Is(reqErr.OrigErr(), context.Canceled) {
-		return reqErr.OrigErr()
-	}
-	return err
 }
 
 func (s *Store) Close() {
@@ -427,34 +412,58 @@ func (s *Store) Close() {
 
 // DropTable used internally for testing purposes
 func (s *Store) DropTable() error {
-	_, err := s.svc.DeleteTable(&dynamodb.DeleteTableInput{
+	ctx := context.Background()
+	_, err := s.svc.DeleteTable(ctx, &dynamodb.DeleteTableInput{
 		TableName: &s.params.TableName,
 	})
+	if s.isSlowDownErr(err) {
+		s.logger.WithField("table", s.params.TableName).WithContext(ctx).Error("drop table: %w", kv.ErrSlowDown)
+		dynamoSlowdown.WithLabelValues("DeleteTable").Inc()
+		err = errors.Join(err, kv.ErrSlowDown)
+	}
 	return err
+}
+
+func (e *EntriesIterator) SeekGE(key []byte) {
+	if !e.isInRange(key) {
+		e.startKey = key
+		e.exclusiveStartKey = nil
+		e.runQuery(e.limit)
+		return
+	}
+	var item DynKVItem
+	e.currEntryIdx = sort.Search(len(e.queryResult.Items), func(i int) bool {
+		if e.err = attributevalue.UnmarshalMap(e.queryResult.Items[i], &item); e.err != nil {
+			return false
+		}
+		return bytes.Compare(key, item.ItemKey) <= 0
+	})
+	if e.currEntryIdx == -1 {
+		// not found, set to the end
+		e.currEntryIdx = len(e.queryResult.Items)
+	}
 }
 
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
-
-	for e.currEntryIdx == aws.Int64Value(e.queryResult.Count) {
+	// check if we reached the end of the current queryResult, this can be called twice in case runQuery returned an empty result
+	for e.currEntryIdx == len(e.queryResult.Items) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		queryResult, err := e.store.scanInternal(e.scanCtx, e.keyConditionExpression, e.expressionAttributeValues, e.limit, e.queryResult.LastEvaluatedKey)
-		if err != nil {
-			e.err = fmt.Errorf("scan paging: %w", err)
+		e.exclusiveStartKey = e.queryResult.LastEvaluatedKey
+		e.doubleAndCapLimit()
+		e.runQuery(e.limit)
+		if e.err != nil {
 			return false
 		}
-		e.queryResult = queryResult
-		e.currEntryIdx = 0
 	}
-
 	var item DynKVItem
-	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
-	if err != nil {
-		e.err = fmt.Errorf("unmarshal map: %w", err)
+	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
+	if e.err != nil {
+		return false
 	}
 	e.entry = &kv.Entry{
 		Key:   item.ItemKey,
@@ -462,6 +471,17 @@ func (e *EntriesIterator) Next() bool {
 	}
 	e.currEntryIdx++
 	return true
+}
+
+// doubleAndCapLimit doubles the limit up to the maximum allowed by the store
+// this is done to avoid:
+// 1. limit being too small and causing multiple queries on one side
+// 2. limit being too large and causing a single query consuming too much capacity
+func (e *EntriesIterator) doubleAndCapLimit() {
+	e.limit *= 2
+	if e.limit > int(e.store.params.ScanLimit) {
+		e.limit = int(e.store.params.ScanLimit)
+	}
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
@@ -474,6 +494,85 @@ func (e *EntriesIterator) Err() error {
 
 func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
+}
+
+func (e *EntriesIterator) runQuery(limit int) {
+	expressionAttributeValues := map[string]types.AttributeValue{
+		":partitionkey": &types.AttributeValueMemberB{
+			Value: e.partitionKey,
+		},
+	}
+	keyConditionExpression := PartitionKey + " = :partitionkey"
+	if len(e.startKey) > 0 {
+		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
+		expressionAttributeValues[":fromkey"] = &types.AttributeValueMemberB{
+			Value: e.startKey,
+		}
+	}
+	queryInput := &dynamodb.QueryInput{
+		TableName:                 aws.String(e.store.params.TableName),
+		KeyConditionExpression:    aws.String(keyConditionExpression),
+		ExpressionAttributeValues: expressionAttributeValues,
+		ConsistentRead:            aws.Bool(true),
+		ScanIndexForward:          aws.Bool(true),
+		ExclusiveStartKey:         e.exclusiveStartKey,
+		ReturnConsumedCapacity:    types.ReturnConsumedCapacityTotal,
+	}
+
+	queryInput.Limit = aws.Int32(int32(limit)) //nolint:gosec
+	e.store.logger.
+		WithField("partition_key", e.partitionKey).
+		WithField("limit", limit).
+		WithField("exclusive_start_key", e.exclusiveStartKey).
+		WithField("start_key", e.startKey).
+		WithContext(e.scanCtx).
+		Trace("Performing DynamoDB query")
+	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
+	const operation = "Query"
+	if err != nil {
+		if e.store.isSlowDownErr(err) {
+			e.store.logger.WithField("partition_key", e.partitionKey).WithContext(e.scanCtx).Error("query: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues("query").Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
+		}
+		e.err = fmt.Errorf("query: %w", err)
+		return
+	}
+	if queryResult.ConsumedCapacity != nil {
+		dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryResult.ConsumedCapacity.CapacityUnits)
+	}
+	e.queryResult = queryResult
+	e.currEntryIdx = 0
+}
+
+// isInRange checks if key falls within the range of keys on the queryResult.
+// To optimize range checking:
+// - If the current queryResult is a result of a seek operation with exclusiveStartKey use exclusiveStartKey as the minKey otherwise use e.startKey as the minKey.
+// - Use LastEvaluatedKey as the Max value, in case LastEvaluatedKey is nil  all keys greater than the minimum key are considered in range.
+// This function returns true if e.startKey is within these defined range criteria.
+func (e *EntriesIterator) isInRange(key []byte) bool {
+	minKey := e.startKey
+	if e.exclusiveStartKey != nil {
+		var minItem DynKVItem
+		e.err = attributevalue.UnmarshalMap(e.exclusiveStartKey, &minItem)
+		if e.err != nil {
+			return false
+		}
+		minKey = minItem.ItemKey
+	}
+	if bytes.Compare(key, minKey) < 0 {
+		return false
+	}
+	if e.queryResult.LastEvaluatedKey == nil {
+		// evaluated all -> all keys greater than minKey are in range
+		return true
+	}
+	var maxItem DynKVItem
+	e.err = attributevalue.UnmarshalMap(e.queryResult.LastEvaluatedKey, &maxItem)
+	if e.err != nil {
+		return false
+	}
+	return bytes.Compare(key, maxItem.ItemKey) <= 0
 }
 
 // StartPeriodicCheck performs one check and continues every 'interval' in the background
@@ -517,4 +616,13 @@ func (s *Store) StopPeriodicCheck() {
 		s.wg.Wait()
 		s.cancel = nil
 	}
+}
+
+func (s *Store) isSlowDownErr(err error) bool {
+	for _, te := range retry.DefaultThrottles {
+		if te.IsErrorThrottle(err).Bool() {
+			return true
+		}
+	}
+	return false
 }

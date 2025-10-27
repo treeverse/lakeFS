@@ -32,7 +32,7 @@ func decode(l *lua.State) int {
 	value := lua.CheckString(l, 1)
 	decoded, err := hex.DecodeString(value)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 

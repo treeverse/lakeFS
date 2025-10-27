@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 type MockDriver struct {
@@ -68,6 +68,7 @@ func TestRegister(t *testing.T) {
 		if err != nil {
 			t.Fatal("expected Store 'md'", err)
 		}
+		defer s1.Close()
 		store1, ok := s1.(*kv.StoreMetricsWrapper)
 		if !ok {
 			t.Fatal("expected StoreMetricsWrapper")

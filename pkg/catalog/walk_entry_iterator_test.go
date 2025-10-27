@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 const (
@@ -40,7 +40,7 @@ func TestWalkEntryIterator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := testutils.NewFakeWalker(iteratorTestCount, tt.max, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
 			parsedURL, _ := url.Parse(fromSourceURIWithPrefix)
-			sut, err := catalog.NewWalkEntryIterator(context.Background(), store.NewWrapper(w, parsedURL), prepend, after, continuationToken)
+			sut, err := catalog.NewWalkEntryIterator(context.Background(), block.NewWalkerWrapper(w, parsedURL), catalog.ImportPathTypePrefix, prepend, after, continuationToken)
 			require.NoError(t, err, "creating walk entry iterator")
 			require.NotNil(t, sut)
 
@@ -51,16 +51,18 @@ func TestWalkEntryIterator(t *testing.T) {
 				if i < iteratorTestCount-1 {
 					// Last entry since race condition can give inconsistent HasMore.
 					// After it's closed than HasMore must be set to false
-					require.Equal(t, catalog.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque}, sut.Marker())
+					require.Equal(t, catalog.Mark{
+						Mark: block.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque},
+					}, sut.Marker())
 				}
 			}
 			sut.Close()
 			require.NoError(t, sut.Err())
 
 			if i == iteratorTestCount {
-				require.Equal(t, catalog.Mark{LastKey: "", HasMore: false, ContinuationToken: ""}, sut.Marker())
+				require.Equal(t, catalog.Mark{Mark: block.Mark{LastKey: "", HasMore: false, ContinuationToken: ""}}, sut.Marker())
 			} else {
-				require.Equal(t, catalog.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque}, sut.Marker())
+				require.Equal(t, catalog.Mark{Mark: block.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque}}, sut.Marker())
 			}
 			require.NoError(t, sut.Err())
 		})

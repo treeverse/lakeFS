@@ -3,9 +3,9 @@ info:
   description: lakeFS HTTP API
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: lakeFS API
-  version: 0.1.0
+  version: 1.0.0
 servers:
 - description: lakeFS server endpoint
   url: /api/v1
@@ -27,10 +27,6 @@ paths:
         required: true
       responses:
         "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NextStep'
           description: communication preferences saved successfully
         "409":
           content:
@@ -44,6 +40,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: wrong setup state for this operation
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -53,7 +51,7 @@ paths:
       security: []
       summary: setup communications preferences
       tags:
-      - config
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /setup_lakefs:
@@ -66,6 +64,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetupState'
           description: lakeFS setup state
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -75,7 +75,7 @@ paths:
       security: []
       summary: check if the lakeFS installation is already set up
       tags:
-      - config
+      - internal
       x-accepts: application/json
     post:
       operationId: setup
@@ -97,13 +97,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: bad request
+          description: Bad Request
         "409":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: setup was already called
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -113,7 +115,7 @@ paths:
       security: []
       summary: setup lakeFS and create a first user
       tags:
-      - config
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /user:
@@ -158,6 +160,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -170,55 +174,47 @@ paths:
       - auth
       x-content-type: application/json
       x-accepts: application/json
-  /auth/password:
+  /auth/external/principal/login:
     post:
-      operationId: updatePassword
+      operationId: externalPrincipalLogin
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdatePasswordByToken'
-        required: true
+              $ref: '#/components/schemas/ExternalLoginInformation'
       responses:
-        "201":
-          description: successful reset
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: successful external login
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        default:
+        "403":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security:
-      - cookie_auth: []
-      summary: Update user password by reset_password token
-      tags:
-      - auth
-      x-content-type: application/json
-      x-accepts: application/json
-  /auth/password/forgot:
-    post:
-      operationId: forgotPassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ForgotPasswordRequest'
-        required: true
-      responses:
-        "204":
-          description: No content
-        "400":
+          description: Forbidden
+        "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: bad request
+          description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -226,9 +222,47 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       security: []
-      summary: forgot password request initiates the password reset process
+      summary: perform a login using an external authenticator
       tags:
+      - external
+      - experimental
       - auth
+      x-content-type: application/json
+      x-accepts: application/json
+  /sts/login:
+    post:
+      operationId: stsLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StsAuthRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: successful STS login
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: perform a login with STS
+      tags:
+      - experimental
       x-content-type: application/json
       x-accepts: application/json
   /auth/capabilities:
@@ -241,6 +275,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthCapabilities'
           description: auth capabilities
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -250,13 +286,14 @@ paths:
       security: []
       summary: list authentication capabilities supported
       tags:
-      - auth
+      - internal
       x-accepts: application/json
   /auth/users:
     get:
       operationId: listUsers
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -264,7 +301,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -296,6 +334,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -338,6 +378,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -375,6 +417,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -414,6 +458,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -428,7 +474,8 @@ paths:
     get:
       operationId: listGroups
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -436,7 +483,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -468,6 +516,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -504,6 +554,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -541,6 +593,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -580,6 +634,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -594,7 +650,8 @@ paths:
     get:
       operationId: listPolicies
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -602,7 +659,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -634,6 +692,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -677,6 +737,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -714,6 +776,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -753,6 +817,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -804,6 +870,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -826,7 +894,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -834,7 +903,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -859,13 +929,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserList'
-          description: group memeber list
+          description: group member list
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -909,6 +981,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -951,6 +1025,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -972,7 +1048,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -980,7 +1057,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1018,6 +1096,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1057,6 +1137,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1100,6 +1182,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1146,6 +1230,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1167,7 +1253,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1175,7 +1262,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1213,6 +1301,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1234,7 +1324,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1242,7 +1333,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1290,6 +1382,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1333,6 +1427,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1375,6 +1471,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1384,6 +1482,229 @@ paths:
       summary: attach policy to user
       tags:
       - auth
+      x-accepts: application/json
+  /auth/users/{userId}/external/principals:
+    delete:
+      operationId: deleteUserExternalPrincipal
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: external principal detached successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: delete external principal from user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-accepts: application/json
+    post:
+      operationId: createUserExternalPrincipal
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalPrincipalCreation'
+        required: false
+      responses:
+        "201":
+          description: external principal attached successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: attach external principal to user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+  /auth/users/{userId}/external/principals/ls:
+    get:
+      operationId: listUserExternalPrincipals
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - allowEmptyValue: true
+        description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
+      - allowEmptyValue: true
+        description: return items after this value
+        explode: true
+        in: query
+        name: after
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: how many items to return
+        explode: true
+        in: query
+        name: amount
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: -1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalPrincipalList'
+          description: external principals list
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: list user external policies attached to a user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-accepts: application/json
+  /auth/external/principals:
+    get:
+      operationId: getExternalPrincipal
+      parameters:
+      - explode: true
+        in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalPrincipal'
+          description: external principal
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: describe external principal by id
+      tags:
+      - auth
+      - external
+      - experimental
       x-accepts: application/json
   /auth/groups/{groupId}/policies:
     get:
@@ -1396,7 +1717,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1404,7 +1726,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1442,6 +1765,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1485,6 +1810,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1527,6 +1854,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1537,11 +1866,98 @@ paths:
       tags:
       - auth
       x-accepts: application/json
+  /auth/groups/{groupId}/acl:
+    get:
+      operationId: getGroupACL
+      parameters:
+      - explode: false
+        in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ACL'
+          description: ACL of group
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNoACL'
+          description: "Group not found, or group found but has no ACL"
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get ACL of group
+      tags:
+      - auth
+      x-accepts: application/json
+    post:
+      operationId: setGroupACL
+      parameters:
+      - explode: false
+        in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ACL'
+        required: true
+      responses:
+        "201":
+          description: ACL successfully changed
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: set ACL of group
+      tags:
+      - auth
+      x-content-type: application/json
+      x-accepts: application/json
   /repositories:
     get:
       operationId: listRepositories
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1549,7 +1965,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1568,6 +1985,15 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - allowEmptyValue: true
+        description: string for searching relevant entries
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -1581,6 +2007,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1635,6 +2063,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1657,6 +2087,15 @@ paths:
         schema:
           type: string
         style: simple
+      - description: Bypass read-only protection and delete the repository
+        explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       responses:
         "204":
           description: repository deleted successfully
@@ -1672,6 +2111,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1699,6 +2140,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Repository'
           description: repository
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
         "401":
           content:
             application/json:
@@ -1711,6 +2158,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1721,9 +2170,11 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
-  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
-    get:
-      operationId: otfDiff
+  /repositories/{repository}/metadata:
+    delete:
+      description: |
+        Delete specified keys from the repository's metadata.
+      operationId: deleteRepositoryMetadata
       parameters:
       - explode: false
         in: path
@@ -1732,49 +2183,353 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: false
-        in: path
-        name: left_ref
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepositoryMetadataKeys'
         required: true
-        schema:
-          type: string
-        style: simple
-      - explode: false
-        in: path
-        name: right_ref
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: a path to the table location under the specified ref.
-        explode: true
-        in: query
-        name: table_path
-        required: true
-        schema:
-          type: string
-        style: form
-      - description: the type of otf
-        explode: true
-        in: query
-        name: type
-        required: true
-        schema:
-          type: string
-        style: form
       responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OtfDiffList'
-          description: diff list
+        "204":
+          description: repository metadata keys deleted successfully
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: delete repository metadata
+      tags:
+      - internal
+      x-content-type: application/json
+      x-accepts: application/json
+    get:
+      operationId: getRepositoryMetadata
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryMetadata'
+          description: repository metadata
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get repository metadata
+      tags:
+      - repositories
+      x-accepts: application/json
+    post:
+      description: |
+        Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys.
+      operationId: setRepositoryMetadata
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepositoryMetadataSet'
+        required: true
+      responses:
+        "204":
+          description: repository metadata set successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: set repository metadata
+      tags:
+      - internal
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/settings/gc_rules:
+    delete:
+      operationId: deleteGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: deleted garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-accepts: application/json
+    get:
+      operationId: getGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionRules'
+          description: repository GC rules
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get repository GC rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GarbageCollectionRules'
+        required: true
+      responses:
+        "204":
+          description: set garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/settings/branch_protection:
+    get:
+      operationId: getBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BranchProtectionRule'
+                type: array
+          description: branch protection rules
+          headers:
+            ETag:
+              explode: false
+              schema:
+                description: ETag of the branch protection rules
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get branch protection rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "if provided, the branch protection rules will be updated only\
+          \ if the current ETag match the provided value"
+        explode: false
+        in: header
+        name: If-Match
+        required: false
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/BranchProtectionRule'
+              type: array
+        required: true
+      responses:
+        "204":
+          description: branch protection rule created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -1787,16 +2542,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: perform otf diff
       tags:
-      - experimental
-      - otf diff
+      - repositories
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/dump:
     put:
@@ -1834,15 +2590,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: "Dump repository refs (tags, commits, branches) to object store"
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       tags:
-      - refs
+      - internal
       x-accepts: application/json
   /repositories/{repository}/refs/restore:
     put:
@@ -1859,11 +2619,116 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefsDump'
+              $ref: '#/components/schemas/RefsRestore'
         required: true
       responses:
         "200":
           description: refs successfully loaded
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
+      tags:
+      - internal
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/dump:
+    get:
+      operationId: dumpStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: task_id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryDumpStatus'
+          description: dump task status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Status of a repository dump task
+      tags:
+      - repositories
+      x-accepts: application/json
+    post:
+      operationId: dumpSubmit
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfo'
+          description: dump task information
         "400":
           content:
             application/json:
@@ -1888,9 +2753,122 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: "Restore repository refs (tags, commits, branches) from object store"
+      summary: "Backup the repository metadata (tags, commits, branches) and save\
+        \ the backup to the object store."
       tags:
-      - refs
+      - repositories
+      x-accepts: application/json
+  /repositories/{repository}/restore:
+    get:
+      operationId: restoreStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: task_id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryRestoreStatus'
+          description: restore task status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Status of a restore request
+      tags:
+      - repositories
+      x-accepts: application/json
+    post:
+      operationId: restoreSubmit
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefsRestore'
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfo'
+          description: restore task created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Restore repository from a dump in the object store
+      tags:
+      - repositories
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/tags:
@@ -1904,7 +2882,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1912,7 +2891,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1950,6 +2930,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -1995,6 +2977,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2007,6 +2995,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2036,6 +3026,13 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "204":
           description: tag deleted successfully
@@ -2045,12 +3042,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2097,6 +3102,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2118,7 +3125,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -2126,7 +3134,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -2144,6 +3153,15 @@ paths:
           maximum: 1000
           minimum: -1
           type: integer
+        style: form
+      - explode: true
+        in: query
+        name: show_hidden
+        required: false
+        schema:
+          default: false
+          description: When set - list all branches including hidden branches. *EXPERIMENTAL*
+          type: boolean
         style: form
       responses:
         "200":
@@ -2164,6 +3182,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2209,6 +3229,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2221,6 +3247,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2250,7 +3278,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -2298,6 +3327,37 @@ paths:
         schema:
           type: boolean
         style: form
+      - description: "if set to true, follow only the first parent upon reaching a\
+          \ merge commit"
+        explode: true
+        in: query
+        name: first_parent
+        required: false
+        schema:
+          type: boolean
+        style: form
+      - allowEmptyValue: true
+        description: "Show commits more recent than a specific date-time. In case\
+          \ used with stop_at parameter, will stop at the first commit that meets\
+          \ any of the conditions."
+        explode: true
+        in: query
+        name: since
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - allowEmptyValue: true
+        description: "A reference to stop at. In case used with since parameter, will\
+          \ stop at the first commit that meets any of the conditions."
+        explode: true
+        in: query
+        name: stop_at
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -2317,6 +3377,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2329,74 +3391,6 @@ paths:
       - refs
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/commits:
-    get:
-      deprecated: true
-      operationId: logBranchCommits
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      - explode: false
-        in: path
-        name: branch
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: return items after this value
-        explode: true
-        in: query
-        name: after
-        required: false
-        schema:
-          type: string
-        style: form
-      - description: how many items to return
-        explode: true
-        in: query
-        name: amount
-        required: false
-        schema:
-          default: 100
-          maximum: 1000
-          minimum: -1
-          type: integer
-        style: form
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommitList'
-          description: commit log
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: |
-        get commit log from branch.
-        Deprecated: replaced by logCommits by passing branch name as ref
-      tags:
-      - commits
-      x-accepts: application/json
     post:
       operationId: commit
       parameters:
@@ -2460,21 +3454,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        default:
+        "409":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Internal Server Error
+          description: Resource Conflicts With Target
         "412":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
       summary: create commit
       tags:
       - commits
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/commits:
+    post:
+      operationId: CreateCommitRecord
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitRecordCreation'
+        required: true
+      responses:
+        "204":
+          description: commit record created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: create commit record
+      tags:
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}:
@@ -2495,6 +3554,14 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       responses:
         "204":
           description: branch deleted successfully
@@ -2516,6 +3583,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2562,6 +3631,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2598,18 +3669,32 @@ paths:
       responses:
         "204":
           description: reset successful
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2620,6 +3705,81 @@ paths:
       tags:
       - branches
       x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/hard_reset:
+    put:
+      description: Relocate branch to refer to ref.  Branch must not contain uncommitted
+        data.
+      operationId: hardResetBranch
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "After reset, branch will point at this reference."
+        explode: true
+        in: query
+        name: ref
+        required: true
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      responses:
+        "204":
+          description: reset successful
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: hard reset branch
+      tags:
+      - experimental
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/revert:
     post:
@@ -2660,6 +3820,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2672,6 +3838,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Conflict Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2726,6 +3894,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2738,13 +3912,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Conflict Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Cherry-Pick the given reference commit into the given branch
+      summary: Replay the changes from the given commit on the branch
       tags:
       - branches
       x-content-type: application/json
@@ -2801,6 +3977,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2887,6 +4065,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: precondition failed (e.g. a pre-merge hook returned a failure)
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -2902,7 +4082,8 @@ paths:
     get:
       operationId: diffBranch
       parameters:
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -2921,7 +4102,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -2929,7 +4111,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -2970,6 +4153,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3008,7 +4193,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -3027,7 +4213,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -3035,7 +4222,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -3053,6 +4241,16 @@ paths:
           - two_dot
           - three_dot
           type: string
+        style: form
+      - description: "If set to true, the diff will include right-side object stats.\
+          \ *EXPERIMENTAL*"
+        explode: true
+        in: query
+        name: include_right_stats
+        required: false
+        schema:
+          default: false
+          type: boolean
         style: form
       responses:
         "200":
@@ -3073,6 +4271,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3120,6 +4320,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3165,6 +4367,16 @@ paths:
         required: false
         schema:
           pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
+          type: string
+        style: simple
+      - description: Returns response only if the object does not have a matching
+          ETag
+        example: 33a64df551425fcc55e4d42a148795d9f25f89d4
+        explode: false
+        in: header
+        name: If-None-Match
+        required: false
+        schema:
           type: string
         style: simple
       - explode: true
@@ -3237,6 +4449,14 @@ paths:
               schema:
                 type: string
               style: simple
+        "304":
+          description: Content not modified
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3249,12 +4469,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
         "410":
           content:
             application/json:
@@ -3267,6 +4481,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Requested Range Not Satisfiable
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
       summary: get object content
       tags:
       - objects
@@ -3352,6 +4574,8 @@ paths:
               schema:
                 type: string
               style: simple
+        "400":
+          description: Bad Request
         "401":
           description: Unauthorized
         "404":
@@ -3360,11 +4584,405 @@ paths:
           description: object expired
         "416":
           description: Requested Range Not Satisfiable
+        "429":
+          description: too many requests
         default:
           description: internal server error
       summary: check if object exists
       tags:
       - objects
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu:
+    post:
+      description: |
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional).
+        Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation.
+        For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
+      operationId: createPresignMultipartUpload
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      - description: number of presigned URL parts required to upload
+        explode: true
+        in: query
+        name: parts
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignMultipartUpload'
+          description: Presign multipart upload initiated
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Initiate a multipart upload
+      tags:
+      - experimental
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}:
+    delete:
+      description: Aborts a presign multipart upload.
+      operationId: abortPresignMultipartUpload
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbortPresignMultipartUpload'
+      responses:
+        "204":
+          description: Presign multipart upload aborted
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Abort a presign multipart upload
+      tags:
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+    put:
+      description: Completes a presign multipart upload by assembling the uploaded
+        parts.
+      operationId: completePresignMultipartUpload
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletePresignMultipartUpload'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+          description: Presign multipart upload completed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StagingLocation'
+          description: "conflict with a commit, try here"
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Complete a presign multipart upload request
+      tags:
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}:
+    put:
+      description: Return a presigned URL to upload into a presigned multipart upload.
+      operationId: uploadPart
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: partNumber
+        required: true
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadPartFrom'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadTo'
+          description: presigned URL to use for upload
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy:
+    put:
+      description: Upload a part by copying part of another object.
+      operationId: uploadPartCopy
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: partNumber
+        required: true
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadPartCopyFrom'
+        required: true
+      responses:
+        "204":
+          description: part copied
+          headers:
+            ETag:
+              explode: false
+              schema:
+                description: "ETag of the uploaded part, pass in completion"
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - experimental
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/staging/backing:
     get:
@@ -3418,26 +5036,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: get a physical address and a return token to write object to underlying
-        storage
+      summary: generate an address to which the client can upload an object
       tags:
       - staging
       x-accepts: application/json
     put:
       description: |
-        If the supplied token matches the current staging token, associate the object as the
-        physical address with the supplied path.
-
-        Otherwise, if staging has been committed and the token has expired, return a conflict
-        and hint where to place the object to try again.  Caller should copy the object to the
-        new physical address and PUT again with the new staging token.  (No need to back off,
-        this is due to losing the race against a concurrent commit operation.)
+        Link the physical address with the path in lakeFS, creating an uncommitted change.
+        The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace.
       operationId: linkPhysicalAddress
       parameters:
       - explode: false
@@ -3462,6 +5076,16 @@ paths:
         schema:
           type: string
         style: form
+      - description: Set to "*" to atomically allow the upload only if the key has
+          no object yet. Other values are not supported.
+        example: '*'
+        explode: false
+        in: header
+        name: If-None-Match
+        required: false
+        schema:
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
@@ -3487,6 +5111,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3499,6 +5129,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/StagingLocation'
           description: "conflict with a commit, try here"
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3510,9 +5148,9 @@ paths:
       - staging
       x-content-type: application/json
       x-accepts: application/json
-  /repositories/{repository}/branches/metaranges:
-    post:
-      operationId: createMetaRange
+  /repositories/{repository}/branches/{branch}/import:
+    delete:
+      operationId: importCancel
       parameters:
       - explode: false
         in: path
@@ -3521,19 +5159,146 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: import canceled successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: cancel ongoing import
+      tags:
+      - import
+      x-accepts: application/json
+    get:
+      operationId: importStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportStatus'
+          description: import status
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get import status
+      tags:
+      - import
+      x-accepts: application/json
+    post:
+      operationId: importStart
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MetaRangeCreation'
+              $ref: '#/components/schemas/ImportCreation'
         required: true
       responses:
-        "201":
+        "202":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MetaRangeCreationResponse'
-          description: metarange metadata
+                $ref: '#/components/schemas/ImportCreationResponse'
+          description: Import started
         "400":
           content:
             application/json:
@@ -3558,20 +5323,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: create a lakeFS metarange file from the given ranges
+      summary: import data from object store
       tags:
       - import
       x-content-type: application/json
       x-accepts: application/json
-  /repositories/{repository}/branches/ranges:
-    post:
-      operationId: ingestRange
+  /repositories/{repository}/branches/{branch}/objects/stage_allowed:
+    get:
+      operationId: uploadObjectPreflight
       parameters:
       - explode: false
         in: path
@@ -3580,47 +5347,54 @@ paths:
         schema:
           type: string
         style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StageRangeCreation'
+      - explode: false
+        in: path
+        name: branch
         required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
       responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IngestRangeCreationResponse'
-          description: range metadata
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
+        "204":
+          description: User has permissions to upload this object. This does not guarantee
+            that the upload will be successful or even possible. It indicates only
+            the permission at the time of calling this endpoint
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: create a lakeFS range file from the source uri
       tags:
-      - import
-      x-content-type: application/json
+      - internal
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects:
     delete:
@@ -3648,6 +5422,23 @@ paths:
         schema:
           type: string
         style: form
+      - explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      - description: delete entry without tombstone when possible *EXPERIMENTAL*
+        explode: true
+        in: query
+        name: no_tombstone
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       responses:
         "204":
           description: object deleted successfully
@@ -3669,6 +5460,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3704,29 +5497,43 @@ paths:
         schema:
           type: string
         style: form
-      - explode: true
-        in: query
-        name: storageClass
-        required: false
-        schema:
-          type: string
-        style: form
-      - description: Currently supports only "*" to allow uploading an object only
-          if one doesn't exist yet
+      - description: Set to "*" to atomically allow the upload only if the key has
+          no object yet. Other values are not supported.
         example: '*'
         explode: false
         in: header
         name: If-None-Match
         required: false
         schema:
-          pattern: ^\*$
           type: string
         style: simple
+      - deprecated: true
+        description: "Deprecated, this capability will not be supported in future\
+          \ releases."
+        explode: true
+        in: query
+        name: storageClass
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       requestBody:
         content:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/uploadObject_request'
+          application/octet-stream:
+            schema:
+              format: binary
+              type: string
       responses:
         "201":
           content:
@@ -3764,6 +5571,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3776,6 +5585,7 @@ paths:
       x-content-type: multipart/form-data
       x-accepts: application/json
     put:
+      deprecated: true
       operationId: stageObject
       parameters:
       - explode: false
@@ -3825,12 +5635,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3839,7 +5657,7 @@ paths:
           description: Internal Server Error
       summary: stage an object's metadata for the given branch
       tags:
-      - objects
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/delete:
@@ -3860,6 +5678,23 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      - description: delete entry without tombstone when possible *EXPERIMENTAL*
+        explode: true
+        in: query
+        name: no_tombstone
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       requestBody:
         content:
           application/json:
@@ -3891,6 +5726,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -3954,12 +5791,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4032,17 +5877,93 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "410":
+          description: object gone (but partial metadata may be available)
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-        "410":
-          description: object gone (but partial metadata may be available)
       summary: get object metadata
       tags:
       - objects
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/stat/user_metadata:
+    put:
+      operationId: updateObjectUserMetadata
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: branch to update
+        explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: path to object relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateObjectUserMetadata'
+        required: true
+      responses:
+        "201":
+          description: User metadata updated
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: rewrite (all) object metadata
+      tags:
+      - objects
+      - experimental
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/underlyingProperties:
     get:
@@ -4090,6 +6011,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4134,7 +6057,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -4153,7 +6077,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -4161,7 +6086,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -4188,6 +6114,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4243,6 +6171,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4251,7 +6181,7 @@ paths:
           description: Internal Server Error
       summary: creates symlink files corresponding to the given directory
       tags:
-      - metadata
+      - internal
       x-accepts: application/json
   /repositories/{repository}/actions/runs:
     get:
@@ -4264,7 +6194,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -4283,14 +6214,16 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: branch
         required: false
         schema:
           type: string
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: commit
         required: false
@@ -4316,6 +6249,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4363,6 +6298,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4391,7 +6328,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -4429,6 +6367,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4484,6 +6424,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4493,6 +6435,88 @@ paths:
       summary: get run hook output
       tags:
       - actions
+      x-accepts: application/json
+  /repositories/{repository}/metadata/object/{type}/{object_id}:
+    get:
+      operationId: getMetadataObject
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: object_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: type
+        required: true
+        schema:
+          enum:
+          - range
+          - meta_range
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
+        style: form
+      responses:
+        "200":
+          content:
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
+          description: object content
+          headers:
+            Content-Length:
+              explode: false
+              schema:
+                format: int64
+                type: integer
+              style: simple
+        "302":
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: return a lakeFS metadata object by ID
+      tags:
+      - internal
       x-accepts: application/json
   /repositories/{repository}/metadata/meta_range/{meta_range}:
     get:
@@ -4538,6 +6562,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4592,6 +6618,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4602,9 +6630,49 @@ paths:
       tags:
       - metadata
       x-accepts: application/json
+  /repositories/{repository}/gc/rules/set_allowed:
+    get:
+      operationId: setGarbageCollectionRulesPreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: User has permissions to set garbage collection rules on this
+            repository
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - internal
+      x-accepts: application/json
   /repositories/{repository}/gc/rules:
     delete:
-      operationId: delete garbage collection rules
+      deprecated: true
+      description: Deprecated; use deleteGCRules.
+      operationId: internalDeleteGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4628,6 +6696,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4635,10 +6705,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     get:
-      operationId: getGarbageCollectionRules
+      deprecated: true
+      description: Deprecated; use getGCRules.
+      operationId: internalGetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4666,6 +6738,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4673,10 +6747,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     post:
-      operationId: set garbage collection rules
+      deprecated: true
+      description: Deprecated; use setGCRules.
+      operationId: internalSetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4706,6 +6782,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4713,7 +6791,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_commits:
@@ -4727,11 +6805,6 @@ paths:
         schema:
           type: string
         style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GarbageCollectionPrepareRequest'
       responses:
         "201":
           content:
@@ -4745,22 +6818,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: save lists of active and expired commits for garbage collection
+      summary: save lists of active commits for garbage collection
       tags:
-      - retention
-      x-content-type: application/json
+      - internal
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_uncommited:
     post:
@@ -4797,12 +6877,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4811,12 +6899,57 @@ paths:
           description: Internal Server Error
       summary: save repository uncommitted metadata for garbage collection
       tags:
-      - retention
+      - internal
       x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branch_protection/set_allowed:
+    get:
+      operationId: createBranchProtectionRulePreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: User has permissions to create a branch protection rule in
+            this repository
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - internal
       x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
-      operationId: deleteBranchProtectionRule
+      deprecated: true
+      operationId: internalDeleteBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -4829,7 +6962,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/deleteBranchProtectionRule_request'
+              $ref: '#/components/schemas/internalDeleteBranchProtectionRule_request'
         required: true
       responses:
         "204":
@@ -4846,6 +6979,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4853,11 +6988,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-content-type: application/json
       x-accepts: application/json
     get:
-      operationId: getBranchProtectionRules
+      deprecated: true
+      operationId: internalGetBranchProtectionRules
       parameters:
       - explode: false
         in: path
@@ -4887,6 +7023,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4895,10 +7033,11 @@ paths:
           description: Internal Server Error
       summary: get branch protection rules
       tags:
-      - repositories
+      - internal
       x-accepts: application/json
     post:
-      operationId: createBranchProtectionRule
+      deprecated: true
+      operationId: internalCreateBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -4928,6 +7067,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -4935,8 +7076,359 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/pulls:
+    get:
+      operationId: listPullRequests
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - allowEmptyValue: true
+        description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
+      - allowEmptyValue: true
+        description: return items after this value
+        explode: true
+        in: query
+        name: after
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: how many items to return
+        explode: true
+        in: query
+        name: amount
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: -1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          default: all
+          description: filter pull requests by status
+          enum:
+          - open
+          - closed
+          - all
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullRequestsList'
+          description: list of pull requests
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: list pull requests
+      tags:
+      - pulls
+      - experimental
+      x-accepts: application/json
+    post:
+      operationId: createPullRequest
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PullRequestCreation'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullRequestCreationResponse'
+          description: pull request created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: create pull request
+      tags:
+      - pulls
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/pulls/{pull_request}:
+    get:
+      operationId: getPullRequest
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: pull request id
+        explode: false
+        in: path
+        name: pull_request
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullRequest'
+          description: pull request
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get pull request
+      tags:
+      - pulls
+      - experimental
+      x-accepts: application/json
+    patch:
+      operationId: updatePullRequest
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: pull request id
+        explode: false
+        in: path
+        name: pull_request
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PullRequestBasic'
+        required: true
+      responses:
+        "200":
+          description: pull request updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: update pull request
+      tags:
+      - pulls
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/pulls/{pull_request}/merge:
+    put:
+      operationId: mergePullRequest
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: pull request id
+        explode: false
+        in: path
+        name: pull_request
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+          description: merge completed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+          description: |
+            Conflict
+            Deprecated: content schema will return Error format and not an empty MergeResult
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: precondition failed (e.g. a pre-merge hook returned a failure)
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: merge pull request
+      tags:
+      - pulls
+      - experimental
       x-accepts: application/json
   /healthcheck:
     get:
@@ -4949,8 +7441,29 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
+  /config:
+    get:
+      description: retrieve lakeFS configuration
+      operationId: getConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: lakeFS configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /config/version:
     get:
+      deprecated: true
       description: get version of lakeFS server
       operationId: getLakeFSVersion
       responses:
@@ -4967,10 +7480,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/storage:
     get:
+      deprecated: true
       description: retrieve lakeFS storage configuration
       operationId: getStorageConfig
       responses:
@@ -4987,7 +7501,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/garbage-collection:
     get:
@@ -5007,61 +7521,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
-      x-accepts: application/json
-  /templates/{template_location}:
-    get:
-      description: fetch and expand template
-      operationId: expandTemplate
-      parameters:
-      - description: URL of the template; must be relative (to a URL configured on
-          the server).
-        example: spark.submit.conf.tt
-        explode: false
-        in: path
-        name: template_location
-        required: true
-        schema:
-          type: string
-        style: simple
-      - explode: true
-        in: query
-        name: params
-        required: false
-        schema:
-          additionalProperties:
-            type: string
-          example:
-            lakefs_url: https://lakefs.example.com
-          type: object
-        style: form
-      responses:
-        "200":
-          content:
-            '*/*':
-              schema:
-                format: binary
-          description: expanded template
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      tags:
-      - templates
+      - internal
       x-accepts: application/json
   /statistics:
     post:
@@ -5080,13 +7540,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: bad request
+          description: Bad Request
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "429":
+          description: too many requests
         default:
           content:
             application/json:
@@ -5095,12 +7557,107 @@ paths:
           description: Internal Server Error
       summary: "post stats events, this endpoint is meant for internal use only"
       tags:
-      - statistics
+      - internal
       x-content-type: application/json
+      x-accepts: application/json
+  /usage-report/summary:
+    get:
+      operationId: getUsageReportSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallationUsageReport'
+            application/text:
+              schema:
+                type: string
+          description: Usage report
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get usage report summary
+      tags:
+      - internal
+      x-accepts: application/json
+  /license:
+    get:
+      description: retrieve lakeFS license information
+      operationId: getLicense
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/License'
+          description: lakeFS configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - license
+      - experimental
+      x-accepts: application/json
+  /oidc/callback:
+    get:
+      operationId: oauthCallback
+      responses:
+        "302":
+          description: successfully got token
+        "401":
+          description: failed to exchange authorization code for token
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      tags:
+      - auth
       x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
+      allowEmptyValue: true
       description: return items prefixed with this value
       explode: true
       in: query
@@ -5110,6 +7667,7 @@ components:
         type: string
       style: form
     PaginationAfter:
+      allowEmptyValue: true
       description: return items after this value
       explode: true
       in: query
@@ -5131,6 +7689,7 @@ components:
         type: integer
       style: form
     PaginationDelimiter:
+      allowEmptyValue: true
       description: delimiter used to group common prefixes by
       explode: true
       in: query
@@ -5139,7 +7698,44 @@ components:
       schema:
         type: string
       style: form
+    SearchString:
+      allowEmptyValue: true
+      description: string for searching relevant entries
+      explode: true
+      in: query
+      name: search
+      required: false
+      schema:
+        type: string
+      style: form
+    IfNoneMatch:
+      description: Set to "*" to atomically allow the upload only if the key has no
+        object yet. Other values are not supported.
+      example: '*'
+      explode: false
+      in: header
+      name: If-None-Match
+      required: false
+      schema:
+        type: string
+      style: simple
+    NoTombstone:
+      description: delete entry without tombstone when possible *EXPERIMENTAL*
+      explode: true
+      in: query
+      name: no_tombstone
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
   responses:
+    NotFoundOrNoACL:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorNoACL'
+      description: "Group not found, or group found but has no ACL"
     Unauthorized:
       content:
         application/json:
@@ -5170,6 +7766,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Precondition Failed
+    BadRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Bad Request
     Forbidden:
       content:
         application/json:
@@ -5182,6 +7784,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Validation Error
+    NotImplemented:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Not Implemented
   schemas:
     Pagination:
       example:
@@ -5210,27 +7818,10 @@ components:
       - next_offset
       - results
       type: object
-    ImportPagination:
-      example:
-        continuation_token: continuation_token
-        has_more: true
-        last_key: last_key
-      properties:
-        has_more:
-          description: More keys to be ingested.
-          type: boolean
-        continuation_token:
-          description: Opaque. Token used to import the next range.
-          type: string
-        last_key:
-          description: Last object store key that was ingested.
-          type: string
-      required:
-      - has_more
-      - last_key
-      type: object
     Repository:
       example:
+        read_only: true
+        storage_id: storage_id
         default_branch: default_branch
         id: id
         creation_date: 0
@@ -5244,14 +7835,51 @@ components:
           type: integer
         default_branch:
           type: string
+        storage_id:
+          description: Unique identifier of the underlying data store. *EXPERIMENTAL*
+          type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
           type: string
+        read_only:
+          description: Whether the repository is a read-only repository- not relevant
+            for bare repositories
+          type: boolean
       required:
       - creation_date
       - default_branch
       - id
       - storage_namespace
+      type: object
+    RepositoryMetadata:
+      additionalProperties:
+        type: string
+      type: object
+    RepositoryMetadataSet:
+      example:
+        metadata:
+          key: metadata
+      properties:
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - metadata
+      type: object
+    RepositoryMetadataKeys:
+      example:
+        keys:
+        - keys
+        - keys
+      properties:
+        keys:
+          items:
+            description: metadata key
+            type: string
+          type: array
+      required:
+      - keys
       type: object
     RepositoryList:
       example:
@@ -5261,11 +7889,15 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - default_branch: default_branch
+        - read_only: true
+          storage_id: storage_id
+          default_branch: default_branch
           id: id
           creation_date: 0
           storage_namespace: storage_namespace
-        - default_branch: default_branch
+        - read_only: true
+          storage_id: storage_id
+          default_branch: default_branch
           id: id
           creation_date: 0
           storage_namespace: storage_namespace
@@ -5300,41 +7932,10 @@ components:
       - destination_commit_id
       - source_commit_id
       type: object
-    MergeResultSummary:
-      example:
-        removed: 6
-        added: 0
-        changed: 1
-        conflict: 5
-      properties:
-        added:
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-          type: integer
-        removed:
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-          type: integer
-        changed:
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-          type: integer
-        conflict:
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-          type: integer
-      type: object
     MergeResult:
       example:
-        summary:
-          removed: 6
-          added: 0
-          changed: 1
-          conflict: 5
         reference: reference
       properties:
-        summary:
-          $ref: '#/components/schemas/MergeResultSummary'
         reference:
           type: string
       required:
@@ -5342,12 +7943,18 @@ components:
       type: object
     RepositoryCreation:
       example:
+        sample_data: true
+        read_only: true
+        storage_id: storage_id
         name: name
         default_branch: main
         storage_namespace: s3://example-bucket/
       properties:
         name:
           pattern: "^[a-z0-9][a-z0-9-]{2,62}$"
+          type: string
+        storage_id:
+          description: Unique identifier of the underlying data store. *EXPERIMENTAL*
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
@@ -5357,6 +7964,14 @@ components:
         default_branch:
           example: main
           type: string
+        sample_data:
+          default: false
+          example: true
+          type: boolean
+        read_only:
+          default: false
+          example: true
+          type: boolean
       required:
       - name
       - storage_namespace
@@ -5375,17 +7990,44 @@ components:
       required:
       - paths
       type: object
+    DiffObjectStat:
+      example:
+        metadata:
+          key: metadata
+        content_type: content_type
+        checksum: checksum
+        mtime: 6
+      properties:
+        checksum:
+          type: string
+        mtime:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        content_type:
+          description: Object media type
+          type: string
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - checksum
+      - content_type
+      - mtime
+      type: object
     ObjectStats:
       example:
         physical_address: physical_address
         path: path
         metadata:
           key: metadata
-        size_bytes: 0
+        size_bytes: 6
         content_type: content_type
+        physical_address_expiry: 0
         checksum: checksum
         path_type: common_prefix
-        mtime: 6
+        mtime: 1
       properties:
         path:
           type: string
@@ -5400,9 +8042,23 @@ components:
             Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
             Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
           type: string
+        physical_address_expiry:
+          description: |
+            If present and nonzero, physical_address is a pre-signed URL and
+            will expire at this Unix Epoch time.  This will be shorter than
+            the pre-signed URL lifetime if an authentication token is about
+            to expire.
+
+            This field is *optional*.
+          format: int64
+          type: integer
         checksum:
           type: string
         size_bytes:
+          description: |
+            The number of bytes in the object.  lakeFS always populates this
+            field when returning ObjectStats.  This field is optional _for
+            the client_ to supply, for instance on upload.
           format: int64
           type: integer
         mtime:
@@ -5435,20 +8091,22 @@ components:
           path: path
           metadata:
             key: metadata
-          size_bytes: 0
+          size_bytes: 6
           content_type: content_type
+          physical_address_expiry: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 6
+          mtime: 1
         - physical_address: physical_address
           path: path
           metadata:
             key: metadata
-          size_bytes: 0
+          size_bytes: 6
           content_type: content_type
+          physical_address_expiry: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 6
+          mtime: 1
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -5460,8 +8118,21 @@ components:
       - pagination
       - results
       type: object
+    UpdateObjectUserMetadata:
+      example:
+        set:
+          key: set
+      properties:
+        set:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - set
+      type: object
     ObjectCopyCreation:
       example:
+        force: false
         src_path: src_path
         src_ref: src_ref
       properties:
@@ -5471,6 +8142,9 @@ components:
         src_ref:
           description: "a reference, if empty uses the provided branch as ref"
           type: string
+        force:
+          default: false
+          type: boolean
       required:
       - src_path
       type: object
@@ -5482,6 +8156,7 @@ components:
         size_bytes: 0
         content_type: content_type
         checksum: checksum
+        force: false
         mtime: 6
       properties:
         physical_address:
@@ -5502,6 +8177,9 @@ components:
         content_type:
           description: Object media type
           type: string
+        force:
+          default: false
+          type: boolean
       required:
       - checksum
       - physical_address
@@ -5560,6 +8238,12 @@ components:
         path: path
         size_bytes: 0
         path_type: common_prefix
+        right:
+          metadata:
+            key: metadata
+          content_type: content_type
+          checksum: checksum
+          mtime: 6
         type: added
       properties:
         type:
@@ -5581,6 +8265,8 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
           type: integer
+        right:
+          $ref: '#/components/schemas/DiffObjectStat'
       required:
       - path
       - path_type
@@ -5597,10 +8283,22 @@ components:
         - path: path
           size_bytes: 0
           path_type: common_prefix
+          right:
+            metadata:
+              key: metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           type: added
         - path: path
           size_bytes: 0
           path_type: common_prefix
+          right:
+            metadata:
+              key: metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           type: added
       properties:
         pagination:
@@ -5613,71 +8311,14 @@ components:
       - pagination
       - results
       type: object
-    OtfDiffEntry:
-      example:
-        operation_content: "{}"
-        operation_type: create
-        id: id
-        operation: operation
-        timestamp: 0
-      properties:
-        id:
-          type: string
-        timestamp:
-          type: integer
-        operation:
-          type: string
-        operation_content:
-          description: free form content describing the returned operation diff
-          type: object
-        operation_type:
-          description: the operation category (CUD)
-          enum:
-          - create
-          - update
-          - delete
-          type: string
-      required:
-      - id
-      - operation
-      - operation_content
-      - operation_type
-      - timestamp
-      type: object
-    OtfDiffList:
-      example:
-        diff_type: created
-        results:
-        - operation_content: "{}"
-          operation_type: create
-          id: id
-          operation: operation
-          timestamp: 0
-        - operation_content: "{}"
-          operation_type: create
-          id: id
-          operation: operation
-          timestamp: 0
-      properties:
-        diff_type:
-          enum:
-          - created
-          - dropped
-          - changed
-          type: string
-        results:
-          items:
-            $ref: '#/components/schemas/OtfDiffEntry'
-          type: array
-      required:
-      - results
-      type: object
     ResetCreation:
       example:
         path: path
+        force: false
         type: object
       properties:
         type:
+          description: What to reset according to path.
           enum:
           - object
           - common_prefix
@@ -5685,43 +8326,87 @@ components:
           type: string
         path:
           type: string
+        force:
+          default: false
+          type: boolean
       required:
       - type
       type: object
+    CommitOverrides:
+      example:
+        metadata:
+          key: metadata
+        message: message
+      properties:
+        message:
+          description: replace the commit message
+          type: string
+        metadata:
+          additionalProperties:
+            type: string
+          description: replace the metadata of the commit
+          type: object
+      type: object
     RevertCreation:
       example:
+        commit_overrides:
+          metadata:
+            key: metadata
+          message: message
         ref: ref
         parent_number: 0
+        force: false
+        allow_empty: false
       properties:
         ref:
           description: "the commit to revert, given by a ref"
           type: string
+        commit_overrides:
+          $ref: '#/components/schemas/CommitOverrides'
         parent_number:
           description: "when reverting a merge commit, the parent number (starting\
             \ from 1) relative to which to perform the revert."
           type: integer
+        force:
+          default: false
+          type: boolean
+        allow_empty:
+          default: false
+          description: allow empty commit (revert without changes)
+          type: boolean
       required:
       - parent_number
       - ref
       type: object
     CherryPickCreation:
       example:
+        commit_overrides:
+          metadata:
+            key: metadata
+          message: message
         ref: ref
         parent_number: 0
+        force: false
       properties:
         ref:
           description: "the commit to cherry-pick, given by a ref"
           type: string
         parent_number:
           description: |
-            when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff.
-            The destination branch is parent 1, which is the default behaviour.
+            When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff.
+            The default branch is parent 1.
           type: integer
+        commit_overrides:
+          $ref: '#/components/schemas/CommitOverrides'
+        force:
+          default: false
+          type: boolean
       required:
       - ref
       type: object
     Commit:
       example:
+        generation: 6
         metadata:
           key: metadata
         committer: committer
@@ -5729,6 +8414,7 @@ components:
         creation_date: 0
         meta_range_id: meta_range_id
         message: message
+        version: 0
         parents:
         - parents
         - parents
@@ -5753,6 +8439,13 @@ components:
           additionalProperties:
             type: string
           type: object
+        generation:
+          format: int64
+          type: integer
+        version:
+          maximum: 1
+          minimum: 0
+          type: integer
       required:
       - committer
       - creation_date
@@ -5769,23 +8462,27 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - metadata:
+        - generation: 6
+          metadata:
             key: metadata
           committer: committer
           id: id
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 0
           parents:
           - parents
           - parents
-        - metadata:
+        - generation: 6
+          metadata:
             key: metadata
           committer: committer
           id: id
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 0
           parents:
           - parents
           - parents
@@ -5805,7 +8502,9 @@ components:
         date: 0
         metadata:
           key: metadata
+        force: false
         message: message
+        allow_empty: false
       properties:
         message:
           type: string
@@ -5818,15 +8517,89 @@ components:
             in seconds)
           format: int64
           type: integer
+        allow_empty:
+          default: false
+          description: sets whether a commit can contain no changes
+          type: boolean
+        force:
+          default: false
+          type: boolean
       required:
       - message
+      type: object
+    CommitRecordCreation:
+      example:
+        generation: 1
+        metadata:
+          key: metadata
+        committer: committer
+        metarange_id: metarange_id
+        force: false
+        creation_date: 6
+        message: message
+        commit_id: commit_id
+        version: 0
+        parents:
+        - parents
+        - parents
+      properties:
+        commit_id:
+          description: id of the commit record
+          type: string
+        version:
+          description: version of the commit record
+          maximum: 1
+          minimum: 0
+          type: integer
+        committer:
+          description: committer of the commit record
+          type: string
+        message:
+          description: message of the commit record
+          type: string
+        metarange_id:
+          description: metarange_id of the commit record
+          type: string
+        creation_date:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        parents:
+          description: parents of the commit record
+          items:
+            type: string
+          type: array
+        metadata:
+          additionalProperties:
+            type: string
+          description: metadata of the commit record
+          type: object
+        generation:
+          description: generation of the commit record
+          format: int64
+          type: integer
+        force:
+          default: false
+          type: boolean
+      required:
+      - commit_id
+      - committer
+      - creation_date
+      - generation
+      - message
+      - metarange_id
+      - parents
+      - version
       type: object
     Merge:
       example:
         metadata:
           key: metadata
+        squash_merge: false
+        force: false
         message: message
         strategy: strategy
+        allow_empty: false
       properties:
         message:
           type: string
@@ -5840,32 +8613,127 @@ components:
             \ or from the source branch('source-wins'). In case no selection is made,\
             \ the merge process will fail in case of a conflict"
           type: string
+        force:
+          default: false
+          description: Allow merge into a read-only branch or into a branch with the
+            same content
+          type: boolean
+        allow_empty:
+          default: false
+          description: Allow merge when the branches have the same content
+          type: boolean
+        squash_merge:
+          default: false
+          description: |
+            If set, set only the destination branch as a parent, which "squashes" the merge to
+            appear as a single commit on the destination branch.  The source commit is no longer
+            a part of the merge commit; consider adding it to the 'metadata' or 'message'
+            fields.  This behaves like a GitHub or GitLab "squash merge", or in Git terms 'git
+            merge --squash; git commit ...'.
+          type: boolean
       type: object
     BranchCreation:
       example:
+        hidden: false
         name: name
+        force: false
         source: source
       properties:
         name:
           type: string
         source:
           type: string
+        force:
+          default: false
+          type: boolean
+        hidden:
+          default: false
+          description: "When set, branch will not show up when listing branches by\
+            \ default. *EXPERIMENTAL*"
+          type: boolean
       required:
       - name
       - source
       type: object
     TagCreation:
+      description: Make tag ID point at this REF.
       example:
         ref: ref
+        force: false
         id: id
       properties:
         id:
+          description: ID of tag to create
           type: string
         ref:
+          description: the commit to tag
           type: string
+        force:
+          default: false
+          type: boolean
       required:
       - id
       - ref
+      type: object
+    TaskInfo:
+      example:
+        id: id
+      properties:
+        id:
+          description: ID of the task
+          type: string
+      required:
+      - id
+      type: object
+    RepositoryDumpStatus:
+      example:
+        update_time: 2000-01-23T04:56:07.000+00:00
+        refs:
+          tags_meta_range_id: tags_meta_range_id
+          branches_meta_range_id: branches_meta_range_id
+          commits_meta_range_id: commits_meta_range_id
+        id: id
+        error: error
+        done: true
+      properties:
+        id:
+          description: ID of the task
+          type: string
+        done:
+          type: boolean
+        update_time:
+          format: date-time
+          type: string
+        error:
+          type: string
+        refs:
+          $ref: '#/components/schemas/RefsDump'
+      required:
+      - done
+      - id
+      - update_time
+      type: object
+    RepositoryRestoreStatus:
+      example:
+        update_time: 2000-01-23T04:56:07.000+00:00
+        id: id
+        error: error
+        done: true
+      properties:
+        id:
+          description: ID of the task
+          type: string
+        done:
+          type: boolean
+        update_time:
+          format: date-time
+          type: string
+        error:
+          type: string
+      required:
+      - done
+      - id
+      - update_time
       type: object
     RefsDump:
       example:
@@ -5884,6 +8752,27 @@ components:
       - commits_meta_range_id
       - tags_meta_range_id
       type: object
+    RefsRestore:
+      example:
+        tags_meta_range_id: tags_meta_range_id
+        branches_meta_range_id: branches_meta_range_id
+        force: false
+        commits_meta_range_id: commits_meta_range_id
+      properties:
+        commits_meta_range_id:
+          type: string
+        tags_meta_range_id:
+          type: string
+        branches_meta_range_id:
+          type: string
+        force:
+          default: false
+          type: boolean
+      required:
+      - branches_meta_range_id
+      - commits_meta_range_id
+      - tags_meta_range_id
+      type: object
     StorageURI:
       description: URI to a path in a storage provider (e.g. "s3://bucket1/path/to/object")
       example:
@@ -5895,6 +8784,8 @@ components:
       - location
       type: object
     Error:
+      example:
+        message: message
       properties:
         message:
           description: short message explaining the error
@@ -5938,6 +8829,17 @@ components:
       required:
       - errors
       type: object
+    ErrorNoACL:
+      properties:
+        message:
+          description: short message explaining the error
+          type: string
+        no_acl:
+          description: true if the group exists but has no ACL
+          type: boolean
+      required:
+      - message
+      type: object
     User:
       example:
         friendly_name: friendly_name
@@ -5946,16 +8848,23 @@ components:
         email: email
       properties:
         id:
-          description: "a unique identifier for the user. In password-based authentication,\
-            \ this is the email."
+          description: A unique identifier for the user. Cannot be edited.
           type: string
         creation_date:
           description: Unix Epoch in seconds
           format: int64
           type: integer
         friendly_name:
+          description: |
+            A shorter name for the user than the id. Unlike id it does not identify the user (it
+            might not be unique). Used in some places in the UI.
           type: string
         email:
+          description: "The email address of the user. If API authentication is enabled,\
+            \ this field is mandatory and will be invited to login.\nIf API authentication\
+            \ is disabled, this field will be ignored. All current APIAuthenticators\
+            \ require the email to be \nlowercase and unique, although custom authenticators\
+            \ may not enforce this.\n"
           type: string
       required:
       - creation_date
@@ -5974,23 +8883,13 @@ components:
       required:
       - user
       type: object
-    ForgotPasswordRequest:
-      example:
-        email: email
-      properties:
-        email:
-          type: string
-      required:
-      - email
-      type: object
     UserCreation:
       example:
         invite_user: true
         id: id
       properties:
         id:
-          description: "a unique identifier for the user. In password-based authentication,\
-            \ this is the email."
+          description: a unique identifier for the user.
           type: string
         invite_user:
           type: boolean
@@ -5999,40 +8898,65 @@ components:
       type: object
     LoginConfig:
       example:
+        username_ui_placeholder: username_ui_placeholder
         login_failed_message: login_failed_message
         logout_url: logout_url
         login_url: login_url
-        RBAC: simplified
+        RBAC: none
+        password_ui_placeholder: password_ui_placeholder
         fallback_login_url: fallback_login_url
         login_cookie_names:
         - login_cookie_names
         - login_cookie_names
         fallback_login_label: fallback_login_label
+        login_url_method: none
       properties:
         RBAC:
           description: |
             RBAC will remain enabled on GUI if "external".  That only works
             with an external auth service.
           enum:
+          - none
           - simplified
+          - internal
           - external
           type: string
+        username_ui_placeholder:
+          description: |
+            Placeholder text to display in the username field of the login form.
+          type: string
+        password_ui_placeholder:
+          description: |
+            Placeholder text to display in the password field of the login form.
+          type: string
         login_url:
-          description: primary URL to use for login.
+          description: Primary URL to use for login.
+          type: string
+        login_url_method:
+          description: |
+            Defines login behavior when login_url is set.
+            - none: For OSS users.
+            - redirect: Auto-redirect to login_url.
+            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
+            Ignored if login_url is not configured.
+          enum:
+          - none
+          - redirect
+          - select
           type: string
         login_failed_message:
           description: |
-            message to display to users who fail to login; a full sentence that is rendered
+            Message to display to users who fail to login; a full sentence that is rendered
             in HTML and may contain a link to a secondary login method
           type: string
         fallback_login_url:
-          description: secondary URL to offer users to use for login.
+          description: Secondary URL to offer users to use for login.
           type: string
         fallback_login_label:
-          description: label to place on fallback_login_url.
+          description: Label to place on fallback_login_url.
           type: string
         login_cookie_names:
-          description: cookie names used to store JWT
+          description: Cookie names used to store JWT
           items:
             type: string
           type: array
@@ -6047,23 +8971,29 @@ components:
     SetupState:
       example:
         login_config:
+          username_ui_placeholder: username_ui_placeholder
           login_failed_message: login_failed_message
           logout_url: logout_url
           login_url: login_url
-          RBAC: simplified
+          RBAC: none
+          password_ui_placeholder: password_ui_placeholder
           fallback_login_url: fallback_login_url
           login_cookie_names:
           - login_cookie_names
           - login_cookie_names
           fallback_login_label: fallback_login_label
+          login_url_method: none
         state: initialized
+        comm_prefs_missing: true
       properties:
         state:
           enum:
           - initialized
           - not_initialized
-          - comm_prefs_done
           type: string
+        comm_prefs_missing:
+          description: true if the comm prefs are missing.
+          type: boolean
         login_config:
           $ref: '#/components/schemas/LoginConfig'
       type: object
@@ -6111,43 +9041,14 @@ components:
           description: the provided email
           type: string
         featureUpdates:
-          description: was "feature updates" checked
+          description: user preference to receive feature updates
           type: boolean
         securityUpdates:
-          description: was "security updates" checked
+          description: user preference to receive security updates
           type: boolean
       required:
       - featureUpdates
       - securityUpdates
-      type: object
-    NextStep:
-      example:
-        nextStep: nextStep
-      properties:
-        nextStep:
-          description: the next step in the setup process
-          type: string
-      required:
-      - nextStep
-      type: object
-    UpdatePasswordByToken:
-      example:
-        newPassword: newPassword
-        email: email
-        token: token
-      properties:
-        token:
-          description: token used for authentication
-          type: string
-        newPassword:
-          description: new password to update
-          type: string
-        email:
-          description: optional user email to match the token for verification
-          type: string
-      required:
-      - newPassword
-      - token
       type: object
     Credentials:
       example:
@@ -6208,10 +9109,16 @@ components:
       type: object
     Group:
       example:
+        name: name
+        description: description
         id: id
         creation_date: 0
       properties:
         id:
+          type: string
+        name:
+          type: string
+        description:
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -6229,9 +9136,13 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - id: id
+        - name: name
+          description: description
+          id: id
           creation_date: 0
-        - id: id
+        - name: name
+          description: description
+          id: id
           creation_date: 0
       properties:
         pagination:
@@ -6294,6 +9205,42 @@ components:
       - access_key_id
       - secret_access_key
       type: object
+    ExternalLoginInformation:
+      example:
+        identityRequest: "{}"
+        token_expiration_duration: 0
+      properties:
+        token_expiration_duration:
+          type: integer
+        identityRequest:
+          type: object
+      required:
+      - identityRequest
+      type: object
+    StsAuthRequest:
+      example:
+        code: code
+        ttl_seconds: 0
+        state: state
+        redirect_uri: redirect_uri
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+        redirect_uri:
+          type: string
+        ttl_seconds:
+          description: |
+            The time-to-live for the generated token in seconds.  The default
+            value is 3600 seconds (1 hour) maximum time allowed is 12 hours.
+          format: int64
+          type: integer
+      required:
+      - code
+      - redirect_uri
+      - state
+      type: object
     AuthenticationToken:
       example:
         token_expiration: 0
@@ -6311,9 +9258,12 @@ components:
       type: object
     GroupCreation:
       example:
+        description: description
         id: id
       properties:
         id:
+          type: string
+        description:
           type: string
       required:
       - id
@@ -6419,12 +9369,29 @@ components:
       - pagination
       - results
       type: object
+    ACL:
+      example:
+        permission: permission
+      properties:
+        permission:
+          description: |
+            Permission level to give this ACL.  "Read", "Write", "Super" and
+            "Admin" are all supported.
+          type: string
+      required:
+      - permission
+      type: object
     StorageConfig:
       example:
+        blockstore_description: blockstore_description
+        pre_sign_multipart_upload: true
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+        blockstore_id: blockstore_id
         blockstore_type: blockstore_type
+        pre_sign_support_ui: true
         import_support: true
+        import_validity_regex: import_validity_regex
         default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
       properties:
@@ -6438,27 +9405,174 @@ components:
           type: string
         pre_sign_support:
           type: boolean
+        pre_sign_support_ui:
+          type: boolean
         import_support:
           type: boolean
+        import_validity_regex:
+          type: string
+        pre_sign_multipart_upload:
+          type: boolean
+        blockstore_id:
+          type: string
+        blockstore_description:
+          type: string
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
       - blockstore_type
       - import_support
+      - import_validity_regex
       - pre_sign_support
+      - pre_sign_support_ui
+      type: object
+    StorageConfigList:
+      items:
+        $ref: '#/components/schemas/StorageConfig'
+      type: array
+    Config:
+      example:
+        storage_config_list:
+        - blockstore_description: blockstore_description
+          pre_sign_multipart_upload: true
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        - blockstore_description: blockstore_description
+          pre_sign_multipart_upload: true
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        storage_config:
+          blockstore_description: blockstore_description
+          pre_sign_multipart_upload: true
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        version_config:
+          latest_version: latest_version
+          version_context: version_context
+          version: version
+          upgrade_recommended: true
+          upgrade_url: upgrade_url
+        ui_config:
+          custom_viewers:
+          - extensions:
+            - extensions
+            - extensions
+            name: name
+            content_types:
+            - content_types
+            - content_types
+            url: url
+          - extensions:
+            - extensions
+            - extensions
+            name: name
+            content_types:
+            - content_types
+            - content_types
+            url: url
+      properties:
+        version_config:
+          $ref: '#/components/schemas/VersionConfig'
+        storage_config:
+          $ref: '#/components/schemas/StorageConfig'
+        storage_config_list:
+          items:
+            $ref: '#/components/schemas/StorageConfig'
+          type: array
+        ui_config:
+          $ref: '#/components/schemas/UIConfig'
       type: object
     VersionConfig:
       example:
+        latest_version: latest_version
+        version_context: version_context
         version: version
         upgrade_recommended: true
         upgrade_url: upgrade_url
       properties:
         version:
           type: string
+        version_context:
+          type: string
+        latest_version:
+          type: string
         upgrade_recommended:
           type: boolean
         upgrade_url:
           type: string
+      type: object
+    UIConfig:
+      example:
+        custom_viewers:
+        - extensions:
+          - extensions
+          - extensions
+          name: name
+          content_types:
+          - content_types
+          - content_types
+          url: url
+        - extensions:
+          - extensions
+          - extensions
+          name: name
+          content_types:
+          - content_types
+          - content_types
+          url: url
+      properties:
+        custom_viewers:
+          items:
+            $ref: '#/components/schemas/CustomViewer'
+          type: array
+      type: object
+    CustomViewer:
+      example:
+        extensions:
+        - extensions
+        - extensions
+        name: name
+        content_types:
+        - content_types
+        - content_types
+        url: url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        extensions:
+          items:
+            type: string
+          type: array
+        content_types:
+          items:
+            type: string
+          type: array
+      required:
+      - name
+      - url
       type: object
     GarbageCollectionConfig:
       example:
@@ -6608,20 +9722,25 @@ components:
       example:
         physical_address: physical_address
         presigned_url: presigned_url
-        token: token
+        presigned_url_expiry: 0
       properties:
         physical_address:
           type: string
-        token:
-          description: opaque staging token to use to link uploaded object
-          type: string
         presigned_url:
           description: "if presign=true is passed in the request, this field will\
-            \ contain a presigned URL to use when uploading"
+            \ contain a pre-signed URL to use when uploading"
           nullable: true
           type: string
-      required:
-      - token
+        presigned_url_expiry:
+          description: |
+            If present and nonzero, physical_address is a pre-signed URL and
+            will expire at this Unix Epoch time.  This will be shorter than
+            the pre-signed URL lifetime if an authentication token is about
+            to expire.
+
+            This field is *optional*.
+          format: int64
+          type: integer
       type: object
     StagingMetadata:
       description: information about uploaded object
@@ -6631,10 +9750,12 @@ components:
           key: user_metadata
         content_type: content_type
         checksum: checksum
+        force: false
+        mtime: 6
         staging:
           physical_address: physical_address
           presigned_url: presigned_url
-          token: token
+          presigned_url_expiry: 0
       properties:
         staging:
           $ref: '#/components/schemas/StagingLocation'
@@ -6652,25 +9773,24 @@ components:
         content_type:
           description: Object media type
           type: string
+        mtime:
+          description: Unix Epoch in seconds.  May be ignored by server.
+          format: int64
+          type: integer
+        force:
+          default: false
+          type: boolean
       required:
       - checksum
       - size_bytes
       - staging
-      type: object
-    GarbageCollectionPrepareRequest:
-      example:
-        previous_run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
-      properties:
-        previous_run_id:
-          description: run id of a previous successful GC job
-          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
-          type: string
       type: object
     GarbageCollectionPrepareResponse:
       example:
         run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
         gc_addresses_location: s3://my-storage-namespace/_lakefs/retention/addresses
         gc_commits_location: s3://my-storage-namespace/_lakefs/retention/commits
+        gc_commits_presigned_url: gc_commits_presigned_url
       properties:
         run_id:
           description: a unique identifier generated for this GC job
@@ -6685,6 +9805,9 @@ components:
           description: location to use for expired addresses parquet table (partitioned
             by run_id)
           example: s3://my-storage-namespace/_lakefs/retention/addresses
+          type: string
+        gc_commits_presigned_url:
+          description: a presigned url to download the commits csv
           type: string
       required:
       - gc_addresses_location
@@ -6759,42 +9882,57 @@ components:
       required:
       - pattern
       type: object
-    StageRangeCreation:
-      example:
-        fromSourceURI: s3://my-bucket/production/collections/
-        continuation_token: continuation_token
-        prepend: collections/
-        after: production/collections/some/file.parquet
+    ImportLocation:
       properties:
-        fromSourceURI:
-          description: The source location of the ingested files. Must match the lakeFS
-            installation blockstore type.
+        type:
+          description: "Path type, can either be 'common_prefix' or 'object'"
+          enum:
+          - common_prefix
+          - object
+          type: string
+        path:
+          description: A source location to a 'common_prefix' or to a single object.
+            Must match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
           type: string
-        after:
-          description: Only objects after this key would be ingested.
-          example: production/collections/some/file.parquet
-          type: string
-        prepend:
-          description: A prefix to prepend to ingested objects.
+        destination:
+          description: |
+            Destination for the imported objects on the branch. Must be a relative path to the branch.
+            If the type is an 'object', the destination is the exact object name under the branch.
+            If the type is a 'common_prefix', the destination is the prefix under the branch.
           example: collections/
           type: string
-        continuation_token:
-          description: Opaque. Client should pass the continuation_token received
-            from server to continue creation ranges from the same key.
-          type: string
       required:
-      - after
-      - fromSourceURI
-      - prepend
+      - destination
+      - path
+      - type
+      type: object
+    ImportCreation:
+      example:
+        commit:
+          message: Importing collections from S3
+        paths:
+        - path: s3://my-bucket/production/collections/
+          destination: collections/
+          type: common_prefix
+        - path: s3://my-bucket/production/collections/file1
+          destination: collections/file1
+          type: object
+      properties:
+        paths:
+          items:
+            $ref: '#/components/schemas/ImportLocation'
+          type: array
+        commit:
+          $ref: '#/components/schemas/CommitCreation'
+        force:
+          default: false
+          type: boolean
+      required:
+      - commit
+      - paths
       type: object
     RangeMetadata:
-      example:
-        max_key: production/collections/some/file_8229.parquet
-        count: 0
-        estimated_size: 6
-        id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-        min_key: production/collections/some/file_1.parquet
       properties:
         id:
           description: ID of the range.
@@ -6821,37 +9959,58 @@ components:
       - max_key
       - min_key
       type: object
-    IngestRangeCreationResponse:
+    ImportStatus:
       example:
-        pagination:
-          continuation_token: continuation_token
-          has_more: true
-          last_key: last_key
-        range:
-          max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
+        update_time: 2000-01-23T04:56:07.000+00:00
+        metarange_id: metarange_id
+        ingested_objects: 0
+        commit:
+          generation: 6
+          metadata:
+            key: metadata
+          committer: committer
+          id: id
+          creation_date: 0
+          meta_range_id: meta_range_id
+          message: message
+          version: 0
+          parents:
+          - parents
+          - parents
+        completed: true
+        error:
+          message: message
       properties:
-        range:
-          $ref: '#/components/schemas/RangeMetadata'
-        pagination:
-          $ref: '#/components/schemas/ImportPagination'
+        completed:
+          type: boolean
+        update_time:
+          format: date-time
+          type: string
+        ingested_objects:
+          description: Number of objects processed so far
+          format: int64
+          type: integer
+        metarange_id:
+          type: string
+        commit:
+          $ref: '#/components/schemas/Commit'
+        error:
+          $ref: '#/components/schemas/Error'
+      required:
+      - completed
+      - update_time
+      type: object
+    ImportCreationResponse:
+      example:
+        id: id
+      properties:
+        id:
+          description: The id of the import process
+          type: string
+      required:
+      - id
       type: object
     MetaRangeCreation:
-      example:
-        ranges:
-        - max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
-        - max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
       properties:
         ranges:
           items:
@@ -6862,12 +10021,17 @@ components:
       - ranges
       type: object
     MetaRangeCreationResponse:
-      example:
-        id: id
       properties:
         id:
           description: The id of the created metarange
           type: string
+      type: object
+    UpdateToken:
+      properties:
+        staging_token:
+          type: string
+      required:
+      - staging_token
       type: object
     StatsEvent:
       example:
@@ -6908,6 +10072,343 @@ components:
       required:
       - events
       type: object
+    PresignMultipartUpload:
+      example:
+        physical_address: physical_address
+        upload_id: upload_id
+        presigned_urls:
+        - presigned_urls
+        - presigned_urls
+      properties:
+        upload_id:
+          type: string
+        physical_address:
+          type: string
+        presigned_urls:
+          items:
+            type: string
+          type: array
+      required:
+      - physical_address
+      - upload_id
+      type: object
+    UploadPart:
+      example:
+        part_number: 0
+        etag: etag
+      properties:
+        part_number:
+          type: integer
+        etag:
+          type: string
+      required:
+      - etag
+      - part_number
+      type: object
+    UploadPartFrom:
+      example:
+        physical_address: physical_address
+      properties:
+        physical_address:
+          description: |
+            The physical address (of the entire intended object) returned from
+            createPresignMultipartUpload.
+          type: string
+      required:
+      - physical_address
+      type: object
+    CopyPartSource:
+      properties:
+        repository:
+          type: string
+        ref:
+          type: string
+        path:
+          type: string
+        range:
+          description: Range of bytes to copy
+          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
+          type: string
+      required:
+      - path
+      - ref
+      - repository
+      type: object
+    UploadPartCopyFrom:
+      allOf:
+      - $ref: '#/components/schemas/UploadPartFrom'
+      - properties:
+          copy_source:
+            $ref: '#/components/schemas/CopyPartSource'
+        required:
+        - copy_source
+        type: object
+    UploadTo:
+      example:
+        presigned_url: presigned_url
+      properties:
+        presigned_url:
+          type: string
+      required:
+      - presigned_url
+      type: object
+    CompletePresignMultipartUpload:
+      example:
+        physical_address: physical_address
+        user_metadata:
+          key: user_metadata
+        content_type: content_type
+        parts:
+        - part_number: 0
+          etag: etag
+        - part_number: 0
+          etag: etag
+      properties:
+        physical_address:
+          type: string
+        parts:
+          description: "List of uploaded parts, should be ordered by ascending part\
+            \ number"
+          items:
+            $ref: '#/components/schemas/UploadPart'
+          type: array
+        user_metadata:
+          additionalProperties:
+            type: string
+          type: object
+        content_type:
+          description: Object media type
+          type: string
+      required:
+      - parts
+      - physical_address
+      type: object
+    AbortPresignMultipartUpload:
+      example:
+        physical_address: physical_address
+      properties:
+        physical_address:
+          type: string
+      required:
+      - physical_address
+      type: object
+    UsageReport:
+      example:
+        month: 6
+        year: 0
+        count: 1
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        count:
+          format: int64
+          type: integer
+      required:
+      - count
+      - month
+      - year
+      type: object
+    InstallationUsageReport:
+      example:
+        reports:
+        - month: 6
+          year: 0
+          count: 1
+        - month: 6
+          year: 0
+          count: 1
+        installation_id: installation_id
+      properties:
+        installation_id:
+          type: string
+        reports:
+          items:
+            $ref: '#/components/schemas/UsageReport'
+          type: array
+      required:
+      - installation_id
+      - reports
+      type: object
+    ExternalPrincipalList:
+      example:
+        pagination:
+          max_per_page: 0
+          has_more: true
+          next_offset: next_offset
+          results: 0
+        results:
+        - settings:
+          - null
+          - null
+          user_id: user_id
+          id: id
+        - settings:
+          - null
+          - null
+          user_id: user_id
+          id: id
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          items:
+            $ref: '#/components/schemas/ExternalPrincipal'
+          type: array
+      required:
+      - pagination
+      - results
+      type: object
+    ExternalPrincipalSettings:
+      additionalProperties:
+        type: string
+      description: Additional settings to be consumed by the remote authenticator
+      type: object
+    ExternalPrincipalCreation:
+      example:
+        settings:
+        - null
+        - null
+      properties:
+        settings:
+          items:
+            $ref: '#/components/schemas/ExternalPrincipalSettings'
+          type: array
+      type: object
+    ExternalPrincipal:
+      example:
+        settings:
+        - null
+        - null
+        user_id: user_id
+        id: id
+      properties:
+        id:
+          description: A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
+          type: string
+        user_id:
+          description: |
+            lakeFS user ID to associate with an external principal.
+          type: string
+        settings:
+          items:
+            $ref: '#/components/schemas/ExternalPrincipalSettings'
+          type: array
+      required:
+      - id
+      - user_id
+      type: object
+    PullRequestBasic:
+      example:
+        description: description
+        title: title
+        status: open
+      properties:
+        status:
+          enum:
+          - open
+          - closed
+          - merged
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+      type: object
+    PullRequest:
+      allOf:
+      - $ref: '#/components/schemas/PullRequestBasic'
+      - required:
+        - description
+        - status
+        - title
+      - properties:
+          id:
+            type: string
+          creation_date:
+            format: date-time
+            type: string
+          author:
+            type: string
+          source_branch:
+            type: string
+          destination_branch:
+            type: string
+          merged_commit_id:
+            description: the commit id of merged PRs
+            type: string
+          closed_date:
+            format: date-time
+            type: string
+        required:
+        - author
+        - creation_date
+        - destination_branch
+        - id
+        - source_branch
+        type: object
+    PullRequestsList:
+      example:
+        pagination:
+          max_per_page: 0
+          has_more: true
+          next_offset: next_offset
+          results: 0
+        results:
+        - null
+        - null
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          items:
+            $ref: '#/components/schemas/PullRequest'
+          type: array
+      required:
+      - pagination
+      - results
+      type: object
+    PullRequestCreation:
+      example:
+        destination_branch: destination_branch
+        description: description
+        title: title
+        source_branch: source_branch
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        source_branch:
+          type: string
+        destination_branch:
+          type: string
+      required:
+      - destination_branch
+      - source_branch
+      - title
+      type: object
+    PullRequestCreationResponse:
+      example:
+        id: id
+      properties:
+        id:
+          description: ID of the pull request
+          type: string
+      required:
+      - id
+      type: object
+    License:
+      example:
+        token: token
+      properties:
+        token:
+          description: The license JWT token
+          type: string
+      required:
+      - token
+      type: object
     uploadObject_request:
       properties:
         content:
@@ -6915,7 +10416,7 @@ components:
           format: binary
           type: string
       type: object
-    deleteBranchProtectionRule_request:
+    internalDeleteBranchProtectionRule_request:
       properties:
         pattern:
           type: string

@@ -9,4 +9,6 @@ var (
 	ErrAuthenticatingRequest = errors.New("error authenticating request")
 	ErrInvalidAPIEndpoint    = errors.New("invalid API endpoint")
 	ErrRequestSizeExceeded   = errors.New("request size exceeded")
+	ErrStorageNamespaceInUse = errors.New("storage namespace already in use")
+	ErrInvalidFormat         = errors.New("invalid format")
 )

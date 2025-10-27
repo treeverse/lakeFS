@@ -6,560 +6,31 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/mock"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-var (
-	someSecret = []byte("some secret")
-
-	userPoliciesForTesting = []*model.Policy{
-		{
-			Statement: model.Statements{
-				{
-					Action:   []string{"auth:DeleteUser"},
-					Resource: "arn:lakefs:auth:::user/foobar",
-					Effect:   model.StatementEffectAllow,
-				},
-				{
-					Action:   []string{"auth:*"},
-					Resource: "*",
-					Effect:   model.StatementEffectDeny,
-				},
-			},
-		},
-	}
-)
+const creationDate = 12345678
 
 func TestMain(m *testing.M) {
 	logging.SetLevel("panic")
 	code := m.Run()
 	os.Exit(code)
-}
-
-func setupService(t *testing.T, ctx context.Context) *auth.AuthService {
-	t.Helper()
-	kvStore := kvtest.GetStore(ctx, t)
-	return auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
-}
-
-func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
-	ctx := context.Background()
-	userName := uuid.New().String()
-	_, err := s.CreateUser(ctx, &model.User{
-		Username: userName,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, policy := range policies {
-		if policy.DisplayName == "" {
-			policy.DisplayName = model.CreateID()
-		}
-		err := s.WritePolicy(ctx, policy, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = s.AttachPolicyToUser(ctx, policy.DisplayName, userName)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	return userName
-}
-
-func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
-
-	users := []string{"bar", "barn", "baz", "foo", "foobar", "foobaz"}
-	for _, u := range users {
-		user := model.User{Username: u}
-		if _, err := s.CreateUser(ctx, &user); err != nil {
-			t.Fatalf("create user: %s", err)
-		}
-	}
-
-	sizes := []int{10, 3, 2}
-	prefixes := []string{"b", "ba", "bar", "f", "foo", "foob", "foobar"}
-	for _, size := range sizes {
-		for _, p := range prefixes {
-			t.Run(fmt.Sprintf("Size:%d;Prefix:%s", size, p), func(t *testing.T) {
-				// Only count the correct number of entries were
-				// returned; values are tested below.
-				got := 0
-				after := ""
-				for {
-					value, paginator, err := s.ListUsers(ctx, &model.PaginationParams{Amount: size, Prefix: p, After: after})
-					if err != nil {
-						t.Fatal(err)
-					}
-					got += len(value)
-					after = paginator.NextPageToken
-					if after == "" {
-						break
-					}
-				}
-				// Verify got the right number of users
-				count := 0
-				for _, u := range users {
-					if strings.HasPrefix(u, p) {
-						count++
-					}
-				}
-				if got != count {
-					t.Errorf("Got %d users when expecting %d", got, count)
-				}
-			})
-		}
-	}
-}
-
-func TestAuthService_ListPaged(t *testing.T) {
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
-
-	const chars = "abcdefghijklmnopqrstuvwxyz"
-	for _, c := range chars {
-		user := model.User{Username: string(c)}
-		if _, err := s.CreateUser(ctx, &user); err != nil {
-			t.Fatalf("create user: %s", err)
-		}
-	}
-	var userData model.UserData
-
-	for size := 0; size <= len(chars)+1; size++ {
-		t.Run(fmt.Sprintf("PageSize%d", size), func(t *testing.T) {
-			pagination := &model.PaginationParams{Amount: size}
-			if size == 0 { // Overload to mean "don't paginate"
-				pagination.Amount = -1
-			}
-			got := ""
-			for {
-				values, paginator, err := s.ListKVPaged(ctx, (&userData).ProtoReflect().Type(), pagination, model.UserPath(""), false)
-				if err != nil {
-					t.Errorf("ListPaged: %s", err)
-					break
-				}
-				if values == nil {
-					t.Fatalf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
-				}
-				letters := model.ConvertUsersDataList(values)
-				for _, c := range letters {
-					got = got + c.Username
-				}
-				if paginator.NextPageToken == "" {
-					if size > 0 && len(letters) > size {
-						t.Errorf("expected at most %d entries in last page but got %d", size, len(letters))
-					}
-					break
-				}
-				if len(letters) != size {
-					t.Errorf("expected %d entries in page but got %d", size, len(letters))
-				}
-				pagination.After = paginator.NextPageToken
-			}
-			if got != chars {
-				t.Errorf("Expected to read back \"%s\" but got \"%s\"", chars, got)
-			}
-		})
-	}
-}
-
-func TestAuthService_DeleteUserWithRelations(t *testing.T) {
-	userNames := []string{"first", "second"}
-	groupNames := []string{"groupA", "groupB"}
-	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
-
-	ctx := context.Background()
-	authService := setupService(t, ctx)
-
-	// create initial data set and verify users groups and policies are create and related as expected
-	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
-	users, _, err := authService.ListUsers(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, users)
-	require.Equal(t, len(userNames), len(users))
-	for _, userName := range userNames {
-		user, err := authService.GetUser(ctx, userName)
-		require.NoError(t, err)
-		require.NotNil(t, user)
-		require.Equal(t, userName, user.Username)
-
-		groups, _, err := authService.ListUserGroups(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, groups)
-		require.Equal(t, len(groupNames), len(groups))
-
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2, len(policies))
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames), len(policies))
-	}
-	for _, groupName := range groupNames {
-		users, _, err := authService.ListGroupUsers(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, users)
-		require.Equal(t, len(userNames), len(users))
-	}
-
-	// delete a user
-	err = authService.DeleteUser(ctx, userNames[0])
-	require.NoError(t, err)
-
-	// verify user does not exist
-	user, err := authService.GetUser(ctx, userNames[0])
-	require.Error(t, err)
-	require.Nil(t, user)
-
-	// verify user is removed from all lists and relations
-	users, _, err = authService.ListUsers(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, users)
-	require.Equal(t, len(userNames)-1, len(users))
-
-	for _, groupName := range groupNames {
-		users, _, err := authService.ListGroupUsers(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, users)
-		require.Equal(t, len(userNames)-1, len(users))
-		for _, user := range users {
-			require.NotEqual(t, userNames[0], user.Username)
-		}
-	}
-}
-
-func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
-	userNames := []string{"first", "second", "third"}
-	groupNames := []string{"groupA", "groupB", "groupC"}
-	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
-
-	ctx := context.Background()
-	authService := setupService(t, ctx)
-
-	// create initial data set and verify users groups and policies are created and related as expected
-	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
-	groups, _, err := authService.ListGroups(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, groups)
-	require.Equal(t, len(groupNames), len(groups))
-	for _, userName := range userNames {
-		user, err := authService.GetUser(ctx, userName)
-		require.NoError(t, err)
-		require.NotNil(t, user)
-		require.Equal(t, userName, user.Username)
-
-		groups, _, err := authService.ListUserGroups(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, groups)
-		require.Equal(t, len(groupNames), len(groups))
-
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2, len(policies))
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames), len(policies))
-	}
-	for _, groupName := range groupNames {
-		group, err := authService.GetGroup(ctx, groupName)
-		require.NoError(t, err)
-		require.NotNil(t, group)
-		require.Equal(t, groupName, group.DisplayName)
-
-		users, _, err := authService.ListGroupUsers(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, users)
-		require.Equal(t, len(userNames), len(users))
-
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-len(policyNames)/2, len(policies))
-	}
-	for _, userName := range userNames {
-		groups, _, err := authService.ListUserGroups(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, groups)
-		require.Equal(t, len(groupNames), len(groups))
-	}
-
-	// delete a group
-	err = authService.DeleteGroup(ctx, groupNames[1])
-	require.NoError(t, err)
-
-	// verify group does not exist
-	group, err := authService.GetGroup(ctx, groupNames[1])
-	require.Error(t, err)
-	require.Nil(t, group)
-
-	// verify group is removed from all lists and relations
-	groups, _, err = authService.ListGroups(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, groups)
-	require.Equal(t, len(groupNames)-1, len(groups))
-
-	for _, userName := range userNames {
-		groups, _, err := authService.ListUserGroups(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, groups)
-		require.Equal(t, len(userNames)-1, len(groups))
-		for _, group := range groups {
-			require.NotEqual(t, groupNames[1], group.DisplayName)
-		}
-	}
-}
-
-func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
-	userNames := []string{"first", "second", "third"}
-	groupNames := []string{"groupA", "groupB", "groupC"}
-	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
-
-	ctx := context.Background()
-	authService := setupService(t, ctx)
-
-	// create initial data set and verify users groups and policies are create and related as expected
-	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
-	policies, _, err := authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, policies)
-	require.Equal(t, len(policyNames), len(policies))
-	for _, policyName := range policyNames {
-		policy, err := authService.GetPolicy(ctx, policyName)
-		require.NoError(t, err)
-		require.NotNil(t, policy)
-		require.Equal(t, policyName, policy.DisplayName)
-	}
-
-	for _, groupName := range groupNames {
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-len(policyNames)/2, len(policies))
-	}
-	for _, userName := range userNames {
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2, len(policies))
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames), len(policies))
-	}
-
-	// delete a user policy (beginning of the names list)
-	err = authService.DeletePolicy(ctx, policyNames[0])
-	require.NoError(t, err)
-
-	// verify policy does not exist
-	policy, err := authService.GetPolicy(ctx, policyNames[0])
-	require.Error(t, err)
-	require.Nil(t, policy)
-
-	// verify policy is removed from all lists and relations
-	policies, _, err = authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, policies)
-	require.Equal(t, len(policyNames)-1, len(policies))
-
-	for _, userName := range userNames {
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[0], policy.DisplayName)
-		}
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[0], policy.DisplayName)
-		}
-	}
-
-	for _, groupName := range groupNames {
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-len(policyNames)/2, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[0], policy.DisplayName)
-		}
-	}
-
-	// delete a group policy (end of the names list)
-	err = authService.DeletePolicy(ctx, policyNames[len(policyNames)-1])
-	require.NoError(t, err)
-
-	// verify policy does not exist
-	policy, err = authService.GetPolicy(ctx, policyNames[len(policyNames)-1])
-	require.Error(t, err)
-	require.Nil(t, policy)
-
-	// verify policy is removed from all lists and relations
-	policies, _, err = authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
-	require.NoError(t, err)
-	require.NotNil(t, policies)
-	require.Equal(t, len(policyNames)-2, len(policies))
-
-	for _, userName := range userNames {
-		policies, _, err := authService.ListUserPolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)/2-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[len(policyNames)-1], policy.DisplayName)
-		}
-
-		policies, _, err = authService.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-2, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[len(policyNames)-1], policy.DisplayName)
-		}
-	}
-
-	for _, groupName := range groupNames {
-		policies, _, err := authService.ListGroupPolicies(ctx, groupName, &model.PaginationParams{Amount: 100})
-		require.NoError(t, err)
-		require.NotNil(t, policies)
-		require.Equal(t, len(policyNames)-len(policyNames)/2-1, len(policies))
-		for _, policy := range policies {
-			require.NotEqual(t, policyNames[len(policyNames)-1], policy.DisplayName)
-		}
-	}
-}
-
-// createInitialDataSet -
-// Creates K users with 2 credentials each, L groups and M policies
-// Adds all users to all groups
-// Attaches M/2 of the policies to all K users and the other M-M/2 policies to all L groups
-func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, userNames, groupNames, policyNames []string) {
-	for _, userName := range userNames {
-		if _, err := svc.CreateUser(ctx, &model.User{Username: userName}); err != nil {
-			t.Fatalf("CreateUser(%s): %s", userName, err)
-		}
-		for i := 0; i < 2; i++ {
-			_, err := svc.CreateCredentials(ctx, userName)
-			if err != nil {
-				t.Errorf("CreateCredentials(%s): %s", userName, err)
-			}
-		}
-	}
-
-	for _, groupName := range groupNames {
-		if err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
-			t.Fatalf("CreateGroup(%s): %s", groupName, err)
-		}
-		for _, userName := range userNames {
-			if err := svc.AddUserToGroup(ctx, userName, groupName); err != nil {
-				t.Fatalf("AddUserToGroup(%s, %s): %s", userName, groupName, err)
-			}
-		}
-	}
-
-	numPolicies := len(policyNames)
-	for i, policyName := range policyNames {
-		if err := svc.WritePolicy(ctx, &model.Policy{DisplayName: policyName, Statement: userPoliciesForTesting[0].Statement}, false); err != nil {
-			t.Fatalf("WritePolicy(%s): %s", policyName, err)
-		}
-		if i < numPolicies/2 {
-			for _, userName := range userNames {
-				if err := svc.AttachPolicyToUser(ctx, policyName, userName); err != nil {
-					t.Fatalf("AttachPolicyToUser(%s, %s): %s", policyName, userName, err)
-				}
-			}
-		} else {
-			for _, groupName := range groupNames {
-				if err := svc.AttachPolicyToGroup(ctx, policyName, groupName); err != nil {
-					t.Fatalf("AttachPolicyToGroup(%s, %s): %s", policyName, groupName, err)
-				}
-			}
-		}
-	}
-}
-
-func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
-	// setup user with policies for benchmark
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, b)
-
-	serviceWithoutCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
-	serviceWithCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: true,
-		Size:    1024,
-		TTL:     20 * time.Second,
-		Jitter:  3 * time.Second,
-	}, logging.Default())
-	serviceWithCacheLowTTL := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: true,
-		Size:    1024,
-		TTL:     1 * time.Millisecond,
-		Jitter:  1 * time.Millisecond,
-	}, logging.Default())
-	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
-
-	b.Run("without_cache", func(b *testing.B) {
-		benchmarkKVListEffectivePolicies(b, serviceWithoutCache, userName)
-	})
-	b.Run("with_cache", func(b *testing.B) {
-		benchmarkKVListEffectivePolicies(b, serviceWithCache, userName)
-	})
-	b.Run("without_cache_low_ttl", func(b *testing.B) {
-		benchmarkKVListEffectivePolicies(b, serviceWithCacheLowTTL, userName)
-	})
-}
-
-func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.AuthService, userName string) {
-	b.ResetTimer()
-	ctx := context.Background()
-	for n := 0; n < b.N; n++ {
-		_, _, err := s.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: -1})
-		if err != nil {
-			b.Fatal("Failed to list effective policies", err)
-		}
-	}
 }
 
 func TestAPIAuthService_GetUserById(t *testing.T) {
@@ -614,7 +85,11 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 				Results:    returnedUsers,
 			}
 
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Id: &tt.userIntID})).Return(&auth.ListUsersResponse{
+			const amount = 2
+			paginationAmount := auth.PaginationAmount(amount)
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
+				gomock.Eq(&auth.ListUsersParams{Id: &tt.userIntID, Amount: &paginationAmount}),
+			).Return(&auth.ListUsersResponse{
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
 				},
@@ -702,14 +177,12 @@ func TestAuthApiGetUserCache(t *testing.T) {
 	ctx := context.Background()
 	mockClient, s := NewTestApiService(t, true)
 	const userID = "123"
-	const uid = int64(123)
 
 	const username = "foo"
 	userMail := "foo@test.com"
 	externalId := "1234"
 	userResult := auth.User{
 		Username:   username,
-		Id:         uid,
 		Email:      &userMail,
 		ExternalId: &externalId,
 	}
@@ -796,7 +269,6 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 		friendlyName       string
 		source             string
 		responseStatusCode int
-		responseID         int64
 		expectedResponseID string
 		expectedErr        error
 	}{
@@ -806,9 +278,8 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			email:              "foo@gmail.com",
 			friendlyName:       "friendly foo",
 			source:             "internal",
-			responseID:         1,
 			responseStatusCode: http.StatusCreated,
-			expectedResponseID: "1",
+			expectedResponseID: "foo",
 			expectedErr:        nil,
 		},
 		{
@@ -838,6 +309,15 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			source:             "internal",
 			responseStatusCode: http.StatusInternalServerError,
 			expectedResponseID: auth.InvalidUserID,
+			expectedErr:        auth.ErrInternalServerError,
+		},
+		{
+			name:               "unknown_error",
+			userName:           "user",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
+			expectedResponseID: auth.InvalidUserID,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
 		},
 	}
@@ -848,7 +328,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON201: &auth.User{
-					Id: tt.responseID,
+					Username: tt.userName,
 				},
 			}
 			mockClient.EXPECT().CreateUserWithResponse(gomock.Any(), auth.CreateUserJSONRequestBody{
@@ -903,7 +383,7 @@ func TestAPIAuthService_DeleteUser(t *testing.T) {
 				},
 			}
 			ctx := context.Background()
-			mockClient.EXPECT().DeleteUserWithResponse(ctx, tt.userName).Return(response, nil)
+			mockClient.EXPECT().DeleteUserWithResponse(gomock.Any(), tt.userName).Return(response, nil)
 			err := s.DeleteUser(ctx, tt.userName)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("DeleteUser: expected err: %v got: %v", tt.expectedErr, err)
@@ -961,7 +441,11 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 				Pagination: auth.Pagination{},
 				Results:    returnedUsers,
 			}
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Email: swag.String(tt.email)})).Return(&auth.ListUsersResponse{
+			const amount = 2
+			paginationAmount := auth.PaginationAmount(amount)
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
+				gomock.Eq(&auth.ListUsersParams{Email: swag.String(tt.email), Amount: &paginationAmount}),
+			).Return(&auth.ListUsersResponse{
 				Body: nil,
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
@@ -999,7 +483,7 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 		cacheParams.TTL = time.Minute
 		cacheParams.Jitter = time.Minute
 	}
-	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams)
+	s, err := auth.NewAPIAuthServiceWithClient(mockClient, true, true, secretStore, cacheParams, logging.ContextUnavailable())
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
 	}
@@ -1047,8 +531,17 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 			email:              "",
 			encryptedPassword:  nil,
 			source:             "",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			userName:           "user",
+			email:              "",
+			encryptedPassword:  nil,
+			source:             "",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -1096,18 +589,22 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 func TestAPIAuthService_GetGroup(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
-		name               string
-		groupName          string
-		responseStatusCode int
-		responseName       string
-		expectedErr        error
+		name                string
+		groupName           string
+		groupDescription    string
+		responseStatusCode  int
+		responseName        string
+		responseDescription string
+		expectedErr         error
 	}{
 		{
-			name:               "successful",
-			groupName:          "foo",
-			responseName:       "foo",
-			responseStatusCode: http.StatusOK,
-			expectedErr:        nil,
+			name:                "successful",
+			groupName:           "foo",
+			groupDescription:    "foo group",
+			responseName:        "foo",
+			responseDescription: "foo group",
+			responseStatusCode:  http.StatusOK,
+			expectedErr:         nil,
 		},
 		{
 			name:               "invalid_group",
@@ -1128,7 +625,8 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON200: &auth.Group{
-					Name: tt.responseName,
+					Name:        tt.responseName,
+					Description: swag.String(tt.responseDescription),
 				},
 			}
 			mockClient.EXPECT().GetGroupWithResponse(gomock.Any(), tt.groupName).Return(response, nil)
@@ -1142,6 +640,9 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 			}
 			if group.DisplayName != tt.responseName {
 				t.Errorf("expected response group name:%s, got:%s", tt.responseName, group.DisplayName)
+			}
+			if swag.StringValue(group.Description) != tt.responseDescription {
+				t.Errorf("expected response group description:%s, got:%s", tt.responseDescription, swag.StringValue(group.Description))
 			}
 		})
 	}
@@ -1287,7 +788,6 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 func TestAPIAuthService_ListGroups(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1296,6 +796,7 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 				groups[i] = auth.Group{
 					CreationDate: creationDate,
 					Name:         fmt.Sprintf("%s-%d", groupNamePrefix, i),
+					Description:  swag.String(fmt.Sprintf("%s-%d desc", groupNamePrefix, i)),
 				}
 			}
 			groupList := auth.GroupList{
@@ -1325,12 +826,16 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 				if g == nil {
 					t.Fatalf("got nil group")
 				}
-				expected := fmt.Sprintf("%s-%d", groupNamePrefix, i)
-				if g.DisplayName != expected {
-					t.Errorf("ListGroups item %d, expected displayName:%s got:%s", i, g.DisplayName, expected)
+				expectedName := fmt.Sprintf("%s-%d", groupNamePrefix, i)
+				if g.DisplayName != expectedName {
+					t.Errorf("ListGroups item %d, expected displayName:%s got:%s", i, g.DisplayName, expectedName)
+				}
+				expectedDescription := fmt.Sprintf("%s-%d desc", groupNamePrefix, i)
+				if swag.StringValue(g.Description) != expectedDescription {
+					t.Errorf("ListGroups item %d, expected expectedDescription:%s got:%s", i, swag.StringValue(g.Description), expectedName)
 				}
 				if !g.CreatedAt.Equal(creationTime) {
-					t.Errorf("eListGroups item %d, expected created date:%s got:%s for %s", i, g.CreatedAt, creationTime, expected)
+					t.Errorf("eListGroups item %d, expected created date:%s got:%s for %s", i, g.CreatedAt, creationTime, expectedName)
 				}
 			}
 		})
@@ -1340,7 +845,6 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 func TestAPIAuthService_ListUsers(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1385,7 +889,6 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1585,7 +1088,6 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 func TestAPIAuthService_ListUserGroups(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1631,7 +1133,6 @@ func TestAPIAuthService_ListUserGroups(t *testing.T) {
 func TestAPIAuthService_ListUserCredentials(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const accessKeyPrefix = "AKIA"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1736,11 +1237,21 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			firstStatementEffect:   "effect",
 			firstStatementResource: "resource",
 			policyName:             "policy",
-			responseStatusCode:     http.StatusInternalServerError,
+			responseStatusCode:     http.StatusHTTPVersionNotSupported,
 			expectedErr:            auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:                   "internal_error",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			policyName:             "policy",
+			responseStatusCode:     http.StatusInternalServerError,
+			expectedErr:            auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
+		acl := ""
 		t.Run(tt.name, func(t *testing.T) {
 			creationTime := time.Unix(123456789, 0)
 
@@ -1754,6 +1265,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 					},
 				}
 				mockClient.EXPECT().UpdatePolicyWithResponse(gomock.Any(), tt.policyName, gomock.Eq(auth.UpdatePolicyJSONRequestBody{
+					Acl:          &acl,
 					CreationDate: swag.Int64(creationTime.Unix()),
 					Name:         tt.policyName,
 					Statement: []auth.Statement{
@@ -1774,6 +1286,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 					},
 				}
 				mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(auth.CreatePolicyJSONRequestBody{
+					Acl:          &acl,
 					CreationDate: swag.Int64(creationTime.Unix()),
 					Name:         tt.policyName,
 					Statement: []auth.Statement{
@@ -1789,11 +1302,13 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			err := s.WritePolicy(ctx, &model.Policy{
 				DisplayName: tt.policyName,
 				CreatedAt:   creationTime,
-				Statement: []model.Statement{{
-					Action:   tt.firstStatementAction,
-					Effect:   tt.firstStatementEffect,
-					Resource: tt.firstStatementResource,
-				}},
+				Statement: []model.Statement{
+					{
+						Action:   tt.firstStatementAction,
+						Effect:   tt.firstStatementEffect,
+						Resource: tt.firstStatementResource,
+					},
+				},
 			}, tt.overwrite)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("CreatePolicy: expected err: %v got: %v", tt.expectedErr, err)
@@ -2252,18 +1767,22 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 func TestAPIAuthService_CreateGroup(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
-		name               string
-		groupName          string
-		responseStatusCode int
-		responseName       string
-		expectedErr        error
+		name                string
+		groupName           string
+		groupDescription    string
+		responseStatusCode  int
+		responseName        string
+		responseDescription string
+		expectedErr         error
 	}{
 		{
-			name:               "successful",
-			groupName:          "foo",
-			responseName:       "foo",
-			responseStatusCode: http.StatusCreated,
-			expectedErr:        nil,
+			name:                "successful",
+			groupName:           "foo",
+			groupDescription:    "foo description",
+			responseName:        "foo",
+			responseDescription: "foo description",
+			responseStatusCode:  http.StatusCreated,
+			expectedErr:         nil,
 		},
 		{
 			name:               "invalid_group",
@@ -2280,8 +1799,14 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 		{
 			name:               "internal_error",
 			groupName:          "group",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			groupName:          "group",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -2291,14 +1816,15 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON201: &auth.Group{
-					Name: tt.responseName,
+					Name:        tt.responseName,
+					Description: swag.String(tt.responseDescription),
 				},
 			}
 			mockClient.EXPECT().CreateGroupWithResponse(gomock.Any(), auth.CreateGroupJSONRequestBody{
 				Id: tt.groupName,
 			}).Return(response, nil)
 			ctx := context.Background()
-			err := s.CreateGroup(ctx, &model.Group{
+			_, err := s.CreateGroup(ctx, &model.Group{
 				DisplayName: tt.groupName,
 			})
 			if !errors.Is(err, tt.expectedErr) {
@@ -2353,8 +1879,18 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 			returnedSecretKey:  "AKIASECRET",
 			email:              "foo@gmail.com",
 			source:             "internal",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			username:           "credentials",
+			returnedAccessKey:  "AKIA",
+			returnedSecretKey:  "AKIASECRET",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -2453,8 +1989,20 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			secretKey:          "AKIASECRET",
 			email:              "foo@gmail.com",
 			source:             "internal",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			username:           "credentials",
+			returnedAccessKey:  "",
+			returnedSecretKey:  "",
+			accessKey:          "AKIA",
+			secretKey:          "AKIASECRET",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -2487,5 +2035,170 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 				t.Errorf("expected secretKeyID:%s, got:%s", tt.returnedSecretKey, resCredentials.SecretAccessKey)
 			}
 		})
+	}
+}
+
+func TestAPIAuthService_CreateUserExternalPrincipal(t *testing.T) {
+	mockClient, s := NewTestApiService(t, false)
+
+	tests := []struct {
+		name               string
+		userID             string
+		principalID        string
+		responseStatusCode int
+		expectedErr        error
+	}{
+		{
+			name:               "successful_principal1",
+			userID:             "user1",
+			principalID:        "arn:aws:sts::123:assumed-role/MyRole/SessionName",
+			responseStatusCode: http.StatusCreated,
+		},
+		{
+			name:               "successful_principal2",
+			userID:             "user1",
+			principalID:        "arn:aws:sts::456:assumed-role/OtherRole",
+			responseStatusCode: http.StatusCreated,
+		},
+		{
+			name:               "err_existing_principal",
+			userID:             "user2",
+			principalID:        "arn:aws:sts::456:assumed-role/OtherRole",
+			responseStatusCode: http.StatusConflict,
+			expectedErr:        auth.ErrAlreadyExists,
+		},
+		{
+			name:               "successful_principal3",
+			userID:             "user2",
+			principalID:        "arn:aws:sts::456:assumed-role/Principal3",
+			responseStatusCode: http.StatusCreated,
+		},
+		{
+			name:               "err_no_such_user",
+			userID:             "no-user",
+			principalID:        "arn:aws:sts::456:assumed-role/Principal3",
+			responseStatusCode: http.StatusNotFound,
+			expectedErr:        auth.ErrNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.userID, func(t *testing.T) {
+			ctx := context.Background()
+			response := &auth.CreateUserExternalPrincipalResponse{
+				HTTPResponse: &http.Response{
+					StatusCode: tt.responseStatusCode,
+				},
+			}
+			reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: tt.principalID})
+			mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), tt.userID, reqParams).Return(response, nil)
+			err := s.CreateUserExternalPrincipal(ctx, tt.userID, tt.principalID)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("CreateUserExternalPrincipal: expected err: %v got: %v", tt.expectedErr, err)
+			}
+			if err != nil {
+				return
+			}
+		})
+	}
+}
+func TestAPIAuthService_ReusePrincipalAfterDelete(t *testing.T) {
+	mockClient, s := NewTestApiService(t, false)
+	userA := "user_a"
+	userB := "user_b"
+	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
+	ctx := context.Background()
+
+	// create principal A for user1
+	reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: principalId})
+	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userA, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusCreated,
+		},
+	}, nil)
+	err := s.CreateUserExternalPrincipal(ctx, userA, principalId)
+	require.NoErrorf(t, err, "creating initial principal for user %s", userA)
+
+	// delete principal A for user1
+	reqDelParams := gomock.Eq(&auth.DeleteUserExternalPrincipalParams{PrincipalId: principalId})
+	mockClient.EXPECT().DeleteUserExternalPrincipalWithResponse(gomock.Any(), userA, reqDelParams).Return(&auth.DeleteUserExternalPrincipalResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusNoContent,
+		},
+	}, nil)
+	err = s.DeleteUserExternalPrincipal(ctx, userA, principalId)
+	require.NoErrorf(t, err, "deleting principal for user %s", userA)
+
+	// re-use principal A again for user2
+	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userB, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusCreated,
+		},
+	}, nil)
+	err = s.CreateUserExternalPrincipal(ctx, userB, principalId)
+	require.NoErrorf(t, err, "re-using principal for user %s", userB)
+}
+
+func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T) {
+	mockClient, s := NewTestApiService(t, false)
+	userId := "user"
+	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
+	ctx := context.Background()
+
+	// create userA and principalA
+	reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: principalId})
+	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userId, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusCreated,
+		},
+	}, nil)
+	err := s.CreateUserExternalPrincipal(ctx, userId, principalId)
+	require.NoError(t, err)
+
+	// delete user A
+	mockClient.EXPECT().DeleteUserWithResponse(gomock.Any(), userId).Return(&auth.DeleteUserResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusNoContent,
+		},
+	}, nil)
+	err = s.DeleteUser(ctx, userId)
+	require.NoError(t, err)
+	// get principalA and expect error
+
+	mockClient.EXPECT().GetExternalPrincipalWithResponse(gomock.Any(), gomock.Eq(&auth.GetExternalPrincipalParams{
+		PrincipalId: principalId,
+	})).Return(
+		&auth.GetExternalPrincipalResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusNotFound,
+			},
+		}, auth.ErrNotFound)
+
+	_, err = s.GetExternalPrincipal(ctx, principalId)
+	require.Errorf(t, err, "principal should not exist if a user is deleted")
+}
+
+func TestAPIService_RequestIDPropagation(t *testing.T) {
+	const requestID = "the-quick-brown-fox-jumps-over-the-lazy-dog"
+	called := false
+	innerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle (only) fake deleteUser, by returning 204.
+		if actual := r.Header.Get("X-Request-ID"); actual != requestID {
+			t.Errorf("Got request ID %s expecting %s", actual, requestID)
+		}
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	secretStore := crypt.NewSecretStore([]byte("secret"))
+	cacheParams := authparams.ServiceCache{}
+	service, err := auth.NewAPIAuthService(innerServer.URL, "token", true, true, secretStore, cacheParams, logging.ContextUnavailable())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(context.Background(), httputil.RequestIDContextKey, requestID)
+
+	require.NoError(t, service.DeleteUser(ctx, "foo"))
+	if !called {
+		t.Error("Expected inner server to be called but it wasn't")
 	}
 }

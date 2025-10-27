@@ -10,21 +10,21 @@ All URIs are relative to */api/v1*
 | [**listTags**](TagsApi.md#listTags) | **GET** /repositories/{repository}/tags | list tags |
 
 
-<a name="createTag"></a>
+<a id="createTag"></a>
 # **createTag**
-> Ref createTag(repository, tagCreation)
+> Ref createTag(repository, tagCreation).execute();
 
 create tag
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.TagsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.TagsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -62,7 +62,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     TagCreation tagCreation = new TagCreation(); // TagCreation | 
     try {
-      Ref result = apiInstance.createTag(repository, tagCreation);
+      Ref result = apiInstance.createTag(repository, tagCreation)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling TagsApi#createTag");
@@ -101,25 +102,27 @@ public class Example {
 | **201** | tag |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="deleteTag"></a>
+<a id="deleteTag"></a>
 # **deleteTag**
-> deleteTag(repository, tag)
+> deleteTag(repository, tag).force(force).execute();
 
 delete tag
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.TagsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.TagsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -156,8 +159,11 @@ public class Example {
     TagsApi apiInstance = new TagsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String tag = "tag_example"; // String | 
+    Boolean force = true; // Boolean | 
     try {
-      apiInstance.deleteTag(repository, tag);
+      apiInstance.deleteTag(repository, tag)
+            .force(force)
+            .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling TagsApi#deleteTag");
       System.err.println("Status code: " + e.getCode());
@@ -175,6 +181,7 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
 | **tag** | **String**|  | |
+| **force** | **Boolean**|  | [optional] |
 
 ### Return type
 
@@ -194,24 +201,26 @@ null (empty response body)
 |-------------|-------------|------------------|
 | **204** | tag deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="getTag"></a>
+<a id="getTag"></a>
 # **getTag**
-> Ref getTag(repository, tag)
+> Ref getTag(repository, tag).execute();
 
 get tag
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.TagsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.TagsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -249,7 +258,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     String tag = "tag_example"; // String | 
     try {
-      Ref result = apiInstance.getTag(repository, tag);
+      Ref result = apiInstance.getTag(repository, tag)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling TagsApi#getTag");
@@ -288,23 +298,24 @@ public class Example {
 | **200** | tag |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="listTags"></a>
+<a id="listTags"></a>
 # **listTags**
-> RefList listTags(repository, prefix, after, amount)
+> RefList listTags(repository).prefix(prefix).after(after).amount(amount).execute();
 
 list tags
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.TagsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.TagsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -344,7 +355,11 @@ public class Example {
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     try {
-      RefList result = apiInstance.listTags(repository, prefix, after, amount);
+      RefList result = apiInstance.listTags(repository)
+            .prefix(prefix)
+            .after(after)
+            .amount(amount)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling TagsApi#listTags");
@@ -385,5 +400,6 @@ public class Example {
 | **200** | tag list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

@@ -1,26 +1,11 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
+import * as arrow from 'apache-arrow';
+import {AsyncDuckDB, AsyncDuckDBConnection, DuckDBDataProtocol} from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
 import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
-
-// based on the replacement rules on the percent-encoding MDN page:
-// https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding
-// also, I tried doing something nicer with list comprehensions and printf('%x') to convert
-//  from unicode code point to hex - DuckDB didn't seem to evaluate lambdas and list comprehensions
-// Issue: https://github.com/duckdb/duckdb/issues/5821
-// when padding a macro to a table function such as read_parquet() or read_csv().
-// so - string replacements it is.
-const URL_ENCODE_MACRO_SQL = `
-CREATE MACRO p_encode(s) AS 
-    list_aggregate([
-        case when x in (':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '''', '(', ')', '*', '+', ',', ';', '=', '%', ' ') 
-            then printf('%%%X', unicode(x))  else x end
-        for x 
-        in string_split(s, '')
-    ], 'string_agg', '');
-`
 
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
@@ -34,35 +19,83 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     },
 };
 
+let _db: AsyncDuckDB | null = null;
 
-let _db: duckdb.AsyncDuckDB | null
-let _worker: Worker | null
-
-async function getDB(): Promise<duckdb.AsyncDuckDB> {
-    if (!_db) {
-        const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
-        if (!bundle.mainWorker) {
-            throw Error("could not initialize DuckDB")
-        }
-        _worker = new Worker(bundle.mainWorker);
-        const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), _worker);
-        await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-        const conn = await db.connect()
-        // await conn.query(`SET access_mode = READ_ONLY`)
-        await conn.query(URL_ENCODE_MACRO_SQL)
-        await conn.query(`
-            CREATE MACRO lakefs_object(repoId, refId, path) AS
-                '${document.location.protocol}//${document.location.host}/api/v1/repositories/' ||
-                p_encode(repoId) || '/refs/' || p_encode(refId) || '/objects?path=' || p_encode(path);
-        `)
-        await conn.close()
-        _db = db
+async function getDuckDB(): Promise<duckdb.AsyncDuckDB> {
+    if (_db !== null) {
+        return _db
     }
+    const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
+    if (!bundle.mainWorker) {
+        throw Error("could not initialize DuckDB")
+    }
+    const worker = new Worker(bundle.mainWorker)
+    const logger = new duckdb.VoidLogger()
+    const db = new duckdb.AsyncDuckDB(logger, worker)
+    await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
+    const conn = await db.connect()
+    await conn.close()
+    _db = db
     return _db
 }
 
-export async function getConnection(): Promise<duckdb.AsyncDuckDBConnection> {
-    // Instantiate the async version of DuckDB-wasm
-    const db = await getDB()
-    return await db.connect()
+
+// taken from @duckdb/duckdb-wasm/dist/types/src/bindings/tokens.d.ts
+// which, unfortunately, we cannot import.
+const DUCKDB_STRING_CONSTANT = 2;
+const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
+
+// returns a mapping of `lakefs://..` URIs to their `s3://...` equivalent
+async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{ [name: string]: string }> {
+    const tokenized = await conn.bindings.tokenize(sql)
+    const r = Math.random(); // random number to make sure the S3 gateway picks up the request
+    let prev = 0;
+    const fileMap: { [name: string]: string } = {};
+    tokenized.offsets.forEach((offset, i) => {
+        let currentToken = sql.length;
+        if (i < tokenized.offsets.length - 1) {
+            currentToken = tokenized.offsets[i+1];
+        }
+        const part = sql.substring(prev, currentToken);
+        prev = currentToken;
+        if (tokenized.types[i] === DUCKDB_STRING_CONSTANT) {
+            const matches = part.match(LAKEFS_URI_PATTERN)
+            if (matches !== null) {
+                fileMap[matches[2]] = `s3://${matches[3]}?r=${r}`;
+            }
+        }
+    })
+    return fileMap
+}
+
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+export async function runDuckDBQuery(sql: string):  Promise<arrow.Table<any>> {
+    const db = await getDuckDB()
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    let result: arrow.Table<any>
+    const conn  = await db.connect()
+    try {
+        // TODO (ozk): read this from the server's configuration?
+        await conn.query(`SET s3_region='us-east-1';`)
+        // set the example values (used to make sure the S3 gateway picks up the request)
+        // real authentication is done using the existing swagger cookie or token
+        await conn.query(`SET s3_access_key_id='use_swagger_credentials';`)
+        await conn.query(`SET s3_secret_access_key='these_are_meaningless_but_must_be_set';`)
+        await conn.query(`SET s3_endpoint='${document.location.protocol}//${document.location.host}';`)
+
+        // register lakefs uri-ed files as s3 files
+        const fileMap = await extractFiles(conn, sql)
+        const fileNames = Object.getOwnPropertyNames(fileMap)
+        await Promise.all(fileNames.map(
+            fileName => db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)
+        ))
+        // execute the query
+        result = await conn.query(sql)
+
+        // remove registrations
+        await Promise.all(fileNames.map(fileName => db.dropFile(fileName)))
+    } finally {
+        await conn.close()
+    }
+    return result
 }

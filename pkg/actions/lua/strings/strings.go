@@ -42,11 +42,11 @@ func trim(l *lua.State) int {
 
 func replace(l *lua.State) int {
 	s := lua.CheckString(l, 1)
-	old := lua.CheckString(l, 2)
-	new := lua.CheckString(l, 3)
+	oldStr := lua.CheckString(l, 2)
+	newStr := lua.CheckString(l, 3)
 	n := lua.CheckInteger(l, 4)
 
-	l.PushString(strings.Replace(s, old, new, n))
+	l.PushString(strings.Replace(s, oldStr, newStr, n))
 	return 1
 }
 

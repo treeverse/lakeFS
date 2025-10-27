@@ -3,6 +3,8 @@ package errors
 import (
 	"encoding/xml"
 	"net/http"
+
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 /*
@@ -80,6 +82,7 @@ const (
 	ErrNoSuchBucket
 	ErrNoSuchBucketPolicy
 	ErrNoSuchBucketLifecycle
+	ErrNoSuchBucketPossibleAPIEndpoint
 	ErrNoSuchKey
 	ErrNoSuchUpload
 	ErrNoSuchVersion
@@ -171,6 +174,7 @@ const (
 	ERRLakeFSNotSupported
 	ERRLakeFSWrongEndpoint
 	ErrWriteToProtectedBranch
+	ErrReadOnlyRepository
 )
 
 type errorCodeMap map[APIErrorCode]APIError
@@ -180,6 +184,12 @@ func (e errorCodeMap) ToAPIErr(errCode APIErrorCode) APIError {
 	if !ok {
 		return e[ErrInternalError]
 	}
+	return apiErr
+}
+
+func (e errorCodeMap) ToAPIErrWithInternalError(errCode APIErrorCode, err error) APIError {
+	apiErr := e.ToAPIErr(errCode)
+	apiErr.Description = err.Error()
 	return apiErr
 }
 
@@ -332,6 +342,11 @@ var Codes = errorCodeMap{
 	ErrNoSuchBucketLifecycle: {
 		Code:           "NoSuchBucketLifecycle",
 		Description:    "The bucket lifecycle configuration does not exist",
+		HTTPStatusCode: http.StatusNotFound,
+	},
+	ErrNoSuchBucketPossibleAPIEndpoint: {
+		Code:           "ErrNoSuchBucketPossibleAPIEndpoint",
+		Description:    `Repository "api" not found; this can happen if your endpoint URL mistakenly ends in "` + apiutil.BaseURL + `".`,
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrNoSuchKey: {
@@ -756,6 +771,11 @@ var Codes = errorCodeMap{
 	ErrWriteToProtectedBranch: {
 		Code:           "ErrWriteToProtectedBranch",
 		Description:    "Attempted to write to a protected branch",
+		HTTPStatusCode: http.StatusForbidden,
+	},
+	ErrReadOnlyRepository: {
+		Code:           "ErrReadOnlyRepository",
+		Description:    "Attempted to write to a read-only repository",
 		HTTPStatusCode: http.StatusForbidden,
 	},
 }

@@ -12,7 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/antonmedv/expr"
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -30,26 +32,32 @@ const (
 	commitPrefix = "commits"
 )
 
-var (
-	ErrNotFound = errors.New("not found")
-	ErrNilValue = errors.New("nil value")
-)
+type Config struct {
+	Enabled bool
+	Lua     struct {
+		NetHTTPEnabled bool
+	}
+	Env struct {
+		Enabled bool
+		Prefix  string
+	}
+}
 
 // StoreService is an implementation of actions.Service that saves
 // the run data to the blockstore and to the actions.Store (which is a
 // fancy name for a DB - kv style or postgres directly)
 type StoreService struct {
-	Store    Store
-	idGen    IDGenerator
-	Source   Source
-	Writer   OutputWriter
-	ctx      context.Context
-	cancel   context.CancelFunc
-	wg       sync.WaitGroup
-	stats    stats.Collector
-	runHooks bool
-
-	endpoint *http.Server
+	Store         Store
+	idGen         IDGenerator
+	Source        Source
+	Writer        OutputWriter
+	ctx           context.Context
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
+	stats         stats.Collector
+	cfg           Config
+	endpoint      *http.Server
+	serverAddress string
 }
 
 type Task struct {
@@ -58,6 +66,7 @@ type Task struct {
 	Action    *Action
 	HookID    string
 	Hook      Hook
+	If        string
 	Err       error
 	StartTime time.Time
 	EndTime   time.Time
@@ -196,7 +205,7 @@ type TaskResultIterator interface {
 type Service interface {
 	Stop()
 	Run(ctx context.Context, record graveler.HookRecord) error
-	UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error
+	UpdateCommitID(ctx context.Context, repository *graveler.RepositoryRecord, runID string, commitID string) error
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error)
 	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error)
@@ -204,18 +213,19 @@ type Service interface {
 	graveler.HooksHandler
 }
 
-func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, runHooks bool) *StoreService {
+func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, cfg Config, serverAddress string) *StoreService {
 	ctx, cancel := context.WithCancel(ctx)
 	return &StoreService{
-		Store:    store,
-		Source:   source,
-		Writer:   writer,
-		ctx:      ctx,
-		idGen:    idGen,
-		cancel:   cancel,
-		wg:       sync.WaitGroup{},
-		stats:    stats,
-		runHooks: runHooks,
+		Store:         store,
+		Source:        source,
+		Writer:        writer,
+		ctx:           ctx,
+		idGen:         idGen,
+		cancel:        cancel,
+		wg:            sync.WaitGroup{},
+		stats:         stats,
+		cfg:           cfg,
+		serverAddress: serverAddress,
 	}
 }
 
@@ -255,7 +265,7 @@ func (s *StoreService) asyncRun(ctx context.Context, record graveler.HookRecord)
 
 // Run load and run actions based on the event information
 func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) error {
-	if !s.runHooks {
+	if !s.cfg.Enabled {
 		logging.FromContext(ctx).WithField("record", record).Debug("Hooks are disabled, skipping hooks execution")
 		return nil
 	}
@@ -300,8 +310,8 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 	var tasks [][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
-		for hookIdx, hook := range action.Hooks {
-			h, err := NewHook(hook, action, s.endpoint)
+		for hookIdx, actionHook := range action.Hooks {
+			h, err := NewHook(actionHook, action, s.cfg, s.endpoint, s.serverAddress, s.stats)
 			if err != nil {
 				return nil, err
 			}
@@ -309,8 +319,9 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 				RunID:     runID,
 				HookRunID: NewHookRunID(actionIdx, hookIdx),
 				Action:    action,
-				HookID:    hook.ID,
+				HookID:    actionHook.ID,
 				Hook:      h,
+				If:        actionHook.If,
 			}
 			// append new task or chain to the last one based on the current action
 			actionTasks = append(actionTasks, task)
@@ -325,21 +336,35 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	var g multierror.Group
 	for _, actionTasks := range tasks {
-		actionTasks := actionTasks // pin
 		g.Go(func() error {
+			var actionErr error
 			for _, task := range actionTasks {
 				hookOutputWriter := &HookOutputWriter{
-					Writer:           s.Writer,
-					StorageNamespace: record.StorageNamespace.String(),
-					RunID:            task.RunID,
-					HookRunID:        task.HookRunID,
-					ActionName:       task.Action.Name,
-					HookID:           task.HookID,
+					Writer:     s.Writer,
+					Repository: record.Repository,
+					RunID:      task.RunID,
+					HookRunID:  task.HookRunID,
+					ActionName: task.Action.Name,
+					HookID:     task.HookID,
 				}
-				buf := bytes.Buffer{}
-				task.StartTime = time.Now().UTC()
 
-				task.Err = task.Hook.Run(ctx, record, &buf)
+				// evaluate if expression and keep error for later
+				var ifHook bool
+				ifHook, task.Err = runHookIfEval(task, actionErr)
+				if task.Err == nil && !ifHook {
+					continue
+				}
+
+				// execute hook if expression evaluated as true or if expression is empty
+				task.StartTime = time.Now().UTC()
+				var buf bytes.Buffer
+				if task.Err == nil {
+					task.Err = task.Hook.Run(ctx, record, &buf)
+					if task.Err != nil {
+						// Wrap the error to later indicate that the precondition failed due to a client-side hook error.
+						task.Err = fmt.Errorf("%w: %s", ErrActionFailed, task.Err)
+					}
+				}
 				task.EndTime = time.Now().UTC()
 
 				s.stats.CollectEvent(stats.Event{Class: "actions_service", Name: string(record.EventType)})
@@ -347,24 +372,53 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 				if task.Err != nil {
 					_, _ = fmt.Fprintf(&buf, "Error: %s\n", task.Err)
 					// wrap error with more information
-					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
-						task.HookRunID, task.Action.Name, task.HookID, task.Err)
+					if _, ok := task.Err.(hook.ErrHookFailure); ok {
+						task.Err = fmt.Errorf("%s: %w", task.HookID, task.Err)
+					} else {
+						task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
+							task.HookRunID, task.Action.Name, task.HookID, task.Err)
+					}
 				}
 
 				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
 				if err != nil {
+					// non task error - we stop the tasks processing
 					return fmt.Errorf("failed to write action log. Run id '%s' action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, err)
 				}
+
+				// stop execution if needed - keep using lastErr for return value.
+				// we do not return here as we like to process all the steps
 				if task.Err != nil {
-					// stop execution of tasks and return error
-					return task.Err
+					// capture the first error
+					if actionErr == nil {
+						actionErr = task.Err
+					}
 				}
 			}
-			return nil
+			return actionErr
 		})
 	}
 	return g.Wait().ErrorOrNil()
+}
+
+func runHookIfEval(task *Task, actionErr error) (bool, error) {
+	result := actionErr == nil // by default, we run based on current status - success: no error
+	if task.If == "" {
+		return result, nil
+	}
+	env := map[string]any{
+		"success": func() bool { return actionErr == nil },
+		"failure": func() bool { return actionErr != nil },
+	}
+	output, err := expr.Eval(task.If, env)
+	if err != nil {
+		return false, err
+	}
+	if b, ok := output.(bool); ok {
+		return b, nil
+	}
+	return false, ErrIfExprNotBool
 }
 
 func (s *StoreService) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
@@ -374,15 +428,16 @@ func (s *StoreService) saveRunInformation(ctx context.Context, record graveler.H
 
 	manifest := buildRunManifestFromTasks(record, tasks)
 
-	err := s.saveRunManifestDB(ctx, record.RepositoryID, manifest)
+	repositoryID := record.Repository.RepositoryID
+	err := s.saveRunManifestDB(ctx, repositoryID, manifest)
 	if err != nil {
 		return fmt.Errorf("insert run information: %w", err)
 	}
 
-	return s.saveRunManifestObjectStore(ctx, manifest, record.StorageNamespace.String(), record.RunID)
+	return s.saveRunManifestObjectStore(ctx, manifest, record.Repository, record.RunID)
 }
 
-func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
+func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, repository *graveler.RepositoryRecord, runID string) error {
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return fmt.Errorf("marshal run manifest: %w", err)
@@ -390,7 +445,7 @@ func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest 
 	runManifestPath := FormatRunManifestOutputPath(runID)
 	manifestReader := bytes.NewReader(manifestJSON)
 	manifestSize := int64(len(manifestJSON))
-	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
+	return s.Writer.OutputWrite(ctx, repository, runManifestPath, manifestReader, manifestSize)
 }
 
 func (s *StoreService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
@@ -438,8 +493,8 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 }
 
 // UpdateCommitID assume record is a post event, we use the PreRunID to update the commit_id and save the run manifest again
-func (s *StoreService) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
-	manifest, err := s.Store.UpdateCommitID(ctx, repositoryID, runID, commitID)
+func (s *StoreService) UpdateCommitID(ctx context.Context, repository *graveler.RepositoryRecord, runID string, commitID string) error {
+	manifest, err := s.Store.UpdateCommitID(ctx, repository.RepositoryID.String(), runID, commitID)
 	if err != nil {
 		return fmt.Errorf("updating commit ID: %w", err)
 	}
@@ -448,7 +503,7 @@ func (s *StoreService) UpdateCommitID(ctx context.Context, repositoryID string, 
 	}
 
 	// update manifest
-	return s.saveRunManifestObjectStore(ctx, *manifest, storageNamespace, runID)
+	return s.saveRunManifestObjectStore(ctx, *manifest, repository, runID)
 }
 
 func (s *StoreService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
@@ -467,13 +522,17 @@ func (s *StoreService) ListRunTaskResults(ctx context.Context, repositoryID stri
 	return s.Store.ListRunTaskResults(ctx, repositoryID, runID, after)
 }
 
+func (s *StoreService) PrepareCommitHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
 func (s *StoreService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
 
 func (s *StoreService) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-commit with commit ID if needed
-	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
+	err := s.UpdateCommitID(ctx, record.Repository, record.PreRunID, record.CommitID.String())
 	if err != nil {
 		return err
 	}
@@ -487,12 +546,6 @@ func (s *StoreService) PreMergeHook(ctx context.Context, record graveler.HookRec
 }
 
 func (s *StoreService) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
-	// update pre-merge with commit ID if needed
-	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
-	if err != nil {
-		return err
-	}
-
 	s.asyncRun(ctx, record)
 	return nil
 }
@@ -527,6 +580,30 @@ func (s *StoreService) PreDeleteBranchHook(ctx context.Context, record graveler.
 
 func (s *StoreService) PostDeleteBranchHook(ctx context.Context, record graveler.HookRecord) {
 	s.asyncRun(ctx, record)
+}
+
+func (s *StoreService) PreRevertHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostRevertHook(ctx context.Context, record graveler.HookRecord) error {
+	// update pre-commit with commit ID if needed
+	err := s.UpdateCommitID(ctx, record.Repository, record.PreRunID, record.CommitID.String())
+	if err != nil {
+		return err
+	}
+
+	s.asyncRun(ctx, record)
+	return nil
+}
+
+func (s *StoreService) PreCherryPickHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostCherryPickHook(ctx context.Context, record graveler.HookRecord) error {
+	s.asyncRun(ctx, record)
+	return nil
 }
 
 func (s *StoreService) NewRunID() string {

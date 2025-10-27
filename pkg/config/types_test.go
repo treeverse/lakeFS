@@ -1,14 +1,17 @@
 package config_test
 
 import (
-	"github.com/go-test/deep"
-	"github.com/mitchellh/mapstructure"
-	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/testutil"
-
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/go-openapi/swag"
+
+	"github.com/go-test/deep"
+	"github.com/go-viper/mapstructure/v2"
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type StringsStruct struct {
@@ -77,6 +80,57 @@ func TestStrings(t *testing.T) {
 	}
 }
 
+func TestDecodeStringToMap(t *testing.T) {
+	cases := []struct {
+		Name        string
+		Source      string
+		Expected    map[string]string
+		ExpectedErr error
+	}{
+		{
+			Name:     "empty string",
+			Source:   "",
+			Expected: map[string]string{},
+		}, {
+			Name:     "single pair",
+			Source:   "key=value",
+			Expected: map[string]string{"key": "value"},
+		}, {
+			Name:     "multiple pairs",
+			Source:   "key1=value1,key2=value2",
+			Expected: map[string]string{"key1": "value1", "key2": "value2"},
+		}, {
+			Name:     "pair with spaces",
+			Source:   "key = value , key2 = value2",
+			Expected: map[string]string{"key": "value", "key2": "value2"},
+		}, {
+			Name:        "invalid pair",
+			Source:      "key1=value1,key2",
+			ExpectedErr: config.ErrInvalidKeyValuePair,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			result := make(map[string]string)
+			dc := mapstructure.DecoderConfig{
+				DecodeHook: config.DecodeStringToMap(),
+				Result:     &result,
+			}
+			decoder, err := mapstructure.NewDecoder(&dc)
+			testutil.MustDo(t, "new decoder", err)
+			err = decoder.Decode(c.Source)
+			if c.ExpectedErr == nil {
+				testutil.MustDo(t, "decode", err)
+				if diffs := deep.Equal(result, c.Expected); diffs != nil {
+					t.Error(diffs)
+				}
+			} else if !errorsMatch(err, c.ExpectedErr) {
+				t.Errorf("Got error \"%v\", expected error \"%v\"", err, c.ExpectedErr)
+			}
+		})
+	}
+}
+
 type OnlyStringStruct struct {
 	S config.OnlyString
 }
@@ -132,6 +186,138 @@ func TestOnlyString(t *testing.T) {
 				if diffs := deep.Equal(o, *c.Expected); diffs != nil {
 					t.Errorf("Got unexpected value: %s", diffs)
 				}
+			}
+		})
+	}
+}
+
+func TestStringToSliceWithBracketHookFunc(t *testing.T) {
+	type testStruct struct {
+		ID      int
+		Element string
+	}
+
+	cases := []struct {
+		Name       string
+		Source     string
+		Expected   any
+		ErrMessage *string
+	}{
+		{
+			Name:     "empty slice of strings",
+			Source:   "",
+			Expected: []string{},
+		},
+		{
+			Name:     "slice of string",
+			Source:   `["one", "two", "three"]`,
+			Expected: []string{"one", "two", "three"},
+		},
+		{
+			Name:     "slice of numbers",
+			Source:   `[1, 2, 3]`,
+			Expected: []int{1, 2, 3},
+		},
+		{
+			Name:   "slice of structs",
+			Source: `[{"id": 1, "element": "one"}, {"id": 2, "element": "two"}]`,
+			Expected: []testStruct{
+				{ID: 1, Element: "one"},
+				{ID: 2, Element: "two"},
+			},
+		},
+		{
+			Name:       "invalid object",
+			Source:     `{"key": "value"}`,
+			Expected:   []string(nil),
+			ErrMessage: swag.String("source data must be an array or slice"),
+		},
+		{
+			Name:       "invalid json",
+			Source:     "not a json array",
+			Expected:   []string(nil),
+			ErrMessage: swag.String("source data must be an array or slice"),
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			expectedType := reflect.TypeOf(c.Expected)
+			result := reflect.New(expectedType).Interface()
+			dc := mapstructure.DecoderConfig{
+				DecodeHook: config.StringToSliceWithBracketHookFunc(),
+				Result:     &result,
+			}
+			decoder, err := mapstructure.NewDecoder(&dc)
+			testutil.MustDo(t, "new decoder", err)
+
+			err = decoder.Decode(c.Source)
+			if c.ErrMessage != nil && err == nil {
+				t.Errorf("Got value %+v, error %v when expecting error %v", result, err, c.ErrMessage)
+			} else if err != nil && !strings.Contains(err.Error(), *c.ErrMessage) {
+				t.Errorf("Got error %v when expecting to succeed", err)
+			} else {
+				reflectResult := reflect.ValueOf(result).Elem().Interface()
+				if diffs := deep.Equal(reflectResult, c.Expected); diffs != nil {
+					t.Errorf("Got unexpected value: %v", diffs)
+				}
+			}
+		})
+	}
+}
+
+func TestStringToStructHookFunc(t *testing.T) {
+	type TestStruct struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+
+	cases := []struct {
+		Name     string
+		Source   string
+		Result   interface{}
+		Expected interface{}
+	}{
+		{
+			Name:     "Empty string",
+			Source:   "",
+			Result:   &TestStruct{},
+			Expected: &TestStruct{},
+		},
+		{
+			Name:   "Valid JSON object",
+			Source: `{"name": "test", "value": 42}`,
+			Result: &TestStruct{},
+			Expected: &TestStruct{
+				Name:  "test",
+				Value: 42,
+			},
+		},
+		{
+			Name:     "Invalid JSON (array)",
+			Source:   `["one", "two", "three"]`,
+			Expected: `["one", "two", "three"]`,
+		},
+		{
+			Name:     "Invalid JSON (string)",
+			Source:   "just a string",
+			Expected: "just a string",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			dc := mapstructure.DecoderConfig{
+				DecodeHook: config.StringToStructHookFunc(),
+				Result:     &c.Result,
+			}
+			decoder, err := mapstructure.NewDecoder(&dc)
+			testutil.MustDo(t, "new decoder", err)
+			err = decoder.Decode(c.Source)
+			if err != nil {
+				t.Errorf("Got error %v when expecting to succeed", err)
+			} else if diffs := deep.Equal(c.Result, c.Expected); diffs != nil {
+				t.Errorf("Got unexpected value: %s", diffs)
 			}
 		})
 	}

@@ -26,15 +26,6 @@ func (*HexAddressProvider) ContentAddress(entity Identifiable) string {
 	return hex.EncodeToString(entity.Identity())
 }
 
-// IsContentAddress check if addr is valid content address or partial content address
-func IsContentAddress(addr string) bool {
-	if len(addr) == 0 || len(addr) > sha256.Size*2 {
-		return false
-	}
-	_, err := hex.DecodeString(addr)
-	return err == nil
-}
-
 type AddressType uint8
 
 const (
@@ -47,8 +38,6 @@ const (
 )
 
 // linter is angry because h can be an io.Writer, but we explicitly want a Hash here.
-//
-//nolint:interfacer
 func marshalType(h hash.Hash, addressType AddressType) {
 	_, _ = h.Write([]byte{byte(addressType)})
 }
@@ -70,7 +59,8 @@ func MarshalInt64(h hash.Hash, v int64) {
 	marshalType(h, AddressTypeInt64)
 	_, _ = h.Write([]byte{int64Bytes})
 	bytes := make([]byte, int64Bytes)
-	binary.BigEndian.PutUint64(bytes, uint64(v))
+	// safe as we are only interested in v's bytes value
+	binary.BigEndian.PutUint64(bytes, uint64(v)) //nolint:gosec
 	_, _ = h.Write(bytes)
 }
 

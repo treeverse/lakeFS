@@ -1,15 +1,19 @@
 package block
 
 import (
-	"crypto/md5" //nolint:gosec
+	// MD5 required for ETag computation.
+	//nolint:gosec
+	"crypto/md5"
 	"crypto/sha256"
 	"hash"
 	"io"
 	"strconv"
 )
 
+type HashFunction int
+
 const (
-	HashFunctionMD5 = iota
+	HashFunctionMD5 HashFunction = iota
 	HashFunctionSHA256
 )
 
@@ -36,13 +40,14 @@ func (s *HashingReader) Read(p []byte) (int, error) {
 	return nb, err
 }
 
-func NewHashingReader(body io.Reader, hashTypes ...int) *HashingReader {
+func NewHashingReader(body io.Reader, hashTypes ...HashFunction) *HashingReader {
 	s := new(HashingReader)
 	s.originalReader = body
-	for hashType := range hashTypes {
+	for _, hashType := range hashTypes {
 		switch hashType {
 		case HashFunctionMD5:
 			if s.Md5 == nil {
+				// MD5 required for ETag computation.
 				s.Md5 = md5.New() //nolint:gosec
 			}
 		case HashFunctionSHA256:
@@ -50,7 +55,7 @@ func NewHashingReader(body io.Reader, hashTypes ...int) *HashingReader {
 				s.Sha256 = sha256.New()
 			}
 		default:
-			panic("wrong hash type number " + strconv.Itoa(hashType))
+			panic("wrong hash type number " + strconv.Itoa(int(hashType)))
 		}
 	}
 	return s
