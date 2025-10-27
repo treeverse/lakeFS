@@ -116,7 +116,7 @@ public class Statement {
 
   public static final String SERIALIZED_NAME_CONDITION = "condition";
   @SerializedName(SERIALIZED_NAME_CONDITION)
-  private Map<String, List<String>> condition = new HashMap<>();
+  private Map<String, Map<String, List<String>>> condition = new HashMap<>();
 
   public Statement() {
   }
@@ -192,13 +192,13 @@ public class Statement {
   }
 
 
-  public Statement condition(Map<String, List<String>> condition) {
+  public Statement condition(Map<String, Map<String, List<String>>> condition) {
     
     this.condition = condition;
     return this;
   }
 
-  public Statement putConditionItem(String key, List<String> conditionItem) {
+  public Statement putConditionItem(String key, Map<String, List<String>> conditionItem) {
     if (this.condition == null) {
       this.condition = new HashMap<>();
     }
@@ -211,12 +211,12 @@ public class Statement {
    * @return condition
   **/
   @javax.annotation.Nullable
-  public Map<String, List<String>> getCondition() {
+  public Map<String, Map<String, List<String>>> getCondition() {
     return condition;
   }
 
 
-  public void setCondition(Map<String, List<String>> condition) {
+  public void setCondition(Map<String, Map<String, List<String>>> condition) {
     this.condition = condition;
   }
 

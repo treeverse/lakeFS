@@ -32,7 +32,7 @@ class Statement(BaseModel):
     effect: StrictStr = Field(...)
     resource: StrictStr = Field(...)
     action: conlist(StrictStr, min_items=1) = Field(...)
-    condition: Optional[Dict[str, conlist(StrictStr)]] = Field(None, description="Optional conditions for when this statement applies.")
+    condition: Optional[Dict[str, Dict[str, conlist(StrictStr)]]] = Field(None, description="Optional conditions for when this statement applies.")
     __properties = ["effect", "resource", "action", "condition"]
 
     @validator('effect')
@@ -66,15 +66,6 @@ class Statement(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
-        # override the default output from pydantic by calling `to_dict()` of each value in condition (dict of array)
-        _field_dict_of_array = {}
-        if self.condition:
-            for _key in self.condition:
-                if self.condition[_key]:
-                    _field_dict_of_array[_key] = [
-                        _item.to_dict() for _item in self.condition[_key]
-                    ]
-            _dict['condition'] = _field_dict_of_array
         return _dict
 
     @classmethod

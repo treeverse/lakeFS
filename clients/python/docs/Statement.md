@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 **effect** | **str** |  | 
 **resource** | **str** |  | 
 **action** | **List[str]** |  | 
-**condition** | **Dict[str, List[str]]** | Optional conditions for when this statement applies. | [optional] 
+**condition** | **Dict[str, Dict[str, List[str]]]** | Optional conditions for when this statement applies. | [optional] 
 
 ## Example
 
