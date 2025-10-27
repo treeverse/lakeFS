@@ -3,6 +3,7 @@ package esti
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -903,6 +904,23 @@ func TestS3CopyObject(t *testing.T) {
 	})
 }
 
+var errMissingPrefix = errors.New("missing prefix")
+
+// stripKeyPrefix strips prefix from all keys of m.  It returns an error along with a stripped
+// map if not all keys have the prefix.
+func stripKeyPrefix[T any](prefix string, m map[string]T) (map[string]T, error) {
+	ret := make(map[string]T, len(m))
+	var err error
+	for key, value := range m {
+		stripped, ok := strings.CutPrefix(key, prefix)
+		if !ok {
+			err = errors.Join(err, fmt.Errorf("%w in %s", errMissingPrefix, key))
+		}
+		ret[stripped] = value
+	}
+	return ret, err
+}
+
 func TestS3PutObjectUserMetadata(t *testing.T) {
 	t.Parallel()
 	ctx, _, repo := setupTest(t)
@@ -940,8 +958,11 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 	require.NoError(t, err, "Call statObject using lakeFS API")
 	require.NoError(t, VerifyResponse(statsResp.HTTPResponse, statsResp.Body), "statObject using lakeFS API")
 
-	if diffs := deep.Equal(statsResp.JSON200.Metadata.AdditionalProperties,
-		metadata); diffs != nil {
+	// Because of #9089, any user metadata uploaded through the S3 gateway has a x-aws-meta-
+	// prefix.
+	strippedMetadata, err := stripKeyPrefix("X-Amz-Meta-", statsResp.JSON200.Metadata.AdditionalProperties)
+	assert.NoErrorf(t, err, "Failed to strip prefix from metadata keys in %+v", statsResp.JSON200.Metadata.AdditionalProperties)
+	if diffs := deep.Equal(strippedMetadata, metadata); diffs != nil {
 		t.Errorf("Different user metadata from API: %s", diffs)
 	}
 }
