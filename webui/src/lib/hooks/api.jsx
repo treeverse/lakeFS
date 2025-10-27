@@ -58,11 +58,6 @@ export const useAPI = (promise, deps = []) => {
         setRequest(initialAPIState);
         const execute = async () => {
             try {
-                if (sessionStorage.getItem('logging_out') === '1') {
-                    if (!isMounted) return;
-                    setRequest({ loading: false, error: null, response: null });
-                    return;
-                }
                 const response = await promise();
                 if (!isMounted) return;
                 setRequest({ loading: false, error: null, response });

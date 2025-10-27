@@ -122,10 +122,6 @@ const LoginPage = () => {
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
 
-    useEffect(() => {
-        sessionStorage.removeItem('logging_out');
-    }, []);
-
     if (loading) {
         return <Loading />;
     }
