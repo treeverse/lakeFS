@@ -39,10 +39,22 @@ const NavUserInfo = () => {
                     </>
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
-                onClick={()=> {
+                onClick={async () => {
+                    // auth.clearCurrentUser();
+                    // setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
+                    // window.location.replace(logoutUrl);
+                    sessionStorage.setItem('logging_out', '1');
+
                     auth.clearCurrentUser();
                     setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-                    window.location.replace(logoutUrl);
+                    await fetch(logoutUrl, {
+                        method: 'GET',
+                        credentials: 'include',
+                        redirect: 'manual',
+                        cache: 'no-store'
+                    });
+
+                    window.location.assign('/auth/login?redirected=true');
                 }}>
                 Logout
             </NavDropdown.Item>
