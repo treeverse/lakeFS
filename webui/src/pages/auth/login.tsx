@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -121,6 +121,10 @@ const LoginPage = () => {
     const location = useLocation();
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
+
+    useEffect(() => {
+        window.sessionStorage.removeItem('logging_out');
+    }, []);
 
     if (loading) {
         return <Loading />;

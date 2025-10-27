@@ -7,6 +7,7 @@ const useUser = () => {
     const { status, setAuthStatus } = useAuth();
 
     const fetcher = useCallback(() => {
+        if (window.sessionStorage.getItem('logging_out') === '1') return Promise.resolve(null);
         if (status === AUTH_STATUS.UNAUTHENTICATED) return Promise.resolve(null);
         return auth.getCurrentUser();
     }, [status]);
