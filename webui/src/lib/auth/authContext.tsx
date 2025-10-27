@@ -3,6 +3,7 @@ import React, { createContext, useContext, useMemo, useState, ReactNode } from "
 export const AUTH_STATUS = {
     AUTHENTICATED: "authenticated",
     UNAUTHENTICATED: "unauthenticated",
+    UNKNOWN: "unknown",
 } as const;
 
 export type AuthStatus = typeof AUTH_STATUS[keyof typeof AUTH_STATUS];
@@ -14,10 +15,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const readInitialStatus = (): AuthStatus =>
-    window.localStorage.getItem("user")
-        ? AUTH_STATUS.AUTHENTICATED
-        : AUTH_STATUS.UNAUTHENTICATED;
+const readInitialStatus = (): AuthStatus => AUTH_STATUS.UNKNOWN;
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [status, setStatus] = useState<AuthStatus>(() => readInitialStatus());
