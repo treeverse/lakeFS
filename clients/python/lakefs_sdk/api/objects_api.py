@@ -582,7 +582,7 @@ class ObjectsApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def get_object(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve")] = None, if_none_match : Annotated[Optional[StrictStr], Field(description="Returns response only if the object does not have a matching ETag")] = None, presign : Optional[StrictBool] = None, **kwargs) -> bytearray:  # noqa: E501
+    def get_object(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve1")] = None, if_none_match : Annotated[Optional[StrictStr], Field(description="Returns response only if the object does not have a matching ETag")] = None, presign : Optional[StrictBool] = None, **kwargs) -> bytearray:  # noqa: E501
         """get object content  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -597,7 +597,7 @@ class ObjectsApi:
         :type ref: str
         :param path: relative to the ref (required)
         :type path: str
-        :param range: Byte range to retrieve
+        :param range: Byte range to retrieve1
         :type range: str
         :param if_none_match: Returns response only if the object does not have a matching ETag
         :type if_none_match: str
@@ -621,7 +621,7 @@ class ObjectsApi:
         return self.get_object_with_http_info(repository, ref, path, range, if_none_match, presign, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_object_with_http_info(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve")] = None, if_none_match : Annotated[Optional[StrictStr], Field(description="Returns response only if the object does not have a matching ETag")] = None, presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def get_object_with_http_info(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve1")] = None, if_none_match : Annotated[Optional[StrictStr], Field(description="Returns response only if the object does not have a matching ETag")] = None, presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """get object content  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -636,7 +636,7 @@ class ObjectsApi:
         :type ref: str
         :param path: relative to the ref (required)
         :type path: str
-        :param range: Byte range to retrieve
+        :param range: Byte range to retrieve1
         :type range: str
         :param if_none_match: Returns response only if the object does not have a matching ETag
         :type if_none_match: str

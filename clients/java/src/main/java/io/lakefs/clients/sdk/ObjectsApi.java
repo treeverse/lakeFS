@@ -856,7 +856,7 @@ public class ObjectsApi {
 
         /**
          * Set range
-         * @param range Byte range to retrieve (optional)
+         * @param range Byte range to retrieve1 (optional)
          * @return APIgetObjectRequest
          */
         public APIgetObjectRequest range(String range) {

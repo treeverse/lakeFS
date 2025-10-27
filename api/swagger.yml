@@ -4420,7 +4420,7 @@ paths:
       parameters:
         - in: header
           name: Range
-          description: Byte range to retrieve
+          description: Byte range to retrieve1
           example: "bytes=0-1023"
           required: false
           schema:
