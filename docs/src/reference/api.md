@@ -5,4 +5,4 @@ hide:
   toc: true
 ---
 
-!!swagger ../assets/js/swagger.yml!!
+!!swagger ../../../api/swagger.yml!!

@@ -85,7 +85,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(ctx, p, options.GS...)
+		return BuildSingleGSAdapter(ctx, p, options.GS...)
 	case block.BlockstoreTypeAzure:
 		p, err := c.BlockstoreAzureParams()
 		if err != nil {
@@ -168,33 +168,8 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 	return storage.NewClient(ctx, opts...)
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (block.Adapter, error) {
-	if params.DataCredentialsJSON == "" && params.DataCredentialsFile == "" {
-		return buildSingleGSAdapter(ctx, params, adapterOpts...)
-	}
-
-	metadataAdapter, err := buildSingleGSAdapter(ctx, params, adapterOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metadata adapter: %w", err)
-	}
-
-	dataParams := params
-	dataParams.CredentialsFile = params.DataCredentialsFile
-	dataParams.CredentialsJSON = params.DataCredentialsJSON
-
-	dataAdapter, err := buildSingleGSAdapter(ctx, dataParams, adapterOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create data adapter: %w", err)
-	}
-
-	dualAdapter := gs.NewDualAdapter(metadataAdapter, dataAdapter)
-	logging.FromContext(ctx).WithField("type", "gs").Info("initialized dual blockstore adapter")
-
-	return dualAdapter, nil
-}
-
-// buildSingleGSAdapter creates a single GS adapter (extracted from original buildGSAdapter)
-func buildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
+// BuildSingleGSAdapter creates a single GS adapter
+func BuildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
 	client, err := BuildGSClient(ctx, params)
 	if err != nil {
 		return nil, err

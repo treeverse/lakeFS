@@ -137,6 +137,190 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
    <img src="../../../assets/img/setup_done.png" alt="Setup Done">
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
+## Configure minimal permissions for your GCS bucket
+
+If required, lakeFS can operate without accessing the data itself. This permission model is useful if you are running a zero trust architecture, using [presigned URLs mode][presigned-url], or the [lakeFS Hadoop FileSystem Spark integration][integration-hadoopfs].
+
+!!! warning "Dedicated GCP Project Recommended"
+    Due to the nature of VPC Service Controls which place a perimeter around the entire GCS service, it's strongly recommended to use a dedicated GCP project for your lakeFS bucket. This simplifies permission and access management significantly.
+
+### Architecture Overview
+
+This setup uses two service accounts:
+
+1. **Metadata Service Account (SA_OPEN)**: Accesses bucket prefixes in the form of  `gs://<bucket-name>/<prefix>/_lakefs/` from anywhere.
+2. **Data Service Account (SA_RESTRICTED)**: Accesses all data except bucket prefixes in the form of `gs://<bucket-name>/<prefix>/_lakefs/`, restricted by network using VPC Service Controls.
+
+lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, where metadata is stored.
+
+### Limitations
+
+This configuration supports only presign mode. This means that you won't be able to:
+
+* Upload objects using the lakeFS Web UI (presign mode is configurable)
+* Upload objects through lakeFS S3 Gateway
+* Run `lakectl fs` commands
+
+### Setup Steps
+
+#### 1. Create Service Accounts
+
+Set your environment variables:
+
+```bash
+export PROJECT_ID="[YOUR_PROJECT_ID]"
+export SA_OPEN_ID="lakefs-metadata"
+export SA_RESTRICTED_ID="lakefs-data"
+export BUCKET="[YOUR_BUCKET_NAME]"
+```
+
+Create the service accounts:
+
+```bash
+# Metadata service account (accesses _lakefs/** from anywhere)
+gcloud iam service-accounts create "${SA_OPEN_ID}" \
+  --project="${PROJECT_ID}" \
+  --description="lakeFS metadata - RW only under /_lakefs/** (from anywhere)" \
+  --display-name="lakeFS Metadata Service Account"
+
+# Data service account (accesses everything except _lakefs/**, network-restricted)
+gcloud iam service-accounts create "${SA_RESTRICTED_ID}" \
+  --project="${PROJECT_ID}" \
+  --description="lakeFS data - RW everywhere except /_lakefs/** (network-restricted)" \
+  --display-name="lakeFS Data Service Account"
+```
+
+Get the full service account emails:
+
+```bash
+export SA_OPEN="${SA_OPEN_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
+export SA_RESTRICTED="${SA_RESTRICTED_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
+```
+
+#### 2. Configure Bucket IAM Policies
+
+In this step, we will configure the IAM policies on the bucket level to grant the necessary permissions for the service accounts.
+
+Grant the metadata service account access to `gs://<bucket-name>/<prefix>/_lakefs/` prefix only:
+
+```bash
+gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
+  --member="serviceAccount:${SA_OPEN}" \
+  --role="roles/storage.objectAdmin" \
+  --condition='title=lakefs-metadata-only,description=Access_only_to_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{prefix}/_lakefs/") != ""'
+```
+
+Grant the data service account access to everything except `gs://<bucket-name>/<prefix>/_lakefs/` prefix:
+
+```bash
+# Object access (read/write) for non-_lakefs paths
+gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
+  --member="serviceAccount:${SA_RESTRICTED}" \
+  --role="roles/storage.objectAdmin" \
+  --condition='title=lakefs-data-only,description=Access_except_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{prefix}/_lakefs/") == ""'
+```
+
+Create a custom IAM role for listing objects and grant it to the data service account:
+
+```bash
+# Create custom role for listing objects only
+gcloud iam roles create lakefsDataListOnly \
+  --project="${PROJECT_ID}" \
+  --title="lakeFS Data List Only" \
+  --description="Custom role for lakeFS data service account to list objects" \
+  --permissions="storage.objects.list"
+
+# Grant the custom role to the data service account
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${SA_RESTRICTED}" \
+  --role="projects/${PROJECT_ID}/roles/lakefsDataListOnly"
+```
+
+#### 3. Set Up VPC Service Controls
+
+Create an access level that defines your allowed networks (adjust IP ranges and VPC as needed):
+
+```bash
+# Get your organization's access policy ID
+export ORG_ID="[YOUR_ORG_ID]"
+export POLICY_ID=$(gcloud access-context-manager policies list \
+  --organization="${ORG_ID}" \
+  --format="value(name)")
+
+# Create an access level for your allowed networks
+cat > access-level.yaml <<EOF
+- ipSubnetworks:
+  - "[YOUR_ALLOWED_IP_CIDR]"
+  vpcNetworkSources:
+  - vpcSubnetwork:
+      network: "projects/[YOUR_VPC_PROJECT]/global/networks/[YOUR_VPC_NAME]"
+EOF
+
+gcloud access-context-manager levels create Restrict_Network_Access \
+  --policy="${POLICY_ID}" \
+  --title="Restrict Network Access to Approved IPs and VPCs" \
+  --combine-function=OR \
+  --basic-level-spec=access-level.yaml
+```
+
+#### 4. Create Ingress Policy
+
+Define the ingress policy for the restricted service account:
+
+```bash
+export ACCESS_LEVEL="accessPolicies/${POLICY_ID}/accessLevels/Restrict_Network_Access"
+
+cat > ingress-policy.yaml <<EOF
+- ingressFrom:
+    identities:
+    - serviceAccount:${SA_RESTRICTED}
+    sources:
+    - accessLevel: ${ACCESS_LEVEL}
+  ingressTo:
+    operations:
+    - serviceName: storage.googleapis.com
+    resources:
+    - '*'
+  title: lakeFS Data Service Account Ingress
+EOF
+```
+
+#### 5. Create VPC Service Controls Perimeter
+
+```bash
+gcloud access-context-manager perimeters create lakefs_perimeter \
+  --policy="${POLICY_ID}" \
+  --title="lakeFS Security Perimeter" \
+  --resources="projects/${PROJECT_ID}" \
+  --restricted-services="storage.googleapis.com" \
+  --ingress-policies=ingress-policy.yaml
+```
+
+#### 6. Update lakeFS configuration
+
+In your lakeFS configuration, update the credentials for the blockstore to use the metadata and data service accounts:
+
+```yaml
+blockstore:
+  type: gs
+  gs:
+    credentials_json: [SA_OPEN_SERVICE_ACCOUNT_JSON]
+    # Alternatively, you can use a file path:
+    # data_credentials_file: /path/to/sa_restricted_service_account.json
+```
+
+For data operations, your clients should use the data service account (SA_RESTRICTED) credentials and must access from within the allowed networks and VPCs defined in your VPC Service Controls.
+
+### Network Access Control
+
+With this setup:
+
+- **lakeFS server** uses SA_OPEN to access metadata (`_lakefs/`) from any network
+- **Data access** through SA_RESTRICTED is only permitted from approved IP addresses and VPCs defined in the VPC Service Controls access level
+- Clients accessing data must be within the allowed network perimeter
+
+This provides similar security to AWS's condition keys (like `aws:SourceVpc` and `aws:SourceIp`) but using GCP's VPC Service Controls.
+
 ## Create your first repository
 
 1. Use the credentials from the previous step to log in
@@ -149,3 +333,4 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 !!! success "Congratulations"
     Your environment is now ready 🤩
+

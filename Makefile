@@ -79,14 +79,6 @@ check-licenses-npm:
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
-docs/src/assets/js/swagger.yml: api/swagger.yml
-	@cp api/swagger.yml docs/src/assets/js/swagger.yml
-
-docs/src/assets/js/authorization.yml: api/authorization.yml
-	@cp api/authorization.yml docs/src/assets/js/authorization.yml
-
-docs: docs/src/assets/js/swagger.yml docs/src/assets/js/authorization.yml
-
 docs-serve: ### Serve local docs
 	$(DOCKER) run --rm -it -p 4000:4000 -v ./docs:/docs --entrypoint /bin/sh squidfunk/mkdocs-material:9 -c "cd /docs && pip install -r requirements-docs.txt && mkdocs serve --dev-addr=0.0.0.0:4000"
 
@@ -151,7 +143,7 @@ package-python-wrapper:
 package: package-python
 
 .PHONY: gen-api
-gen-api: docs/src/assets/js/swagger.yml ## Run the swagger code generator
+gen-api: ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth ./pkg/authentication
 
 .PHONY: gen-code
@@ -170,7 +162,7 @@ gen-code: gen-api ## Run the generator for inline commands
 		./tools/wrapgen/testcode
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
-build: gen docs build-binaries ## Download dependencies and build the default binary
+build: gen build-binaries ## Download dependencies and build the default binary
 
 build-binaries:
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
