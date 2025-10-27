@@ -74,8 +74,7 @@ export const useAPI = (promise, deps = []) => {
             }
         };
         execute();
-        return () => { isMounted = false; };
+        return () => isMounted = false;
     }, deps);
-
-    return { ...request };
-};
+    return {...request};
+}
