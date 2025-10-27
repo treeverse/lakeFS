@@ -932,38 +932,59 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 		"Ascii":     "value",
 		"Non-Ascii": "והארץ היתה תהו ובהו", // "without form and void"
 	}
-
-	path := gatewayTestPrefix + "file"
-	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
-
-	_, err := s3lakefsClient.PutObject(ctx, repo, path, strings.NewReader(contents), int64(len(contents)),
-		minio.PutObjectOptions{
-			UserMetadata: metadata,
-		})
-	require.NoError(t, err, "putObject")
-
-	info, err := s3lakefsClient.StatObject(ctx, repo, path, minio.StatObjectOptions{})
-	require.NoError(t, err, "statObject")
-
-	if diffs := deep.Equal(info.UserMetadata, minio.StringMap(metadata)); diffs != nil {
-		t.Errorf("Different user metadata from S3 gateway: %s", diffs)
+	// encodedMetadata are the metadata a conforming client sends, with
+	// values Q-word encoded according to RFC 2047.
+	encodedMetadata := map[string]string{
+		"Ascii":     "value",
+		"Non-Ascii": "=?utf-8?q?=D7=95=D7=94=D7=90=D7=A8=D7=A5_=D7=94=D7=99=D7=AA=D7=94_=D7=AA?= =?utf-8?q?=D7=94=D7=95_=D7=95=D7=91=D7=94=D7=95?=",
 	}
 
-	// The lakeFS API does not need to perform header encoding.  Use it to check that lakeFS
-	// sees the expected values.
-	statsResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{
-		Path:         "data/file",
-		UserMetadata: aws.Bool(true),
-	})
-	require.NoError(t, err, "Call statObject using lakeFS API")
-	require.NoError(t, VerifyResponse(statsResp.HTTPResponse, statsResp.Body), "statObject using lakeFS API")
+	// Headers are _supposed_ to be RFC 2047 encoded on upload.  But this should actually
+	// _always_ work, "non" is just illegal encoding.
+	for _, encode := range []string{"rfc2047", "none"} {
+		t.Run(encode, func(t *testing.T) {
+			file := fmt.Sprintf("data/file.%s", encode)
+			path := fmt.Sprintf("%sfile.%s", gatewayTestPrefix, encode)
+			s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
 
-	// Because of #9089, any user metadata uploaded through the S3 gateway has a x-aws-meta-
-	// prefix.
-	strippedMetadata, err := stripKeyPrefix("X-Amz-Meta-", statsResp.JSON200.Metadata.AdditionalProperties)
-	assert.NoErrorf(t, err, "Failed to strip prefix from metadata keys in %+v", statsResp.JSON200.Metadata.AdditionalProperties)
-	if diffs := deep.Equal(strippedMetadata, metadata); diffs != nil {
-		t.Errorf("Different user metadata from API: %s", diffs)
+			metadataToSend := metadata
+			if encode == "rfc2047" {
+				metadataToSend = encodedMetadata
+			}
+			_, err := s3lakefsClient.PutObject(ctx, repo, path, strings.NewReader(contents), int64(len(contents)),
+				minio.PutObjectOptions{
+					UserMetadata: metadataToSend,
+				})
+			require.NoError(t, err, "putObject")
+
+			info, err := s3lakefsClient.StatObject(ctx, repo, path, minio.StatObjectOptions{})
+			require.NoError(t, err, "statObject")
+
+			// The AWS golang SDK does _not_ decode RFC 2047 headers.  The check
+			// here is actually a minor bug because the gateway could choose a
+			// different encoding for the same headers.  But of course it uses the
+			// same encoder we used, so this should never happen.
+			if diffs := deep.Equal(info.UserMetadata, minio.StringMap(encodedMetadata)); diffs != nil {
+				t.Errorf("Different user metadata from S3 gateway: %s", diffs)
+			}
+
+			// The lakeFS API does not need to perform header encoding.  Use it to
+			// check that lakeFS sees the expected values.
+			statsResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{
+				Path:         file,
+				UserMetadata: aws.Bool(true),
+			})
+			require.NoError(t, err, "Call statObject using lakeFS API")
+			require.NoError(t, VerifyResponse(statsResp.HTTPResponse, statsResp.Body), "statObject using lakeFS API")
+
+			// Because of #9089, any user metadata uploaded through the S3 gateway
+			// has a x-aws-meta- prefix.
+			strippedMetadata, err := stripKeyPrefix("X-Amz-Meta-", statsResp.JSON200.Metadata.AdditionalProperties)
+			assert.NoErrorf(t, err, "Failed to strip prefix from metadata keys in %+v", statsResp.JSON200.Metadata.AdditionalProperties)
+			if diffs := deep.Equal(strippedMetadata, metadata); diffs != nil {
+				t.Errorf("Different user metadata from API: %s", diffs)
+			}
+		})
 	}
 }
 

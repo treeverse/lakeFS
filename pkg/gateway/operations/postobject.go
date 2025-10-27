@@ -64,12 +64,17 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
+	metadata, err := amzMetaAsMetadata(req)
+	if err != nil {
+		o.Log(req).WithError(err).Error("failed to decode user metadata")
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
+	}
 	mpu := multipart.Upload{
 		UploadID:        resp.UploadID,
 		Path:            o.Path,
 		CreationDate:    time.Now(),
 		PhysicalAddress: address,
-		Metadata:        map[string]string(amzMetaAsMetadata(req)),
+		Metadata:        map[string]string(metadata),
 		ContentType:     req.Header.Get("Content-Type"),
 	}
 	err = o.MultipartTracker.Create(req.Context(), mpu)
