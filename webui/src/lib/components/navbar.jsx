@@ -54,7 +54,7 @@ const NavUserInfo = () => {
                         cache: 'no-store'
                     });
 
-                    window.location.assign('/auth/login?redirected=true');
+                    window.location = logoutUrl;
                 }}>
                 Logout
             </NavDropdown.Item>
