@@ -6213,3 +6213,13 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }
+
+func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalog string) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalog string) {
+	// TODO implement me
+	panic("implement me")
+}

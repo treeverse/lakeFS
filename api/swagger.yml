@@ -2021,6 +2021,70 @@ components:
         token:
           type: string
           description: The license JWT token
+          
+    RemoteTable:
+      type: object
+      required:
+        - namespace
+        - table
+      properties:
+        namespace:
+          type: string
+          description: Remote table namespace
+        table:
+          type: string
+          description: Remote table name
+
+    LocalTable:
+      type: object
+      required:
+        - namespace
+        - table
+        - repository_id
+        - reference_id
+      properties:
+        namespace:
+          type: string
+          description: Remote table namespace
+        table:
+          type: string
+          description: Remote table name
+        repository_id:
+          type: string
+          description: lakeFS repository ID
+        reference_id:
+          type: string
+          description: lakeFS reference ID (branch or commit)
+
+    IcebergPushRequest:
+      type: object
+      required:
+        - source
+        - destination
+      properties:
+        source:
+          $ref: "#/components/schemas/LocalTable"
+        destination:
+          $ref: "#/components/schemas/RemoteTable"
+        force_update:
+          type: boolean
+          default: false
+          description: Override exiting table in remote if exists
+        create_namespace:
+          type: boolean
+          default: false
+          description: Creates namespace in remote catalog if not exist
+
+    IcebergPullRequest:
+      type: object
+      required:
+        - source
+        - destination
+      properties:
+        source:
+          $ref: "#/components/schemas/RemoteTable"
+        destination:
+          $ref: "#/components/schemas/LocalTable"
 
 paths:
   /setup_comm_prefs:
@@ -6412,5 +6476,59 @@ paths:
           description: successfully got token
         401:
           description: failed to exchange authorization code for token
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /iceberg/remotes/{catalog}/push:
+    parameters:
+      - in: path
+        name: catalog
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - remotes
+      operationId: pushIcebergTable
+      summary: register existing lakeFS table in remote catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IcebergPushRequest"
+      responses:
+        204:
+          description: successfully pushed table to remote
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /iceberg/remotes/{catalog}/pull:
+    parameters:
+      - in: path
+        name: catalog
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - remotes
+      operationId: pullIcebergTable
+      summary: take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IcebergPullRequest"
+      responses:
+        204:
+          description: successfully pulled table from remote
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"

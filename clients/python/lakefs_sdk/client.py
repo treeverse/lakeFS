@@ -17,6 +17,7 @@ from lakefs_sdk.api import metadata_api
 from lakefs_sdk.api import objects_api
 from lakefs_sdk.api import pulls_api
 from lakefs_sdk.api import refs_api
+from lakefs_sdk.api import remotes_api
 from lakefs_sdk.api import repositories_api
 from lakefs_sdk.api import staging_api
 from lakefs_sdk.api import tags_api
@@ -75,6 +76,7 @@ class LakeFSClient:
         self.objects_api = objects_api.ObjectsApi(self._api)
         self.pulls_api = pulls_api.PullsApi(self._api)
         self.refs_api = refs_api.RefsApi(self._api)
+        self.remotes_api = remotes_api.RemotesApi(self._api)
         self.repositories_api = repositories_api.RepositoriesApi(self._api)
         self.staging_api = staging_api.StagingApi(self._api)
         self.tags_api = tags_api.TagsApi(self._api)

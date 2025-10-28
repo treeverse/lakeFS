@@ -54,6 +54,8 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
+docs/IcebergPullRequest.md
+docs/IcebergPushRequest.md
 docs/ImportApi.md
 docs/ImportCreation.md
 docs/ImportCreationResponse.md
@@ -64,6 +66,7 @@ docs/InternalApi.md
 docs/InternalDeleteBranchProtectionRuleRequest.md
 docs/License.md
 docs/LicenseApi.md
+docs/LocalTable.md
 docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
@@ -97,6 +100,8 @@ docs/RefList.md
 docs/RefsApi.md
 docs/RefsDump.md
 docs/RefsRestore.md
+docs/RemoteTable.md
+docs/RemotesApi.md
 docs/RepositoriesApi.md
 docs/Repository.md
 docs/RepositoryCreation.md
@@ -152,6 +157,7 @@ src/apis/mod.rs
 src/apis/objects_api.rs
 src/apis/pulls_api.rs
 src/apis/refs_api.rs
+src/apis/remotes_api.rs
 src/apis/repositories_api.rs
 src/apis/staging_api.rs
 src/apis/tags_api.rs
@@ -199,6 +205,8 @@ src/models/group_creation.rs
 src/models/group_list.rs
 src/models/hook_run.rs
 src/models/hook_run_list.rs
+src/models/iceberg_pull_request.rs
+src/models/iceberg_push_request.rs
 src/models/import_creation.rs
 src/models/import_creation_response.rs
 src/models/import_location.rs
@@ -206,6 +214,7 @@ src/models/import_status.rs
 src/models/installation_usage_report.rs
 src/models/internal_delete_branch_protection_rule_request.rs
 src/models/license.rs
+src/models/local_table.rs
 src/models/login_config.rs
 src/models/login_information.rs
 src/models/merge.rs
@@ -236,6 +245,7 @@ src/models/range_metadata.rs
 src/models/ref_list.rs
 src/models/refs_dump.rs
 src/models/refs_restore.rs
+src/models/remote_table.rs
 src/models/repository.rs
 src/models/repository_creation.rs
 src/models/repository_dump_status.rs

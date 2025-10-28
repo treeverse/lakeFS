@@ -7686,6 +7686,91 @@ paths:
       tags:
       - auth
       x-accepts: application/json
+  /iceberg/remotes/{catalog}/push:
+    post:
+      operationId: pushIcebergTable
+      parameters:
+      - explode: false
+        in: path
+        name: catalog
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IcebergPushRequest'
+      responses:
+        "204":
+          description: successfully pushed table to remote
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: register existing lakeFS table in remote catalog
+      tags:
+      - remotes
+      x-content-type: application/json
+      x-accepts: application/json
+  /iceberg/remotes/{catalog}/pull:
+    post:
+      operationId: pullIcebergTable
+      parameters:
+      - explode: false
+        in: path
+        name: catalog
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IcebergPullRequest'
+      responses:
+        "204":
+          description: successfully pulled table from remote
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: "take a table previously pushed from lakeFS into a remote catalog,\
+        \ and pull its state back into the originating lakeFS repository"
+      tags:
+      - remotes
+      x-content-type: application/json
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -10451,6 +10536,94 @@ components:
           type: string
       required:
       - token
+      type: object
+    RemoteTable:
+      example:
+        namespace: namespace
+        table: table
+      properties:
+        namespace:
+          description: Remote table namespace
+          type: string
+        table:
+          description: Remote table name
+          type: string
+      required:
+      - namespace
+      - table
+      type: object
+    LocalTable:
+      example:
+        reference_id: reference_id
+        namespace: namespace
+        repository_id: repository_id
+        table: table
+      properties:
+        namespace:
+          description: Remote table namespace
+          type: string
+        table:
+          description: Remote table name
+          type: string
+        repository_id:
+          description: lakeFS repository ID
+          type: string
+        reference_id:
+          description: lakeFS reference ID (branch or commit)
+          type: string
+      required:
+      - namespace
+      - reference_id
+      - repository_id
+      - table
+      type: object
+    IcebergPushRequest:
+      example:
+        destination:
+          namespace: namespace
+          table: table
+        create_namespace: false
+        source:
+          reference_id: reference_id
+          namespace: namespace
+          repository_id: repository_id
+          table: table
+        force_update: false
+      properties:
+        source:
+          $ref: '#/components/schemas/LocalTable'
+        destination:
+          $ref: '#/components/schemas/RemoteTable'
+        force_update:
+          default: false
+          description: Override exiting table in remote if exists
+          type: boolean
+        create_namespace:
+          default: false
+          description: Creates namespace in remote catalog if not exist
+          type: boolean
+      required:
+      - destination
+      - source
+      type: object
+    IcebergPullRequest:
+      example:
+        destination:
+          reference_id: reference_id
+          namespace: namespace
+          repository_id: repository_id
+          table: table
+        source:
+          namespace: namespace
+          table: table
+      properties:
+        source:
+          $ref: '#/components/schemas/RemoteTable'
+        destination:
+          $ref: '#/components/schemas/LocalTable'
+      required:
+      - destination
+      - source
       type: object
     uploadObject_request:
       properties:
