@@ -1,5 +1,6 @@
 import React from "react";
 import useUser from '../hooks/user'
+import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import DarkModeToggle from "./darkModeToggle";
@@ -36,7 +37,8 @@ const NavUserInfo = () => {
                     </>
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
-                onClick={async () => {
+                onClick={() => {
+                    auth.clearCurrentUser();
                     window.location.replace(logoutUrl);
                 }}>
                 Logout
