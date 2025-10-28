@@ -11,10 +11,10 @@ const useUser = () => {
     const shouldRevalidateOnThisRoute = useMemo(() => location.pathname.startsWith("/auth/") && location.pathname !== "/auth/login", [location.pathname]);
     const revalidateKey = shouldRevalidateOnThisRoute ? `${location.pathname}${location.search}` : undefined;
 
-    const fetcher = useCallback(() => {
-        if (status === AUTH_STATUS.UNAUTHENTICATED) return Promise.resolve(null);
-        return shouldRevalidateOnThisRoute ? auth.getCurrentUser() : auth.getCurrentUserWithCache();
-    }, [status, shouldRevalidateOnThisRoute]);
+    const fetcher = useCallback(
+        () => (shouldRevalidateOnThisRoute ? auth.getCurrentUser() : auth.getCurrentUserWithCache()),
+        [shouldRevalidateOnThisRoute]
+    );
 
     const { response, loading, error } = useAPI(fetcher, [status, revalidateKey]);
 
