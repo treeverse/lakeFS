@@ -11,7 +11,7 @@ else:
 
 def parse() -> str:
     """Returns the lakefs version as a string directly from pyproject.toml."""
-    pyproject_path = Path(__file__).parents[1] / "pyproject.toml"
+    pyproject_path = Path(__file__).parent / "pyproject.toml"
     with open(pyproject_path, "rb") as f:
         metadata = tomllib.load(f)
         return metadata["project"]["version"]
