@@ -57,7 +57,7 @@
     "remark-rehype": "^11.1.0",
     "unified": "^11.0.4",
     "unist-util-visit": "^4.1.2",
-    "validator": "^13.11.0"
+    "validator": "^13.15.20"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.23.3",
