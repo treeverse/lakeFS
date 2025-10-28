@@ -33,8 +33,9 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const location = useLocation();
     const { setAuthStatus } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
-    const state = location.state as { next?: string; redirected?: boolean } | null;
-    const next = (state?.next ?? (router.query as { next?: string })?.next) || "/";
+    const loginState = (location.state as { next?: string; redirected?: boolean } | null) ?? null;
+    const search = new URLSearchParams(location.search);
+    const next = loginState?.next ?? search.get("next") ?? "/";
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
 
@@ -57,7 +58,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const password = formData.get('password');
                             await auth.login(username, password);
                             setAuthStatus(AUTH_STATUS.AUTHENTICATED);
-                            router.navigate(next || "/", { replace: true });
+                            router.navigate(next, { replace: true });
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {
                                 const contents = {__html: `${loginConfig.login_failed_message}` ||
@@ -133,7 +134,7 @@ const LoginPage = () => {
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
     const setupResponse = response as SetupResponse | null;
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
+        router.navigate(`/setup${location.search}${location.hash ?? ''}`, { replace: true });
         return null;
     }
     const loginConfig = setupResponse?.login_config;
@@ -146,7 +147,20 @@ const LoginPage = () => {
     // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
     // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
     // selection page or the default lakeFS login form, since both share the same endpoint.
-    const redirected = (location.state)?.redirected || (router.query)?.redirected;
+    const st = (location.state as { redirected?: boolean } | null) ?? null;
+
+    const urlSearch = new URLSearchParams(location.search);
+    const redirectedFromQuery = urlSearch.get("redirected") === "true";
+    const redirectedFromState = !!st?.redirected;
+
+    const redirected = redirectedFromState || redirectedFromQuery;
+
+    if (redirectedFromQuery) {
+        urlSearch.delete("redirected");
+        const qs = urlSearch.toString();
+        const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
+        router.navigate(cleanUrl, { replace: true });
+    }
 
     if (redirected)  {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);

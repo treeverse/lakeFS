@@ -1,10 +1,9 @@
-import React, { createContext, FC, useContext, useEffect } from "react";
+import React, {createContext, FC, useContext, useEffect, useMemo} from "react";
 
 import { config } from "../api";
 import useUser from "./user";
 import { usePluginManager } from "../../extendable/plugins/pluginsContext";
 import {useAPI} from "./api";
-import {useLocation} from "react-router-dom";
 
 type ConfigContextType = {
     error: Error | null;
@@ -60,16 +59,22 @@ const useConfigContext = () => useContext(configContext);
 const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const pluginManager = usePluginManager();
     const {user} = useUser();
-    const location = useLocation();
-    const { response, loading, error } = useAPI(() => config.getConfig(), [user, location.pathname, location.search]);
+    const { response, loading, error } = useAPI(() => config.getConfig(), [user]);
+
     useEffect(() => {
         if (response) {
             pluginManager.customObjectRenderers?.init(response);
         }
     }, [response, pluginManager]);
 
+    const value = useMemo(
+        () => (
+            { config: response ?? null, loading, error } satisfies ConfigContextType
+        ),
+        [response, loading, error]);
+
     return (
-        <configContext.Provider value={{ config: response ?? null, loading, error }}>
+        <configContext.Provider value={value}>
             {children}
         </configContext.Provider>
     );
