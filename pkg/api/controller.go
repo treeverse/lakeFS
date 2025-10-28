@@ -750,6 +750,11 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 		writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
+	if err != nil {
+		c.Logger.WithContext(ctx).WithError(err).Error("failed to authenticate")
+		writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		return
+	}
 
 	loginTime := time.Now()
 	duration := c.Config.AuthConfig().GetBaseAuthConfig().LoginDuration
