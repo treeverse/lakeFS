@@ -1,17 +1,22 @@
 import {useAPI} from "./api";
 import {auth} from "../api";
 import {AUTH_STATUS, useAuth} from "../auth/authContext";
-import {useEffect, useCallback} from "react";
+import {useEffect, useCallback, useMemo} from "react";
+import {useLocation} from "react-router-dom";
 
 const useUser = () => {
     const { status, setAuthStatus } = useAuth();
+    const location = useLocation();
+
+    const shouldRevalidateOnThisRoute = useMemo(() => location.pathname.startsWith("/auth/") && location.pathname !== "/auth/login", [location.pathname]);
+    const revalidateKey = shouldRevalidateOnThisRoute ? `${location.pathname}${location.search}` : undefined;
 
     const fetcher = useCallback(() => {
         if (status === AUTH_STATUS.UNAUTHENTICATED) return Promise.resolve(null);
-        return auth.getCurrentUserWithCache();
-    }, [status]);
+        return shouldRevalidateOnThisRoute ? auth.getCurrentUser() : auth.getCurrentUserWithCache();
+    }, [status, shouldRevalidateOnThisRoute]);
 
-    const { response, loading, error } = useAPI(fetcher, [status]);
+    const { response, loading, error } = useAPI(fetcher, [status, revalidateKey]);
 
     useEffect(() => {
         if (loading) return;
