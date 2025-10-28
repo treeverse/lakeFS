@@ -189,6 +189,9 @@ func (s *StagingFake) Update(_ context.Context, st graveler.StagingToken, key gr
 	v, exists := s.Values[st.String()][key.String()]
 	if !exists {
 		v = nil
+	} else if v == nil {
+		// Tombstone
+		v = new(graveler.Value)
 	}
 	val, err := updateFunc(v)
 	if err != nil {
