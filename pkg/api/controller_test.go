@@ -2216,6 +2216,41 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("disable overwrite with if-none-match (tombstone)", func(t *testing.T) {
+		_, err := deps.catalog.CreateBranch(ctx, "my-new-repo", "tombstone-branch", "main")
+		testutil.Must(t, err)
+
+		// write first
+		contentType, buf := writeMultipart("content", "baz5", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "tombstone-branch", &apigen.UploadObjectParams{
+			Path: "foo/baz5",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		if b.StatusCode() != http.StatusCreated {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+
+		// commit
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "tombstone-branch", "commit object", "user1", nil, nil, nil, false)
+		testutil.Must(t, err)
+
+		// delete the object in staging (creating a tombstone)
+		err = deps.catalog.DeleteEntry(ctx, "my-new-repo", "tombstone-branch", "foo/baz5")
+		testutil.Must(t, err)
+
+		// try to upload with if-none-match - should succeed since object is deleted (tombstone)
+		ifNoneMatch := apigen.IfNoneMatch("*")
+		contentType, buf = writeMultipart("content", "baz5", "new content!")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "tombstone-branch", &apigen.UploadObjectParams{
+			Path:        "foo/baz5",
+			IfNoneMatch: &ifNoneMatch,
+		}, contentType, buf)
+		testutil.Must(t, err)
+		if resp.StatusCode() != http.StatusCreated {
+			t.Fatalf("expected 201 for UploadObject with tombstone, got %d", resp.StatusCode())
+		}
+	})
+
 	t.Run("disable overwrite with if-none-match (no entry)", func(t *testing.T) {
 		ifNoneMatch := apigen.IfNoneMatch("*")
 		contentType, buf := writeMultipart("content", "baz4", "something else!")
@@ -2241,8 +2276,8 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("UploadObject err=%s, expected no error", err)
 		}
-		if resp.JSON400 == nil {
-			t.Fatalf("UploadObject status code=%d, expected 400", resp.StatusCode())
+		if resp.JSON501 == nil {
+			t.Fatalf("UploadObject status code=%d, expected 501", resp.StatusCode())
 		}
 	})
 

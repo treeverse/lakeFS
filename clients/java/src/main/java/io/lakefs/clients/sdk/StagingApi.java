@@ -283,7 +283,7 @@ public class StagingApi {
     public APIgetPhysicalAddressRequest getPhysicalAddress(String repository, String branch, String path) {
         return new APIgetPhysicalAddressRequest(repository, branch, path);
     }
-    private okhttp3.Call linkPhysicalAddressCall(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call linkPhysicalAddressCall(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, String ifMatch, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -318,6 +318,10 @@ public class StagingApi {
             localVarHeaderParams.put("If-None-Match", localVarApiClient.parameterToString(ifNoneMatch));
         }
 
+        if (ifMatch != null) {
+            localVarHeaderParams.put("If-Match", localVarApiClient.parameterToString(ifMatch));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -339,7 +343,7 @@ public class StagingApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call linkPhysicalAddressValidateBeforeCall(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call linkPhysicalAddressValidateBeforeCall(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, String ifMatch, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling linkPhysicalAddress(Async)");
@@ -360,20 +364,20 @@ public class StagingApi {
             throw new ApiException("Missing the required parameter 'stagingMetadata' when calling linkPhysicalAddress(Async)");
         }
 
-        return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
+        return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, ifNoneMatch, ifMatch, _callback);
 
     }
 
 
-    private ApiResponse<ObjectStats> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch) throws ApiException {
-        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, ifNoneMatch, null);
+    private ApiResponse<ObjectStats> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, String ifMatch) throws ApiException {
+        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, ifNoneMatch, ifMatch, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    private okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, String ifMatch, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
+        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, ifNoneMatch, ifMatch, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -385,6 +389,7 @@ public class StagingApi {
         private final String path;
         private final StagingMetadata stagingMetadata;
         private String ifNoneMatch;
+        private String ifMatch;
 
         private APIlinkPhysicalAddressRequest(String repository, String branch, String path, StagingMetadata stagingMetadata) {
             this.repository = repository;
@@ -404,6 +409,16 @@ public class StagingApi {
         }
 
         /**
+         * Set ifMatch
+         * @param ifMatch Set to the object&#39;s ETag to atomically allow operations only if the object&#39;s current ETag matches the provided value. (optional)
+         * @return APIlinkPhysicalAddressRequest
+         */
+        public APIlinkPhysicalAddressRequest ifMatch(String ifMatch) {
+            this.ifMatch = ifMatch;
+            return this;
+        }
+
+        /**
          * Build call for linkPhysicalAddress
          * @param _callback ApiCallback API callback
          * @return Call to execute
@@ -419,11 +434,12 @@ public class StagingApi {
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
+            return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, ifNoneMatch, ifMatch, _callback);
         }
 
         /**
@@ -441,11 +457,12 @@ public class StagingApi {
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public ObjectStats execute() throws ApiException {
-            ApiResponse<ObjectStats> localVarResp = linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata, ifNoneMatch);
+            ApiResponse<ObjectStats> localVarResp = linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata, ifNoneMatch, ifMatch);
             return localVarResp.getData();
         }
 
@@ -464,11 +481,12 @@ public class StagingApi {
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
-            return linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata, ifNoneMatch);
+            return linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata, ifNoneMatch, ifMatch);
         }
 
         /**
@@ -487,11 +505,12 @@ public class StagingApi {
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
-            return linkPhysicalAddressAsync(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
+            return linkPhysicalAddressAsync(repository, branch, path, stagingMetadata, ifNoneMatch, ifMatch, _callback);
         }
     }
 
@@ -514,6 +533,7 @@ public class StagingApi {
         <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
