@@ -16,7 +16,6 @@ authors = [
 dependencies = [
     "lakefs-sdk>=1.50,< 2",
     "pyyaml~=6.0.1",
-    "tomli ; python_version < '3.11'",
 ]
 classifiers = [
     "Intended Audience :: Developers",
@@ -27,7 +26,6 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dynamic = ["version"]
 
 [project.optional-dependencies]
 all = [ "boto3 >= 1.26.0" ]
@@ -44,9 +42,6 @@ test = [
 
 [project.urls]
 Homepage = "https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper"
-
-[tool.setuptools.dynamic]
-version = { attr = "lakefs.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["lakectl", "lakefs"]
