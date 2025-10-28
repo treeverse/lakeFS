@@ -746,12 +746,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.LoginJSONRequestBody) {
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
-	if errors.Is(err, ErrAuthenticatingRequest) {
-		writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-		return
-	}
 	if err != nil {
-		c.Logger.WithContext(ctx).WithError(err).Error("failed to authenticate")
 		writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		return
 	}
