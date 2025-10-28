@@ -210,6 +210,31 @@ public class ExperimentalApiTest {
     }
 
     /**
+     * receive the token after user has authenticated on redirect URL.
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getTokenFromMailboxTest() throws ApiException {
+        String mailbox = null;
+        AuthenticationToken response = api.getTokenFromMailbox(mailbox)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * start acquiring a token by logging in on a browser
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getTokenRedirectTest() throws ApiException {
+        Error response = api.getTokenRedirect()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * hard reset branch
      *
      * Relocate branch to refer to ref.  Branch must not contain uncommitted data.

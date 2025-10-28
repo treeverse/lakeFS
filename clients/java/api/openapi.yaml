@@ -1952,6 +1952,102 @@ paths:
       - auth
       x-content-type: application/json
       x-accepts: application/json
+  /auth/get-token/start:
+    get:
+      operationId: getTokenRedirect
+      responses:
+        "303":
+          description: "login on this page, await results on the mailbox URL"
+          headers:
+            Location:
+              description: open this URL on the browser
+              explode: false
+              schema:
+                type: string
+              style: simple
+            X-LakeFS-Mailbox:
+              description: GET the token from this mailbox.  Keep the mailbox SECRET!
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "429":
+          description: too many requests
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: start acquiring a token by logging in on a browser
+      tags:
+      - auth
+      - experimental
+      x-accepts: application/json
+  /auth/get-token/mailboxes/{mailbox}:
+    get:
+      operationId: getTokenFromMailbox
+      parameters:
+      - description: mailbox returned by getTokenRedirect
+        explode: false
+        in: path
+        name: mailbox
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: user successfully logged in
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: receive the token after user has authenticated on redirect URL.
+      tags:
+      - auth
+      - experimental
+      x-accepts: application/json
   /repositories:
     get:
       operationId: listRepositories

@@ -14,6 +14,8 @@ Method | HTTP request | Description
 [**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**get_license**](ExperimentalApi.md#get_license) | **GET** /license | 
 [**get_pull_request**](ExperimentalApi.md#get_pull_request) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
+[**get_token_from_mailbox**](ExperimentalApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
+[**get_token_redirect**](ExperimentalApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**list_pull_requests**](ExperimentalApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
@@ -1124,6 +1126,147 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_token_from_mailbox**
+> AuthenticationToken get_token_from_mailbox(mailbox)
+
+receive the token after user has authenticated on redirect URL.
+
+### Example
+
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.authentication_token import AuthenticationToken
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+    mailbox = 'mailbox_example' # str | mailbox returned by getTokenRedirect
+
+    try:
+        # receive the token after user has authenticated on redirect URL.
+        api_response = api_instance.get_token_from_mailbox(mailbox)
+        print("The response of ExperimentalApi->get_token_from_mailbox:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->get_token_from_mailbox: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **mailbox** | **str**| mailbox returned by getTokenRedirect | 
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | user successfully logged in |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**429** | too many requests |  -  |
+**501** | Not Implemented |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_token_redirect**
+> Error get_token_redirect()
+
+start acquiring a token by logging in on a browser
+
+### Example
+
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.error import Error
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+
+    try:
+        # start acquiring a token by logging in on a browser
+        api_response = api_instance.get_token_redirect()
+        print("The response of ExperimentalApi->get_token_redirect:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->get_token_redirect: %s\n" % e)
+```
+
+
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**Error**](Error.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**303** | login on this page, await results on the mailbox URL |  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  |
+**401** | Unauthorized |  -  |
+**429** | too many requests |  -  |
+**501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

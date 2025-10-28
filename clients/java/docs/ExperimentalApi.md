@@ -14,6 +14,8 @@ All URIs are relative to */api/v1*
 | [**getExternalPrincipal**](ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id |
 | [**getLicense**](ExperimentalApi.md#getLicense) | **GET** /license |  |
 | [**getPullRequest**](ExperimentalApi.md#getPullRequest) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request |
+| [**getTokenFromMailbox**](ExperimentalApi.md#getTokenFromMailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL. |
+| [**getTokenRedirect**](ExperimentalApi.md#getTokenRedirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser |
 | [**hardResetBranch**](ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch |
 | [**listPullRequests**](ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests |
 | [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
@@ -973,6 +975,133 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="getTokenFromMailbox"></a>
+# **getTokenFromMailbox**
+> AuthenticationToken getTokenFromMailbox(mailbox).execute();
+
+receive the token after user has authenticated on redirect URL.
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ExperimentalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+
+    ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
+    String mailbox = "mailbox_example"; // String | mailbox returned by getTokenRedirect
+    try {
+      AuthenticationToken result = apiInstance.getTokenFromMailbox(mailbox)
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExperimentalApi#getTokenFromMailbox");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **mailbox** | **String**| mailbox returned by getTokenRedirect | |
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | user successfully logged in |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
+| **501** | Not Implemented |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="getTokenRedirect"></a>
+# **getTokenRedirect**
+> Error getTokenRedirect().execute();
+
+start acquiring a token by logging in on a browser
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ExperimentalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+
+    ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
+    try {
+      Error result = apiInstance.getTokenRedirect()
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExperimentalApi#getTokenRedirect");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**Error**](Error.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **303** | login on this page, await results on the mailbox URL |  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  |
+| **401** | Unauthorized |  -  |
+| **429** | too many requests |  -  |
+| **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="hardResetBranch"></a>

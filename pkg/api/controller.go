@@ -90,23 +90,24 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config          config.Config
-	Catalog         *catalog.Catalog
-	Authenticator   auth.Authenticator
-	Auth            auth.Service
-	Authentication  authentication.Service
-	BlockAdapter    block.Adapter
-	MetadataManager auth.MetadataManager
-	Migrator        Migrator
-	Collector       stats.Collector
-	Actions         actionsHandler
-	AuditChecker    AuditChecker
-	Logger          logging.Logger
-	sessionStore    sessions.Store
-	PathProvider    upload.PathProvider
-	usageReporter   stats.UsageReporterOperations
-	licenseManager  license.Manager
-	icebergSyncer   icebergsync.Controller
+	Config             config.Config
+	Catalog            *catalog.Catalog
+	Authenticator      auth.Authenticator
+	Auth               auth.Service
+	Authentication     authentication.Service
+	BlockAdapter       block.Adapter
+	MetadataManager    auth.MetadataManager
+	Migrator           Migrator
+	Collector          stats.Collector
+	Actions            actionsHandler
+	AuditChecker       AuditChecker
+	Logger             logging.Logger
+	sessionStore       sessions.Store
+	PathProvider       upload.PathProvider
+	usageReporter      stats.UsageReporterOperations
+	licenseManager     license.Manager
+	icebergSyncer      icebergsync.Controller
+	loginTokenProvider authentication.LoginTokenProvider
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -129,25 +130,27 @@ func NewController(
 	usageReporter stats.UsageReporterOperations,
 	licenseManager license.Manager,
 	icebergSyncer icebergsync.Controller,
+	loginTokenProvider authentication.LoginTokenProvider,
 ) *Controller {
 	return &Controller{
-		Config:          cfg,
-		Catalog:         catalog,
-		Authenticator:   authenticator,
-		Auth:            authService,
-		Authentication:  authenticationService,
-		BlockAdapter:    blockAdapter,
-		MetadataManager: metadataManager,
-		Migrator:        migrator,
-		Collector:       collector,
-		Actions:         actions,
-		AuditChecker:    auditChecker,
-		Logger:          logger,
-		sessionStore:    sessionStore,
-		PathProvider:    pathProvider,
-		usageReporter:   usageReporter,
-		licenseManager:  licenseManager,
-		icebergSyncer:   icebergSyncer,
+		Config:             cfg,
+		Catalog:            catalog,
+		Authenticator:      authenticator,
+		Auth:               authService,
+		Authentication:     authenticationService,
+		BlockAdapter:       blockAdapter,
+		MetadataManager:    metadataManager,
+		Migrator:           migrator,
+		Collector:          collector,
+		Actions:            actions,
+		AuditChecker:       auditChecker,
+		Logger:             logger,
+		sessionStore:       sessionStore,
+		PathProvider:       pathProvider,
+		usageReporter:      usageReporter,
+		licenseManager:     licenseManager,
+		icebergSyncer:      icebergSyncer,
+		loginTokenProvider: loginTokenProvider,
 	}
 }
 
@@ -868,6 +871,34 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 		TokenExpiration: swag.Int64(expiresAt.Unix()),
 	}
 	writeResponse(w, r, http.StatusOK, responseToken)
+}
+
+func (c *Controller) GetTokenRedirect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	// Login method needs no auth!
+	redirect, err := c.loginTokenProvider.GetRedirect(ctx)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	w.Header().Set("Location", redirect.RedirectURL)
+	w.Header().Set("X-LakeFS-Mailbox", redirect.Mailbox)
+	writeResponse(w, r, http.StatusOK, nil)
+}
+
+func (c *Controller) GetTokenFromMailbox(w http.ResponseWriter, r *http.Request, mailbox string) {
+	ctx := r.Context()
+	// Login method needs no auth!
+	token, expiresAt, err := c.loginTokenProvider.GetToken(ctx, mailbox)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	response := apigen.AuthenticationToken{
+		Token:           token,
+		TokenExpiration: swag.Int64(expiresAt.Unix()),
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {

@@ -170,6 +170,8 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**getGroup**](docs/AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
 *AuthApi* | [**getGroupACL**](docs/AuthApi.md#getGroupACL) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**getPolicy**](docs/AuthApi.md#getPolicy) | **GET** /auth/policies/{policyId} | get policy
+*AuthApi* | [**getTokenFromMailbox**](docs/AuthApi.md#getTokenFromMailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
+*AuthApi* | [**getTokenRedirect**](docs/AuthApi.md#getTokenRedirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 *AuthApi* | [**getUser**](docs/AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user
 *AuthApi* | [**listGroupMembers**](docs/AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members
 *AuthApi* | [**listGroupPolicies**](docs/AuthApi.md#listGroupPolicies) | **GET** /auth/groups/{groupId}/policies | list group policies
@@ -205,6 +207,8 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**getExternalPrincipal**](docs/ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
 *ExperimentalApi* | [**getLicense**](docs/ExperimentalApi.md#getLicense) | **GET** /license | 
 *ExperimentalApi* | [**getPullRequest**](docs/ExperimentalApi.md#getPullRequest) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
+*ExperimentalApi* | [**getTokenFromMailbox**](docs/ExperimentalApi.md#getTokenFromMailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
+*ExperimentalApi* | [**getTokenRedirect**](docs/ExperimentalApi.md#getTokenRedirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 *ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**listPullRequests**](docs/ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests
 *ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user

@@ -188,6 +188,20 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_get_token_from_mailbox(self) -> None:
+        """Test case for get_token_from_mailbox
+
+        receive the token after user has authenticated on redirect URL.  # noqa: E501
+        """
+        pass
+
+    def test_get_token_redirect(self) -> None:
+        """Test case for get_token_redirect
+
+        start acquiring a token by logging in on a browser  # noqa: E501
+        """
+        pass
+
     def test_get_user(self) -> None:
         """Test case for get_user
 
