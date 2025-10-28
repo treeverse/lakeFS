@@ -13,6 +13,8 @@ type PathProvider interface {
 	NewPath() string
 	// ResolvePathTime - get string parse it to xid and returns the timestamp part of it
 	ResolvePathTime(address string) (time.Time, error)
+	// GetDataPathPrefix return the data path prefix used by the provider
+	GetDataPathPrefix() string
 }
 
 // PathPartitionProvider provides path by request to upload data. The provided path is built from '<prefix>/<partition>/<unique id>'.
@@ -110,6 +112,10 @@ func (i *PathPartitionProvider) ResolvePathTime(address string) (time.Time, erro
 		return time.Time{}, err
 	}
 	return id.Time(), nil
+}
+
+func (i *PathPartitionProvider) GetDataPathPrefix() string {
+	return i.cfg.Prefix
 }
 
 // partitionForID return the current partition to use. It will update the partition value before return in case we
