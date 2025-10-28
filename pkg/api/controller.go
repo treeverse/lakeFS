@@ -747,7 +747,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if err != nil {
-		if errors.Is(err, authentication.ErrAuthenticatingRequest) {
+		if errors.Is(err, ErrAuthenticatingRequest) {
 			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 			return
 		}
