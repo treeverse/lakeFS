@@ -747,7 +747,12 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if err != nil {
-		writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		if errors.Is(err, authentication.ErrAuthenticatingRequest) {
+			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+			return
+		}
+		c.Logger.WithError(err).Error("Unexpected error during user authentication")
+		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
