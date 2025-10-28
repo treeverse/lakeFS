@@ -198,8 +198,8 @@ func WithStageOnly(v bool) GetOptionsFunc {
 	}
 }
 
+type ConditionFunc func(currentValue *Value) error
 type SetOptions struct {
-	IfAbsent bool
 	// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
 	// By default, 0 - we try BranchWriteMaxTries
 	MaxTries int
@@ -214,6 +214,10 @@ type SetOptions struct {
 	SquashMerge bool
 	// NoTombstone will try to remove entry without setting a tombstone in KV
 	NoTombstone bool
+	// Condition is a function that validates the current value before performing the Set.
+	// If the condition returns an error, the Set operation fails with that error.
+	// If the condition succeeds, the Set is performed using SetIf with the current value.
+	Condition ConditionFunc
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -224,12 +228,6 @@ func NewSetOptions(opts []SetOptionsFunc) *SetOptions {
 		opt(options)
 	}
 	return options
-}
-
-func WithIfAbsent(v bool) SetOptionsFunc {
-	return func(opts *SetOptions) {
-		opts.IfAbsent = v
-	}
 }
 
 func WithForce(v bool) SetOptionsFunc {
@@ -259,6 +257,12 @@ func WithSquashMerge(v bool) SetOptionsFunc {
 func WithNoTombstone(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.NoTombstone = v
+	}
+}
+
+func WithCondition(condition ConditionFunc) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.Condition = condition
 	}
 }
 
@@ -546,7 +550,8 @@ type BranchRecord struct {
 type BranchUpdateFunc func(*Branch) (*Branch, error)
 
 // ValueUpdateFunc Used to pass validation call back to staging manager for UpdateValue flow
-type ValueUpdateFunc func(*Value) (*Value, error)
+// val - current value, nil if not fount, val.Identity == nil indicates tombstone
+type ValueUpdateFunc func(val *Value) (*Value, error)
 
 // TagRecord holds TagID with the associated Tag data
 type TagRecord struct {
@@ -1843,28 +1848,51 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
-		if !options.IfAbsent {
+		if options.Condition == nil {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
-		// verify the key not found
-		_, err := g.Get(ctx, repository, Ref(branchID), key)
-		if err == nil { // Entry found, return precondition failed
-			return ErrPreconditionFailed
+		// setFunc is a update function that sets the value regardless of the current value
+		setFunc := func(_ *Value) (*Value, error) {
+			return &value, nil
 		}
-		if !errors.Is(err, ErrNotFound) {
-			return err
-		}
-
-		// update stage with new value only if key not found or tombstone
-		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
-			if currentValue == nil || currentValue.Identity == nil {
-				return &value, nil
-			}
-			return nil, ErrSkipValueUpdate
-		})
+		return g.handleUpdate(ctx, repository, branchID, branch, key, setFunc, options.Condition)
 	}, "set")
 	return err
+}
+
+// handleUpdate applies the provided condition and update callback functions to the current value of the given key,
+// considering both committed and staging values. The condition is checked before applying the update.
+func (g *Graveler) handleUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch *Branch, key Key, updateFunc ValueUpdateFunc, condition ConditionFunc) error {
+	// Get current value considering committed and sealed tokens
+	curValue, err := g.Get(ctx, repository, Ref(branchID), key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+
+	return g.StagingManager.Update(ctx, branch.StagingToken, key, func(stagingValue *Value) (*Value, error) {
+		var latestValue *Value
+		switch {
+		case stagingValue != nil && stagingValue.Identity == nil:
+			// tombstone in staging
+			latestValue = nil
+		case stagingValue != nil:
+			latestValue = stagingValue
+		default:
+			latestValue = curValue
+		}
+
+		if condition != nil {
+			if err := condition(latestValue); err != nil {
+				return nil, err
+			}
+		}
+
+		if updateFunc != nil {
+			return updateFunc(latestValue)
+		}
+		return curValue, nil
+	})
 }
 
 // safeBranchWrite repeatedly attempts to perform stagingOperation, retrying
@@ -1931,27 +1959,8 @@ func (g *Graveler) Update(ctx context.Context, repository *RepositoryRecord, bra
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "update_user_metadata"})
 
-	// committedValue, if non-nil is a value read from either uncommitted or committed.  Usually
-	// it is read from committed.  If there is a value on staging, that entry will be modified
-	// and committedValue will never be read.
-	var committedValue *Value
-
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
-		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
-			if currentValue == nil {
-				// Object not on staging: need to update committed value.
-				if committedValue == nil {
-					committedValue, err = g.Get(ctx, repository, Ref(branchID), key)
-					if err != nil {
-						// (Includes ErrNotFound)
-						return nil, fmt.Errorf("read from committed: %w", err)
-					}
-				}
-				// Get always returns a non-nil value or an error.
-				currentValue = committedValue
-			}
-			return update(currentValue)
-		})
+		return g.handleUpdate(ctx, repository, branchID, branch, key, update, options.Condition)
 	}, "update_metadata")
 	return err
 }

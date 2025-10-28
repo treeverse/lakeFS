@@ -108,7 +108,7 @@ func (it *walkEntryIterator) Next() bool {
 }
 
 func (it *walkEntryIterator) SeekGE(Path) {
-	it.err.Store(ErrFeatureNotSupported)
+	panic("Not supported")
 }
 
 func (it *walkEntryIterator) Value() *EntryRecord {
