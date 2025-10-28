@@ -30,14 +30,14 @@ func TestUpdate(t *testing.T) {
 	testVal := newTestValue("identity1", "value1")
 	testVal2 := newTestValue("identity2", "value2")
 	// update missing key
-	err := s.Update(ctx, "t1", []byte(key), func(exists bool, value *graveler.Value) (*graveler.Value, error) {
+	err := s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
 		require.Nil(t, value)
 		return testVal, nil
 	})
 	require.NoError(t, err)
 
 	// update existing key
-	err = s.Update(ctx, "t1", []byte(key), func(exists bool, value *graveler.Value) (*graveler.Value, error) {
+	err = s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
 		require.Equal(t, testVal, value)
 		return testVal2, nil
 	})
@@ -49,7 +49,7 @@ func TestUpdate(t *testing.T) {
 	require.Equal(t, testVal2, val)
 
 	// update with error
-	err = s.Update(ctx, "t1", []byte(key), func(exists bool, value *graveler.Value) (*graveler.Value, error) {
+	err = s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
 		require.Equal(t, testVal2, value)
 		return testVal, graveler.ErrNotUnique
 	})
@@ -61,7 +61,7 @@ func TestUpdate(t *testing.T) {
 	require.Equal(t, testVal2, val)
 
 	// update without set new value
-	err = s.Update(ctx, "t1", []byte(key), func(exists bool, value *graveler.Value) (*graveler.Value, error) {
+	err = s.Update(ctx, "t1", []byte(key), func(value *graveler.Value) (*graveler.Value, error) {
 		require.Equal(t, testVal2, value)
 		return nil, graveler.ErrSkipValueUpdate
 	})
