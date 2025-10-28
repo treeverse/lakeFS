@@ -1028,7 +1028,10 @@ func (c *Controller) normalizePhysicalAddress(storageNamespace, physicalAddress 
 	if !strings.HasSuffix(prefix, catalog.DefaultPathDelimiter) {
 		prefix += catalog.DefaultPathDelimiter
 	}
-	dataPrefix := prefix + c.PathProvider.GetDataPathPrefix() + catalog.DefaultPathDelimiter
+	dataPrefix := prefix
+	if len(c.PathProvider.CommonPrefix()) > 0 {
+		dataPrefix = dataPrefix + c.PathProvider.CommonPrefix() + catalog.DefaultPathDelimiter
+	}
 	if strings.HasPrefix(physicalAddress, dataPrefix) {
 		// if the address is in the "data" path, treat it as a relative address.
 		// note that it's relative to the storage namespace (add it'll include the "data" prefix).

@@ -147,14 +147,14 @@ func TestPathPartitionProvider_ResolvePathTime(t *testing.T) {
 	})
 }
 
-func TestPathPartitionProvider_GetDataPathPrefix(t *testing.T) {
+func TestPathPartitionProvider_CommonPrefix(t *testing.T) {
 	t.Run("get_data_prefix", func(t *testing.T) {
 		const prefix = "data_prefix"
 		provider := NewPathPartitionProvider(
 			WithPathProviderPrefix(prefix),
 		)
-		if provider.GetDataPathPrefix() != prefix {
-			t.Errorf("data path prefix mismatch: expected %s, got %s", prefix, provider.GetDataPathPrefix())
+		if provider.CommonPrefix() != prefix {
+			t.Errorf("data path prefix mismatch: expected %s, got %s", prefix, provider.CommonPrefix())
 		}
 	})
 }
