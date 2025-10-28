@@ -287,7 +287,7 @@ func (c *Controller) UploadPart(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -363,7 +363,7 @@ func (c *Controller) UploadPartCopy(w http.ResponseWriter, r *http.Request,
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -468,7 +468,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -536,7 +536,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -963,7 +963,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		writeTime = time.Unix(*mtime, 0)
 	}
 	fullPhysicalAddress := swag.StringValue(body.Staging.PhysicalAddress)
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
 
 	if addressType == catalog.AddressTypeRelative {
 		// if the address is in the storage namespace, verify it has been produced by lakeFS
@@ -1028,12 +1028,18 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 // normalizePhysicalAddress return relative address based on storage namespace if possible. If address doesn't match
 // the storage namespace prefix, the return address type is full.
-func normalizePhysicalAddress(storageNamespace, physicalAddress string) (string, catalog.AddressType) {
+func (c *Controller) normalizePhysicalAddress(storageNamespace, physicalAddress string) (string, catalog.AddressType) {
 	prefix := storageNamespace
 	if !strings.HasSuffix(prefix, catalog.DefaultPathDelimiter) {
 		prefix += catalog.DefaultPathDelimiter
 	}
-	if strings.HasPrefix(physicalAddress, prefix) {
+	dataPrefix := prefix + c.PathProvider.CommonPrefix()
+	if !strings.HasSuffix(dataPrefix, catalog.DefaultPathDelimiter) {
+		dataPrefix += catalog.DefaultPathDelimiter
+	}
+	if strings.HasPrefix(physicalAddress, dataPrefix) {
+		// if the address is in the "data" path, treat it as a relative address.
+		// note that it's relative to the storage namespace (add it'll include the "data" prefix).
 		return physicalAddress[len(prefix):], catalog.AddressTypeRelative
 	}
 	return physicalAddress, catalog.AddressTypeFull
@@ -3627,7 +3633,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		writeTime = time.Unix(*body.Mtime, 0)
 	}
 
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
