@@ -27,6 +27,8 @@ Method | HTTP request | Description
 [**get_group**](AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
 [**get_group_acl**](AuthApi.md#get_group_acl) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 [**get_policy**](AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
+[**get_token_from_mailbox**](AuthApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
+[**get_token_redirect**](AuthApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 [**get_user**](AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
 [**list_group_members**](AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 [**list_group_policies**](AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
@@ -687,6 +689,59 @@ Name | Type | Description  | Required | Notes
 ### Authorization
 
 [basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## get_token_from_mailbox
+
+> models::AuthenticationToken get_token_from_mailbox(mailbox)
+receive the token after user has authenticated on redirect URL.
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**mailbox** | **String** | mailbox returned by getTokenRedirect | [required] |
+
+### Return type
+
+[**models::AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## get_token_redirect
+
+> models::Error get_token_redirect()
+start acquiring a token by logging in on a browser
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**models::Error**](Error.md)
+
+### Authorization
+
+No authorization required
 
 ### HTTP request headers
 
