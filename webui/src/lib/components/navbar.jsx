@@ -29,13 +29,6 @@ const NavUserInfo = () => {
         </>
         )
     }
-    const handleLogout = (e) => {
-        e.preventDefault();
-        window.history.replaceState(null, "", "/auth/login?redirected=true");
-        setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-        auth.clearCurrentUser();
-        window.location.href = logoutUrl;
-    };
     return (
         <NavDropdown title={<NavBarTitle />} className="navbar-username" align="end">
             {notifyNewVersion && <>
@@ -45,7 +38,14 @@ const NavUserInfo = () => {
                     New lakeFS version is available!
                     </>
             </NavDropdown.Item><NavDropdown.Divider/></>}
-            <NavDropdown.Item onClick={handleLogout}>Logout</NavDropdown.Item>
+            <NavDropdown.Item
+                as="button"
+                onClick={() => {
+                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
+                    window.location.replace(logoutUrl);
+                }}>
+                Logout
+            </NavDropdown.Item>
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
             <NavDropdown.Item disabled={true}>
