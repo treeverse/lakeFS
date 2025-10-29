@@ -24,7 +24,7 @@ if (typeof window !== "undefined" && !window.__lakefsBFGuard) {
         }
     };
     window.addEventListener("popstate", redirectIfUnauthed, { capture: true });
-    const onPageShow = (e: any) => {
+    const onPageShow = (e: { persisted: boolean; }) => {
         const type = (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined)?.type;
         if (e?.persisted === true || type === "back_forward") redirectIfUnauthed();
     };
