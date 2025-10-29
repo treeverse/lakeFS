@@ -38,12 +38,7 @@ const NavUserInfo = () => {
                     New lakeFS version is available!
                     </>
             </NavDropdown.Item><NavDropdown.Divider/></>}
-            <NavDropdown.Item
-                onClick={()=> {
-                    auth.clearCurrentUser();
-                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-                    window.location.replace(logoutUrl);
-                }}>
+            <NavDropdown.Item as="a" href={`${logoutUrl}${logoutUrl.includes('?') ? '&' : '?'}ts=${Date.now()}`}>
                 Logout
             </NavDropdown.Item>
             <NavDropdown.Divider/>
