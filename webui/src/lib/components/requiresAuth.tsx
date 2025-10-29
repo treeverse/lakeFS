@@ -1,28 +1,21 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import useUser from "../hooks/user";
 import { Loading } from "./controls";
+import useUser from "../hooks/user";
 
-function hasAuthSessionCookie() {
-    if (typeof document === "undefined") return false;
-    const c = document.cookie;
+const hasAuthSessionCookie = () => {
+    const c = typeof document === "undefined" ? "" : document.cookie || "";
     return c.includes("internal_auth_session=") || c.includes("oidc_auth_session=");
 }
 
 const RequiresAuth: React.FC = () => {
     const { user, loading } = useUser();
     const location = useLocation();
+    const next = location.pathname + (location.search || "") + (location.hash || "");
 
-    if (!hasAuthSessionCookie()) {
-        const next = location.pathname + (location.search || "") + (location.hash || "");
-        return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
-    }
-
+    if (!hasAuthSessionCookie()) return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
     if (loading) return <Loading />;
-    if (!user) {
-        const next = location.pathname + (location.search || "") + (location.hash || "");
-        return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
-    }
+    if (!user) return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
 
     return <Outlet />;
 };
