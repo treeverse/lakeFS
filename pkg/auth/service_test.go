@@ -22,6 +22,7 @@ import (
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -792,7 +793,7 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			groups := make([]auth.Group, amount)
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				groups[i] = auth.Group{
 					CreationDate: creationDate,
 					Name:         fmt.Sprintf("%s-%d", groupNamePrefix, i),
@@ -849,7 +850,7 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			users := make([]auth.User, amount)
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				users[i] = auth.User{
 					CreationDate: creationDate,
 					Username:     fmt.Sprintf("%s-%d", userNamePrefix, i),
@@ -893,7 +894,7 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			users := make([]auth.User, amount)
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				users[i] = auth.User{
 					CreationDate: creationDate,
 					Username:     fmt.Sprintf("%s-%d", userNamePrefix, i),
@@ -1092,7 +1093,7 @@ func TestAPIAuthService_ListUserGroups(t *testing.T) {
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			groups := make([]auth.Group, amount)
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				groups[i] = auth.Group{
 					CreationDate: creationDate,
 					Name:         fmt.Sprintf("%s-%d", groupNamePrefix, i),
@@ -1137,7 +1138,7 @@ func TestAPIAuthService_ListUserCredentials(t *testing.T) {
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
 			credentials := make([]auth.Credentials, amount)
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				credentials[i] = auth.Credentials{
 					CreationDate: creationDate,
 					AccessKeyId:  fmt.Sprintf("%s-%d", accessKeyPrefix, i),
@@ -2101,6 +2102,7 @@ func TestAPIAuthService_CreateUserExternalPrincipal(t *testing.T) {
 		})
 	}
 }
+
 func TestAPIAuthService_ReusePrincipalAfterDelete(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	userA := "user_a"
@@ -2201,4 +2203,242 @@ func TestAPIService_RequestIDPropagation(t *testing.T) {
 	if !called {
 		t.Error("Expected inner server to be called but it wasn't")
 	}
+}
+
+func TestAPIAuthService_Authorize(t *testing.T) {
+	mockClient, s := NewTestApiService(t, true)
+
+	tests := []struct {
+		name             string
+		username         string
+		clientIP         string
+		requiredAction   string
+		requiredResource string
+		policies         []auth.Policy
+		expectedAllowed  bool
+	}{
+		{
+			name:             "successful_authorization",
+			username:         "user1",
+			clientIP:         "192.168.1.1",
+			requiredAction:   "fs:ReadObject",
+			requiredResource: "arn:lakefs:fs:::repository/main/*",
+			policies: []auth.Policy{
+				{
+					Name: "allow-read",
+					Statement: []auth.Statement{
+						{
+							Action:   []string{"fs:ReadObject"},
+							Resource: "arn:lakefs:fs:::repository/main/*",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expectedAllowed: true,
+		},
+		{
+			name:             "authorization_denied_missing_permission",
+			username:         "user2",
+			clientIP:         "192.168.1.2",
+			requiredAction:   "fs:WriteObject",
+			requiredResource: "arn:lakefs:fs:::repository/main/*",
+			policies: []auth.Policy{
+				{
+					Name: "allow-read-only",
+					Statement: []auth.Statement{
+						{
+							Action:   []string{"fs:ReadObject"},
+							Resource: "arn:lakefs:fs:::repository/main/*",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expectedAllowed: false,
+		},
+		{
+			name:             "authorization_explicitly_denied",
+			username:         "user3",
+			clientIP:         "192.168.1.3",
+			requiredAction:   "fs:DeleteObject",
+			requiredResource: "arn:lakefs:fs:::repository/main/sensitive/*",
+			policies: []auth.Policy{
+				{
+					Name: "deny-delete-sensitive",
+					Statement: []auth.Statement{
+						{
+							Action:   []string{"fs:*"},
+							Resource: "*",
+							Effect:   model.StatementEffectAllow,
+						},
+						{
+							Action:   []string{"fs:DeleteObject"},
+							Resource: "arn:lakefs:fs:::repository/main/sensitive/*",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expectedAllowed: false,
+		},
+		{
+			name:             "authorization_wildcard_action",
+			username:         "user4",
+			clientIP:         "192.168.1.4",
+			requiredAction:   "fs:ReadObject",
+			requiredResource: "arn:lakefs:fs:::repository/main/*",
+			policies: []auth.Policy{
+				{
+					Name: "allow-all-fs",
+					Statement: []auth.Statement{
+						{
+							Action:   []string{"fs:*"},
+							Resource: "*",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expectedAllowed: true,
+		},
+		{
+			name:             "authorization_no_policies",
+			username:         "user5",
+			clientIP:         "192.168.1.5",
+			requiredAction:   "fs:ReadObject",
+			requiredResource: "arn:lakefs:fs:::repository/main/*",
+			policies:         []auth.Policy{},
+			expectedAllowed:  false,
+		},
+		{
+			name:             "authorization_with_conditions_ip_match",
+			username:         "user6",
+			clientIP:         "192.168.1.100",
+			requiredAction:   "fs:ReadObject",
+			requiredResource: "arn:lakefs:fs:::repository/main/*",
+			policies: []auth.Policy{
+				{
+					Name: "allow-from-specific-ip",
+					Statement: []auth.Statement{
+						{
+							Action:   []string{"fs:ReadObject"},
+							Resource: "*",
+							Effect:   model.StatementEffectAllow,
+							Condition: &auth.Statement_Condition{
+								AdditionalProperties: map[string]auth.PolicyCondition{
+									"IpAddress": {
+										AdditionalProperties: map[string][]string{
+											"SourceIp": {"192.168.1.100/32"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedAllowed: true,
+		},
+		{
+			name:             "authorization_with_conditions_ip_mismatch",
+			username:         "user7",
+			clientIP:         "10.0.0.1",
+			requiredAction:   "fs:ReadObject",
+			requiredResource: "arn:lakefs:fs:::repository/main/*",
+			policies: []auth.Policy{
+				{
+					Name: "allow-from-specific-ip",
+					Statement: []auth.Statement{
+						{
+							Action:   []string{"fs:ReadObject"},
+							Resource: "*",
+							Effect:   model.StatementEffectAllow,
+							Condition: &auth.Statement_Condition{
+								AdditionalProperties: map[string]auth.PolicyCondition{
+									"IpAddress": {
+										AdditionalProperties: map[string][]string{
+											"SourceIp": {"192.168.1.0/24"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedAllowed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			// Mock ListEffectivePolicies response
+			policyList := auth.PolicyList{
+				Pagination: auth.Pagination{},
+				Results:    tt.policies,
+			}
+			response := &auth.ListUserPoliciesResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+				JSON200:      &policyList,
+			}
+			mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), tt.username, gomock.Any()).
+				Return(response, nil)
+
+			// Create authorization request
+			authReq := &auth.AuthorizationRequest{
+				Username: tt.username,
+				ClientIP: tt.clientIP,
+				RequiredPermissions: permissions.Node{
+					Type: permissions.NodeTypeNode,
+					Permission: permissions.Permission{
+						Action:   tt.requiredAction,
+						Resource: tt.requiredResource,
+					},
+				},
+			}
+
+			// Call Authorize
+			authResp, err := s.Authorize(ctx, authReq)
+
+			// Verify authorization response
+			require.NoError(t, err)
+			require.NotNil(t, authResp)
+			require.Equal(t, tt.expectedAllowed, authResp.Allowed)
+
+			if !tt.expectedAllowed {
+				require.ErrorIs(t, authResp.Error, auth.ErrInsufficientPermissions)
+			} else {
+				require.Nil(t, authResp.Error)
+			}
+		})
+	}
+}
+
+func TestAPIAuthService_Authorize_ListPoliciesError(t *testing.T) {
+	mockClient, s := NewTestApiService(t, true)
+	ctx := context.Background()
+
+	expectedErr := errors.New("database connection failed")
+	mockClient.EXPECT().ListUserPoliciesWithResponse(gomock.Any(), "user1", gomock.Any()).
+		Return(nil, expectedErr)
+
+	authReq := &auth.AuthorizationRequest{
+		Username: "user1",
+		ClientIP: "192.168.1.1",
+		RequiredPermissions: permissions.Node{
+			Type: permissions.NodeTypeNode,
+			Permission: permissions.Permission{
+				Action:   "fs:ReadObject",
+				Resource: "arn:lakefs:fs:::repository/main/*",
+			},
+		},
+	}
+
+	authResp, err := s.Authorize(ctx, authReq)
+	require.Error(t, err)
+	require.Nil(t, authResp)
+	require.Equal(t, expectedErr, err)
 }

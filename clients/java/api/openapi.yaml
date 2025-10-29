@@ -9311,8 +9311,24 @@ components:
       required:
       - id
       type: object
+    PolicyCondition:
+      additionalProperties:
+        items:
+          type: string
+        type: array
+      description: "Condition operator (e.g., IpAddress)"
+      example:
+        IpAddress:
+        - 192.168.0.1/32
+        - 192.168.0.2/32
+      type: object
     Statement:
       example:
+        condition:
+          key:
+            IpAddress:
+            - 192.168.0.1/32
+            - 192.168.0.2/32
         resource: resource
         effect: allow
         action:
@@ -9331,6 +9347,11 @@ components:
             type: string
           minItems: 1
           type: array
+        condition:
+          additionalProperties:
+            $ref: '#/components/schemas/PolicyCondition'
+          description: Optional conditions for when this statement applies.
+          type: object
       required:
       - action
       - effect
@@ -9339,12 +9360,22 @@ components:
     Policy:
       example:
         statement:
-        - resource: resource
+        - condition:
+            key:
+              IpAddress:
+              - 192.168.0.1/32
+              - 192.168.0.2/32
+          resource: resource
           effect: allow
           action:
           - action
           - action
-        - resource: resource
+        - condition:
+            key:
+              IpAddress:
+              - 192.168.0.1/32
+              - 192.168.0.2/32
+          resource: resource
           effect: allow
           action:
           - action
@@ -9376,12 +9407,22 @@ components:
           results: 0
         results:
         - statement:
-          - resource: resource
+          - condition:
+              key:
+                IpAddress:
+                - 192.168.0.1/32
+                - 192.168.0.2/32
+            resource: resource
             effect: allow
             action:
             - action
             - action
-          - resource: resource
+          - condition:
+              key:
+                IpAddress:
+                - 192.168.0.1/32
+                - 192.168.0.2/32
+            resource: resource
             effect: allow
             action:
             - action
@@ -9389,12 +9430,22 @@ components:
           id: id
           creation_date: 0
         - statement:
-          - resource: resource
+          - condition:
+              key:
+                IpAddress:
+                - 192.168.0.1/32
+                - 192.168.0.2/32
+            resource: resource
             effect: allow
             action:
             - action
             - action
-          - resource: resource
+          - condition:
+              key:
+                IpAddress:
+                - 192.168.0.1/32
+                - 192.168.0.2/32
+            resource: resource
             effect: allow
             action:
             - action
