@@ -9,7 +9,6 @@ import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
 import {AUTH_STATUS, useAuth} from "../auth/authContext";
-import router from "happy-dom/src/browser/utilities/BrowserFrameNavigator.ts.ts";
 import {auth} from "../api";
 
 const NavUserInfo = () => {
@@ -18,6 +17,7 @@ const NavUserInfo = () => {
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
     const versionConfig = config?.versionConfig || {};
     const { setAuthStatus } = useAuth();
+    const router = useRouter();
 
     if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);

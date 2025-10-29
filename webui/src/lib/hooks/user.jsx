@@ -4,7 +4,7 @@ import { AUTH_STATUS, useAuth } from "../auth/authContext";
 import { useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
-const LOGIN_COOKIE_NAMES = ["internal_auth_session", "oidc_auth_session"]; // אפשר להחליף מ-login_config
+const LOGIN_COOKIE_NAMES = ["internal_auth_session", "oidc_auth_session"];
 const hasSessionCookie = () => {
     const c = typeof document === "undefined" ? "" : document.cookie || "";
     return LOGIN_COOKIE_NAMES.some((name) => c.includes(`${name}=`));
