@@ -1,16 +1,15 @@
 import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import useUser from "../hooks/user";
-import {Loading} from "./controls";
-import {AUTH_STATUS, useAuth} from "../auth/authContext";
+import { Loading } from "./controls";
 
 const RequiresAuth: React.FC = () => {
-    const { user, loading } = useUser();
-    const { status } = useAuth();
+    const { user, loading, checked } = useUser();
+    const location = useLocation();
 
-    if (loading || status === AUTH_STATUS.UNKNOWN) return <Loading />;
+    if (loading || !checked) return <Loading />;
 
-    if (status === AUTH_STATUS.UNAUTHENTICATED || !user) {
+    if (!user) {
         const next = location.pathname + (location.search || "") + (location.hash || "");
         return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
     }
