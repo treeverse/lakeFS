@@ -4,9 +4,10 @@ import { AUTH_STATUS, useAuth } from "../auth/authContext";
 import { useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
-const hasAuthSessionCookie = () => {
+const LOGIN_COOKIE_NAMES = ["internal_auth_session", "oidc_auth_session"]; // אפשר להחליף מ-login_config
+const hasSessionCookie = () => {
     const c = typeof document === "undefined" ? "" : document.cookie || "";
-    return c.includes("internal_auth_session=") || c.includes("oidc_auth_session=");
+    return LOGIN_COOKIE_NAMES.some((name) => c.includes(`${name}=`));
 };
 
 const useUser = () => {
@@ -14,8 +15,8 @@ const useUser = () => {
     const location = useLocation();
 
     const hardValidate = useMemo(() => location.pathname.startsWith("/auth/") && location.pathname !== "/auth/login", [location.pathname]);
+    const hasSession = hasSessionCookie();
 
-    const hasSession = hasAuthSessionCookie();
     useEffect(() => {
         if (!hasSession) setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
     }, [hasSession, setAuthStatus]);
@@ -33,8 +34,7 @@ const useUser = () => {
 
     useEffect(() => {
         if (loading) return;
-        const next = response?.id ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED;
-        setAuthStatus(prev => (prev === next ? prev : next));
+        setAuthStatus(response?.id ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED);
     }, [loading, response, setAuthStatus]);
 
     const user = response?.id ? response : null;
