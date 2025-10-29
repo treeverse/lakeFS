@@ -9,7 +9,6 @@ import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
 import {AUTH_STATUS, useAuth} from "../auth/authContext";
-import {auth} from "../api";
 
 const NavUserInfo = () => {
     const { user, loading: userLoading, error } = useUser();
@@ -39,7 +38,6 @@ const NavUserInfo = () => {
                     </>
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
-                as="button"
                 onClick={() => {
                     setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     window.location.replace(logoutUrl);
