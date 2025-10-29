@@ -67,6 +67,7 @@ export const useAPI = (promise, deps = []) => {
                     if (status === AUTH_STATUS.AUTHENTICATED) {
                         setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     }
+                    return;
                 }
                 setRequest({
                     loading: false,
