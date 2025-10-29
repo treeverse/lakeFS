@@ -21,16 +21,14 @@ const (
 	StatementEffectAllow   = "allow"
 	StatementEffectDeny    = "deny"
 	PartitionKey           = "auth"
-	PackageName            = "auth"
 	groupsPrefix           = "groups"
 	groupsUsersPrefix      = "gUsers"
 	groupsPoliciesPrefix   = "gPolicies"
 	usersPrefix            = "users"
 	policiesPrefix         = "policies"
 	usersPoliciesPrefix    = "uPolicies"
-	usersCredentialsPrefix = "uCredentials" //#nosec G101 -- False positive: this is only a kv key prefix
+	usersCredentialsPrefix = "uCredentials" // #nosec G101 -- False positive: this is only a kv key prefix
 	credentialsPrefix      = "credentials"
-	expiredTokensPrefix    = "expiredTokens"
 	metadataPrefix         = "installation_metadata"
 )
 
@@ -75,14 +73,6 @@ func GroupPolicyPath(groupDisplayName string, policyDisplayName string) []byte {
 	return []byte(kv.FormatPath(groupsPoliciesPrefix, groupDisplayName, policiesPrefix, policyDisplayName))
 }
 
-func ExpiredTokenPath(tokenID string) []byte {
-	return []byte(kv.FormatPath(expiredTokensPrefix, tokenID))
-}
-
-func ExpiredTokensPath() []byte {
-	return ExpiredTokenPath("")
-}
-
 func MetadataKeyPath(key string) string {
 	return kv.FormatPath(metadataPrefix, key)
 }
@@ -113,7 +103,7 @@ type User struct {
 	// Username is a unique identifier for the user. In password-based authentication, it is the email.
 	Username string `db:"display_name" json:"display_name"`
 	// FriendlyName, if set, is a shorter name for the user than
-	// Username.  Unlike Username it does not identify the user (it
+	// Username.  Unlike Username, it does not identify the user (it
 	// might not be unique); use it in the user's GUI rather than in
 	// backend code.
 	FriendlyName      *string `db:"friendly_name" json:"friendly_name"`
@@ -121,6 +111,13 @@ type User struct {
 	EncryptedPassword []byte  `db:"encrypted_password" json:"encrypted_password"`
 	Source            string  `db:"source" json:"source"`
 	ExternalID        *string `db:"external_id" json:"external_id"`
+}
+
+func (u *User) Committer() string {
+	if u.Email != nil && *u.Email != "" {
+		return *u.Email
+	}
+	return u.Username
 }
 
 type DBUser struct {
@@ -134,8 +131,10 @@ func ConvertDBID(id int64) string {
 }
 
 type Group struct {
+	ID          string    `db:"id"`
 	CreatedAt   time.Time `db:"created_at"`
 	DisplayName string    `db:"display_name" json:"display_name"`
+	Description *string   `db:"description" json:"description"`
 }
 
 type DBGroup struct {
@@ -143,10 +142,17 @@ type DBGroup struct {
 	Group
 }
 
+type ACLPermission string
+
+type ACL struct {
+	Permission ACLPermission `json:"permission"`
+}
+
 type Policy struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	DisplayName string     `db:"display_name" json:"display_name"`
 	Statement   Statements `db:"statement"`
+	ACL         ACL        `db:"acl" json:"acl"`
 }
 
 type DBPolicy struct {
@@ -155,9 +161,10 @@ type DBPolicy struct {
 }
 
 type Statement struct {
-	Effect   string   `json:"Effect"`
-	Action   []string `json:"Action"`
-	Resource string   `json:"Resource"`
+	Effect    string                         `json:"Effect"`
+	Action    []string                       `json:"Action"`
+	Resource  string                         `json:"Resource"`
+	Condition map[string]map[string][]string `json:"Condition,omitempty"`
 }
 
 type Statements []Statement
@@ -185,6 +192,14 @@ type CredentialKeys struct {
 	SecretAccessKey string `json:"secret_access_key"`
 }
 
+// ExternalPrincipal represents an attachment of a user to an external identity such as an IAM Role ARN
+type ExternalPrincipal struct {
+	// External Principal ID (i.e ARN)
+	ID string `json:"id"`
+	// The attached lakeFS user ID
+	UserID string `json:"user_id"`
+}
+
 func (u *User) UpdatePassword(password string) error {
 	pw, err := HashPassword(password)
 	if err != nil {
@@ -204,14 +219,14 @@ func (u *User) Authenticate(password string) error {
 	return bcrypt.CompareHashAndPassword(u.EncryptedPassword, []byte(password))
 }
 
-func (s Statements) Value() (driver.Value, error) {
+func (s *Statements) Value() (driver.Value, error) {
 	if s == nil {
 		return json.Marshal([]struct{}{})
 	}
 	return json.Marshal(s)
 }
 
-func (s *Statements) Scan(src interface{}) error {
+func (s *Statements) Scan(src any) error {
 	if src == nil {
 		return nil
 	}
@@ -250,6 +265,8 @@ func GroupFromProto(pb *GroupData) *Group {
 	return &Group{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
+		ID:          pb.DisplayName,
+		Description: &pb.Description,
 	}
 }
 
@@ -257,15 +274,22 @@ func ProtoFromGroup(g *Group) *GroupData {
 	return &GroupData{
 		CreatedAt:   timestamppb.New(g.CreatedAt),
 		DisplayName: g.DisplayName,
+		Description: swag.StringValue(g.Description),
 	}
 }
 
 func PolicyFromProto(pb *PolicyData) *Policy {
-	return &Policy{
+	policy := &Policy{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
 		Statement:   *statementsFromProto(pb.Statements),
 	}
+	if pb.Acl != nil {
+		policy.ACL = ACL{
+			Permission: ACLPermission(pb.Acl.Permission),
+		}
+	}
+	return policy
 }
 
 func ProtoFromPolicy(p *Policy) *PolicyData {
@@ -273,6 +297,9 @@ func ProtoFromPolicy(p *Policy) *PolicyData {
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
+		Acl: &ACLData{
+			Permission: string(p.ACL.Permission),
+		},
 	}
 }
 
@@ -302,18 +329,43 @@ func ProtoFromCredential(c *Credential) *CredentialData {
 }
 
 func statementFromProto(pb *StatementData) *Statement {
+	condition := make(map[string]map[string][]string)
+	if pb.Condition != nil {
+		for operatorName, condOp := range pb.Condition {
+			condition[operatorName] = make(map[string][]string)
+			if condOp != nil && condOp.Fields != nil {
+				for fieldName, stringList := range condOp.Fields {
+					if stringList != nil {
+						condition[operatorName][fieldName] = stringList.Values
+					}
+				}
+			}
+		}
+	}
 	return &Statement{
-		Effect:   pb.Effect,
-		Action:   pb.Action,
-		Resource: pb.Resource,
+		Effect:    pb.Effect,
+		Action:    pb.Action,
+		Resource:  pb.Resource,
+		Condition: condition,
 	}
 }
 
 func protoFromStatement(s *Statement) *StatementData {
+	condition := make(map[string]*ConditionOperator)
+	if s.Condition != nil {
+		for operatorName, fields := range s.Condition {
+			fieldMap := make(map[string]*StringList)
+			for fieldName, values := range fields {
+				fieldMap[fieldName] = &StringList{Values: values}
+			}
+			condition[operatorName] = &ConditionOperator{Fields: fieldMap}
+		}
+	}
 	return &StatementData{
-		Effect:   s.Effect,
-		Action:   s.Action,
-		Resource: s.Resource,
+		Effect:    s.Effect,
+		Action:    s.Action,
+		Resource:  s.Resource,
+		Condition: condition,
 	}
 }
 
@@ -334,14 +386,6 @@ func protoFromStatements(s *Statements) []*StatementData {
 	return statements
 }
 
-func ConvertUsersList(users []*DBUser) []*User {
-	kvUsers := make([]*User, 0, len(users))
-	for _, u := range users {
-		kvUsers = append(kvUsers, &u.User)
-	}
-	return kvUsers
-}
-
 func ConvertUsersDataList(users []proto.Message) []*User {
 	kvUsers := make([]*User, 0, len(users))
 	for _, u := range users {
@@ -349,25 +393,6 @@ func ConvertUsersDataList(users []proto.Message) []*User {
 		kvUsers = append(kvUsers, UserFromProto(a))
 	}
 	return kvUsers
-}
-
-func ConvertCredList(creds []*DBCredential, username string) []*Credential {
-	res := make([]*Credential, 0, len(creds))
-	for _, c := range creds {
-		res = append(res, &Credential{
-			Username:       username,
-			BaseCredential: c.BaseCredential,
-		})
-	}
-	return res
-}
-
-func ConvertGroupList(groups []*DBGroup) []*Group {
-	res := make([]*Group, 0, len(groups))
-	for _, g := range groups {
-		res = append(res, &g.Group)
-	}
-	return res
 }
 
 func ConvertGroupDataList(group []proto.Message) []*Group {
@@ -388,7 +413,7 @@ func ConvertPolicyDataList(policies []proto.Message) []*Policy {
 	return res
 }
 
-func ConvertCredDataList(s crypt.SecretStore, creds []proto.Message) ([]*Credential, error) {
+func ConvertCredDataList(s crypt.SecretStore, creds []proto.Message, withSecret bool) ([]*Credential, error) {
 	res := make([]*Credential, 0, len(creds))
 	for _, c := range creds {
 		credentialData := c.(*CredentialData)
@@ -396,7 +421,9 @@ func ConvertCredDataList(s crypt.SecretStore, creds []proto.Message) ([]*Credent
 		if err != nil {
 			return nil, fmt.Errorf("credentials for %s: %w", credentialData.AccessKeyId, err)
 		}
-		m.SecretAccessKey = ""
+		if !withSecret {
+			m.SecretAccessKey = ""
+		}
 		res = append(res, m)
 	}
 	return res, nil

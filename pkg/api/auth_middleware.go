@@ -11,12 +11,12 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
-	"github.com/golang-jwt/jwt"
+	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	oidc_encoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
-	"github.com/treeverse/lakefs/pkg/config"
+	oidcencoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -37,12 +37,52 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 		return nil, err
 	}
 	if route.Operation.Security == nil {
-		return route.Swagger.Security, nil
+		return route.Spec.Security, nil
 	}
 	return *route.Operation.Security, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) func(next http.Handler) http.Handler {
+type OIDCConfig struct {
+	ValidateIDTokenClaims  map[string]string
+	DefaultInitialGroups   []string
+	InitialGroupsClaimName string
+	FriendlyNameClaimName  string
+	PersistFriendlyName    bool
+}
+
+type CookieAuthConfig struct {
+	ValidateIDTokenClaims   map[string]string
+	DefaultInitialGroups    []string
+	InitialGroupsClaimName  string
+	FriendlyNameClaimName   string
+	ExternalUserIDClaimName string
+	AuthSource              string
+	PersistFriendlyName     bool
+}
+
+func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) (func(next http.Handler) http.Handler, error) {
+	swagger, err := apigen.GetSwagger()
+	if err != nil {
+		return nil, err
+	}
+	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
+			if err != nil {
+				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
+				return
+			}
+			if user != nil {
+				ctx := logging.AddFields(r.Context(), logging.Fields{logging.UserFieldKey: user.Username})
+				r = r.WithContext(auth.WithUser(ctx, user))
+			}
+			next.ServeHTTP(w, r)
+		})
+	}, nil
+}
+
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -55,14 +95,13 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
-
 			if err != nil {
-				writeError(w, r, http.StatusBadRequest, err)
+				writeAuthError(w, r, err, http.StatusBadRequest, err.Error())
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
-				writeError(w, r, http.StatusUnauthorized, err)
+				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
 				return
 			}
 			if user != nil {
@@ -82,8 +121,8 @@ func checkSecurityRequirements(r *http.Request,
 	authenticator auth.Authenticator,
 	authService auth.Service,
 	sessionStore sessions.Store,
-	oidcConfig *config.OIDC,
-	cookieAuthConfig *config.CookieAuthVerification,
+	oidcConfig *OIDCConfig,
+	cookieAuthConfig *CookieAuthConfig,
 ) (*model.User, error) {
 	ctx := r.Context()
 	var user *model.User
@@ -155,9 +194,19 @@ func checkSecurityRequirements(r *http.Request,
 	return nil, nil
 }
 
-func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User {
-	if friendlyName != "" {
-		user.FriendlyName = &friendlyName
+func enhanceWithFriendlyName(ctx context.Context, user *model.User, friendlyName string, persistFriendlyName bool, authService auth.Service, logger logging.Logger) *model.User {
+	log := logger.WithFields(logging.Fields{"friendly_name": friendlyName, "persist_friendly_name": persistFriendlyName})
+	if user == nil {
+		log.Error("user is nil")
+		return nil
+	}
+	if swag.StringValue(user.FriendlyName) != friendlyName {
+		user.FriendlyName = swag.String(friendlyName)
+		if persistFriendlyName {
+			if err := authService.UpdateUserFriendlyName(ctx, user.Username, friendlyName); err != nil {
+				log.WithError(err).Error("failed to update user friendly name")
+			}
+		}
 	}
 	return user
 }
@@ -165,8 +214,8 @@ func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User 
 // userFromSAML returns a user from an existing SAML session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
-func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, cookieAuthConfig *config.CookieAuthVerification) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidc_encoding.Claims)
+func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, cookieAuthConfig *CookieAuthConfig) (*model.User, error) {
+	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidcencoding.Claims)
 	if idTokenClaims == nil {
 		return nil, nil
 	}
@@ -209,11 +258,11 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 	user, err := authService.GetUserByExternalID(ctx, externalID)
 	if err == nil {
 		log.Info("Found user")
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		log.WithError(err).Error("Failed while searching if user exists in database")
-		return nil, ErrAuthenticatingRequest
+		return nil, fmt.Errorf("get user by external ID: %w", err)
 	}
 	log.Info("User not found; creating them")
 
@@ -223,43 +272,59 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 		Username:   externalID,
 		ExternalID: &externalID,
 	}
-
+	if cookieAuthConfig.PersistFriendlyName {
+		u.FriendlyName = &friendlyName
+	}
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, auth.ErrAlreadyExists) {
 			log.WithError(err).Error("Failed to create external user in database")
-			return nil, ErrAuthenticatingRequest
+			return nil, fmt.Errorf("create user: %w", err)
 		}
 		// user already exists - get it:
 		user, err = authService.GetUserByExternalID(ctx, externalID)
 		if err != nil {
-			log.WithError(err).Error("failed to get external user from database")
-			return nil, ErrAuthenticatingRequest
+			log.WithError(err).Error("Failed to get external user from database")
+			return nil, fmt.Errorf("get user by external ID: %w", err)
 		}
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
 	}
-	initialGroups := cookieAuthConfig.DefaultInitialGroups
-	if userInitialGroups, ok := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName].(string); ok {
-		initialGroups = strings.Split(userInitialGroups, ",")
+
+	// Assign initial groups to the user. by default, we assign the configured default groups from the config.
+	// If the user has a custom initial groups claim, we use it to assign the groups to the user.
+	groupsClaim := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName]
+	initialGroups, err := initialGroupsFromClaims(groupsClaim, cookieAuthConfig.DefaultInitialGroups)
+	if err != nil {
+		log.WithError(err).WithField("groups_claim", groupsClaim).Error("Failed to parse initial groups claim")
+		return nil, ErrAuthenticatingRequest
 	}
-	for _, g := range initialGroups {
-		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+	for _, groupName := range initialGroups {
+		err := authService.AddUserToGroup(ctx, u.Username, groupName)
 		if err != nil {
-			log.WithError(err).Error("Failed to add external user to group")
+			logger.WithError(err).WithFields(logging.Fields{
+				"group": groupName,
+				"user":  u.Username,
+			}).Error("Failed to add external user to group")
+			// At this point in the code the user is already created. Re-running this after an error will not re-attach the user.
+			// We don't return failure since one of the groups may not always exist at first or may even be deleted in the future.
+			// If we with an error here, enhanceWithFriendlyName will not run and the call will result in an error.
 		}
 	}
-	return enhanceWithFriendlyName(&u, friendlyName), nil
+
+	// The user was just created.
+	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
+	return enhanceWithFriendlyName(ctx, user, friendlyName, false, authService, logger), nil
 }
 
 // userFromOIDC returns a user from an existing OIDC session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
-func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc_encoding.Claims)
+func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *OIDCConfig) (*model.User, error) {
+	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidcencoding.Claims)
 	if idTokenClaims == nil {
 		return nil, nil
 	}
-	if !ok || idTokenClaims == nil {
+	if !ok {
 		return nil, ErrAuthenticatingRequest
 	}
 	externalID, ok := idTokenClaims["sub"].(string)
@@ -285,11 +350,11 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	}
 	user, err := authService.GetUserByExternalID(ctx, externalID)
 	if err == nil {
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		logger.WithError(err).Error("Failed to get external user from database")
-		return nil, ErrAuthenticatingRequest
+		return nil, fmt.Errorf("get user by external ID: %w", err)
 	}
 	u := model.User{
 		CreatedAt:  time.Now().UTC(),
@@ -297,37 +362,51 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		Username:   externalID,
 		ExternalID: &externalID,
 	}
+	if oidcConfig.PersistFriendlyName {
+		u.FriendlyName = &friendlyName
+	}
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, auth.ErrAlreadyExists) {
 			logger.WithError(err).Error("Failed to create external user in database")
-			return nil, ErrAuthenticatingRequest
+			return nil, fmt.Errorf("create user: %w", err)
 		}
 		// user already exists - get it:
 		user, err = authService.GetUserByExternalID(ctx, externalID)
 		if err != nil {
 			logger.WithError(err).Error("Failed to get external user from database")
-			return nil, ErrAuthenticatingRequest
+			return nil, fmt.Errorf("get user by external ID: %w", err)
 		}
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
-	initialGroups := oidcConfig.DefaultInitialGroups
-	if userInitialGroups, ok := idTokenClaims[oidcConfig.InitialGroupsClaimName].(string); ok {
-		initialGroups = strings.Split(userInitialGroups, ",")
+	groupsClaim := idTokenClaims[oidcConfig.InitialGroupsClaimName]
+	initialGroups, err := initialGroupsFromClaims(groupsClaim, oidcConfig.DefaultInitialGroups)
+	if err != nil {
+		logger.WithError(err).WithField("groups_claim", groupsClaim).Error("Failed to parse initial groups claim")
+		return nil, ErrAuthenticatingRequest
 	}
-	for _, g := range initialGroups {
-		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+	for _, groupName := range initialGroups {
+		err := authService.AddUserToGroup(ctx, u.Username, groupName)
 		if err != nil {
-			logger.WithError(err).Error("Failed to add external user to group")
+			logger.WithError(err).WithFields(logging.Fields{
+				"group": groupName,
+				"user":  u.Username,
+			}).Error("Failed to add external user to group")
+			// At this point in the code the user is already created. Re-running this after an error will not re-attach the user.
+			// We don't return failure since one of the groups may not always exist at first or may even be deleted in the future.
+			// If we with an error here, enhanceWithFriendlyName will not run and the call will result in an error.
 		}
 	}
-	return enhanceWithFriendlyName(&u, friendlyName), nil
+
+	// The user was just created.
+	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
+	return enhanceWithFriendlyName(ctx, &u, friendlyName, false, authService, logger), nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
 	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
-	// make sure no audience is set for login token
-	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
+	// make sure audience is set correctly for login token
+	if err != nil {
 		return nil, ErrAuthenticatingRequest
 	}
 
@@ -335,11 +414,11 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	userData, err := authService.GetUser(ctx, username)
 	if err != nil {
 		logger.WithFields(logging.Fields{
-			"token_id": claims.Id,
+			"token_id": claims.ID,
 			"username": username,
-			"subject":  claims.Subject,
+			"subject":  username,
 		}).Debug("could not find user id by credentials")
-		return nil, ErrAuthenticatingRequest
+		return nil, fmt.Errorf("get user: %w", err)
 	}
 	return userData, nil
 }
@@ -349,27 +428,52 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {
 		logger.WithError(err).WithField("user", accessKey).Error("authenticate")
-		return nil, ErrAuthenticatingRequest
+		return nil, err
 	}
 	user, err := authService.GetUser(ctx, username)
 	if err != nil {
 		logger.WithError(err).WithFields(logging.Fields{"user_name": username}).Debug("could not find user id by credentials")
-		return nil, ErrAuthenticatingRequest
+		return nil, err
 	}
 	return user, nil
 }
 
-func VerifyResetPasswordToken(ctx context.Context, authService auth.Service, token string) (*jwt.StandardClaims, error) {
-	secret := authService.SecretStore().SharedSecret()
-	claims, err := auth.VerifyTokenWithAudience(secret, token, auth.ResetPasswordAudience)
-	if err != nil {
-		return nil, err
+// initialGroupsFromClaims extracts initial groups from the claim.
+// If the claim is nil, it returns the default initial groups.
+// If the claim is present but not in the expected format, it returns an error.
+// The expected format is either a comma-separated string or a slice of strings.
+func initialGroupsFromClaims(groupsClaim any, defaultInitialGroups []string) ([]string, error) {
+	if groupsClaim == nil {
+		return defaultInitialGroups, nil
 	}
-	tokenID := claims.Id
-	tokenExpiresAt := claims.ExpiresAt
-	err = authService.ClaimTokenIDOnce(ctx, tokenID, tokenExpiresAt)
-	if err != nil {
-		return nil, err
+	groups := make([]string, 0)
+	switch v := groupsClaim.(type) {
+	case string:
+		for item := range strings.SplitSeq(v, ",") {
+			trimmed := strings.TrimSpace(item)
+			if trimmed != "" {
+				groups = append(groups, trimmed)
+			}
+		}
+	case []any:
+		for _, item := range v {
+			str, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("%w: initial groups must be strings", ErrInvalidFormat)
+			}
+			groups = append(groups, str)
+		}
 	}
-	return claims, nil
+	return groups, nil
+}
+
+// writeAuthError centralizes error handling logic and avoids duplication
+func writeAuthError(w http.ResponseWriter, r *http.Request, err error, defaultStatus int, defaultMsg string) {
+	// Only internal server errors are returned to the client to allow retries.
+	// Other errors are masked to avoid exposing sensitive information.
+	if errors.Is(err, auth.ErrInternalServerError) {
+		writeError(w, r, http.StatusInternalServerError, auth.ErrInternalServerError)
+	} else {
+		writeError(w, r, defaultStatus, defaultMsg)
+	}
 }

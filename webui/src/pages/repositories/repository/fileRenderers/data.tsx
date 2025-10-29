@@ -1,6 +1,5 @@
 import React, {FC, FormEvent, useCallback, useEffect, useState} from "react";
-import {getConnection} from "./duckdb";
-import * as duckdb from '@duckdb/duckdb-wasm';
+import {runDuckDBQuery} from "./duckdb";
 import * as arrow from 'apache-arrow';
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -10,7 +9,7 @@ import Table from "react-bootstrap/Table";
 
 import {SQLEditor} from "./editor";
 import {RendererComponent} from "./types";
-import {Error, Loading} from "../../../../lib/components/controls";
+import {AlertError, Loading} from "../../../../lib/components/controls";
 
 
 const MAX_RESULTS_RETURNED = 1000;
@@ -20,17 +19,11 @@ export const DataLoader: FC = () => {
 }
 
 export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, fileExtension }) => {
-    let initialQuery = `SELECT * 
-FROM read_parquet(lakefs_object('${repoId}', '${refId}', '${path}')) 
-LIMIT 20`;
+    let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${path}', hive_partitioning=false) LIMIT 20`;
     if (fileExtension === 'csv') {
-        initialQuery = `SELECT * 
-FROM read_csv(lakefs_object('${repoId}', '${refId}', '${path}'), AUTO_DETECT = TRUE) 
-LIMIT 20`
+        initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${path}', AUTO_DETECT = TRUE) LIMIT 20`
     } else if (fileExtension === 'tsv') {
-        initialQuery = `SELECT * 
-FROM read_csv(lakefs_object('${repoId}', '${refId}', '${path}'), DELIM='\t', AUTO_DETECT=TRUE) 
-LIMIT 20`
+        initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${path}', DELIM='\t', AUTO_DETECT=TRUE) LIMIT 20`
     }
     const [shouldSubmit, setShouldSubmit] = useState<boolean>(true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,31 +47,20 @@ LIMIT 20`
     }, [setSql])
 
     useEffect(() => {
-        if (!sql) return
+        if (!sql) {
+            return;
+        }
         const runQuery = async (sql: string) => {
             setLoading(true)
             setError(null)
-            let conn: duckdb.AsyncDuckDBConnection | null
             try {
-                conn =  await getConnection()
-            } catch (e) {
-                setData(null)
-                setError(e.toString())
-                setLoading(false)
-                return
-            }
-
-            try {
-                const results = await conn.query(sql)
+                const results = await runDuckDBQuery(sql)
                 setData(results)
-                setError(null)
             } catch (e) {
                 setError(e.toString())
                 setData(null)
             } finally {
                 setLoading(false)
-                if (conn !== null)
-                    await conn.close()
             }
         }
         runQuery(sql).catch(console.error);
@@ -93,11 +75,10 @@ LIMIT 20`
     );
 
     if (error) {
-        content = <Error error={error}/>
+        content = <AlertError error={error}/>
     } else if (data === null) {
         content = <DataLoader/>
     } else {
-
         if (!data || data.numRows === 0) {
             content = (
                 <p className="text-md-center mt-5 mb-5">
@@ -117,14 +98,15 @@ LIMIT 20`
                         <small>{`Showing only the first ${res.numRows.toLocaleString()} rows (out of ${data.numRows.toLocaleString()})`}</small>
                     }
                     <div className="object-viewer-sql-results">
-                        <Table striped bordered hover size={"sm"} responsive={true}>
+                        <Table bordered hover responsive={true}>
                             <thead className="table-dark">
                             <tr>
                                 {fields.map((field, i) =>
                                     <th key={i}>
-                                        {field.name}
-                                        <br/>
-                                        <small>{field.type.toString()}</small>
+                                        <div className="d-flex flex-column">
+                                            <span>{field.name}</span>
+                                            <small>{field.type.toString()}</small>
+                                        </div>
                                     </th>
                                 )}
                             </tr>
@@ -136,7 +118,6 @@ LIMIT 20`
                                         return (
                                             <DataRow key={`col-${i}-${j}`} value={v[1]}/>
                                         )
-
                                     })}
                                 </tr>
                             ))}
@@ -193,18 +174,16 @@ const DataRow: FC<{ value: any }> = ({ value }) => {
     }
 
     if (dataType === 'string') {
-        return <td>{value}</td>
+        return <td className="string-cell">{value}</td>
     }
 
     if (dataType === 'date') {
-        return <td>{dayjs(value).format()}</td>
+        return <td className="date-cell">{dayjs(value).format()}</td>
     }
 
     if (dataType === 'number') {
-        return <td>{value.toLocaleString("en-US")}</td>
+        return <td className="number-cell">{value.toLocaleString("en-US")}</td>
     }
 
     return <td>{""  + value}</td>;
 }
-
-

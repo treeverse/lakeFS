@@ -13,13 +13,13 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 type MakeStore func(t testing.TB, ctx context.Context) kv.Store
 
-var runTestID = nanoid.MustGenerate("abcdef1234567890", 8) //nolint:gomnd
+var runTestID = nanoid.MustGenerate("abcdef1234567890", 8) //nolint:mnd
 
 const (
 	testPartitionKey       = "test"
@@ -50,8 +50,8 @@ func sampleEntry(prefix string, n int) kv.Entry {
 	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }
 
-func TestDriver(t *testing.T, name string, params kvparams.Config) {
-	ms := MakeStoreByName(name, params)
+func DriverTest(t *testing.T, ms MakeStore) {
+	t.Helper()
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
 	t.Run("Store_SetIf", func(t *testing.T) { testStoreSetIf(t, ms) })
@@ -297,7 +297,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 
 	t.Run("predicate_empty_slice", func(t *testing.T) {
 		key := uniqueKey("predicate-empty-slice")
-		val1 := []byte{}
+		val1 := make([]byte, 0)
 		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
 		if err != nil {
 			t.Fatalf("Set while testing predicate empty slice - key=%s value=%s: %s", key, val1, err)
@@ -419,19 +419,79 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		}
 		testCompareEntries(t, entries, sampleData[fromIndex:])
 	})
-}
 
-func MakeStoreByName(name string, kvParams kvparams.Config) MakeStore {
-	return func(t testing.TB, ctx context.Context) kv.Store {
-		t.Helper()
-		kvParams.Type = name
-		store, err := kv.Open(ctx, kvParams)
+	t.Run("deleted_last", func(t *testing.T) {
+		scanSkipSize := 5
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - scanSkipSize})
 		if err != nil {
-			t.Fatalf("failed to open kv '%s' store: %s", name, err)
+			t.Fatal("failed to scan", err)
 		}
-		t.Cleanup(store.Close)
-		return store
-	}
+		defer scan.Close()
+		require.NoError(t, store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key), "failed to delete last key")
+
+		var entries []kv.Entry
+		for scan.Next() {
+			ent := scan.Entry()
+			switch {
+			case ent == nil:
+				t.Fatal("scan got nil entry")
+			case ent.Key == nil:
+				t.Fatal("Key is nil while scan item", len(entries))
+			case ent.Value == nil:
+				t.Fatal("Value is nil while scan item", len(entries))
+			}
+			if !bytes.HasPrefix(ent.Key, samplePrefix) {
+				break
+			}
+			entries = append(entries, *ent)
+		}
+		require.NoError(t, scan.Err(), "scan ended with an error")
+
+		// you can either get the first 99 or the whole 100 since delete happened after the scan started
+		if len(entries) == len(sampleData) {
+			testCompareEntries(t, entries, sampleData)
+		} else {
+			testCompareEntries(t, entries, sampleData[:len(sampleData)-1])
+		}
+	})
+
+	t.Run("empty_batch", func(t *testing.T) {
+		// this is meant to test cosmosdb's "Iterator.Next()" behavior when it gets to an empty page,
+		// and since after the first batch it checks if "queryPager.More()",
+		// we "Scan" all but the last in order to have more items remaining to scan,
+		// and delete the last one, so that the next batch will be empty.
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - 1})
+		if err != nil {
+			t.Fatal("failed to scan", err)
+		}
+		defer scan.Close()
+		require.NoError(t, store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key), "failed to delete last key")
+
+		var entries []kv.Entry
+		for scan.Next() {
+			ent := scan.Entry()
+			switch {
+			case ent == nil:
+				t.Fatal("scan got nil entry")
+			case ent.Key == nil:
+				t.Fatal("Key is nil while scan item", len(entries))
+			case ent.Value == nil:
+				t.Fatal("Value is nil while scan item", len(entries))
+			}
+			if !bytes.HasPrefix(ent.Key, samplePrefix) {
+				break
+			}
+			entries = append(entries, *ent)
+		}
+		require.NoError(t, scan.Err(), "scan ended with an error")
+
+		// you can either get the first 99 or the whole 100 since delete happened after the scan started
+		if len(entries) == len(sampleData) {
+			testCompareEntries(t, entries, sampleData)
+		} else {
+			testCompareEntries(t, entries, sampleData[:len(sampleData)-1])
+		}
+	})
 }
 
 func testStoreMissingArgument(t *testing.T, ms MakeStore) {
@@ -539,7 +599,7 @@ func testStoreContextCancelled(t *testing.T, ms MakeStore) {
 	// cancel the context for all requests
 	cancel()
 	t.Run("Set", func(t *testing.T) {
-		// set test key with value1
+		// set the test key with value1
 		err := store.Set(ctx, []byte(testPartitionKey), testKey, testValue1)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected context cancellation error, got: %s", err)
@@ -840,7 +900,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	// initialKv holds all the created items, to later verify that no items, that do not fit delPref, were deleted
 	var initialKv []kv.Entry
 	for _, pref := range prefsToCreate {
-		initialKv = append(initialKv, setupSampleData(t, ctx, store, testPartitionKey, string(pref), 100)...) //nolint:gomnd
+		initialKv = append(initialKv, setupSampleData(t, ctx, store, testPartitionKey, string(pref), 100)...) //nolint:mnd
 	}
 
 	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
@@ -962,8 +1022,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 		e := verifyIter.Entry()
 		if e == nil {
 			t.Fatal("unexpected nil entry in KV store")
-		}
-		if strings.Index(string(e.Key), string(delPref)) == 0 {
+		} else if strings.Index(string(e.Key), string(delPref)) == 0 {
 			t.Fatal("unexpected entry found after delete", string(e.Key), string(delPref))
 		}
 	}

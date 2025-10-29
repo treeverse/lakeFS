@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -17,7 +17,10 @@ type DatabaseMigrator struct {
 	params kvparams.Config
 }
 
-var ErrMigrationRequired = errors.New("wrong kv version")
+var (
+	ErrMigrationVersion  = errors.New("wrong kv version")
+	ErrMigrationRequired = errors.New("migration required")
+)
 
 func NewDatabaseMigrator(params kvparams.Config) *DatabaseMigrator {
 	return &DatabaseMigrator{
@@ -36,7 +39,7 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 		return fmt.Errorf("failed to setup KV store: %w", err)
 	}
 	if version < InitialMigrateVersion { // 0 In case of ErrNotFound
-		return SetDBSchemaVersion(ctx, kvStore, InitialMigrateVersion)
+		return SetDBSchemaVersion(ctx, kvStore, NextSchemaVersion-1)
 	}
 	return nil
 }
@@ -50,11 +53,18 @@ func ValidateSchemaVersion(ctx context.Context, store Store) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("get KV schema version: %w", err)
 	}
-	if kvVersion < InitialMigrateVersion {
-		logging.Default().Info("Migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration")
-		return 0, ErrMigrationRequired
+	switch {
+	case kvVersion >= NextSchemaVersion:
+		return kvVersion, fmt.Errorf("incompatible schema version. Latest: %d: %w", NextSchemaVersion-1, ErrMigrationVersion)
+	case kvVersion < InitialMigrateVersion:
+		return kvVersion, fmt.Errorf("migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration: %w", ErrMigrationVersion)
+	case kvVersion < ACLMigrateVersion,
+		kvVersion < ACLNoReposMigrateVersion:
+		return kvVersion, fmt.Errorf("migration to ACL required. Please run 'lakefs migrate up': %w", ErrMigrationRequired)
+	case kvVersion < ACLImportMigrateVersion:
+		return kvVersion, fmt.Errorf("ACL migration required. Please run 'lakefs migrate up': %w", ErrMigrationRequired)
 	}
 
-	logging.Default().WithField("version", kvVersion).Info("KV valid")
+	logging.FromContext(ctx).WithField("version", kvVersion).Info("KV valid")
 	return kvVersion, nil
 }

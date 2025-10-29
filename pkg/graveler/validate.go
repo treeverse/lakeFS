@@ -3,6 +3,7 @@ package graveler
 import (
 	"strings"
 
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/validator"
 )
 
@@ -77,6 +78,20 @@ func ValidateTagID(v interface{}) error {
 		}
 	}
 	return nil
+}
+
+func ValidatePullRequestID(v interface{}) error {
+	s, ok := v.(PullRequestID)
+	if !ok {
+		panic(ErrInvalidType)
+	}
+
+	// TODO (niro): Any other validations?
+	_, err := xid.FromString(s.String())
+	if err != nil {
+		return ErrInvalidPullRequestID
+	}
+	return err
 }
 
 func isControlCodeOrSpace(r rune) bool {

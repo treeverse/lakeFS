@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -8,13 +9,13 @@ import (
 	"strconv"
 
 	"github.com/IBM/pgxpoolprometheus"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 type Driver struct{}
@@ -28,11 +29,14 @@ type Store struct {
 
 type EntriesIterator struct {
 	ctx          context.Context
+	partitionKey []byte
+	startKey     []byte
+	includeStart bool
 	store        *Store
 	entries      []kv.Entry
-	limit        int
 	currEntryIdx int
 	err          error
+	limit        int
 }
 
 const (
@@ -61,7 +65,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, err
 	}
 
-	pool, err := pgxpool.ConnectConfig(ctx, config)
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
@@ -272,8 +276,10 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		return kv.ErrMissingValue
 	}
 
-	var res pgconn.CommandTag
-	var err error
+	var (
+		res pgconn.CommandTag
+		err error
+	)
 	switch valuePredicate {
 	case nil: // use insert to make sure there was no previous value before
 		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(partition_key,key,value) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`, partitionKey, key, value)
@@ -312,51 +318,24 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	// limit based on the minimum between ScanPageSize and ScanOptions batch size
-	limit := s.Params.ScanPageSize
+	// firstScanLimit based on the minimum between ScanPageSize and ScanOptions batch size
+	firstScanLimit := s.Params.ScanPageSize
 	if options.BatchSize != 0 && s.Params.ScanPageSize != 0 && options.BatchSize < s.Params.ScanPageSize {
-		limit = options.BatchSize
+		firstScanLimit = options.BatchSize
 	}
-
-	entries, err := s.scanInternal(ctx, partitionKey, options.KeyStart, limit, true)
-	if err != nil {
-		return nil, err
-	}
-	return &EntriesIterator{
+	it := &EntriesIterator{
 		ctx:          ctx,
+		partitionKey: partitionKey,
+		startKey:     options.KeyStart,
+		limit:        firstScanLimit,
 		store:        s,
-		entries:      entries,
-		limit:        limit,
-		currEntryIdx: -1,
-	}, nil
-}
-
-func (s *Store) scanInternal(ctx context.Context, partitionKey []byte, keyStart []byte, limit int, includeStart bool) ([]kv.Entry, error) {
-	var (
-		rows pgx.Rows
-		err  error
-	)
-
-	if keyStart == nil {
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, partitionKey, limit)
-	} else {
-		compareOp := ">="
-		if !includeStart {
-			compareOp = ">"
-		}
-		rows, err = s.Pool.Query(ctx, `SELECT partition_key,key,value FROM `+s.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, partitionKey, keyStart, limit)
+		includeStart: true,
 	}
-	if err != nil {
-		return nil, fmt.Errorf("postgres scan: %w", err)
+	it.runQuery(it.limit)
+	if it.err != nil {
+		return nil, it.err
 	}
-	defer rows.Close()
-
-	var entries []kv.Entry
-	err = pgxscan.ScanAll(&entries, rows)
-	if err != nil {
-		return nil, fmt.Errorf("scanning all entries: %w", err)
-	}
-	return entries, nil
+	return it, nil
 }
 
 func (s *Store) Close() {
@@ -369,29 +348,48 @@ func (s *Store) Close() {
 
 // Next reads the next key/value.
 func (e *EntriesIterator) Next() bool {
-	if e.err != nil {
+	if e.err != nil || len(e.entries) == 0 {
 		return false
 	}
-
-	e.currEntryIdx++
-	if e.currEntryIdx == len(e.entries) {
-		if e.currEntryIdx == 0 {
+	if e.currEntryIdx+1 == len(e.entries) {
+		key := e.entries[e.currEntryIdx].Key
+		e.startKey = key
+		e.includeStart = false
+		e.doubleAndCapLimit()
+		e.runQuery(e.limit)
+		if e.err != nil || len(e.entries) == 0 {
 			return false
 		}
-		partitionKey := e.entries[e.currEntryIdx-1].PartitionKey
-		key := e.entries[e.currEntryIdx-1].Key
-		entries, err := e.store.scanInternal(e.ctx, partitionKey, key, e.limit, false)
-		if err != nil {
-			e.err = fmt.Errorf("scan paging: %w", err)
-			return false
-		}
-		if len(entries) == 0 {
-			return false
-		}
-		e.entries = entries
-		e.currEntryIdx = 0
 	}
+	e.currEntryIdx++
 	return true
+}
+
+// DoubleAndCapLimit doubles the limit up to the maximum allowed by the store
+// this is to avoid
+// 1. limit being too small and causing multiple queries on one sid
+// 2. limit being too large and causing a single query to be too slow
+func (e *EntriesIterator) doubleAndCapLimit() {
+	e.limit *= 2
+	if e.limit > e.store.Params.ScanPageSize {
+		e.limit = e.store.Params.ScanPageSize
+	}
+}
+
+func (e *EntriesIterator) SeekGE(key []byte) {
+	if !e.isInRange(key) {
+		e.startKey = key
+		e.includeStart = true
+		e.doubleAndCapLimit()
+		e.runQuery(e.limit)
+		return
+	}
+	for i := range e.entries {
+		if bytes.Compare(key, e.entries[i].Key) <= 0 {
+			e.currEntryIdx = i - 1
+			return
+		}
+	}
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
@@ -410,4 +408,40 @@ func (e *EntriesIterator) Close() {
 	e.entries = nil
 	e.currEntryIdx = -1
 	e.err = kv.ErrClosedEntries
+}
+
+func (e *EntriesIterator) runQuery(scanLimit int) {
+	var (
+		rows pgx.Rows
+		err  error
+	)
+	if e.startKey == nil {
+		rows, err = e.store.Pool.Query(e.ctx, `SELECT partition_key,key,value FROM `+e.store.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, e.partitionKey, scanLimit)
+	} else {
+		compareOp := ">="
+		if !e.includeStart {
+			compareOp = ">"
+		}
+		rows, err = e.store.Pool.Query(e.ctx, `SELECT partition_key,key,value FROM `+e.store.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, e.partitionKey, e.startKey, scanLimit)
+	}
+	if err != nil {
+		e.err = fmt.Errorf("postgres scan: %w", err)
+		return
+	}
+	defer rows.Close()
+	err = pgxscan.ScanAll(&e.entries, rows)
+	if err != nil {
+		e.err = fmt.Errorf("scanning all entries: %w", err)
+		return
+	}
+	e.currEntryIdx = -1
+}
+
+func (e *EntriesIterator) isInRange(key []byte) bool {
+	if len(e.entries) == 0 {
+		return false
+	}
+	minKey := e.entries[0].Key
+	maxKey := e.entries[len(e.entries)-1].Key
+	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
 }

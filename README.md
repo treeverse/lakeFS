@@ -1,22 +1,22 @@
 <p align="center">
-  <img src="docs/assets/img/logo_large.png"/>
+  <img src="docs/src/assets/img/logo_large.png"/>
 </p>
-
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
 		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master" alt="Go tests status" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" >
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/test.yaml?query=branch%3Amaster">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Test/badge.svg?branch=master" alt="Go tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/node.yaml?query=branch%3Amaster" >
 		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AEsti">
-		<img src="https://github.com/treeverse/lakeFS/workflows/Esti/badge.svg" alt="Integration tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/esti.yaml?query=branch%3Amaster">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Esti/badge.svg?branch=master" alt="Integration tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml">
+		<img src="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml/badge.svg" alt="Docs Preview & Link Check status" /></a>
 	<a href="https://artifacthub.io/packages/search?repo=lakefs">
 		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
 	<a href="CODE_OF_CONDUCT.md">
 		<img src="https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg" alt="code of conduct"></a>
 </p>
-
 
 ## lakeFS is Data Version Control (Git for Data)
 
@@ -26,12 +26,38 @@ With lakeFS you can build repeatable, atomic, and versioned data lake operations
 
 lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, DuckDB, and Presto.
 
-To get started see [Getting Started](#getting-started) below.
-
 For more information, see the [documentation](https://docs.lakefs.io).
 
+## Getting Started
 
-## Capabilities
+You can spin up a standalone sandbox instance of lakeFS:
+
+```bash
+pip install lakefs
+python -m lakefs.quickstart
+```
+
+Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
+
+### Getting Started with Docker
+
+Alternatively, you can run lakeFS a server using Docker:
+
+```bash
+docker run --pull always \
+		   --name lakefs \
+		   -p 8000:8000 \
+		   treeverse/lakefs:latest \
+		   run --quickstart
+```
+
+### Quickstart
+
+**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://docs.lakefs.io/quickstart/) to jump right in!**
+
+Make sure to also have a look at the [lakeFS samples](https://github.com/treeverse/lakeFS-samples). These are a rich resource of examples of end-to-end applications that you can build with lakeFS.
+
+## Why Do I Need lakeFS?
 
 ### ETL Testing with Isolated Dev/Test Environment
 
@@ -50,55 +76,28 @@ Comply with data audits.
 
 In comparison, lakeFS exposes a Git-like interface to data that allows keeping track of more than just the current state of data. This makes reproducing its state at any point in time straightforward.
 
-### CI/CD for Data
+### Write-Audit-Publish
 
 Data pipelines feed processed data from data lakes to downstream consumers like business dashboards and machine learning models. As more and more organizations rely on data to enable business critical decisions, data reliability and trust are of paramount concern. Thus, it’s important to ensure that production data adheres to the data governance policies of businesses. These data governance requirements can be as simple as a file format validation, schema check, or an exhaustive PII(Personally Identifiable Information) data removal from all of organization’s data.
 
-Thus, to ensure the quality and reliability at each stage of the data lifecycle, data quality gates need to be implemented. That is, we need to run Continuous Integration(CI) tests on the data, and only if data governance requirements are met can the data can be promoted to production for business use.
+Thus, to ensure the quality and reliability at each stage of the data lifecycle, data quality gates need to be implemented. That is, we need to run quality and correctness tests on the data, and only if data governance requirements are met can the data can be published to production for business use.
 
-Everytime there is an update to production data, the best practice would be to run CI tests and then promote(deploy) the data to production. With lakeFS you can create hooks that make sure that only data that passed these tests will become part of production.
+Everytime there is an update to production data, the best practice would be to run tests and then publish (deploy) the data to production. With lakeFS you can create hooks that make sure that only data that passed these tests will become part of production.
 
 ### Rollback
+
 A rollback operation is used to to fix critical data errors immediately.
 
 What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
 Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors. Since lakeFS provides versions of the data without making copies of the data, you can time travel between versions and roll back to the version of the data before the error was presented.
 
-## Getting Started
-
-You can spin up a standalone sandbox instance of lakeFS quickly under Docker by running the following:
-
-```bash
-docker run --pull always \
-		   --name lakefs \
-		   -p 8000:8000 \
-		   treeverse/lakefs \
-		   	 run --local-settings
-```
-
-### Other quickstart methods
-
-If you don't want to use Docker you can [install and run lakeFS locally](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
-
-### What next after running it? 
-
-Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser and follow the prompts to set up an admin user. After that go ahead and [create your first repository](https://docs.lakefs.io/quickstart/repository).
-
-The [lakeFS samples](https://github.com/treeverse/lakeFS-samples) are a rich resource of examples of end-to-end applications that you can build with lakeFS.
-
-
-## Deploying lakeFS
-
-For a production-suitable deployments including on-premises with Kubernetes and on AWS, GCP, and Azure clouds see the [docs](https://docs.lakefs.io/deploy/). 
-
-
 ## Community
 
 Stay up to date and get lakeFS support via:
 
 - Share your lakeFS experience and get support on [our Slack](https://go.lakefs.io/JoinSlack).
-- Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS) and [Mastodon](https://data-folks.masto.host/@lakeFS).
+- Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS).
 - Learn from video tutorials on [our YouTube channel](https://lakefs.io/youtube).
 - Read more on data versioning and other data lake best practices in [our blog](https://lakefs.io/blog/data-version-control/).
 - Feel free to [contact us](https://lakefs.io/contact-us/) about anything else.
@@ -112,3 +111,45 @@ Stay up to date and get lakeFS support via:
 ## Licensing
 
 lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+
+## Who Uses lakeFS?
+
+lakeFS is used by numerous companies, including those below. _If you use lakeFS and would like to be included here please open a PR._
+
+* AirAsia
+* APEX Global
+* AppsFlyer
+* Auburn University
+* BAE Systems
+* Bureau of Labor Statistics
+* Cambridge Consultants
+* Connor, Clark & Lunn Financial Group
+* Context Labs Bv
+* Daimler Truck
+* Enigma
+* EPCOR
+* Ford Motor Company
+* Generali
+* Giesecke+Devrient
+* greehill
+* Karius
+* Luxonis
+* Mixpeek
+* Netflix
+* Paige
+* PETRONAS
+* Pollinate
+* Proton Technologies AG
+* ProtonMail
+* Renaissance Computing Institute
+* RHEA Group 
+* RMS
+* Sensum
+* Similarweb
+* State Street Global Advisors
+* Terramera
+* Tredence
+* Volvo Cars
+* Webiks
+* Windward
+* Woven by Toyota

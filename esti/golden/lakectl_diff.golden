@@ -1,0 +1,3 @@
+Left ref: lakefs://${REPO}/${LEFT_BRANCH}
+Right ref: lakefs://${REPO}/${RIGHT_BRANCH}
+${DIFF_LIST}

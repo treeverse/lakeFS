@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 )
@@ -17,15 +19,14 @@ import (
 func TestAuthMiddleware(t *testing.T) {
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
-	apiEndpoint := server.URL + api.BaseURL
+	apiEndpoint := server.URL + apiutil.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")
-	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	t.Run("valid basic auth", func(t *testing.T) {
 		ctx := context.Background()
 		authClient := setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal("ListRepositories() should return without error:", err)
 		}
@@ -37,7 +38,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("invalid basic auth", func(t *testing.T) {
 		ctx := context.Background()
 		authClient := setupClientByEndpoint(t, server.URL, "foo", "bar")
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal("ListRepositories() should return without error:", err)
 		}
@@ -56,11 +57,11 @@ func TestAuthMiddleware(t *testing.T) {
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
 		}
-		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		authClient, err := apigen.NewClientWithResponses(apiEndpoint, apigen.WithRequestEditorFn(authProvider.Intercept))
 		if err != nil {
 			t.Fatal("failed to create lakefs api client:", err)
 		}
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal("ListRepositories() should return without error:", err)
 		}
@@ -76,11 +77,11 @@ func TestAuthMiddleware(t *testing.T) {
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
 		}
-		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		authClient, err := apigen.NewClientWithResponses(apiEndpoint, apigen.WithRequestEditorFn(authProvider.Intercept))
 		if err != nil {
 			t.Fatal("failed to create lakefs api client:", err)
 		}
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal("ListRepositories() should return without error:", err)
 		}
@@ -105,11 +106,11 @@ func TestAuthMiddleware(t *testing.T) {
 		if err != nil {
 			t.Fatal("gorilla session security provider", err)
 		}
-		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		authClient, err := apigen.NewClientWithResponses(apiEndpoint, apigen.WithRequestEditorFn(authProvider.Intercept))
 		if err != nil {
 			t.Fatal("failed to create lakefs api client:", err)
 		}
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal("ListRepositories() should return without error:", err)
 		}
@@ -131,11 +132,11 @@ func TestAuthMiddleware(t *testing.T) {
 		if err != nil {
 			t.Fatal("gorilla session security provider", err)
 		}
-		authClient, err := api.NewClientWithResponses(apiEndpoint, api.WithRequestEditorFn(authProvider.Intercept))
+		authClient, err := apigen.NewClientWithResponses(apiEndpoint, apigen.WithRequestEditorFn(authProvider.Intercept))
 		if err != nil {
 			t.Fatal("failed to create lakefs api client:", err)
 		}
-		resp, err := authClient.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
 			t.Fatal("ListRepositories() should return without error:", err)
 		}
@@ -148,9 +149,9 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 }
 
-func testGenerateApiToken(ctx context.Context, t testing.TB, clt api.ClientWithResponsesInterface, cred *model.BaseCredential) string {
+func testGenerateApiToken(ctx context.Context, t testing.TB, clt apigen.ClientWithResponsesInterface, cred *model.BaseCredential) string {
 	t.Helper()
-	loginReq := api.LoginJSONRequestBody{
+	loginReq := apigen.LoginJSONRequestBody{
 		AccessKeyId:     cred.AccessKeyID,
 		SecretAccessKey: cred.SecretAccessKey,
 	}
@@ -168,9 +169,8 @@ func testGenerateBadAPIToken(t testing.TB, authService auth.Service) string {
 	secret := authService.SecretStore().SharedSecret()
 	now := time.Now()
 	expires := now.Add(time.Hour)
-	userID := "2906"
-	// Generate a JWT for a nonexistent user.  It will fail authentication.
-	tokenString, err := api.GenerateJWTLogin(secret, userID, now, expires)
+	userID := "test_user"
+	tokenString, err := auth.GenerateJWTLogin(secret, userID, now, expires)
 	if err != nil {
 		t.Fatal("Generate (bad) JWT token:", err)
 	}

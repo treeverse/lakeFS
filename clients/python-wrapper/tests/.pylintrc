@@ -1,0 +1,21 @@
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=120
+
+[MESSAGES CONTROL]
+disable=
+    unused-argument,
+    import-outside-toplevel,
+    protected-access,
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-module-docstring,
+    too-few-public-methods,
+    no-member,
+    fixme,
+
+[MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+notes=FIXME,XXX,TODO

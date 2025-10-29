@@ -4,6 +4,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class FSConfigurationTest {
 
     @Test
@@ -45,5 +48,30 @@ public class FSConfigurationTest {
         Assert.assertEquals(99, FSConfiguration.getInt(conf, "lakefs", "key3", 99));
         Assert.assertEquals(99, FSConfiguration.getInt(conf, "lakefs", "missing", 99));
         Assert.assertThrows(NumberFormatException.class, () -> FSConfiguration.getInt(conf, "lakefs", "bad.key", 99));
+    }
+    @Test
+    public void testGetMap(){
+        Configuration conf = new Configuration(false);
+        conf.set("fs.lakefs.map1", "k1:v1");
+        conf.set("fs.lakefs.map2", "k1:v1,k2:v2,k3:v3");
+        conf.set("fs.lakefs.map3", "k1:v1,k2:v2,");
+        conf.set("fs.lakefs.map4", "");
+        Assert.assertEquals(new HashMap<String, String>() {{
+            put("k1", "v1");
+        }}, FSConfiguration.getMap(conf, "lakefs", "map1"));
+        Assert.assertEquals(new HashMap<String, String>() {{
+            put("k1", "v1");
+            put("k2", "v2");
+            put("k3", "v3");
+        }}, FSConfiguration.getMap(conf, "lakefs", "map2"));
+        Assert.assertEquals(new HashMap<String, String>() {{
+            put("k1", "v1");
+            put("k2", "v2");
+        }}, FSConfiguration.getMap(conf, "lakefs", "map3"));
+        Assert.assertThrows(
+                ArrayIndexOutOfBoundsException.class,
+                () -> FSConfiguration.getMap(conf, "lakefs", "map4")
+        );
+        Assert.assertNull(FSConfiguration.getMap(conf, "lakefs", "no-set"));
     }
 }

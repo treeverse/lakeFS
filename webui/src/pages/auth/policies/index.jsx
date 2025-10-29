@@ -1,10 +1,9 @@
 import React, {useEffect, useState} from "react";
-
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 
 import {auth} from "../../../lib/api";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {AuthLayout} from "../../../lib/components/auth/layout";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {Paginator} from "../../../lib/components/pagination";
 import {PolicyEditor} from "../../../lib/components/policy";
@@ -13,16 +12,17 @@ import {
     ActionsBar,
     Checkbox,
     DataTable,
-    Error, FormattedDate,
+    AlertError,
+    FormattedDate,
     Loading,
     RefreshButton,
     Warning,
+    useDebouncedState,
+    SearchInput
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {Link} from "../../../lib/components/nav";
-import {Route, Routes} from "react-router-dom";
-import PolicyPage from "./policy";
 import { disallowPercentSign, INVALID_POLICY_ID_ERROR_MESSAGE } from "../validation";
 
 
@@ -34,16 +34,23 @@ const PoliciesContainer = () => {
     const [createModalError, setCreateModalError] = useState(null);
 
     const router = useRouter();
-    const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listPolicies("", after);
-    }, [after, refresh]);
+    const prefix = router.query.prefix ? router.query.prefix : "";
+    const after = router.query.after ? router.query.after : "";
+
+    const [searchPrefix, setSearchPrefix] = useDebouncedState(
+        prefix,
+        search => router.push({ pathname: '/auth/policies', query: {prefix: search} })
+    );
+
+    const { results, loading, error, nextPage } = useAPIWithPagination(() => {
+        return auth.listPolicies(prefix, after);
+    }, [refresh, prefix, after]);
 
     useEffect(() => { setSelected([]); }, [after, refresh]);
 
-    const showRBACWarning = useLoginConfigContext()?.RBAC === 'simplified';
+    const {RBAC: rbac} = useLoginConfigContext();
 
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
 
     return (
@@ -72,10 +79,15 @@ const PoliciesContainer = () => {
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
+                    <SearchInput
+                        searchPrefix={searchPrefix}
+                        setSearchPrefix={setSearchPrefix}
+                        placeholder="Find a Policy..."
+                    />
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
-            {showRBACWarning && <Warning>
+            {rbac === 'simplified' && <Warning>
                                 <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated
                                 and will be replaced by ACL (Access Control Lists) in future releases.
                                 For more information on the transition from RBAC to ACL, please visit
@@ -85,7 +97,7 @@ const PoliciesContainer = () => {
                 A policy defines the permissions of a user or a group. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
-            {(!!deleteError) && <Error error={deleteError}/>}
+            {(!!deleteError) && <AlertError error={deleteError}/>}
 
             <PolicyEditor
                 onSubmit={(policyId, policyBody) => {
@@ -121,12 +133,14 @@ const PoliciesContainer = () => {
                         {policy.id}
                     </Link>,
                     <FormattedDate dateValue={policy.creation_date}/>
-                ]}/>
+                ]}
+                firstFixedCol={true}
+            />
 
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: '/auth/policies', query: {after}})}
+                onPaginate={after => router.push({pathname: "/auth/policies", query: {prefix, after}})}
             />
         </>
     );
@@ -134,20 +148,9 @@ const PoliciesContainer = () => {
 
 
 const PoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="policies">
-            <PoliciesContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab("policies"), [setActiveTab]);
+    return <PoliciesContainer/>;
 };
 
-const PoliciesIndexPage = () => {
-    return (
-        <Routes>
-            <Route exact path="" element={<PoliciesPage/>} />
-            <Route path=":policyId" element={<PolicyPage/>} />
-        </Routes>
-    )
-}
-
-export default PoliciesIndexPage;
+export default PoliciesPage;

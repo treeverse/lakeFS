@@ -10,21 +10,21 @@ All URIs are relative to */api/v1*
 | [**listRunHooks**](ActionsApi.md#listRunHooks) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks | list run hooks |
 
 
-<a name="getRun"></a>
+<a id="getRun"></a>
 # **getRun**
-> ActionRun getRun(repository, runId)
+> ActionRun getRun(repository, runId).execute();
 
 get a run
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -62,7 +62,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     String runId = "runId_example"; // String | 
     try {
-      ActionRun result = apiInstance.getRun(repository, runId);
+      ActionRun result = apiInstance.getRun(repository, runId)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ActionsApi#getRun");
@@ -101,23 +102,24 @@ public class Example {
 | **200** | action run result |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="getRunHookOutput"></a>
+<a id="getRunHookOutput"></a>
 # **getRunHookOutput**
-> File getRunHookOutput(repository, runId, hookRunId)
+> File getRunHookOutput(repository, runId, hookRunId).execute();
 
 get run hook output
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -156,7 +158,8 @@ public class Example {
     String runId = "runId_example"; // String | 
     String hookRunId = "hookRunId_example"; // String | 
     try {
-      File result = apiInstance.getRunHookOutput(repository, runId, hookRunId);
+      File result = apiInstance.getRunHookOutput(repository, runId, hookRunId)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ActionsApi#getRunHookOutput");
@@ -196,23 +199,24 @@ public class Example {
 | **200** | run hook output |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="listRepositoryRuns"></a>
+<a id="listRepositoryRuns"></a>
 # **listRepositoryRuns**
-> ActionRunList listRepositoryRuns(repository, after, amount, branch, commit)
+> ActionRunList listRepositoryRuns(repository).after(after).amount(amount).branch(branch).commit(commit).execute();
 
 list runs
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -253,7 +257,12 @@ public class Example {
     String branch = "branch_example"; // String | 
     String commit = "commit_example"; // String | 
     try {
-      ActionRunList result = apiInstance.listRepositoryRuns(repository, after, amount, branch, commit);
+      ActionRunList result = apiInstance.listRepositoryRuns(repository)
+            .after(after)
+            .amount(amount)
+            .branch(branch)
+            .commit(commit)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ActionsApi#listRepositoryRuns");
@@ -295,23 +304,24 @@ public class Example {
 | **200** | list action runs |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a name="listRunHooks"></a>
+<a id="listRunHooks"></a>
 # **listRunHooks**
-> HookRunList listRunHooks(repository, runId, after, amount)
+> HookRunList listRunHooks(repository, runId).after(after).amount(amount).execute();
 
 list run hooks
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -351,7 +361,10 @@ public class Example {
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
     try {
-      HookRunList result = apiInstance.listRunHooks(repository, runId, after, amount);
+      HookRunList result = apiInstance.listRunHooks(repository, runId)
+            .after(after)
+            .amount(amount)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ActionsApi#listRunHooks");
@@ -392,5 +405,6 @@ public class Example {
 | **200** | list specific run hooks |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

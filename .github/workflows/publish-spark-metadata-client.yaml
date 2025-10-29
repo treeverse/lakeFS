@@ -4,11 +4,11 @@ on:
 jobs:
   publish-spark-metadata-client:
     name: Publish Spark metadata client
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: Treeverse signing
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
@@ -31,7 +31,7 @@ jobs:
         run: |
           mkdir -p ~/.sbt
           cat << EOS > ~/.sbt/credentials
-          realm=Amazon S3" > ~/.sbt/credentials
+          realm=Amazon S3
           host=treeverse-clients-us-east.s3.amazonaws.com
           user=${AWS_ACCESS_KEY_ID}
           password=${AWS_SECRET_ACCESS_KEY}
@@ -39,18 +39,25 @@ jobs:
           cat << EOS > ~/.sbt/sonatype_credentials
           realm=Sonatype Nexus Repository Manager
           host=s01.oss.sonatype.org
-          user=${OSSRH_USERNAME}
-          password=${OSSRH_TOKEN}
+          user=${SONATYPE_USERNAME}
+          password=${SONATYPE_TOKEN}
           EOS
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-      - name: Publish artifacts
-        run: make publish-scala
-        env:
+        env:                    # Some credentials required in this step, some in next.
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
+          PGP_PASSPHRASE: ""
+          PGP_SECRET: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          SONATYPE_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+      - name: SBT release (Maven Central, AWS)
+        run: make publish-scala
+        env:                    # Some credentials required in this step, some in previous.
+          S3_PUBLISH_BUCKET: treeverse-clients-us-east
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PGP_PASSPHRASE: ""
+          PGP_SECRET: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          SONATYPE_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}

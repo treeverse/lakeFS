@@ -58,6 +58,6 @@ func PolicyArn(policyID string) string {
 	return authArnPrefix + "policy/" + policyID
 }
 
-func TemplateArn(templateID string) string {
-	return fsArnPrefix + "template/" + templateID
+func ExternalPrincipalArn(principalID string) string {
+	return authArnPrefix + "externalPrincipal/" + principalID
 }

@@ -1,13 +1,9 @@
 package api
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
-
 import (
 	"errors"
 	"io"
 	"net/http"
-
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -16,101 +12,64 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/email"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 const (
-	RequestIDHeaderName = "X-Request-ID"
-	LoggerServiceName   = "rest_api"
-	BaseURL             = "/api/v1"
+	LoggerServiceName = "rest_api"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-func Serve(
-	cfg *config.Config,
-	catalog catalog.Interface,
-	middlewareAuthenticator auth.Authenticator,
-	controllerAuthenticator auth.Authenticator,
-	authService auth.Service,
-	blockAdapter block.Adapter,
-	metadataManager auth.MetadataManager,
-	migrator Migrator,
-	collector stats.Collector,
-	cloudMetadataProvider cloud.MetadataProvider,
-	actions actionsHandler,
-	auditChecker AuditChecker,
-	logger logging.Logger,
-	emailer *email.Emailer,
-	templater templater.Service,
-	gatewayDomains []string,
-	snippets []params.CodeSnippet,
-	pathProvider upload.PathProvider,
-	otfService *tablediff.Service,
-) http.Handler {
+func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
-	swagger, err := GetSwagger()
+	swagger, err := apigen.GetSwagger()
 	if err != nil {
 		panic(err)
 	}
-
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	oidcConfig := OIDCConfig(cfg.AuthConfig().GetBaseAuthConfig().OIDC)
+	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().GetBaseAuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 		}),
 		httputil.LoggingMiddleware(
-			RequestIDHeaderName,
+			httputil.RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
-			cfg.Logging.AuditLogLevel,
-			cfg.Logging.TraceRequestHeaders),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &cfg.Auth.OIDC, &cfg.Auth.CookieAuthVerification),
-		MetricsMiddleware(swagger),
+			cfg.GetBaseConfig().Logging.AuditLogLevel,
+			cfg.GetBaseConfig().Logging.TraceRequestHeaders,
+			authService.IsAdvancedAuth()),
+		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
+		MetricsMiddleware(swagger, requestHistograms, requestCounter),
 	)
-	controller := NewController(
-		cfg,
-		catalog,
-		controllerAuthenticator,
-		authService,
-		blockAdapter,
-		metadataManager,
-		migrator,
-		collector,
-		cloudMetadataProvider,
-		actions,
-		auditChecker,
-		logger,
-		emailer,
-		templater,
-		sessionStore,
-		pathProvider,
-		otfService,
-	)
-	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
+	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter, licenseManager)
+	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
-	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
-	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
+	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
+	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.
 	var rootHandler http.Handler
-	if cfg.UI.Enabled {
+	if cfg.UIConfig().IsUIEnabled() {
 		// Handler which serves the embedded UI
 		// as well as handles erroneous S3 gateway requests
 		// and returns a compatible response
@@ -122,11 +81,13 @@ func Serve(
 	}
 	r.Mount("/", rootHandler)
 
+	authenticationService.RegisterAdditionalRoutes(r, sessionStore)
+
 	return r
 }
 
 func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
-	reader, err := GetSwaggerSpecReader()
+	reader, err := apigen.GetSwaggerSpecReader()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -138,12 +99,12 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
 // This middleware is good for net/http either since go-chi is 100% compatible with net/http.
 // The original implementation can be found at https://github.com/deepmap/oapi-codegen/blob/master/pkg/chi-middleware/oapi_validate.go
-// Used our own implementation in order to:
+// Use our own implementation in order to:
 //  1. Use the latest version kin-openapi (can switch back when oapi-codegen will be updated)
 //  2. For file upload wanted to skip body validation for two reasons:
 //     a. didn't find a way for the validator to accept any file content type
 //     b. didn't want the validator to read the complete request body for the specific request
-func OapiRequestValidatorWithOptions(swagger *openapi3.Swagger, options *openapi3filter.Options) func(http.Handler) http.Handler {
+func OapiRequestValidatorWithOptions(swagger *openapi3.T, options *openapi3filter.Options) func(http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)

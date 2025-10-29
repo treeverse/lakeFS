@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -20,9 +23,17 @@ import (
 var superuserCmd = &cobra.Command{
 	Use:   "superuser",
 	Short: "Create additional user with admin credentials",
+	Long: `Create additional user with admin credentials.
+This command can be used to import an admin user when moving from lakeFS version
+with previously configured users to a lakeFS with basic auth version.
+To do that provide the user name as well as the access key ID to import.
+If the wrong user or credentials were chosen it is possible to delete the user and perform the action again.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig()
-		if cfg.IsAuthTypeAPI() {
+		cfg := LoadConfig()
+		authUIConfig := cfg.AuthConfig().GetAuthUIConfig()
+		baseConfig := cfg.GetBaseConfig()
+		if authUIConfig.RBAC == config.AuthRBACExternal {
 			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
 			os.Exit(1)
 		}
@@ -43,9 +54,9 @@ var superuserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		logger := logging.Default()
+		logger := logging.ContextUnavailable()
 		ctx := cmd.Context()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(&baseConfig.Database)
 		if err != nil {
 			fmt.Printf("KV params: %s\n", err)
 			os.Exit(1)
@@ -55,26 +66,32 @@ var superuserCmd = &cobra.Command{
 			fmt.Printf("Failed to open KV store: %s\n", err)
 			os.Exit(1)
 		}
-		authService := auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, cfg.Auth.Cache, logger.WithField("service", "auth_service"))
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		defer kvStore.Close()
 
-		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), authMetadataManager, metadataProvider)
-		credentials, err := auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
+		addToAdmins := !authUIConfig.IsAuthBasic()
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
+		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		if err != nil {
+			fmt.Printf("Failed to initialize auth service: %s\n", err)
+			os.Exit(1)
+		}
+
+		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
 				CreatedAt: time.Now(),
 				Username:  userName,
 			},
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
-		})
+		}, addToAdmins)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
+		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseConfig.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 		collector.Start(ctx)
 		defer collector.Close()

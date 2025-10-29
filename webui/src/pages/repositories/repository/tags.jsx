@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
-
+import React, {useContext, useEffect, useMemo, useRef, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {
     TagIcon,
     LinkIcon,
@@ -16,11 +16,10 @@ import {tags} from "../../../lib/api";
 import {
     ActionGroup,
     ActionsBar, ClipboardButton,
-    Error, LinkButton,
+    AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
-import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
-import { RefContextProvider, useRefs } from "../../../lib/hooks/repo";
+import { useRefs } from "../../../lib/hooks/repo";
 import { useAPIWithPagination } from "../../../lib/hooks/api";
 import { Paginator } from "../../../lib/components/pagination";
 import Modal from "react-bootstrap/Modal";
@@ -29,19 +28,19 @@ import RefDropdown from "../../../lib/components/repository/refDropdown";
 import { Link } from "../../../lib/components/nav";
 import { useRouter } from "../../../lib/hooks/router";
 import {ConfirmationButton} from "../../../lib/components/modals";
-import Alert from "react-bootstrap/Alert";
 import {RepoError} from "./error";
+import {AppContext} from "../../../lib/hooks/appContext";
 
 
 const TagWidget = ({ repo, tag, onDelete }) => {
-
-    const buttonVariant = "outline-dark";
+    const {state} = useContext(AppContext);
+    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
 
     return (
         <ListGroup.Item>
             <div className="clearfix">
                 <div className="float-start">
-                    <h6>
+                    <h6 className="mb-0">
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
                             params: { repoId: repo.id },
@@ -73,7 +72,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                                 pathname: '/repositories/:repoId/commits/:commitId',
                                 params: { repoId: repo.id, commitId: tag.commit_id },
                             }}
-                            buttonVariant="outline-dark"
+                            buttonVariant={buttonVariant}
                             tooltip="View referenced commit">
                             {tag.commit_id.substr(0, 12)}
                         </LinkButton>
@@ -88,7 +87,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
 };
 
 
-const CreateTagButton = ({ repo, variant = "success", onCreate = null, children }) => {
+const CreateTagButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(true);
     const [error, setError] = useState(null);
@@ -155,7 +154,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                         </Form.Group>
                     </Form>
 
-                    {!!error && <Error error={error} />}
+                    {!!error && <AlertError error={error} />}
 
                 </Modal.Body>
                 <Modal.Footer>
@@ -167,8 +166,54 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant={variant} onClick={display}>{children}</Button>
+            <Button variant={variant} disabled={readOnly} onClick={display}>{children}</Button>
         </>
+    );
+};
+
+
+const EmptyTagsState = ({ repo, onCreateTag }) => {
+    return (
+        <div className="text-center py-5">
+            <div className="mb-5">
+                <div className="mb-4">
+                    <h2 className="mb-3">
+                        <TagIcon size={36} className="me-2"/>
+                        No tags yet
+                    </h2>
+                    <p className="text-muted mb-4 fs-5">
+                        Tags help you mark important points in your data&apos;s history, like releases, experiments, or versions. 
+                        <br/>
+                        They&apos;re perfect for <a 
+                            href="https://docs.lakefs.io/latest/understand/use_cases/reproducibility/" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-decoration-none"
+                        >reproducibility</a> and making your data workflows more reliable. 
+                    </p>
+                        <p>
+                        Learn more about <a 
+                            href="https://docs.lakefs.io/latest/understand/model/#tags" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-decoration-none"
+                        >what tags are</a> and how to use them effectively.
+                    </p>
+                </div>
+                
+                <div className="mb-5">
+                    <CreateTagButton 
+                        repo={repo} 
+                        readOnly={repo?.read_only} 
+                        variant="success" 
+                        onCreate={onCreateTag}
+                        className="btn-lg px-4 py-2"
+                    >
+                        <TagIcon /> Create Your First Tag
+                    </CreateTagButton>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -181,23 +226,29 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
     }, [repo.id, prefix, refresh, after]);
 
     const doRefresh = () => setRefresh(!refresh);
-
     let content;
 
     if (loading) content = <Loading />;
-    else if (error) content = <Error error={error} />;
-    else content = ( results && !!results.length  ?
-        <>
-            <Card>
-                <ListGroup variant="flush">
-                    {results.map(tag => (
-                        <TagWidget key={tag.id} repo={repo} tag={tag} onDelete={doRefresh} />
-                    ))}
-                </ListGroup>
-            </Card>
-            <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
-        </> : <Alert variant="info">There aren&apos;t any tags yet.</Alert>
-    )
+    else if (error) content = <AlertError error={error} />;
+    else if (results && !!results.length) {
+        content = (
+            <>
+                <Card>
+                    <ListGroup variant="flush">
+                        {results.map(tag => (
+                            <TagWidget key={tag.id} repo={repo} tag={tag} onDelete={doRefresh} />
+                        ))}
+                    </ListGroup>
+                </Card>
+                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
+                <div className={"mt-2"}>
+                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                </div>
+            </>
+        );
+    } else {
+        content = <EmptyTagsState repo={repo} onCreateTag={doRefresh} />;
+    }
 
     return (
         <>
@@ -215,16 +266,13 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
 
                         <RefreshButton onClick={doRefresh} />
 
-                        <CreateTagButton repo={repo} variant="success" onCreate={doRefresh}>
+                        <CreateTagButton repo={repo} readOnly={repo?.read_only} variant="success" onCreate={doRefresh}>
                             <TagIcon /> Create Tag
                         </CreateTagButton>
 
                     </ActionGroup>
                 </ActionsBar>
                 {content}
-                <div className={"mt-2"}>
-                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/object-model.html#identifying-commits" target="_blank" rel="noopener noreferrer">Learn more.</a>
-                </div>
             </div>
         </>
     );
@@ -238,7 +286,7 @@ const TagsContainer = () => {
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
 
     if (loading) return <Loading />;
-    if (error) return <RepoError error={error} />;
+    if (error) return <RepoError error={error}/>;
 
     return (
         <TagList
@@ -255,13 +303,9 @@ const TagsContainer = () => {
 
 
 const RepositoryTagsPage = () => {
-    return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'tags'}>
-                <TagsContainer />
-            </RepositoryPageLayout>
-        </RefContextProvider>
-    )
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("tags"), [setActivePage]);
+  return <TagsContainer />;
 }
 
 export default RepositoryTagsPage;

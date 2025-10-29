@@ -1,23 +1,41 @@
 import React from "react";
 import useUser from '../hooks/user'
-import {auth, config} from "../api";
+import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
-import {useAPI} from "../hooks/api";
+import DarkModeToggle from "./darkModeToggle";
 import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
+import {FeedPersonIcon} from "@primer/octicons-react";
+import {useConfigContext} from "../hooks/configProvider";
 
 const NavUserInfo = () => {
-    const { user, loading, error } = useUser();
+    const { user, loading: userLoading, error } = useUser();
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
-    const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
-        return config.getLakeFSVersion()
-    }, [])
-    if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
+    const {config, error: versionError, loading: versionLoading} = useConfigContext();
+    const versionConfig = config?.versionConfig || {};
+
+    if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
+    const notifyNewVersion = !versionLoading && !versionError && versionConfig.upgrade_recommended
+    const NavBarTitle = () => {
+        return (
+        <>
+            {notifyNewVersion && <> <div className="user-menu-notification-indicator"></div> </> }
+            <FeedPersonIcon size={28} verticalAlign={"middle"}/> <span style={{marginLeft:6, fontSize:18}}>{user.friendly_name || user.id} </span>
+        </>
+        )
+    }
     return (
-        <NavDropdown title={user.friendly_name || user.id} className="navbar-username" align="end">
+        <NavDropdown title={<NavBarTitle />} className="navbar-username" align="end">
+            {notifyNewVersion && <>
+            <NavDropdown.Item href={versionConfig.upgrade_url}>
+                    <>
+                    <div className="menu-item-notification-indicator"></div>
+                    New lakeFS version is available!
+                    </>
+            </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
                 onClick={()=> {
                     auth.clearCurrentUser();
@@ -28,15 +46,8 @@ const NavUserInfo = () => {
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
             <NavDropdown.Item disabled={true}>
-                <small>lakeFS {versionResponse.version}</small>
+                {`${versionConfig.version_context} ${versionConfig.version}`}
             </NavDropdown.Item></>}
-            <NavDropdown.Item disabled={true}>
-                <small>Web UI __buildVersion</small>
-            </NavDropdown.Item>
-            {!versionLoading && !versionError && versionResponse.upgrade_recommended && <>
-                <NavDropdown.Item href={versionResponse.upgrade_url}>
-                    <small>upgrade recommended</small>
-                </NavDropdown.Item></>}
         </NavDropdown>
     );
 };
@@ -53,19 +64,8 @@ const TopNavLink = ({ href, children }) => {
 };
 
 const TopNav = ({logged = true}) => {
-    if (!logged) {
-        return (
-            <Navbar variant="dark" bg="dark" expand="md">
-            <Container fluid={true}>
-                <Link component={Navbar.Brand} href="/">
-                    <img src="/logo.png" alt="lakeFS" className="logo"/>
-                </Link>
-            </Container>
-            </Navbar>
-        );
-    }
-    return (
-        <Navbar variant="dark" bg="dark" expand="md">
+    return logged && (
+        <Navbar variant="dark" bg="dark" expand="md" className="border-bottom">
             <Container fluid={true}>
                 <Link component={Navbar.Brand} href="/">
                     <img src="/logo.png" alt="lakeFS" className="logo"/>
@@ -80,6 +80,7 @@ const TopNav = ({logged = true}) => {
                         <TopNavLink href="/auth">Administration</TopNavLink>
                     </Nav>
 
+                    <DarkModeToggle/>
                     <NavUserInfo/>
                 </Navbar.Collapse>
             </Container>

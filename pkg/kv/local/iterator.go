@@ -3,7 +3,7 @@ package local
 import (
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -54,6 +54,13 @@ func (e *EntriesIterator) Next() bool {
 	}
 	e.logger.WithField("next_key", string(key)).WithField("took", time.Since(start)).Trace("read next value")
 	return true
+}
+
+func (e *EntriesIterator) SeekGE(key []byte) {
+	e.entry = nil
+	e.start = composeKey(e.partitionKey, key)
+	e.primed = false
+	e.iter.Seek(e.start)
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {

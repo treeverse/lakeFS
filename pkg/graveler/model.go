@@ -15,7 +15,8 @@ const (
 	branchesPrefix         = "branches"
 	commitsPrefix          = "commits"
 	settingsPrefix         = "settings"
-	addressesPrefix        = "link-addresses"
+	importsPrefix          = "imports"
+	repoMetadataPrefix     = "repo-metadata"
 )
 
 //nolint:gochecknoinits
@@ -67,8 +68,12 @@ func SettingsPath(key string) string {
 	return kv.FormatPath(settingsPrefix, key)
 }
 
-func LinkedAddressPath(key string) string {
-	return kv.FormatPath(addressesPrefix, key)
+func ImportsPath(key string) string {
+	return kv.FormatPath(importsPrefix, key)
+}
+
+func RepoMetadataPath() string {
+	return repoMetadataPrefix
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
@@ -85,7 +90,7 @@ func CommitFromProto(pb *CommitData) *Commit {
 		CreationDate: pb.CreationDate.AsTime(),
 		Parents:      parents,
 		Metadata:     pb.Metadata,
-		Generation:   int(pb.Generation),
+		Generation:   CommitGeneration(pb.Generation),
 	}
 }
 
@@ -113,11 +118,13 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 	return &RepositoryRecord{
 		RepositoryID: RepositoryID(pb.Id),
 		Repository: &Repository{
+			StorageID:        StorageID(pb.StorageId),
 			StorageNamespace: StorageNamespace(pb.StorageNamespace),
 			DefaultBranchID:  BranchID(pb.DefaultBranchId),
 			CreationDate:     pb.CreationDate.AsTime(),
 			InstanceUID:      pb.InstanceUid,
 			State:            pb.State,
+			ReadOnly:         pb.ReadOnly,
 		},
 	}
 }
@@ -125,11 +132,13 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 	return &RepositoryData{
 		Id:               repo.RepositoryID.String(),
-		StorageNamespace: repo.Repository.StorageNamespace.String(),
-		DefaultBranchId:  repo.Repository.DefaultBranchID.String(),
-		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
+		StorageId:        repo.StorageID.String(),
+		StorageNamespace: repo.StorageNamespace.String(),
+		DefaultBranchId:  repo.DefaultBranchID.String(),
+		CreationDate:     timestamppb.New(repo.CreationDate),
 		State:            repo.State,
 		InstanceUid:      repo.InstanceUID,
+		ReadOnly:         repo.ReadOnly,
 	}
 }
 
@@ -153,4 +162,99 @@ func TagFromProto(pb *TagData) *TagRecord {
 		TagID:    TagID(pb.Id),
 		CommitID: CommitID(pb.CommitId),
 	}
+}
+
+func ImportStatusFromProto(pb *ImportStatusData) *ImportStatus {
+	var commit *CommitRecord
+	if pb.Commit != nil {
+		commit = &CommitRecord{
+			CommitID: CommitID(pb.Commit.Id),
+			Commit:   CommitFromProto(pb.Commit),
+		}
+	}
+	var statusErr error
+	if pb.Error != "" {
+		statusErr = fmt.Errorf("%w: %s", ErrImport, pb.Error)
+	}
+
+	return &ImportStatus{
+		ID:          ImportID(pb.Id),
+		Completed:   pb.Completed,
+		UpdatedAt:   pb.UpdatedAt.AsTime(),
+		Progress:    pb.Progress,
+		MetaRangeID: MetaRangeID(pb.MetarangeId),
+		Commit:      commit,
+		Error:       statusErr,
+	}
+}
+
+func ProtoFromImportStatus(status *ImportStatus) *ImportStatusData {
+	var commit *CommitData
+	if status.Commit != nil {
+		commit = ProtoFromCommit(status.Commit.CommitID, status.Commit.Commit)
+	}
+	var statusErr string
+	if status.Error != nil {
+		statusErr = status.Error.Error()
+	}
+
+	return &ImportStatusData{
+		Id:          status.ID.String(),
+		Completed:   status.Completed,
+		UpdatedAt:   timestamppb.New(status.UpdatedAt),
+		Progress:    status.Progress,
+		MetarangeId: status.MetaRangeID.String(),
+		Commit:      commit,
+		Error:       statusErr,
+	}
+}
+
+func RepoMetadataFromProto(pb *RepoMetadata) RepositoryMetadata {
+	return pb.Metadata
+}
+
+func ProtoFromRepositoryMetadata(metadata RepositoryMetadata) *RepoMetadata {
+	return &RepoMetadata{
+		Metadata: metadata,
+	}
+}
+
+func PullRequestFromProto(pb *PullRequestData) *PullRequestRecord {
+	pr := &PullRequestRecord{
+		ID: PullRequestID(pb.Id),
+		PullRequest: PullRequest{
+			CreationDate:   pb.CreatedAt.AsTime(),
+			Status:         pb.Status,
+			Title:          pb.Title,
+			Author:         pb.Author,
+			Description:    pb.Description,
+			Source:         pb.SourceBranch,
+			Destination:    pb.DestinationBranch,
+			MergedCommitID: pb.CommitId,
+		},
+	}
+	if pb.ClosedAt != nil {
+		pbTime := pb.ClosedAt.AsTime()
+		pr.ClosedDate = &pbTime
+	}
+	return pr
+}
+
+func ProtoFromPullRequest(pullID PullRequestID, pull *PullRequest) *PullRequestData {
+	prData := &PullRequestData{
+		Id:                pullID.String(),
+		Status:            pull.Status,
+		CreatedAt:         timestamppb.New(pull.CreationDate),
+		Title:             pull.Title,
+		Author:            pull.Author,
+		Description:       pull.Description,
+		SourceBranch:      pull.Source,
+		DestinationBranch: pull.Destination,
+		CommitId:          pull.MergedCommitID,
+	}
+	if pull.ClosedDate != nil {
+		prData.ClosedAt = timestamppb.New(*pull.ClosedDate)
+	}
+
+	return prData
 }

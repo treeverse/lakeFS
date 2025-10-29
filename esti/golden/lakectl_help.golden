@@ -1,6 +1,9 @@
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
+lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment.
+
+It can be extended with plugins; see 'lakectl plugin --help' for more information.
 
 Usage:
+  lakectl [flags]
   lakectl [command]
 
 Available Commands:
@@ -9,21 +12,21 @@ Available Commands:
   auth            Manage authentication and authorization
   branch          Create and manage branches within a repository
   branch-protect  Create and manage branch protection rules
-  cherry-pick     Cherry-Pick a ref into a branch
+  cherry-pick     Apply the changes introduced by an existing commit
   commit          Commit changes on a given branch
   completion      Generate completion script
   config          Create/update local lakeFS configuration
-  dbt             Integration with dbt commands
   diff            Show changes between two commits, or the currently uncommitted changes
   doctor          Run a basic diagnosis of the LakeFS configuration
   fs              View and manipulate objects
   gc              Manage the garbage collection policy
   help            Help about any command
-  import          Import data from external source to an imported branch (with optional merge)
-  ingest          Ingest objects from an external source into a lakeFS branch (without actually copying them)
+  identity        Show identity info
+  import          Import data from external source to a destination branch
+  local           Sync local directories with lakeFS paths
   log             Show log of commits
   merge           Merge & commit changes from source branch into destination branch
-  metastore       Manage metastore commands
+  plugin          Manage lakectl plugins
   repo            Manage and explore repos
   show            See detailed information about an entity
   tag             Create and manage tags within a repository
@@ -35,7 +38,7 @@ Flags:
       --log-format string    set logging output format
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
-      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --no-color             don't use fancy output colors (default value can be set by NO_COLOR environment variable)
       --verbose              run in verbose mode
   -v, --version              version for lakectl
 

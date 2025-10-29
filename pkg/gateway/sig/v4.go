@@ -21,16 +21,18 @@ import (
 )
 
 const (
-	V4authHeaderName        = "Authorization"
-	V4authHeaderPrefix      = "AWS4-HMAC-SHA256"
-	AmzDecodedContentLength = "X-Amz-Decoded-Content-Length"
-	v4StreamingPayloadHash  = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
-	v4UnsignedPayload       = "UNSIGNED-PAYLOAD"
-	v4authHeaderPayload     = "x-amz-content-sha256"
-	v4scopeTerminator       = "aws4_request"
-	v4timeFormat            = "20060102T150405Z"
-	v4shortTimeFormat       = "20060102"
-	v4SignatureHeader       = "X-Amz-Signature"
+	V4authHeaderName         = "Authorization"
+	V4authHeaderPrefix       = "AWS4-HMAC-SHA256"
+	v4TrailerHeader          = "X-Amz-Trailer"
+	v4SignatureHeader        = "X-Amz-Signature"
+	AmzDecodedContentLength  = "X-Amz-Decoded-Content-Length"
+	v4StreamingPayloadHash   = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
+	v4UnsignedPayloadTrailer = "STREAMING-UNSIGNED-PAYLOAD-TRAILER"
+	v4UnsignedPayload        = "UNSIGNED-PAYLOAD"
+	v4authHeaderPayload      = "x-amz-content-sha256"
+	v4scopeTerminator        = "aws4_request"
+	v4timeFormat             = "20060102T150405Z"
+	v4shortTimeFormat        = "20060102"
 )
 
 var (
@@ -46,6 +48,7 @@ type V4Auth struct {
 	SignedHeaders       []string
 	SignedHeadersString string
 	Signature           string
+	ChecksumAlgorithm   string
 }
 
 func (a V4Auth) GetAccessKeyID() string {
@@ -61,6 +64,8 @@ func splitHeaders(headers string) []string {
 func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	var ctx V4Auth
 
+	ctx.ChecksumAlgorithm = r.Header.Get(v4TrailerHeader)
+
 	// start by trying to extract the data from the Authorization header
 	headerValue := r.Header.Get(V4authHeaderName)
 	if len(headerValue) > 0 {
@@ -74,16 +79,15 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 				result[name] = match[i]
 			}
 		}
-		headers := splitHeaders(result["SignatureHeaders"])
 		ctx.AccessKeyID = result["AccessKeyId"]
 		ctx.Date = result["Date"]
 		ctx.Region = result["Region"]
 		ctx.Service = result["Service"]
-
 		ctx.Signature = result["Signature"]
 
-		ctx.SignedHeaders = headers
-		ctx.SignedHeadersString = result["SignatureHeaders"]
+		signatureHeaders := result["SignatureHeaders"]
+		ctx.SignedHeaders = splitHeaders(signatureHeaders)
+		ctx.SignedHeadersString = signatureHeaders
 		return ctx, nil
 	}
 
@@ -316,11 +320,8 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 	if err != nil {
 		return "", err
 	}
-	h := sha256.New()
-	if _, err := h.Write([]byte(canonicalRequest)); err != nil {
-		return "", err
-	}
-	hashedCanonicalRequest := hex.EncodeToString(h.Sum(nil))
+	h := sha256.Sum256([]byte(canonicalRequest))
+	hashedCanonicalRequest := hex.EncodeToString(h[:])
 	stringToSign := strings.Join([]string{
 		algorithm,
 		amzDate,
@@ -332,7 +333,8 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 
 func (ctx *verificationCtx) isStreaming() bool {
 	payloadHash := ctx.payloadHash()
-	return strings.EqualFold(payloadHash, v4StreamingPayloadHash)
+	return strings.EqualFold(payloadHash, v4StreamingPayloadHash) ||
+		strings.EqualFold(payloadHash, v4UnsignedPayloadTrailer)
 }
 
 func (ctx *verificationCtx) isUnsigned() bool {
@@ -347,7 +349,7 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 				return 0, errors.ErrMissingContentLength
 			}
 			var err error
-			size, err = strconv.ParseInt(sizeStr[0], 10, 64) //nolint: gomnd
+			size, err = strconv.ParseInt(sizeStr[0], 10, 64) //nolint: mnd
 			if err != nil {
 				return 0, err
 			}
@@ -362,7 +364,8 @@ func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential
 		if err != nil {
 			return nil, err
 		}
-		chunkReader, err := newSignV4ChunkedReader(bufio.NewReader(reader), amzDate, ctx.AuthValue, creds)
+
+		chunkReader, err := newSignV4ChunkedReader(bufio.NewReader(reader), amzDate, ctx.AuthValue, ctx.payloadHash(), creds)
 		if err != nil {
 			return nil, err
 		}
@@ -377,32 +380,29 @@ func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential
 
 type V4Authenticator struct {
 	request *http.Request
-	ctx     V4Auth
+	sigCtx  V4Auth
 }
 
 func (a *V4Authenticator) Parse() (SigContext, error) {
-	var ctx V4Auth
-	var err error
-	ctx, err = ParseV4AuthContext(a.request)
+	sigCtx, err := ParseV4AuthContext(a.request)
 	if err != nil {
-		return ctx, err
+		return nil, err
 	}
-	a.ctx = ctx
-	return a.ctx, nil
+	a.sigCtx = sigCtx
+	return a.sigCtx, nil
 }
 
 func (a *V4Authenticator) String() string {
 	return "sigv4"
 }
 
-func (a *V4Authenticator) Verify(creds *model.Credential, _ string) error {
-	err := V4Verify(a.ctx, creds, a.request)
-	return err
+func (a *V4Authenticator) Verify(creds *model.Credential) error {
+	return V4Verify(a.sigCtx, creds, a.request)
 }
 
-func NewV4Authenticator(r *http.Request) SigAuthenticator {
+func NewV4Authenticator(r *http.Request) *V4Authenticator {
 	return &V4Authenticator{
 		request: r,
-		ctx:     V4Auth{},
+		sigCtx:  V4Auth{},
 	}
 }

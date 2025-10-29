@@ -11,9 +11,11 @@ import (
 
 type merger struct {
 	ctx    context.Context
+	sCtx   graveler.StorageContext
 	logger logging.Logger
 
 	writer               MetaRangeWriter
+	resolvers            []graveler.ConflictResolver
 	base                 Iterator
 	source               Iterator
 	dest                 Iterator
@@ -199,7 +201,7 @@ func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrate
 						return graveler.ErrConflictFound
 					}
 					// In case of conflict, if the strategy favors the given iter we
-					// still want to write the record. Otherwise it will be ignored.
+					// still want to write the record. Otherwise, it will be ignored.
 					if m.strategy != strategyToInclude {
 						shouldWriteRecord = false
 					}
@@ -229,7 +231,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.NextRange()
 		m.haveDest = m.dest.NextRange()
 
-	case bytes.Equal(sourceRange.MinKey, destRange.MinKey) && bytes.Equal(sourceRange.MaxKey, destRange.MaxKey): // same bounds
+	case sourceRange.EqualBounds(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return err
@@ -250,7 +252,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 			m.haveDest = m.dest.Next()
 		}
 
-	case bytes.Compare(sourceRange.MaxKey, destRange.MinKey) < 0: // source before dest
+	case sourceRange.BeforeRange(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -271,7 +273,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
 
-	case bytes.Compare(destRange.MaxKey, sourceRange.MinKey) < 0: // dest before source
+	case destRange.BeforeRange(sourceRange) && m.validWritingRange(m.dest):
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -300,23 +302,27 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 }
 
 func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
-	switch m.strategy {
-	case graveler.MergeStrategyDest:
-		err := m.writeRecord(destValue)
+	// try all resolvers in order
+	for _, resolver := range m.resolvers {
+		valueToWrite, err := resolver.ResolveConflict(m.ctx, m.sCtx, m.strategy, sourceValue, destValue)
 		if err != nil {
-			return fmt.Errorf("write record: %w", err)
+			return err
 		}
-	case graveler.MergeStrategySrc:
-		err := m.writeRecord(sourceValue)
-		if err != nil {
-			return fmt.Errorf("write record: %w", err)
+
+		if valueToWrite != nil {
+			// resolved by the resolver - write the resolved value
+			if err = m.writeRecord(valueToWrite); err != nil {
+				return fmt.Errorf("write record: %w", err)
+			}
+
+			m.haveSource = m.source.Next()
+			m.haveDest = m.dest.Next()
+
+			return nil // conflict resolved
 		}
-	default: // graveler.MergeStrategyNone
-		return graveler.ErrConflictFound
 	}
-	m.haveSource = m.source.Next()
-	m.haveDest = m.dest.Next()
-	return nil
+	// not resolved by any resolver, it's a conflict
+	return graveler.ErrConflictFound
 }
 
 // handleBothKeys handles the case where both source and dest iterators are inside range
@@ -370,7 +376,8 @@ func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *gravele
 		return m.sourceBeforeDest(sourceValue)
 	}
 
-	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 { // dest range before source
+	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 &&
+		m.validWritingRange(m.dest) { // dest range before source
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -480,15 +487,48 @@ func (m *merger) merge() error {
 	return nil
 }
 
-func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
+func (m *merger) validWritingRange(it Iterator) bool {
+	switch v := it.(type) {
+	case ImportIterator:
+		return !v.IsCurrentPrefixIncludedInRange()
+	default:
+		return true
+	}
+}
+
+func Merge(
+	ctx context.Context,
+	sCtx graveler.StorageContext,
+	writer MetaRangeWriter,
+	resolvers []graveler.ConflictResolver,
+	base Iterator,
+	source Iterator,
+	destination Iterator,
+	strategy graveler.MergeStrategy,
+) error {
 	m := merger{
-		ctx:      ctx,
-		logger:   logging.FromContext(ctx),
-		writer:   writer,
-		base:     base,
-		source:   source,
-		dest:     destination,
-		strategy: strategy,
+		ctx:       ctx,
+		sCtx:      sCtx,
+		logger:    logging.FromContext(ctx),
+		writer:    writer,
+		resolvers: resolvers,
+		base:      base,
+		source:    source,
+		dest:      destination,
+		strategy:  strategy,
 	}
 	return m.merge()
+}
+
+type StrategyConflictResolver struct{}
+
+func (r *StrategyConflictResolver) ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, strategy graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+	switch strategy {
+	case graveler.MergeStrategyDest:
+		return destValue, nil
+	case graveler.MergeStrategySrc:
+		return srcValue, nil
+	default: // graveler.MergeStrategyNone
+		return nil, nil
+	}
 }

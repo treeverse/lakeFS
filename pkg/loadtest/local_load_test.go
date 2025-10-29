@@ -9,17 +9,22 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -35,9 +40,10 @@ func TestLocalLoad(t *testing.T) {
 
 	// Only once
 	ctx := context.Background()
-	viper.Set("blockstore.type", block.BlockstoreTypeLocal)
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 
-	conf, err := config.NewConfig()
+	cfg := &configfactory.ConfigImpl{}
+	baseCfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 
 	superuser := &authmodel.SuperuserConfiguration{
@@ -48,8 +54,8 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	kvStore := kvtest.GetStore(ctx, t)
-	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
-	meta := auth.NewKVMetadataManager("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
+	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.FromContext(ctx))
+	meta := auth.NewKVMetadataManager("local_load_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
 	if blockstoreType == "" {
@@ -58,10 +64,10 @@ func TestLocalLoad(t *testing.T) {
 
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:       conf,
-		KVStore:      kvStore,
-		PathProvider: upload.DefaultPathProvider,
-		Limiter:      conf.NewGravelerBackgroundLimiter(),
+		Config:            cfg,
+		KVStore:           kvStore,
+		PathProvider:      upload.DefaultPathProvider,
+		ConflictResolvers: catalogfactory.BuildConflictResolvers(cfg, blockAdapter),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
@@ -69,43 +75,23 @@ func TestLocalLoad(t *testing.T) {
 	outputWriter := catalog.NewActionsOutputWriter(c.BlockAdapter)
 
 	// wire actions
-	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, true)
+	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, actions.Config{Enabled: true}, "")
 	c.SetHooksHandler(actionsService)
 
-	credentials, err := auth.SetupAdminUser(ctx, authService, superuser)
+	credentials, err := setup.AddAdminUser(ctx, authService, superuser, false)
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := conf.DatabaseParams()
+	kvParams, err := kvparams.NewConfig(&baseCfg.Database)
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
-	auditChecker := version.NewDefaultAuditChecker(conf.Security.AuditCheckURL, "")
-	emailer, err := email.NewEmailer(email.Params(conf.Email))
-	testutil.Must(t, err)
-	handler := api.Serve(
-		conf,
-		c,
-		authenticator,
-		authenticator,
-		authService,
-		blockAdapter,
-		meta,
-		migrator,
-		&stats.NullCollector{},
-		nil,
-		actionsService,
-		auditChecker,
-		logging.Default(),
-		emailer,
-		nil,
-		nil,
-		nil,
-		upload.DefaultPathProvider,
-		nil,
-	)
+	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
+	authenticationService := authentication.NewDummyService()
+	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, blockAdapter, meta, migrator, &stats.NullCollector{}, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

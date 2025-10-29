@@ -1,7 +1,7 @@
-import React, {useState} from "react";
-
+import React, {useEffect, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import dayjs from "dayjs";
-import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
+import {BrowserIcon, LinkIcon, PlayIcon} from "@primer/octicons-react";
 
 import {commits} from "../../../../lib/api";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
@@ -12,25 +12,22 @@ import {
     ActionGroup,
     ActionsBar,
     ClipboardButton,
-    Error,
+    AlertError,
     LinkButton,
     Loading, RefreshButton
 } from "../../../../lib/components/controls";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {CommitMessage} from "../../../../lib/components/repository/commits";
+import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
-import {Route, Routes} from "react-router-dom";
-import RepositoryCommitPage from "./commit";
 import {RepoError} from "../error";
 
 
 const CommitWidget = ({ repo, commit }) => {
-
-    const buttonVariant = "outline-dark";
+    const buttonVariant = "light";
 
     return (
         <ListGroup.Item>
@@ -41,7 +38,7 @@ const CommitWidget = ({ repo, commit }) => {
                             pathname: '/repositories/:repoId/commits/:commitId',
                             params: {repoId: repo.id, commitId: commit.id}
                         }}>
-                            {commit.message}
+                            <CommitMessage commit={commit}/>
                         </Link>
                     </h6>
                     <p>
@@ -51,9 +48,9 @@ const CommitWidget = ({ repo, commit }) => {
                     </p>
                 </div>
                 <div className="float-end">
-                    <ButtonGroup className="commit-actions">
+                    <ButtonGroup className="commit-actions mt-1">
                         <LinkButton
-                            buttonVariant="outline-dark"
+                            buttonVariant={buttonVariant}
                             href={{
                                 pathname: '/repositories/:repoId/commits/:commitId',
                                 params: {repoId: repo.id, commitId: commit.id}
@@ -66,11 +63,9 @@ const CommitWidget = ({ repo, commit }) => {
                             tooltip="View Commit Action runs">
                             <PlayIcon/>
                         </LinkButton>
-                        <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="Copy ID to clipboard"/>
                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="Copy URI to clipboard" icon={<LinkIcon/>}/>
-                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="Copy S3 URI to clipboard" icon={<PackageIcon/>}/>
                         <LinkButton
-                            buttonVariant="outline-dark"
+                            buttonVariant={buttonVariant}
                             href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
                             tooltip="Browse objects at this commit">
                             <BrowserIcon/>
@@ -92,7 +87,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     }, [repo.id, reference.id, refresh, after])
 
     if (loading) return <Loading/>
-    if (error) return <Error error={error}/>
+    if (error) return <AlertError error={error}/>
 
     return (
         <div className="mb-5">
@@ -159,22 +154,9 @@ const CommitsContainer = () => {
 
 
 const RepositoryCommitsPage = () => {
-    return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'commits'}>
-                <CommitsContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
-    );
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage('commits'), [setActivePage]);
+  return <CommitsContainer />;
 };
 
-const RepositoryCommitsIndexPage = () => {
-    return (
-        <Routes>
-            <Route path="" element={<RepositoryCommitsPage/>} />
-            <Route path=":commitId" element={<RepositoryCommitPage/>} />
-        </Routes>
-    )
-}
-
-export default RepositoryCommitsIndexPage;
+export default RepositoryCommitsPage;

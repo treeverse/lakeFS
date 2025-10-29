@@ -1,6 +1,7 @@
 package path
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -26,6 +27,7 @@ var library = []lua.RegistryFunction{
 	{Name: "join", Function: join},
 	{Name: "is_hidden", Function: isHidden},
 	{Name: "default_separator", Function: getDefaultSeparator},
+	{Name: "extract_dir_name", Function: extractDirName},
 }
 
 func getDefaultSeparator(l *lua.State) int {
@@ -81,16 +83,19 @@ func join(l *lua.State) int {
 	return 1
 }
 
+// Join joins the parts with the separator.
+// Will keep the first part prefix separator (if found) and the last part suffix separator optional.
 func Join(sep string, parts ...string) string {
-	s := ""
+	var s string
 	for i, part := range parts {
-		s += part // append it
-		isLast := i == len(parts)-1
-		if !isLast {
-			// check if ends with sep, if not, add it
-			if !strings.HasSuffix(part, sep) {
-				s += sep
-			}
+		// remove prefix sep if not first
+		if i != 0 {
+			part = strings.TrimPrefix(part, sep)
+		}
+		s += part
+		// if not last part, make sure we have a suffix sep
+		if i != len(parts)-1 && !strings.HasSuffix(part, sep) {
+			s += sep
 		}
 	}
 	return s
@@ -118,5 +123,13 @@ func isHidden(l *lua.State) int {
 		prefix = lua.CheckString(l, 3)
 	}
 	l.PushBoolean(IsHidden(p, sep, prefix))
+	return 1
+}
+
+// Function to extract directory from a path
+func extractDirName(l *lua.State) int {
+	path := lua.CheckString(l, 1)
+	dirName := filepath.Dir(path)
+	l.PushString(dirName)
 	return 1
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 // Define errors we raise from this package - do not convert underlying errors, optionally wrap if needed to consolidate
@@ -13,8 +12,7 @@ var (
 	// ErrUserVisible is base error for "user-visible" errors, which should not be wrapped with internal debug info.
 	ErrUserVisible = errors.New("")
 
-	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
-	ErrNotFound                     = wrapError(kv.ErrNotFound, "not found")
+	ErrNotFound                     = wrapError(ErrUserVisible, "not found")
 	ErrNotUnique                    = wrapError(ErrUserVisible, "not unique")
 	ErrPreconditionFailed           = errors.New("precondition failed")
 	ErrProtectedBranch              = errors.New("protected branch")
@@ -32,6 +30,7 @@ var (
 	ErrInvalidTagID                 = fmt.Errorf("tag id: %w", ErrInvalidValue)
 	ErrInvalid                      = errors.New("validation error")
 	ErrInvalidType                  = fmt.Errorf("invalid type: %w", ErrInvalid)
+	ErrInvalidStorageID             = fmt.Errorf("storage id: %w", ErrInvalidValue)
 	ErrInvalidRepositoryID          = fmt.Errorf("repository id: %w", ErrInvalidValue)
 	ErrRequiredValue                = fmt.Errorf("required value: %w", ErrInvalid)
 	ErrCommitNotFound               = fmt.Errorf("commit %w", ErrNotFound)
@@ -39,14 +38,15 @@ var (
 	ErrRepositoryNotFound           = fmt.Errorf("repository %w", ErrNotFound)
 	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)
+	ErrSameBranch                   = fmt.Errorf("same branch %w", ErrInvalid)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
 	ErrNoChanges                    = wrapError(ErrUserVisible, "no changes")
 	ErrConflictFound                = wrapError(ErrUserVisible, "conflict found")
 	ErrBranchExists                 = fmt.Errorf("branch already exists: %w", ErrNotUnique)
 	ErrTagAlreadyExists             = fmt.Errorf("tag already exists: %w", ErrNotUnique)
-	ErrAddressTokenAlreadyExists    = fmt.Errorf("address token already exists: %w", ErrNotUnique)
-	ErrAddressTokenNotFound         = fmt.Errorf("address token %w", ErrNotFound)
-	ErrAddressTokenExpired          = errors.New("address token has expired")
+	ErrCommitAlreadyExists          = fmt.Errorf("commit already exists: %w", ErrNotUnique)
+	ErrLinkAddressInvalid           = errors.New("link address invalid")
+	ErrLinkAddressExpired           = errors.New("link address expired")
 	ErrDirtyBranch                  = wrapError(ErrUserVisible, "uncommitted changes (dirty branch)")
 	ErrMetaRangeNotFound            = errors.New("metarange not found")
 	ErrLockNotAcquired              = errors.New("lock not acquired")
@@ -60,6 +60,13 @@ var (
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
 	ErrTooManyTries                 = errors.New("too many tries")
 	ErrSkipValueUpdate              = errors.New("skip value update")
+	ErrImport                       = wrapError(ErrUserVisible, "import error")
+	ErrReadOnlyRepository           = wrapError(ErrUserVisible, "read-only repository")
+	ErrPullRequestNotFound          = fmt.Errorf("pull request %w", ErrNotFound)
+	ErrPullRequestExists            = fmt.Errorf("pull request already exists: %w", ErrNotUnique)
+	ErrInvalidPullRequestStatus     = fmt.Errorf("invalid pull request status: %w", ErrInvalid)
+	ErrInvalidPullRequestID         = fmt.Errorf("pull request id: %w", ErrInvalidValue)
+	ErrCannotClone                  = fmt.Errorf("cannot clone: %w", ErrInvalid)
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

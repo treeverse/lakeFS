@@ -62,8 +62,8 @@ func isDirEmpty(name string) (bool, error) {
 	return false, err
 }
 
-// createFile creates the file under the path and creates all parent dirs if missing.
-func (d *directory) createFile(path string) (*os.File, error) {
+// createTempFile creates the file under the path and creates all parent dirs if missing.
+func (d *directory) createTempFile(path string) (*os.File, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -71,7 +71,8 @@ func (d *directory) createFile(path string) (*os.File, error) {
 		return nil, err
 	}
 
-	return os.Create(path)
+	dir, name := filepath.Split(path)
+	return os.CreateTemp(dir, name+".*.tmp")
 }
 
 // renameFile will move the src file to dst location and creates all parent dirs if missing.

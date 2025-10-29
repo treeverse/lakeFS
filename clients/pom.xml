@@ -46,7 +46,7 @@
             <artifactId>maven-gpg-plugin</artifactId>
 	    <version>1.5</version> <!-- must match java/pom.xml -->
 	    <configuration>
-	      <keyname>F638279A7281EE8EAE58C4B98D3CFE7E7D0262DA</keyname>
+	      <keyname>4E40AA3FAE98D8B3067712BED1BAD3FE38D74FE4</keyname>
 	    </configuration>
 	    <executions>
               <execution>
@@ -64,28 +64,24 @@
   </profiles>
 
   <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <name>Nexus Snapshots Repo</name>
-      <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
-    </snapshotRepository>
     <repository>
-      <id>ossrh</id>
-      <name>Nexus Staging Repo</name>
-      <url>https://s01.oss.sonatype.org/nexus/service/local/staging/deploy/maven2/</url>
+      <id>central</id>
+      <name>Maven Central Repo</name>
+      <url>https://central.sonatype.com</url>
     </repository>
   </distributionManagement>
 
   <build>
     <plugins>
       <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.8</version>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <version>0.8.0</version>
         <extensions>true</extensions>
         <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+          <publishingServerId>central</publishingServerId>
+          <autoPublish>true</autoPublish>>
+          <failOnBuildFailure>true</failOnBuildFailure>
         </configuration>
       </plugin>
     </plugins>

@@ -37,63 +37,63 @@ func (m *MockFS) EXPECT() *MockFSMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockFS) Create(ctx context.Context, namespace string) (pyramid.StoredFile, error) {
+func (m *MockFS) Create(ctx context.Context, storageID, namespace string) (pyramid.StoredFile, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, namespace)
+	ret := m.ctrl.Call(m, "Create", ctx, storageID, namespace)
 	ret0, _ := ret[0].(pyramid.StoredFile)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockFSMockRecorder) Create(ctx, namespace interface{}) *gomock.Call {
+func (mr *MockFSMockRecorder) Create(ctx, storageID, namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockFS)(nil).Create), ctx, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockFS)(nil).Create), ctx, storageID, namespace)
 }
 
 // Exists mocks base method.
-func (m *MockFS) Exists(ctx context.Context, namespace, filename string) (bool, error) {
+func (m *MockFS) Exists(ctx context.Context, storageID, namespace, filename string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exists", ctx, namespace, filename)
+	ret := m.ctrl.Call(m, "Exists", ctx, storageID, namespace, filename)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Exists indicates an expected call of Exists.
-func (mr *MockFSMockRecorder) Exists(ctx, namespace, filename interface{}) *gomock.Call {
+func (mr *MockFSMockRecorder) Exists(ctx, storageID, namespace, filename interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockFS)(nil).Exists), ctx, namespace, filename)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockFS)(nil).Exists), ctx, storageID, namespace, filename)
 }
 
 // GetRemoteURI mocks base method.
-func (m *MockFS) GetRemoteURI(ctx context.Context, namespace, filename string) (string, error) {
+func (m *MockFS) GetRemoteURI(ctx context.Context, filename string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRemoteURI", ctx, namespace, filename)
+	ret := m.ctrl.Call(m, "GetRemoteURI", ctx, filename)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRemoteURI indicates an expected call of GetRemoteURI.
-func (mr *MockFSMockRecorder) GetRemoteURI(ctx, namespace, filename interface{}) *gomock.Call {
+func (mr *MockFSMockRecorder) GetRemoteURI(ctx, filename interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteURI", reflect.TypeOf((*MockFS)(nil).GetRemoteURI), ctx, namespace, filename)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteURI", reflect.TypeOf((*MockFS)(nil).GetRemoteURI), ctx, filename)
 }
 
 // Open mocks base method.
-func (m *MockFS) Open(ctx context.Context, namespace, filename string) (pyramid.File, error) {
+func (m *MockFS) Open(ctx context.Context, storageID, namespace, filename string) (pyramid.File, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Open", ctx, namespace, filename)
+	ret := m.ctrl.Call(m, "Open", ctx, storageID, namespace, filename)
 	ret0, _ := ret[0].(pyramid.File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Open indicates an expected call of Open.
-func (mr *MockFSMockRecorder) Open(ctx, namespace, filename interface{}) *gomock.Call {
+func (mr *MockFSMockRecorder) Open(ctx, storageID, namespace, filename interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockFS)(nil).Open), ctx, namespace, filename)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockFS)(nil).Open), ctx, storageID, namespace, filename)
 }
 
 // MockFile is a mock of File interface.

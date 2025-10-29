@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"errors"
 	"fmt"
 
 	"github.com/cockroachdb/pebble"
@@ -15,7 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid"
 )
 
-type NewSSTableReaderFn func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error)
+type NewSSTableReaderFn func(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (*sstable.Reader, error)
 
 type Unrefer interface {
 	Unref()
@@ -26,21 +25,22 @@ type RangeManager struct {
 	fs        pyramid.FS
 	hash      crypto.Hash
 	cache     Unrefer
+	storageID committed.StorageID
 }
 
-func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypto.Hash, storageID committed.StorageID) *RangeManager {
 	if cache != nil { // nil cache allowed (size=0), see sstable.ReaderOptions
 		cache.Ref()
 	}
 	opts := sstable.ReaderOptions{Cache: cache}
-	newReader := func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
-		return newReader(ctx, fs, ns, id, opts)
+	newReader := func(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
+		return newReader(ctx, fs, storageID, ns, id, opts)
 	}
-	return NewPebbleSSTableRangeManagerWithNewReader(newReader, opts.Cache, fs, hash)
+	return NewPebbleSSTableRangeManagerWithNewReader(newReader, opts.Cache, fs, hash, storageID)
 }
 
-func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
-	file, err := fs.Open(ctx, string(ns), string(id))
+func newReader(ctx context.Context, fs pyramid.FS, storageID committed.StorageID, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
+	file, err := fs.Open(ctx, string(storageID), string(ns), string(id))
 	if err != nil {
 		return nil, fmt.Errorf("open sstable file %s %s: %w", ns, id, err)
 	}
@@ -51,28 +51,29 @@ func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id co
 	return r, nil
 }
 
-func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, cache Unrefer, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, cache Unrefer, fs pyramid.FS, hash crypto.Hash, storageID committed.StorageID) *RangeManager {
 	return &RangeManager{
 		fs:        fs,
 		hash:      hash,
 		newReader: newReader,
 		cache:     cache,
+		storageID: storageID,
 	}
 }
 
 var (
 	// ErrKeyNotFound is the error returned when a path is not found
-	ErrKeyNotFound = errors.New("path not found")
+	ErrKeyNotFound = fmt.Errorf("key: %w", committed.ErrNotFound)
 
 	_ committed.RangeManager = &RangeManager{}
 )
 
 func (m *RangeManager) Exists(ctx context.Context, ns committed.Namespace, id committed.ID) (bool, error) {
-	return m.fs.Exists(ctx, string(ns), string(id))
+	return m.fs.Exists(ctx, string(m.storageID), string(ns), string(id))
 }
 
 func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, err := m.newReader(ctx, ns, id)
+	reader, err := m.newReader(ctx, m.storageID, ns, id)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +94,8 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 		}
 		return nil, ErrKeyNotFound
 	}
-	vBytes, _, err := value.Value(nil)
+	vBytes, err := retrieveValue(value)
+
 	if err != nil {
 		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
 	}
@@ -106,7 +108,7 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 // GetValue returns the Record matching the key in the SSTable referenced by the id.
 // If key is not found, (nil, ErrKeyNotFound) is returned.
 func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, err := m.newReader(ctx, ns, id)
+	reader, err := m.newReader(ctx, m.storageID, ns, id)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +135,8 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 		// lookup path in range but key not found
 		return nil, ErrKeyNotFound
 	}
-	vBytes, _, err := value.Value(nil)
+	vBytes, err := retrieveValue(value)
+
 	if err != nil {
 		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
 	}
@@ -146,7 +149,7 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
 func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
-	reader, err := m.newReader(ctx, ns, tid)
+	reader, err := m.newReader(ctx, m.storageID, ns, tid)
 	if err != nil {
 		return nil, err
 	}
@@ -164,11 +167,11 @@ func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namesp
 
 // GetWriter returns a new SSTable writer instance
 func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
-	return NewDiskWriter(ctx, m.fs, ns, m.hash.New(), metadata)
+	return NewDiskWriter(ctx, m.fs, m.storageID, ns, m.hash.New(), metadata)
 }
 
-func (m *RangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {
-	return m.fs.GetRemoteURI(ctx, string(ns), string(id))
+func (m *RangeManager) GetURI(ctx context.Context, id committed.ID) (string, error) {
+	return m.fs.GetRemoteURI(ctx, string(id))
 }
 
 func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg string) {

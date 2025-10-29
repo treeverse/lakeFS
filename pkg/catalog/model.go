@@ -14,12 +14,16 @@ const (
 )
 
 type Metadata map[string]string
+type CommitVersion int
+type CommitGeneration int64
 
 type Repository struct {
 	Name             string
+	StorageID        string
 	StorageNamespace string
 	DefaultBranch    string
 	CreationDate     time.Time
+	ReadOnly         bool
 }
 
 type DBEntry struct {
@@ -43,6 +47,8 @@ type CommitLog struct {
 	Metadata     Metadata
 	MetaRangeID  string
 	Parents      []string
+	Generation   CommitGeneration
+	Version      CommitVersion
 }
 
 type Branch struct {
@@ -55,7 +61,19 @@ type Tag struct {
 	CommitID string
 }
 
-// AddressType is the type of an entry address
+type PullRequest struct {
+	ID                string
+	Title             string
+	Description       string
+	Author            string
+	SourceBranch      string
+	DestinationBranch string
+	Status            string
+	CreationDate      time.Time
+	ClosedDate        *time.Time
+}
+
+// AddressType is the type of entry address
 type AddressType int32
 
 const (

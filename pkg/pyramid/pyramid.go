@@ -14,18 +14,18 @@ import (
 type FS interface {
 	// Create creates a new file in the FS.
 	// It will only be persistent after the returned file is stored.
-	Create(ctx context.Context, namespace string) (StoredFile, error)
+	Create(ctx context.Context, storageID, namespace string) (StoredFile, error)
 
 	// Open finds the referenced file and returns its read-only File.
 	// If file isn't in the local disk, it is fetched from the block storage.
-	Open(ctx context.Context, namespace, filename string) (File, error)
+	Open(ctx context.Context, storageID, namespace, filename string) (File, error)
 
 	// Exists returns true if filename currently exists on block storage.
-	Exists(ctx context.Context, namespace, filename string) (bool, error)
+	Exists(ctx context.Context, storageID, namespace, filename string) (bool, error)
 
 	// GetRemoteURI returns the URI for filename on block storage.  That URI might not
 	// resolve if filename does not exist.
-	GetRemoteURI(ctx context.Context, namespace, filename string) (string, error)
+	GetRemoteURI(ctx context.Context, filename string) (string, error)
 }
 
 // File is pyramid abstraction for an os.File

@@ -20,6 +20,7 @@ type EventInfo struct {
 	CommitMessage  string            `json:"commit_message,omitempty"`
 	Committer      string            `json:"committer,omitempty"`
 	CommitMetadata map[string]string `json:"commit_metadata,omitempty"`
+	MergeSource    string            `json:"merge_source,omitempty"`
 }
 
 func marshalEventInformation(actionName, hookID string, record graveler.HookRecord) ([]byte, error) {
@@ -29,7 +30,7 @@ func marshalEventInformation(actionName, hookID string, record graveler.HookReco
 		EventTime:      now.UTC().Format(time.RFC3339),
 		ActionName:     actionName,
 		HookID:         hookID,
-		RepositoryID:   record.RepositoryID.String(),
+		RepositoryID:   record.Repository.RepositoryID.String(),
 		BranchID:       record.BranchID.String(),
 		SourceRef:      record.SourceRef.String(),
 		TagID:          record.TagID.String(),
@@ -37,6 +38,7 @@ func marshalEventInformation(actionName, hookID string, record graveler.HookReco
 		CommitMessage:  record.Commit.Message,
 		Committer:      record.Commit.Committer,
 		CommitMetadata: record.Commit.Metadata,
+		MergeSource:    record.MergeSource.String(),
 	}
 	return json.Marshal(info)
 }

@@ -229,6 +229,10 @@ func (si *SkipFirstIterator) Next() bool {
 	return si.it.Next()
 }
 
+func (si *SkipFirstIterator) SeekGE(key []byte) {
+	si.it.SeekGE(key)
+}
+
 func (si *SkipFirstIterator) Entry() *Entry {
 	return si.it.Entry()
 }
@@ -246,7 +250,6 @@ type PartitionIterator struct {
 	ctx          context.Context
 	store        Store
 	msgType      protoreflect.MessageType
-	itrClosed    bool
 	itr          EntriesIterator
 	partitionKey string
 	value        *MessageEntry
@@ -259,7 +262,6 @@ func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect
 		ctx:          ctx,
 		store:        store,
 		msgType:      msgType,
-		itrClosed:    true,
 		partitionKey: partitionKey,
 		batchSize:    batchSize,
 	}
@@ -270,12 +272,12 @@ func (p *PartitionIterator) Next() bool {
 		return false
 	}
 	p.value = nil
-	if p.itrClosed {
+	if p.itr == nil {
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize})
 		if p.err != nil {
+			p.itr = nil
 			return false
 		}
-		p.itrClosed = false
 	}
 	if !p.itr.Next() {
 		return false
@@ -299,11 +301,11 @@ func (p *PartitionIterator) Next() bool {
 }
 
 func (p *PartitionIterator) SeekGE(key []byte) {
-	if p.Err() == nil {
-		p.Close() // Close previous before creating new iterator
-		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{KeyStart: key, BatchSize: p.batchSize})
-		p.itrClosed = p.err != nil
+	if p.itr == nil {
+		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize, KeyStart: key})
+		return
 	}
+	p.itr.SeekGE(key)
 }
 
 func (p *PartitionIterator) Entry() *MessageEntry {
@@ -314,7 +316,7 @@ func (p *PartitionIterator) Err() error {
 	if p.err != nil {
 		return p.err
 	}
-	if !p.itrClosed {
+	if p.itr != nil {
 		return p.itr.Err()
 	}
 	return nil
@@ -322,8 +324,8 @@ func (p *PartitionIterator) Err() error {
 
 func (p *PartitionIterator) Close() {
 	// Check itr is set, can be null in case seek fails
-	if !p.itrClosed {
+	if p.itr != nil {
 		p.itr.Close()
-		p.itrClosed = true
+		p.itr = nil
 	}
 }

@@ -5,23 +5,25 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
+	"path"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
-
-var ErrNotImplemented = errors.New("not implemented")
 
 const (
 	sizeSuffix = "_size"
@@ -29,32 +31,57 @@ const (
 	_1MiB      = 1024 * 1024
 	MaxBuffers = 1
 	// udcCacheSize - Arbitrary number: exceeding this number means that in the expiry timeframe we requested pre-signed urls from
-	// more the 5000 different accounts which is highly unlikely
+	// more the 5000 different accounts, which is highly unlikely
 	udcCacheSize = 5000
 
-	URLTemplate = "https://%s.blob.core.windows.net/"
+	BlobEndpointDefaultDomain = "blob.core.windows.net"
+	BlobEndpointChinaDomain   = "blob.core.chinacloudapi.cn"
+	BlobEndpointUSGovDomain   = "blob.core.usgovcloudapi.net"
+	BlobEndpointTestDomain    = "azurite.test"
+)
+
+var (
+	ErrInvalidDomain = errors.New("invalid Azure Domain")
+
+	endpointRegex    = regexp.MustCompile(`https://(?P<account>[\w]+).(?P<domain>[\w.-]+)[/:][\w-/,]*$`)
+	supportedDomains = []string{
+		BlobEndpointDefaultDomain,
+		BlobEndpointChinaDomain,
+		BlobEndpointUSGovDomain,
+		BlobEndpointTestDomain,
+	}
 )
 
 type Adapter struct {
-	clientCache      *ClientCache
-	preSignedExpiry  time.Duration
-	disablePreSigned bool
+	clientCache        *ClientCache
+	preSignedExpiry    time.Duration
+	disablePreSigned   bool
+	disablePreSignedUI bool
 }
 
-func NewAdapter(params params.Azure) (*Adapter, error) {
-	logging.Default().WithField("type", "azure").Info("initialized blockstore adapter")
+func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
+	logging.FromContext(ctx).WithField("type", "azure").Info("initialized blockstore adapter")
 	preSignedExpiry := params.PreSignedExpiry
 	if preSignedExpiry == 0 {
 		preSignedExpiry = block.DefaultPreSignExpiryDuration
 	}
+
+	if params.Domain == "" {
+		params.Domain = BlobEndpointDefaultDomain
+	} else if !slices.Contains(supportedDomains, params.Domain) {
+		return nil, ErrInvalidDomain
+	}
+
 	cache, err := NewCache(params)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Adapter{
-		clientCache:      cache,
-		preSignedExpiry:  preSignedExpiry,
-		disablePreSigned: params.DisablePreSigned,
+		clientCache:        cache,
+		preSignedExpiry:    preSignedExpiry,
+		disablePreSigned:   params.DisablePreSigned,
+		disablePreSignedUI: params.DisablePreSignedUI,
 	}, nil
 }
 
@@ -63,6 +90,7 @@ type BlobURLInfo struct {
 	ContainerURL       string
 	ContainerName      string
 	BlobURL            string
+	Host               string
 }
 
 type PrefixURLInfo struct {
@@ -77,7 +105,7 @@ func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
 	const expectedHostParts = 2
 	hostParts := strings.SplitN(storageAccount.Host, ".", expectedHostParts)
 	if len(hostParts) != expectedHostParts {
-		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidNamespace)
+		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidAddress)
 	}
 
 	return hostParts[0], nil
@@ -85,18 +113,16 @@ func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
 
 func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 	var qk BlobURLInfo
-	storageType, err := block.GetStorageType(pathURL)
+	err := block.ValidateStorageType(pathURL, block.StorageTypeAzure)
 	if err != nil {
 		return qk, err
 	}
-	if storageType != block.StorageTypeAzure {
-		return qk, fmt.Errorf("wrong storage type: %w", block.ErrInvalidNamespace)
-	}
-	// In azure the first part of the path is part of the storage namespace
+
+	// In azure, the first part of the path is part of the storage namespace
 	trimmedPath := strings.Trim(pathURL.Path, "/")
 	pathParts := strings.Split(trimmedPath, "/")
 	if len(pathParts) == 0 {
-		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidNamespace)
+		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidAddress)
 	}
 
 	storageAccount, err := ExtractStorageAccount(pathURL)
@@ -109,11 +135,13 @@ func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		ContainerURL:       fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, pathParts[0]),
 		ContainerName:      pathParts[0],
 		BlobURL:            strings.Join(pathParts[1:], "/"),
+		Host:               pathURL.Host,
 	}, nil
 }
 
 func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 	key := obj.Identifier
+	// we're in the context of a specific storage here, so there's no need for StorageID.
 	defaultNamespace := obj.StorageNamespace
 	var qk BlobURLInfo
 	// check if the key is fully qualified
@@ -134,6 +162,7 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 			ContainerURL:       qp.ContainerURL,
 			ContainerName:      qp.ContainerName,
 			BlobURL:            qp.BlobURL + "/" + key,
+			Host:               parsedNamespace.Host,
 		}
 		if qp.BlobURL == "" {
 			info.BlobURL = key
@@ -141,10 +170,6 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 		return info, nil
 	}
 	return ResolveBlobURLInfoFromURL(parsedKey)
-}
-
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
 
 func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azblob.UploadStreamOptions {
@@ -172,32 +197,56 @@ func (a *Adapter) log(ctx context.Context) logging.Logger {
 	return logging.FromContext(ctx)
 }
 
-func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
 	var err error
-	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
+	defer reportMetrics("Put", obj.StorageID, time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	o := a.translatePutOpts(ctx, opts)
 	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = containerClient.NewBlockBlobClient(qualifiedKey.BlobURL).UploadStream(ctx, reader, &o)
-	return err
+	res, err := containerClient.NewBlockBlobClient(qualifiedKey.BlobURL).UploadStream(ctx, reader, &o)
+	if err != nil {
+		return nil, err
+	}
+	return &block.PutResponse{ModTime: res.LastModified}, nil
 }
 
-func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
 	var err error
-	defer reportMetrics("Get", time.Now(), nil, &err)
+	defer reportMetrics("Get", obj.StorageID, time.Now(), nil, &err)
 
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeAzure); err != nil {
+		return nil, err
+	}
+
+	storageAccount, domain, err := ParseURL(opts.StorageURI)
+	if err != nil {
+		return nil, err
+	}
+	if domain != a.clientCache.params.Domain {
+		return nil, fmt.Errorf("domain mismatch! expected: %s, got: %s. %w", a.clientCache.params.Domain, domain, ErrInvalidDomain)
+	}
+
+	client, err := a.clientCache.NewServiceClient(storageAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAzureDataLakeWalker(client, opts.SkipOutOfOrder)
+}
+
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode, filename string) (string, time.Time, error) {
 	if a.disablePreSigned {
-		return "", block.ErrOperationNotSupported
+		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
 	permissions := sas.BlobPermissions{Read: true}
@@ -208,10 +257,12 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Write: true,
 		}
 	}
-	return a.getPreSignedURL(ctx, obj, permissions)
+	preSignedURL, err := a.getPreSignedURL(ctx, obj, permissions, filename)
+	// TODO(#6347): Report expiry.
+	return preSignedURL, time.Time{}, err
 }
 
-func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions, filename string) (string, error) {
 	if a.disablePreSigned {
 		return "", block.ErrOperationNotSupported
 	}
@@ -221,40 +272,78 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 
-	// Use shared credential for clients initialized with storage access key
-	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
-		container, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
-		if err != nil {
-			return "", err
-		}
-		return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
+	// Add content-disposition if filename provided
+	var contentDisposition string
+	if permissions.Read && filename != "" {
+		contentDisposition = mime.FormatMediaType("attachment", map[string]string{"filename": path.Base(filename)})
 	}
 
-	urlExpiry := a.newPreSignedTime()
-	udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
+	// Snapshot time
+	urlParts, err := sas.ParseURL(qualifiedKey.BlobURL)
 	if err != nil {
 		return "", err
+	}
+	snapshotTime, err := time.Parse(blob.SnapshotTimeFormat, urlParts.Snapshot)
+	if err != nil {
+		snapshotTime = time.Time{}
 	}
 
 	// Create Blob Signature Values with desired permissions and sign with user delegation credential
-	sasQueryParams, err := sas.BlobSignatureValues{
-		Protocol:      sas.ProtocolHTTPS,
-		ExpiryTime:    urlExpiry,
-		Permissions:   to.Ptr(permissions).String(),
-		ContainerName: qualifiedKey.ContainerName,
-		BlobName:      qualifiedKey.BlobURL,
-	}.SignWithUserDelegation(udc)
+	urlExpiry := a.newPreSignedTime()
+	blobSignatureValues := sas.BlobSignatureValues{
+		Protocol:           sas.ProtocolHTTPS,
+		ExpiryTime:         urlExpiry,
+		Version:            sas.Version,
+		Permissions:        permissions.String(),
+		ContainerName:      qualifiedKey.ContainerName,
+		BlobName:           qualifiedKey.BlobURL,
+		ContentDisposition: contentDisposition,
+		SnapshotTime:       snapshotTime,
+	}
+
+	// Use shared credential for clients initialized with storage access key
+	var sasQueryParams sas.QueryParameters
+	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
+		credentials, err := azblob.NewSharedKeyCredential(qualifiedKey.StorageAccountName, a.clientCache.params.StorageAccessKey)
+		if err != nil {
+			return "", err
+		}
+		sasQueryParams, err = blobSignatureValues.SignWithSharedKey(credentials)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		// Otherwise assume using role based credentials and build signed URL using user delegation credentials
+		udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
+		if err != nil {
+			return "", err
+		}
+
+		sasQueryParams, err = blobSignatureValues.SignWithUserDelegation(udc)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	var accountEndpoint string
+	// format blob URL with signed SAS query params
+	if a.clientCache.params.TestEndpointURL != "" {
+		accountEndpoint = a.clientCache.params.TestEndpointURL
+	} else {
+		accountEndpoint = buildAccountEndpoint(qualifiedKey.StorageAccountName, a.clientCache.params.Domain)
+	}
+
+	u, err := url.JoinPath(accountEndpoint, qualifiedKey.ContainerName, qualifiedKey.BlobURL)
 	if err != nil {
 		return "", err
 	}
-	u := fmt.Sprintf("%s/%s?%s", qualifiedKey.ContainerURL, qualifiedKey.BlobURL, sasQueryParams.Encode())
-
+	u += "?" + sasQueryParams.Encode()
 	return u, nil
 }
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
-	defer reportMetrics("GetRange", time.Now(), nil, &err)
+	defer reportMetrics("GetRange", obj.StorageID, time.Now(), nil, &err)
 
 	return a.Download(ctx, obj, startPosition, endPosition-startPosition+1)
 }
@@ -281,7 +370,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
-		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %s key %s", container, blobURL)
+		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %v key %v", container, blobURL)
 		return nil, err
 	}
 	return downloadResponse.Body, nil
@@ -289,7 +378,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
-	defer reportMetrics("Exists", time.Now(), nil, &err)
+	defer reportMetrics("Exists", obj.StorageID, time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -303,7 +392,6 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	_, err = blobURL.GetProperties(ctx, nil)
-
 	if bloberror.HasCode(err, bloberror.BlobNotFound) {
 		return false, nil
 	}
@@ -315,7 +403,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
-	defer reportMetrics("GetProperties", time.Now(), nil, &err)
+	defer reportMetrics("GetProperties", obj.StorageID, time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -329,15 +417,21 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	props, err := blobURL.GetProperties(ctx, nil)
+	if bloberror.HasCode(err, bloberror.BlobNotFound) {
+		return block.Properties{}, block.ErrDataNotFound
+	}
 	if err != nil {
 		return block.Properties{}, err
 	}
-	return block.Properties{StorageClass: props.AccessTier}, nil
+	return block.Properties{
+		StorageClass: props.AccessTier,
+		LastModified: apiutil.Value(props.LastModified),
+	}, nil
 }
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
-	defer reportMetrics("Remove", time.Now(), nil, &err)
+	defer reportMetrics("Remove", obj.StorageID, time.Now(), nil, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return err
@@ -354,7 +448,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
-	defer reportMetrics("Copy", time.Now(), nil, &err)
+	defer reportMetrics("Copy", sourceObj.StorageID, time.Now(), nil, &err)
 
 	qualifiedDestinationKey, err := resolveBlobURLInfo(destinationObj)
 	if err != nil {
@@ -367,7 +461,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	destClient := destContainerClient.NewBlobClient(qualifiedDestinationKey.BlobURL)
 
-	sasKey, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead)
+	sasKey, _, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead, "")
 	if err != nil {
 		return err
 	}
@@ -446,7 +540,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	// Azure has no create multipart upload
 	var err error
-	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
+	defer reportMetrics("CreateMultiPartUpload", obj.StorageID, time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -460,7 +554,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int) (*block.UploadPartResponse, error) {
 	var err error
-	defer reportMetrics("UploadPart", time.Now(), nil, &err)
+	defer reportMetrics("UploadPart", obj.StorageID, time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -488,14 +582,14 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int) (*block.UploadPartResponse, error) {
 	var err error
-	defer reportMetrics("UploadPart", time.Now(), nil, &err)
+	defer reportMetrics("UploadPart", sourceObj.StorageID, time.Now(), nil, &err)
 
 	return a.copyPartRange(ctx, sourceObj, destinationObj, 0, blockblob.CountToEnd)
 }
 
 func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
-	defer reportMetrics("UploadPart", time.Now(), nil, &err)
+	defer reportMetrics("UploadPart", sourceObj.StorageID, time.Now(), nil, &err)
 	return a.copyPartRange(ctx, sourceObj, destinationObj, startPosition, endPosition-startPosition+1)
 }
 
@@ -510,22 +604,11 @@ func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj b
 		return nil, err
 	}
 
-	destinationContainer, err := a.clientCache.NewContainerClient(qualifiedDestinationKey.StorageAccountName, qualifiedDestinationKey.ContainerName)
-	if err != nil {
-		return nil, err
-	}
-	sourceContainer, err := a.clientCache.NewContainerClient(qualifiedSourceKey.StorageAccountName, qualifiedSourceKey.ContainerName)
-	if err != nil {
-		return nil, err
-	}
-
-	sourceBlobURL := sourceContainer.NewBlockBlobClient(qualifiedSourceKey.BlobURL)
-
-	return copyPartRange(ctx, *destinationContainer, qualifiedDestinationKey.BlobURL, *sourceBlobURL, startPosition, count)
+	return copyPartRange(ctx, a.clientCache, qualifiedDestinationKey, qualifiedSourceKey, startPosition, count)
 }
 
 func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ string) error {
-	// Azure has no abort, in case of commit, uncommitted parts are erased, otherwise staged data is erased after 7 days
+	// Azure has no abort. In case of commit, uncommitted parts are erased. Otherwise, staged data is erased after 7 days
 	return nil
 }
 
@@ -533,9 +616,13 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeAzure
 }
 
+func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
+	return nil, block.ErrOperationNotSupported
+}
+
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
-	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
+	defer reportMetrics("CompleteMultiPartUpload", obj.StorageID, time.Now(), nil, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return nil, err
@@ -548,14 +635,28 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	return completeMultipart(ctx, multipartList.Part, *containerURL, qualifiedKey.BlobURL)
 }
 
-func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
-	info.ValidityRegex = `^https?://`
-	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
+
+	info.ImportValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
+	info.ValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
+
+	info.Example = fmt.Sprintf("https://mystorageaccount.%s/mycontainer/", a.clientCache.params.Domain)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
 	}
-	return info
+	if !(a.disablePreSignedUI || a.disablePreSigned) {
+		info.PreSignSupportUI = true
+	}
+	return &info
+}
+
+func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
+}
+
+func (a *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
@@ -564,4 +665,42 @@ func (a *Adapter) RuntimeStats() map[string]string {
 
 func (a *Adapter) newPreSignedTime() time.Time {
 	return time.Now().UTC().Add(a.preSignedExpiry)
+}
+
+func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
+	return "", block.ErrOperationNotSupported
+}
+
+func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
+	return nil, block.ErrOperationNotSupported
+}
+
+func (a *Adapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer, _ block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
+	return nil, block.ErrOperationNotSupported
+}
+
+// ParseURL - parses url and extracts account name and domain. If either are not found returns an error
+func ParseURL(uri *url.URL) (accountName string, domain string, err error) {
+	u, err := uri.Parse("")
+	if err != nil {
+		return "", "", err
+	}
+
+	u.RawQuery = ""
+	matches := endpointRegex.FindStringSubmatch(u.String())
+	if matches == nil {
+		return "", "", ErrAzureInvalidURL
+	}
+
+	domainIdx := endpointRegex.SubexpIndex("domain")
+	if domainIdx < 0 {
+		return "", "", fmt.Errorf("invalid domain: %w", ErrInvalidDomain)
+	}
+
+	accountIdx := endpointRegex.SubexpIndex("account")
+	if accountIdx < 0 {
+		return "", "", fmt.Errorf("missing storage account: %w", ErrAzureInvalidURL)
+	}
+
+	return matches[accountIdx], matches[domainIdx], nil
 }

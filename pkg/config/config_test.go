@@ -9,24 +9,28 @@ import (
 	"strings"
 	"testing"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/stretchr/testify/require"
+	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/local"
-	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func newConfigFromFile(fn string) (*config.Config, error) {
+func newConfigFromFile(fn string) (config.Config, error) {
 	viper.SetConfigFile(fn)
 	err := viper.ReadInConfig()
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := config.NewConfig()
+	cfg, err := configfactory.BuildConfig("")
 	if err != nil {
 		return nil, err
 	}
@@ -36,11 +40,12 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	c, err := config.NewConfig()
+	cfg := &configfactory.ConfigImpl{}
+	baseCfg, err := config.NewConfig("", cfg)
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
-	if c.ListenAddress != config.DefaultListenAddress {
-		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, c.ListenAddress)
+	if baseCfg.ListenAddress != config.DefaultListenAddress {
+		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, baseCfg.ListenAddress)
 	}
 }
 
@@ -48,10 +53,11 @@ func TestConfig_NewFromFile(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
-		if c.ListenAddress != "0.0.0.0:8005" {
-			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.ListenAddress)
+		baseConfig := c.GetBaseConfig()
+		if baseConfig.ListenAddress != "0.0.0.0:8005" {
+			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", baseConfig.ListenAddress)
 		}
-		if diffs := deep.Equal([]string(c.Gateways.S3.DomainNames), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
+		if diffs := deep.Equal([]string(baseConfig.Gateways.S3.DomainNames), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
 			t.Fatalf("expected domain name s3.example.com, diffs %s", diffs)
 		}
 	})
@@ -69,6 +75,22 @@ func TestConfig_NewFromFile(t *testing.T) {
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("expected missing configuration file to fail, got %v", err)
 		}
+	})
+
+	t.Run("auth fixture", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			c, err := newConfigFromFile("testdata/auth_fixture/basic_auth.yaml")
+			require.NoError(t, err)
+			require.Equal(t, "test value", c.AuthConfig().GetBaseAuthConfig().Encrypt.SecretKey.SecureValue())
+		})
+		t.Run("invalid auth", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/invalid_auth.yaml")
+			require.Error(t, err)
+		})
+		t.Run("no auth", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/no_auth.yaml")
+			require.Error(t, err)
+		})
 	})
 }
 
@@ -91,7 +113,7 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	kvParams, err := c.DatabaseParams()
+	kvParams, err := kvparams.NewConfig(&c.GetBaseConfig().Database)
 	testutil.Must(t, err)
 	if kvParams.Postgres.ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)
@@ -110,29 +132,39 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
+		adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
-		if _, ok := adapter.(*local.Adapter); !ok {
-			t.Fatalf("expected a local block adapter, got something else instead")
+		metricsAdapter, ok := adapter.(*block.MetricsAdapter)
+		if !ok {
+			t.Fatalf("got a %T when expecting a MetricsAdapter", adapter)
+		}
+		if _, ok := metricsAdapter.InnerAdapter().(*local.Adapter); !ok {
+			t.Fatalf("got %T expected a local block adapter", metricsAdapter.InnerAdapter())
 		}
 	})
 
 	t.Run("s3 block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
-		testutil.Must(t, err)
-		if _, ok := adapter.(*s3a.Adapter); !ok {
-			t.Fatalf("expected an s3 block adapter, got something else instead")
+
+		_, err = blockfactory.BuildBlockAdapter(ctx, nil, c)
+		var errProfileNotExists awsconfig.SharedConfigProfileNotExistError
+		if !errors.As(err, &errProfileNotExists) {
+			t.Fatalf("expected a config.SharedConfigProfileNotExistError, got '%v'", err)
 		}
 	})
 
 	t.Run("gs block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
+		adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
-		if _, ok := adapter.(*gs.Adapter); !ok {
+
+		metricsAdapter, ok := adapter.(*block.MetricsAdapter)
+		if !ok {
+			t.Fatalf("expected a metrics block adapter, got something else instead")
+		}
+		if _, ok := metricsAdapter.InnerAdapter().(*gs.Adapter); !ok {
 			t.Fatalf("expected an gs block adapter, got something else instead")
 		}
 	})
@@ -144,7 +176,7 @@ func TestConfig_JSONLogger(t *testing.T) {
 	_, err := newConfigFromFile("testdata/valid_json_logger_config.yaml")
 	testutil.Must(t, err)
 
-	logging.Default().Info("some message that I should be looking for")
+	logging.ContextUnavailable().Info("some message that I should be looking for")
 
 	content, err := os.Open(logfile)
 	if err != nil {
@@ -166,29 +198,4 @@ func TestConfig_JSONLogger(t *testing.T) {
 	if _, ok := m["msg"]; !ok {
 		t.Fatalf("expected a msg field, could not find one")
 	}
-}
-
-func verifyAWSConfig(t *testing.T, c *config.Config) {
-	awsConfig := c.GetAwsConfig()
-	credentials, err := awsConfig.Credentials.Get()
-	testutil.Must(t, err)
-	if credentials.AccessKeyID != "my-key-id" {
-		t.Fatalf("unexpected key id in credentials. expected %s got %s", "my-key-id", credentials.AccessKeyID)
-	}
-	if credentials.SecretAccessKey != "my-secret-key" {
-		t.Fatalf("unexpected secret access key in credentials. expected %s got %s", "my-secret-key", credentials.SecretAccessKey)
-	}
-}
-
-func TestConfig_AWSConfig(t *testing.T) {
-	t.Run("use secret_access_key configuration", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/aws_credentials.yaml")
-		testutil.Must(t, err)
-		verifyAWSConfig(t, c)
-	})
-	t.Run("use alias access_secret_key configuration", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/aws_credentials_with_alias.yaml")
-		testutil.Must(t, err)
-		verifyAWSConfig(t, c)
-	})
 }

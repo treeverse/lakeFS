@@ -1,0 +1,6 @@
+User-agent: *
+
+Allow: /dev
+Allow: /latest
+
+Sitemap: https://docs.lakefs.io/latest/sitemap.xml

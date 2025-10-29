@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 type Detailed interface {
@@ -18,6 +21,12 @@ type Detailed interface {
 type CredentialsError struct {
 	Message string
 	Details string
+}
+
+var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
+
+func IsValidAccessKeyID(accessKeyID string) bool {
+	return accessKeyRegexp.MatchString(accessKeyID)
 }
 
 func (e *CredentialsError) Error() string { return e.Message }
@@ -84,7 +93,7 @@ var doctorCmd = &cobra.Command{
 		}
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate access key format."})
-		accessKeyID := cfg.Values.Credentials.AccessKeyID
+		accessKeyID := string(cfg.Credentials.AccessKeyID)
 		if !IsValidAccessKeyID(accessKeyID) {
 			Write(analyzingMessageTemplate, &UserMessage{Message: "access_key_id value looks suspicious: " + accessKeyID})
 		} else {
@@ -92,16 +101,16 @@ var doctorCmd = &cobra.Command{
 		}
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate secret access key format."})
-		secretAccessKey := cfg.Values.Credentials.SecretAccessKey
-		if !IsValidSecretAccessKey(secretAccessKey) {
+		secretAccessKey := cfg.Credentials.SecretAccessKey
+		if !IsValidSecretAccessKey(string(secretAccessKey)) {
 			Write(analyzingMessageTemplate, &UserMessage{Message: "secret_access_key value looks suspicious..."})
 		} else {
 			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Couldn't find a problem with secret access key format."})
 		}
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate endpoint URL format."})
-		serverEndpoint := cfg.Values.Server.EndpointURL
-		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
+		serverEndpoint := string(cfg.Server.EndpointURL)
+		if !strings.HasSuffix(serverEndpoint, apiutil.BaseURL) {
 			Write(analyzingMessageTemplate, &UserMessage{Message: "Suspicious URI format for server.endpoint_url: " + serverEndpoint})
 		} else {
 			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Couldn't find a problem with endpoint URL format."})
@@ -113,18 +122,18 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 	configFileName := viper.GetViper().ConfigFileUsed()
 	msgOnErrUnknownConfig := "It looks like you have a problem with your `" + configFileName + "` file."
 	msgOnErrWrongEndpointURI := "It looks like endpoint url is wrong."
-	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong." //nolint: gosec
+	msgOnErrCredential := "It seems like the `access_key_id` or `secret_access_key` you supplied are wrong." //nolint:gosec
 
 	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to get endpoint URL and parse it as a URL format."})
 	// getClient might die on url.Parse error, so check it first.
-	serverEndpoint := cfg.Values.Server.EndpointURL
+	serverEndpoint := string(cfg.Server.EndpointURL)
 	_, err := url.Parse(serverEndpoint)
 	if err != nil {
 		return &WrongEndpointURIError{Message: msgOnErrWrongEndpointURI, Details: err.Error()}
 	}
 	client := getClient()
 	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to run a sanity command using current configuration."})
-	resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+	resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 
 	switch {
 	case err != nil:
@@ -154,4 +163,9 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(doctorCmd)
+}
+
+func IsValidSecretAccessKey(secretAccessKey string) bool {
+	_, err := base64.StdEncoding.DecodeString(secretAccessKey)
+	return err == nil && len(secretAccessKey) == 40
 }

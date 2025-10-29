@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
@@ -18,6 +19,7 @@ func TestTagIterator(t *testing.T) {
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -104,8 +106,13 @@ func TestTagIterator(t *testing.T) {
 	t.Run("empty value SeekGE", func(t *testing.T) {
 		iter, err := ref.NewTagIterator(ctx, kvStore, repository)
 		testutil.Must(t, err)
-		iter.SeekGE("b")
+		defer iter.Close()
 
+		// make sure value is not nil
+		require.True(t, iter.Next())
+
+		// SeekGE should nil the value field
+		iter.SeekGE("b")
 		if iter.Value() != nil {
 			t.Fatalf("expected nil value after seekGE")
 		}

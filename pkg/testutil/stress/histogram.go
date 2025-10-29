@@ -23,11 +23,11 @@ func NewHistogram(buckets []int64) *Histogram {
 func (h *Histogram) String() string {
 	builder := &strings.Builder{}
 	for _, b := range h.buckets {
-		builder.WriteString(fmt.Sprintf("%d\t%d\n", b, h.counters[b]))
+		_, _ = fmt.Fprintf(builder, "%d\t%d\n", b, h.counters[b])
 	}
-	builder.WriteString(fmt.Sprintf("min\t%d\n", h.min))
-	builder.WriteString(fmt.Sprintf("max\t%d\n", h.max))
-	builder.WriteString(fmt.Sprintf("total\t%d\n", h.total))
+	_, _ = fmt.Fprintf(builder, "min\t%d\n", h.min)
+	_, _ = fmt.Fprintf(builder, "max\t%d\n", h.max)
+	_, _ = fmt.Fprintf(builder, "total\t%d\n", h.total)
 	return builder.String()
 }
 

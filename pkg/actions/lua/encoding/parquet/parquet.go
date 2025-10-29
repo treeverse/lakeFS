@@ -22,7 +22,7 @@ var parquetLibrary = []lua.RegistryFunction{
 
 func check(l *lua.State, err error) {
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 }
@@ -31,8 +31,7 @@ func getSchema(l *lua.State) int {
 	payload := lua.CheckString(l, 1)
 	bin := []byte(payload)
 	t := struct{}{}
-	fp, err := buffer.NewBufferFile(bin)
-	check(l, err)
+	fp := buffer.NewBufferFileFromBytes(bin)
 	r, err := reader.NewParquetReader(fp, &t, 1)
 	check(l, err)
 	output := make([]map[string]string, 0)

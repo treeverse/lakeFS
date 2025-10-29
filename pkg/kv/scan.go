@@ -28,6 +28,11 @@ func (b *PrefixIterator) Next() bool {
 	return true
 }
 
+func (b *PrefixIterator) SeekGE(key []byte) {
+	b.Iterator.SeekGE(key)
+	b.completed = false
+}
+
 func (b *PrefixIterator) Entry() *Entry {
 	if b.completed {
 		return nil

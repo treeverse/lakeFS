@@ -1,6 +1,10 @@
 package committed
 
-import "google.golang.org/protobuf/proto"
+import (
+	"bytes"
+
+	"google.golang.org/protobuf/proto"
+)
 
 // Range represents a range of sorted Keys
 type Range struct {
@@ -21,6 +25,14 @@ func (r Range) Copy() *Range {
 		Count:         r.Count,
 		Tombstone:     r.Tombstone,
 	}
+}
+
+func (r Range) EqualBounds(o *Range) bool {
+	return bytes.Equal(r.MinKey, o.MinKey) && bytes.Equal(r.MaxKey, o.MaxKey)
+}
+
+func (r Range) BeforeRange(o *Range) bool {
+	return bytes.Compare(r.MaxKey, o.MinKey) < 0
 }
 
 func MarshalRange(r Range) ([]byte, error) {

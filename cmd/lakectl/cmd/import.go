@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const importSummaryTemplate = `Import of {{ .Objects | yellow }} object(s) into "{{.Branch}}" completed.
@@ -22,24 +26,19 @@ Parents: {{.Commit.Parents|join ", "}}
 `
 
 var importCmd = &cobra.Command{
-	Use:   "import --from <object store URI> --to <lakeFS path URI> [--merge]",
-	Short: "Import data from external source to an imported branch (with optional merge)",
+	Use:   "import --from <object store URI> --to <lakeFS path URI>",
+	Short: "Import data from external source to a destination branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := cmd.Flags()
-		merge := MustBool(flags.GetBool("merge"))
-		noProgress := MustBool(flags.GetBool("no-progress"))
-		from := MustString(flags.GetString("from"))
-		to := MustString(flags.GetString("to"))
-		toURI := MustParsePathURI("to", to)
-		message := MustString(flags.GetString("message"))
-		metadata, err := getKV(cmd, "meta")
-		if err != nil {
-			DieErr(err)
-		}
+		noProgress := Must(flags.GetBool("no-progress"))
+		from := Must(flags.GetString("from"))
+		to := Must(flags.GetString("to"))
+		toURI := MustParsePathURI("lakeFS path URI", to)
+		message, metadata := getCommitFlags(cmd)
 
 		ctx := cmd.Context()
 		client := getClient()
-		verifySourceMatchConfiguredStorage(ctx, client, from)
+		verifySourceMatchConfiguredStorage(ctx, client, toURI.Repository, from)
 
 		// verify target branch exists before we try to create and import into the associated imported branch
 		if err, ok := branchExists(ctx, client, toURI.Repository, toURI.Ref); err != nil {
@@ -50,79 +49,90 @@ var importCmd = &cobra.Command{
 
 		// setup progress bar - based on `progressbar.Default` defaults + control visibility
 		bar := newImportProgressBar(!noProgress)
-		var (
-			sum               int
-			continuationToken *string
-			after             string
-			ranges            = make([]api.RangeMetadata, 0)
+		body := apigen.ImportStartJSONRequestBody{
+			Commit: apigen.CommitCreation{
+				Message: message,
+			},
+			Paths: []apigen.ImportLocation{
+				{
+					Destination: apiutil.Value(toURI.Path),
+					Path:        from,
+					Type:        "common_prefix",
+				},
+			},
+		}
+		if len(metadata) > 0 {
+			body.Commit.Metadata = &apigen.CommitCreation_Metadata{AdditionalProperties: metadata}
+		}
+
+		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, body)
+		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusAccepted)
+		if importResp.JSON202 == nil {
+			Die("Bad response from server", 1)
+		}
+		importID := importResp.JSON202.Id
+		// Handle interrupts
+		sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+		defer stop()
+
+		const (
+			statusPollInterval = 5 * time.Second
+			maxUpdateFailures  = 5
 		)
+		var (
+			statusResp     *apigen.ImportStatusResponse
+			updateFailures int
+			updatedAt      time.Time
+		)
+		ticker := time.NewTicker(statusPollInterval)
+		defer ticker.Stop()
 		for {
-			rangeResp, err := client.IngestRangeWithResponse(ctx, toURI.Repository, api.IngestRangeJSONRequestBody{
-				After:             after,
-				ContinuationToken: continuationToken,
-				FromSourceURI:     from,
-				Prepend:           api.StringValue(toURI.Path),
-			})
-			DieOnErrorOrUnexpectedStatusCode(rangeResp, err, http.StatusCreated)
-			if rangeResp.JSON201 == nil {
-				Die("Bad response from server", 1)
-			}
-			if rangeResp.JSON201.Range != nil {
-				rangeInfo := *rangeResp.JSON201.Range
-				ranges = append(ranges, rangeInfo)
-				sum += rangeInfo.Count
-				_ = bar.Add(rangeInfo.Count)
+			select {
+			case <-sigCtx.Done():
+				fmt.Println()
+				fmt.Println("Canceling import")
+				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &apigen.ImportCancelParams{Id: importID})
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+				Die("Import Canceled", 1)
+			case <-ticker.C:
+				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &apigen.ImportStatusParams{Id: importID})
+				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
+				status := statusResp.JSON200
+				if status == nil {
+					Die("Bad response from server", 1)
+				}
+				if status.Error != nil {
+					DieFmt("Import failed: %s", status.Error.Message)
+				}
+				if status.IngestedObjects != nil {
+					_ = bar.Set64(*status.IngestedObjects)
+				}
+				if updatedAt.Equal(status.UpdateTime) {
+					updateFailures += 1
+				}
+				if updateFailures >= maxUpdateFailures {
+					DieFmt("Import status did not update for %s - abandon", maxUpdateFailures*statusPollInterval)
+				}
+				updatedAt = status.UpdateTime
 			}
 
-			continuationToken = rangeResp.JSON201.Pagination.ContinuationToken
-			after = rangeResp.JSON201.Pagination.LastKey
-			if !rangeResp.JSON201.Pagination.HasMore {
+			if statusResp.JSON200.Completed {
 				break
 			}
 		}
 		_ = bar.Clear()
 
-		// create metarange with all the ranges we created
-		metaRangeResp, err := client.CreateMetaRangeWithResponse(ctx, toURI.Repository, api.CreateMetaRangeJSONRequestBody{
-			Ranges: ranges,
-		})
-		DieOnErrorOrUnexpectedStatusCode(metaRangeResp, err, http.StatusCreated)
-		if metaRangeResp.JSON201 == nil {
-			Die("Bad response from server", 1)
-		}
-
-		importedBranchID := formatImportedBranchID(toURI.Ref)
-		ensureBranchExists(ctx, client, toURI.Repository, importedBranchID, toURI.Ref)
-
-		// commit metarange to the imported branch
-		commitResp, err := client.CommitWithResponse(ctx, toURI.Repository, importedBranchID, &api.CommitParams{
-			SourceMetarange: metaRangeResp.JSON201.Id,
-		}, api.CommitJSONRequestBody{
-			Message: message,
-			Metadata: &api.CommitCreation_Metadata{
-				AdditionalProperties: metadata,
-			},
-		})
-		DieOnErrorOrUnexpectedStatusCode(commitResp, err, http.StatusCreated)
-		if commitResp.JSON201 == nil {
-			Die("Bad response from server", 1)
-		}
 		Write(importSummaryTemplate, struct {
-			Objects     int
+			Objects     int64
 			MetaRangeID string
 			Branch      string
-			Commit      *api.Commit
+			Commit      *apigen.Commit
 		}{
-			Objects:     sum,
-			MetaRangeID: api.StringValue(metaRangeResp.JSON201.Id),
-			Branch:      importedBranchID,
-			Commit:      commitResp.JSON201,
+			Objects:     apiutil.Value(statusResp.JSON200.IngestedObjects),
+			MetaRangeID: apiutil.Value(statusResp.JSON200.MetarangeId),
+			Branch:      toURI.Ref,
+			Commit:      statusResp.JSON200.Commit,
 		})
-
-		// merge to target branch if needed
-		if merge {
-			mergeImportedBranch(ctx, client, toURI.Repository, importedBranchID, toURI.Ref)
-		}
 	},
 }
 
@@ -152,17 +162,18 @@ func newImportProgressBar(visible bool) *progressbar.ProgressBar {
 	return bar
 }
 
-func verifySourceMatchConfiguredStorage(ctx context.Context, client *api.ClientWithResponses, source string) {
-	storageConfResp, err := client.GetStorageConfigWithResponse(ctx)
-	DieOnErrorOrUnexpectedStatusCode(storageConfResp, err, http.StatusOK)
-	storageConfig := storageConfResp.JSON200
-	if storageConfig == nil {
-		Die("Bad response from server", 1)
+func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string, source string) {
+	// Adds backwards compatibility for ADLS Gen2 storage import `hint`
+	if strings.Contains(source, "adls.core.windows.net") {
+		source = strings.Replace(source, "adls.core.windows.net", "blob.core.windows.net", 1)
+		Warning(fmt.Sprintf("'adls' hint is deprecated\n Using %s", source))
 	}
-	if storageConfig.BlockstoreNamespaceValidityRegex == "" {
+
+	storageConfig := getStorageConfigOrDie(ctx, client, repositoryID)
+	if storageConfig.ImportValidityRegex == "" {
 		return
 	}
-	matched, err := regexp.MatchString(storageConfig.BlockstoreNamespaceValidityRegex, source)
+	matched, err := regexp.MatchString(storageConfig.ImportValidityRegex, source)
 	if err != nil {
 		DieErr(err)
 	}
@@ -171,25 +182,7 @@ func verifySourceMatchConfiguredStorage(ctx context.Context, client *api.ClientW
 	}
 }
 
-func mergeImportedBranch(ctx context.Context, client *api.ClientWithResponses, repository, fromBranch, toBranch string) {
-	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repository, fromBranch, toBranch, api.MergeIntoBranchJSONRequestBody{})
-	DieOnErrorOrUnexpectedStatusCode(mergeResp, err, http.StatusOK)
-	if mergeResp.JSON200 == nil {
-		Die("Bad response from server", 1)
-	}
-	Write(mergeCreateTemplate, struct {
-		Merge  FromTo
-		Result *api.MergeResult
-	}{
-		Merge: FromTo{
-			FromRef: fromBranch,
-			ToRef:   toBranch,
-		},
-		Result: mergeResp.JSON200,
-	})
-}
-
-func branchExists(ctx context.Context, client *api.ClientWithResponses, repository string, branch string) (error, bool) {
+func branchExists(ctx context.Context, client *apigen.ClientWithResponses, repository string, branch string) (error, bool) {
 	resp, err := client.GetBranchWithResponse(ctx, repository, branch)
 	if err != nil {
 		return err, false
@@ -203,32 +196,15 @@ func branchExists(ctx context.Context, client *api.ClientWithResponses, reposito
 	return RetrieveError(resp, err), false
 }
 
-func ensureBranchExists(ctx context.Context, client *api.ClientWithResponses, repository, branch, sourceBranch string) {
-	if err, ok := branchExists(ctx, client, repository, branch); err != nil {
-		DieErr(err)
-	} else if ok {
-		return
-	}
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repository, api.CreateBranchJSONRequestBody{
-		Name:   branch,
-		Source: sourceBranch,
-	})
-	DieOnErrorOrUnexpectedStatusCode(createBranchResp, err, http.StatusCreated)
-}
-
-func formatImportedBranchID(branch string) string {
-	return "_" + branch + "_imported"
-}
-
-//nolint:gochecknoinits,gomnd
+//nolint:gochecknoinits
 func init() {
 	importCmd.Flags().String("from", "", "prefix to read from (e.g. \"s3://bucket/sub/path/\"). must not be in a storage namespace")
 	_ = importCmd.MarkFlagRequired("from")
 	importCmd.Flags().String("to", "", "lakeFS path to load objects into (e.g. \"lakefs://repo/branch/sub/path/\")")
 	_ = importCmd.MarkFlagRequired("to")
 	importCmd.Flags().Bool("merge", false, "merge imported branch into target branch")
+	_ = importCmd.Flags().MarkDeprecated("merge", "import is done directly into target branch")
 	importCmd.Flags().Bool("no-progress", false, "switch off the progress output")
-	importCmd.Flags().StringP("message", "m", "Import objects", "commit message")
-	importCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")
+	withCommitFlags(importCmd, true)
 	rootCmd.AddCommand(importCmd)
 }

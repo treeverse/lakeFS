@@ -3,16 +3,17 @@ import React, { useCallback, useState } from "react";
 import dayjs from "dayjs";
 import {
   PasteIcon,
-  DotIcon,
   DownloadIcon,
   FileDirectoryIcon,
   FileIcon,
   GearIcon,
   InfoIcon,
+  LinkIcon,
   PencilIcon,
   PlusIcon,
   TrashIcon,
   LogIcon,
+  BeakerIcon,
 } from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Table from "react-bootstrap/Table";
@@ -23,17 +24,19 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
+import Modal from "react-bootstrap/Modal";
+import {FaDownload} from "react-icons/fa";
 
-import { commits, linkToPath } from "../../api";
+import { commits, linkToPath, objects } from "../../api";
 import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import {ClipboardButton, copyTextToClipboard, Error, Loading} from "../controls";
-import Modal from "react-bootstrap/Modal";
+import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
-import {FaDownload} from "react-icons/fa";
+import {CommitInfoCard} from "./commits";
+
 
 export const humanSize = (bytes) => {
   if (!bytes) return "0.0 B";
@@ -45,7 +48,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -57,6 +60,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
 
   const [showObjectStat, setShowObjectStat] = useState(false);
   const [showObjectOrigin, setShowObjectOrigin] = useState(false);
+  const [showPrefixSize, setShowPrefixSize] = useState(false);
 
   const handleShowObjectOrigin = useCallback(
     (e) => {
@@ -66,20 +70,51 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
     [setShowObjectOrigin]
   );
 
+  const handleShowPrefixSize = useCallback(e => {
+    e.preventDefault();
+    setShowPrefixSize(true)
+  }, [setShowPrefixSize]);
+
   return (
     <>
-      <Dropdown align="end">
+      <Dropdown align="end" drop="down">
         <Dropdown.Toggle variant="light" size="sm" className={"row-hover"}>
           <GearIcon />
         </Dropdown.Toggle>
 
-        <Dropdown.Menu>
+        <Dropdown.Menu popperConfig={{
+          strategy: "fixed",
+          modifiers: [
+            {
+              name: "preventOverflow",
+              options: {
+                boundary: "viewport"
+              }
+            }
+          ]
+        }}>
+          {entry.path_type === "object" && presign && (
+               <Dropdown.Item
+                onClick={async e => {
+                  try {
+                    const resp = await objects.getStat(repo.id, reference.id, entry.path, true);
+                    copyTextToClipboard(resp.physical_address);
+                  } catch (err) {
+                    alert(err);
+                  }
+                  e.preventDefault();
+                }}
+              >
+                <LinkIcon /> Copy Presigned URL
+              </Dropdown.Item>
+          )}
           {entry.path_type === "object" && (
             <PathLink
               path={entry.path}
               reference={reference}
               repoId={repo.id}
               as={Dropdown.Item}
+              presign={presign_ui}
             >
               <DownloadIcon /> Download
             </PathLink>
@@ -109,6 +144,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
           >
             <PasteIcon /> Copy URI
           </Dropdown.Item>
+
           {entry.path_type === "object" && reference.type === RefTypeBranch && (
             <>
               <Dropdown.Divider />
@@ -122,6 +158,13 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
               </Dropdown.Item>
             </>
           )}
+
+          {entry.path_type === "common_prefix" && (
+            <Dropdown.Item onClick={handleShowPrefixSize}>
+              <BeakerIcon /> Calculate Size
+            </Dropdown.Item>
+          )}
+
         </Dropdown.Menu>
       </Dropdown>
 
@@ -145,18 +188,26 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
         show={showObjectOrigin}
         onHide={() => setShowObjectOrigin(false)}
       />
+
+      <PrefixSizeModal
+        entry={entry}
+        repo={repo}
+        reference={reference}
+        show={showPrefixSize}
+        onHide={() => setShowPrefixSize(false)}
+      />
     </>
   );
 };
 
 const StatModal = ({ show, onHide, entry }) => {
   return (
-    <Modal show={show} onHide={onHide} size={"lg"}>
+    <Modal show={show} onHide={onHide} size={"xl"}>
       <Modal.Header closeButton>
         <Modal.Title>Object Information</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <Table hover>
+        <Table responsive hover>
           <tbody>
             <tr>
               <td>
@@ -206,6 +257,16 @@ const StatModal = ({ show, onHide, entry }) => {
                 </td>
               </tr>
             )}
+            {entry.metadata && (
+                <tr>
+                  <td>
+                    <strong>Metadata</strong>
+                  </td>
+                  <td>
+                    <EntryMetadata metadata={entry.metadata}/>
+                  </td>
+                </tr>
+            )}
           </tbody>
         </Table>
       </Modal.Body>
@@ -213,25 +274,107 @@ const StatModal = ({ show, onHide, entry }) => {
   );
 };
 
-const CommitMetadata = ({ metadata }) => {
-  const entries = Object.entries(metadata);
-  if (entries.length === 0) {
-    // empty state
-    return <small>No metadata fields</small>;
-  }
-  return (
-    <Table striped size="sm" responsive>
-      <tbody>
-        {entries.map(([key, value]) => (
-          <tr key={`blame-commit-md-${key}`}>
-            <td>{key}</td>
-            <td>
-              <code>{value}</code>
-            </td>
+const EntryMetadata = ({ metadata }) => {
+    return (
+        <Table hover striped>
+          <thead>
+          <tr>
+            <th>Key</th>
+            <th>Value</th>
           </tr>
-        ))}
-      </tbody>
+          </thead>
+          <tbody>
+          {Object.getOwnPropertyNames(metadata).map(key =>
+              <tr key={`metadata:${key}`}>
+                <td><code>{key}</code></td>
+                <td><code>{metadata[key]}</code></td>
+              </tr>
+          )}
+          </tbody>
+        </Table>
+    )
+};
+
+export const PrefixSizeInfoCard = ({ entry, totalObjects }) => {
+  const totalBytes = totalObjects.reduce((acc, obj) => acc + obj.size_bytes, 0)
+  const table = (
+    <Table>
+      <Table bordered hover>
+        <tbody>
+        <tr>
+          <td><strong>path</strong></td>
+          <td><code>{entry.path}</code></td>
+        </tr>
+        <tr>
+          <td><strong>Total Objects</strong></td>
+          <td><code>{totalObjects.length.toLocaleString()}</code></td>
+        </tr>
+        <tr>
+          <td><strong>Total Size</strong></td>
+          <td><code>{totalBytes.toLocaleString()} Bytes ({humanSize(totalBytes)})</code></td>
+        </tr>
+        </tbody>
+      </Table>
     </Table>
+  )
+  return table;
+}
+
+const PrefixSizeModal = ({show, onHide, entry, repo, reference }) => {
+  const [progress, setProgress] = useState(0)
+  const {
+    response,
+    error,
+    loading,
+  } = useAPI(async () => {
+    if (show) {
+      setProgress(0)
+      let accumulator = []
+      let finished = false
+      const iterator = objects.listAll(repo.id, reference.id, entry.path)
+      while (!finished) {
+        let {page, done} = await iterator.next()
+        accumulator = accumulator.concat(page)
+        setProgress(accumulator.length)
+        if (done) finished = true
+      }
+      return accumulator;
+    }
+    return null;
+  }, [show, repo.id, reference.id, entry.path, setProgress]);
+
+  let content = <Loading message={`Finding all objects (${progress.toLocaleString()} so far). This could take a while...`} />;
+
+  if (error) {
+    content = <AlertError error={error} />;
+  }
+  if (!loading && !error && response) {
+    content = (
+      <PrefixSizeInfoCard repo={repo} reference={reference} entry={entry} totalObjects={response}/>
+    );
+  }
+
+  if (!loading && !error && !response) {
+    content = (
+      <>
+        <h5>
+          <small>
+            No objects found
+          </small>
+        </h5>
+      </>
+    );
+  }
+
+  return (
+    <Modal show={show} onHide={onHide} size={"lg"}>
+      <Modal.Header closeButton>
+        <Modal.Title>
+          Total Objects in Path
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>{content}</Modal.Body>
+    </Modal>
   );
 };
 
@@ -257,73 +400,11 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   let content = <Loading />;
 
   if (error) {
-    content = <Error error={error} />;
+    content = <AlertError error={error} />;
   }
   if (!loading && !error && commit) {
     content = (
-      <>
-        <Table hover responsive>
-          <tbody>
-            <tr>
-              <td>
-                <strong>Path</strong>
-              </td>
-              <td>
-                <code>{entry.path}</code>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Commit ID</strong>
-              </td>
-              <td>
-                <Link
-                  className="me-2"
-                  href={{
-                    pathname: "/repositories/:repoId/commits/:commitId",
-                    params: { repoId: repo.id, commitId: commit.id },
-                  }}
-                >
-                  <code>{commit.id}</code>
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Commit Message</strong>
-              </td>
-              <td>{commit.message}</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Committed By</strong>
-              </td>
-              <td>{commit.committer}</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Created At</strong>
-              </td>
-              <td>
-                <>
-                  {dayjs
-                    .unix(commit.creation_date)
-                    .format("MM/DD/YYYY HH:mm:ss")}
-                </>{" "}
-                ({dayjs.unix(commit.creation_date).fromNow()})
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Metadata</strong>
-              </td>
-              <td>
-                <CommitMetadata metadata={commit.metadata} />
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-      </>
+      <CommitInfoCard bare={true} repo={repo} commit={commit}/>
     );
   }
 
@@ -336,9 +417,9 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
             <Link
               className="me-2"
               href={{
-                pathname: "/repositories/:repoId/changes",
+                pathname: "/repositories/:repoId/objects",
                 params: { repoId: repo.id },
-                query: { ref: reference.id },
+                query: { ref: reference.id, showChanges: 'true' },
               }}
             >
               uncommitted change
@@ -362,9 +443,9 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   );
 };
 
-const PathLink = ({ repoId, reference, path, children, as = null }) => {
+const PathLink = ({ repoId, reference, path, children, presign = false, as = null }) => {
   const name = path.split("/").pop();
-  const link = linkToPath(repoId, reference.id, path);
+  const link = linkToPath(repoId, reference.id, path, presign);
   if (as === null)
     return (
       <a href={link} download={name}>
@@ -374,7 +455,7 @@ const PathLink = ({ repoId, reference, path, children, as = null }) => {
   return React.createElement(as, { href: link, download: name }, children);
 };
 
-const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
+const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
   let rowClass = "change-entry-row ";
   switch (entry.diff_type) {
     case "changed":
@@ -462,7 +543,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
       diffIndicator = (
         <OverlayTrigger
           placement="bottom"
-          overlay={<Tooltip>removed in diff</Tooltip>}
+          overlay={<Tooltip>removed</Tooltip>}
         >
           <span>
             <TrashIcon />
@@ -474,7 +555,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
       diffIndicator = (
         <OverlayTrigger
           placement="bottom"
-          overlay={<Tooltip>added in diff</Tooltip>}
+          overlay={<Tooltip>added</Tooltip>}
         >
           <span>
             <PlusIcon />
@@ -486,7 +567,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
       diffIndicator = (
         <OverlayTrigger
           placement="bottom"
-          overlay={<Tooltip>changed in diff</Tooltip>}
+          overlay={<Tooltip>changed</Tooltip>}
         >
           <span>
             <PencilIcon />
@@ -506,6 +587,8 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
         reference={reference}
         entry={entry}
         onDelete={onDelete}
+        presign={config.config.pre_sign_support}
+        presign_ui={config.config.pre_sign_support_ui}
       />
     );
   }
@@ -513,7 +596,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
   return (
     <>
       <tr className={rowClass}>
-        <td className="diff-indicator">{diffIndicator}</td>
+        <td className="diff-indicator">{diffIndicator || ""}</td>
         <td className="tree-path">
           {entry.path_type === "common_prefix" ? (
             <FileDirectoryIcon />
@@ -572,57 +655,68 @@ export const URINavigator = ({
 }) => {
   const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
+  const displayedReference =
+      reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
 
   return (
     <div className="d-flex">
       <div className="lakefs-uri flex-grow-1">
-        {relativeTo === "" ? (
-          <>
-            <strong>{"lakefs://"}</strong>
-            <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
-              {repo.id}
-            </Link>
-            <strong>{"/"}</strong>
-            <Link
-              href={{
-                pathname: "/repositories/:repoId/objects",
-                params,
-                query: { ref: reference.id },
-              }}
-            >
-              {reference.type === RefTypeCommit
-                ? reference.id.substr(0, 12)
-                : reference.id}
-            </Link>
-            <strong>{"/"}</strong>
-          </>
-        ) : (
-          <>
-            <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-            <strong>{"/"}</strong>
-          </>
-        )}
-
-        {parts.map((part, i) => {
-          const path =
-            parts
-              .slice(0, i + 1)
-              .map((p) => p.name)
-              .join("/") + "/";
-          const query = { path, ref: reference.id };
-          const edgeElement =
-            isPathToFile && i === parts.length - 1 ? (
-              <span>{part.name}</span>
-            ) : (
+        <div
+            title={displayedReference}
+            className="w-100 text-nowrap overflow-hidden text-truncate"
+        >
+          {relativeTo === "" ? (
               <>
-                <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                <strong>{"/"}</strong>
+                <strong>lakefs://</strong>
+                <Link
+                    href={{
+                      pathname: "/repositories/:repoId/objects",
+                      params,
+                      query: { ref: reference.id },
+                    }}
+                >
+                  {repo.id}
+                </Link>
+                <strong>/</strong>
+                <Link
+                    href={{
+                      pathname: "/repositories/:repoId/objects",
+                      params,
+                      query: { ref: reference.id },
+                    }}
+                >
+                  {displayedReference}
+                </Link>
+                <strong>/</strong>
               </>
-            );
-          return <span key={part.name}>{edgeElement}</span>;
-        })}
+          ) : (
+              <>
+                <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+                <strong>/</strong>
+              </>
+          )}
+
+          {parts.map((part, i) => {
+            const path =
+              parts
+                .slice(0, i + 1)
+                .map((p) => p.name)
+                .join("/") + "/";
+            const query = { path, ref: reference.id };
+            const edgeElement =
+              isPathToFile && i === parts.length - 1 ? (
+                <span>{part.name}</span>
+              ) : (
+                <>
+                  <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                  <strong>{"/"}</strong>
+                </>
+              );
+            return <span key={part.name}>{edgeElement}</span>;
+          })}
         </div>
-      <div className="object-viewer-buttons">
+      </div>
+      <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
         {hasCopyButton &&
         <ClipboardButton
             text={`lakefs://${repo.id}/${reference.id}/${path}`}
@@ -645,67 +739,79 @@ export const URINavigator = ({
   );
 };
 
-const GetStarted = ({ config, onUpload, onImport }) => {
+const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
   const importDisabled = !config.config.import_support;
+  
   return (
-    <Container className="m-4 mb-5">
-      <h2 className="mt-2">To get started with this repository:</h2>
-
-      <Row className="pt-2 ms-2">
-        <Col>
-          <DotIcon className="me-1 mt-3" />
-          <Button
-            variant="link"
-            className="mb-1"
-            disabled={importDisabled}
-            onClick={onImport}
-          >
-            Import
-          </Button>
-          &nbsp;data from {config.config.blockstore_type}. Or, see the&nbsp;
-          <a
-            href="https://docs.lakefs.io/setup/import.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            docs
-          </a>
-          &nbsp;for other ways to import data to your repository.
+    <Container className="get-started-container pb-5">
+      <div className="mb-4">
+        <img 
+          src="/getting-started.png" 
+          alt="Empty repository" 
+          className="img-fluid get-started-image"
+        />
+      </div>
+      
+      <h2 className="mb-0">Your repository is ready!</h2>
+      {!readOnly && <h6 className="lead mb-5">Let&apos;s add some data to get started</h6>}
+      
+      {!readOnly && <Row className="justify-content-center">
+        <Col md={5} className="mb-4">
+          <Card className="h-100 get-started-card">
+            <Card.Body className="d-flex flex-column align-items-center p-4">
+              <div className="get-started-icon-container mb-3">
+                <DownloadIcon size={24} />
+              </div>
+              <Card.Title>Import Data</Card.Title>
+              <Card.Text>
+                Import existing data from {config.config.blockstore_type}
+              </Card.Text>
+              <Button
+                variant="primary"
+                className="mt-auto"
+                disabled={importDisabled}
+                onClick={onImport}
+              >
+                Import Data
+              </Button>
+            </Card.Body>
+            <Card.Footer className="text-center bg-transparent border-0">
+              <a
+                href="https://docs.lakefs.io/howto/import.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-decoration-none"
+              >
+                Learn more about importing
+              </a>
+            </Card.Footer>
+          </Card>
         </Col>
-      </Row>
-
-      <Row className="pt-2 ms-2">
-        <Col>
-          <DotIcon className="me-1 mt-1" />
-          <Button variant="link" className="mb-1" onClick={onUpload}>
-            Upload
-          </Button>
-          &nbsp;an object.
+        
+        <Col md={5} className="mb-4">
+          <Card className="h-100 get-started-card">
+            <Card.Body className="d-flex flex-column align-items-center p-4">
+              <div className="get-started-icon-container mb-3">
+                <PlusIcon size={24} />
+              </div>
+              <Card.Title>Upload Objects</Card.Title>
+              <Card.Text>
+                Upload individual files directly to your repository
+              </Card.Text>
+              <Button
+                variant="primary"
+                className="mt-auto"
+                onClick={onUpload}
+              >
+                Upload Files
+              </Button>
+            </Card.Body>
+            <Card.Footer className="text-center bg-transparent border-0">
+              <span className="text-muted">Quick and easy for small files</span>
+            </Card.Footer>
+          </Card>
         </Col>
-      </Row>
-
-      <Row className="pt-2 ms-2">
-        <Col>
-          <DotIcon className="me-1 mt-1" />
-          Use&nbsp;
-          <a
-            href="https://docs.lakefs.io/integrations/distcp.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            DistCp
-          </a>
-          &nbsp;or&nbsp;
-          <a
-            href="https://docs.lakefs.io/integrations/rclone.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Rclone
-          </a>
-          &nbsp;to copy data into your repository.
-        </Col>
-      </Row>
+      </Row>}
     </Container>
   );
 };
@@ -728,7 +834,7 @@ export const Tree = ({
   if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
     // empty state!
     body = (
-      <GetStarted config={config} onUpload={onUpload} onImport={onImport} />
+      <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />
     );
   } else {
     body = (
@@ -737,6 +843,7 @@ export const Tree = ({
           <tbody>
             {results.map((entry) => (
               <EntryRow
+                config={config}
                 key={entry.path}
                 entry={entry}
                 path={path}

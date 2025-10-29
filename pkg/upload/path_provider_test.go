@@ -108,7 +108,7 @@ func testValidUploadPath(t *testing.T, prefix, p string) []string {
 	return parts
 }
 
-func TestResolvePathTime(t *testing.T) {
+func TestPathPartitionProvider_ResolvePathTime(t *testing.T) {
 	const (
 		size     = 5
 		interval = 24 * time.Hour
@@ -124,16 +124,16 @@ func TestResolvePathTime(t *testing.T) {
 	)
 
 	t.Run("sanity", func(t *testing.T) {
-		time := time.Now()
-		id := xid.NewWithTime(time).String()
+		now := time.Now()
+		id := xid.NewWithTime(now).String()
 
 		idTime, err := provider.ResolvePathTime(id)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
-		if time.Equal(idTime) {
-			t.Errorf("time doesn't match: '%s' '%s'", idTime, time)
+		if now.Equal(idTime) {
+			t.Errorf("time doesn't match: '%s' '%s'", idTime, now)
 		}
 	})
 
@@ -143,6 +143,18 @@ func TestResolvePathTime(t *testing.T) {
 		_, err := provider.ResolvePathTime(id)
 		if !errors.Is(err, xid.ErrInvalidID) {
 			t.Errorf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestPathPartitionProvider_CommonPrefix(t *testing.T) {
+	t.Run("get_data_prefix", func(t *testing.T) {
+		const prefix = "data_prefix"
+		provider := NewPathPartitionProvider(
+			WithPathProviderPrefix(prefix),
+		)
+		if provider.CommonPrefix() != prefix {
+			t.Errorf("data path prefix mismatch: expected %s, got %s", prefix, provider.CommonPrefix())
 		}
 	})
 }

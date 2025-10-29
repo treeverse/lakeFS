@@ -1,8 +1,13 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.*;
-import io.lakefs.clients.api.auth.HttpBasicAuth;
+import io.lakefs.auth.LakeFSTokenProvider;
+import io.lakefs.auth.LakeFSTokenProviderFactory;
+import io.lakefs.clients.sdk.*;
+import io.lakefs.clients.sdk.auth.HttpBasicAuth;
+import io.lakefs.clients.sdk.auth.HttpBearerAuth;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -11,50 +16,105 @@ import java.io.IOException;
  * This class uses the configuration to initialize API client and instance per API interface we expose.
  */
 public class LakeFSClient {
+    private static final Logger LOG = LoggerFactory.getLogger(LakeFSClient.class);
     private static final String BASIC_AUTH = "basic_auth";
-
-    private final ObjectsApi objects;
-    private final StagingApi staging;
-    private final RepositoriesApi repositories;
-    private final BranchesApi branches;
+    private static final String JWT_TOKEN_AUTH = "jwt_token";
+    LakeFSTokenProvider provider;
+    private final ObjectsApi objectsApi;
+    private final StagingApi stagingApi;
+    private final RepositoriesApi repositoriesApi;
+    private final BranchesApi branchesApi;
+    private final CommitsApi commitsApi;
+    private final ConfigApi configApi;
+    private final InternalApi internalApi;
 
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
-        String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
-        if (accessKey == null) {
-            throw new IOException("Missing lakeFS access key");
+        String authProvider = FSConfiguration.get(conf, scheme, Constants.LAKEFS_AUTH_PROVIDER_KEY_SUFFIX, LakeFSClient.BASIC_AUTH);
+        ApiClient apiClient;
+        LOG.info("Initiating lakeFS auth provider: {}", authProvider);
+        if (authProvider == BASIC_AUTH) {
+            String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
+            if (accessKey == null) {
+                throw new IOException("Missing lakeFS access key");
+            }
+
+            String secretKey = FSConfiguration.get(conf, scheme, Constants.SECRET_KEY_KEY_SUFFIX);
+            if (secretKey == null) {
+                throw new IOException("Missing lakeFS secret key");
+            }
+            apiClient = newApiClientNoAuth(scheme, conf);
+            HttpBasicAuth basicAuth = (HttpBasicAuth) apiClient.getAuthentication(BASIC_AUTH);
+            basicAuth.setUsername(accessKey);
+            basicAuth.setPassword(secretKey);
+        } else {
+            this.provider = LakeFSTokenProviderFactory.newLakeFSTokenProvider(Constants.DEFAULT_SCHEME, conf);
+            String lakeFSToken = provider.getToken();
+            apiClient = newApiClientNoAuth(scheme, conf);
+            HttpBearerAuth tokenAuth = (HttpBearerAuth) apiClient.getAuthentication(JWT_TOKEN_AUTH);
+            tokenAuth.setBearerToken(lakeFSToken);
         }
 
-        String secretKey = FSConfiguration.get(conf, scheme, Constants.SECRET_KEY_KEY_SUFFIX);
-        if (secretKey == null) {
-            throw new IOException("Missing lakeFS secret key");
-        }
+        this.objectsApi = new ObjectsApi(apiClient);
+        this.stagingApi = new StagingApi(apiClient);
+        this.repositoriesApi = new RepositoriesApi(apiClient);
+        this.branchesApi = new BranchesApi(apiClient);
+        this.commitsApi = new CommitsApi(apiClient);
+        this.configApi = new ConfigApi(apiClient);
+        this.internalApi = new InternalApi(apiClient);
+    }
 
-        ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
+    ApiClient newApiClientNoAuth(String scheme, Configuration conf) {
+
+        ApiClient apiClient = io.lakefs.clients.sdk.Configuration.getDefaultApiClient();
+        
+        // Configure timeouts
+        int connectTimeout = FSConfiguration.getInt(conf, scheme, Constants.CONNECT_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_CONNECT_TIMEOUT_MS);
+        int readTimeout = FSConfiguration.getInt(conf, scheme, Constants.READ_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_READ_TIMEOUT_MS);
+        int writeTimeout = FSConfiguration.getInt(conf, scheme, Constants.WRITE_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_WRITE_TIMEOUT_MS);
+        
+        apiClient.setConnectTimeout(connectTimeout);
+        apiClient.setReadTimeout(readTimeout);
+        apiClient.setWriteTimeout(writeTimeout);
+        
         String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith(Constants.SEPARATOR)) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
         apiClient.setBasePath(endpoint);
         apiClient.addDefaultHeader("X-Lakefs-Client", "lakefs-hadoopfs/" + getClass().getPackage().getImplementationVersion());
-        HttpBasicAuth basicAuth = (HttpBasicAuth) apiClient.getAuthentication(BASIC_AUTH);
-        basicAuth.setUsername(accessKey);
-        basicAuth.setPassword(secretKey);
 
-        this.objects = new ObjectsApi(apiClient);
-        this.staging = new StagingApi(apiClient);
-        this.repositories = new RepositoriesApi(apiClient);
-        this.branches = new BranchesApi(apiClient);
+        String sessionId = FSConfiguration.get(conf, scheme, Constants.SESSION_ID);
+        if (sessionId != null) {
+            apiClient.addDefaultCookie("sessionId", sessionId);
+        }
+        return apiClient;
     }
 
-    public ObjectsApi getObjects() {
-        return objects;
+    public ObjectsApi getObjectsApi() {
+        return objectsApi;
     }
 
-    public StagingApi getStaging() {
-        return staging;
+    public StagingApi getStagingApi() {
+        return stagingApi;
     }
 
-    public RepositoriesApi getRepositories() { return repositories; }
+    public RepositoriesApi getRepositoriesApi() {
+        return repositoriesApi;
+    }
 
-    public BranchesApi getBranches() { return branches; }
+    public BranchesApi getBranchesApi() {
+        return branchesApi;
+    }
+
+    public CommitsApi getCommitsApi() {
+        return commitsApi;
+    }
+
+    public ConfigApi getConfigApi() {
+        return configApi;
+    }
+
+    public InternalApi getInternalApi() {
+        return internalApi;
+    }
 }

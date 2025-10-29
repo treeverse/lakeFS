@@ -4,29 +4,40 @@ import (
 	"context"
 	"errors"
 
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-type RepositoryIterator struct {
-	ctx    context.Context
-	it     kv.MessageIterator
-	err    error
-	value  *graveler.RepositoryRecord
-	store  kv.Store
-	closed bool
+func updateStorageID(repo *graveler.RepositoryRecord, storageConfig config.StorageConfig) {
+	if repo.StorageID == config.SingleBlockstoreID {
+		if storage := storageConfig.GetStorageByID(config.SingleBlockstoreID); storage != nil {
+			repo.StorageID = graveler.StorageID(storage.ID()) // Will return the real actual ID
+		}
+	}
 }
 
-func NewRepositoryIterator(ctx context.Context, store kv.Store) (*RepositoryIterator, error) {
+type RepositoryIterator struct {
+	ctx           context.Context
+	storageConfig config.StorageConfig
+	it            kv.MessageIterator
+	err           error
+	value         *graveler.RepositoryRecord
+	store         kv.Store
+	closed        bool
+}
+
+func NewRepositoryIterator(ctx context.Context, store kv.Store, storageConfig config.StorageConfig) (*RepositoryIterator, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.RepositoryData{}).ProtoReflect().Type(), graveler.RepositoriesPartition(), []byte(graveler.RepoPath("")), kv.IteratorOptionsAfter([]byte{}))
 	if err != nil {
 		return nil, err
 	}
 	return &RepositoryIterator{
-		ctx:    ctx,
-		it:     it,
-		store:  store,
-		closed: false,
+		ctx:           ctx,
+		storageConfig: storageConfig,
+		it:            it,
+		store:         store,
+		closed:        false,
 	}, nil
 }
 
@@ -52,6 +63,8 @@ func (ri *RepositoryIterator) Next() bool {
 	}
 
 	ri.value = graveler.RepoFromProto(repo)
+	ri.value.StorageID = graveler.StorageID(config.GetActualStorageID(ri.storageConfig, ri.value.StorageID.String()))
+	updateStorageID(ri.value, ri.storageConfig)
 	return true
 }
 

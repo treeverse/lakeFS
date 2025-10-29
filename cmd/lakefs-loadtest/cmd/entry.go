@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 	"sync"
@@ -14,9 +13,10 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -31,8 +31,8 @@ var entryCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
-		if !u.IsRef() {
-			fmt.Printf("Invalid 'ref': %s", uri.ErrInvalidRefURI)
+		if err := u.ValidateRef(); err != nil {
+			fmt.Printf("Invalid 'ref': %s", err)
 			os.Exit(1)
 		}
 		requests, _ := cmd.Flags().GetInt("requests")
@@ -48,34 +48,33 @@ var entryCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		rand.Seed(time.Now().UTC().UnixNano()) // make it special
-
 		ctx := cmd.Context()
 
-		conf, err := config.NewConfig()
+		confInterface, err := configfactory.BuildConfig("")
 		if err != nil {
 			fmt.Printf("config: %s\n", err)
 		}
-		err = conf.Validate()
+		conf := confInterface.GetBaseConfig()
+
+		err = confInterface.Validate()
 		if err != nil {
 			fmt.Printf("invalid config: %s\n", err)
 		}
 
-		kvParams, err := conf.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(&conf.Database)
 		if err != nil {
-			logging.Default().WithError(err).Fatal("Get KV params")
+			logging.ContextUnavailable().WithError(err).Fatal("Get KV params")
 		}
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			logging.Default().WithError(err).Fatal("failed to open KV store")
+			logging.ContextUnavailable().WithError(err).Fatal("failed to open KV store")
 		}
 		defer kvStore.Close()
 
 		c, err := catalog.New(ctx, catalog.Config{
-			Config:       conf,
+			Config:       confInterface,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-			Limiter:      conf.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			fmt.Printf("Cannot create catalog: %s\n", err)

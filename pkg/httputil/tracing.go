@@ -107,22 +107,26 @@ func presentBody(body []byte) string {
 	return string(body)
 }
 
-func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceRequestHeaders bool) func(http.Handler) http.Handler {
+func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceRequestHeaders bool, isAdvancedAuth bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
 			responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
 			r, reqID := RequestID(r)
+			client := GetRequestLakeFSClient(r)
+			sourceIP := SourceIP(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
-				logging.PathFieldKey:      r.RequestURI,
-				logging.MethodFieldKey:    r.Method,
-				logging.HostFieldKey:      r.Host,
-				logging.RequestIDFieldKey: reqID,
+				logging.PathFieldKey:   r.RequestURI,
+				logging.MethodFieldKey: r.Method,
+				logging.HostFieldKey:   r.Host,
 			}
-			for k, v := range fields {
-				requestFields[k] = v
+			if isAdvancedAuth {
+				requestFields[logging.RequestIDFieldKey] = reqID
+				for k, v := range fields {
+					requestFields[k] = v
+				}
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			responseWriter.Header().Set(requestIDHeaderName, reqID)
@@ -134,19 +138,23 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			next.ServeHTTP(responseWriter, r) // handle the request
 
 			traceFields := logging.Fields{
-				"took":             time.Since(startTime),
-				"status_code":      responseWriter.StatusCode,
-				"sent_bytes":       responseWriter.ResponseSize,
-				"request_body":     presentBody(requestBodyTracer.bodyRecorder.Buffer),
-				"response_body":    presentBody(responseWriter.BodyRecorder.Buffer),
-				"response_headers": responseWriter.Header(),
+				"took":        time.Since(startTime),
+				"status_code": responseWriter.StatusCode,
+				"source_ip":   sourceIP,
 			}
-			if traceRequestHeaders {
-				traceFields["request_headers"] = r.Header
+			if isAdvancedAuth {
+				traceFields["sent_bytes"] = responseWriter.ResponseSize
+				traceFields["client"] = client
+				traceFields["request_body"] = presentBody(requestBodyTracer.bodyRecorder.Buffer)
+				traceFields["response_body"] = presentBody(responseWriter.BodyRecorder.Buffer)
+				traceFields["response_headers"] = responseWriter.Header()
+				if traceRequestHeaders {
+					traceFields["request_headers"] = r.Header
+				}
 			}
 			logging.FromContext(r.Context()).
 				WithFields(traceFields).
-				Trace("HTTP call ended")
+				Trace(AuditLogEndMessage)
 		})
 	}
 }

@@ -1,16 +1,31 @@
-import React from "react";
+import React, {useContext} from "react";
 import {useAPI} from "../../hooks/api";
-import {objects} from "../../api";
+import {objects, qs} from "../../api";
 import ReactDiffViewer, {DiffMethod} from "react-diff-viewer-continued";
-import {Error, Loading} from "../controls";
+import {AlertError, Loading} from "../controls";
 import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";
+import Card from "react-bootstrap/Card";
 import {InfoIcon} from "@primer/octicons-react";
+import {useConfigContext} from "../../hooks/configProvider";
+import {AppContext} from "../../hooks/appContext";
+import {useRefs} from "../../hooks/repo";
+import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "csv", "tsv"];
+const supportedReadableFormats = ["txt", "text", "md", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson", "geojson"];
+const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "webp"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
+    const {state} = useContext(AppContext);
+    const {repo, error: repoError, loading: repoLoading} = useRefs();
+    const {config, error: configsError, loading: configLoading} = useConfigContext();
+    const {storageConfig, error: storageConfigError} = getRepoStorageConfig(config?.storages, repo);
+    const hooksLoading = repoLoading || configLoading;
+    const hooksError = hooksLoading ? null : repoError || configsError || storageConfigError;
+
+    if (hooksError) return <AlertError error={hooksError}/>;
+
     const readable = readableObject(path);
     let left;
     let right;
@@ -31,12 +46,12 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
                 [repoId, leftRef, path]);
             break;
         default:
-            return <Error error={"Unsupported diff type " + diffType}/>;
+            return <AlertError error={"Unsupported diff type " + diffType}/>;
     }
 
-    if ((left && left.loading) || (right && right.loading)) return <Loading/>;
+    if (hooksLoading || (left && left.loading) || (right && right.loading)) return <Loading/>;
     const err = (left && left.error) || (right && right.err);
-    if (err) return <Error error={err}/>;
+    if (err) return <AlertError error={err}/>;
 
     const leftStat = left && left.response;
     const rightStat = right && right.response;
@@ -45,16 +60,26 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     }
     const objectTooBig = (leftStat && leftStat.size_bytes > maxDiffSizeBytes) || (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
     if (objectTooBig) {
-        return <Error error={path + " is too big (> " + humanSize(maxDiffSizeBytes)+ "). To view its diff please download" +
+        return <AlertError error={path + " is too big (> " + humanSize(maxDiffSizeBytes)+ "). To view its diff please download" +
         " the objects and use an external diff tool."}/>
     }
     const leftSize = leftStat && leftStat.size_bytes;
     const rightSize = rightStat && rightStat.size_bytes;
-    return <ContentDiff repoId={repoId} path={path} leftRef={left && leftRef} rightRef={right && rightRef}
-                        leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>;
+    return <ContentDiff
+        config={storageConfig}
+        repoId={repoId}
+        path={path}
+        leftRef={left && leftRef}
+        rightRef={right && rightRef}
+        leftSize={leftSize}
+        rightSize={rightSize}
+        diffType={diffType}
+        settings={state.settings}
+    />;
 }
 
 function readableObject(path) {
+    if (isImage(path)) return true;
     for (const ext of supportedReadableFormats) {
         if (path.endsWith("." + ext)) {
             return true;
@@ -64,47 +89,109 @@ function readableObject(path) {
 }
 
 const NoContentDiff = ({left, right, diffType}) => {
+    const supportedFileExtensions = supportedReadableFormats.map((fileType) => `.${fileType}`);
     return <div>
         <span><StatDiff left={left} right={right} diffType={diffType}/></span>
-        <span><Alert variant="light"><InfoIcon/> lakeFS supports content diff for .tsv, .csv, and .txt file formats only</Alert></span>
+        <span><Alert variant="light"><InfoIcon/> {`lakeFS supports content diff for ${supportedFileExtensions.join(',')} file formats only`}</Alert></span>
     </div>;
 }
 
-const ContentDiff = ({repoId, path, leftRef, rightRef, leftSize, rightSize, diffType}) => {
-    const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path),
+const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, settings}) =>
+    isImage(path)
+        ? <ImageCardDiff
+            config={config}
+            repoId={repoId}
+            path={path}
+            leftRef={leftRef}
+            rightRef={rightRef}
+            leftSize={leftSize}
+            rightSize={rightSize}
+            diffType={diffType}
+        />
+        : <TextDiff
+            config={config}
+            repoId={repoId}
+            path={path}
+            leftRef={leftRef}
+            rightRef={rightRef}
+            leftSize={leftSize}
+            rightSize={rightSize}
+            diffType={diffType}
+            settings={settings.darkMode}
+        />;
+
+
+const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, isDarkMode }) => {
+    const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui),
         [repoId, leftRef, path]);
-    const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path),
+    const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui),
         [repoId, rightRef, path]);
 
     if ((left && left.loading) || (right && right.loading)) return <Loading/>;
-    const err = (left && left.error) || (right && right.err);
-    if (err) return <Error error={err}/>;
+    const err = (left && left.error) || (right && right.error);
+    if (err) return <AlertError error={err}/>;
 
     return <div>
-        <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
+        <DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>
         <ReactDiffViewer
-            oldValue={left && left.response}
-            newValue={right && right.response}
+            oldValue={left?.response}
+            newValue={right?.response}
             splitView={false}
-            compareMethod={DiffMethod.WORDS}/>
+            useDarkTheme={isDarkMode}
+            compareMethod={DiffMethod.WORDS}
+        />
     </div>;
+}
+
+const ImageCardDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType }) => {
+    const query = qs({ path, presign: config.pre_sign_support_ui });
+    const oldUrl = leftRef  && buildUrl(repoId, leftRef,  query);
+    const newUrl = rightRef && buildUrl(repoId, rightRef, query);
+
+    return (
+        <div>
+            <ImageDiffSummary leftSize={leftSize} rightSize={rightSize} diffType={diffType} />
+            <div className="image-diff-card-container">
+                {oldUrl && (
+                    <Card className="image-diff-card-flex">
+                        <Card.Header className="text-danger text-center image-diff-header-deleted">
+                            Deleted
+                        </Card.Header>
+                        <Card.Body className="d-flex overflow-auto justify-content-center p-3">
+                            <img className="image-diff-card" src={oldUrl} alt="old" />
+                        </Card.Body>
+                    </Card>
+                )}
+                {newUrl && (
+                    <Card className="image-diff-card-flex">
+                        <Card.Header className="text-success text-center image-diff-header-added">
+                            Added
+                        </Card.Header>
+                        <Card.Body className="d-flex overflow-auto justify-content-center p-3">
+                            <img className="image-diff-card" src={newUrl} alt="new"  />
+                        </Card.Body>
+                    </Card>
+                )}
+            </div>
+        </div>
+    );
 }
 
 function validateDiffInput(left, right, diffType) {
     switch (diffType) {
         case 'changed':
-            if (!left && !right) return <Error error={"Invalid diff input"}/>;
+            if (!left && !right) return <AlertError error={"Invalid diff input"}/>;
             break;
         case 'added':
-            if (!right) return <Error error={"Invalid diff input: right hand-side is missing"}/>;
+            if (!right) return <AlertError error={"Invalid diff input: right hand-side is missing"}/>;
             break;
         case 'removed':
-            if (!left) return <Error error={"Invalid diff input: left hand-side is missing"}/>;
+            if (!left) return <AlertError error={"Invalid diff input: left hand-side is missing"}/>;
             break;
         case 'conflict':
             break;
         default:
-            return <Error error={"Unknown diff type: " + diffType}/>;
+            return <AlertError error={"Unknown diff type: " + diffType}/>;
     }
 }
 
@@ -154,7 +241,7 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
             size = leftSize;
             break;
         default:
-            return <Error error={"Unknown diff type: " + diffType}/>;
+            return <AlertError error={"Unknown diff type: " + diffType}/>;
     }
 
 
@@ -164,3 +251,31 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
         <span> in size</span>
     </div>;
 }
+
+const ImageDiffSummary= ({ leftSize, rightSize, diffType }) => {
+    let diffValue = '';
+    let cls = '';
+    if (diffType === 'changed' && leftSize !== null && rightSize !== null) {
+        const d = rightSize - leftSize;
+        const sign = d > 0 ? '+' : '-';
+        const abs = Math.abs(d);
+        const pct = leftSize > 0 ? ((abs / leftSize) * 100).toFixed(1) : '0.0';
+        cls = d > 0 ? 'text-success' : 'text-danger';
+        diffValue = `${sign}${humanSize(abs)} (${pct}%)`;
+    } else if (diffType === 'added') {
+        cls = 'text-success';
+        diffValue = `+${humanSize(rightSize)}`;
+    } else if (diffType === 'removed') {
+        cls = 'text-danger';
+        diffValue = `-${humanSize(leftSize)}`;
+    }
+    return (
+        <div className={`text-center mb-2 ${cls} image-diff-summary`}>
+            {diffValue}
+        </div>
+    );
+}
+
+const isImage = path => imageExtensions.some(ext => path.toLowerCase().endsWith("." + ext));
+
+const buildUrl = (repoId, ref, query) => `/api/v1/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?${query}`;

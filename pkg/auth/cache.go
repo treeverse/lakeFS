@@ -7,35 +7,41 @@ import (
 	"github.com/treeverse/lakefs/pkg/cache"
 )
 
-type CredentialSetFn func() (*model.Credential, error)
-type UserSetFn func() (*model.User, error)
-type UserPoliciesSetFn func() ([]*model.Policy, error)
+type (
+	CredentialSetFn     func() (*model.Credential, error)
+	UserSetFn           func() (*model.User, error)
+	UserPoliciesSetFn   func() ([]*model.Policy, error)
+	ExternalPrincipalFn func() (*model.ExternalPrincipal, error)
+)
 
-type userKey struct {
+type UserKey struct {
 	id         string
-	username   string
-	externalID string
-	email      string
+	Username   string
+	ExternalID string
+	Email      string
 }
 
 type Cache interface {
 	GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error)
-	GetUser(key userKey, setFn UserSetFn) (*model.User, error)
+	GetUser(key UserKey, setFn UserSetFn) (*model.User, error)
 	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error)
+	GetExternalPrincipal(key string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error)
 }
 
 type LRUCache struct {
-	credentialsCache cache.Cache
-	userCache        cache.Cache
-	policyCache      cache.Cache
+	credentialsCache       cache.Cache
+	userCache              cache.Cache
+	policyCache            cache.Cache
+	externalPrincipalCache cache.Cache
 }
 
 func NewLRUCache(size int, expiry, jitter time.Duration) *LRUCache {
 	jitterFn := cache.NewJitterFn(jitter)
 	return &LRUCache{
-		credentialsCache: cache.NewCache(size, expiry, jitterFn),
-		userCache:        cache.NewCache(size, expiry, jitterFn),
-		policyCache:      cache.NewCache(size, expiry, jitterFn),
+		credentialsCache:       cache.NewCache(size, expiry, jitterFn),
+		userCache:              cache.NewCache(size, expiry, jitterFn),
+		policyCache:            cache.NewCache(size, expiry, jitterFn),
+		externalPrincipalCache: cache.NewCache(size, expiry, jitterFn),
 	}
 }
 
@@ -47,7 +53,7 @@ func (c *LRUCache) GetCredential(accessKeyID string, setFn CredentialSetFn) (*mo
 	return v.(*model.Credential), nil
 }
 
-func (c *LRUCache) GetUser(key userKey, setFn UserSetFn) (*model.User, error) {
+func (c *LRUCache) GetUser(key UserKey, setFn UserSetFn) (*model.User, error) {
 	v, err := c.userCache.GetOrSet(key, func() (interface{}, error) { return setFn() })
 	if err != nil {
 		return nil, err
@@ -63,6 +69,14 @@ func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*m
 	return v.([]*model.Policy), nil
 }
 
+func (c *LRUCache) GetExternalPrincipal(key string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error) {
+	v, err := c.externalPrincipalCache.GetOrSet(key, func() (interface{}, error) { return setFn() })
+	if err != nil {
+		return nil, err
+	}
+	return v.(*model.ExternalPrincipal), nil
+}
+
 // DummyCache dummy cache that doesn't cache
 type DummyCache struct{}
 
@@ -70,10 +84,14 @@ func (d *DummyCache) GetCredential(_ string, setFn CredentialSetFn) (*model.Cred
 	return setFn()
 }
 
-func (d *DummyCache) GetUser(_ userKey, setFn UserSetFn) (*model.User, error) {
+func (d *DummyCache) GetUser(_ UserKey, setFn UserSetFn) (*model.User, error) {
 	return setFn()
 }
 
 func (d *DummyCache) GetUserPolicies(_ string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
+	return setFn()
+}
+
+func (d *DummyCache) GetExternalPrincipal(_ string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error) {
 	return setFn()
 }

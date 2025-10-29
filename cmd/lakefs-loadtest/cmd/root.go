@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -19,9 +20,7 @@ const (
 	DefaultServerEndpointURL = "http://localhost:8000"
 )
 
-var (
-	cfgFile string
-)
+var cfgFile string
 
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
@@ -68,12 +67,14 @@ func initConfig() {
 	viper.SetEnvPrefix("LAKEFS_LOADTEST")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
+
+	var errConfigNotFound viper.ConfigFileNotFoundError
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-		fmt.Println("Error while reading config file:", viper.ConfigFileUsed(), "-", err)
-	} else {
-		// err is viper.ConfigFileNotFoundError
+	} else if errors.As(err, &errConfigNotFound) {
 		fmt.Println("Config file not found. Will try to use environment variables.")
+	} else {
+		fmt.Println("Error while reading config file:", viper.ConfigFileUsed(), "-", err)
+		os.Exit(1)
 	}
 }

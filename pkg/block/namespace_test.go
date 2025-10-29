@@ -3,9 +3,9 @@ package block_test
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
@@ -16,7 +16,7 @@ func TestResolveNamespace(t *testing.T) {
 		Key              string
 		Type             block.IdentifierType
 		ExpectedErr      error
-		Expected         block.QualifiedKey
+		Expected         block.CommonQualifiedKey
 	}{
 		{
 			Name:             "valid_namespace_no_trailing_slash",
@@ -24,7 +24,7 @@ func TestResolveNamespace(t *testing.T) {
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "foo",
 				Key:              "bar/baz",
@@ -36,7 +36,7 @@ func TestResolveNamespace(t *testing.T) {
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "foo",
 				Key:              "bar/baz",
@@ -48,7 +48,7 @@ func TestResolveNamespace(t *testing.T) {
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeMem,
 				StorageNamespace: "foo",
 				Key:              "bar/baz",
@@ -60,10 +60,10 @@ func TestResolveNamespace(t *testing.T) {
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeGS,
-				StorageNamespace: "foo",
-				Key:              "bla/bar/baz",
+				StorageNamespace: "foo/bla",
+				Key:              "bar/baz",
 			},
 		},
 		{
@@ -72,10 +72,10 @@ func TestResolveNamespace(t *testing.T) {
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeGS,
-				StorageNamespace: "foo",
-				Key:              "bla/bar/baz",
+				StorageNamespace: "foo/bla",
+				Key:              "bar/baz",
 			},
 		},
 		{
@@ -84,10 +84,10 @@ func TestResolveNamespace(t *testing.T) {
 			Key:              "/bar/baz",
 			Type:             block.IdentifierTypeRelative,
 			ExpectedErr:      nil,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeGS,
-				StorageNamespace: "foo",
-				Key:              "bla//bar/baz",
+				StorageNamespace: "foo/bla",
+				Key:              "/bar/baz",
 			},
 		},
 		{
@@ -96,10 +96,34 @@ func TestResolveNamespace(t *testing.T) {
 			Key:              "s3://example/bar/baz",
 			Type:             block.IdentifierTypeFull,
 			ExpectedErr:      nil,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "example",
 				Key:              "bar/baz",
+			},
+		},
+		{
+			Name:             "valid_fq_key_encoded",
+			DefaultNamespace: "s3://foo/",
+			Key:              "s3://example/bar/foo%3Abaz",
+			Type:             block.IdentifierTypeFull,
+			ExpectedErr:      nil,
+			Expected: block.CommonQualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "example",
+				Key:              "bar/foo%3Abaz",
+			},
+		},
+		{
+			Name:             "valid_relative_encoded",
+			DefaultNamespace: "s3://foo/",
+			Key:              "bar/foo%3Abaz",
+			Type:             block.IdentifierTypeRelative,
+			ExpectedErr:      nil,
+			Expected: block.CommonQualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "foo",
+				Key:              "bar/foo%3Abaz",
 			},
 		},
 		{
@@ -107,31 +131,31 @@ func TestResolveNamespace(t *testing.T) {
 			DefaultNamespace: "memzzzz://foo/",
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
-			ExpectedErr:      block.ErrInvalidNamespace,
-			Expected:         block.QualifiedKey{},
+			ExpectedErr:      block.ErrInvalidAddress,
+			Expected:         block.CommonQualifiedKey{},
 		},
 		{
 			Name:             "invalid_namespace_invalid_uri",
 			DefaultNamespace: "foo",
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
-			ExpectedErr:      block.ErrInvalidNamespace,
-			Expected:         block.QualifiedKey{},
+			ExpectedErr:      block.ErrInvalidAddress,
+			Expected:         block.CommonQualifiedKey{},
 		},
 		{
 			Name:             "invalid_key_wrong_scheme",
 			DefaultNamespace: "s3://foo/",
 			Key:              "s4://bar/baz",
 			Type:             block.IdentifierTypeFull,
-			ExpectedErr:      block.ErrInvalidNamespace,
-			Expected:         block.QualifiedKey{},
+			ExpectedErr:      block.ErrInvalidAddress,
+			Expected:         block.CommonQualifiedKey{},
 		},
 		{
 			Name:             "key_weird_format",
 			DefaultNamespace: "s3://foo/",
 			Key:              "://invalid/baz",
 			Type:             block.IdentifierTypeRelative,
-			Expected: block.QualifiedKey{
+			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "foo",
 				Key:              "://invalid/baz",
@@ -151,28 +175,29 @@ func TestResolveNamespace(t *testing.T) {
 				relativeName = "full"
 			}
 			t.Run(fmt.Sprintf("%s/%s", cas.Name, relativeName), func(t *testing.T) {
-				resolved, err := block.ResolveNamespace(cas.DefaultNamespace, cas.Key, r)
+				resolved, err := block.DefaultResolveNamespace(cas.DefaultNamespace, cas.Key, r)
 				if err != nil && !errors.Is(err, cas.ExpectedErr) {
-					t.Fatalf("got unexpected error :%v - expected %v", err, cas.ExpectedErr)
+					t.Fatalf("got unexpected error: %v - expected %v", err, cas.ExpectedErr)
 				}
-				if cas.ExpectedErr == nil && !reflect.DeepEqual(resolved, cas.Expected) {
-					t.Fatalf("expected %v got %v", cas.Expected, resolved)
+				if cas.ExpectedErr == nil {
+					if diff := deep.Equal(resolved, cas.Expected); diff != nil {
+						t.Fatalf("mismatch in resolved namespace: %s", diff)
+					}
 				}
 			})
 		}
-
 	}
 }
 
 func TestFormatQualifiedKey(t *testing.T) {
 	cases := []struct {
 		Name         string
-		QualifiedKey block.QualifiedKey
+		QualifiedKey block.CommonQualifiedKey
 		Expected     string
 	}{
 		{
 			Name: "simple_path",
-			QualifiedKey: block.QualifiedKey{
+			QualifiedKey: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeGS,
 				StorageNamespace: "some-bucket",
 				Key:              "path",
@@ -181,7 +206,7 @@ func TestFormatQualifiedKey(t *testing.T) {
 		},
 		{
 			Name: "path_with_prefix",
-			QualifiedKey: block.QualifiedKey{
+			QualifiedKey: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/",
 				Key:              "path/to/file",
@@ -190,7 +215,7 @@ func TestFormatQualifiedKey(t *testing.T) {
 		},
 		{
 			Name: "bucket_with_prefix",
-			QualifiedKey: block.QualifiedKey{
+			QualifiedKey: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/prefix/",
 				Key:              "path/to/file",
@@ -199,7 +224,7 @@ func TestFormatQualifiedKey(t *testing.T) {
 		},
 		{
 			Name: "path_with_prefix_leading_slash",
-			QualifiedKey: block.QualifiedKey{
+			QualifiedKey: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket",
 				Key:              "/path/to/file",
@@ -208,7 +233,7 @@ func TestFormatQualifiedKey(t *testing.T) {
 		},
 		{
 			Name: "bucket_with_prefix_leading_slash",
-			QualifiedKey: block.QualifiedKey{
+			QualifiedKey: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/prefix",
 				Key:              "/path/to/file",
@@ -217,7 +242,7 @@ func TestFormatQualifiedKey(t *testing.T) {
 		},
 		{
 			Name: "dont_eliminate_dots",
-			QualifiedKey: block.QualifiedKey{
+			QualifiedKey: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "some-bucket/prefix/",
 				Key:              "path/to/../file",

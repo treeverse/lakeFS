@@ -30,7 +30,7 @@ func encryptCBC(l *lua.State) int {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
@@ -39,7 +39,7 @@ func encryptCBC(l *lua.State) int {
 	ciphertext := make([]byte, aes.BlockSize+len(content))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
@@ -57,7 +57,7 @@ func decryptCBC(l *lua.State) int {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
@@ -73,7 +73,7 @@ func decryptCBC(l *lua.State) int {
 }
 
 func PKCS5Padding(ciphertext []byte, blockSize int, after int) []byte {
-	block := (blockSize - len(ciphertext)%blockSize)
+	block := blockSize - len(ciphertext)%blockSize
 	padding := bytes.Repeat([]byte{byte(block)}, block)
 	return append(ciphertext, padding...)
 }

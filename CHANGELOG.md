@@ -1,6 +1,1254 @@
 # Changelog
 
-## UNRELEASED
+# v1.70.1
+
+:bug: Bugs fixed:
+
+- Fix MinIO repository creation (#9546)
+- Fix login flow issues (#9506)
+
+# v1.70.0
+
+:new: What's new:
+
+- Updated login page appearance (#9425)
+- DynamoDB: Make credentials expiry window + jitter configurable (#9527)
+
+:bug: Bugs fixed:
+
+- Fix GetRepository "invalid repo name" error code to 400 (#9535)
+- Use internal errors status codes during authentication flow (#9540)
+
+# v1.69.0
+
+🏢 Includes only changes for Enterprise.
+
+# v1.68.0
+:new: What's new:
+- GS: Dual Adapter (Experimental) (#9508)
+:bug: Bugs fixed:
+- Fix block store adapters physical path resolve (#9464)
+- Fix enforce import_enabled flag for local storage (#9417)
+
+# v1.67.0
+
+:new: What's new:
+- Delete entity with experimental option to reduce tombstone when possible (#9482)
+
+# v1.66.0
+
+:bug: Bugs fixed:
+- Fix initial group by claim to support slice of strings (#9427)
+- Fix configuration reload for log level update (#9434)
+- Fix pagination in diff_refs in Lua hook for detla exporter (#9444)
+- API: GetObject use content-disposition to prevent browser rendering (#9440)
+- WebUI: Add security headers to all responses (#9438)
+
+# v1.65.2
+
+🏢 Includes only changes for Enterprise.
+
+# v1.65.1
+
+:bug: Bugs fixed:
+
+- Fix WebUI merge conflict error message (#9405)
+- Fix Upload object API memory growth (#9406)
+
+# v1.65.0
+
+:bug: Bugs fixed:
+
+- Fix concurrent commits with allow-empty may fail with no-changes (#9371)
+- Remove uninitialized logger from joined diff iterator (#9379)
+- Fix possible infinite loop while listing action files (#9390)
+- Fix metrics reports in s3 gateway (#9385)
+- Fix delete default branch error (#9377)
+- Fix cherry-pick action unrecognized hook event (#9395)
+
+# v1.64.1
+
+:bug: Bugs fixed:
+
+- Fix race while update branch returned from ref manager branch update (#9360)
+- WebUI: Fix loading state when fetching repository data (#9366)
+- API: update API spec from status code 423 (locked) to 429 (too many requests) (#9367)
+
+# v1.64.0
+
+:new: What's new:
+
+- lakectl configurable symlink support (#9212)
+
+:bug: Bugs fixed:
+
+- Fixed the image overflow in the diff view in the UI (#9346)
+- Allow trailing slash in lakectl fs upload (#9337)
+- Log failed audit check in debug level (#9348)
+
+# v1.63.0
+
+:new: What's new:
+
+- Implement Pre/Post Cherry-Pick Hooks (#9263)
+- Support multipart for lakectl presigned uploads (#9283)
+- Add gauge metrics for API, Gateway and Blockstore endpoints (#9260)
+
+# v1.62.0
+
+:new: What's new:
+
+- Basic plugin support for lakectl (#9242)
+- UI: Image content diff view (#9246)
+- UI: Improved empty states for actions, tags (#9230)
+- Support right object info in commit diff (#9248)
+
+:bug: Bugs fixed:
+
+- Clean temp cache files (#9250)
+- UI: Fix some dark mode elements (#9237)
+
+# v1.61.0
+
+:new: What's new:
+
+- UI: Unify uncommitted changes tab into objects (#9181)
+- lakectl: Add retries to sync download (#9191)
+- lakectl log: Support all refs  (#9170)
+
+:bug: Bugs fixed:
+
+- Fix web ui action menu dropdown position (#9198)
+
+# v1.60.0
+
+:new: What's new:
+
+- Actions: Distinguish client and internal errors in actions responses (#9162)
+- Update kin-openapi package with changes related to request validation (#9167)
+- Sample repository: remove unused images (#9156)
+
+:bug: Bugs fixed:
+
+- Fix: laktectl progress bar panic (#9148)
+- Fix issue with not showing marker icons in GeoJSON preview map (#9140)
+
+# v1.59.0
+
+:new: What's new:
+
+- UI: Overhaul lakeFS look & feel (#9022)
+
+:bug: Bugs fixed:
+
+- Fix lakefs superuser command using external authorization (#9127)
+- Fix missing BadRequest(400) in the API spec for get/head object (#9130)
+
+# v1.58.0
+
+🏢 Includes only changes for Enterprise.
+
+# v1.57.0
+
+:new: What's new:
+
+- UI: turn off hive partitioning while select parquet using DuckDB (#9056)
+- Add friendly name to GetUser API response (#9065)
+
+# v1.56.1
+
+:bug: Bugs fixed:
+
+- Fix ParseRange to fail on bytes=-0 (#9032)
+- Fix S3 ListMultipartUploads response missing NextUploadIDMarker (#9036)
+- Use MD5 as ETag in gs adapter (#9041)
+- lakectl - add AWS IAM login config (ignored) (#8994)
+
+# v1.56.0
+
+:new: What's new:
+
+- UI : Add GeoJSON preview support (#8996,#9014)
+- S3 Gateway: Add support for list parts for Google storage adapter (#9019)
+- S3 Gateway: SigV4 Support Unsigned Payload Trailers (#9009)
+- UI: Enable expand/collapse functionality for directory trees  (#8978)
+
+:bug: Bugs fixed:
+
+-  UI: Fix repository tree layout and link behavior (#8999)
+
+# v1.55.0
+
+:new: What's new:
+
+- Support list repositories and branches in lakectl by prefixes by @AliRamberg in #8860
+- Add pagination to Add Group Members and Attach Policies by @Ben-El in #8953
+- Security fix - Replace old go-jwt by @Isan-Rivkin in #8968
+- Support separate per-part requests for MPU presigned URLs by @arielshaqed in #8962
+- lua delta exporter- add a function to find changed tables by @nadavsteindler in #8957
+- Enable expand/collapse functionality for directory trees by @Ben-El in #8978
+
+:bug: Bugs fixed:
+
+- Fix - long branch name overflows in the UI by @Annaseli in #8948
+- Fix - No prompt after clicking the button in access control page #8610 by @VH992098059 in #8932
+- Fix - Parse configuration from environment slice of any by @nopcoder in #8980
+
+# v1.54.0
+
+:new: What's new:
+- Support multiple resources policies (#8823)
+- Presigned URL support in original filename content disposition (#8897)
+
+:bug: Bugs fixed:
+- Fix webui dropzone should be disabled while upload in progress (#8892)
+- Import: prohibit import from storage namespace (#8917)
+- Fix: Truncate Long Path Values in Upload Object Modal (#8920)
+- Truncated the display of overly long branch names in the dropdown. (#8922)
+
+# v1.53.1
+
+:new: What's new:
+- Support configuration populate arrays from environment variables (#8891)
+
+:bug: Bugs fixed:
+- Fix BI metadata collection (#8901)
+
+# v1.53.0
+
+:new: What's new:
+- Added a lakectl flag to point to configurations file: `LAKECTL_CONFIG_FILE` (#8831)
+- Added markdown files diff display to the webui (#8855)
+
+:bug: Bugs fixed:
+- Fixed: Use new Delta Lake client registration flow to handle multiple parquet readers (#8869)
+- Fixed: Preserve PR form state when switching branches (#8870)
+
+# v1.52.0
+
+:new: What's new:
+- Added Lua Action support for `update_object_user_metadata` (#8771)
+- Hooks: Enhanced Lua `stat_object` to get metadata (#8777)
+- Added search functionality for Groups and Policies in Web UI (#8783)
+- Added search functionality for Users in Web UI (#8784)
+- Actions: Added pre-post revert hooks (#8804)
+- Actions: Added prepare-commit hook (#8788)
+
+:bug: Bugs fixed:
+
+- Fixed Web UI Merge Dialog - Enter Should Submit (#8781)
+- Fixed Web UI Auth Error after first login (#8806)
+- Fixed: Revert with allow empty commit (#8803)
+- Fixed: Create bare repository now skips storage namespace check (#8816)
+- Fixed lakeFS Lua package to properly post data in request (#8768)
+
+# v1.51.0
+
+:new: What's new:
+- Hook pre/post merge include merge source (#8703)
+- Switch to use openapi generator v7.0.1.2 (#8710)
+- lakectl: Add storage ID to repo list (#8756)
+
+:bug: Bugs fixed:
+- WebUI: Fix overflowed values in modals (#8640)
+- WebUI: Fix overflowed policy name error (#8705)
+
+# v1.50.0
+
+:new: What's new:
+- Accelerate large files download using concurent chunks for lakectl download recursive (#8613)
+- lakectl support create repository with sample data (#8628)
+- Enable parse config map properties from environment string value (#8657)
+- Upgrade code to use openapi-generator-cli v7.0.1.1 (#8652)
+- Renewed the PGP key (#8661)
+- Add support for no-check flag in setup command (#8591)
+
+:bug: Bugs fixed:
+- UI: Truncated long value names in selected in the AttachModal (#8668)
+- UI: Truncated long value names in groups, users and policies (#8666)
+- UI: Truncated long value names in confirmation window (#8670)
+
+# v1.49.1
+
+:bug: Bugs fixed:
+- Fix: UI Create user (#8604)
+- Fix: Change validation error message on create repository to reflect validation (#8585)
+
+# v1.49.0
+
+:new: What's new:
+- change login placeholders for remote authenticator (#8519)
+- Make http client type configurable (#8516)
+- S3GW: Support list multipart uploads (#8531)
+- Metric: Report time-to-first-byte for get object API (#8503)
+
+:bug: Bugs fixed:
+- Fix: react-dropzone dependency (#8534)
+- Add admin/superuser error handling and cleanup (#8559)
+
+
+# v1.48.2
+
+:bug: Bugs fixed:
+- added storage namespace validation on non-readonly bare repo creation (#8364)
+
+# v1.48.1
+
+:bug: Bugs fixed:
+-  Squash merges is ON by default #8482 (switched to OFF)
+
+   This bug **breaks** backwards compatibility by causing all merged to be
+   squashed by default.
+
+# v1.48.0
+
+## :warning: Do **NOT** use version 1.48.0 :warning:
+
+It squashes merges by default, which is incorrect and a breaking change (#8482)
+
+:new: What's new:
+- Upgrade to Golang 1.23 (#8452)
+- Add "squash merge" support to merge API (#8464)
+
+# v1.47.0
+
+:new: What's new:
+- S3 GW: Support PutIfAbsent (#8428)
+
+# v1.46.0
+
+:new: What's new:
+- Feature: Repository Search by Substring (#8417)
+
+# v1.45.0
+
+**Note:**
+The legacy Python client has been discontinued as of this release. Its development, distribution, and codebase have been terminated.
+
+:new: What's new:
+- Remove Python Legacy Client (#8410)
+- Add friendly name to list group members response (#8413)
+
+# v1.44.0
+
+**Note:**
+The legacy Java client has been discontinued as of this release. Its development, distribution, and codebase have been terminated.
+
+:new: What's new:
+- Support for hidden branches (#8375)
+
+:bug: Bugs fixed:
+- Fix: Auth no endpoint error (#8407)
+- Fix: Delta Exporter- Handle vacuumed objects correctly (#8409)
+- Fix: Allow pre-signed upload via the web UI (#8365)
+
+# v1.43.0
+
+:new: What's new:
+- Support Dark Mode for Text Viewer (#8371)
+
+:bug: Bugs fixed:
+- Fix: lakectl FS upload big files cause OOM (#8349)
+- Fix: CosmosDB panic in handleBatchSizeChange(#8367)
+- Fix: RepoManagementReadAll pull requests permissions (#8374)
+
+# v1.42.0
+
+:new: What's new:
+- Optionally set mtime in linkPhysicalAddress (#8338)
+
+:bug: Bugs fixed:
+- Fix: EnsureStorageNamespace close reader (#8346)
+- Fix: Git package error handling (#8345)
+
+# v1.41.0
+
+:new: What's new:
+- command to check current user in lakectl (#8322)
+
+:bug: Bugs fixed:
+- Use time of create MPU on backend storage as time of MPU (#8311)
+- Fix: Pull Requests merge errors (#8302)
+- Fix "http: read on closed response body" error (#8332)
+- Fix: Get mtime from storage server (#8329)
+
+# v1.40.0
+
+:new: What's new:
+- Added Parallelism configuration option to lakectl (#8283)
+- Experiment: Improve concurrent merge performance by weakly owning branch updates (#8268)
+- Add documentation for standalone (sparkless) GC (#8307)
+
+:bug: Bugs fixed:
+- Pass request context to import operation sub tasks (#8320)
+
+# v1.39.2
+
+:new: What's new:
+- lakectl log: add option to filter merge commits (#8142)
+- Add a deprecation and upgrade warning to python-legacy client (#8195)
+- Make update object metadata API atomic (#8264)
+
+:bug: Bugs fixed:
+- Fix: GC: Read commit explicitly when it is missing from prescanned commits (#8282)
+- Fix: Copy object mtime (#8291)
+
+# v1.38.0
+
+:new: What's new:
+- WebUI: support jsonl/ndjson file diff (#8136)
+- Separate hidden and non-hidden commands in lakectl docs (#8204)
+
+# v1.37.0
+
+:new: What's new:
+- Experimental: add update object metadata API (#8253)
+
+:bug: Bugs fixed:
+- Fix Sample Data checkbox of the Repository Create form (#8255)
+- Add Effect to PR statement (#8254)
+
+# v1.36.0
+
+:new: What's new:
+- Pull Requests for Data (#8235)
+
+:bug: Bugs fixed:
+- lakectl local checkout src uri (#8213)
+
+# v1.35.0
+
+:new: What's new:
+- AWS Pre-signed url endpoint configuration (#8170)
+
+# v1.34.0
+
+:new: What's new:
+- WebUI Dark Mode (#8137)
+
+:bug: Bugs fixed:
+- Make Blockstore Type config case insensitive (#8146)
+
+# v1.33.0
+
+**Note:**
+PLEASE READ CAREFULLY BEFORE UPGRADING TO THIS VERSION!!!
+This version removes the built-in ACLs functionality, and might require some users to take action.
+Refer to [documentation](https://docs.lakefs.io/security/access-control-lists.html) for more information.
+
+:new: What's new:
+- ACLs: Remove server usage (#8126)
+- S3 Gateway CopyObject repsect metadata directive header (#8117)
+
+# v1.32.1
+
+:bug: Bugs fixed:
+- lakectl local: fix dir seek (#8105)
+
+# v1.32.0
+
+:new: What's new:
+
+- lakectl: add --no-progress flag for disabling progress bar animation (#8093)
+
+# v1.31.1
+
+:bug: Bugs fixed:
+- Handle empty page on CosmosDB Iterator (#8066)
+
+# v1.31.0
+
+:new: What's new:
+- lakectl local: add option to ignore symlinks (#8055)
+- Allow Glue exporter to create a database per branch (#8000)
+
+# v1.30.0
+
+:new: What's new:
+- KV Scan optimization - paginate with exponential jumps (#8002)
+
+# v1.29.0
+
+:bug: Bugs fixed:
+- GCS Multipart Upload Performance Fix (#7822) (#7953)
+- Fail `revert` operation in the Python wrapper in case both `reference` and `reference_id` args are provided (#7983)
+- Show deprecation warnings from the Python wrapper by default (#7987)
+- Fix lakectl upload from standard input (#7984)
+- Resolve panic caused by nil parameter in enhanceWithFriendlyName function (#7989)
+
+# v1.28.2
+
+:bug: Bugs fixed:
+- Spark client panics when reading DataFrame from entire repository / storageNamespace (#7955)
+
+# v1.28.1
+
+:new: What's new:
+
+- Metric for open connections (#7913)
+
+# v1.28.0
+
+:new: What's new:
+- Add `flare` command (#7854)
+
+:bug: Bugs fixed:
+- Enforce MonitoredAuthService to implement EmailInviter when required (#7916)
+
+# v1.27.0
+
+:bug: Bugs fixed:
+- CosmosDB iterator to use dynamic batch size after the first list (#7892)
+- Fix S3 bucket validation for inter-region storage (#7896)
+
+# v1.26.1
+
+:new: What's new:
+- Introduce support of GCS encryption for both CMEK and CSEK (#7809)
+- Support prefix parameter in lakectl diff command (#7832)
+- Enforce same-region storage for new repositories (#7847)
+- Add metrics to auth (#7840)
+- Allow changing commit data in cherry-pick and revert (#7865)
+- Prevent unnecessary operations on write actions to read-only repository in s3 gateway (#7844)
+- Return an informative error message when using 'api/v1' for S3 GW endpoint (#7828)
+
+:bug: Bugs fixed:
+- Make batch_size in kv.Scan effective for first Scan of iterator (#7875)
+- Fix lakectl local diff slowness (#7842)
+
+# v1.25.0
+
+:new: What's new:
+- Add OS info to `lakectl` User Agent (#7759)
+- Serve GZipped Static Assets (#7788)
+- Propagate request ID from context to API auth service calls (#7803)
+- Add more context-based logging (#7804)
+- Add "allow-empty" flag to Merge (#7798)
+- Sync Manager to use HTTP client with retries (#7815)
+
+:bug: Bugs fixed:
+- `lakectl local commit`: Prevent remote changes outside synced prefix (#7796)
+- UI: Restore colors in diff view (#7808)
+
+# v1.24.0
+
+:new: What's new:
+- Make MaxBatchDelay configurable (#7774)
+- Handle empty commit messages (#7767)
+  * 🐣 Welcome @itaigilo!
+
+# v1.23.0
+
+:new: What's new:
+- Support presigned image URLs in markdown (#7745)
+- Make the number of DynamoDB connections configurable (#7751)
+
+:bug: Bugs fixed:
+
+- Fix background staging token behaviour (#7754)
+- Fix: pre-merge is missing commit ID (#7750)
+
+# v1.22.0
+
+:new: What's new:
+
+- UI: Report progress when calculating size (#7722)
+- Handle KV slow down error (#7744)
+- Remove linked addresses from KV (#7725)
+**Upgrading to this version will void all existing physical addresses issued by GetPhysicalAddress and require them to be re-issued. This will only effect some of the in-flight uploads during the upgrade**
+
+:bug: Bugs fixed:
+
+- Fix: Object diff to use pre-sign when presign ui is enabled (#7736)
+
+# v1.21.0
+
+:new: What's new:
+
+- Warn when creating lakectl local on case-insensitive filesystems (#7650)
+- lakectl added support for retries (#7723)
+- S3 gateway - return slowdown on DynamoDB throttle (#7685)
+- UI: calculate total size of common prefix (#7720)
+
+:bug: Bugs fixed:
+
+- DDB temp creds to refresh before expiry (#7718)
+- Close resp body in lua s3 client (#7703)
+
+# v1.20.0
+
+:new:  What's new:
+
+- Python SDK: Support multiple pydantic versions (#7672)
+
+# v1.19.0
+
+:new:  What's new:
+
+- Experimental: Support pre-signed redirects for S3A (#7630)
+- lakeFSFS: IAM Role Support Login call (#7659)
+- Azure: Add support for Gov Cloud (#7664)
+- Revert "allow lakectl local to be 'git data' (#7618)" (#7654)
+
+:bug: Bugs fixed:
+
+- Fix: S3 GW ListParts (#7629)
+
+# v1.18.0
+:new: What's new:
+
+- LakeFSFS - TokenProvider AWS (no login yet) (#7604)
+- Add AWS remote auth login (#7578)
+
+# v1.17.0
+:new:  What's new:
+
+- Allow lakectl local to be "git data" (#7618)
+- Support STS in Python wrapper (#7620)
+
+:bug: Bugs fixed: 
+- Fix storage config loading state not updated (#7638)
+- Include hidden files in `lakectl local` (#7644)
+- Use username as token subject in STS login (#7637)
+
+# v1.16.0
+:new: What’s new:
+
+- lakectl: get presigned url for object (#7603)
+- Align S3 Gateway Prometheus Histogram Buckets with lakeFS API Buckets (#7622)
+
+:bug: Bugs fixed:
+
+- Allow storing of friendly_name in KV when integrating with external auth API (#7572)
+- Add TTL to STS (#7605)
+
+# v1.15.0
+
+**Deprecation notice:**
+Azure users no longer need to use the import `hint` when importing from an ADLS Gen2 account.
+We've added a backwards compatibility support in lakectl, but support for the ADLS `hint` will be removed completely in future releases.
+
+:new: What's new:
+
+- Integrate support for Short-Lived Tokens (STS) in Remote Authentication (#7571)
+
+:bug: Bugs fixed:
+
+- Fix lakectl branch protection set 400 response (#7590)
+- Remove ADLS hint from import (#7581)
+
+# v1.14.1
+
+:new: What's new:
+
+- Integration: update experimental external principals API with auth service (#7566)
+
+:bug: Bugs fixed:
+
+- Fix lakectl local diff (#7563)
+
+# v1.14.0
+
+:new: What's new:
+
+- Delta exporter: support export of delta log files with abfss scheme to support unity catalog external tables (#7553)
+- Auth Service: External Principals Management endpoints only (#7539)
+
+:bug: Bugs fixed:
+
+- Support Azure Unity Catalog export (#7554)
+- Groups Pagination is broken in the WebUI (#7556)
+ 
+# v1.13.0
+
+:new: What's new:
+- Delta Lake + Unity Catalog exporter: Delta Lake table metadata (#7527)
+- Handle Azure URLs for chinacloud (#7520)
+- Support "If-None-Match: <etag>" header in getObject request (#5967).
+  Kudos to our latest contributor @vishalsanfran!
+
+:bug: Bugs fixed:
+- Fix: Count KV retries (not tries) in Graveler (#7541)
+- Fix: CreateDirectoryMarkerIfNotExists (#7510)
+- Fix: Fixed bug in multipart upload s3 (#7512)
+- Fix: Gateway wrong error description for copy object (#7526)
+
+# v1.12.1
+
+:bug: Bugs fixed:
+
+* Check for correct RBAC action (GHSA-fvv5-h29g-f6w5).  This security
+  advisory has **moderate** severity (5.3/10), and does not affect users who
+  use the default ACL permissions.
+
+# v1.12.0
+
+:new: What's new:
+- Add If-None-Match to LinkPhysicalAddress (#7480)
+  **Removes deprecation of If-Non-Match from upload object!**
+- Skip actions for read-only repositories (#7477)
+- [hooks] Log the user when fetching Lua script from lakeFS (#7486)
+
+# v1.11.1
+
+:new: What's new:
+- Disable GC and branch protection for read-only repositories (#7471)
+
+:bug: Bugs fixed:
+- Fix S3 gateway cross-repo copies (#7468)
+- Delta export path unescape (#7473)
+
+# v1.11.0
+
+:new: What's new:
+
+- Delta Exporter: Azure Support (#7444)
+- Prohibit empty revert by default (#7308)
+
+:bug: Bugs fixed:
+
+- Fix: Skip ensureStorageNamespace when creating a read-only repository (#7449)
+- Fix: Show email or group name in place of ID in AttachModal (#7454)
+- Fix: Show email when available in the create credentials confirmation modal (#7456)
+- Fix: bug on creating bare repository as read-only (#7458)
+
+# v1.10.0
+
+:new: What's new:
+
+- Remove Delta Diff experimental support + code cleanup (#7343)
+
+:bug: Bugs fixed:
+
+- Handle empty metadata on import (#7363)
+- Remove unnecessary CreateBranch permission check on import (#7362)
+
+# v1.9.1
+
+ :bug: Bugs fixed:
+
+- API: make version and generation fields optional for commit- fix a breaking change introduced in v1.9.0 (#7323)
+
+# v1.9.0
+
+:new: What's new:
+
+- lakectl: download single file using presign now support multipart (#7284)
+- API: separate group id and display name (#7292)
+
+**Note:** the separation of group IDs from displayNames isn't a breaking change.
+However, if using older generated clients with the latest lakeFS version,
+IDs will be displayed instead of the human-readable displayNames when using an external authentication API.
+
+# v1.8.0
+
+:new: What's new:
+
+- Add "hard reset" operation (#7263)
+- Usage report for API and S3 gateway (#7281)
+
+:bug: Bugs fixed:
+
+- Fix docker image build for cross compile (#7286)
+
+
+# v1.7.0
+
+:new: What's new:
+
+- API: Presigned multipart uploads for S3. You can initiate presigned multipart uploads for Amazon S3 directly through the API. **experimental** (#7246)
+
+:bug: Bugs fixed:
+
+- UI: DuckDB cached files fixed with cache buster: No more worries about outdated files. (#7252)
+
+
+# v1.6.0
+
+:new: What's new:
+
+- Allow empty commits option #7186
+
+# v1.5.0
+
+:new: What's new:
+
+- Read-only repositories (#7157)
+- Add StopAt field to the CommitLog action (early-stop at a specific commit) (#7222)
+
+:bug: Bugs fixed:
+
+- Fix: Return "bad request - 400" on reset branch with unknown type  (#7210)
+- Fix: S3-gateway "delete" operation with branch protection should return 200 with error (#7211)
+
+# v1.4.0
+
+:new: What's new:
+
+- Delta Lake Catalog Exporter (#7078)
+- Unity Catalog Exporter (#7167)
+
+# v1.3.1
+
+:bug: Bugs fixed:
+
+- Fix: User with permission to write actions can impersonate another user when auth token is configured in environment variable
+  ([GHSA-26hr-q2wp-rvc5](https://github.com/treeverse/lakeFS/security/advisories/GHSA-26hr-q2wp-rvc5))
+- Fix: S3 Gateway block unsupported S3 operations (#7028)
+- Fix: Better error handling on hook error (#7081)
+- Fix: Upload object without specify content type (#7130)
+- Fix: UI notebook preview fix colors (#7141)
+- Fix: Match blockstore reader hash function (#7099) (thanks @hunjixin)
+- UI improve load by cache and split of embedded content (#7132,#7135)
+
+# v1.3.0
+
+:new: What's new:
+
+- Update AWS Go SDK v2 to support S3 express directory buckets (#7083)
+- API and lakectl: support long-running dump and restore operations (#6975)
+- lakectl: Improved performance for fs rm recursive command (#7035)
+- Glue Exporter: Support Hadoop directory markers (#7058)
+
+:bug: Bugs fixed:
+
+- API: Fix StatsObject returned metadata on empty metadata (#7026)
+- API: Return the right default pagination per page- 100 instead of 1000 (#7051)
+- DynamoDB KV: Check if a table exists before we try to create it (#7056)
+
+# v1.2.0
+
+:new: What's new:
+
+- UI: Allow commit message and metadata in merge action (#6897)
+- API: CreateRepository check if repository exists before trying to validate storage namespace (#6967)
+- lakectl: Add commit params to merge command (#6892)
+- Optimization - Reduce DynamoDB and CosmosDB calls by extending current range to include additional information (#6983)
+
+:bug: Bugs fixed:
+
+- Fix - Lakefs crashing when using database.type=”dynamodb” and scylladb as a database (#6924)
+- Change 'committer' field from UserID to Email, when Email is available (#6912)
+- Use Buf CLI to compile our proto files (#6784)
+- Log time.Duration _twice_ in all modes, as string and as nanoseconds (#6934)
+- External auth remove required id from user model (#6902)
+
+# v1.1.0
+
+:new: What's new:
+
+- API: Added optional since parameter to commit log request (#6851)
+- lakectl: supported log 'since' flag (#6854)
+- Improved lakectl validation error messages (#6816)
+
+:bug: Bugs fixed:
+
+- Fixed S3 gateway error on no underlying object (#6822)
+- Fixed branch protection 'not found' error (#6846)
+
+# v1.0.0
+
+:new: What's new:
+
+After more than 3 years since its initial public release...
+
+🎉 **lakeFS 1.0 is now generally available** 🎉
+
+This is a huge milestone for the lakeFS maintainers, contributors and community and we can't be more excited!
+
+## Benefits
+
+1.0 is more than just a cosmetic change - it includes a few important benefits and guarantees to anyone running or using lakeFS:
+
+* lakeFS 1.x ensures both [backwards]() and [forwards]() compatibility with any future 1.x release, as per [Semver](https://semver.org/).
+* Not just the [lakeFS Open API](https://docs.lakefs.io/reference/api.html): This is also true for the [new lakeFS Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk), the [Java SDK](https://central.sonatype.com/artifact/io.lakefs/sdk?smo=true) and the [lakectl CLI](https://docs.lakefs.io/reference/cli.html) tool.
+* Bug fixes will be released for lakeFS 1.x even after the release of future major version, and at least until October 2024
+* Security fixes will be released (and if needed, backported) even after the release of future major version, and at least until June 2025(!).
+* While lakeFS is already trusted in production in hundreds of organizations around the world, 1.x ensures a stable API going forward and it is highly recommended for all lakeFS users.
+
+## Feature Highlights
+
+The lakeFS 1.0 release actually doesn't introduce any new capabilities other than the guarantees given above. However,
+for users of slightly older 0.x lakeFS versions, here are a few highlights from the last few months that are included with this version:
+
+- `lakectl local` - Allows syncing a local directory with remote data in lakeFS, including full Git integration ([read announcement](https://lakefs.io/blog/scalable-data-version-control-getting-the-best-of-both-worlds-with-lakefs/))
+- **iceberg catalog** - Making it possible to branch, commit and merge multiple Iceberg tables together and in tandem with other formats ([read announcement](https://lakefs.io/blog/using-lakefs-with-apache-iceberg/))
+- **lua based hooks** - Run your own custom logic when commits, merges and other events occur. No need to host a webhook server or deploy anything! ([read announcement](https://lakefs.io/blog/introducing-lua-hooks/))
+- **enhanced security with pre-signed URLs** - Allows lakeFS to version data it cannot even read! This enhanced security by leveraging pre-signed URLs supported on all common object stores, to allow lakeFS to authorize access to data without having to proxy that data through the lakeFS server ([read more](https://docs.lakefs.io/reference/security/presigned-url.html))
+- **[Many many](https://github.com/treeverse/lakeFS/pulls?q=is%3Apr+is%3Aclosed) bug fixes and performance improvements across the board** 
+
+## Notes on upgrading from lakeFS 0.x
+
+While most of the API hasn't changed much, there are a few notable API changes between 0.x and 1.x.
+
+The migration path is usually pretty simple and not many code changes are required - but *please read through the list of breaking changes*:
+
+[lakeFS 1.0 - Code Migration Guide](https://docs.lakefs.io/project/code-migrate-1.0-sdk.html)
+
+For more information on the benefits of upgrading to 1.0 and the migration path, please refer to the [lakeFS documentation](https://docs.lakefs.io/understand/towards-1.0-sdk.html) or [reach out on Slack](https://lakefs.io/slack).
+
+:bug: Bugs fixed:
+
+- Increased the maximum attempts for DynamoDB with configuration support (#6804)
+- Amended Azure import to utilize content MD5 instead of entry Etag (#6802)
+- Corrected issue where the UI upload failed due to conversion of undefined or null values (#6818)
+
+# v0.113.0
+
+:new: What's new:
+
+- Reintroduce recursive flag for lakectl fs download/upload (#6777)
+- Spark client update to use the latest lakefs SDK package (#6742)
+
+:bug: Bugs fixed:
+
+- Fix lakectl upload with pre-sign for Azure (#6660)
+- Fix lakeFSFS ETag value when using pre-signed mode (#6751)
+- Fix LinkPhysicalAddress trim quotes and spaces from checksum (#6749)
+- Fix lakectl upload using pre-signed use ContentMD5 header for ETag (#6750)
+- Fix LinkPhysicalAddress response with full path (#6748)
+- Fix lakectl download error with bad path traversal blocked (#6775)
+- Fix UI Azure pre-sign upload (#6764)
+- Fix UI upload azure pre-signed URL checksum as hex md5 (#6770)
+- Fix UI copy pre-signed URL not working when pre-sign UI disabled (#6776)
+- Fix delete branch protection prevent commit because invalid state (#6788)
+
+
+# v0.112.0
+
+:new: What's new:
+- New Java SDK (#6656)
+- New Pyhon SDK (#6562)
+- Export Hooks: Glue Catalog exporter (#6653)
+- Remove recursive flag from lakectl fs Upload and Download (#6681)
+- CosmosDB: Add throughput configuration (#6693)
+- lakectl: block `fs stage` command for objects in the storage namespace (#6696)
+- API: Deprecate stageObject (#6690)
+- API: linkPhysicalAddress do not verify external addresses (#6667)
+- API: GC prepare move operations to internal tag (#6700)
+- API: support response Too many requests 420 (#6711)
+- API: deprecate upload object If-None-Match and Storage Class (#6708)
+- LakeFSFileSystem is now compatible only with lakeFS versions >= 0.108.0 (#6725)
+
+# v0.111.1
+
+:bug: Bugs fixed:
+- Fix email display bug when using external auth provider (#6680)
+- Fix repository creation bug in quickstart mode (#6682)
+
+# v0.111.0
+
+:new: What's new:
+- lakectl endpoint configure and endpoint path reuse (#6609)
+- Remove UpdateBranchToken API (#6590)
+- Table Extractor Hook and _lakefs_tables format  (#6589)
+- Export Hooks: Symlink Exporter (#6636)
+- Move setting endpoints to be under `/settings/` (#6649)
+- Remove expired commits from prepare_gc_commits response (#6634)
+- Remove lakectl dbt deprecated functionality (#6632)
+- Remove lakectl direct deprecated functionality (#6623)
+- API cleanup: remove emailer service implementation (#6661)
+- API cleanup: consolidate lakefs level information API (#6647)
+- API cleanup: make createSymlinkFile internal (#6630)
+- API cleanup: Mark refs dump/restore current API as internal (#6640)
+
+:bug: Bug fixed:
+- Fix: lua s3 client endpoint configure if set (#6629)
+- Fix: UI alert if "quickstart" repository failed on local (#6622)
+- Fix: Lua runtime - marshaling arrays (#6655)
+- Fix: Presigned URL Cache - change to Default expiry due to bug in package (#6651)
+
+# v0.110.0
+
+:new: What's new:
+- Upgrade code to use AWS SDK go v2 (#6486)
+- Actions: Lua package to parse URL (#6597)
+- UI: Commit info consistent across screens (#6593)
+- API: Update APIs tag for internal use (#6582)
+- lakectl: dbt and metastore commands marked as deprecated (#6565)
+- Removed deprecated: expand template API (#6587)
+- Removed deprecated: remove the update and forgot password APIs (#6591)
+
+:bug: Bug fixed:
+- Fix lakectl local verify bad path error on Windows (#6602)
+- Fix Azure pre-signed URL for blob imported from different account (#6594)
+  
+# v0.109.0
+
+:new: What's new:
+- Restrict lakectl local to common prefixes only (#6510)
+- lakectl local gitignore end marker (#6522)
+- Remove logBranchCommits (#6528)
+- Lua package for yaml support (#6545)
+- lakectl skip stats for unrelased version (#6551)
+- Remove OTF diff APIs from non experimental tag/category (#6563)
+- S3 API: Propogate slowdown response from cosmosdb to client (#6556)
+- logging and lakectl NO_COLOR support (#6569)
+ 
+:bug: Bug fixed:
+- Fix: lakectl import with Azure Data Lake Storage (#6515)
+- Fix: UI pdf viewer by X-Frame-Options set to SAMEORIGIN (#6520)
+- Fix: Lua gs client close (#6547)
+- Fix: Lua path.Join to handle concatenation of two separators (#6549)
+- Fix latest version cache and remove the use of go-github (#6572)
+- Fix: DynamoDB SeekGE bug (#6561)
+
+# v0.108.0
+
+:new: What's new:
+- Support vertex AI (Datasets + Fuse) (#6492)
+- A better way to handle interrupts in lakectl local (#6455) 
+- When creating Repository: `dummy` file location changed from `<storage-namespace>/dummy` to `<storage-namespace>/_lakefs/dummy` (#6497)
+- Removed support for migration from lakeFS version < v0.50.0 (#6497)
+- Deprecate lakectl fs "--direct" flag (#6480)
+
+:bug: Bug fixed:
+- Fix: Ensure that metadata is included in merge operations (#6500)
+- Fix: Increase DynamoDB concurrent requests (#6489)
+- Fix: UI ignores presigned URL configuration for GetObject requests (#6477)
+- Fix: lakectl local sync parallelism (#6485)
+- Fix: UI object information slides outside the modal dialog (#6501)
+- Fix: CosmosDB SeekGE query from iterator start key (#6503)
+- Fix: UI ADLS import validity regex (#6509)
+
+# v0.107.1
+
+:bug: Bug fixed:
+- Fix: Allow disabling pre-signed URLs for google storage block adapter (#6462)
+- Fix: lakectl local with windows (#6464)
+
+# v0.107.0
+
+:new: What's new:
+- Experiment: Batch staging get operations for DBIO transaction markers (#6441)
+
+:bug: Bug fixed:
+- Fix kv local SeekGE fail to skip common prefix (#6435)
+- Fix lakectl local commit to use lakefs upload with user metadata (#6437)
+
+# v0.106.2
+
+:bug: Bugs fixed:
+
+- Refresh credentials if needed before pre-signing URLs, include S3 credentials expiry in their requested lifetime, and make these S3 parameters configurable (#6392)
+- Add meaningful error on block unsupported operation and check pre-sign capabilities in lakectl local (#6408)
+
+## v0.106.1
+
+- Fix: quickstart validation (#6402)
+
+## v0.106.0
+
+:new: What's new:
+- lakectl local release (#6388)
+- Bump vite from 4.0.2 to 4.0.5 in /webui (#6026)
+- Graveler: use result from memory on seek (#6339)
+
+:bug: Bugs fixed:
+- Fix: pass nil reader when content size is 0 (#6367)
+- Fix cosmosdb pagination bug (#6336)
+- Add a warning in lakectl when catalog id is empty (#6381)
+- Arbitrary JavaScript Injection via Direct Link to HTML Files ([GHSA-9phh-r37v-34wh](https://github.com/treeverse/lakeFS/security/advisories/GHSA-9phh-r37v-34wh))
+
+## v0.105.0
+
+:new: What's new:
+- Support .text as a text file extension in the Web UI (#6130)
+- UI: allow loading >10k diff summary (#6287)
+- Add `diff_branch` to Lua hook (#6318)
+- Setup lakefs on startup using predefined setup parameters (#5962)
+- Quickstart now uses DuckDB WASM instead of CLI (#6092)
+- Stop publishing lakeFS DuckDB image (#6141)
+- Remove Everything Bagel - incorporated into the new lakeFS-samples repository (#6146)
+- Return presigned URL expiry time (S3 only for now) (#6328)
+
+:bug: Bugs fixed:
+- Local Storage Range Allow 0:0 (#6116)
+- Fix: Create repo with invalid namespace (#6084)
+- Fix broken link to WAP notebook (#6121)
+- Fix create and delete branch protection error and lakectl output (#6135)
+- Import should replace the destination prefix with the source's state (#6251)
+
+## v0.104.0
+
+:new: What's new:
+- UI: Support uploading multiple files and directories (#6074)
+
+:bug: Bugs fixed:
+- Delta Diff fails on certain operations (#6065)
+- Fix: s3 gateway returning 200 instead of 206 for range requests (#6101)
+- DuckDB: handle line breaks after a string constant (#6109)
+- Add relative ./ path support for MD images (#6057)
+- Fix pre-signed URL UI config default and property name - Azure and GCS (#6073)
+
+## v0.103.0
+
+:new: What's new:
+- Add Azure Cosmos DB kvstore driver (#5915)
+- UI: Allow writing to lakeFS from duckdb-wasm (#6044)
+- Show object's user metadata in UI and CLI (#6050)
+
+:bug: Bugs fixed:
+- Fix gateway list bucket 1k limit (#6025)
+- Fix lakeFSFS non simple access mode with address translator (#6028)
+- Fix: Migration start version (#6039)
+
+## v0.102.2
+
+:bug: Bugs fixed:
+- Using not owned LazyValue after closing a reader (#6004)
+- Fix pre-signed URL UI config default and property name (#6014)
+
+## v0.102.1
+
+:bug: Bugs fixed:
+- Non-Blocking write to wakeup channel (#6007)
+
+## v0.102.0
+
+:new: What's new: 
+- Onboarding progress indicator - repository level (#5876)
+
+:bug: Bugs fixed:
+- Publish docker lakefs+duckdb with latest tag (#5993)
+- Fix import start permissions (#5996)
+
+## v0.101.1
+
+**This release eliminates the need to go through previous ACL migration versions (v0.98.0 and up)**
+Migrations can be perfomed from this version instead
+
+:new: What's new: 
+- Improved Import experience
+- UGC prepare configurable max file size and produce time (#5969)
+- Migrations: Revert remove ACL migration (#5942)
+- Merge API response - remove summary field (#5115)
+- Split and publish lakefs duckdb build and images (#5985)
+
+:bug: Bugs fixed:
+- GC: Read provided mark ID's run id in case that the run is a sweep-only run (#5936)
+- Avoid panics after errors in log-commits (#5956)
+- Fix extended stats user id report (#5970)
+- Fix branch truncation in object viewer (#5982)
+
+## v0.101.0
+
+**This release requires running database migration.**
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+
+:new: What's new: 
+- Refactor import (#5840)
+- Deprecate ingest command (#5882)
+- Support TLS for lakeFS local development (#5322)
+- Generate JWT while working with auth API when non is configured (#5894)
+- Remove email authenticator middleware (#5884)
+
+:bug: Bugs fixed:
+- Fix UI rename Error control to AlertError fixing conflict with class (#5907)
+- Fix loading metadata cache with path separator prefix (#5922)
+- Fix database setup for non-external mode (#5860)
+
+## v0.100.0
+
+:new: What's new:
+- Support `--first-parent` option for commit log (#5733)
+- Homebrew support as part of lakefs release (#5738)
+- [actions] Add conditional execution to hooks (#5707)
+- :wind_face: [UI] Display buttons to open (Airflow) metadata from UI (#5763)
+- [bagel] Add docker-compose-airflow (#5757)
+- :gift: Add Sample Repository with Quickstart option for new repositories (#5787)
+
+:bug: Bugs fixed:
+- [API] LinkPhysicalAddress twice should fail with status code 400 (#5727)
+- [UI] Add back the copy URI button + add cache-control header to GET objects (#5731)
+- [export] Fix lakeFS export docker image to use python 3.11 (#5755)
+- [S3gw] Fix s3 multipart upload abort (#5725)
+- [setup] Fix warning on ACL write group for ACL during setupFS (#5792)
+- [UI] Fix repository name while validating storage namespace (#5802)
+- [UI/setup] Require admin username in initial setup (#5818)
+- [lakectl] Validate fs upload path is not empty (#5819)
+- [lakectl] refs-dump output should be valid JSON (#5831)
+- [auth] Add metarange creation permissions to Developers and to Writers (#5833)
+- [UI] only show group ACL column in simplified mode (#5843)
+- [auth] Remove auth API pass and use username with credentials (#5838)
+
+## v0.99.0
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
+
+:new: What's new:
+- Lua optional net http request (#5679)
+- bisect lakectl support (#5381)
+- Migrate up to ACL if there are no warning (#5657)
+- Remove Repositories from ACL (#5680))
+- Reduce listObjects calls and amount (#5683)
+- Write expired addresses once (#5631)
+- Add configuration for RBAC type in UI (#5656)
+- [GC] Partition and aggregate expired addresses more efficiently (#5618)
+
+- :bug: Bugs fixed:
+- Fix priority queue used by merge find base (#5668)
+
+## v0.98.0
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
+
+
+:new: What's new:
+- change authorization from RBAC to ACL (#5338)
+- Notify new lakefs version in lakectl and Web UI (#5608)
+- Added code highlighting for markdown code blocks + prettier formatting (#5590)
+- Preview Build and Check links for any doc PRs (#5601)
+- Bump Java version in SBT (#5615)
+- Safer fs for config in HadoopFS (#5602)
+- Added support for Azure service principal (#5549)
+
+:bug: Bugs fixed:
+- Fix adls import (#5625)
+
+## v0.97.5
+
+:bug: Bugs fixed:
+
+- Fix: show GC rules missing warning not showing up (#5582)
+- Fix: dotgraph commit urls are broken (#5583)
+- Fix azure data lake v2 import (#5563)
+- fix presign UI  (#5586)
+
+## v0.97.4
+
+:bug: Bugs fixed:
+
+- Fix lakeFS clients - revert OpenAPI generator cli version (#5572)
+
+## v0.97.3
+
+:new: What's new:
+
+- Delta Lake Tables diff - BETA: Compare Delta Lake tables between different refs - UI only (#5427)
+- Cherry-pick a commit to a branch (#5483)
+- Diff UX improvements (#5414)
+- DuckDB/lakeFS improvements (#5430)
+- Display images in markdown with support for lakefs:// URIs (#5449)
+- DynamoDB KV error count without context cancellation (#5512)
+
+:bug: Bugs fixed:
+
+- Fix inconsistent marshaling in DynamoDB KV (#5409)
+- Fix S3 accept header prefer application/xml (#5447)
+- Fix lakectl table write to non TTY non string column (#5500)
+- Fix S3 adapter access content length without nil check (#5499)
+- Fix UI DuckDB fix re-query updated data (#5536)
+- Fix object name wrapping in UI (#5532)
+- Fix iterator panic on close after failed SeekGE (#5516)
+- Remove stack trace from error message in the UI (#5523)
 
 ## v0.96.1
 

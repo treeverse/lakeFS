@@ -3,11 +3,11 @@ package actions
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type HookType string
@@ -23,11 +23,12 @@ type Hook interface {
 	Run(ctx context.Context, record graveler.HookRecord, buf *bytes.Buffer) error
 }
 
-type NewHookFunc func(ActionHook, *Action, *http.Server) (Hook, error)
+type NewHookFunc func(ActionHook, *Action, Config, *http.Server, string, stats.Collector) (Hook, error)
 
 type HookBase struct {
 	ID         string
 	ActionName string
+	Config     Config
 	Endpoint   *http.Server
 }
 
@@ -37,12 +38,10 @@ var hooks = map[HookType]NewHookFunc{
 	HookTypeLua:     NewLuaHook,
 }
 
-var ErrUnknownHookType = errors.New("unknown hook type")
-
-func NewHook(h ActionHook, a *Action, e *http.Server) (Hook, error) {
-	f := hooks[h.Type]
+func NewHook(hook ActionHook, action *Action, cfg Config, server *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {
+	f := hooks[hook.Type]
 	if f == nil {
-		return nil, fmt.Errorf("%w (%s)", ErrUnknownHookType, h.Type)
+		return nil, fmt.Errorf("%w (%s)", ErrUnknownHookType, hook.Type)
 	}
-	return f(h, a, e)
+	return f(hook, action, cfg, server, serverAddress, collector)
 }

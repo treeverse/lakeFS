@@ -20,7 +20,7 @@ func CommitDataToCommitRecord(c *graveler.CommitData) *graveler.CommitRecord {
 			Metadata:     c.Metadata,
 			Parents:      parents,
 			Version:      graveler.CommitVersion(c.Version),
-			Generation:   int(c.Generation),
+			Generation:   graveler.CommitGeneration(c.Generation),
 		},
 	}
 }

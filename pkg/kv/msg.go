@@ -7,6 +7,10 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// GetMsg gets and decodes a protobuf into msg from key on partitionKey,
+// returning a predicate to use with SetMsg.  If it returns an error, it
+// returns a nil predicate.  This predicate makes particular sense for
+// ErrNotFound.
 func GetMsg(ctx context.Context, s Store, partitionKey string, key []byte, msg protoreflect.ProtoMessage) (Predicate, error) {
 	res, err := s.Get(ctx, []byte(partitionKey), key)
 	if err != nil {

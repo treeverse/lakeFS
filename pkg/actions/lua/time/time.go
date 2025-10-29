@@ -35,7 +35,7 @@ func format(l *lua.State) int {
 
 	loc, err := time.LoadLocation(zone)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 	}
 
 	unixTime := time.Unix(epochNanoToFormat/1e9, 0)
@@ -51,7 +51,7 @@ func formatISO(l *lua.State) int {
 
 	loc, err := time.LoadLocation(zone)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 	}
 
 	unixTime := time.Unix(epochNanoToFormat/1e9, 0)
@@ -113,7 +113,7 @@ func parseISO(l *lua.State) int {
 func parseTime(l *lua.State, format, value string) int {
 	t, err := time.Parse(format, value)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 	}
 
 	l.PushNumber(float64(t.UnixNano()))

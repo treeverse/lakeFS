@@ -1,6 +1,6 @@
 
 ID:            <COMMIT_ID>
-Author:        esti
+Author:        ${AUTHOR}
 Date:          ${DATE}
 Meta Range ID: <COMMIT_ID>
 

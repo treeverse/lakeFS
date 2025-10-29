@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -27,15 +28,26 @@ func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) 
 }
 
 func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
+	// verify we only handle delete request
+	query := req.URL.Query()
+	if !query.Has("delete") {
+		_ = o.EncodeError(w, req, nil, gerrors.ERRLakeFSNotSupported.ToAPIErr())
+		return
+	}
 	o.Incr("delete_objects", o.Principal, o.Repository.Name, "")
+	if o.Repository.ReadOnly {
+		_ = o.EncodeError(w, req, nil, gerrors.Codes.ToAPIErr(gerrors.ErrReadOnlyRepository))
+		return
+	}
+
 	decodedXML := &serde.Delete{}
 	err := DecodeXMLBody(req.Body, decodedXML)
 	if err != nil {
-		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, err, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
 		return
 	}
 	if len(decodedXML.Object) == 0 || len(decodedXML.Object) > maxDeleteObjects {
-		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrMalformedXML))
+		_ = o.EncodeError(w, req, err, gerrors.Codes.ToAPIErr(gerrors.ErrMalformedXML))
 		return
 	}
 
@@ -46,6 +58,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		pathsToDelete []string
 		refsToDelete  []string
 		errs          []serde.DeleteError
+		clientIP      string
 	)
 	for _, obj := range decodedXML.Object {
 		resolvedPath, err := path.ResolvePath(obj.Key)
@@ -58,6 +71,9 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 			continue
 		}
 		// authorize this object deletion
+		if clientIP == "" {
+			clientIP = httputil.ExtractClientIP(req.Header, req.RemoteAddr)
+		}
 		authResp, err := o.Auth.Authorize(req.Context(), &auth.AuthorizationRequest{
 			Username: o.Principal,
 			RequiredPermissions: permissions.Node{
@@ -66,6 +82,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 					Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
 				},
 			},
+			ClientIP: clientIP,
 		})
 		if err != nil || !authResp.Allowed {
 			errs = append(errs, serde.DeleteError{
@@ -152,6 +169,13 @@ func checkForDeleteError(log logging.Logger, key string, err error) *serde.Delet
 		log.Debug("tried to delete a non-existent object (OK)")
 	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 		apiErr := gerrors.Codes.ToAPIErr(gerrors.ErrWriteToProtectedBranch)
+		return &serde.DeleteError{
+			Code:    apiErr.Code,
+			Key:     key,
+			Message: fmt.Sprintf("error deleting object: %s", apiErr.Description),
+		}
+	case errors.Is(err, graveler.ErrReadOnlyRepository):
+		apiErr := gerrors.Codes.ToAPIErr(gerrors.ErrReadOnlyRepository)
 		return &serde.DeleteError{
 			Code:    apiErr.Code,
 			Key:     key,

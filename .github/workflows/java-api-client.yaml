@@ -2,7 +2,7 @@ name: java-api-client
 
 on:
   release:
-    types: [published]
+    types: [released]
   workflow_dispatch:
     inputs:
       tag:
@@ -10,11 +10,11 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: Treeverse signing
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
         # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
       - name: Extract version
@@ -46,7 +46,7 @@ jobs:
 
       - name: Build and publish package
         working-directory: clients/java
-        run: mvn --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" --activate-profiles sign-artifacts
+        run: mvn --settings ../cdsettings.xml --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" --activate-profiles sign-artifacts
         env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}

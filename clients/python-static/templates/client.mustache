@@ -1,0 +1,75 @@
+import warnings
+
+from urllib3.util import parse_url, Url
+from lakefs_sdk import ApiClient
+{{#apiInfo}}
+{{#apis}}
+from {{apiPackage}} import {{classFilename}}
+{{/apis}}
+{{/apiInfo}}
+
+
+class _WrappedApiClient(ApiClient):
+    """ApiClient that fixes some weirdness"""
+
+    def files_parameters(self, files=None):
+        """
+        Transforms input file data into a formatted list to return file_parameters.
+        Assume a string file_name is a path to the file to read.
+        Assume a bytes file_name is a file-like object that we append the information.
+        The parent class will handle the files to read.
+        """
+        if not files:
+            return []
+
+        params = []
+        files_to_read = {}
+
+        for idx, (key, value) in enumerate(files.items()):
+            if not value:
+                continue
+
+            # Ensure the value is always a list.
+            file_names = value if isinstance(value, list) else [value]
+
+            for file_name in file_names:
+                if type(file_name) is str:
+                    files_to_read[key] = file_name
+                else:
+                    name = f'{key}_{idx}'
+                    mimetype = 'application/octet-stream'
+                    params.append(tuple([key, tuple([name, value, mimetype])]))
+
+        return super().files_parameters(files_to_read) + params
+
+class LakeFSClient:
+    def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None, pool_threads=1):
+        configuration = LakeFSClient._ensure_endpoint(configuration)
+        self._api = _WrappedApiClient(configuration=configuration, header_name=header_name,
+                                          header_value=header_value, cookie=cookie, pool_threads=pool_threads)
+{{#apiInfo}}
+{{#apis}}
+        self.{{classFilename}} = {{classFilename}}.{{{classname}}}(self._api)
+{{/apis}}
+{{/apiInfo}}
+
+    @staticmethod
+    def _ensure_endpoint(configuration):
+        """Normalize lakefs connection endpoint found in configuration's host"""
+        if not configuration or not configuration.host:
+            return configuration
+        try:
+            # prefix http scheme if missing
+            if not configuration.host.startswith('http://') and not configuration.host.startswith('https://'):
+                configuration.host = 'http://' + configuration.host
+            # if 'host' not set any 'path', format the endpoint url with default 'path' based on the generated code
+            o = parse_url(configuration.host)
+            if not o.path or o.path == '/':
+                settings = configuration.get_host_settings()
+                if settings:
+                    base_path = parse_url(settings[0].get('url')).path
+                    configuration.host = Url(scheme=o.scheme, auth=o.auth, host=o.host, port=o.port,
+                                             path=base_path, query=o.query, fragment=o.fragment).url
+        except ValueError:
+            pass
+        return configuration

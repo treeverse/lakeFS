@@ -32,7 +32,7 @@ func decode(l *lua.State) int {
 	data := lua.CheckString(l, 1)
 	decoded, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 	l.PushString(string(decoded))
@@ -49,7 +49,7 @@ func urlDecode(l *lua.State) int {
 	data := lua.CheckString(l, 1)
 	decoded, err := base64.RawURLEncoding.DecodeString(data)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 	l.PushString(string(decoded))

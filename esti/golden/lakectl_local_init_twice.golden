@@ -1,0 +1,2 @@
+directory '${LOCAL_DIR}' already linked to a lakeFS path, run command with --force to overwrite
+Error executing command.
