@@ -34,9 +34,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
+const (
+	contextKeyConditionContext contextKey = "condition_context"
+)
+
 type AuthorizationRequest struct {
 	Username            string
 	RequiredPermissions permissions.Node
+	ClientIP            string // IP address of the client making the request
 }
 
 type AuthorizationResponse struct {
@@ -562,9 +567,10 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 	stmts := make([]Statement, len(policy.Statement))
 	for i, s := range policy.Statement {
 		stmts[i] = Statement{
-			Action:   s.Action,
-			Effect:   s.Effect,
-			Resource: s.Resource,
+			Action:    s.Action,
+			Effect:    s.Effect,
+			Resource:  s.Resource,
+			Condition: conditionToAPICondition(s.Condition),
 		}
 	}
 	createdAt := policy.CreatedAt.Unix()
@@ -593,13 +599,49 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
+// conditionToAPICondition converts model.Statement.Condition to API Statement_Condition format
+func conditionToAPICondition(modelCondition map[string]map[string][]string) *Statement_Condition {
+	if len(modelCondition) == 0 {
+		return nil
+	}
+
+	apiCondition := &Statement_Condition{
+		AdditionalProperties: make(map[string]PolicyCondition, len(modelCondition)),
+	}
+
+	for operator, conditions := range modelCondition {
+		policyCondition := PolicyCondition{
+			AdditionalProperties: conditions,
+		}
+		apiCondition.AdditionalProperties[operator] = policyCondition
+	}
+
+	return apiCondition
+}
+
+// apiConditionToCondition converts API Statement_Condition to model.Statement.Condition format
+func apiConditionToCondition(apiCondition *Statement_Condition) map[string]map[string][]string {
+	if apiCondition == nil || len(apiCondition.AdditionalProperties) == 0 {
+		return nil
+	}
+
+	modelCondition := make(map[string]map[string][]string, len(apiCondition.AdditionalProperties))
+
+	for operator, policyCondition := range apiCondition.AdditionalProperties {
+		modelCondition[operator] = policyCondition.AdditionalProperties
+	}
+
+	return modelCondition
+}
+
 func serializePolicyToModalPolicy(p Policy) *model.Policy {
 	stmts := make(model.Statements, len(p.Statement))
 	for i, apiStatement := range p.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
-			Action:   apiStatement.Action,
-			Resource: apiStatement.Resource,
+			Effect:    apiStatement.Effect,
+			Action:    apiStatement.Action,
+			Resource:  apiStatement.Resource,
+			Condition: apiConditionToCondition(apiStatement.Condition),
 		}
 	}
 	var creationTime time.Time
@@ -931,6 +973,11 @@ func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupID string, 
 
 func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	ctx = httputil.SetClientTrace(ctx, "api_auth")
+
+	// Build condition context from request
+	conditionCtx := NewConditionContext(req.ClientIP)
+	ctx = context.WithValue(ctx, contextKeyConditionContext, conditionCtx)
+
 	policies, _, err := a.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
 		Amount: -1, // all
@@ -1180,6 +1227,18 @@ func (n *MissingPermissions) String() string {
 }
 
 func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy, permAudit *MissingPermissions) CheckResult {
+	// Create condition context for condition evaluation
+	conditionCtx := &ConditionContext{
+		Fields: make(map[string]string),
+	}
+	log := logging.FromContext(ctx)
+	if reqContext, ok := ctx.Value(contextKeyConditionContext).(*ConditionContext); ok {
+		conditionCtx = reqContext
+		if len(conditionCtx.Fields) > 0 {
+			log = log.WithField("fields", conditionCtx.Fields)
+		}
+	}
+
 	allowed := CheckNeutral
 	switch node.Type {
 	case permissions.NodeTypeNode:
@@ -1187,9 +1246,22 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		// check whether the permission is allowed, denied or natural (not allowed and not denied)
 		for _, policy := range policies {
 			for _, stmt := range policy.Statement {
+				// Evaluate conditions first
+				if len(stmt.Condition) > 0 {
+					conditionPassed, err := EvaluateConditions(stmt.Condition, conditionCtx)
+					if err != nil {
+						log.WithError(err).Warn("Failed to evaluate conditions")
+						return CheckDeny
+					}
+					if !conditionPassed {
+						// Conditions didn't pass, skip this statement
+						continue
+					}
+				}
+
 				resources, err := ParsePolicyResourceAsList(stmt.Resource)
 				if err != nil {
-					logging.FromContext(ctx).Error(err)
+					log.Error(err)
 					return CheckDeny
 				}
 				for _, resource := range resources {
@@ -1220,9 +1292,9 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 
 	case permissions.NodeTypeOr:
 		// returns:
-		// Allowed - at least one of the permissions is allowed and no one is denied
-		// Denied - one of the permissions is Deny
-		// Natural - otherwise
+		// Allowed - at least one of the permissions is allowed and no one is denied.
+		// Denied - one of the permissions is Deny.
+		// Natural - otherwise.
 		for _, node := range node.Nodes {
 			result := CheckPermissions(ctx, node, username, policies, permAudit)
 			if result == CheckDeny {
@@ -1247,7 +1319,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		return CheckAllow
 
 	default:
-		logging.FromContext(ctx).Error("unknown permission node type")
+		log.Error("unknown permission node type")
 		return CheckDeny
 	}
 	return allowed

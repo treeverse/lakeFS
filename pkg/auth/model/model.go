@@ -103,7 +103,7 @@ type User struct {
 	// Username is a unique identifier for the user. In password-based authentication, it is the email.
 	Username string `db:"display_name" json:"display_name"`
 	// FriendlyName, if set, is a shorter name for the user than
-	// Username.  Unlike Username it does not identify the user (it
+	// Username.  Unlike Username, it does not identify the user (it
 	// might not be unique); use it in the user's GUI rather than in
 	// backend code.
 	FriendlyName      *string `db:"friendly_name" json:"friendly_name"`
@@ -152,7 +152,7 @@ type Policy struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	DisplayName string     `db:"display_name" json:"display_name"`
 	Statement   Statements `db:"statement"`
-	ACL         ACL        `db:"acl" json:"acl,omitempty"`
+	ACL         ACL        `db:"acl" json:"acl"`
 }
 
 type DBPolicy struct {
@@ -161,9 +161,10 @@ type DBPolicy struct {
 }
 
 type Statement struct {
-	Effect   string   `json:"Effect"`
-	Action   []string `json:"Action"`
-	Resource string   `json:"Resource"`
+	Effect    string                         `json:"Effect"`
+	Action    []string                       `json:"Action"`
+	Resource  string                         `json:"Resource"`
+	Condition map[string]map[string][]string `json:"Condition,omitempty"`
 }
 
 type Statements []Statement
@@ -218,14 +219,14 @@ func (u *User) Authenticate(password string) error {
 	return bcrypt.CompareHashAndPassword(u.EncryptedPassword, []byte(password))
 }
 
-func (s Statements) Value() (driver.Value, error) {
+func (s *Statements) Value() (driver.Value, error) {
 	if s == nil {
 		return json.Marshal([]struct{}{})
 	}
 	return json.Marshal(s)
 }
 
-func (s *Statements) Scan(src interface{}) error {
+func (s *Statements) Scan(src any) error {
 	if src == nil {
 		return nil
 	}
@@ -328,18 +329,43 @@ func ProtoFromCredential(c *Credential) *CredentialData {
 }
 
 func statementFromProto(pb *StatementData) *Statement {
+	condition := make(map[string]map[string][]string)
+	if pb.Condition != nil {
+		for operatorName, condOp := range pb.Condition {
+			condition[operatorName] = make(map[string][]string)
+			if condOp != nil && condOp.Fields != nil {
+				for fieldName, stringList := range condOp.Fields {
+					if stringList != nil {
+						condition[operatorName][fieldName] = stringList.Values
+					}
+				}
+			}
+		}
+	}
 	return &Statement{
-		Effect:   pb.Effect,
-		Action:   pb.Action,
-		Resource: pb.Resource,
+		Effect:    pb.Effect,
+		Action:    pb.Action,
+		Resource:  pb.Resource,
+		Condition: condition,
 	}
 }
 
 func protoFromStatement(s *Statement) *StatementData {
+	condition := make(map[string]*ConditionOperator)
+	if s.Condition != nil {
+		for operatorName, fields := range s.Condition {
+			fieldMap := make(map[string]*StringList)
+			for fieldName, values := range fields {
+				fieldMap[fieldName] = &StringList{Values: values}
+			}
+			condition[operatorName] = &ConditionOperator{Fields: fieldMap}
+		}
+	}
 	return &StatementData{
-		Effect:   s.Effect,
-		Action:   s.Action,
-		Resource: s.Resource,
+		Effect:    s.Effect,
+		Action:    s.Action,
+		Resource:  s.Resource,
+		Condition: condition,
 	}
 }
 
