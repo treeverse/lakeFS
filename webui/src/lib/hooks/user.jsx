@@ -4,29 +4,32 @@ import { AUTH_STATUS, useAuth } from "../auth/authContext";
 import { useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
-const hasAuthSessionCookie = () =>
-    typeof document !== "undefined" &&
-    (document.cookie.includes("internal_auth_session=") ||
-        document.cookie.includes("oidc_auth_session="));
+const hasAuthSessionCookie = () => {
+    const c = typeof document === "undefined" ? "" : document.cookie || "";
+    return c.includes("internal_auth_session=") || c.includes("oidc_auth_session=");
+};
 
 const useUser = () => {
     const { setAuthStatus } = useAuth();
     const location = useLocation();
 
-    const shouldHardValidate = useMemo(
-        () => location.pathname.startsWith("/auth/") && location.pathname !== "/auth/login",
-        [location.pathname]
-    );
-    const revalidateKey = shouldHardValidate ? `${location.pathname}${location.search}` : undefined;
+    const hardValidate = useMemo(() => location.pathname.startsWith("/auth/") && location.pathname !== "/auth/login", [location.pathname]);
+
+    const hasSession = hasAuthSessionCookie();
+    useEffect(() => {
+        if (!hasSession) setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
+    }, [hasSession, setAuthStatus]);
+
+    if (!hasSession) return { user: null, loading: false, error: null, checked: true };
 
     const fetcher = useCallback(async () => {
-        if (!hasAuthSessionCookie()) return null;          // ⟵ קצר ולעניין
-        if (shouldHardValidate) return auth.getCurrentUser();
+        if (hardValidate) return auth.getCurrentUser();
         const cached = await auth.getCurrentUserWithCache();
-        return cached?.id ? cached : auth.getCurrentUser();
-    }, [shouldHardValidate]);
+        if (cached?.id) return cached;
+        return auth.getCurrentUser();
+    }, [hardValidate]);
 
-    const { response, loading, error } = useAPI(fetcher, [revalidateKey]);
+    const { response, loading, error } = useAPI(fetcher, [hardValidate ? `${location.pathname}${location.search}` : undefined]);
 
     useEffect(() => {
         if (loading) return;
@@ -34,7 +37,8 @@ const useUser = () => {
         setAuthStatus(prev => (prev === next ? prev : next));
     }, [loading, response, setAuthStatus]);
 
-    return { user: response?.id ? response : null, loading, error, checked: !loading };
+    const user = response?.id ? response : null;
+    return { user, loading, error, checked: !loading };
 };
 
 export default useUser;
