@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {AuthenticationError} from "../api";
 import {AUTH_STATUS, useAuth} from "../auth/authContext";
+import {useNavigate} from "react-router-dom";
 
 const initialPaginationState = {
     loading: true,
@@ -52,6 +53,7 @@ const initialAPIState = {
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
     const { status, setAuthStatus } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         let isMounted = true;
@@ -63,9 +65,17 @@ export const useAPI = (promise, deps = []) => {
                 setRequest({ loading: false, error: null, response });
             } catch (error) {
                 if (!isMounted) return;
-                if (error instanceof AuthenticationError) {
+                if (error instanceof AuthenticationError && error.status === 401) {
                     if (status === AUTH_STATUS.AUTHENTICATED) {
                         setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
+                    }
+
+                    setRequest({ loading: false, error: null, response: null });
+                    if (!window.location.pathname.startsWith("/auth/")) {
+                        navigate("/auth/login", {
+                            replace: true,
+                            state: { redirected: true, next: window.location.pathname },
+                        });
                     }
                     return;
                 }
