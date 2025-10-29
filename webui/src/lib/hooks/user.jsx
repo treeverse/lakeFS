@@ -23,7 +23,7 @@ const useUser = () => {
     useEffect(() => {
         if (loading) return;
         const next = response?.id ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED;
-        setAuthStatus(next);
+        setAuthStatus(prev => (prev === next ? prev : next));
     }, [loading, response, setAuthStatus]);
 
     const user = response?.id ? response : null;

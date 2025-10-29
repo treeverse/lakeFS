@@ -9,12 +9,14 @@ import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
+import {AUTH_STATUS, useAuth} from "../auth/authContext";
 
 const NavUserInfo = () => {
     const { user, loading: userLoading, error } = useUser();
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
     const versionConfig = config?.versionConfig || {};
+    const { setAuthStatus } = useAuth();
 
     if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
@@ -39,6 +41,7 @@ const NavUserInfo = () => {
             <NavDropdown.Item
                 onClick={()=> {
                     auth.clearCurrentUser();
+                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     window.location.replace(logoutUrl);
                 }}>
                 Logout
