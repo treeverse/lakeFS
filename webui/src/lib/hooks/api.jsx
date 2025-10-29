@@ -51,7 +51,7 @@ const initialAPIState = {
 
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
-    const { status, setAuthStatus } = useAuth();
+    const { setAuthStatus } = useAuth();
 
     useEffect(() => {
         let isMounted = true;
