@@ -1,11 +1,29 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import Table from "react-bootstrap/Table";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
-import {FormControl} from "react-bootstrap";
+import { FormControl } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
-import {AlertError, FormattedDate} from "./controls";
+import { AlertError, FormattedDate } from "./controls";
+
+// Helper function to format condition for display
+// Example: { "IpAddress": { "SourceIp": ["10.0.0.0/8", "127.0.0.1/32"] } }
+const formatCondition = (condition) => {
+    if (!condition || Object.keys(condition).length === 0) {
+        return "";
+    }
+
+    return Object.entries(condition)
+        .map(([operator, contextObj]) => {
+            const parts = Object.entries(contextObj).map(([contextKey, values]) => {
+                const arr = Array.isArray(values) ? values : [values];
+                return `${contextKey}: [${arr.join(", ")}]`;
+            });
+            return `${operator}: { ${parts.join(", ")} }`;
+        })
+        .join(" | ");
+};
 
 export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = false, isCreate = false, validationFunction = null, externalError = null }) => {
     const [error, setError] = useState(null);
@@ -20,9 +38,9 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
     const [body, setBody] = useState('')
     useEffect(() => {
         if (policy !== null) {
-        const newBody = JSON.stringify(policy, null, 4);
+            const newBody = JSON.stringify(policy, null, 4);
             setBody(newBody);
-        setSavedBody(newBody);
+            setSavedBody(newBody);
         }
     }, [policy]);
 
@@ -41,26 +59,26 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
             JSON.parse(statement);
         } catch (error) {
             setError(error);
-        return false;
+            return false;
         }
         const promise = (policy === null) ? onSubmit(idField.current.value, statement) : onSubmit(statement)
         return promise
-        .then((res) => {
-        setSavedBody(statement);
-        setError(null);
-        return res;
-        })
-        .catch((err) => {
-        setError(err);
-        return null;
-        });
+            .then((res) => {
+                setSavedBody(statement);
+                setError(null);
+                return res;
+            })
+            .catch((err) => {
+                setError(err);
+                return null;
+            });
     };
 
     const hide = () => {
         setError(null);
-    if (savedBody !== null) {
-        setBody(savedBody);
-    }
+        if (savedBody !== null) {
+            setBody(savedBody);
+        }
         onHide();
     };
     const actionName = policy === null || isCreate ? 'Create' : 'Edit'
@@ -77,7 +95,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
                 }}>
                     {(policy === null) && !noID && (
                         <Form.Group className="mb-3">
-                            <FormControl ref={idField} autoFocus placeholder="Policy ID (e.g. 'MyRepoReadWrite')" type="text"/>
+                            <FormControl ref={idField} autoFocus placeholder="Policy ID (e.g. 'MyRepoReadWrite')" type="text" />
                         </Form.Group>
                     )}
                     <Form.Group className="mb-3">
@@ -89,12 +107,12 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
                             as="textarea"
                             type="text"
                             onChange={e => setBody(e.target.value)}
-                            value={body}/>
+                            value={body} />
                     </Form.Group>
                 </Form>
 
-                {(!!error) && <AlertError className="mt-3" error={error}/>}
-                {(!!externalError) && <AlertError className="mt-3" error={externalError}/>}
+                {(!!error) && <AlertError className="mt-3" error={error} />}
+                {(!!externalError) && <AlertError className="mt-3" error={externalError} />}
 
             </Modal.Body>
 
@@ -109,27 +127,29 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
 export const PolicyDisplay = ({ policy, asJSON }) => {
     let childComponent;
     if (asJSON) {
-        childComponent = (<pre className={"policy-body"}>{JSON.stringify({statement: policy.statement}, null, 4)}</pre>);
+        childComponent = (<pre className={"policy-body"}>{JSON.stringify({ statement: policy.statement }, null, 4)}</pre>);
     } else {
         childComponent = (
             <Table>
                 <thead>
-                <tr>
-                    <th>Actions</th>
-                    <th>Resource</th>
-                    <th>Effect</th>
-                </tr>
+                    <tr>
+                        <th>Actions</th>
+                        <th>Resource</th>
+                        <th>Effect</th>
+                        <th>Condition</th>
+                    </tr>
                 </thead>
                 <tbody>
-                {policy.statement.map((statement, i) => {
-                    return (
-                        <tr key={`statement-${i}`}>
-                            <td><code>{statement.action.join(", ")}</code></td>
-                            <td><code>{statement.resource}</code></td>
-                            <td><strong style={{'color': (statement.effect === "allow") ? 'green':'red'}}>{statement.effect}</strong></td>
-                        </tr>
-                    );
-                })}
+                    {policy.statement.map((statement, i) => {
+                        return (
+                            <tr key={`statement-${i}`}>
+                                <td><code>{statement.action.join(", ")}</code></td>
+                                <td><code>{statement.resource}</code></td>
+                                <td><strong style={{ 'color': (statement.effect === "allow") ? 'green' : 'red' }}>{statement.effect}</strong></td>
+                                <td><code>{formatCondition(statement.condition)}</code></td>
+                            </tr>
+                        );
+                    })}
                 </tbody>
             </Table>
 
@@ -140,7 +160,7 @@ export const PolicyDisplay = ({ policy, asJSON }) => {
         <div>
             <p>
                 <strong>Created At: </strong>
-                <FormattedDate dateValue={policy.creation_date}/>
+                <FormattedDate dateValue={policy.creation_date} />
             </p>
             {childComponent}
         </div>

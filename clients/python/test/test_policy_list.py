@@ -52,7 +52,10 @@ class TestPolicyList(unittest.TestCase):
                                 resource = '', 
                                 action = [
                                     ''
-                                    ], )
+                                    ], 
+                                condition = {
+                                    'key' : {"IpAddress":["192.168.0.1/32","192.168.0.2/32"]}
+                                    }, )
                             ], )
                     ]
             )
@@ -73,7 +76,10 @@ class TestPolicyList(unittest.TestCase):
                                 resource = '', 
                                 action = [
                                     ''
-                                    ], )
+                                    ], 
+                                condition = {
+                                    'key' : {"IpAddress":["192.168.0.1/32","192.168.0.2/32"]}
+                                    }, )
                             ], )
                     ],
         )

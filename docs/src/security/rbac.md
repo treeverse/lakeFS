@@ -48,6 +48,96 @@ During evaluation of a request, `deny` would take precedence over any other `all
 This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `deny` rules to then selectively restrict what that user can do.
 
 
+## Policy Conditions
+
+lakeFS policies support optional conditions that provide additional control over when a policy statement is in effect.
+
+Conditions are specified using condition operators that evaluate to true or false based on the request context. When a condition evaluates to false, the policy statement does not apply.
+
+### Condition Structure
+
+Conditions are added to policy statements using the optional `condition` field:
+
+```json
+{
+  "statement": [
+    {
+      "action": ["fs:ReadObject"],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/myrepo/object/*",
+      "condition": {
+        "IpAddress": {
+          "SourceIp": ["203.0.113.0/24", "198.51.100.25/32"]
+        }
+      }
+    }
+  ]
+}
+```
+
+### Supported Condition Operators
+
+#### IpAddress
+
+The `IpAddress` condition operator matches the client's source IP address against one or more IP addresses or CIDR blocks.
+
+**Supported Fields:**
+- `SourceIp` - The IP address of the client making the request
+
+**Value Format:**
+- Single IP address: `"203.0.113.5"`
+- CIDR notation: `"203.0.113.0/24"`
+- Array of IPs and/or CIDRs: `["203.0.113.0/24", "198.51.100.25/32"]`
+
+**Example - Allow access only from specific IP range:**
+
+```json
+{
+  "statement": [
+    {
+      "action": ["fs:*"],
+      "effect": "allow",
+      "resource": "*",
+      "condition": {
+        "IpAddress": {
+          "SourceIp": ["10.0.0.0/8", "172.16.0.0/12"]
+        }
+      }
+    }
+  ]
+}
+```
+
+**Example - Deny access from specific IPs:**
+
+```json
+{
+  "statement": [
+    {
+      "action": ["fs:*"],
+      "effect": "deny",
+      "resource": "*",
+      "condition": {
+        "IpAddress": {
+          "SourceIp": ["192.0.2.0/24"]
+        }
+      }
+    }
+  ]
+}
+```
+
+**IP Address Extraction:**
+
+lakeFS extracts the client IP address from the request using the following priority:
+
+1. `X-Forwarded-For` header (first IP in the list) - for requests through proxies/load balancers
+2. `X-Real-IP` header - as a fallback
+3. Remote address from the TCP connection
+
+This ensures that IP-based conditions work correctly even when lakeFS is deployed behind a load balancer or reverse proxy.
+
+
 ## Resource naming - ARNs
 
 lakeFS uses [ARN identifier](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-arns){:target="_blank"} - very similar in structure to those used by AWS. 

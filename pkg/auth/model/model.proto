@@ -7,67 +7,78 @@ package io.treeverse.lakefs.auth.model;
 
 // message data model for model.User struct
 message UserData {
-    google.protobuf.Timestamp created_at = 1;
-    string username = 2;
-    string friendly_name = 3;
-    string email = 4;
-    bytes encrypted_password = 5;
-    string source = 6;
-    string external_id = 7;
+  google.protobuf.Timestamp created_at = 1;
+  string username = 2;
+  string friendly_name = 3;
+  string email = 4;
+  bytes encrypted_password = 5;
+  string source = 6;
+  string external_id = 7;
 }
 
 // message data model for model.Group struct
 message GroupData {
-    google.protobuf.Timestamp created_at = 1;
-    string display_name = 2;
-    string description = 3;
+  google.protobuf.Timestamp created_at = 1;
+  string display_name = 2;
+  string description = 3;
 }
 
 // message data model for model.ACL struct
 message ACLData {
-    string permission = 1;
-    bool all_repositories = 2 [deprecated = true];
-    repeated string repositories = 3 [deprecated = true];
+  string permission = 1;
+  bool all_repositories = 2 [deprecated = true];
+  repeated string repositories = 3 [deprecated = true];
 }
 
 // message data model for model.Policy struct
 message PolicyData {
-    google.protobuf.Timestamp created_at = 1;
-    string display_name = 2;
-    repeated StatementData statements = 3;
+  google.protobuf.Timestamp created_at = 1;
+  string display_name = 2;
+  repeated StatementData statements = 3;
 
-    ACLData acl = 4;
+  ACLData acl = 4;
 }
 
 // message data model for model.Credential struct
 message CredentialData {
-    string access_key_id = 1;
-    bytes secret_access_key_encrypted_bytes = 2;
-    google.protobuf.Timestamp issued_date = 3;
-    bytes user_id = 4;
+  string access_key_id = 1;
+  bytes secret_access_key_encrypted_bytes = 2;
+  google.protobuf.Timestamp issued_date = 3;
+  bytes user_id = 4;
 }
 
 // message data model for model.Statement struct
 message StatementData {
-    string effect = 1;
-    repeated string action = 2;
-    string resource = 3;
+  string effect = 1;
+  repeated string action = 2;
+  string resource = 3;
+  map<string, ConditionOperator> condition = 4;
+}
+
+// ConditionOperator represents fields and values for a condition operator
+message ConditionOperator {
+  map<string, StringList> fields = 1;
+}
+
+// StringList is a helper message to support repeated string values in map
+message StringList {
+  repeated string values = 1;
 }
 
 // message data model for rest password token
 message TokenData {
-    string token_id = 1;
-    google.protobuf.Timestamp expired_at = 2;
+  string token_id = 1;
+  google.protobuf.Timestamp expired_at = 2;
 }
 
 // message data model for repositories / all repositories in UI
 message RepositoriesData {
-    bool all = 1;
-    repeated string list = 2;
+  bool all = 1;
+  repeated string list = 2;
 }
 
 // message data model for UI structure
 message UIData {
-    string permission = 1;
-    RepositoriesData repositories = 2;
+  string permission = 1;
+  RepositoriesData repositories = 2;
 }

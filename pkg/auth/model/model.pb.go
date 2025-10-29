@@ -381,10 +381,11 @@ func (x *CredentialData) GetUserId() []byte {
 
 // message data model for model.Statement struct
 type StatementData struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Effect        string                 `protobuf:"bytes,1,opt,name=effect,proto3" json:"effect,omitempty"`
-	Action        []string               `protobuf:"bytes,2,rep,name=action,proto3" json:"action,omitempty"`
-	Resource      string                 `protobuf:"bytes,3,opt,name=resource,proto3" json:"resource,omitempty"`
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Effect        string                        `protobuf:"bytes,1,opt,name=effect,proto3" json:"effect,omitempty"`
+	Action        []string                      `protobuf:"bytes,2,rep,name=action,proto3" json:"action,omitempty"`
+	Resource      string                        `protobuf:"bytes,3,opt,name=resource,proto3" json:"resource,omitempty"`
+	Condition     map[string]*ConditionOperator `protobuf:"bytes,4,rep,name=condition,proto3" json:"condition,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -440,6 +441,103 @@ func (x *StatementData) GetResource() string {
 	return ""
 }
 
+func (x *StatementData) GetCondition() map[string]*ConditionOperator {
+	if x != nil {
+		return x.Condition
+	}
+	return nil
+}
+
+// ConditionOperator represents fields and values for a condition operator
+type ConditionOperator struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Fields        map[string]*StringList `protobuf:"bytes,1,rep,name=fields,proto3" json:"fields,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConditionOperator) Reset() {
+	*x = ConditionOperator{}
+	mi := &file_auth_model_model_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConditionOperator) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConditionOperator) ProtoMessage() {}
+
+func (x *ConditionOperator) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_model_model_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConditionOperator.ProtoReflect.Descriptor instead.
+func (*ConditionOperator) Descriptor() ([]byte, []int) {
+	return file_auth_model_model_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ConditionOperator) GetFields() map[string]*StringList {
+	if x != nil {
+		return x.Fields
+	}
+	return nil
+}
+
+// StringList is a helper message to support repeated string values in map
+type StringList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Values        []string               `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StringList) Reset() {
+	*x = StringList{}
+	mi := &file_auth_model_model_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StringList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringList) ProtoMessage() {}
+
+func (x *StringList) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_model_model_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringList.ProtoReflect.Descriptor instead.
+func (*StringList) Descriptor() ([]byte, []int) {
+	return file_auth_model_model_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *StringList) GetValues() []string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
 // message data model for rest password token
 type TokenData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -451,7 +549,7 @@ type TokenData struct {
 
 func (x *TokenData) Reset() {
 	*x = TokenData{}
-	mi := &file_auth_model_model_proto_msgTypes[6]
+	mi := &file_auth_model_model_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -463,7 +561,7 @@ func (x *TokenData) String() string {
 func (*TokenData) ProtoMessage() {}
 
 func (x *TokenData) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_model_model_proto_msgTypes[6]
+	mi := &file_auth_model_model_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -476,7 +574,7 @@ func (x *TokenData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TokenData.ProtoReflect.Descriptor instead.
 func (*TokenData) Descriptor() ([]byte, []int) {
-	return file_auth_model_model_proto_rawDescGZIP(), []int{6}
+	return file_auth_model_model_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *TokenData) GetTokenId() string {
@@ -504,7 +602,7 @@ type RepositoriesData struct {
 
 func (x *RepositoriesData) Reset() {
 	*x = RepositoriesData{}
-	mi := &file_auth_model_model_proto_msgTypes[7]
+	mi := &file_auth_model_model_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -516,7 +614,7 @@ func (x *RepositoriesData) String() string {
 func (*RepositoriesData) ProtoMessage() {}
 
 func (x *RepositoriesData) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_model_model_proto_msgTypes[7]
+	mi := &file_auth_model_model_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -529,7 +627,7 @@ func (x *RepositoriesData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoriesData.ProtoReflect.Descriptor instead.
 func (*RepositoriesData) Descriptor() ([]byte, []int) {
-	return file_auth_model_model_proto_rawDescGZIP(), []int{7}
+	return file_auth_model_model_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RepositoriesData) GetAll() bool {
@@ -557,7 +655,7 @@ type UIData struct {
 
 func (x *UIData) Reset() {
 	*x = UIData{}
-	mi := &file_auth_model_model_proto_msgTypes[8]
+	mi := &file_auth_model_model_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -569,7 +667,7 @@ func (x *UIData) String() string {
 func (*UIData) ProtoMessage() {}
 
 func (x *UIData) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_model_model_proto_msgTypes[8]
+	mi := &file_auth_model_model_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -582,7 +680,7 @@ func (x *UIData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UIData.ProtoReflect.Descriptor instead.
 func (*UIData) Descriptor() ([]byte, []int) {
-	return file_auth_model_model_proto_rawDescGZIP(), []int{8}
+	return file_auth_model_model_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UIData) GetPermission() string {
@@ -639,11 +737,23 @@ const file_auth_model_model_proto_rawDesc = "" +
 	"!secret_access_key_encrypted_bytes\x18\x02 \x01(\fR\x1dsecretAccessKeyEncryptedBytes\x12;\n" +
 	"\vissued_date\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"issuedDate\x12\x17\n" +
-	"\auser_id\x18\x04 \x01(\fR\x06userId\"[\n" +
+	"\auser_id\x18\x04 \x01(\fR\x06userId\"\xa8\x02\n" +
 	"\rStatementData\x12\x16\n" +
 	"\x06effect\x18\x01 \x01(\tR\x06effect\x12\x16\n" +
 	"\x06action\x18\x02 \x03(\tR\x06action\x12\x1a\n" +
-	"\bresource\x18\x03 \x01(\tR\bresource\"a\n" +
+	"\bresource\x18\x03 \x01(\tR\bresource\x12Z\n" +
+	"\tcondition\x18\x04 \x03(\v2<.io.treeverse.lakefs.auth.model.StatementData.ConditionEntryR\tcondition\x1ao\n" +
+	"\x0eConditionEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12G\n" +
+	"\x05value\x18\x02 \x01(\v21.io.treeverse.lakefs.auth.model.ConditionOperatorR\x05value:\x028\x01\"\xd1\x01\n" +
+	"\x11ConditionOperator\x12U\n" +
+	"\x06fields\x18\x01 \x03(\v2=.io.treeverse.lakefs.auth.model.ConditionOperator.FieldsEntryR\x06fields\x1ae\n" +
+	"\vFieldsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12@\n" +
+	"\x05value\x18\x02 \x01(\v2*.io.treeverse.lakefs.auth.model.StringListR\x05value:\x028\x01\"$\n" +
+	"\n" +
+	"StringList\x12\x16\n" +
+	"\x06values\x18\x01 \x03(\tR\x06values\"a\n" +
 	"\tTokenData\x12\x19\n" +
 	"\btoken_id\x18\x01 \x01(\tR\atokenId\x129\n" +
 	"\n" +
@@ -669,7 +779,7 @@ func file_auth_model_model_proto_rawDescGZIP() []byte {
 	return file_auth_model_model_proto_rawDescData
 }
 
-var file_auth_model_model_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_auth_model_model_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_auth_model_model_proto_goTypes = []any{
 	(*UserData)(nil),              // 0: io.treeverse.lakefs.auth.model.UserData
 	(*GroupData)(nil),             // 1: io.treeverse.lakefs.auth.model.GroupData
@@ -677,25 +787,33 @@ var file_auth_model_model_proto_goTypes = []any{
 	(*PolicyData)(nil),            // 3: io.treeverse.lakefs.auth.model.PolicyData
 	(*CredentialData)(nil),        // 4: io.treeverse.lakefs.auth.model.CredentialData
 	(*StatementData)(nil),         // 5: io.treeverse.lakefs.auth.model.StatementData
-	(*TokenData)(nil),             // 6: io.treeverse.lakefs.auth.model.TokenData
-	(*RepositoriesData)(nil),      // 7: io.treeverse.lakefs.auth.model.RepositoriesData
-	(*UIData)(nil),                // 8: io.treeverse.lakefs.auth.model.UIData
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*ConditionOperator)(nil),     // 6: io.treeverse.lakefs.auth.model.ConditionOperator
+	(*StringList)(nil),            // 7: io.treeverse.lakefs.auth.model.StringList
+	(*TokenData)(nil),             // 8: io.treeverse.lakefs.auth.model.TokenData
+	(*RepositoriesData)(nil),      // 9: io.treeverse.lakefs.auth.model.RepositoriesData
+	(*UIData)(nil),                // 10: io.treeverse.lakefs.auth.model.UIData
+	nil,                           // 11: io.treeverse.lakefs.auth.model.StatementData.ConditionEntry
+	nil,                           // 12: io.treeverse.lakefs.auth.model.ConditionOperator.FieldsEntry
+	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
 }
 var file_auth_model_model_proto_depIdxs = []int32{
-	9, // 0: io.treeverse.lakefs.auth.model.UserData.created_at:type_name -> google.protobuf.Timestamp
-	9, // 1: io.treeverse.lakefs.auth.model.GroupData.created_at:type_name -> google.protobuf.Timestamp
-	9, // 2: io.treeverse.lakefs.auth.model.PolicyData.created_at:type_name -> google.protobuf.Timestamp
-	5, // 3: io.treeverse.lakefs.auth.model.PolicyData.statements:type_name -> io.treeverse.lakefs.auth.model.StatementData
-	2, // 4: io.treeverse.lakefs.auth.model.PolicyData.acl:type_name -> io.treeverse.lakefs.auth.model.ACLData
-	9, // 5: io.treeverse.lakefs.auth.model.CredentialData.issued_date:type_name -> google.protobuf.Timestamp
-	9, // 6: io.treeverse.lakefs.auth.model.TokenData.expired_at:type_name -> google.protobuf.Timestamp
-	7, // 7: io.treeverse.lakefs.auth.model.UIData.repositories:type_name -> io.treeverse.lakefs.auth.model.RepositoriesData
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	13, // 0: io.treeverse.lakefs.auth.model.UserData.created_at:type_name -> google.protobuf.Timestamp
+	13, // 1: io.treeverse.lakefs.auth.model.GroupData.created_at:type_name -> google.protobuf.Timestamp
+	13, // 2: io.treeverse.lakefs.auth.model.PolicyData.created_at:type_name -> google.protobuf.Timestamp
+	5,  // 3: io.treeverse.lakefs.auth.model.PolicyData.statements:type_name -> io.treeverse.lakefs.auth.model.StatementData
+	2,  // 4: io.treeverse.lakefs.auth.model.PolicyData.acl:type_name -> io.treeverse.lakefs.auth.model.ACLData
+	13, // 5: io.treeverse.lakefs.auth.model.CredentialData.issued_date:type_name -> google.protobuf.Timestamp
+	11, // 6: io.treeverse.lakefs.auth.model.StatementData.condition:type_name -> io.treeverse.lakefs.auth.model.StatementData.ConditionEntry
+	12, // 7: io.treeverse.lakefs.auth.model.ConditionOperator.fields:type_name -> io.treeverse.lakefs.auth.model.ConditionOperator.FieldsEntry
+	13, // 8: io.treeverse.lakefs.auth.model.TokenData.expired_at:type_name -> google.protobuf.Timestamp
+	9,  // 9: io.treeverse.lakefs.auth.model.UIData.repositories:type_name -> io.treeverse.lakefs.auth.model.RepositoriesData
+	6,  // 10: io.treeverse.lakefs.auth.model.StatementData.ConditionEntry.value:type_name -> io.treeverse.lakefs.auth.model.ConditionOperator
+	7,  // 11: io.treeverse.lakefs.auth.model.ConditionOperator.FieldsEntry.value:type_name -> io.treeverse.lakefs.auth.model.StringList
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_auth_model_model_proto_init() }
@@ -709,7 +827,7 @@ func file_auth_model_model_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_model_model_proto_rawDesc), len(file_auth_model_model_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

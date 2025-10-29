@@ -99,7 +99,7 @@ components:
       required: false
       schema:
         type: string
-    
+
     NoTombstone:
       in: query
       name: no_tombstone
@@ -1233,6 +1233,18 @@ components:
         description:
           type: string
 
+    PolicyCondition:
+      type: object
+      description: Condition operator (e.g., IpAddress)
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        IpAddress:
+          - 192.168.0.1/32
+          - 192.168.0.2/32
+
     Statement:
       type: object
       required:
@@ -1250,6 +1262,11 @@ components:
           items:
             type: string
           minItems: 1
+        condition:
+          type: object
+          description: Optional conditions for when this statement applies.
+          additionalProperties:
+            $ref: "#/components/schemas/PolicyCondition"
 
     Policy:
       type: object
