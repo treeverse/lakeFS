@@ -544,6 +544,41 @@ var fsDownloadCmd = &cobra.Command{
 	},
 }
 
+var copyCmd = &cobra.Command{
+	Use:   "cp",
+	Short: "Copy an object from source to destination",
+	Run: func(cmd *cobra.Command, args []string) {
+		sourceURI := MustParsePathURI("source", args[0])
+		destinationURI := MustParsePathURI("destination", args[1])
+
+		if sourceURI.Repository != destinationURI.Repository {
+			Die("Can only copy files in the same repo", 1)
+		}
+
+		client := getClient()
+
+		ctx := cmd.Context()
+
+		resp, err := client.CopyObjectWithResponse(ctx, sourceURI.Repository, sourceURI.Ref,
+			&api.CopyObjectParams{
+				DestPath: *destinationURI.Path,
+			}, api.CopyObjectJSONRequestBody{
+				SrcPath: *sourceURI.Path,
+				SrcRef:  &sourceURI.Ref,
+			})
+
+		if err != nil {
+			DieErr(err)
+		}
+
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		Write(fsStatTemplate, resp.JSON201)
+	},
+}
+
 func listRecursiveHelper(ctx context.Context, client *api.ClientWithResponses, repo, ref, prefix string, ch chan string) {
 	pfx := api.PaginationPrefix(prefix)
 	var from string
@@ -628,6 +663,7 @@ func init() {
 	fsCmd.AddCommand(fsStageCmd)
 	fsCmd.AddCommand(fsRmCmd)
 	fsCmd.AddCommand(fsDownloadCmd)
+	fsCmd.AddCommand(copyCmd)
 
 	fsStatCmd.Flags().Bool("pre-sign", false, "Request pre-sign for physical address")
 
