@@ -40,8 +40,6 @@ const NavUserInfo = () => {
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
                 onClick={()=> {
-                    auth.clearCurrentUser();
-                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     window.location.replace(logoutUrl);
                 }}>
                 Logout
