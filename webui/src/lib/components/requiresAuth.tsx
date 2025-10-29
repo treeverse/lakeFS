@@ -18,16 +18,6 @@ const RequiresAuth: React.FC = () => {
     if (loading) return <Loading />;
     if (!user) return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
 
-    useEffect(() => {
-        const onPageShow = (e: PageTransitionEvent) => {
-            if ((e).persisted && !hasAuthSessionCookie()) {
-                window.location.replace(`/auth/login?redirected=true&next=${encodeURIComponent(next)}`);
-            }
-        };
-        window.addEventListener("pageshow", onPageShow);
-        return () => window.removeEventListener("pageshow", onPageShow);
-    }, []);
-
     return <Outlet />;
 };
 
