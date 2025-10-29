@@ -1,5 +1,6 @@
 import React from "react";
 import useUser from '../hooks/user'
+import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import DarkModeToggle from "./darkModeToggle";
@@ -8,6 +9,7 @@ import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
+import {AUTH_STATUS} from "../auth/authContext";
 
 const NavUserInfo = () => {
     const { user, loading: userLoading, error } = useUser();
@@ -38,7 +40,7 @@ const NavUserInfo = () => {
             <NavDropdown.Item
                 onClick={()=> {
                     auth.clearCurrentUser();
-                    window.history.replaceState(null, "", "/auth/login");
+                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     window.location.replace(logoutUrl);
                 }}>
                 Logout
