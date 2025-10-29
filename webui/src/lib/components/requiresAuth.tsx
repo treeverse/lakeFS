@@ -10,7 +10,7 @@ const RequiresAuth: React.FC = () => {
 
     if (loading || status === AUTH_STATUS.UNKNOWN) return <Loading />;
 
-    if (status === AUTH_STATUS.UNAUTHENTICATED && !user) {
+    if (status === AUTH_STATUS.UNAUTHENTICATED || !user) {
         const next = location.pathname + (location.search || "") + (location.hash || "");
         return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
     }
