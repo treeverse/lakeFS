@@ -9,8 +9,11 @@ const hasSessionCookie = () => {
     return LOGIN_COOKIE_NAMES.some((name) => c.includes(`${name}=`));
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-declare global { interface Window { __lakefsBFGuard?: boolean } }
+declare global {
+    interface Window {
+        __lakefsBFGuard?: boolean;
+    }
+}
 
 if (typeof window !== "undefined" && !window.__lakefsBFGuard) {
     const redirectIfUnauthed = () => {
