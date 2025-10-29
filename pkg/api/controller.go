@@ -25,6 +25,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -286,7 +287,7 @@ func (c *Controller) UploadPart(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -362,7 +363,7 @@ func (c *Controller) UploadPartCopy(w http.ResponseWriter, r *http.Request,
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -467,7 +468,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -535,7 +536,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -746,8 +747,13 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.LoginJSONRequestBody) {
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
-	if errors.Is(err, ErrAuthenticatingRequest) {
-		writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+	if err != nil {
+		if errors.Is(err, ErrAuthenticatingRequest) {
+			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+			return
+		}
+		c.Logger.WithError(err).Error("Unexpected error during user authentication")
+		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
@@ -936,15 +942,6 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	ifAbsent := false
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		ifAbsent = true
-	}
-
 	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
 	if storage == nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage config found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
@@ -966,7 +963,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		writeTime = time.Unix(*mtime, 0)
 	}
 	fullPhysicalAddress := swag.StringValue(body.Staging.PhysicalAddress)
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
 
 	if addressType == catalog.AddressTypeRelative {
 		// if the address is in the storage namespace, verify it has been produced by lakeFS
@@ -998,8 +995,18 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
+	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	opts := []graveler.SetOptionsFunc{
+		graveler.WithForce(swag.BoolValue(body.Force)),
+	}
+	if condition != nil {
+		opts = append(opts, graveler.WithCondition(*condition))
+	}
 	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, opts...)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1021,12 +1028,18 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 // normalizePhysicalAddress return relative address based on storage namespace if possible. If address doesn't match
 // the storage namespace prefix, the return address type is full.
-func normalizePhysicalAddress(storageNamespace, physicalAddress string) (string, catalog.AddressType) {
+func (c *Controller) normalizePhysicalAddress(storageNamespace, physicalAddress string) (string, catalog.AddressType) {
 	prefix := storageNamespace
 	if !strings.HasSuffix(prefix, catalog.DefaultPathDelimiter) {
 		prefix += catalog.DefaultPathDelimiter
 	}
-	if strings.HasPrefix(physicalAddress, prefix) {
+	dataPrefix := prefix + c.PathProvider.CommonPrefix()
+	if !strings.HasSuffix(dataPrefix, catalog.DefaultPathDelimiter) {
+		dataPrefix += catalog.DefaultPathDelimiter
+	}
+	if strings.HasPrefix(physicalAddress, dataPrefix) {
+		// if the address is in the "data" path, treat it as a relative address.
+		// note that it's relative to the storage namespace (add it'll include the "data" prefix).
 		return physicalAddress[len(prefix):], catalog.AddressTypeRelative
 	}
 	return physicalAddress, catalog.AddressTypeFull
@@ -3039,7 +3052,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
-		errors.Is(err, license.ErrNotImplemented):
+		errors.Is(err, license.ErrNotImplemented),
+		errors.Is(err, catalog.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
@@ -3452,16 +3466,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
-	// once before uploading the body to save resources and time,
-	//	and then graveler will check again when passed a SetOptions.
-	allowOverwrite := true
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		// check if exists
+	if params.IfNoneMatch != nil && *params.IfNoneMatch == "*" {
 		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
 		if err == nil {
 			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
@@ -3471,7 +3476,15 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		allowOverwrite = false
+	}
+	var setOpts []graveler.SetOptionsFunc
+	// Handle preconditions
+	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if condition != nil {
+		setOpts = append(setOpts, graveler.WithCondition(*condition))
 	}
 
 	// read request body parse multipart for "content" and upload the data
@@ -3562,7 +3575,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force)))
+	setOpts = append(setOpts, graveler.WithForce(swag.BoolValue(params.Force)))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
@@ -3639,7 +3653,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		writeTime = time.Unix(*body.Mtime, 0)
 	}
 
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
