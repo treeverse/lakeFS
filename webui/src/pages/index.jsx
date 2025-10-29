@@ -69,7 +69,7 @@ export const IndexPage = () => {
                         <Routes>
                             <Route element={<RequiresAuth/>}>
                                 <Route index element={<Navigate to="/repositories"/>}/>
-                                <Route path="repositories" element={<Layout logged={true}/>}>
+                                <Route path="repositories" element={<Layout/>}>
                                     <Route index element={<RepositoriesPage/>}/>
                                     <Route path=":repoId" element={<RepositoryPageLayout/>}>
                                         <Route path="objects" element={<RepositoryObjectsPage/>}/>
@@ -99,7 +99,7 @@ export const IndexPage = () => {
                                         <Route index element={<Navigate to="objects"/>}/>
                                     </Route>
                                 </Route>
-                                <Route path="auth" element={<Layout logged={true}/>}>
+                                <Route path="auth" element={<Layout/>}>
                                     <Route index element={<Navigate to="credentials" replace/>}/>
                                     <Route element={<AuthLayout/>}>
                                         <Route path="credentials" element={<CredentialsPage/>}/>
@@ -129,11 +129,11 @@ export const IndexPage = () => {
                                 </Route>
                                 <Route path="*" element={<Navigate to="/repositories" replace/>}/>
                             </Route>
-                            <Route path="auth" element={<Layout logged={false}/>}>
+                            <Route path="auth" element={<Layout/>}>
                                 <Route path="login" element={<RedirectIfAuthenticated><LoginPage/></RedirectIfAuthenticated>}/>
                                 <Route path="users/create" element={<ActivateInvitedUserPage/>}/>
                             </Route>
-                            <Route path="/setup" element={<Layout logged={false}/>}>
+                            <Route path="/setup" element={<Layout/>}>
                                 <Route index element={<Setup />}/>
                                 <Route path="*" element={<Setup />}/>
                             </Route>

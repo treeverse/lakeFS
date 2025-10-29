@@ -63,8 +63,8 @@ const TopNavLink = ({ href, children }) => {
     );
 };
 
-const TopNav = ({logged = true}) => {
-    return logged && (
+const TopNav = () => {
+    return (
         <Navbar variant="dark" bg="dark" expand="md" className="border-bottom">
             <Container fluid={true}>
                 <Link component={Navbar.Brand} href="/">
