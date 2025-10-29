@@ -51,7 +51,7 @@ const initialAPIState = {
 
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
-    const { setAuthStatus } = useAuth();
+    const { status, setAuthStatus } = useAuth();
 
     useEffect(() => {
         let isMounted = true;
@@ -64,12 +64,9 @@ export const useAPI = (promise, deps = []) => {
             } catch (error) {
                 if (!isMounted) return;
                 if (error instanceof AuthenticationError) {
-                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-                    setRequest({ loading: false, error, response: null });
-                    return;
-                    // if (status === AUTH_STATUS.AUTHENTICATED) {
-                    //     setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-                    // }
+                    if (status === AUTH_STATUS.AUTHENTICATED) {
+                        setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
+                    }
                 }
                 setRequest({
                     loading: false,

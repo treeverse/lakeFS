@@ -153,13 +153,6 @@ const LoginPage = () => {
     const redirectedFromQuery = urlSearch.get("redirected") === "true";
     const redirectedFromState = !!st?.redirected;
 
-    if (redirectedFromState) {
-        router.navigate(
-            `${location.pathname}${location.search || ""}${location.hash || ""}`,
-            { replace: true, state: null }
-        );
-    }
-
     const redirected = redirectedFromState || redirectedFromQuery;
 
     if (redirectedFromQuery) {
