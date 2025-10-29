@@ -1,5 +1,6 @@
 import React from "react";
 import useUser from '../hooks/user'
+import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import DarkModeToggle from "./darkModeToggle";
@@ -39,6 +40,7 @@ const NavUserInfo = () => {
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
                 onClick={() => {
+                    auth.clearCurrentUser();
                     setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     window.location.replace(logoutUrl);
                 }}>
