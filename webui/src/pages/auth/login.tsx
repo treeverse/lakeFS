@@ -57,9 +57,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const username = formData.get('username');
                             const password = formData.get('password');
                             await auth.login(username, password);
-                            try {
-                                await auth.getCurrentUser();
-                            } catch {return;}
+                            await auth.getCurrentUser();
                             setAuthStatus(AUTH_STATUS.AUTHENTICATED);
                             router.navigate(next, { replace: true });
                         } catch(err) {
