@@ -17,7 +17,6 @@ const NavUserInfo = () => {
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
     const versionConfig = config?.versionConfig || {};
     const { setAuthStatus } = useAuth();
-    const router = useRouter();
 
     if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
@@ -32,9 +31,9 @@ const NavUserInfo = () => {
     }
     const handleLogout = (e) => {
         e.preventDefault();
-        router.navigate("/auth/login?redirected=true", { replace: true });
+        window.history.replaceState(null, "", "/auth/login?redirected=true");
         setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-        auth.clearCurrentUser?.();
+        auth.clearCurrentUser();
         window.location.href = logoutUrl;
     };
     return (
