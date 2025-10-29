@@ -1,6 +1,6 @@
 import React from "react";
 import useUser from '../hooks/user'
-import {auth} from "../api";
+//import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import DarkModeToggle from "./darkModeToggle";
