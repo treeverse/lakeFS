@@ -41,7 +41,7 @@ const NavUserInfo = () => {
                     auth.clearCurrentUser();
                     window.location.replace(logoutUrl);
                 }}>
-                Logout
+                Logoutsss
             </NavDropdown.Item>
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
