@@ -71,10 +71,17 @@ export const useAPI = (promise, deps = []) => {
                     }
 
                     setRequest({ loading: false, error: null, response: null });
-                    if (!window.location.pathname.startsWith("/auth/")) {
+
+                    const path = window.location.pathname;
+                    const next = path + (window.location.search || "") + (window.location.hash || "");
+                    const isLogin = path === "/auth/login";
+                    const isOidcCallback = path.startsWith("/auth/oidc");
+                    const isPublicAuthRoute = isLogin || isOidcCallback;
+
+                    if (!isPublicAuthRoute) {
                         navigate("/auth/login", {
                             replace: true,
-                            state: { redirected: true, next: window.location.pathname },
+                            state: { redirected: true, next },
                         });
                     }
                     return;
