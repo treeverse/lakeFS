@@ -6,7 +6,7 @@ import { AUTH_STATUS, useAuth } from "../auth/authContext";
 
 const RequiresAuth: React.FC = () => {
     const { status } = useAuth();
-    const { user, loading } = useUser(); // נשאר כפי שהוא
+    const { user, loading } = useUser();
     const location = useLocation();
 
     if (status === AUTH_STATUS.UNAUTHENTICATED) {
