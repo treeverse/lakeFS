@@ -15,7 +15,7 @@ lakeFS provides multiple Python packages and integrations to suit different use 
 
 | Package | Abstraction | Best For | Installation | Learning Curve |
 |---------|-------------|----------|--------------|-----------------|
-| **High-Level SDK** | High | Versioning operations, branch management, commits, tags, transactions | `pip install lakefs` | Low |
+| **High-Level SDK** | High | Versioning operations, data operations, transactions | `pip install lakefs` | Low |
 | **Generated SDK** | Low | Direct API access, full API surface, programmatic control | `pip install lakefs-sdk` | Medium |
 | **lakefs-spec** | High | File system operations, pandas/data science integration, S3-like interface | `pip install lakefs-spec` | Low |
 | **Boto3** | Medium | S3-compatible operations, existing S3 workflows, direct gateway access | `pip install boto3` | Low |
