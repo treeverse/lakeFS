@@ -191,15 +191,15 @@ nav:
     - Data Processing & Compute:
       - Apache Spark: integrations/spark.md
       - Apache Iceberg: integrations/iceberg.md
-      - Apache Hive: integrations/hive.md
       - Presto / Trino: integrations/presto_trino.md
+      - DuckDB: integrations/duckdb.md
       - Dremio: integrations/dremio.md
       - Databricks: integrations/databricks.md
       - Cloudera: integrations/cloudera.md
-      - DuckDB: integrations/duckdb.md
       - Delta Lake: integrations/delta.md
       - Amazon Athena: integrations/athena.md
       - Apache Kafka: integrations/kafka.md
+      - Apache Hive: integrations/hive.md
     - ML & AI:
       - Amazon SageMaker: integrations/sagemaker.md
       - Vertex AI: integrations/vertex_ai.md
