@@ -28,13 +28,13 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 !!! tip "New to Everest?"
     After completing this getting started guide, we recommend reading the [Core Concepts](#core-concepts) section to understand caching, consistency, and performance characteristics.
 
-### 1. Prerequisites
+### Prerequisites
 
 -   lakeFS Cloud account or lakeFS Enterprise Version `1.25.0` or higher.
 -   **Supported OS:** macOS (with NFS V3) or Linux.
 -   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
 
-### 2. Authentication & Configuration
+### Authentication & Configuration
 
 Everest uses the same configuration and authentication methods as `lakectl`. It discovers credentials and the server endpoint in the following order:
 
@@ -66,7 +66,7 @@ Everest will attempt to authenticate in the following order:
     export EVEREST_LAKEFS_CREDENTIALS_PROVIDER_AWS_IAM_CLIENT_LOG_PRE_SIGNING_REQUEST=true
     ```
 
-### 3. Your First Mount (Read-Only)
+### Your First Mount (Read-Only)
 
 Let's mount a prefix from a lakeFS repository to a local directory. In read-only mode, Everest mounts a specific commit ID. If you provide a branch name, it will resolve to the HEAD commit at the time of mounting.
 
@@ -272,6 +272,7 @@ When running in write mode, the lakeFS URI must point to a branch, not a commit 
 
 !!! warning "Private Preview"
     The CSI Driver is in private preview. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
+    The driver currently provides only read-only access.
 
 The lakeFS CSI (Container Storage Interface) Driver allows Kubernetes Pods to mount and interact with data in a lakeFS repository as if it were a local filesystem.
 
@@ -296,14 +297,14 @@ The CSI driver, installed in your cluster, orchestrates mount operations on each
 -   **Access Modes:** `ReadOnlyMany` is supported.
 -   **Security Context:** Setting Pod `securityContext` (e.g., `runAsUser`) is not currently supported.
 
-### 1. Prerequisites
+### Prerequisites
 
 1.  lakeFS Enterprise Version `1.25.0` or higher.
 2.  A Kubernetes cluster (`>=1.23.0`) with [Helm](https://helm.sh/docs/intro/install/) installed.
 3.  Network access from the cluster pods to your lakeFS server.
 4.  Access to the `treeverse/everest-lakefs-csi-driver` Docker Hub image.
 
-### 2. Deploy the CSI Driver
+### Deploy the CSI Driver
 
 The driver is deployed using a Helm chart.
 
@@ -356,7 +357,7 @@ The driver is deployed using a Helm chart.
     helm install -f values.yaml lakefs lakefs/everest-lakefs-csi-driver --version <chart-version>
     ```
 
-### 3. Use in Pods
+### Use in Pods
 
 To use the driver, you create a `PersistentVolume` (PV) and a `PersistentVolumeClaim` (PVC) to mount a lakeFS URI into your Pod.
 
@@ -651,7 +652,7 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
     # PVC and Pod definitions follow...
     ```
 
-### 4. Troubleshooting
+### Troubleshooting
 
 -   Check logs from the CSI driver pods and the application pod that failed to mount.
 -   Inspect the events and status of the `PV` and `PVC` (`kubectl get pv`, `kubectl get pvc`, `kubectl describe ...`).
@@ -707,6 +708,7 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--partial-reads`: (Experimental) Fetch only the accessed parts of large files. This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, and tar that do not need to read the entire file.
 
 #### `everest umount`
+
 Unmounts a lakeFS directory.
 
 ```bash
@@ -714,6 +716,7 @@ everest umount <mount_directory>
 ```
 
 #### `everest diff` (Write Mode Only)
+
 Shows the difference between the local mount directory and the source branch.
 
 ```bash
@@ -721,6 +724,7 @@ everest diff [mount_directory]
 ```
 
 #### `everest commit` (Write Mode Only)
+
 Commits local changes to the source lakeFS branch. The new commit is merged to the original branch using a `source-wins` strategy. After the commit succeeds, the mounted directory's source commit is updated to the new HEAD of the branch.
 
 !!! warning
@@ -731,6 +735,7 @@ everest commit [mount_directory] -m <commit_message>
 ```
 
 #### `everest mount-server` (Advanced)
+
 Starts the mount server without performing the OS-level mount. This is intended for advanced use cases where you want to manage the server process and the OS mount command separately.
 
 ```bash
@@ -861,4 +866,4 @@ You can use lakeFS's [Role-Based Access Control](../security/rbac.md) to manage 
 
 ### Why use lakeFS Mount instead of `lakectl local`?
 
-While both tools work with local data, they serve different needs. Use `lakectl local` for Git-like workflows where you need to pull and push entire directories. Use **lakeFS Mount** for cases where you want immediate, on-demand access to a large repository without downloading it first, making it ideal for exploration, training ML models, or any task that benefits from lazy loading.
+While both tools work with local data, they serve different needs. Use `lakectl local` for Git-like workflows where you need to pull and push entire directories. Use **lakeFS Mount** when you need **immediate, on-demand access to a large repository without downloading it first**, making it ideal for exploration, training ML models, or any task that benefits from lazy loading.
