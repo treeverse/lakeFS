@@ -20,7 +20,7 @@ lakeFS provides multiple Python packages and integrations to suit different use 
 | **lakefs-spec** | High | File system operations, pandas/data science integration, S3-like interface | `pip install lakefs-spec` | Low |
 | **Boto3** | Medium | S3-compatible operations, existing S3 workflows, direct gateway access | `pip install boto3` | Low |
 
-## Quick Start
+## Quickstart
 
 New to lakeFS Python SDK? Start with the **[Getting Started Guide](./python-getting-started.md)** to install and configure the High-Level SDK.
 
