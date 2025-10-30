@@ -35,7 +35,7 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 -   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
 
 !!! note "Windows Support"
-    Everest supports windows starting at version <version>.
+    Everest supports Windows starting at version <version>.
     Currently, only read operations are supported.
 	See Everest for [Windows](#everest-for-windows-cfapi-protocol)
 
@@ -276,9 +276,10 @@ When running in write mode, the lakeFS URI must point to a branch, not a commit 
 Starting at version <version>, Everest mount is available for Windows OS using *Cloud Filter API* (CFAPI)
 Currently, Everest for Windows supports read-only operation.
 
-### Syntax
+### Semantics
 
-Everest for Windows uses the same sytnax. To utilize it we will have to add the cfapi flag
+Everest for Windows uses the classic Everest [semantics](https://docs.lakefs.io/latest/reference/mount-write-mode-semantics/)
+It requires utilization of the protocol flag with the value of `cfapi`
 
 ```powershell
 ./everest mount <lakefs_uri> <mount_directory> --protocol cfapi [flags]
