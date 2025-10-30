@@ -174,7 +174,7 @@ See the [Write-Mode Operations](#write-mode-operations) section for more details
 
 ### Performance Considerations
 
-Everest is optimized for high-performance data access, but understanding these characteristics will help you get the best results:
+Everest achieves high-performance data access through:
 
 -   **Direct Object Store Access**: By default, Everest uses pre-signed URLs to read and write data directly to and from the underlying object store, bypassing the lakeFS server for data transfer. Only metadata operations go through the lakeFS server.
 -   **Lazy Metadata Loading**: Directory listings are fetched on-demand, allowing you to work with repositories containing billions of files without upfront overhead.
