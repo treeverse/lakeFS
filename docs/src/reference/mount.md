@@ -66,7 +66,7 @@ Everest will attempt to authenticate in the following order:
     export EVEREST_LAKEFS_CREDENTIALS_PROVIDER_AWS_IAM_CLIENT_LOG_PRE_SIGNING_REQUEST=true
     ```
 
-### Your First Mount (Read-Only)
+### Create Your First Mount
 
 Let's mount a prefix from a lakeFS repository to a local directory. In read-only mode, Everest mounts a specific commit ID. If you provide a branch name, it will resolve to the HEAD commit at the time of mounting.
 
