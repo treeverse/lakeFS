@@ -3490,6 +3490,7 @@ class AuthApi:
         _response_types_map = {
             '200': "AuthenticationToken",
             '401': "Error",
+            '404': "Error",
             '429': None,
             '501': "Error",
         }

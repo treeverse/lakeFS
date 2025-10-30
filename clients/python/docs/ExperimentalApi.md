@@ -1196,6 +1196,7 @@ No authorization required
 |-------------|-------------|------------------|
 **200** | user successfully logged in |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |

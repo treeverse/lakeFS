@@ -274,6 +274,7 @@ pub enum GetPolicyError {
 #[serde(untagged)]
 pub enum GetTokenFromMailboxError {
     Status401(models::Error),
+    Status404(models::Error),
     Status429(),
     Status501(models::Error),
     DefaultResponse(models::Error),
