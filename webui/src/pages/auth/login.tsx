@@ -145,7 +145,7 @@ const LoginPage = () => {
     const nextFromState = st?.next ?? null;
     const nextFromQuery = urlSearch.get("next");
     const rawNext = nextFromState ?? nextFromQuery ?? "/";
-    const next = typeof rawNext === "string" && rawNext.startsWith("/") ? rawNext : "/";
+    const next = rawNext.startsWith("/") ? rawNext : "/";
 
     if (next) window.sessionStorage.setItem("post_login_next", next);
 
