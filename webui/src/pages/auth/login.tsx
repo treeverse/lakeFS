@@ -135,26 +135,8 @@ const LoginPage = () => {
     const { response, error, loading } = useAPI(() => setup.getState());
     const { status } = useAuth();
 
-    if (loading) {
-        return <Loading />;
-    }
-
-    if (error) {
-        return <AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()} />;
-    }
-
-    // setup redirect if needed
+    // derive values that never early-return
     const setupResponse = response as SetupResponse | null;
-    if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        router.navigate(`/setup${location.search}${location.hash ?? ''}`, { replace: true });
-        return null;
-    }
-    const loginConfig = setupResponse?.login_config;
-    if (!loginConfig) {
-        return null;
-    }
-
-    // ---------- derive redirected + next ----------
     const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
     const urlSearch = new URLSearchParams(location.search);
     const redirectedFromQuery = urlSearch.get("redirected") === "true";
@@ -163,12 +145,11 @@ const LoginPage = () => {
     const nextFromState = st?.next ?? null;
     const nextFromQuery = urlSearch.get("next");
     const rawNext = nextFromState ?? nextFromQuery ?? "/";
-    const next = rawNext.startsWith("/") ? rawNext : "/";
+    const next = typeof rawNext === "string" && rawNext.startsWith("/") ? rawNext : "/";
 
-    // ---------- persist next ASAP (covers SSO auto-redirect) ----------
     if (next) window.sessionStorage.setItem("post_login_next", next);
 
-    // ---------- normalize URL: remove ?redirected=true without breaking hooks order ----------
+    // clean redirected query param
     useEffect(() => {
         if (redirectedFromQuery) {
             const s = new URLSearchParams(location.search);
@@ -177,33 +158,39 @@ const LoginPage = () => {
             const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
             router.navigate(cleanUrl, { replace: true });
         }
-    }, [redirectedFromQuery, location.pathname, location.search, location.hash, router]);
+    }, [redirectedFromQuery, location, router]);
 
-    // ---------- when authenticated (after SSO), jump to stored next ----------
+    // navigate after auth
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
             const storedNext = window.sessionStorage.getItem("post_login_next");
             if (storedNext) {
                 window.sessionStorage.removeItem("post_login_next");
                 router.navigate(storedNext, { replace: true });
-            } else {
-                const raw = new URLSearchParams(location.search).get("next");
-                const fallbackNext = raw && raw.startsWith("/") ? raw : "/";
-                if (fallbackNext !== "/") {
-                    router.navigate(fallbackNext, { replace: true });
-                }
             }
         }
-    }, [status, router, location.search]);
+    }, [status, router]);
 
-    // ---------- SSO login strategy (safe: all hooks are already declared) ----------
-    if (redirected) {
-        const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-        if (loginStrategy.element !== undefined) return loginStrategy.element;
+    // decide what to render (no early returns)
+    let content: React.ReactNode = null;
+
+    if (loading) {
+        content = <Loading />;
+    } else if (error) {
+        content = (<AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()}/>);
+    } else if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
+        router.navigate(`/setup${location.search}${location.hash ?? ''}`, { replace: true });
+        content = <Loading />;
+    } else if (redirected) {
+        const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(setupResponse?.login_config, router);
+        if (loginStrategy.element !== undefined) {
+            content = loginStrategy.element;
+        }
+    } else if (setupResponse?.login_config) {
+        content = <LoginForm loginConfig={setupResponse.login_config} />;
     }
 
-    // ---------- default username/password form ----------
-    return <LoginForm loginConfig={loginConfig} />;
+    return <>{content}</>;
 };
 
 export default LoginPage;
