@@ -287,7 +287,7 @@ Everest for Windows uses the same sytnax. To utilize it we will have to add the 
 ### Firewall
 
 To enable Everest run, we must disable firewall for the mounted path.
-This can be done via the UI and with Admin in Powershell:
+This can be done via the UI or in Powershell With an admin user:
 
 ```powershell
 Add-MpPreference -ExclusionPath "Path\To\Mount-Dir"
@@ -298,8 +298,6 @@ Verify exclusions:
 ```powershell
 Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
 ```
-
-
 
 ## Everest on Kubernetes (CSI Driver)
 
