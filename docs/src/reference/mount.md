@@ -102,7 +102,7 @@ Let's mount a prefix from a lakeFS repository to a local directory. In read-only
 
 ## Core Concepts
 
-Before diving into data operations, it's important to understand how Everest manages performance, consistency, and caching. These concepts apply to both local and Kubernetes deployments.
+This section will help you understand how Everest manages performance, consistency, and caching in both local and Kubernetes deployments.
 
 ### Cache Behavior
 
