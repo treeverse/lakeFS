@@ -10537,14 +10537,29 @@ components:
       required:
       - token
       type: object
-    RemoteTable:
+    IcebergNamespaceRef:
+      description: Reference to one or more levels of a namespace
       example:
-        namespace: namespace
+      - accounting
+      - tax
+      items:
+        type: string
+      type: array
+    IcebergRemoteTable:
+      example:
+        namespace:
+        - accounting
+        - tax
         table: table
       properties:
         namespace:
-          description: Remote table namespace
-          type: string
+          description: Reference to one or more levels of a namespace
+          example:
+          - accounting
+          - tax
+          items:
+            type: string
+          type: array
         table:
           description: Remote table name
           type: string
@@ -10552,16 +10567,23 @@ components:
       - namespace
       - table
       type: object
-    LocalTable:
+    IcebergLocalTable:
       example:
         reference_id: reference_id
-        namespace: namespace
+        namespace:
+        - accounting
+        - tax
         repository_id: repository_id
         table: table
       properties:
         namespace:
-          description: Remote table namespace
-          type: string
+          description: Reference to one or more levels of a namespace
+          example:
+          - accounting
+          - tax
+          items:
+            type: string
+          type: array
         table:
           description: Remote table name
           type: string
@@ -10580,20 +10602,24 @@ components:
     IcebergPushRequest:
       example:
         destination:
-          namespace: namespace
+          namespace:
+          - accounting
+          - tax
           table: table
         create_namespace: false
         source:
           reference_id: reference_id
-          namespace: namespace
+          namespace:
+          - accounting
+          - tax
           repository_id: repository_id
           table: table
         force_update: false
       properties:
         source:
-          $ref: '#/components/schemas/LocalTable'
+          $ref: '#/components/schemas/IcebergLocalTable'
         destination:
-          $ref: '#/components/schemas/RemoteTable'
+          $ref: '#/components/schemas/IcebergRemoteTable'
         force_update:
           default: false
           description: Override exiting table in remote if exists
@@ -10610,17 +10636,21 @@ components:
       example:
         destination:
           reference_id: reference_id
-          namespace: namespace
+          namespace:
+          - accounting
+          - tax
           repository_id: repository_id
           table: table
         source:
-          namespace: namespace
+          namespace:
+          - accounting
+          - tax
           table: table
       properties:
         source:
-          $ref: '#/components/schemas/RemoteTable'
+          $ref: '#/components/schemas/IcebergRemoteTable'
         destination:
-          $ref: '#/components/schemas/LocalTable'
+          $ref: '#/components/schemas/IcebergLocalTable'
       required:
       - destination
       - source

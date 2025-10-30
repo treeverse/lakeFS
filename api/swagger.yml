@@ -2021,21 +2021,27 @@ components:
         token:
           type: string
           description: The license JWT token
-          
-    RemoteTable:
+      
+    IcebergNamespaceRef:
+      description: Reference to one or more levels of a namespace
+      type: array
+      items:
+        type: string
+      example: [ "accounting", "tax" ]
+
+    IcebergRemoteTable:
       type: object
       required:
         - namespace
         - table
       properties:
         namespace:
-          type: string
-          description: Remote table namespace
+          $ref: "#/components/schemas/IcebergNamespaceRef"
         table:
           type: string
           description: Remote table name
 
-    LocalTable:
+    IcebergLocalTable:
       type: object
       required:
         - namespace
@@ -2044,8 +2050,7 @@ components:
         - reference_id
       properties:
         namespace:
-          type: string
-          description: Remote table namespace
+          $ref: "#/components/schemas/IcebergNamespaceRef"
         table:
           type: string
           description: Remote table name
@@ -2063,9 +2068,9 @@ components:
         - destination
       properties:
         source:
-          $ref: "#/components/schemas/LocalTable"
+          $ref: "#/components/schemas/IcebergLocalTable"
         destination:
-          $ref: "#/components/schemas/RemoteTable"
+          $ref: "#/components/schemas/IcebergRemoteTable"
         force_update:
           type: boolean
           default: false
@@ -2082,9 +2087,9 @@ components:
         - destination
       properties:
         source:
-          $ref: "#/components/schemas/RemoteTable"
+          $ref: "#/components/schemas/IcebergRemoteTable"
         destination:
-          $ref: "#/components/schemas/LocalTable"
+          $ref: "#/components/schemas/IcebergLocalTable"
 
 paths:
   /setup_comm_prefs:

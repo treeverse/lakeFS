@@ -16,10 +16,10 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.local_table import LocalTable  # noqa: E501
+from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable  # noqa: E501
 
-class TestLocalTable(unittest.TestCase):
-    """LocalTable unit test stubs"""
+class TestIcebergLocalTable(unittest.TestCase):
+    """IcebergLocalTable unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,32 +27,32 @@ class TestLocalTable(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> LocalTable:
-        """Test LocalTable
+    def make_instance(self, include_optional) -> IcebergLocalTable:
+        """Test IcebergLocalTable
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `LocalTable`
+        # uncomment below to create an instance of `IcebergLocalTable`
         """
-        model = LocalTable()  # noqa: E501
+        model = IcebergLocalTable()  # noqa: E501
         if include_optional:
-            return LocalTable(
-                namespace = '',
+            return IcebergLocalTable(
+                namespace = ["accounting","tax"],
                 table = '',
                 repository_id = '',
                 reference_id = ''
             )
         else:
-            return LocalTable(
-                namespace = '',
+            return IcebergLocalTable(
+                namespace = ["accounting","tax"],
                 table = '',
                 repository_id = '',
                 reference_id = '',
         )
         """
 
-    def testLocalTable(self):
-        """Test LocalTable"""
+    def testIcebergLocalTable(self):
+        """Test IcebergLocalTable"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

@@ -13,13 +13,13 @@ use crate::models;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IcebergPullRequest {
     #[serde(rename = "source")]
-    pub source: Box<models::RemoteTable>,
+    pub source: Box<models::IcebergRemoteTable>,
     #[serde(rename = "destination")]
-    pub destination: Box<models::LocalTable>,
+    pub destination: Box<models::IcebergLocalTable>,
 }
 
 impl IcebergPullRequest {
-    pub fn new(source: models::RemoteTable, destination: models::LocalTable) -> IcebergPullRequest {
+    pub fn new(source: models::IcebergRemoteTable, destination: models::IcebergLocalTable) -> IcebergPullRequest {
         IcebergPullRequest {
             source: Box::new(source),
             destination: Box::new(destination),

@@ -19,21 +19,19 @@ import re  # noqa: F401
 import json
 
 
-
+from typing import List
 try:
-    from pydantic.v1 import BaseModel, Field, StrictStr
+    from pydantic.v1 import BaseModel, Field, StrictStr, conlist
 except ImportError:
-    from pydantic import BaseModel, Field, StrictStr
+    from pydantic import BaseModel, Field, StrictStr, conlist
 
-class LocalTable(BaseModel):
+class IcebergRemoteTable(BaseModel):
     """
-    LocalTable
+    IcebergRemoteTable
     """
-    namespace: StrictStr = Field(..., description="Remote table namespace")
+    namespace: conlist(StrictStr) = Field(..., description="Reference to one or more levels of a namespace")
     table: StrictStr = Field(..., description="Remote table name")
-    repository_id: StrictStr = Field(..., description="lakeFS repository ID")
-    reference_id: StrictStr = Field(..., description="lakeFS reference ID (branch or commit)")
-    __properties = ["namespace", "table", "repository_id", "reference_id"]
+    __properties = ["namespace", "table"]
 
     class Config:
         """Pydantic configuration"""
@@ -49,8 +47,8 @@ class LocalTable(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> LocalTable:
-        """Create an instance of LocalTable from a JSON string"""
+    def from_json(cls, json_str: str) -> IcebergRemoteTable:
+        """Create an instance of IcebergRemoteTable from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -62,19 +60,17 @@ class LocalTable(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> LocalTable:
-        """Create an instance of LocalTable from a dict"""
+    def from_dict(cls, obj: dict) -> IcebergRemoteTable:
+        """Create an instance of IcebergRemoteTable from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return LocalTable.parse_obj(obj)
+            return IcebergRemoteTable.parse_obj(obj)
 
-        _obj = LocalTable.parse_obj({
+        _obj = IcebergRemoteTable.parse_obj({
             "namespace": obj.get("namespace"),
-            "table": obj.get("table"),
-            "repository_id": obj.get("repository_id"),
-            "reference_id": obj.get("reference_id")
+            "table": obj.get("table")
         })
         return _obj
 

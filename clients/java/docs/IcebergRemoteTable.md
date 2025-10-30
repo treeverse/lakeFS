@@ -1,13 +1,13 @@
 
 
-# RemoteTable
+# IcebergRemoteTable
 
 
 ## Properties
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**namespace** | **String** | Remote table namespace |  |
+|**namespace** | **List&lt;String&gt;** | Reference to one or more levels of a namespace |  |
 |**table** | **String** | Remote table name |  |
 
 

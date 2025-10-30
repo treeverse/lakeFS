@@ -19,8 +19,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.LocalTable;
-import io.lakefs.clients.sdk.model.RemoteTable;
+import io.lakefs.clients.sdk.model.IcebergLocalTable;
+import io.lakefs.clients.sdk.model.IcebergRemoteTable;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -55,16 +55,16 @@ import io.lakefs.clients.sdk.JSON;
 public class IcebergPullRequest {
   public static final String SERIALIZED_NAME_SOURCE = "source";
   @SerializedName(SERIALIZED_NAME_SOURCE)
-  private RemoteTable source;
+  private IcebergRemoteTable source;
 
   public static final String SERIALIZED_NAME_DESTINATION = "destination";
   @SerializedName(SERIALIZED_NAME_DESTINATION)
-  private LocalTable destination;
+  private IcebergLocalTable destination;
 
   public IcebergPullRequest() {
   }
 
-  public IcebergPullRequest source(RemoteTable source) {
+  public IcebergPullRequest source(IcebergRemoteTable source) {
     
     this.source = source;
     return this;
@@ -75,17 +75,17 @@ public class IcebergPullRequest {
    * @return source
   **/
   @javax.annotation.Nonnull
-  public RemoteTable getSource() {
+  public IcebergRemoteTable getSource() {
     return source;
   }
 
 
-  public void setSource(RemoteTable source) {
+  public void setSource(IcebergRemoteTable source) {
     this.source = source;
   }
 
 
-  public IcebergPullRequest destination(LocalTable destination) {
+  public IcebergPullRequest destination(IcebergLocalTable destination) {
     
     this.destination = destination;
     return this;
@@ -96,12 +96,12 @@ public class IcebergPullRequest {
    * @return destination
   **/
   @javax.annotation.Nonnull
-  public LocalTable getDestination() {
+  public IcebergLocalTable getDestination() {
     return destination;
   }
 
 
-  public void setDestination(LocalTable destination) {
+  public void setDestination(IcebergLocalTable destination) {
     this.destination = destination;
   }
 
@@ -229,9 +229,9 @@ public class IcebergPullRequest {
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       // validate the required field `source`
-      RemoteTable.validateJsonElement(jsonObj.get("source"));
+      IcebergRemoteTable.validateJsonElement(jsonObj.get("source"));
       // validate the required field `destination`
-      LocalTable.validateJsonElement(jsonObj.get("destination"));
+      IcebergLocalTable.validateJsonElement(jsonObj.get("destination"));
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {

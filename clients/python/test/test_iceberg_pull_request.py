@@ -37,22 +37,22 @@ class TestIcebergPullRequest(unittest.TestCase):
         model = IcebergPullRequest()  # noqa: E501
         if include_optional:
             return IcebergPullRequest(
-                source = lakefs_sdk.models.remote_table.RemoteTable(
-                    namespace = '', 
+                source = lakefs_sdk.models.iceberg_remote_table.IcebergRemoteTable(
+                    namespace = ["accounting","tax"], 
                     table = '', ),
-                destination = lakefs_sdk.models.local_table.LocalTable(
-                    namespace = '', 
+                destination = lakefs_sdk.models.iceberg_local_table.IcebergLocalTable(
+                    namespace = ["accounting","tax"], 
                     table = '', 
                     repository_id = '', 
                     reference_id = '', )
             )
         else:
             return IcebergPullRequest(
-                source = lakefs_sdk.models.remote_table.RemoteTable(
-                    namespace = '', 
+                source = lakefs_sdk.models.iceberg_remote_table.IcebergRemoteTable(
+                    namespace = ["accounting","tax"], 
                     table = '', ),
-                destination = lakefs_sdk.models.local_table.LocalTable(
-                    namespace = '', 
+                destination = lakefs_sdk.models.iceberg_local_table.IcebergLocalTable(
+                    namespace = ["accounting","tax"], 
                     table = '', 
                     repository_id = '', 
                     reference_id = '', ),

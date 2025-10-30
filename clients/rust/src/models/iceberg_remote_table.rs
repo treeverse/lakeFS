@@ -11,18 +11,18 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct RemoteTable {
-    /// Remote table namespace
+pub struct IcebergRemoteTable {
+    /// Reference to one or more levels of a namespace
     #[serde(rename = "namespace")]
-    pub namespace: String,
+    pub namespace: Vec<String>,
     /// Remote table name
     #[serde(rename = "table")]
     pub table: String,
 }
 
-impl RemoteTable {
-    pub fn new(namespace: String, table: String) -> RemoteTable {
-        RemoteTable {
+impl IcebergRemoteTable {
+    pub fn new(namespace: Vec<String>, table: String) -> IcebergRemoteTable {
+        IcebergRemoteTable {
             namespace,
             table,
         }

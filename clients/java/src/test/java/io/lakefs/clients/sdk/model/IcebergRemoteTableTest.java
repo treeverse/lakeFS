@@ -19,22 +19,24 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for RemoteTable
+ * Model tests for IcebergRemoteTable
  */
-public class RemoteTableTest {
-    private final RemoteTable model = new RemoteTable();
+public class IcebergRemoteTableTest {
+    private final IcebergRemoteTable model = new IcebergRemoteTable();
 
     /**
-     * Model tests for RemoteTable
+     * Model tests for IcebergRemoteTable
      */
     @Test
-    public void testRemoteTable() {
-        // TODO: test RemoteTable
+    public void testIcebergRemoteTable() {
+        // TODO: test IcebergRemoteTable
     }
 
     /**

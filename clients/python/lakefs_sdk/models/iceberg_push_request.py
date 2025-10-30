@@ -24,15 +24,15 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictBool
 except ImportError:
     from pydantic import BaseModel, Field, StrictBool
-from lakefs_sdk.models.local_table import LocalTable
-from lakefs_sdk.models.remote_table import RemoteTable
+from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
+from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
 
 class IcebergPushRequest(BaseModel):
     """
     IcebergPushRequest
     """
-    source: LocalTable = Field(...)
-    destination: RemoteTable = Field(...)
+    source: IcebergLocalTable = Field(...)
+    destination: IcebergRemoteTable = Field(...)
     force_update: Optional[StrictBool] = Field(False, description="Override exiting table in remote if exists")
     create_namespace: Optional[StrictBool] = Field(False, description="Creates namespace in remote catalog if not exist")
     __properties = ["source", "destination", "force_update", "create_namespace"]
@@ -79,8 +79,8 @@ class IcebergPushRequest(BaseModel):
             return IcebergPushRequest.parse_obj(obj)
 
         _obj = IcebergPushRequest.parse_obj({
-            "source": LocalTable.from_dict(obj.get("source")) if obj.get("source") is not None else None,
-            "destination": RemoteTable.from_dict(obj.get("destination")) if obj.get("destination") is not None else None,
+            "source": IcebergLocalTable.from_dict(obj.get("source")) if obj.get("source") is not None else None,
+            "destination": IcebergRemoteTable.from_dict(obj.get("destination")) if obj.get("destination") is not None else None,
             "force_update": obj.get("force_update") if obj.get("force_update") is not None else False,
             "create_namespace": obj.get("create_namespace") if obj.get("create_namespace") is not None else False
         })

@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**source** | [**LocalTable**](LocalTable.md) |  | 
-**destination** | [**RemoteTable**](RemoteTable.md) |  | 
+**source** | [**IcebergLocalTable**](IcebergLocalTable.md) |  | 
+**destination** | [**IcebergRemoteTable**](IcebergRemoteTable.md) |  | 
 **force_update** | **bool** | Override exiting table in remote if exists | [optional] [default to False]
 **create_namespace** | **bool** | Creates namespace in remote catalog if not exist | [optional] [default to False]
 

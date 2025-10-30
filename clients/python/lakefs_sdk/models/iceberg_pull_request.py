@@ -24,15 +24,15 @@ try:
     from pydantic.v1 import BaseModel, Field
 except ImportError:
     from pydantic import BaseModel, Field
-from lakefs_sdk.models.local_table import LocalTable
-from lakefs_sdk.models.remote_table import RemoteTable
+from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
+from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
 
 class IcebergPullRequest(BaseModel):
     """
     IcebergPullRequest
     """
-    source: RemoteTable = Field(...)
-    destination: LocalTable = Field(...)
+    source: IcebergRemoteTable = Field(...)
+    destination: IcebergLocalTable = Field(...)
     __properties = ["source", "destination"]
 
     class Config:
@@ -77,8 +77,8 @@ class IcebergPullRequest(BaseModel):
             return IcebergPullRequest.parse_obj(obj)
 
         _obj = IcebergPullRequest.parse_obj({
-            "source": RemoteTable.from_dict(obj.get("source")) if obj.get("source") is not None else None,
-            "destination": LocalTable.from_dict(obj.get("destination")) if obj.get("destination") is not None else None
+            "source": IcebergRemoteTable.from_dict(obj.get("source")) if obj.get("source") is not None else None,
+            "destination": IcebergLocalTable.from_dict(obj.get("destination")) if obj.get("destination") is not None else None
         })
         return _obj
 

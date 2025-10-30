@@ -20,7 +20,9 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -47,13 +49,13 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * LocalTable
+ * IcebergLocalTable
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LocalTable {
+public class IcebergLocalTable {
   public static final String SERIALIZED_NAME_NAMESPACE = "namespace";
   @SerializedName(SERIALIZED_NAME_NAMESPACE)
-  private String namespace;
+  private List<String> namespace = new ArrayList<>();
 
   public static final String SERIALIZED_NAME_TABLE = "table";
   @SerializedName(SERIALIZED_NAME_TABLE)
@@ -67,31 +69,39 @@ public class LocalTable {
   @SerializedName(SERIALIZED_NAME_REFERENCE_ID)
   private String referenceId;
 
-  public LocalTable() {
+  public IcebergLocalTable() {
   }
 
-  public LocalTable namespace(String namespace) {
+  public IcebergLocalTable namespace(List<String> namespace) {
     
     this.namespace = namespace;
     return this;
   }
 
+  public IcebergLocalTable addNamespaceItem(String namespaceItem) {
+    if (this.namespace == null) {
+      this.namespace = new ArrayList<>();
+    }
+    this.namespace.add(namespaceItem);
+    return this;
+  }
+
    /**
-   * Remote table namespace
+   * Reference to one or more levels of a namespace
    * @return namespace
   **/
   @javax.annotation.Nonnull
-  public String getNamespace() {
+  public List<String> getNamespace() {
     return namespace;
   }
 
 
-  public void setNamespace(String namespace) {
+  public void setNamespace(List<String> namespace) {
     this.namespace = namespace;
   }
 
 
-  public LocalTable table(String table) {
+  public IcebergLocalTable table(String table) {
     
     this.table = table;
     return this;
@@ -112,7 +122,7 @@ public class LocalTable {
   }
 
 
-  public LocalTable repositoryId(String repositoryId) {
+  public IcebergLocalTable repositoryId(String repositoryId) {
     
     this.repositoryId = repositoryId;
     return this;
@@ -133,7 +143,7 @@ public class LocalTable {
   }
 
 
-  public LocalTable referenceId(String referenceId) {
+  public IcebergLocalTable referenceId(String referenceId) {
     
     this.referenceId = referenceId;
     return this;
@@ -166,9 +176,9 @@ public class LocalTable {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the LocalTable instance itself
+   * @return the IcebergLocalTable instance itself
    */
-  public LocalTable putAdditionalProperty(String key, Object value) {
+  public IcebergLocalTable putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -207,12 +217,12 @@ public class LocalTable {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LocalTable localTable = (LocalTable) o;
-    return Objects.equals(this.namespace, localTable.namespace) &&
-        Objects.equals(this.table, localTable.table) &&
-        Objects.equals(this.repositoryId, localTable.repositoryId) &&
-        Objects.equals(this.referenceId, localTable.referenceId)&&
-        Objects.equals(this.additionalProperties, localTable.additionalProperties);
+    IcebergLocalTable icebergLocalTable = (IcebergLocalTable) o;
+    return Objects.equals(this.namespace, icebergLocalTable.namespace) &&
+        Objects.equals(this.table, icebergLocalTable.table) &&
+        Objects.equals(this.repositoryId, icebergLocalTable.repositoryId) &&
+        Objects.equals(this.referenceId, icebergLocalTable.referenceId)&&
+        Objects.equals(this.additionalProperties, icebergLocalTable.additionalProperties);
   }
 
   @Override
@@ -223,7 +233,7 @@ public class LocalTable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LocalTable {\n");
+    sb.append("class IcebergLocalTable {\n");
     sb.append("    namespace: ").append(toIndentedString(namespace)).append("\n");
     sb.append("    table: ").append(toIndentedString(table)).append("\n");
     sb.append("    repositoryId: ").append(toIndentedString(repositoryId)).append("\n");
@@ -268,24 +278,27 @@ public class LocalTable {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to LocalTable
+  * @throws IOException if the JSON Element is invalid with respect to IcebergLocalTable
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!LocalTable.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in LocalTable is not found in the empty JSON string", LocalTable.openapiRequiredFields.toString()));
+        if (!IcebergLocalTable.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in IcebergLocalTable is not found in the empty JSON string", IcebergLocalTable.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : LocalTable.openapiRequiredFields) {
+      for (String requiredField : IcebergLocalTable.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("namespace").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `namespace` to be a primitive type in the JSON string but got `%s`", jsonObj.get("namespace").toString()));
+      // ensure the required json array is present
+      if (jsonObj.get("namespace") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("namespace").isJsonArray()) {
+        throw new IllegalArgumentException(String.format("Expected the field `namespace` to be an array in the JSON string but got `%s`", jsonObj.get("namespace").toString()));
       }
       if (!jsonObj.get("table").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `table` to be a primitive type in the JSON string but got `%s`", jsonObj.get("table").toString()));
@@ -302,16 +315,16 @@ public class LocalTable {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!LocalTable.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'LocalTable' and its subtypes
+       if (!IcebergLocalTable.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'IcebergLocalTable' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<LocalTable> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(LocalTable.class));
+       final TypeAdapter<IcebergLocalTable> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(IcebergLocalTable.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<LocalTable>() {
+       return (TypeAdapter<T>) new TypeAdapter<IcebergLocalTable>() {
            @Override
-           public void write(JsonWriter out, LocalTable value) throws IOException {
+           public void write(JsonWriter out, IcebergLocalTable value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -334,12 +347,12 @@ public class LocalTable {
            }
 
            @Override
-           public LocalTable read(JsonReader in) throws IOException {
+           public IcebergLocalTable read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             LocalTable instance = thisAdapter.fromJsonTree(jsonObj);
+             IcebergLocalTable instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -366,18 +379,18 @@ public class LocalTable {
   }
 
  /**
-  * Create an instance of LocalTable given an JSON string
+  * Create an instance of IcebergLocalTable given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of LocalTable
-  * @throws IOException if the JSON string is invalid with respect to LocalTable
+  * @return An instance of IcebergLocalTable
+  * @throws IOException if the JSON string is invalid with respect to IcebergLocalTable
   */
-  public static LocalTable fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, LocalTable.class);
+  public static IcebergLocalTable fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, IcebergLocalTable.class);
   }
 
  /**
-  * Convert an instance of LocalTable to an JSON string
+  * Convert an instance of IcebergLocalTable to an JSON string
   *
   * @return JSON string
   */

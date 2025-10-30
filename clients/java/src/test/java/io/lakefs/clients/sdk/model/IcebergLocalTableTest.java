@@ -19,22 +19,24 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for LocalTable
+ * Model tests for IcebergLocalTable
  */
-public class LocalTableTest {
-    private final LocalTable model = new LocalTable();
+public class IcebergLocalTableTest {
+    private final IcebergLocalTable model = new IcebergLocalTable();
 
     /**
-     * Model tests for LocalTable
+     * Model tests for IcebergLocalTable
      */
     @Test
-    public void testLocalTable() {
-        // TODO: test LocalTable
+    public void testIcebergLocalTable() {
+        // TODO: test IcebergLocalTable
     }
 
     /**

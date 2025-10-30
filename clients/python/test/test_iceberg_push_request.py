@@ -37,26 +37,26 @@ class TestIcebergPushRequest(unittest.TestCase):
         model = IcebergPushRequest()  # noqa: E501
         if include_optional:
             return IcebergPushRequest(
-                source = lakefs_sdk.models.local_table.LocalTable(
-                    namespace = '', 
+                source = lakefs_sdk.models.iceberg_local_table.IcebergLocalTable(
+                    namespace = ["accounting","tax"], 
                     table = '', 
                     repository_id = '', 
                     reference_id = '', ),
-                destination = lakefs_sdk.models.remote_table.RemoteTable(
-                    namespace = '', 
+                destination = lakefs_sdk.models.iceberg_remote_table.IcebergRemoteTable(
+                    namespace = ["accounting","tax"], 
                     table = '', ),
                 force_update = True,
                 create_namespace = True
             )
         else:
             return IcebergPushRequest(
-                source = lakefs_sdk.models.local_table.LocalTable(
-                    namespace = '', 
+                source = lakefs_sdk.models.iceberg_local_table.IcebergLocalTable(
+                    namespace = ["accounting","tax"], 
                     table = '', 
                     repository_id = '', 
                     reference_id = '', ),
-                destination = lakefs_sdk.models.remote_table.RemoteTable(
-                    namespace = '', 
+                destination = lakefs_sdk.models.iceberg_remote_table.IcebergRemoteTable(
+                    namespace = ["accounting","tax"], 
                     table = '', ),
         )
         """

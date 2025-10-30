@@ -13,9 +13,9 @@ use crate::models;
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IcebergPushRequest {
     #[serde(rename = "source")]
-    pub source: Box<models::LocalTable>,
+    pub source: Box<models::IcebergLocalTable>,
     #[serde(rename = "destination")]
-    pub destination: Box<models::RemoteTable>,
+    pub destination: Box<models::IcebergRemoteTable>,
     /// Override exiting table in remote if exists
     #[serde(rename = "force_update", skip_serializing_if = "Option::is_none")]
     pub force_update: Option<bool>,
@@ -25,7 +25,7 @@ pub struct IcebergPushRequest {
 }
 
 impl IcebergPushRequest {
-    pub fn new(source: models::LocalTable, destination: models::RemoteTable) -> IcebergPushRequest {
+    pub fn new(source: models::IcebergLocalTable, destination: models::IcebergRemoteTable) -> IcebergPushRequest {
         IcebergPushRequest {
             source: Box::new(source),
             destination: Box::new(destination),

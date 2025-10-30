@@ -20,7 +20,9 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -47,43 +49,51 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * RemoteTable
+ * IcebergRemoteTable
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class RemoteTable {
+public class IcebergRemoteTable {
   public static final String SERIALIZED_NAME_NAMESPACE = "namespace";
   @SerializedName(SERIALIZED_NAME_NAMESPACE)
-  private String namespace;
+  private List<String> namespace = new ArrayList<>();
 
   public static final String SERIALIZED_NAME_TABLE = "table";
   @SerializedName(SERIALIZED_NAME_TABLE)
   private String table;
 
-  public RemoteTable() {
+  public IcebergRemoteTable() {
   }
 
-  public RemoteTable namespace(String namespace) {
+  public IcebergRemoteTable namespace(List<String> namespace) {
     
     this.namespace = namespace;
     return this;
   }
 
+  public IcebergRemoteTable addNamespaceItem(String namespaceItem) {
+    if (this.namespace == null) {
+      this.namespace = new ArrayList<>();
+    }
+    this.namespace.add(namespaceItem);
+    return this;
+  }
+
    /**
-   * Remote table namespace
+   * Reference to one or more levels of a namespace
    * @return namespace
   **/
   @javax.annotation.Nonnull
-  public String getNamespace() {
+  public List<String> getNamespace() {
     return namespace;
   }
 
 
-  public void setNamespace(String namespace) {
+  public void setNamespace(List<String> namespace) {
     this.namespace = namespace;
   }
 
 
-  public RemoteTable table(String table) {
+  public IcebergRemoteTable table(String table) {
     
     this.table = table;
     return this;
@@ -116,9 +126,9 @@ public class RemoteTable {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the RemoteTable instance itself
+   * @return the IcebergRemoteTable instance itself
    */
-  public RemoteTable putAdditionalProperty(String key, Object value) {
+  public IcebergRemoteTable putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -157,10 +167,10 @@ public class RemoteTable {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RemoteTable remoteTable = (RemoteTable) o;
-    return Objects.equals(this.namespace, remoteTable.namespace) &&
-        Objects.equals(this.table, remoteTable.table)&&
-        Objects.equals(this.additionalProperties, remoteTable.additionalProperties);
+    IcebergRemoteTable icebergRemoteTable = (IcebergRemoteTable) o;
+    return Objects.equals(this.namespace, icebergRemoteTable.namespace) &&
+        Objects.equals(this.table, icebergRemoteTable.table)&&
+        Objects.equals(this.additionalProperties, icebergRemoteTable.additionalProperties);
   }
 
   @Override
@@ -171,7 +181,7 @@ public class RemoteTable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RemoteTable {\n");
+    sb.append("class IcebergRemoteTable {\n");
     sb.append("    namespace: ").append(toIndentedString(namespace)).append("\n");
     sb.append("    table: ").append(toIndentedString(table)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -210,24 +220,27 @@ public class RemoteTable {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to RemoteTable
+  * @throws IOException if the JSON Element is invalid with respect to IcebergRemoteTable
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!RemoteTable.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in RemoteTable is not found in the empty JSON string", RemoteTable.openapiRequiredFields.toString()));
+        if (!IcebergRemoteTable.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in IcebergRemoteTable is not found in the empty JSON string", IcebergRemoteTable.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : RemoteTable.openapiRequiredFields) {
+      for (String requiredField : IcebergRemoteTable.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("namespace").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `namespace` to be a primitive type in the JSON string but got `%s`", jsonObj.get("namespace").toString()));
+      // ensure the required json array is present
+      if (jsonObj.get("namespace") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("namespace").isJsonArray()) {
+        throw new IllegalArgumentException(String.format("Expected the field `namespace` to be an array in the JSON string but got `%s`", jsonObj.get("namespace").toString()));
       }
       if (!jsonObj.get("table").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `table` to be a primitive type in the JSON string but got `%s`", jsonObj.get("table").toString()));
@@ -238,16 +251,16 @@ public class RemoteTable {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!RemoteTable.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'RemoteTable' and its subtypes
+       if (!IcebergRemoteTable.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'IcebergRemoteTable' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<RemoteTable> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(RemoteTable.class));
+       final TypeAdapter<IcebergRemoteTable> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(IcebergRemoteTable.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<RemoteTable>() {
+       return (TypeAdapter<T>) new TypeAdapter<IcebergRemoteTable>() {
            @Override
-           public void write(JsonWriter out, RemoteTable value) throws IOException {
+           public void write(JsonWriter out, IcebergRemoteTable value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -270,12 +283,12 @@ public class RemoteTable {
            }
 
            @Override
-           public RemoteTable read(JsonReader in) throws IOException {
+           public IcebergRemoteTable read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             RemoteTable instance = thisAdapter.fromJsonTree(jsonObj);
+             IcebergRemoteTable instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -302,18 +315,18 @@ public class RemoteTable {
   }
 
  /**
-  * Create an instance of RemoteTable given an JSON string
+  * Create an instance of IcebergRemoteTable given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of RemoteTable
-  * @throws IOException if the JSON string is invalid with respect to RemoteTable
+  * @return An instance of IcebergRemoteTable
+  * @throws IOException if the JSON string is invalid with respect to IcebergRemoteTable
   */
-  public static RemoteTable fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, RemoteTable.class);
+  public static IcebergRemoteTable fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, IcebergRemoteTable.class);
   }
 
  /**
-  * Convert an instance of RemoteTable to an JSON string
+  * Convert an instance of IcebergRemoteTable to an JSON string
   *
   * @return JSON string
   */
