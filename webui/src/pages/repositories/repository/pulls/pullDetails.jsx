@@ -70,12 +70,12 @@ const PullDetailsContent = ({repo, pull}) => {
                     <Markdown>{pull.description}</Markdown>
                 </Card.Body>
             </Card>
-            <div className="bottom-buttons-row mt-4 clearfix">
+            <div className="bottom-buttons-row mt-4">
                 {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
                 {formattedDiffError && <AlertError error={formattedDiffError}/>}
                 {isPullOpen() &&
                     <>
-                        <div className="bottom-buttons-group float-end">
+                        <div className="bottom-buttons-group d-flex justify-content-end">
                             <ClosePullButton onClick={changePullStatus(PullStatus.closed)} loading={loading}/>
                             {!formattedDiffError &&
                                 <MergePullButton
