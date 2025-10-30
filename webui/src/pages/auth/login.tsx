@@ -143,7 +143,7 @@ const LoginPage = () => {
         return <AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()} />;
     }
 
-    // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
+    // setup redirect if needed
     const setupResponse = response as SetupResponse | null;
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
         router.navigate(`/setup${location.search}${location.hash ?? ''}`, { replace: true });
@@ -154,54 +154,58 @@ const LoginPage = () => {
         return null;
     }
 
-    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
-    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
-    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
-    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
-    // selection page or the default lakeFS login form, since both share the same endpoint.
+    // ---------- derive redirected + next ----------
     const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
     const urlSearch = new URLSearchParams(location.search);
     const redirectedFromQuery = urlSearch.get("redirected") === "true";
     const redirectedFromState = !!st?.redirected;
     const redirected = redirectedFromState || redirectedFromQuery;
     const nextFromState = st?.next ?? null;
-    const nextFromQuery  = urlSearch.get("next");
+    const nextFromQuery = urlSearch.get("next");
     const rawNext = nextFromState ?? nextFromQuery ?? "/";
     const next = rawNext.startsWith("/") ? rawNext : "/";
 
+    // ---------- persist next ASAP (covers SSO auto-redirect) ----------
     if (next) window.sessionStorage.setItem("post_login_next", next);
 
-    if (redirectedFromQuery) {
-        urlSearch.delete("redirected");
-        const qs = urlSearch.toString();
-        const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
-        router.navigate(cleanUrl, { replace: true });
-        return null;
-    }
+    // ---------- normalize URL: remove ?redirected=true without breaking hooks order ----------
+    useEffect(() => {
+        if (redirectedFromQuery) {
+            const s = new URLSearchParams(location.search);
+            s.delete("redirected");
+            const qs = s.toString();
+            const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
+            router.navigate(cleanUrl, { replace: true });
+        }
+    }, [redirectedFromQuery, location.pathname, location.search, location.hash, router]);
 
+    // ---------- when authenticated (after SSO), jump to stored next ----------
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
-            const storedNext = window.sessionStorage.getItem("post_login_next");
-            if (storedNext) {
-                window.sessionStorage.removeItem("post_login_next");
-                router.navigate(storedNext, { replace: true });
-            }
+            try {
+                const storedNext = window.sessionStorage.getItem("post_login_next");
+                if (storedNext) {
+                    window.sessionStorage.removeItem("post_login_next");
+                    router.navigate(storedNext, { replace: true });
+                } else {
+                    const raw = new URLSearchParams(location.search).get("next");
+                    const fallbackNext = raw && raw.startsWith("/") ? raw : "/";
+                    if (fallbackNext !== "/") {
+                        router.navigate(fallbackNext, { replace: true });
+                    }
+                }
+            } catch {}
         }
-    }, [status, router]);
+    }, [status, router, location.search]);
 
-    if (redirected)  {
+    // ---------- SSO login strategy (safe: all hooks are already declared) ----------
+    if (redirected) {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-        // Return the element (component or null)
-        if (loginStrategy.element !== undefined) {
-            return loginStrategy.element;
-        }
+        if (loginStrategy.element !== undefined) return loginStrategy.element;
     }
 
-    // Default: show the lakeFS login form when the user navigates directly at '/auth/login'
-    // (no router.query.redirected flag) or when loginStrategyPlugin.element is undefined.
-    return (
-        <LoginForm loginConfig={loginConfig}/>
-    );
+    // ---------- default username/password form ----------
+    return <LoginForm loginConfig={loginConfig} />;
 };
 
 export default LoginPage;
