@@ -28,6 +28,16 @@ export interface LoginConfig {
     logout_url: string;
 }
 
+const withNext = (url: string, n: string) => {
+    try {
+        const u = new URL(url, window.location.origin);
+        u.searchParams.set("next", n);
+        return u.toString();
+    } catch {
+        return url + (url.includes("?") ? "&" : "?") + "next=" + encodeURIComponent(n);
+    }
+};
+
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const location = useLocation();
@@ -38,16 +48,6 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const next = loginState?.next ?? search.get("next") ?? "/";
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
-
-    const withNext = (url: string, n: string) => {
-        try {
-            const u = new URL(url, window.location.origin);
-            u.searchParams.set("next", n);
-            return u.toString();
-        } catch {
-            return url + (url.includes("?") ? "&" : "?") + "next=" + encodeURIComponent(n);
-        }
-    };
 
     return (
         <div className="d-flex align-items-center justify-content-center">
@@ -144,23 +144,21 @@ const LoginPage = () => {
     const redirected = redirectedFromState || redirectedFromQuery;
     const nextFromState = st?.next ?? null;
     const nextFromQuery = urlSearch.get("next");
-    const rawNext = nextFromState ?? nextFromQuery ?? "/";
-    const next = rawNext.startsWith("/") ? rawNext : "/";
+    const raw = nextFromState ?? nextFromQuery ?? "/";
+    const next = raw.startsWith("/") ? raw : "/";
 
     if (next) window.sessionStorage.setItem("post_login_next", next);
 
-    // clean redirected query param
     useEffect(() => {
         if (redirectedFromQuery) {
             const s = new URLSearchParams(location.search);
             s.delete("redirected");
             const qs = s.toString();
             const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
-            router.navigate(cleanUrl, { replace: true });
+            router.navigate(cleanUrl, { replace: true, state: { redirected: true, next } });
         }
-    }, [redirectedFromQuery, location, router]);
+    }, [redirectedFromQuery, location.pathname, location.search, location.hash, router, next]);
 
-    // navigate after auth
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
             const storedNext = window.sessionStorage.getItem("post_login_next");
@@ -185,6 +183,9 @@ const LoginPage = () => {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(setupResponse?.login_config, router);
         if (loginStrategy.element !== undefined) {
             content = loginStrategy.element;
+        } else if (setupResponse?.login_config?.login_url && setupResponse?.login_config?.login_url_method !== "none") {
+            window.location.replace(withNext(setupResponse.login_config.login_url, next));
+            content = <Loading />;
         }
     } else if (setupResponse?.login_config) {
         content = <LoginForm loginConfig={setupResponse.login_config} />;
