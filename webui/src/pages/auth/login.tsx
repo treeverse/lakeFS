@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
+import {auth, AuthenticationError, setup} from "../../lib/api";
 import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
@@ -36,6 +36,18 @@ const withNext = (url: string, n: string) => {
     } catch {
         return url + (url.includes("?") ? "&" : "?") + "next=" + encodeURIComponent(n);
     }
+};
+
+const DEFAULT_LOGIN_CONFIG: LoginConfig = {
+    username_ui_placeholder: "Username",
+    password_ui_placeholder: "Password",
+    login_url: "",
+    login_url_method: "none",
+    login_failed_message: "",
+    fallback_login_url: "",
+    fallback_login_label: "",
+    login_cookie_names: [],
+    logout_url: "/logout",
 };
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
@@ -134,8 +146,6 @@ const LoginPage = () => {
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
     const { status } = useAuth();
-
-    // derive values that never early-return
     const setupResponse = response as SetupResponse | null;
     const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
     const urlSearch = new URLSearchParams(location.search);
@@ -144,9 +154,8 @@ const LoginPage = () => {
     const redirected = redirectedFromState || redirectedFromQuery;
     const nextFromState = st?.next ?? null;
     const nextFromQuery = urlSearch.get("next");
-    const raw = nextFromState ?? nextFromQuery ?? "/";
-    const next = raw.startsWith("/") ? raw : "/";
-
+    const rawNext = nextFromState ?? nextFromQuery ?? "/";
+    const next = rawNext.startsWith("/") ? rawNext : "/";
     if (next) window.sessionStorage.setItem("post_login_next", next);
 
     useEffect(() => {
@@ -162,33 +171,35 @@ const LoginPage = () => {
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
             const storedNext = window.sessionStorage.getItem("post_login_next");
-            if (storedNext) {
+            if (storedNext && storedNext.startsWith("/")) {
                 window.sessionStorage.removeItem("post_login_next");
                 router.navigate(storedNext, { replace: true });
             }
         }
     }, [status, router]);
 
-    // decide what to render (no early returns)
-    let content: React.ReactNode = null;
+    let content: React.ReactNode;
 
     if (loading) {
         content = <Loading />;
     } else if (error) {
-        content = (<AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()}/>);
-    } else if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        router.navigate(`/setup${location.search}${location.hash ?? ''}`, { replace: true });
-        content = <Loading />;
-    } else if (redirected) {
-        const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(setupResponse?.login_config, router);
-        if (loginStrategy.element !== undefined) {
-            content = loginStrategy.element;
-        } else if (setupResponse?.login_config?.login_url && setupResponse?.login_config?.login_url_method !== "none") {
-            window.location.replace(withNext(setupResponse.login_config.login_url, next));
-            content = <Loading />;
+        content = <LoginForm loginConfig={DEFAULT_LOGIN_CONFIG} />;
+    } else {
+        if (redirected) {
+            const loginConfig = setupResponse?.login_config;
+            const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
+            if (loginStrategy.element !== undefined) {
+                content = loginStrategy.element;
+            } else if (loginConfig?.login_url && loginConfig?.login_url_method !== "none") {
+                window.location.replace(withNext(loginConfig.login_url, next));
+                content = <Loading />;
+            } else {
+                content = <LoginForm loginConfig={loginConfig ?? DEFAULT_LOGIN_CONFIG} />;
+            }
+        } else {
+            const loginConfig = setupResponse?.login_config ?? DEFAULT_LOGIN_CONFIG;
+            content = <LoginForm loginConfig={loginConfig} />;
         }
-    } else if (setupResponse?.login_config) {
-        content = <LoginForm loginConfig={setupResponse.login_config} />;
     }
 
     return <>{content}</>;
