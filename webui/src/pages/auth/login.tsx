@@ -1,14 +1,14 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {auth, AuthenticationError, setup} from "../../lib/api";
+import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 import {AUTH_STATUS, useAuth} from "../../lib/auth/authContext";
-import {useLocation} from "react-router-dom";
+import {Navigate, useLocation} from "react-router-dom";
 
 interface SetupResponse {
     state: string;
@@ -36,18 +36,6 @@ const withNext = (url: string, n: string) => {
     } catch {
         return url + (url.includes("?") ? "&" : "?") + "next=" + encodeURIComponent(n);
     }
-};
-
-const DEFAULT_LOGIN_CONFIG: LoginConfig = {
-    username_ui_placeholder: "Username",
-    password_ui_placeholder: "Password",
-    login_url: "",
-    login_url_method: "none",
-    login_failed_message: "",
-    fallback_login_url: "",
-    fallback_login_label: "",
-    login_cookie_names: [],
-    logout_url: "/logout",
 };
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
@@ -146,63 +134,60 @@ const LoginPage = () => {
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
     const { status } = useAuth();
+
     const setupResponse = response as SetupResponse | null;
     const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
     const urlSearch = new URLSearchParams(location.search);
     const redirectedFromQuery = urlSearch.get("redirected") === "true";
     const redirectedFromState = !!st?.redirected;
     const redirected = redirectedFromState || redirectedFromQuery;
+
     const nextFromState = st?.next ?? null;
     const nextFromQuery = urlSearch.get("next");
     const rawNext = nextFromState ?? nextFromQuery ?? "/";
     const next = rawNext.startsWith("/") ? rawNext : "/";
+
     if (next) window.sessionStorage.setItem("post_login_next", next);
+    if (loading || (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing))) {
+        return <Loading />;
+    }
+    if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
+        return <Navigate to={`/setup${location.search}${location.hash ?? ""}`} replace />;
+    }
+    if (error) return (<AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()}/>);
 
-    useEffect(() => {
-        if (redirectedFromQuery) {
-            const s = new URLSearchParams(location.search);
-            s.delete("redirected");
-            const qs = s.toString();
-            const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
-            router.navigate(cleanUrl, { replace: true, state: { redirected: true, next } });
-        }
-    }, [redirectedFromQuery, location.pathname, location.search, location.hash, router, next]);
+    if (redirectedFromQuery) {
+        const s = new URLSearchParams(location.search);
+        s.delete("redirected");
+        const qs = s.toString();
+        const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
+        router.navigate(cleanUrl, { replace: true, state: { redirected: true, next } });
+        return <Loading />;
+    }
 
-    useEffect(() => {
-        if (status === AUTH_STATUS.AUTHENTICATED) {
-            const storedNext = window.sessionStorage.getItem("post_login_next");
-            if (storedNext && storedNext.startsWith("/")) {
-                window.sessionStorage.removeItem("post_login_next");
-                router.navigate(storedNext, { replace: true });
-            }
-        }
-    }, [status, router]);
-
-    let content: React.ReactNode;
-
-    if (loading) {
-        content = <Loading />;
-    } else if (error) {
-        content = <LoginForm loginConfig={DEFAULT_LOGIN_CONFIG} />;
-    } else {
-        if (redirected) {
-            const loginConfig = setupResponse?.login_config;
-            const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-            if (loginStrategy.element !== undefined) {
-                content = loginStrategy.element;
-            } else if (loginConfig?.login_url && loginConfig?.login_url_method !== "none") {
-                window.location.replace(withNext(loginConfig.login_url, next));
-                content = <Loading />;
-            } else {
-                content = <LoginForm loginConfig={loginConfig ?? DEFAULT_LOGIN_CONFIG} />;
-            }
-        } else {
-            const loginConfig = setupResponse?.login_config ?? DEFAULT_LOGIN_CONFIG;
-            content = <LoginForm loginConfig={loginConfig} />;
+    if (status === AUTH_STATUS.AUTHENTICATED) {
+        const storedNext = window.sessionStorage.getItem("post_login_next");
+        if (storedNext && storedNext.startsWith("/")) {
+            window.sessionStorage.removeItem("post_login_next");
+            router.navigate(storedNext, { replace: true });
+            return <Loading />;
         }
     }
 
-    return <>{content}</>;
+    const loginConfig = setupResponse?.login_config;
+
+    if (redirected) {
+        const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
+        if (loginStrategy.element !== undefined) {
+            return loginStrategy.element;
+        }
+        if (loginConfig?.login_url && loginConfig?.login_url_method !== "none") {
+            window.location.replace(withNext(loginConfig.login_url, next));
+            return <Loading />;
+        }
+    }
+
+    return <LoginForm loginConfig={loginConfig} />;
 };
 
 export default LoginPage;
