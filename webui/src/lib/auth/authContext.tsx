@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, ReactNode, useCallback } from "react";
+import React, {createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api";
 
@@ -39,6 +39,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
         }
     }, [navigate]);
+
+    useEffect(() => {
+        if (status === AUTH_STATUS.AUTHENTICATED) {
+            const stored = window.sessionStorage.getItem("post_login_next");
+            if (stored && stored.startsWith("/")) {
+                window.sessionStorage.removeItem("post_login_next");
+                const here = window.location.pathname + (window.location.search || "") + (window.location.hash || "");
+                if (here !== stored) {
+                    navigate(stored, { replace: true });
+                }
+            }
+        }
+    }, [status, navigate]);
 
     const value = useMemo<AuthContextType>(
         () => ({
