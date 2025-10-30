@@ -396,7 +396,6 @@ Here's a simplified example of what writing to an Iceberg table would look like:
 ```mermaid
 sequenceDiagram
     Actor Iceberg Client
-    Actor User/Automation
     participant lakeFS Catalog API
     participant lakeFS
     participant Object Store
@@ -405,7 +404,7 @@ sequenceDiagram
     lakeFS Catalog API->>lakeFS: stage('new table pointer')
     lakeFS->>Object Store: PutObject("metdata.json")
     lakeFS Catalog API->>Iceberg Client: Iceberg commit done
-    User/Automation->>lakeFS: lakeFS commit('repo','branch', message)
+    Iceberg Client->>lakeFS: lakeFS commit('repo','branch', message)
 ```
 
 ### Related Resources
