@@ -3164,10 +3164,13 @@ paths:
         401:
           description: bad mailbox or user has not logged in yet
           $ref: "#/components/responses/Unauthorized"
+        404:
+          description: not found or user has not logged in yet
+          $ref: "#/components/responses/NotFound"
         429:
           description: too many requests
         501:
-          description: Not implemented in this edition.
+          description: not implemented in this edition.
           $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
