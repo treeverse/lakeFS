@@ -182,19 +182,17 @@ const LoginPage = () => {
     // ---------- when authenticated (after SSO), jump to stored next ----------
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
-            try {
-                const storedNext = window.sessionStorage.getItem("post_login_next");
-                if (storedNext) {
-                    window.sessionStorage.removeItem("post_login_next");
-                    router.navigate(storedNext, { replace: true });
-                } else {
-                    const raw = new URLSearchParams(location.search).get("next");
-                    const fallbackNext = raw && raw.startsWith("/") ? raw : "/";
-                    if (fallbackNext !== "/") {
-                        router.navigate(fallbackNext, { replace: true });
-                    }
+            const storedNext = window.sessionStorage.getItem("post_login_next");
+            if (storedNext) {
+                window.sessionStorage.removeItem("post_login_next");
+                router.navigate(storedNext, { replace: true });
+            } else {
+                const raw = new URLSearchParams(location.search).get("next");
+                const fallbackNext = raw && raw.startsWith("/") ? raw : "/";
+                if (fallbackNext !== "/") {
+                    router.navigate(fallbackNext, { replace: true });
                 }
-            } catch {}
+            }
         }
     }, [status, router, location.search]);
 
