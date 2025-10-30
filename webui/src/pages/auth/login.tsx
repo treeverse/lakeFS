@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -36,8 +36,20 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const loginState = (location.state as { next?: string; redirected?: boolean } | null) ?? null;
     const search = new URLSearchParams(location.search);
     const next = loginState?.next ?? search.get("next") ?? "/";
+    if (next) window.sessionStorage.setItem("post_login_next", next);
+
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
+
+    const withNext = (url: string, n: string) => {
+        try {
+            const u = new URL(url, window.location.origin);
+            u.searchParams.set("next", n);
+            return u.toString();
+        } catch {
+            return url + (url.includes("?") ? "&" : "?") + "next=" + encodeURIComponent(n);
+        }
+    };
 
     return (
         <div className="d-flex align-items-center justify-content-center">
@@ -99,13 +111,14 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                     <div className={"mt-2 mb-1"}>
                         { loginConfig.fallback_login_url ?
                             <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
+                                window.sessionStorage.setItem("post_login_next", next);
                                 loginConfig.login_cookie_names?.forEach(
                                     cookie => {
                                         document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
                                     }
                                 );
                                 if (loginConfig.fallback_login_url) {
-                                    window.location.href = loginConfig.fallback_login_url;
+                                    window.location.href = withNext(loginConfig.fallback_login_url, next);
                                 }
                             }}>{loginConfig.fallback_login_label || 'Try another way to login'}</Button>
                             : ""
@@ -122,6 +135,17 @@ const LoginPage = () => {
     const location = useLocation();
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
+    const { status } = useAuth();
+
+    useEffect(() => {
+        if (status === AUTH_STATUS.AUTHENTICATED) {
+            const storedNext = window.sessionStorage.getItem("post_login_next");
+            if (storedNext) {
+                window.sessionStorage.removeItem("post_login_next");
+                router.navigate(storedNext, { replace: true });
+            }
+        }
+    }, [status, router]);
 
     if (loading) {
         return <Loading />;

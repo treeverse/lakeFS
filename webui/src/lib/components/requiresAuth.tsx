@@ -6,10 +6,13 @@ import useUser from "../hooks/user";
 const RequiresAuth: React.FC = () => {
     const {user, loading} = useUser();
     const location = useLocation();
-    const next = location.pathname + (location.search || "") + (location.hash || "");
 
     if (loading) return <Loading/>;
-    if (!user) return <Navigate to="/auth/login" replace state={{next, redirected: true}}/>;
+    if (!user) {
+        const next = location.pathname + (location.search || "") + (location.hash || "");
+        const url = `/auth/login?redirected=true&next=${encodeURIComponent(next)}`;
+        return <Navigate to={url} replace state={{ next, redirected: true }} />;
+    }
 
     return <Outlet/>;
 };
