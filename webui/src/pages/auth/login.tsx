@@ -36,8 +36,6 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const loginState = (location.state as { next?: string; redirected?: boolean } | null) ?? null;
     const search = new URLSearchParams(location.search);
     const next = loginState?.next ?? search.get("next") ?? "/";
-    if (next) window.sessionStorage.setItem("post_login_next", next);
-
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
 
@@ -137,16 +135,6 @@ const LoginPage = () => {
     const { response, error, loading } = useAPI(() => setup.getState());
     const { status } = useAuth();
 
-    useEffect(() => {
-        if (status === AUTH_STATUS.AUTHENTICATED) {
-            const storedNext = window.sessionStorage.getItem("post_login_next");
-            if (storedNext) {
-                window.sessionStorage.removeItem("post_login_next");
-                router.navigate(storedNext, { replace: true });
-            }
-        }
-    }, [status, router]);
-
     if (loading) {
         return <Loading />;
     }
@@ -171,20 +159,35 @@ const LoginPage = () => {
     // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
     // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
     // selection page or the default lakeFS login form, since both share the same endpoint.
-    const st = (location.state as { redirected?: boolean } | null) ?? null;
-
+    const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
     const urlSearch = new URLSearchParams(location.search);
     const redirectedFromQuery = urlSearch.get("redirected") === "true";
     const redirectedFromState = !!st?.redirected;
-
     const redirected = redirectedFromState || redirectedFromQuery;
+    const nextFromState = st?.next ?? null;
+    const nextFromQuery  = urlSearch.get("next");
+    const rawNext = nextFromState ?? nextFromQuery ?? "/";
+    const next = rawNext.startsWith("/") ? rawNext : "/";
+
+    if (next) window.sessionStorage.setItem("post_login_next", next);
 
     if (redirectedFromQuery) {
         urlSearch.delete("redirected");
         const qs = urlSearch.toString();
         const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
         router.navigate(cleanUrl, { replace: true });
+        return null;
     }
+
+    useEffect(() => {
+        if (status === AUTH_STATUS.AUTHENTICATED) {
+            const storedNext = window.sessionStorage.getItem("post_login_next");
+            if (storedNext) {
+                window.sessionStorage.removeItem("post_login_next");
+                router.navigate(storedNext, { replace: true });
+            }
+        }
+    }, [status, router]);
 
     if (redirected)  {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
