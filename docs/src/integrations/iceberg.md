@@ -216,12 +216,10 @@ This provides a complete history of table modifications and enables lakeFS branc
 
 #### Catalog Changes in lakeFS
 
-Creating, dropping, or committing changes to a table results in staging changes to a (table) lakeFS object, 
-and creating or dropping a namespace results in staging changes to a (namespace) lakeFS object.
+Iceberg changes (create/drop/commit to table, create/drop namespace) are reflected as staging changes on the relevant lakeFS (table/namespace) object.
+These changes aren't committed to lakeFS, and should be explicitly committed by using lakeFS tools.
 
-These changes aren't automatically committed to lakeFS, and should be explicitly committed by using lakeFS tools.
-
-Note that this way, several Iceberg operations can be grouped across multiple tables into a single lakeFS commit.
+Note that several Iceberg operations can be grouped across multiple tables into a single lakeFS commit.
 
 #### Branching and Merging
 
