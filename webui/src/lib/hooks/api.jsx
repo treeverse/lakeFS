@@ -1,7 +1,6 @@
 import {useEffect, useState} from 'react';
 import {AuthenticationError} from "../api";
-import {AUTH_STATUS, useAuth} from "../auth/authContext";
-import {useNavigate} from "react-router-dom";
+import {useAuth} from "../auth/authContext";
 
 const initialPaginationState = {
     loading: true,
