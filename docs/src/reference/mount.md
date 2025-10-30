@@ -31,8 +31,13 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 ### Prerequisites
 
 -   lakeFS Cloud account or lakeFS Enterprise Version `1.25.0` or higher.
--   **Supported OS:** macOS (with NFS V3) or Linux.
+-   **Supported OS:** macOS (with NFS V3), Linux And Windows (using CFAPI).
 -   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
+
+!!! note "Windows Support"
+    Everest supports windows starting at version <version>.
+    Currently, only read operations are supported.
+	See Everest for [Windows](#everest-for-windows-cfapi-protocol)
 
 ### Authentication & Configuration
 
@@ -265,6 +270,36 @@ When running in write mode, the lakeFS URI must point to a branch, not a commit 
 
 
 ---
+
+## Everest for Windows (CFAPI protocol)
+
+Starting at version <version>, Everest mount is available for Windows OS using *Cloud Filter API* (CFAPI)
+Currently, Everest for Windows supports read-only operation.
+
+### Syntax
+
+Everest for Windows uses the same sytnax. To utilize it we will have to add the cfapi flag
+
+```powershell
+./everest mount <lakefs_uri> <mount_directory> --protocol cfapi [flags]
+```
+
+### Firewall
+
+To enable Everest run, we must disable firewall for the mounted path.
+This can be done via the UI and with Admin in Powershell:
+
+```powershell
+Add-MpPreference -ExclusionPath "Path\To\Mount-Dir"
+```
+
+Verify exclusions:
+
+```powershell
+Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
+```
+
+
 
 ## Everest on Kubernetes (CSI Driver)
 
@@ -698,7 +733,7 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--cache-create-provided-dir`: If `cache-dir` is provided and does not exist, create it.
 -   `--listen`: Address for the mount server to listen on.
 -   `--no-spawn`: Do not spawn a new server; assume one is already running.
--   `--protocol`: Protocol to use (default: `nfs`).
+-   `--protocol`: Protocol to use (default: `nfs`), for Windows use --cfapi.
 -   `--log-level`: Set logging level.
 -   `--log-format`: Set logging output format.
 -   `--log-output`: Set logging output(s).
@@ -740,12 +775,16 @@ Starts the mount server without performing the OS-level mount. This is intended 
 everest mount-server <remote_mount_uri> [flags]
 ```
 
+!!! note "Windows Support"
+    Windows users must utilze the `--root` flag
+
+
 **Flags:**
 
 -   `--cache-dir`: Directory to cache read files and metadata.
 -   `--cache-create-provided-dir`: Create the cache directory if it does not exist.
 -   `--listen`: Address to listen on.
--   `--protocol`: Protocol to use (nfs | webdav).
+-   `--protocol`: Protocol to use (nfs | fuse | cfapi).
 -   `--callback-addr`: Callback address to report back to.
 -   `--log-level`: Set logging level.
 -   `--log-format`: Set logging output format.
@@ -754,6 +793,7 @@ everest mount-server <remote_mount_uri> [flags]
 -   `--parallelism`: Number of parallel downloads for metadata.
 -   `--presign`: Use presign for downloading.
 -   `--write-mode`: Enable write mode (default: false).
+-   `--root`: Root dir to mount everest onto. Used **only** for CFAPI protocol.
 
 ---
 
