@@ -148,12 +148,17 @@ const LoginPage = () => {
     const next = rawNext.startsWith("/") ? rawNext : "/";
 
     if (next) window.sessionStorage.setItem("post_login_next", next);
-    if (loading || (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing))) {
-        return <Loading />;
-    }
+
+    if (loading) return <Loading />;
+
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        return <Navigate to={`/setup${location.search}${location.hash ?? ""}`} replace />;
+        const qs = new URLSearchParams(location.search);
+        qs.set("redirected", "true");
+        if (!qs.get("next")) qs.set("next", next);
+        const to = `/setup?${qs.toString()}${location.hash ?? ""}`;
+        return <Navigate to={to} replace />;
     }
+
     if (error) return (<AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()}/>);
 
     if (redirectedFromQuery) {
