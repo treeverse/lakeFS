@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lakefs"
+description = "lakeFS Python SDK Wrapper"
+version = "0.14.0"
+keywords = ["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"]
+requires-python = ">=3.9"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    { name = "Treeverse", email = "services@treeverse.io" },
+]
+dependencies = [
+    "lakefs-sdk>=1.50,< 2",
+    "pyyaml~=6.0.1",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Version Control",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+all = [ "boto3 >= 1.26.0" ]
+aws-iam = [ "boto3 >= 1.26.0" ]
+
+[dependency-groups]
+test = [
+    "pytest ~= 7.4.3",
+    "pytest-datafiles ~= 3.0.0",
+    "pandas >= 2.1.4,<3",
+    "pyarrow >= 14.0.1,<20",
+    "pillow >= 10.3.0,<12"
+]
+
+[project.urls]
+Homepage = "https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper"
+
+[tool.setuptools.packages.find]
+include = ["lakectl", "lakefs"]
+
+[tool.setuptools.package-data]
+lakefs = ["py.typed"]

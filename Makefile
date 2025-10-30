@@ -279,8 +279,9 @@ python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
 
 python-wrapper-gen-docs:
+	@version=$$(python -m pip install -r clients/python-wrapper/requirements.txt && python clients/python-wrapper/_version.py)
 	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/
-	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
+	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/$$version
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
