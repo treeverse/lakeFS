@@ -42,7 +42,7 @@ Everest uses the same configuration and authentication methods as `lakectl`. It 
 2.  **Environment Variables:** `LAKECTL_*` or `EVEREST_LAKEFS_*` prefixed variables.
 3.  **Configuration File:** `~/.lakectl.yaml` (or the file specified by `--lakectl-config`).
 
-#### Authentication Methods
+<h4>Authentication Methods</h4>
 
 Everest will attempt to authenticate in the following order:
 
@@ -108,7 +108,7 @@ This section will help you understand how Everest manages performance, consisten
 
 Everest uses a local cache to improve performance when accessing files from lakeFS. Understanding how the cache works will help you optimize performance for your specific use case.
 
-#### How Caching Works
+<h4>How Caching Works</h4>
 
 When you access a file through a mounted lakeFS path, Everest follows this process:
 
@@ -116,7 +116,7 @@ When you access a file through a mounted lakeFS path, Everest follows this proce
 2. **Cache Storage**: When an object is not found in the local cache, Everest fetches the data from the object store and stores it in the cache for subsequent access.
 3. **Cache Reuse**: Subsequent reads of the same file are served directly from the cache, eliminating network requests and improving performance. Cached can't be shared between different instances of mount.
 
-#### Default Cache Behavior
+<h4>Default Cache Behavior</h4>
 
 By default, Everest creates a temporary cache directory when you run `everest mount`. This directory is automatically cleared when the mount is terminated via `everest umount`.
 
@@ -126,7 +126,7 @@ By default, Everest creates a temporary cache directory when you run `everest mo
 -   By default cache location is managed by Everest and cleaned up automatically.
 -   The cache is ephemeral and does not persist between mount sessions. Unless you specify the cache directory.
 
-#### Persistent Cache
+<h4>Persistent Cache</h4>
 
 To reuse cache data across multiple mount sessions, you can specify a custom cache directory using the `--cache-dir` flag:
 
@@ -140,7 +140,7 @@ everest mount lakefs://image-repo/main/datasets/ ./datasets --cache-dir ~/.evere
 -   Reduced bandwidth usage by reusing previously downloaded files.
 -   Useful for iterative workflows where you repeatedly mount and unmount the same repository.
 
-#### Cache Management
+<h4>Cache Management</h4>
 
 Everest manages cached data based on the commit ID of the mounted reference:
 
@@ -152,13 +152,11 @@ Everest manages cached data based on the commit ID of the mounted reference:
 
 ### Consistency & Data Behavior
 
-Understanding how Everest handles data consistency is crucial for working effectively with mounted lakeFS repositories.
-
-#### File System Consistency
+<h4>File System Consistency</h4>
 
 Everest mount provides **strong read-after-write consistency** within a single mount point. Once a write operation completes, the data is guaranteed to be available for subsequent read operations on that same mount.
 
-#### lakeFS Consistency
+<h4>lakeFS Consistency</h4>
 
 Local changes are reflected in lakeFS only after they are **committed** using the `everest commit` command. Until then:
 
@@ -166,7 +164,7 @@ Local changes are reflected in lakeFS only after they are **committed** using th
 -   Other users or mounts will not see your changes
 -   If two users mount the same branch, they will not see each other's changes until those changes are committed
 
-#### Sync Operation
+<h4>Sync Operation</h4>
 
 When you run `everest diff` or `everest commit`, Everest performs a **sync operation** that uploads all local changes to a temporary location in lakeFS for processing. This ensures your changes are safely transferred before being committed to the branch.
 
@@ -215,7 +213,7 @@ For information about how data is cached and accessed, see the [Cache Behavior](
 By enabling write mode (--write-moed), you can modify, add, and delete files locally and then commit those changes back to the lakeFS branch.
 When running in write mode, the lakeFS URI must point to a branch, not a commit ID or a tag.
 
-#### Example of changing data locally
+<h4>Example of changing data locally</h4>
 
     1.  **Mount in write mode:**
         Use the `--write-mode` flag to enable writes.
@@ -365,7 +363,7 @@ To use the driver, you create a `PersistentVolume` (PV) and a `PersistentVolumeC
 -   **Mount URI:** The `lakeFSMountUri` is the only required attribute in the PV spec.
 -   **Mount Options:** Additional `everest mount` flags can be passed via `mountOptions` in the PV spec.
 
-#### Examples
+<h4>Examples</h4>
 
 The following examples demonstrate how to mount a lakeFS URI in different Kubernetes scenarios.
 
@@ -707,7 +705,7 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--presign`: Use pre-signed URLs for direct object store access (default: `true`).
 -   `--partial-reads`: (Experimental) Fetch only the accessed parts of large files. This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, and tar that do not need to read the entire file.
 
-#### `everest umount`
+<h4>`everest umount`</h4>
 
 Unmounts a lakeFS directory.
 
@@ -715,7 +713,7 @@ Unmounts a lakeFS directory.
 everest umount <mount_directory>
 ```
 
-#### `everest diff` (Write Mode Only)
+<h4>`everest diff` (Write Mode Only)</h4>
 
 Shows the difference between the local mount directory and the source branch.
 
@@ -723,7 +721,7 @@ Shows the difference between the local mount directory and the source branch.
 everest diff [mount_directory]
 ```
 
-#### `everest commit` (Write Mode Only)
+<h4>`everest commit` (Write Mode Only)</h4>
 
 Commits local changes to the source lakeFS branch. The new commit is merged to the original branch using a `source-wins` strategy. After the commit succeeds, the mounted directory's source commit is updated to the new HEAD of the branch.
 
@@ -734,7 +732,7 @@ Commits local changes to the source lakeFS branch. The new commit is merged to t
 everest commit [mount_directory] -m <commit_message>
 ```
 
-#### `everest mount-server` (Advanced)
+<h4>`everest mount-server` (Advanced)</h4>
 
 Starts the mount server without performing the OS-level mount. This is intended for advanced use cases where you want to manage the server process and the OS mount command separately.
 
@@ -765,7 +763,7 @@ everest mount-server <remote_mount_uri> [flags]
 
 When using write mode (`--write-mode`), be aware of the following limitations and modified behaviors. For more details on write mode operations, see the [Write-Mode Operations](#write-mode-operations) section.
 
-#### Unsupported Operations
+<h4>Unsupported Operations</h4>
 
 -   **Rename:** File and directory rename operations are not supported.
 -   **Temporary Files:** Temporary files are not supported.
@@ -773,7 +771,7 @@ When using write mode (`--write-mode`), be aware of the following limitations an
 -   **POSIX File Locks:** POSIX file locks (`lockf`) are not supported.
 -   **POSIX Permissions:** POSIX permissions are not supported. Default permissions are assigned to files and directories.
 
-#### Modified Behavior
+<h4>Modified Behavior</h4>
 
 -   **Metadata Operations:** Modifying file metadata (`chmod`, `chown`, `chgrp`, time attributes) results in a no-op. The file metadata will not be changed.
 -   **Deletion Implementation:** When calling `remove`, Everest marks a file as a tombstone using [Extended Attributes](https://en.wikipedia.org/wiki/Extended_file_attributes) APIs.
@@ -781,7 +779,7 @@ When using write mode (`--write-mode`), be aware of the following limitations an
 -   **Type Reuse Restriction:** A deleted file's name cannot be reused as a directory, and vice-versa. For example, this sequence is not allowed: `touch foo; rm foo; mkdir foo;`.
 -   **Directory Removal:** Calling `remove` on a directory will fail explicitly with an error. Use appropriate directory removal commands instead.
 
-#### Functionality Limitations
+<h4>Functionality Limitations</h4>
 
 -   **Empty Directories:** Newly created empty directories will not reflect as directory markers in lakeFS.
 -   **Path Conflicts:** lakeFS allows having two path keys where one is a "directory" prefix of the other (e.g., both `animals/cat.png` and `animals` as an empty object are valid in lakeFS). However, since a filesystem cannot contain both a file and a directory with the same name, this will lead to undefined behavior depending on the filesystem type.
