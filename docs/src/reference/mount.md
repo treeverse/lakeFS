@@ -278,7 +278,7 @@ Currently, Everest for Windows supports read-only operation.
 
 ### Semantics
 
-Everest for Windows uses the classic Everest [semantics](https://docs.lakefs.io/latest/reference/mount-write-mode-semantics/)
+Everest for Windows uses the classic Everest [semantics](https://docs.lakefs.io/latest/reference/mount-write-mode-semantics/).
 It requires utilization of the protocol flag with the value of `cfapi`
 
 ```powershell
