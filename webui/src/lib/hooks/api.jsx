@@ -52,8 +52,7 @@ const initialAPIState = {
 
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
-    const { status, setAuthStatus } = useAuth();
-    const navigate = useNavigate();
+    const { onUnauthorized } = useAuth();
 
     useEffect(() => {
         let isMounted = true;
@@ -66,24 +65,8 @@ export const useAPI = (promise, deps = []) => {
             } catch (error) {
                 if (!isMounted) return;
                 if (error instanceof AuthenticationError && error.status === 401) {
-                    if (status === AUTH_STATUS.AUTHENTICATED) {
-                        setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-                    }
-
+                    onUnauthorized();
                     setRequest({ loading: false, error: null, response: null });
-
-                    const path = window.location.pathname;
-                    const next = path + (window.location.search || "") + (window.location.hash || "");
-                    const isLogin = path === "/auth/login";
-                    const isOidcCallback = path.startsWith("/auth/oidc");
-                    const isPublicAuthRoute = isLogin || isOidcCallback;
-
-                    if (!isPublicAuthRoute) {
-                        navigate("/auth/login", {
-                            replace: true,
-                            state: { redirected: true, next },
-                        });
-                    }
                     return;
                 }
                 setRequest({
