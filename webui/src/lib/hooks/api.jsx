@@ -65,8 +65,6 @@ export const useAPI = (promise, deps = []) => {
                 if (!isMounted) return;
                 if (error instanceof AuthenticationError && error.status === 401) {
                     onUnauthorized();
-                    //setRequest({ loading: false, error: null, response: null });
-                    //return;
                 }
                 setRequest({
                     loading: false,
