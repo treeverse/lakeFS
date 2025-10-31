@@ -10,6 +10,42 @@ description: How to use lakeFS with DuckDB, an open-source SQL OLAP database man
 
 ## Accessing lakeFS from DuckDB
 
+The recommended way to access lakeFS from DuckDB is to use the [Iceberg REST Catalog](./iceberg.md#iceberg-rest-catalog). 
+
+
+![lakeFS Iceberg REST Catalog](../assets/img/lakefs_iceberg_rest_catalog.png)
+
+
+This allows you to query and update Iceberg tables using a standards-compliant catalog, built into lakeFS Enterprise. In this mode, lakeFS stays completely outside the data path: data itself is read and written by DuckDB executors, directly to the underlying object store. Metadata is managed by Iceberg at the table level, while lakeFS keeps track of new snapshots to provide versioning and isolation.
+
+```sql
+LOAD iceberg;
+LOAD httpfs;
+
+CREATE SECRET lakefs_credentials (
+    TYPE ICEBERG,
+    CLIENT_ID 'AKIAIOSFODNN7EXAMPLE',
+    CLIENT_SECRET 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    OAUTH2_SERVER_URI 'https://lakefs.example.com/iceberg/api/v1/oauth/tokens'
+);
+
+ATTACH '' AS main_branch (
+    TYPE iceberg,
+    SECRET lakefs_credentials,
+    ENDPOINT 'https://lakefs.example.com/iceberg/relative_to/my-repo.main/api'
+);
+
+USE main_branch.inventory;
+SELECT * FROM books;
+```
+
+!!! tip
+    To learn more about the Iceberg REST Catalog, see the [Iceberg REST Catalog](./iceberg.md#iceberg-rest-catalog) documentation.
+
+## Using DuckDB with the S3 Gateway
+
+Using the S3 Gateway allows reading and writing data to lakeFS from DuckDB, in any format supported by DuckDB (i.e. not just Iceberg tables). While flexible, this approach requires lakeFS to be involved in the data path, which can be less efficient than the Iceberg REST Catalog approach, since lakeFS has to proxy all data operations through the lakeFS server.
+
 ### Configuration
 
 Querying data in lakeFS from DuckDB is similar to querying data in S3 from DuckDB. It is done using the [httpfs extension](https://duckdb.org/docs/stable/core_extensions/httpfs/overview){:target="_blank"} connecting to the [S3 Gateway that lakeFS provides](../understand/architecture.md#s3-gateway).
