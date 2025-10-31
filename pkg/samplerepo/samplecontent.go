@@ -31,7 +31,8 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat *cata
 	// we also skip checking if the file exists, since we know the repo is empty
 	const tmplSuffix = ".tmpl"
 	config := map[string]string{
-		"RepoName": repo.Name,
+		"RepoName":          repo.Name,
+		"RepoDefaultBranch": repo.DefaultBranch,
 	}
 
 	err := fs.WalkDir(assets.SampleData, sampleRepoFSRootPath, func(p string, d fs.DirEntry, topLevelErr error) error {
