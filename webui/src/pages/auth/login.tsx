@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -28,14 +28,42 @@ export interface LoginConfig {
     logout_url: string;
 }
 
-const withNext = (url: string, n: string) => {
+type NavigateState = { redirected?: boolean; next?: string };
+
+const withNext = (url: string, next: string) => {
+    const safeNext = next?.startsWith("/") ? next : "/";
     try {
         const u = new URL(url, window.location.origin);
-        u.searchParams.set("next", n);
+        u.searchParams.set("next", safeNext);
         return u.toString();
     } catch {
-        return url + (url.includes("?") ? "&" : "?") + "next=" + encodeURIComponent(n);
+        return `${url}${url.includes("?") ? "&" : "?"}next=${encodeURIComponent(safeNext)}`;
     }
+};
+
+const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
+    const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
+    const qp = new URLSearchParams(location.search);
+    const redirectedFromQuery = qp.get("redirected") === "true";
+    const redirected = Boolean(st?.redirected) || redirectedFromQuery;
+    const rawNext = st?.next ?? qp.get("next") ?? "/";
+    const next = rawNext.startsWith("/") ? rawNext : "/";
+    qp.delete("redirected");
+    const qs = qp.toString();
+    const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
+
+    return { redirected, redirectedFromQuery, next, cleanUrl };
+};
+
+const DoNavigate: React.FC<{ to: string; replace?: boolean; state?: NavigateState }> = ({ to, replace = true, state }) => {
+    const router = useRouter();
+    useEffect(() => { router.navigate(to, { replace, state }); }, [router, to, replace, state]);
+    return <Loading />;
+};
+
+const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
+    useEffect(() => { window.location.replace(to); }, [to]);
+    return <Loading />;
 };
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
@@ -134,20 +162,10 @@ const LoginPage = () => {
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
     const { status } = useAuth();
-
     const setupResponse = response as SetupResponse | null;
-    const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
-    const urlSearch = new URLSearchParams(location.search);
-    const redirectedFromQuery = urlSearch.get("redirected") === "true";
-    const redirectedFromState = !!st?.redirected;
-    const redirected = redirectedFromState || redirectedFromQuery;
+    const { redirected, redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
 
-    const nextFromState = st?.next ?? null;
-    const nextFromQuery = urlSearch.get("next");
-    const rawNext = nextFromState ?? nextFromQuery ?? "/";
-    const next = rawNext.startsWith("/") ? rawNext : "/";
-
-    if (next) window.sessionStorage.setItem("post_login_next", next);
+    useEffect(() => {if (next) window.sessionStorage.setItem("post_login_next", next);}, [next]);
 
     if (loading) return <Loading />;
 
@@ -155,40 +173,24 @@ const LoginPage = () => {
         const qs = new URLSearchParams(location.search);
         qs.set("redirected", "true");
         if (!qs.get("next")) qs.set("next", next);
-        const to = `/setup?${qs.toString()}${location.hash ?? ""}`;
-        return <Navigate to={to} replace />;
+        return <Navigate to={`/setup?${qs.toString()}${location.hash ?? ""}`} replace />;
     }
 
-    if (error) return (<AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()}/>);
-
-    if (redirectedFromQuery) {
-        const s = new URLSearchParams(location.search);
-        s.delete("redirected");
-        const qs = s.toString();
-        const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
-        router.navigate(cleanUrl, { replace: true, state: { redirected: true, next } });
-        return <Loading />;
-    }
+    if (error) return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;
+    if (redirectedFromQuery) return <DoNavigate to={cleanUrl} replace state={{ redirected: true, next }} />;
 
     if (status === AUTH_STATUS.AUTHENTICATED) {
-        const storedNext = window.sessionStorage.getItem("post_login_next");
-        if (storedNext && storedNext.startsWith("/")) {
-            window.sessionStorage.removeItem("post_login_next");
-            router.navigate(storedNext, { replace: true });
-            return <Loading />;
-        }
+        const stored = window.sessionStorage.getItem("post_login_next");
+        if (stored?.startsWith("/")) return <DoNavigate to={stored} replace />;
     }
 
     const loginConfig = setupResponse?.login_config;
 
     if (redirected) {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-        if (loginStrategy.element !== undefined) {
-            return loginStrategy.element;
-        }
+        if (loginStrategy.element !== undefined) return loginStrategy.element;
         if (loginConfig?.login_url && loginConfig?.login_url_method !== "none") {
-            window.location.replace(withNext(loginConfig.login_url, next));
-            return <Loading />;
+            return <ExternalRedirect to={withNext(loginConfig.login_url, next)} />;
         }
     }
 
