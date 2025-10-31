@@ -222,6 +222,8 @@ nav:
       - AWS CLI: integrations/aws_cli.md
       - Git: integrations/git.md
       - R: integrations/r.md
+      - MATLAB: integrations/matlab.md
+
   - Concepts:
     - Architecture: understand/architecture.md
     - Model: understand/model.md
