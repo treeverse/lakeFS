@@ -95,7 +95,7 @@
     "mime-types": "^3.0.1",
     "playwright": "^1.40.1",
     "sass": "^1.69.5",
-    "typescript": "^5.3.3",
+    "typescript": "^5.9.3",
     "vite": "^7.1.12",
     "vite-plugin-eslint": "^1.8.1",
     "vitest": "^3.2.4"
