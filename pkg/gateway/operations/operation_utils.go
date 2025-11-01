@@ -1,6 +1,8 @@
 package operations
 
 import (
+	"errors"
+	"mime"
 	"net/http"
 	"strings"
 	"time"
@@ -12,15 +14,25 @@ import (
 
 const amzMetaHeaderPrefix = "X-Amz-Meta-"
 
+var (
+	rfc2047Decoder = new(mime.WordDecoder)
+)
+
 // amzMetaAsMetadata prepare metadata based on amazon user metadata request headers
-func amzMetaAsMetadata(req *http.Request) catalog.Metadata {
+func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
 	metadata := make(catalog.Metadata)
+	var err error
 	for k := range req.Header {
 		if strings.HasPrefix(k, amzMetaHeaderPrefix) {
-			metadata[k] = req.Header.Get(k)
+			value, decodeErr := rfc2047Decoder.DecodeHeader(req.Header.Get(k))
+			if decodeErr != nil {
+				err = errors.Join(err, decodeErr)
+				continue
+			}
+			metadata[k] = value
 		}
 	}
-	return metadata
+	return metadata, err
 }
 
 // amzMetaWriteHeaders set amazon user metadata on http response
@@ -28,7 +40,7 @@ func amzMetaWriteHeaders(w http.ResponseWriter, metadata catalog.Metadata) {
 	h := w.Header()
 	for k, v := range metadata {
 		if strings.HasPrefix(k, amzMetaHeaderPrefix) {
-			h.Set(k, v)
+			h.Set(k, mime.QEncoding.Encode("utf-8", v))
 		}
 	}
 }
