@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-retryablehttp"
@@ -20,9 +22,11 @@ import (
 )
 
 const (
-	MinDownloadPartSize        int64 = 1024 * 64       // 64KB
-	DefaultDownloadPartSize    int64 = 1024 * 1024 * 8 // 8MB
-	DefaultDownloadConcurrency       = 10
+	MinDownloadPartSize         int64 = 1024 * 64       // 64KB
+	DefaultDownloadPartSize     int64 = 1024 * 1024 * 8 // 8MB
+	DefaultDownloadConcurrency        = 10
+	DefaultDownloadBodyRetries        = 3 // Number of retries for body read/write operations
+	DefaultDownloadRetryDelayMs       = 1000
 )
 
 type Downloader struct {
@@ -32,6 +36,7 @@ type Downloader struct {
 	PartSize            int64
 	SkipNonRegularFiles bool
 	SymlinkSupport      bool
+	BodyRetries         int // Number of retries for body read/write operations
 }
 
 type downloadPart struct {
@@ -59,6 +64,7 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		PartSize:            DefaultDownloadPartSize,
 		SkipNonRegularFiles: false,
 		SymlinkSupport:      false,
+		BodyRetries:         DefaultDownloadBodyRetries,
 	}
 }
 
@@ -218,25 +224,9 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 }
 
 func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress string, rangeStart int64, partSize int64, partNumber int, f *os.File, buf []byte) error {
+	// set range header
 	rangeEnd := rangeStart + partSize - 1
 	rangeHeader := fmt.Sprintf("bytes=%d-%d", rangeStart, rangeEnd)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, physicalAddress, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Range", rangeHeader)
-	resp, err := d.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusPartialContent {
-		return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
-	}
-	if resp.ContentLength != partSize {
-		return fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
-	}
 
 	// reuse buffer if possible
 	if buf == nil {
@@ -245,48 +235,109 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 		buf = buf[:partSize]
 	}
 
-	_, err = io.ReadFull(resp.Body, buf)
-	if err != nil {
-		return err
+	var err error
+	for attempt := 0; attempt <= d.BodyRetries; attempt++ {
+		if attempt > 0 {
+			// sleep for a random time between 0 and 1 second or break on context cancellation
+			select {
+			//nolint:gosec
+			case <-time.After(time.Duration(rand.IntN(DefaultDownloadRetryDelayMs)) * time.Millisecond):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+
+		// create request with range header
+		var req *http.Request
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, physicalAddress, nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Range", rangeHeader)
+
+		err = executeHTTPRequest(d.HTTPClient, req, func(resp *http.Response) error {
+			if resp.StatusCode != http.StatusPartialContent {
+				return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+			}
+			if resp.ContentLength != partSize {
+				return fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
+			}
+			_, readErr := io.ReadFull(resp.Body, buf)
+			return readErr
+		})
+		if err != nil {
+			continue
+		}
+
+		_, err = f.WriteAt(buf, rangeStart)
+		// if write is successful, return nil
+		if err == nil {
+			return nil
+		}
 	}
 
-	_, err = f.WriteAt(buf, rangeStart)
-	if err != nil {
-		return err
-	}
-	return nil
+	return fmt.Errorf("failed to download part %d after %d retries: %w", partNumber, d.BodyRetries+1, err)
 }
 
 func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
-	// get object content
-	resp, err := d.Client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
-		Path:    *src.Path,
-		Presign: swag.Bool(d.PreSign),
-	})
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+	var err error
+	for attempt := 0; attempt <= d.BodyRetries; attempt++ {
+		if attempt > 0 {
+			// sleep for a random time between 0 and 1 second or break on context cancellation
+			select {
+			//nolint:gosec
+			case <-time.After(time.Duration(rand.IntN(DefaultDownloadRetryDelayMs)) * time.Millisecond):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			// Remove destination file if retrying (will be recreated)
+			_ = os.Remove(dst)
+		}
+
+		// get object content
+		var resp *http.Response
+		resp, err = d.Client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
+			Path:    *src.Path,
+			Presign: swag.Bool(d.PreSign),
+		})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+		}
+
+		// create and copy object content
+		var f *os.File
+		f, err = os.Create(dst)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = f.Close()
+		}()
+
+		// w is used to write the data, it will be wrapped with a tracker if needed
+		var w io.Writer = f
+		if tracker != nil {
+			if resp.ContentLength != -1 {
+				tracker.UpdateTotal(resp.ContentLength)
+			}
+			w = NewTrackerWriter(f, tracker)
+		}
+
+		_, err = io.Copy(w, resp.Body)
+		// if write is successful, return nil
+		if err == nil {
+			return nil
+		}
 	}
 
-	if tracker != nil && resp.ContentLength != -1 {
-		tracker.UpdateTotal(resp.ContentLength)
-	}
-
-	// create and copy object content
-	f, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = f.Close() }()
-	var w io.Writer = f
-	if tracker != nil {
-		w = NewTrackerWriter(f, tracker)
-	}
-	_, err = io.Copy(w, resp.Body)
-	return err
+	return fmt.Errorf("failed to download object after %d retries: %w", d.BodyRetries+1, err)
 }
 
 // Tracker interface for tracking written data.
