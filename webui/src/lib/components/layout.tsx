@@ -1,41 +1,30 @@
-import React, { FC, useContext, useState, useEffect } from "react";
-import { Outlet, useOutletContext } from "react-router-dom";
+import React, { FC, useContext, useEffect } from "react";
+import { Outlet } from "react-router-dom";
 import { ConfigProvider } from "../hooks/configProvider";
 import TopNav from './navbar';
 import { AppContext } from "../hooks/appContext";
-import useUser from "../hooks/user";
+import {AUTH_STATUS, useAuth} from "../auth/authContext";
 
-type LayoutOutletContext = [boolean];
+const Layout: FC = () => {
+    const { status } = useAuth();
+    const showTopNav = status === AUTH_STATUS.AUTHENTICATED;
 
-const Layout: FC<{logged: boolean}> = ({logged}) => {
-    const [isLogged, setIsLogged] = useState(logged ?? true);
-    const { user, loading, error } = useUser();
-    const userWithId = user as { id?: string } | null;
-
-    // Update isLogged state based on actual authentication status
+    const { state } = useContext(AppContext);
     useEffect(() => {
-        if (!loading) {
-            // If there's a user and no error, show authenticated (full) navbar
-            setIsLogged(!!userWithId?.id && !error);
-        }
-    }, [userWithId, loading, error]);
-
-    // handle global dark mode here
-    const {state} = useContext(AppContext);
-    document.documentElement.setAttribute('data-bs-theme', state.settings.darkMode ? 'dark' : 'light')
+        document.documentElement.setAttribute(
+            "data-bs-theme",
+            state.settings.darkMode ? "dark" : "light"
+        );
+    }, [state.settings.darkMode]);
 
     return (
         <ConfigProvider>
-            {!loading && <TopNav logged={isLogged}/>}
+            {showTopNav && <TopNav/>}
             <div className="main-app">
-                <Outlet context={[isLogged] satisfies LayoutOutletContext}/>
+                <Outlet />
             </div>
         </ConfigProvider>
     );
 };
-
-export function useLayoutOutletContext() {
-    return useOutletContext<LayoutOutletContext>();
-}
 
 export default Layout;

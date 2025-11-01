@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {Outlet, useOutletContext} from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -8,8 +8,6 @@ import Card from "react-bootstrap/Card";
 
 import {Link} from "../nav";
 import {useLoginConfigContext} from "../../hooks/conf";
-import {useLayoutOutletContext} from "../layout";
-import {useRouter} from "../../hooks/router";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
 
@@ -20,22 +18,6 @@ export const AuthLayout = () => {
     const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState("credentials");
     const {RBAC: rbac} = useLoginConfigContext();
-    const [isLogged] = useLayoutOutletContext();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!isLogged) {
-            // Redirect to the login page here, instead of in Layout where isLogged is set, because Layout also wraps
-            // routes that don't require authentication, and redirecting would be incorrect.
-            router.push({
-                pathname: '/auth/login',
-                params: {},
-                query: { next: '/', redirected: 'true' },
-            });
-        }
-    }, [isLogged, router]);
-
-    if (!isLogged) return null;
 
     return (
         <Container fluid="xl">
