@@ -376,7 +376,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the ref
-    String range = "bytes=0-1023"; // String | Byte range to retrieve
+    String range = "bytes=0-1023"; // String | Byte range to retrieve1
     String ifNoneMatch = "33a64df551425fcc55e4d42a148795d9f25f89d4"; // String | Returns response only if the object does not have a matching ETag
     Boolean presign = true; // Boolean | 
     try {
@@ -404,7 +404,7 @@ public class Example {
 | **repository** | **String**|  | |
 | **ref** | **String**| a reference (could be either a branch or a commit ID) | |
 | **path** | **String**| relative to the ref | |
-| **range** | **String**| Byte range to retrieve | [optional] |
+| **range** | **String**| Byte range to retrieve1 | [optional] |
 | **ifNoneMatch** | **String**| Returns response only if the object does not have a matching ETag | [optional] |
 | **presign** | **Boolean**|  | [optional] |
 

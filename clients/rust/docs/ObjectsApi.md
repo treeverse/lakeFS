@@ -125,7 +125,7 @@ Name | Type | Description  | Required | Notes
 **repository** | **String** |  | [required] |
 **r#ref** | **String** | a reference (could be either a branch or a commit ID) | [required] |
 **path** | **String** | relative to the ref | [required] |
-**range** | Option<**String**> | Byte range to retrieve |  |
+**range** | Option<**String**> | Byte range to retrieve1 |  |
 **if_none_match** | Option<**String**> | Returns response only if the object does not have a matching ETag |  |
 **presign** | Option<**bool**> |  |  |
 

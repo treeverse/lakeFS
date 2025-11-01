@@ -438,7 +438,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     repository = 'repository_example' # str | 
     ref = 'ref_example' # str | a reference (could be either a branch or a commit ID)
     path = 'path_example' # str | relative to the ref
-    range = 'bytes=0-1023' # str | Byte range to retrieve (optional)
+    range = 'bytes=0-1023' # str | Byte range to retrieve1 (optional)
     if_none_match = '33a64df551425fcc55e4d42a148795d9f25f89d4' # str | Returns response only if the object does not have a matching ETag (optional)
     presign = True # bool |  (optional)
 
@@ -461,7 +461,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  | 
  **ref** | **str**| a reference (could be either a branch or a commit ID) | 
  **path** | **str**| relative to the ref | 
- **range** | **str**| Byte range to retrieve | [optional] 
+ **range** | **str**| Byte range to retrieve1 | [optional] 
  **if_none_match** | **str**| Returns response only if the object does not have a matching ETag | [optional] 
  **presign** | **bool**|  | [optional] 
 

@@ -4359,7 +4359,7 @@ paths:
         schema:
           type: string
         style: form
-      - description: Byte range to retrieve
+      - description: Byte range to retrieve1
         example: bytes=0-1023
         explode: false
         in: header
