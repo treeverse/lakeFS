@@ -84,6 +84,21 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
     !!! info
         Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
 
+    !!! tip "Local Database and Local Blockstore"
+        When using local database (`LAKEFS_DATABASE_TYPE=local`) and local blockstore (`LAKEFS_BLOCKSTORE_TYPE=local`), 
+        lakeFS stores all data and metadata under `${HOME}/lakefs` in the container by default (configurable).
+        You can mount this location to the host using Docker volumes to persist data and metadata on host storage:
+        
+        ```sh
+        docker run \
+            --name lakefs \
+            -p 8000:8000 \
+            -v /path/on/host:/home/lakefs/lakefs \
+            -e LAKEFS_DATABASE_TYPE="local" \
+            -e LAKEFS_BLOCKSTORE_TYPE="local" \
+            -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
+            treeverse/lakefs:latest run
+        ```
 
     See the [reference][config-envariables] for a complete list of environment variables.
 
