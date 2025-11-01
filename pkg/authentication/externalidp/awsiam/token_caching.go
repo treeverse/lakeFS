@@ -25,21 +25,13 @@ type JWTCache struct {
 	FilePath string
 }
 
-func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, error) {
-	if baseDir == "" {
-		var err error
-		baseDir, err = os.UserHomeDir()
-		if err != nil {
-			return nil, err
-		}
-	}
-	cachePath := filepath.Join(baseDir, lakectlDir, cacheDir)
-	if err := os.MkdirAll(cachePath, ReadWriteExecuteOwnerOnly); err != nil {
+func NewJWTCache(baseDir, fileName string) (*JWTCache, error) {
+	if err := os.MkdirAll(baseDir, ReadWriteExecuteOwnerOnly); err != nil {
 		return nil, ErrFailedToCreateCacheDir
 	}
 
 	jwtCache := &JWTCache{
-		FilePath: filepath.Join(cachePath, fileName),
+		FilePath: filepath.Join(baseDir, fileName),
 	}
 	return jwtCache, nil
 }
