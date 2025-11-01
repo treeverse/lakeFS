@@ -105,6 +105,7 @@ pub mod metadata_api;
 pub mod objects_api;
 pub mod pulls_api;
 pub mod refs_api;
+pub mod remotes_api;
 pub mod repositories_api;
 pub mod staging_api;
 pub mod tags_api;
