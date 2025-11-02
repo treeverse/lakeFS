@@ -283,7 +283,7 @@ Make sure your Everest version is > <Version> and lakeFS > <version>.
 
 #### Skip Scan in Microsoft Protection Preferences (Windows Defender)
 
-To enable Everest run, we must disable firewall for the mounted path.
+AV will try to fully scan all files contents,  please make sure to must disable firewall for the mounted path.
 This can be done via the UI or in Powershell With an admin user:
 
 ```powershell
