@@ -31,8 +31,13 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 ### Prerequisites
 
 -   lakeFS Cloud account or lakeFS Enterprise Version `1.25.0` or higher.
--   **Supported OS:** macOS (with NFS V3) or Linux.
+-   **Supported OS:** macOS (with NFS V3), Linux and Windows (using CFAPI).
 -   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
+
+!!! note "Windows Support"
+    Everest for Windows is now available.
+    Currently, only read operations are supported.
+	See Everest for [Windows](#everest-for-windows)
 
 ### Authentication & Configuration
 
@@ -210,61 +215,99 @@ For information about how data is cached and accessed, see the [Cache Behavior](
 
 ### Write-Mode Operations
 
-By enabling write mode (--write-moed), you can modify, add, and delete files locally and then commit those changes back to the lakeFS branch.
+By enabling write mode (--write-mode), you can modify, add, and delete files locally and then commit those changes back to the lakeFS branch.
 When running in write mode, the lakeFS URI must point to a branch, not a commit ID or a tag.
 
 <h4>Example of changing data locally</h4>
 
-    1.  **Mount in write mode:**
-        Use the `--write-mode` flag to enable writes.
+1.  **Mount in write mode:**
+    Use the `--write-mode` flag to enable writes.
 
-        ```bash
-        everest mount lakefs://image-repo/main/datasets/pets/ ./pets --write-mode
-        ```
+    ```bash
+    everest mount lakefs://image-repo/main/datasets/pets/ ./pets --write-mode
+    ```
 
-    2.  **Modify files:**
-        Make any changes you need using standard shell commands.
+2.  **Modify files:**
+    Make any changes you need using standard shell commands.
 
-        ```bash
-        # Add a new file
-        echo "new data" > ./pets/birds/parrot/cute.jpg
+    ```bash
+    # Add a new file
+    echo "new data" > ./pets/birds/parrot/cute.jpg
 
-        # Update an existing file
-        echo "new data" >> ./pets/dogs/golden_retrievers/cute.jpg
+    # Update an existing file
+    echo "new data" >> ./pets/dogs/golden_retrievers/cute.jpg
 
-        # Delete a file
-        rm ./pets/cats/persian/cute.jpg
-        ```
+    # Delete a file
+    rm ./pets/cats/persian/cute.jpg
+    ```
 
-    3.  **Review your changes:**
-        The `diff` command shows the difference between your local state and the branch's state at the time of mounting.
+3.  **Review your changes:**
+    The `diff` command shows the difference between your local state and the branch's state at the time of mounting.
 
-        ```bash
-        everest diff ./pets
-        # Output:
-        # + added datasets/pets/birds/parrot/cute.jpg
-        # ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
-        # - removed datasets/pets/cats/persian/cute.jpg
-        ```
+    ```bash
+    everest diff ./pets
+    # Output:
+    # + added datasets/pets/birds/parrot/cute.jpg
+    # ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
+    # - removed datasets/pets/cats/persian/cute.jpg
+    ```
 
-    4.  **Commit your changes:**
-        The `commit` command uploads your local changes and commits them to the source branch in lakeFS.
+4.  **Commit your changes:**
+    The `commit` command uploads your local changes and commits them to the source branch in lakeFS.
 
-        ```bash
-        everest commit ./pets -m "Updated pet images"
-        ```
-        After committing, your local mount will be synced to the new HEAD of the branch. Running `diff` again will show no changes.
+    ```bash
+    everest commit ./pets -m "Updated pet images"
+    ```
+    After committing, your local mount will be synced to the new HEAD of the branch. Running `diff` again will show no changes.
 
-    5.  **Unmount when finished:**
-        ```bash
-        everest umount ./pets
-        ```
+5.  **Unmount when finished:**
+    ```bash
+    everest umount ./pets
+    ```
 
 !!! info "Write Mode Limitations"
     Write mode has some limitations on supported operations. See [Write Mode Limitations](#write-mode-limitations) for details on unsupported operations and modified behaviors.
 
 
 ---
+
+## Everest for Windows
+
+Everest mount is available for Windows, in read-only mode.
+
+### Everest Behavior On Windows Operation System 
+
+CFAPI uses an OS-managed caching system optimized for cloud storage:
+
+- **Placeholder Files**: Files initially appear as stubs containing only metadata, without actual content
+- **On-Demand Hydration**: When accessed, files are "hydrated" - their content is fetched from lakeFS
+- **Local Cache**: Subsequent reads are served directly from the local cache without reaching lakeFS
+- **Full Download**: Currently, accessing any part of a file, triggers a full download
+- **Automatic Eviction**: The OS "dehydrates" (clears content) under storage pressure. All data is deleted after unmount
+
+!!! warning "Windows File Explorer Performance"
+    Windows File Explorer may perform slowly as it recursively indexes the entire directory structure. Consider using command-line tools or applications that don't trigger full directory indexing.
+
+### Requirements
+
+- Everest Mount supports the windows's native [Cloud Filter API](https://learn.microsoft.com/en-us/windows/win32/cfapi/cloud-files-api-portal). No need in additional installations.
+- CFAPI Support Starts at Windows 10, version 1709.
+- Make sure your Everest version is > `0.6.0`
+
+#### Skip Scan in Microsoft Protection Preferences (Windows Defender)
+
+AV will try to fully scan all files contents,  please make sure to must disable firewall for the mounted path.
+This can be done via the UI or in Powershell With an admin user:
+
+```powershell
+Add-MpPreference -ExclusionPath "Path\To\Mount-Dir"
+```
+
+Verify exclusions:
+
+```powershell
+Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
+```
 
 ## Everest on Kubernetes (CSI Driver)
 
@@ -698,7 +741,7 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--cache-create-provided-dir`: If `cache-dir` is provided and does not exist, create it.
 -   `--listen`: Address for the mount server to listen on.
 -   `--no-spawn`: Do not spawn a new server; assume one is already running.
--   `--protocol`: Protocol to use (default: `nfs`).
+-   `--protocol`: Protocol to use (default: `nfs`), for Windows use --cfapi.
 -   `--log-level`: Set logging level.
 -   `--log-format`: Set logging output format.
 -   `--log-output`: Set logging output(s).
@@ -745,7 +788,7 @@ everest mount-server <remote_mount_uri> [flags]
 -   `--cache-dir`: Directory to cache read files and metadata.
 -   `--cache-create-provided-dir`: Create the cache directory if it does not exist.
 -   `--listen`: Address to listen on.
--   `--protocol`: Protocol to use (nfs | webdav).
+-   `--protocol`: Protocol to use (nfs | fuse | cfapi).
 -   `--callback-addr`: Callback address to report back to.
 -   `--log-level`: Set logging level.
 -   `--log-format`: Set logging output format.
@@ -754,12 +797,16 @@ everest mount-server <remote_mount_uri> [flags]
 -   `--parallelism`: Number of parallel downloads for metadata.
 -   `--presign`: Use presign for downloading.
 -   `--write-mode`: Enable write mode (default: false).
+-   `--root`: Directory to mount on the the filesystem (Windows only)
 
 ---
 
 ## Advanced Topics
 
 ### Write Mode Limitations
+
+!!! note "Windows Support"
+    Currently, Everest for Windows supportd only read-mode operations
 
 When using write mode (`--write-mode`), be aware of the following limitations and modified behaviors. For more details on write mode operations, see the [Write-Mode Operations](#write-mode-operations) section.
 
