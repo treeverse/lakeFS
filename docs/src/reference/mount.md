@@ -793,7 +793,7 @@ everest mount-server <remote_mount_uri> [flags]
 -   `--parallelism`: Number of parallel downloads for metadata.
 -   `--presign`: Use presign for downloading.
 -   `--write-mode`: Enable write mode (default: false).
--   `--root`: Root dir to mount everest onto. Used **only** for CFAPI protocol.
+-   `--root`: Directory to mount on the the filesystem (Windows only)
 
 ---
 
