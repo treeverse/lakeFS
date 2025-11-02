@@ -31,7 +31,7 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 ### Prerequisites
 
 -   lakeFS Cloud account or lakeFS Enterprise Version `1.25.0` or higher.
--   **Supported OS:** macOS (with NFS V3), Linux And Windows (using CFAPI).
+-   **Supported OS:** macOS (with NFS V3), Linux and Windows (using CFAPI).
 -   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
 
 !!! note "Windows Support"
@@ -271,21 +271,17 @@ When running in write mode, the lakeFS URI must point to a branch, not a commit 
 
 ---
 
-## Everest for Windows (CFAPI protocol)
+## Everest for Windows (Cloud Filter API)
 
 Starting at version <version>, Everest mount is available for Windows OS using *Cloud Filter API* (CFAPI)
 Currently, Everest for Windows supports read-only operation.
 
-### Semantics
+### Requierments
 
-Everest for Windows uses the classic Everest [semantics](https://docs.lakefs.io/latest/reference/mount-write-mode-semantics/).
-It requires utilization of the protocol flag with the value of `cfapi`
+Everest Mount supports the windows's native Cloud Filter API. No need in additional installations. 
+Make sure your Everest version is > <Version> and lakeFS > <version>.
 
-```powershell
-./everest mount <lakefs_uri> <mount_directory> --protocol cfapi [flags]
-```
-
-### Firewall
+#### Disable Firewall
 
 To enable Everest run, we must disable firewall for the mounted path.
 This can be done via the UI or in Powershell With an admin user:
@@ -299,6 +295,11 @@ Verify exclusions:
 ```powershell
 Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
 ```
+
+### Semantics
+
+Everest for Windows uses the classic Everest [semantics](https://docs.lakefs.io/latest/reference/mount-write-mode-semantics/).
+
 
 ## Everest on Kubernetes (CSI Driver)
 
