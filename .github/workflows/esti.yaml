@@ -962,7 +962,7 @@ jobs:
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-16-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
