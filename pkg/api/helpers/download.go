@@ -262,10 +262,12 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != http.StatusPartialContent {
-			return backoff.Permanent(fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status))
+			err := fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+			return backoff.Permanent(err)
 		}
 		if resp.ContentLength != partSize {
-			return backoff.Permanent(fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength))
+			err := fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
+			return backoff.Permanent(err)
 		}
 		_, readErr := io.ReadFull(resp.Body, buf)
 		return readErr
@@ -295,7 +297,8 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 		}()
 
 		if resp.StatusCode != http.StatusOK {
-			return backoff.Permanent(fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status))
+			err := fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+			return backoff.Permanent(err)
 		}
 
 		// create and copy object content
