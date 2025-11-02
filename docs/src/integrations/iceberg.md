@@ -210,13 +210,16 @@ The Iceberg Catalog supports all standard Iceberg table operations:
 
 ### Version Control Features
 
-The Iceberg Catalog integrates with lakeFS's version control system, treating each table change as a commit. 
-This provides a complete history of table modifications and enables branching and merging workflows.
+The Iceberg Catalog integrates with lakeFS's version control system. Table and namespace changes made through the 
+Iceberg API are staged on the target lakeFS reference, and may be committed to lakeFS to record these staged changes. 
+This provides a complete history of table modifications and enables lakeFS branching and merging workflows.
 
-#### Catalog Changes as Commits
+#### Catalog Changes in lakeFS
 
-Each modification to a table (schema changes, data updates, etc.) creates a new commit in lakeFS. 
-Creating or deleting a namespace or a table results in a lakeFS commit on the relevant branch, as well as table data updates ("Iceberg table commit").
+Iceberg changes (create/drop/commit to table, create/drop namespace) are reflected as staging changes on the relevant lakeFS (table/namespace) object.
+These changes aren't committed to lakeFS, and should be explicitly committed by using lakeFS tools.
+
+Note that several Iceberg operations can be grouped across multiple tables into a single lakeFS commit.
 
 #### Branching and Merging
 
@@ -241,7 +244,7 @@ main_table = catalog.load_table('repo.main.inventory.books')
 ```
 
 !!! info
-    Currently, lakeFS handles table changes as file operations during merges.
+    lakeFS handles table changes as file operations during merges.
 
     This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files.
 
@@ -359,7 +362,7 @@ This pointer is stored inside the repository's [storage namespace](../understand
 
 When a request is made, the catalog would examine the table's fully qualified namespace: `<repository>.<reference>.<namespace>.<table_name>` to read that special pointer file from the given reference specified,
 and returns the underlying object store location of the metadata file to the client. When a table is created or updated, lakeFS would make sure to generate a new metadata file inside the storage namespace, and register
-that metadata file as the current pointer for the requested branch.
+that metadata file as the current pointer for the requested branch. These changes are staged in lakeFS, and may be committed to the branch.
 
 This approach leverages Iceberg's existing metadata and the immutability of its snapshots: a commit in lakeFS captures a metadata file, which in turn captures manifest lists, manifest files and all related data files.
 
@@ -394,13 +397,12 @@ sequenceDiagram
     participant lakeFS Catalog API
     participant lakeFS
     participant Object Store
-    Iceberg Client->>Object Store: table data
-    Iceberg Client->>lakeFS Catalog API: commit
-    lakeFS Catalog API->>lakeFS: create branch("branch-tx-uuid")
-    lakeFS Catalog API->>lakeFS: put('new table pointer')
+    Iceberg Client->>Object Store: write table data
+    Iceberg Client->>lakeFS Catalog API: Iceberg commit
+    lakeFS Catalog API->>lakeFS: stage('new table pointer')
     lakeFS->>Object Store: PutObject("metdata.json")
-    lakeFS Catalog API->>lakeFS: merge('branch-tx-uuid', 'branch)
-    lakeFS Catalog API->>Iceberg Client: done
+    lakeFS Catalog API->>Iceberg Client: Iceberg commit done
+    Iceberg Client->>lakeFS: lakeFS commit('repo','branch', message)
 ```
 
 ### Related Resources

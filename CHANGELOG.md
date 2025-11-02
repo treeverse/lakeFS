@@ -1,5 +1,15 @@
 # Changelog
 
+# v1.71.0
+
+:new: What's new:
+- API: copy object will clone object metadata when possible (#9500)
+- lakectl improve download by reducing the number of calls to stat object (#9555)
+
+:bug: Bugs fixed:
+- WebUI: Wrap duckDB cells content (#9584)
+- UpdateMetadata when we have a tombstone in staging should return 404 (#9566)
+
 # v1.70.1
 
 :bug: Bugs fixed:
