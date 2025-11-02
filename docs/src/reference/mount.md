@@ -271,10 +271,9 @@ When running in write mode, the lakeFS URI must point to a branch, not a commit 
 
 ---
 
-## Everest for Windows (Cloud Filter API)
+## Everest for Windows
 
-Everest mount is available for Windows OS using *Cloud Filter API* (CFAPI).
-Currently, Everest for Windows supports read-only operation.
+Everest mount is available for Windows, in read-only mode.
 
 ### Everest Behavior On Windows Operation System 
 
