@@ -37,7 +37,7 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 !!! note "Windows Support"
     Everest for Windows is now available.
     Currently, only read operations are supported.
-	See Everest for [Windows](#everest-for-windows-cloud-filter-api)
+	See Everest for [Windows](#everest-for-windows)
 
 ### Authentication & Configuration
 
