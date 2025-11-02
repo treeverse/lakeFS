@@ -265,18 +265,16 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 			_, readErr := io.ReadFull(resp.Body, buf)
 			return readErr
 		})
-		if err != nil {
-			continue
-		}
-
-		_, err = f.WriteAt(buf, rangeStart)
-		// if write is successful, return nil
 		if err == nil {
-			return nil
+			break
 		}
 	}
+	if err != nil {
+		return fmt.Errorf("failed to download part %d after %d retries: %w", partNumber, d.BodyRetries+1, err)
+	}
 
-	return fmt.Errorf("failed to download part %d after %d retries: %w", partNumber, d.BodyRetries+1, err)
+	_, err = f.WriteAt(buf, rangeStart)
+	return err
 }
 
 func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {

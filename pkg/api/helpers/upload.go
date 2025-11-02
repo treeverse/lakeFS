@@ -309,7 +309,10 @@ func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMulti
 }
 
 func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionReader, partURL string) (string, error) {
-	var err error
+	var (
+		err  error
+		etag string
+	)
 	for attempt := 0; attempt <= u.uploader.BodyRetries; attempt++ {
 		if attempt > 0 {
 			// sleep for a random time between 0 and 1 second or break on context cancellation
@@ -336,7 +339,6 @@ func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionRe
 			req.Header.Set("Content-Type", u.contentType)
 		}
 
-		var etag string
 		err = executeHTTPRequest(u.uploader.HTTPClient, req, func(resp *http.Response) error {
 			if !httputil.IsSuccessStatusCode(resp) {
 				return fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed)
@@ -349,14 +351,15 @@ func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionRe
 
 			return nil
 		})
-		if err != nil {
-			continue
+		if err == nil {
+			break
 		}
-
-		return etag, nil
 	}
 
-	return "", fmt.Errorf("failed to upload part after %d retries: %w", u.uploader.BodyRetries+1, err)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload part after %d retries: %w", u.uploader.BodyRetries+1, err)
+	}
+	return etag, nil
 }
 
 func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, error) {
@@ -424,8 +427,8 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 			}
 			return nil
 		})
-		if err != nil {
-			continue
+		if err == nil {
+			break
 		}
 	}
 	if err != nil {
