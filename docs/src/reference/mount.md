@@ -281,7 +281,7 @@ Currently, Everest for Windows supports read-only operation.
 Everest Mount supports the windows's native Cloud Filter API. No need in additional installations. 
 Make sure your Everest version is > <Version> and lakeFS > <version>.
 
-#### Disable Firewall
+#### Skip Scan in Microsoft Protection Preferences (Windows Defender)
 
 To enable Everest run, we must disable firewall for the mounted path.
 This can be done via the UI or in Powershell With an admin user:
