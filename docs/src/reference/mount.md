@@ -291,9 +291,9 @@ CFAPI uses an OS-managed caching system optimized for cloud storage:
 
 ### Requirements
 
-Everest Mount supports the windows's native [Cloud Filter API](https://learn.microsoft.com/en-us/windows/win32/cfapi/cloud-files-api-portal). No need in additional installations.
-Starting at Windows 10, version 1709.
-Make sure your Everest version is > `0.6.0`
+- Everest Mount supports the windows's native [Cloud Filter API](https://learn.microsoft.com/en-us/windows/win32/cfapi/cloud-files-api-portal). No need in additional installations.
+- CFAPI Support Starts at Windows 10, version 1709.
+- Make sure your Everest version is > `0.6.0`
 
 #### Skip Scan in Microsoft Protection Preferences (Windows Defender)
 
