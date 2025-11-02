@@ -215,55 +215,55 @@ For information about how data is cached and accessed, see the [Cache Behavior](
 
 ### Write-Mode Operations
 
-By enabling write mode (--write-moed), you can modify, add, and delete files locally and then commit those changes back to the lakeFS branch.
+By enabling write mode (--write-mode), you can modify, add, and delete files locally and then commit those changes back to the lakeFS branch.
 When running in write mode, the lakeFS URI must point to a branch, not a commit ID or a tag.
 
 <h4>Example of changing data locally</h4>
 
-    1.  **Mount in write mode:**
-        Use the `--write-mode` flag to enable writes.
+1.  **Mount in write mode:**
+    Use the `--write-mode` flag to enable writes.
 
-        ```bash
-        everest mount lakefs://image-repo/main/datasets/pets/ ./pets --write-mode
-        ```
+    ```bash
+    everest mount lakefs://image-repo/main/datasets/pets/ ./pets --write-mode
+    ```
 
-    2.  **Modify files:**
-        Make any changes you need using standard shell commands.
+2.  **Modify files:**
+    Make any changes you need using standard shell commands.
 
-        ```bash
-        # Add a new file
-        echo "new data" > ./pets/birds/parrot/cute.jpg
+    ```bash
+    # Add a new file
+    echo "new data" > ./pets/birds/parrot/cute.jpg
 
-        # Update an existing file
-        echo "new data" >> ./pets/dogs/golden_retrievers/cute.jpg
+    # Update an existing file
+    echo "new data" >> ./pets/dogs/golden_retrievers/cute.jpg
 
-        # Delete a file
-        rm ./pets/cats/persian/cute.jpg
-        ```
+    # Delete a file
+    rm ./pets/cats/persian/cute.jpg
+    ```
 
-    3.  **Review your changes:**
-        The `diff` command shows the difference between your local state and the branch's state at the time of mounting.
+3.  **Review your changes:**
+    The `diff` command shows the difference between your local state and the branch's state at the time of mounting.
 
-        ```bash
-        everest diff ./pets
-        # Output:
-        # + added datasets/pets/birds/parrot/cute.jpg
-        # ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
-        # - removed datasets/pets/cats/persian/cute.jpg
-        ```
+    ```bash
+    everest diff ./pets
+    # Output:
+    # + added datasets/pets/birds/parrot/cute.jpg
+    # ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
+    # - removed datasets/pets/cats/persian/cute.jpg
+    ```
 
-    4.  **Commit your changes:**
-        The `commit` command uploads your local changes and commits them to the source branch in lakeFS.
+4.  **Commit your changes:**
+    The `commit` command uploads your local changes and commits them to the source branch in lakeFS.
 
-        ```bash
-        everest commit ./pets -m "Updated pet images"
-        ```
-        After committing, your local mount will be synced to the new HEAD of the branch. Running `diff` again will show no changes.
+    ```bash
+    everest commit ./pets -m "Updated pet images"
+    ```
+    After committing, your local mount will be synced to the new HEAD of the branch. Running `diff` again will show no changes.
 
-    5.  **Unmount when finished:**
-        ```bash
-        everest umount ./pets
-        ```
+5.  **Unmount when finished:**
+    ```bash
+    everest umount ./pets
+    ```
 
 !!! info "Write Mode Limitations"
     Write mode has some limitations on supported operations. See [Write Mode Limitations](#write-mode-limitations) for details on unsupported operations and modified behaviors.
