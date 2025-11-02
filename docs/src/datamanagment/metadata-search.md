@@ -29,7 +29,9 @@ ingestion, processing, or curation.
 
 To enable simple and scalable search, lakeFS exposes object metadata as versioned Iceberg tables, fully compatible with
 clients like DuckDB, PyIceberg, Spark, Trino, and others - enabling fast, expressive queries across any lakeFS version. 
-See [How It Works](#how-it-works) for details. 
+See [How It Works](#how-it-works) for details.
+
+<iframe width="560" height="315" src="https://www.youtube.com/watch?v=6JkQK51AaqY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## Benefits
 
