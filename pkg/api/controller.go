@@ -6064,6 +6064,15 @@ func extractLakeFSMetadata(header http.Header) map[string]string {
 func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// verify user is authenticated
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "usage_report_summary", r, "", "", "")
+
 	installationID := c.usageReporter.InstallationID()
 	if installationID == "" {
 		writeError(w, r, http.StatusNotFound, "usage report is not enabled")
