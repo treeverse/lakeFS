@@ -35,9 +35,9 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 -   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
 
 !!! note "Windows Support"
-    Everest supports Windows starting at version <version>.
+    Everest for Windows is now available.
     Currently, only read operations are supported.
-	See Everest for [Windows](#everest-for-windows-cfapi-protocol)
+	See Everest for [Windows](#everest-for-windows-cloud-filter-api)
 
 ### Authentication & Configuration
 
@@ -273,13 +273,14 @@ When running in write mode, the lakeFS URI must point to a branch, not a commit 
 
 ## Everest for Windows (Cloud Filter API)
 
-Starting at version <version>, Everest mount is available for Windows OS using *Cloud Filter API* (CFAPI)
+Everest mount is available for Windows OS using *Cloud Filter API* (CFAPI)
 Currently, Everest for Windows supports read-only operation.
 
 ### Requierments
 
-Everest Mount supports the windows's native Cloud Filter API. No need in additional installations. 
-Make sure your Everest version is > <Version> and lakeFS > <version>.
+Everest Mount supports the windows's native [Cloud Filter API](https://learn.microsoft.com/en-us/windows/win32/cfapi/cloud-files-api-portal). No need in additional installations.
+Starting at Windows 10, version 1709.
+Make sure your Everest version is > `0.6.0`
 
 #### Skip Scan in Microsoft Protection Preferences (Windows Defender)
 
@@ -775,10 +776,6 @@ Starts the mount server without performing the OS-level mount. This is intended 
 everest mount-server <remote_mount_uri> [flags]
 ```
 
-!!! note "Windows Support"
-    Windows users must utilze the `--root` flag
-
-
 **Flags:**
 
 -   `--cache-dir`: Directory to cache read files and metadata.
@@ -800,6 +797,9 @@ everest mount-server <remote_mount_uri> [flags]
 ## Advanced Topics
 
 ### Write Mode Limitations
+
+!!! note "Windows Support"
+    Currently, Everest for Windows supportd only read-mode operations
 
 When using write mode (`--write-mode`), be aware of the following limitations and modified behaviors. For more details on write mode operations, see the [Write-Mode Operations](#write-mode-operations) section.
 
