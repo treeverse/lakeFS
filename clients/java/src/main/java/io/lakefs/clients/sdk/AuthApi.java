@@ -45,6 +45,7 @@ import io.lakefs.clients.sdk.model.GroupList;
 import io.lakefs.clients.sdk.model.LoginInformation;
 import io.lakefs.clients.sdk.model.Policy;
 import io.lakefs.clients.sdk.model.PolicyList;
+import io.lakefs.clients.sdk.model.ReleaseToken;
 import io.lakefs.clients.sdk.model.User;
 import io.lakefs.clients.sdk.model.UserCreation;
 import io.lakefs.clients.sdk.model.UserList;
@@ -6871,6 +6872,174 @@ public class AuthApi {
      */
     public APIoauthCallbackRequest oauthCallback() {
         return new APIoauthCallbackRequest();
+    }
+    private okhttp3.Call releaseTokenToMailboxCall(ReleaseToken releaseToken, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = releaseToken;
+
+        // create path and map variables
+        String localVarPath = "/auth/get-token/release-token";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call releaseTokenToMailboxValidateBeforeCall(ReleaseToken releaseToken, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'releaseToken' is set
+        if (releaseToken == null) {
+            throw new ApiException("Missing the required parameter 'releaseToken' when calling releaseTokenToMailbox(Async)");
+        }
+
+        return releaseTokenToMailboxCall(releaseToken, _callback);
+
+    }
+
+
+    private ApiResponse<Void> releaseTokenToMailboxWithHttpInfo(ReleaseToken releaseToken) throws ApiException {
+        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(releaseToken, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call releaseTokenToMailboxAsync(ReleaseToken releaseToken, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(releaseToken, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIreleaseTokenToMailboxRequest {
+        private final ReleaseToken releaseToken;
+
+        private APIreleaseTokenToMailboxRequest(ReleaseToken releaseToken) {
+            this.releaseToken = releaseToken;
+        }
+
+        /**
+         * Build call for releaseTokenToMailbox
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return releaseTokenToMailboxCall(releaseToken, _callback);
+        }
+
+        /**
+         * Execute releaseTokenToMailbox request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public void execute() throws ApiException {
+            releaseTokenToMailboxWithHttpInfo(releaseToken);
+        }
+
+        /**
+         * Execute releaseTokenToMailbox request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return releaseTokenToMailboxWithHttpInfo(releaseToken);
+        }
+
+        /**
+         * Execute releaseTokenToMailbox request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return releaseTokenToMailboxAsync(releaseToken, _callback);
+        }
+    }
+
+    /**
+     * release a token for the current (authenticated) user to the mailbox of this login request.
+     * 
+     * @param releaseToken  (required)
+     * @return APIreleaseTokenToMailboxRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIreleaseTokenToMailboxRequest releaseTokenToMailbox(ReleaseToken releaseToken) {
+        return new APIreleaseTokenToMailboxRequest(releaseToken);
     }
     private okhttp3.Call setGroupACLCall(String groupId, ACL ACL, final ApiCallback _callback) throws ApiException {
         String basePath = null;

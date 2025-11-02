@@ -32,6 +32,7 @@ import io.lakefs.clients.sdk.model.GroupList;
 import io.lakefs.clients.sdk.model.LoginInformation;
 import io.lakefs.clients.sdk.model.Policy;
 import io.lakefs.clients.sdk.model.PolicyList;
+import io.lakefs.clients.sdk.model.ReleaseToken;
 import io.lakefs.clients.sdk.model.User;
 import io.lakefs.clients.sdk.model.UserCreation;
 import io.lakefs.clients.sdk.model.UserList;
@@ -592,6 +593,19 @@ public class AuthApiTest {
     @Test
     public void oauthCallbackTest() throws ApiException {
         Error response = api.oauthCallback()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * release a token for the current (authenticated) user to the mailbox of this login request.
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void releaseTokenToMailboxTest() throws ApiException {
+        ReleaseToken releaseToken = null;
+        api.releaseTokenToMailbox(releaseToken)
                 .execute();
         // TODO: test validations
     }

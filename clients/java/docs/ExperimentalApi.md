@@ -20,6 +20,7 @@ All URIs are relative to */api/v1*
 | [**listPullRequests**](ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests |
 | [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
 | [**mergePullRequest**](ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request |
+| [**releaseTokenToMailbox**](ExperimentalApi.md#releaseTokenToMailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request. |
 | [**stsLogin**](ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS |
 | [**updateObjectUserMetadata**](ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata |
 | [**updatePullRequest**](ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request |
@@ -1511,6 +1512,98 @@ public class Example {
 | **409** | Conflict Deprecated: content schema will return Error format and not an empty MergeResult  |  -  |
 | **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
 | **429** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="releaseTokenToMailbox"></a>
+# **releaseTokenToMailbox**
+> releaseTokenToMailbox(releaseToken).execute();
+
+release a token for the current (authenticated) user to the mailbox of this login request.
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ExperimentalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
+    ReleaseToken releaseToken = new ReleaseToken(); // ReleaseToken | 
+    try {
+      apiInstance.releaseTokenToMailbox(releaseToken)
+            .execute();
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExperimentalApi#releaseTokenToMailbox");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **releaseToken** | [**ReleaseToken**](ReleaseToken.md)|  | |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **204** | token released |  -  |
+| **401** | Unauthorized |  -  |
+| **429** | too many requests |  -  |
+| **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="stsLogin"></a>

@@ -138,6 +138,13 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_release_token_to_mailbox(self) -> None:
+        """Test case for release_token_to_mailbox
+
+        release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
+        """
+        pass
+
     def test_sts_login(self) -> None:
         """Test case for sts_login
 

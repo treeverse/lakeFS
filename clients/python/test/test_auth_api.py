@@ -285,6 +285,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_release_token_to_mailbox(self) -> None:
+        """Test case for release_token_to_mailbox
+
+        release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
+        """
+        pass
+
     def test_set_group_acl(self) -> None:
         """Test case for set_group_acl
 
