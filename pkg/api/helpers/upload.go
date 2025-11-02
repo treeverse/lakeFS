@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand/v2"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -38,11 +38,14 @@ const DefaultUploadPartSize = MinUploadPartSize
 // DefaultUploadConcurrency is the default number of goroutines to spin up when uploading a multipart upload
 const DefaultUploadConcurrency = 5
 
-// DefaultUploadBodyRetries is the default number of retries for body read/write operations during upload
-const DefaultUploadBodyRetries = 3
-
-// DefaultUploadRetryDelayMs is the default delay between upload retries
-const DefaultUploadRetryDelayMs = 1000
+// newUploadBackoff creates a backoff strategy for upload retries.
+func newUploadBackoff() backoff.BackOff {
+	b := backoff.NewExponentialBackOff()
+	b.InitialInterval = 100 * time.Millisecond
+	b.MaxInterval = 2 * time.Second
+	b.MaxElapsedTime = 30 * time.Second
+	return b
+}
 
 // ClientUpload uploads contents as a file via lakeFS
 func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
@@ -115,7 +118,6 @@ type PreSignUploader struct {
 	HTTPClient       *http.Client
 	Client           apigen.ClientWithResponsesInterface
 	MultipartSupport bool
-	BodyRetries      int // Number of retries for body read/write operations
 }
 
 // presignUpload represents a single upload request
@@ -139,7 +141,6 @@ func NewPreSignUploader(client apigen.ClientWithResponsesInterface, httpClient *
 		HTTPClient:       httpClient,
 		Client:           client,
 		MultipartSupport: multipartSupport,
-		BodyRetries:      DefaultUploadBodyRetries,
 	}
 }
 
@@ -309,88 +310,67 @@ func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMulti
 }
 
 func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionReader, partURL string) (string, error) {
-	var (
-		err  error
-		etag string
-	)
-	for attempt := 0; attempt <= u.uploader.BodyRetries; attempt++ {
-		if attempt > 0 {
-			// sleep for a random time between 0 and 1 second or break on context cancellation
-			select {
-			//nolint:gosec
-			case <-time.After(time.Duration(rand.IntN(DefaultUploadRetryDelayMs)) * time.Millisecond):
-			case <-ctx.Done():
-				return "", ctx.Err()
-			}
-			// Reset reader position for retry
-			if _, err = partReader.Seek(0, io.SeekStart); err != nil {
-				return "", fmt.Errorf("failed to reset reader for retry: %w", err)
-			}
+	var etag string
+
+	operation := func() error {
+		// Reset reader position for each attempt
+		if _, err := partReader.Seek(0, io.SeekStart); err != nil {
+			return backoff.Permanent(fmt.Errorf("failed to reset reader: %w", err))
 		}
 
 		// TODO(barak): consider using streaming upload for better performance
-		var req *http.Request
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, partURL, partReader)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, partURL, partReader)
 		if err != nil {
-			continue
+			return backoff.Permanent(err)
 		}
 		req.ContentLength = partReader.Size()
 		if u.contentType != "" {
 			req.Header.Set("Content-Type", u.contentType)
 		}
 
-		err = executeHTTPRequest(u.uploader.HTTPClient, req, func(resp *http.Response) error {
+		return executeHTTPRequest(u.uploader.HTTPClient, req, func(resp *http.Response) error {
 			if !httputil.IsSuccessStatusCode(resp) {
-				return fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed)
+				return backoff.Permanent(fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed))
 			}
 
 			etag = extractEtagFromResponseHeader(resp.Header)
 			if etag == "" {
-				return fmt.Errorf("upload etag is missing %s: %w", partURL, ErrRequestFailed)
+				return backoff.Permanent(fmt.Errorf("upload etag is missing %s: %w", partURL, ErrRequestFailed))
 			}
 
 			return nil
 		})
-		if err == nil {
-			break
-		}
 	}
 
-	if err != nil {
-		return "", fmt.Errorf("failed to upload part after %d retries: %w", u.uploader.BodyRetries+1, err)
+	b := backoff.WithContext(newUploadBackoff(), ctx)
+	if err := backoff.Retry(operation, b); err != nil {
+		return "", fmt.Errorf("failed to upload part: %w", err)
 	}
 	return etag, nil
 }
 
 func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, error) {
 	var (
-		err             error
 		etag            string
 		stagingLocation *apigen.StagingLocation
 	)
-	for attempt := 0; attempt <= u.uploader.BodyRetries; attempt++ {
-		if attempt > 0 {
-			// Check context cancellation between retries
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			default:
-			}
-			// Reset reader position for retry
-			if _, err := u.reader.Seek(0, io.SeekStart); err != nil {
-				return nil, fmt.Errorf("failed to reset reader for retry: %w", err)
-			}
-		}
 
-		// get physical address for the object upload
-		stagingLocation, err = getPhysicalAddress(ctx, u.uploader.Client, u.repoID, u.branchID, &apigen.GetPhysicalAddressParams{
-			Path:    u.objectPath,
-			Presign: swag.Bool(true),
-		})
-		if err != nil {
-			return nil, err
+	// get physical address for the object upload (done once before retries)
+	var err error
+	stagingLocation, err = getPhysicalAddress(ctx, u.uploader.Client, u.repoID, u.branchID, &apigen.GetPhysicalAddressParams{
+		Path:    u.objectPath,
+		Presign: swag.Bool(true),
+	})
+	if err != nil {
+		return nil, err
+	}
+	preSignURL := swag.StringValue(stagingLocation.PresignedUrl)
+
+	operation := func() error {
+		// Reset reader position for each attempt
+		if _, err := u.reader.Seek(0, io.SeekStart); err != nil {
+			return backoff.Permanent(fmt.Errorf("failed to reset reader: %w", err))
 		}
-		preSignURL := swag.StringValue(stagingLocation.PresignedUrl)
 
 		var body io.ReadSeeker
 		if u.size > 0 {
@@ -398,10 +378,9 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 			body = u.reader
 		}
 
-		var req *http.Request
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, body)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, body)
 		if err != nil {
-			return nil, err
+			return backoff.Permanent(err)
 		}
 		req.ContentLength = u.size
 		if u.contentType != "" {
@@ -411,28 +390,27 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 			req.Header.Set("x-ms-blob-type", "BlockBlob")
 		}
 
-		err = executeHTTPRequest(u.uploader.HTTPClient, req, func(putResp *http.Response) error {
+		return executeHTTPRequest(u.uploader.HTTPClient, req, func(putResp *http.Response) error {
 			// Read response body to ensure upload completed
 			_, readErr := io.Copy(io.Discard, putResp.Body)
 			if readErr != nil {
 				return readErr
 			}
 			if !httputil.IsSuccessStatusCode(putResp) {
-				return fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, putResp.Status)
+				return backoff.Permanent(fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, putResp.Status))
 			}
 
 			etag = extractEtagFromResponseHeader(putResp.Header)
 			if etag == "" {
-				return fmt.Errorf("upload %w %s: etag is missing", ErrRequestFailed, preSignURL)
+				return backoff.Permanent(fmt.Errorf("upload %w %s: etag is missing", ErrRequestFailed, preSignURL))
 			}
 			return nil
 		})
-		if err == nil {
-			break
-		}
 	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to upload object after %d retries: %w", u.uploader.BodyRetries+1, err)
+
+	b := backoff.WithContext(newUploadBackoff(), ctx)
+	if err := backoff.Retry(operation, b); err != nil {
+		return nil, fmt.Errorf("failed to upload object: %w", err)
 	}
 
 	// Link the physical address (don't retry this as it's idempotent and the upload succeeded)

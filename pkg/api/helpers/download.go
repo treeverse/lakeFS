@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math/rand/v2"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -22,12 +22,19 @@ import (
 )
 
 const (
-	MinDownloadPartSize         int64 = 1024 * 64       // 64KB
-	DefaultDownloadPartSize     int64 = 1024 * 1024 * 8 // 8MB
-	DefaultDownloadConcurrency        = 10
-	DefaultDownloadBodyRetries        = 3 // Number of retries for body read/write operations
-	DefaultDownloadRetryDelayMs       = 1000
+	MinDownloadPartSize     int64 = 1024 * 64       // 64KB
+	DefaultDownloadPartSize int64 = 1024 * 1024 * 8 // 8MB
+	DefaultDownloadConcurrency    = 10
 )
+
+// newDownloadBackoff creates a backoff strategy for download retries.
+func newDownloadBackoff() backoff.BackOff {
+	b := backoff.NewExponentialBackOff()
+	b.InitialInterval = 100 * time.Millisecond
+	b.MaxInterval = 2 * time.Second
+	b.MaxElapsedTime = 30 * time.Second
+	return b
+}
 
 type Downloader struct {
 	Client              *apigen.ClientWithResponses
@@ -36,7 +43,6 @@ type Downloader struct {
 	PartSize            int64
 	SkipNonRegularFiles bool
 	SymlinkSupport      bool
-	BodyRetries         int // Number of retries for body read/write operations
 }
 
 type downloadPart struct {
@@ -64,7 +70,6 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		PartSize:            DefaultDownloadPartSize,
 		SkipNonRegularFiles: false,
 		SymlinkSupport:      false,
-		BodyRetries:         DefaultDownloadBodyRetries,
 	}
 }
 
@@ -235,85 +240,57 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 		buf = buf[:partSize]
 	}
 
-	var err error
-	for attempt := 0; attempt <= d.BodyRetries; attempt++ {
-		if attempt > 0 {
-			// sleep for a random time between 0 and 1 second or break on context cancellation
-			select {
-			//nolint:gosec
-			case <-time.After(time.Duration(rand.IntN(DefaultDownloadRetryDelayMs)) * time.Millisecond):
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		}
-
+	operation := func() error {
 		// create request with range header
-		var req *http.Request
-		req, err = http.NewRequestWithContext(ctx, http.MethodGet, physicalAddress, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, physicalAddress, nil)
 		if err != nil {
-			return err
+			return backoff.Permanent(err)
 		}
 		req.Header.Set("Range", rangeHeader)
 
-		err = executeHTTPRequest(d.HTTPClient, req, func(resp *http.Response) error {
+		return executeHTTPRequest(d.HTTPClient, req, func(resp *http.Response) error {
 			if resp.StatusCode != http.StatusPartialContent {
-				return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+				return backoff.Permanent(fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status))
 			}
 			if resp.ContentLength != partSize {
-				return fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
+				return backoff.Permanent(fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength))
 			}
 			_, readErr := io.ReadFull(resp.Body, buf)
 			return readErr
 		})
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		return fmt.Errorf("failed to download part %d after %d retries: %w", partNumber, d.BodyRetries+1, err)
 	}
 
-	_, err = f.WriteAt(buf, rangeStart)
+	b := backoff.WithContext(newDownloadBackoff(), ctx)
+	if err := backoff.Retry(operation, b); err != nil {
+		return fmt.Errorf("failed to download part %d: %w", partNumber, err)
+	}
+
+	_, err := f.WriteAt(buf, rangeStart)
 	return err
 }
 
 func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
-	var err error
-	for attempt := 0; attempt <= d.BodyRetries; attempt++ {
-		if attempt > 0 {
-			// sleep for a random time between 0 and 1 second or break on context cancellation
-			select {
-			//nolint:gosec
-			case <-time.After(time.Duration(rand.IntN(DefaultDownloadRetryDelayMs)) * time.Millisecond):
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-			// Remove destination file if retrying (will be recreated)
-			_ = os.Remove(dst)
-		}
-
+	operation := func() error {
 		// get object content
-		var resp *http.Response
-		resp, err = d.Client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
+		resp, err := d.Client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
 			Path:    *src.Path,
 			Presign: swag.Bool(d.PreSign),
 		})
 		if err != nil {
-			return err
+			return backoff.Permanent(err)
 		}
 		defer func() {
 			_ = resp.Body.Close()
 		}()
 
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+			return backoff.Permanent(fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status))
 		}
 
 		// create and copy object content
-		var f *os.File
-		f, err = os.Create(dst)
+		f, err := os.Create(dst)
 		if err != nil {
-			return err
+			return backoff.Permanent(err)
 		}
 		defer func() {
 			_ = f.Close()
@@ -329,13 +306,20 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 		}
 
 		_, err = io.Copy(w, resp.Body)
-		// if write is successful, return nil
-		if err == nil {
-			return nil
+		if err != nil {
+			// Remove partial file on error (will be recreated on retry)
+			_ = f.Close()
+			_ = os.Remove(dst)
+			return err
 		}
+		return nil
 	}
 
-	return fmt.Errorf("failed to download object after %d retries: %w", d.BodyRetries+1, err)
+	b := backoff.WithContext(newDownloadBackoff(), ctx)
+	if err := backoff.Retry(operation, b); err != nil {
+		return fmt.Errorf("failed to download object: %w", err)
+	}
+	return nil
 }
 
 // Tracker interface for tracking written data.
