@@ -114,6 +114,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
+		return
 	}
 	replaceMetadata := shouldReplaceMetadata(req)
 
@@ -355,6 +356,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
+		return
 	}
 	contentType := req.Header.Get("Content-Type")
 	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType, allowOverwrite)

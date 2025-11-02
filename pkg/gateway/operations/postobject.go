@@ -68,6 +68,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
+		return
 	}
 	mpu := multipart.Upload{
 		UploadID:        resp.UploadID,
