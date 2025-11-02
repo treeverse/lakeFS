@@ -33,6 +33,7 @@ from lakefs_sdk.api.metadata_api import MetadataApi
 from lakefs_sdk.api.objects_api import ObjectsApi
 from lakefs_sdk.api.pulls_api import PullsApi
 from lakefs_sdk.api.refs_api import RefsApi
+from lakefs_sdk.api.remotes_api import RemotesApi
 from lakefs_sdk.api.repositories_api import RepositoriesApi
 from lakefs_sdk.api.staging_api import StagingApi
 from lakefs_sdk.api.tags_api import TagsApi
@@ -92,6 +93,10 @@ from lakefs_sdk.models.group_creation import GroupCreation
 from lakefs_sdk.models.group_list import GroupList
 from lakefs_sdk.models.hook_run import HookRun
 from lakefs_sdk.models.hook_run_list import HookRunList
+from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
+from lakefs_sdk.models.iceberg_pull_request import IcebergPullRequest
+from lakefs_sdk.models.iceberg_push_request import IcebergPushRequest
+from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
 from lakefs_sdk.models.import_creation import ImportCreation
 from lakefs_sdk.models.import_creation_response import ImportCreationResponse
 from lakefs_sdk.models.import_location import ImportLocation
