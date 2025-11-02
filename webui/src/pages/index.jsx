@@ -4,7 +4,7 @@ import {
     BrowserRouter as Router,
     Routes,
     Route,
-    Navigate, useLocation,
+    Navigate,
 } from "react-router-dom";
 import {WithLoginConfigContext} from "../lib/hooks/conf";
 
@@ -45,20 +45,8 @@ import Setup from "./setup";
 import {AuthLayout} from "../lib/components/auth/layout";
 import RepositoryActionPage from "./repositories/repository/actions/run";
 import {WithAppContext} from "../lib/hooks/appContext";
-import {AUTH_STATUS, AuthProvider, useAuth} from "../lib/auth/authContext";
+import {AuthProvider} from "../lib/auth/authContext";
 import RequiresAuth from "../lib/components/requiresAuth";
-
-const RedirectIfAuthenticated = ({ children }) => {
-    const { status } = useAuth();
-    const location = useLocation();
-
-    if (status === AUTH_STATUS.AUTHENTICATED) {
-        const next = (location.state && location.state.next) || "/repositories";
-        return <Navigate to={next} replace />;
-    }
-
-    return <>{children}</>;
-};
 
 export const IndexPage = () => {
     return (
@@ -130,7 +118,7 @@ export const IndexPage = () => {
                                 <Route path="*" element={<Navigate to="/repositories" replace/>}/>
                             </Route>
                             <Route path="auth" element={<Layout/>}>
-                                <Route path="login" element={<RedirectIfAuthenticated><LoginPage/></RedirectIfAuthenticated>}/>
+                                <Route path="login" element={<LoginPage/>}/>
                                 <Route path="users/create" element={<ActivateInvitedUserPage/>}/>
                             </Route>
                             <Route path="/setup" element={<Layout/>}>
