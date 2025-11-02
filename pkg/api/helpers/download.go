@@ -22,18 +22,25 @@ import (
 )
 
 const (
-	MinDownloadPartSize     int64 = 1024 * 64       // 64KB
-	DefaultDownloadPartSize int64 = 1024 * 1024 * 8 // 8MB
-	DefaultDownloadConcurrency    = 10
+	MinDownloadPartSize        int64 = 1024 * 64       // 64KB
+	DefaultDownloadPartSize    int64 = 1024 * 1024 * 8 // 8MB
+	DefaultDownloadConcurrency       = 10
+)
+
+// Backoff parameters for download retries
+const (
+	DefaultDownloadInitialInterval = 100 * time.Millisecond
+	DefaultDownloadMaxInterval     = 2 * time.Second
+	DefaultDownloadMaxElapsedTime  = 30 * time.Second
 )
 
 // newDownloadBackoff creates a backoff strategy for download retries.
 func newDownloadBackoff() backoff.BackOff {
-	b := backoff.NewExponentialBackOff()
-	b.InitialInterval = 100 * time.Millisecond
-	b.MaxInterval = 2 * time.Second
-	b.MaxElapsedTime = 30 * time.Second
-	return b
+	return backoff.NewExponentialBackOff(
+		backoff.WithInitialInterval(DefaultDownloadInitialInterval),
+		backoff.WithMaxInterval(DefaultDownloadMaxInterval),
+		backoff.WithMaxElapsedTime(DefaultDownloadMaxElapsedTime),
+	)
 }
 
 type Downloader struct {
@@ -248,20 +255,24 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 		}
 		req.Header.Set("Range", rangeHeader)
 
-		return executeHTTPRequest(d.HTTPClient, req, func(resp *http.Response) error {
-			if resp.StatusCode != http.StatusPartialContent {
-				return backoff.Permanent(fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status))
-			}
-			if resp.ContentLength != partSize {
-				return backoff.Permanent(fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength))
-			}
-			_, readErr := io.ReadFull(resp.Body, buf)
-			return readErr
-		})
+		resp, err := d.HTTPClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusPartialContent {
+			return backoff.Permanent(fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status))
+		}
+		if resp.ContentLength != partSize {
+			return backoff.Permanent(fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength))
+		}
+		_, readErr := io.ReadFull(resp.Body, buf)
+		return readErr
 	}
 
-	b := backoff.WithContext(newDownloadBackoff(), ctx)
-	if err := backoff.Retry(operation, b); err != nil {
+	bo := backoff.WithContext(newDownloadBackoff(), ctx)
+	if err := backoff.Retry(operation, bo); err != nil {
 		return fmt.Errorf("failed to download part %d: %w", partNumber, err)
 	}
 
@@ -306,13 +317,7 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 		}
 
 		_, err = io.Copy(w, resp.Body)
-		if err != nil {
-			// Remove partial file on error (will be recreated on retry)
-			_ = f.Close()
-			_ = os.Remove(dst)
-			return err
-		}
-		return nil
+		return err
 	}
 
 	b := backoff.WithContext(newDownloadBackoff(), ctx)

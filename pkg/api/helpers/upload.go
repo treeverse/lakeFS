@@ -38,13 +38,20 @@ const DefaultUploadPartSize = MinUploadPartSize
 // DefaultUploadConcurrency is the default number of goroutines to spin up when uploading a multipart upload
 const DefaultUploadConcurrency = 5
 
+// Backoff parameters for upload retries
+const (
+	DefaultUploadInitialInterval = 100 * time.Millisecond
+	DefaultUploadMaxInterval     = 2 * time.Second
+	DefaultUploadMaxElapsedTime  = 30 * time.Second
+)
+
 // newUploadBackoff creates a backoff strategy for upload retries.
 func newUploadBackoff() backoff.BackOff {
-	b := backoff.NewExponentialBackOff()
-	b.InitialInterval = 100 * time.Millisecond
-	b.MaxInterval = 2 * time.Second
-	b.MaxElapsedTime = 30 * time.Second
-	return b
+	return backoff.NewExponentialBackOff(
+		backoff.WithInitialInterval(DefaultUploadInitialInterval),
+		backoff.WithMaxInterval(DefaultUploadMaxInterval),
+		backoff.WithMaxElapsedTime(DefaultUploadMaxElapsedTime),
+	)
 }
 
 // ClientUpload uploads contents as a file via lakeFS
@@ -318,7 +325,6 @@ func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionRe
 			return backoff.Permanent(fmt.Errorf("failed to reset reader: %w", err))
 		}
 
-		// TODO(barak): consider using streaming upload for better performance
 		req, err := http.NewRequestWithContext(ctx, http.MethodPut, partURL, partReader)
 		if err != nil {
 			return backoff.Permanent(err)
@@ -328,18 +334,24 @@ func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionRe
 			req.Header.Set("Content-Type", u.contentType)
 		}
 
-		return executeHTTPRequest(u.uploader.HTTPClient, req, func(resp *http.Response) error {
-			if !httputil.IsSuccessStatusCode(resp) {
-				return backoff.Permanent(fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed))
-			}
+		resp, err := u.uploader.HTTPClient.Do(req)
+		if err != nil {
+			return backoff.Permanent(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
 
-			etag = extractEtagFromResponseHeader(resp.Header)
-			if etag == "" {
-				return backoff.Permanent(fmt.Errorf("upload etag is missing %s: %w", partURL, ErrRequestFailed))
-			}
+		if !httputil.IsSuccessStatusCode(resp) {
+			err := fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed)
+			return backoff.Permanent(err)
+		}
 
-			return nil
-		})
+		etag = extractEtagFromResponseHeader(resp.Header)
+		if etag == "" {
+			err := fmt.Errorf("upload etag is missing %s: %w", partURL, ErrRequestFailed)
+			return backoff.Permanent(err)
+		}
+
+		return nil
 	}
 
 	b := backoff.WithContext(newUploadBackoff(), ctx)
@@ -390,22 +402,29 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 			req.Header.Set("x-ms-blob-type", "BlockBlob")
 		}
 
-		return executeHTTPRequest(u.uploader.HTTPClient, req, func(putResp *http.Response) error {
-			// Read response body to ensure upload completed
-			_, readErr := io.Copy(io.Discard, putResp.Body)
-			if readErr != nil {
-				return readErr
-			}
-			if !httputil.IsSuccessStatusCode(putResp) {
-				return backoff.Permanent(fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, putResp.Status))
-			}
+		resp, err := u.uploader.HTTPClient.Do(req)
+		if err != nil {
+			return backoff.Permanent(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
 
-			etag = extractEtagFromResponseHeader(putResp.Header)
-			if etag == "" {
-				return backoff.Permanent(fmt.Errorf("upload %w %s: etag is missing", ErrRequestFailed, preSignURL))
-			}
-			return nil
-		})
+		// Read response body to ensure upload completed
+		_, readErr := io.Copy(io.Discard, resp.Body)
+		if readErr != nil {
+			return readErr
+		}
+
+		if !httputil.IsSuccessStatusCode(resp) {
+			err := fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, resp.Status)
+			return backoff.Permanent(err)
+		}
+
+		etag = extractEtagFromResponseHeader(resp.Header)
+		if etag == "" {
+			err := fmt.Errorf("upload %w %s: etag is missing", ErrRequestFailed, preSignURL)
+			return backoff.Permanent(err)
+		}
+		return nil
 	}
 
 	b := backoff.WithContext(newUploadBackoff(), ctx)
