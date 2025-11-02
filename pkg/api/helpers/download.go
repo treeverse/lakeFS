@@ -173,9 +173,7 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = f.Close()
-	}()
+	defer func() { _ = f.Close() }()
 
 	// make sure the destination file is in the right size
 	if err := f.Truncate(size); err != nil {
@@ -313,6 +311,7 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 		// w is used to write the data, it will be wrapped with a tracker if needed
 		var w io.Writer = f
 		if tracker != nil {
+			tracker.Reset()
 			if resp.ContentLength != -1 {
 				tracker.UpdateTotal(resp.ContentLength)
 			}
