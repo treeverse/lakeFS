@@ -276,7 +276,20 @@ When running in write mode, the lakeFS URI must point to a branch, not a commit 
 Everest mount is available for Windows OS using *Cloud Filter API* (CFAPI)
 Currently, Everest for Windows supports read-only operation.
 
-### Requierments
+### Everest Behavior On Windows Operation System 
+
+CFAPI uses an OS-managed caching system optimized for cloud storage:
+
+- **Placeholder Files**: Files initially appear as stubs containing only metadata, without actual content
+- **On-Demand Hydration**: When accessed, files are "hydrated" - their content is fetched from lakeFS
+- **Local Cache**: Subsequent reads are served directly from the local cache without reaching lakeFS
+- **Full Download**: Currently, accessing any part of a file, triggers a full download
+- **Automatic Eviction**: The OS "dehydrates" (clears content) under storage pressure. All data is deleted after unmount
+
+!!! warning "Windows File Explorer Performance"
+    Windows File Explorer may perform slowly as it recursively indexes the entire directory structure. Consider using command-line tools or applications that don't trigger full directory indexing.
+
+### Requirements
 
 Everest Mount supports the windows's native [Cloud Filter API](https://learn.microsoft.com/en-us/windows/win32/cfapi/cloud-files-api-portal). No need in additional installations.
 Starting at Windows 10, version 1709.
@@ -296,11 +309,6 @@ Verify exclusions:
 ```powershell
 Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
 ```
-
-### Semantics
-
-Everest for Windows uses the classic Everest [semantics](https://docs.lakefs.io/latest/reference/mount-write-mode-semantics/).
-
 
 ## Everest on Kubernetes (CSI Driver)
 
