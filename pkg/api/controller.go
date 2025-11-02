@@ -901,6 +901,18 @@ func (c *Controller) GetTokenFromMailbox(w http.ResponseWriter, r *http.Request,
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Request, params apigen.ReleaseTokenToMailboxJSONRequestBody) {
+	ctx := r.Context()
+
+	loginRequestToken := params.Token
+	// Release will release a token for the authenticated user.
+	err := c.loginTokenProvider.Release(ctx, loginRequestToken)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{

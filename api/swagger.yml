@@ -2147,6 +2147,15 @@ components:
           default: false
           description: Creates namespace in local catalog if not exist
 
+    ReleaseToken:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Login request token to release
+
 paths:
   /setup_comm_prefs:
     post:
@@ -3275,6 +3284,33 @@ paths:
         404:
           description: not found or user has not logged in yet
           $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        501:
+          description: not implemented in this edition.
+          $ref: "#/components/responses/NotImplemented"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/get-token/release-token:
+    post:
+      tags:
+        - auth
+        - experimental
+      operationId: releaseTokenToMailbox
+      summary: release a token for the current (authenticated) user to the mailbox of this login request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseToken"
+      responses:
+        204:
+          description: token released
+        401:
+          description: bad token or user has not logged in yet
+          $ref: "#/components/responses/Unauthorized"
         429:
           description: too many requests
         501:

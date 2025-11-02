@@ -16,7 +16,7 @@ func (l UnimplementedLoginTokenProvider) GetRedirect(ctx context.Context) (*auth
 	return nil, authentication.ErrNotImplemented
 }
 
-func (l UnimplementedLoginTokenProvider) Release(ctx context.Context, mailbox string) error {
+func (l UnimplementedLoginTokenProvider) Release(ctx context.Context, loginRequestToken string) error {
 	return authentication.ErrNotImplemented
 }
 
