@@ -69,6 +69,7 @@ const (
 	ErrInvalidMaxUploads
 	ErrInvalidMaxParts
 	ErrInvalidPartNumberMarker
+	ErrInvalidHeaderValue
 	ErrInvalidRequestBody
 	ErrInvalidCopySource
 	ErrInvalidMetadataDirective
@@ -247,6 +248,13 @@ var Codes = errorCodeMap{
 	ErrInvalidPartNumberMarker: {
 		Code:           "InvalidArgument",
 		Description:    "Argument partNumberMarker must be an integer.",
+		HTTPStatusCode: http.StatusBadRequest,
+	},
+	ErrInvalidHeaderValue: {
+		// TODO(ariels): S3 itself encodes the bad header in XML tags ArgumentName,
+		// ArgumentValue.
+		Code:           "InvalidArgument",
+		Description:    "Invalid header value.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidPolicyDocument: {
