@@ -5544,8 +5544,32 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 	}
 
 	customViewers := uiConfig.GetCustomViewers()
+	if len(customViewers) == 0 {
+		return &apigen.UIConfig{
+			CustomViewers: nil,
+		}
+	}
+
+	apigenViewers := make([]apigen.CustomViewer, len(customViewers))
+	for i, cv := range customViewers {
+		var extensions *[]string
+		if len(cv.Extensions) > 0 {
+			extensions = &cv.Extensions
+		}
+		var contentTypes *[]string
+		if len(cv.ContentTypes) > 0 {
+			contentTypes = &cv.ContentTypes
+		}
+		apigenViewers[i] = apigen.CustomViewer{
+			Name:         cv.Name,
+			Url:          cv.URL,
+			Extensions:   extensions,
+			ContentTypes: contentTypes,
+		}
+	}
+
 	return &apigen.UIConfig{
-		CustomViewers: &customViewers,
+		CustomViewers: &apigenViewers,
 	}
 }
 
