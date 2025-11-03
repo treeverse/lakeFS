@@ -9,7 +9,7 @@
 :bug: Bugs fixed:
 - WebUI: Wrap duckDB cells content (#9584)
 - UpdateMetadata when we have a tombstone in staging should return 404 (#9566)
-- Fix unauthenticated access to API usage metrics (GHSA-h238-5mwf-8xw8)
+- Fix unauthenticated access to API usage metrics ([GHSA-h238-5mwf-8xw8](https://github.com/treeverse/lakeFS/security/advisories/GHSA-h238-5mwf-8xw8))
 
 # v1.70.1
 
