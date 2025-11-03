@@ -12,7 +12,6 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -447,7 +446,7 @@ type AuthConfig interface {
 type UIConfig interface {
 	IsUIEnabled() bool
 	GetSnippets() []apiparams.CodeSnippet
-	GetCustomViewers() []apigen.CustomViewer
+	GetCustomViewers() []apiparams.CustomViewer
 }
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -834,6 +833,6 @@ func BuildCodeSnippets(s []UISnippet) []apiparams.CodeSnippet {
 	return snippets
 }
 
-func (u *UI) GetCustomViewers() []apigen.CustomViewer {
+func (u *UI) GetCustomViewers() []apiparams.CustomViewer {
 	return nil
 }
