@@ -7,4 +7,3 @@ type CustomViewer struct {
 	Extensions   []string
 	ContentTypes []string
 }
-
