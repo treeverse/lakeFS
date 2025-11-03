@@ -106,11 +106,23 @@ const TableRow = ({diffIndicator, depth, loading, showSummary, entry, getMore, r
                       showRevertConfirm, setShowRevertConfirm, pathSection, onRevert, dirExpanded, onExpand, ...rest}) => {
     return (<tr {...rest}>
             <td className="entry-type-indicator">{diffIndicator}</td>
-            <td className="tree-path">
-                        <span style={{marginLeft: (depth * 20) + "px"}}>
-                            {pathSection}
+            <td className="tree-path" title={entry.path}>
+                        <span style={{
+                            marginLeft: (depth * 20) + "px",
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            maxWidth: '100%',
+                            overflow: 'hidden'
+                        }}>
+                            <span style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                            }}>
+                                {pathSection}
+                            </span>
                             {onExpand && <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand}/>}
-                            {loading ? <ClockIcon/> : ""}
+                            {loading ? <ClockIcon style={{ marginLeft: '4px', flexShrink: 0 }}/> : ""}
                         </span>
             </td>
             <td className={"change-summary"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>

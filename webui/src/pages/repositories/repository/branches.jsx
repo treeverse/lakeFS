@@ -60,16 +60,21 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
             <Row className="d-flex align-items-center justify-content-between">
                 <Col
                     title={branch.id}
-                    className="flex-grow-1 text-nowrap overflow-hidden text-truncate align-middle"
+                    className="flex-grow-1 align-middle"
+                    style={{minWidth: 0}}
                 >
                     <h6 className="mb-0">
-                        <Link href={{
-                            pathname: '/repositories/:repoId/objects',
-                            params: {repoId: repo.id},
-                            query: {ref: branch.id}
-                        }}>
-                            {branch.id}
-                        </Link>
+                        <span className="d-inline-block text-nowrap overflow-hidden text-truncate" style={{maxWidth: '100%', verticalAlign: 'middle'}}>
+                            <Link 
+                                href={{
+                                    pathname: '/repositories/:repoId/objects',
+                                    params: {repoId: repo.id},
+                                    query: {ref: branch.id}
+                                }}
+                            >
+                                {branch.id}
+                            </Link>
+                        </span>
                         
                         {isDefault &&
                             <>

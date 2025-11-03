@@ -546,3 +546,31 @@ export const SearchInput = ({searchPrefix, setSearchPrefix, placeholder}) => {
         </InputGroup>
     );
 };
+
+export const TruncatedText = ({ text, maxLength = 50, className = "", style = {} }) => {
+    const needsTruncation = text && text.length > maxLength;
+
+    const truncatedStyle = {
+        display: 'inline-block',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        ...style
+    };
+
+    if (!needsTruncation) {
+        return <span className={className} style={style}>{text}</span>;
+    }
+
+    return (
+        <OverlayTrigger
+            placement="bottom"
+            overlay={<Tooltip>{text}</Tooltip>}
+        >
+            <span className={className} style={truncatedStyle}>
+                {text}
+            </span>
+        </OverlayTrigger>
+    );
+};

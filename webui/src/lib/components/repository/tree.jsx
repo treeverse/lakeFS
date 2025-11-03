@@ -478,15 +478,23 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
   const params = { repoId: repo.id };
   const query = { ref: reference.id, path: entry.path };
 
+  const linkStyle = {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    display: 'block',
+    maxWidth: '100%'
+  };
+
   let button;
   if (entry.path_type === "common_prefix") {
     button = (
-      <Link href={{ pathname: "/repositories/:repoId/objects", query, params }}>
+      <Link href={{ pathname: "/repositories/:repoId/objects", query, params }} style={linkStyle}>
         {buttonText}
       </Link>
     );
   } else if (entry.diff_type === "removed") {
-    button = <span>{buttonText}</span>;
+    button = <span style={linkStyle}>{buttonText}</span>;
   } else {
     const filePathQuery = {
       ref: query.ref,
@@ -499,6 +507,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
           query: filePathQuery,
           params: params,
         }}
+        style={linkStyle}
       >
         {buttonText}
       </Link>
@@ -597,13 +606,19 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
     <>
       <tr className={rowClass}>
         <td className="diff-indicator">{diffIndicator || ""}</td>
-        <td className="tree-path">
-          {entry.path_type === "common_prefix" ? (
-            <FileDirectoryIcon />
-          ) : (
-            <FileIcon />
-          )}{" "}
-          {button}
+        <td className="tree-path" title={buttonText}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', maxWidth: '100%', overflow: 'hidden' }}>
+            <span style={{ flexShrink: 0, marginRight: '4px' }}>
+              {entry.path_type === "common_prefix" ? (
+                <FileDirectoryIcon />
+              ) : (
+                <FileIcon />
+              )}
+            </span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+              {button}
+            </span>
+          </span>
         </td>
         <td className="tree-size">{size}</td>
         <td className="tree-modified">{modified}</td>
@@ -662,37 +677,57 @@ export const URINavigator = ({
     <div className="d-flex">
       <div className="lakefs-uri flex-grow-1">
         <div
-            title={displayedReference}
-            className="w-100 text-nowrap overflow-hidden text-truncate"
+            className="w-100"
+            style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
         >
           {relativeTo === "" ? (
               <>
-                <strong>lakefs://</strong>
+                <strong style={{ flexShrink: 0 }}>lakefs://</strong>
                 <Link
                     href={{
                       pathname: "/repositories/:repoId/objects",
                       params,
                       query: { ref: reference.id },
                     }}
+                    style={{ flexShrink: 0 }}
                 >
                   {repo.id}
                 </Link>
-                <strong>/</strong>
+                <strong style={{ flexShrink: 0 }}>/</strong>
                 <Link
                     href={{
                       pathname: "/repositories/:repoId/objects",
                       params,
                       query: { ref: reference.id },
                     }}
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      minWidth: 0,
+                      maxWidth: '300px'
+                    }}
+                    title={reference.id}
                 >
                   {displayedReference}
                 </Link>
-                <strong>/</strong>
+                <strong style={{ flexShrink: 0 }}>/</strong>
               </>
           ) : (
               <>
-                <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-                <strong>/</strong>
+                <Link
+                    href={pathURLBuilder(params, { path: "" })}
+                    style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        minWidth: 0,
+                        maxWidth: '400px',
+                        flexShrink: 1
+                    }}
+                    title={relativeTo}
+                >{relativeTo}</Link>
+                <strong style={{ flexShrink: 0 }}>/</strong>
               </>
           )}
 
@@ -705,14 +740,30 @@ export const URINavigator = ({
             const query = { path, ref: reference.id };
             const edgeElement =
               isPathToFile && i === parts.length - 1 ? (
-                <span>{part.name}</span>
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  minWidth: 0
+                }} title={part.name}>{part.name}</span>
               ) : (
                 <>
-                  <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                  <strong>{"/"}</strong>
+                  <Link
+                    href={pathURLBuilder(params, query)}
+                    style={{
+                      flexShrink: 0,
+                      maxWidth: '200px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      display: 'inline-block'
+                    }}
+                    title={part.name}
+                  >{part.name}</Link>
+                  <strong style={{ flexShrink: 0 }}>{"/"}</strong>
                 </>
               );
-            return <span key={part.name}>{edgeElement}</span>;
+            return <span key={part.name} style={{ display: 'inline-flex', minWidth: 0 }}>{edgeElement}</span>;
           })}
         </div>
       </div>

@@ -682,9 +682,16 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
     <>
       <Modal size="xl" show={show} onHide={hide} backdrop="static" keyboard={!uploadState.inProgress}>
         <Modal.Header closeButton={!uploadState.inProgress}>
-          <Modal.Title>
-            <UploadIcon className="me-2" />
-            Upload Objects to Branch &apos;{reference.id}&apos;
+          <Modal.Title style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+            <UploadIcon className="me-2" style={{ flexShrink: 0 }} />
+            <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Upload Objects to Branch &apos;</span>
+            <span style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              minWidth: 0
+            }} title={reference.id}>{reference.id}</span>
+            <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>&apos;</span>
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -1041,7 +1048,18 @@ const TreeContainer = ({
             }
           }} 
           onRevert={onReset}
-          changesTreeMessage={<p>Showing {changesResults.length} change{changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong></p>}
+          changesTreeMessage={
+            <p style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+              <span>Showing {changesResults.length} change{changesResults.length !== 1 ? 's' : ''} for branch</span>
+              <strong style={{
+                maxWidth: '300px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'inline-block'
+              }} title={reference.id}>{reference.id}</strong>
+            </p>
+          }
           noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
           emptyStateComponent={<EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />}
         />

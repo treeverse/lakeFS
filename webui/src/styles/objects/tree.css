@@ -18,6 +18,11 @@
   padding: 0;
 }
 
+.tree-container table {
+  table-layout: fixed;
+  width: 100%;
+}
+
 .tree-entry-row,
 .change-entry-row {
   transition: background-color var(--transition-fast);
@@ -30,6 +35,11 @@
 
 .tree-path {
   font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%; /* Limit path column to 60% of table width */
+  width: 60%;
 }
 
 .tree-path .octicon {
@@ -63,6 +73,23 @@
 .tree-path-action {
   cursor: pointer;
   color: var(--bs-nav-link-color);
+}
+
+/* Change summary and row actions alignment */
+.change-summary {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Row actions alignment and spacing */
+.change-entry-row-actions {
+  white-space: nowrap;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.change-entry-row-actions .btn {
+  margin-left: 0.5rem;
 }
 
 /* Gear icon visibility and alignment */
