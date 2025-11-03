@@ -3,6 +3,7 @@ package esti
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -20,6 +21,7 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/go-openapi/swag"
+	"github.com/go-test/deep"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/tags"
@@ -900,6 +902,90 @@ func TestS3CopyObject(t *testing.T) {
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
 		require.Equal(t, userMetadataReplace, destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
 	})
+}
+
+var errMissingPrefix = errors.New("missing prefix")
+
+// stripKeyPrefix strips prefix from all keys of m.  It returns an error along with a stripped
+// map if not all keys have the prefix.
+func stripKeyPrefix[T any](prefix string, m map[string]T) (map[string]T, error) {
+	ret := make(map[string]T, len(m))
+	var err error
+	for key, value := range m {
+		stripped, ok := strings.CutPrefix(key, prefix)
+		if !ok {
+			err = errors.Join(err, fmt.Errorf("%w in %s", errMissingPrefix, key))
+		}
+		ret[stripped] = value
+	}
+	return ret, err
+}
+
+func TestS3PutObjectUserMetadata(t *testing.T) {
+	t.Parallel()
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	const contents = "the quick brown fox jumps over the lazy dog."
+	// metadata are the metadata we want on the object.
+	metadata := map[string]string{
+		"Ascii":     "value",
+		"Non-Ascii": "והארץ היתה תהו ובהו", // "without form and void"
+	}
+	// encodedMetadata are the metadata a conforming client sends, with
+	// values Q-word encoded according to RFC 2047.
+	encodedMetadata := map[string]string{
+		"Ascii":     "value",
+		"Non-Ascii": "=?utf-8?q?=D7=95=D7=94=D7=90=D7=A8=D7=A5_=D7=94=D7=99=D7=AA=D7=94_=D7=AA?= =?utf-8?q?=D7=94=D7=95_=D7=95=D7=91=D7=94=D7=95?=",
+	}
+
+	// Headers are _supposed_ to be RFC 2047 encoded on upload.  But this should actually
+	// _always_ work, "non" is just illegal encoding.
+	for _, encode := range []string{"rfc2047", "none"} {
+		t.Run(encode, func(t *testing.T) {
+			file := fmt.Sprintf("data/file.%s", encode)
+			path := fmt.Sprintf("%sfile.%s", gatewayTestPrefix, encode)
+			s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
+
+			metadataToSend := metadata
+			if encode == "rfc2047" {
+				metadataToSend = encodedMetadata
+			}
+			_, err := s3lakefsClient.PutObject(ctx, repo, path, strings.NewReader(contents), int64(len(contents)),
+				minio.PutObjectOptions{
+					UserMetadata: metadataToSend,
+				})
+			require.NoError(t, err, "putObject")
+
+			info, err := s3lakefsClient.StatObject(ctx, repo, path, minio.StatObjectOptions{})
+			require.NoError(t, err, "statObject")
+
+			// The AWS golang SDK does _not_ decode RFC 2047 headers.  The check
+			// here is actually a minor bug because the gateway could choose a
+			// different encoding for the same headers.  But of course it uses the
+			// same encoder we used, so this should never happen.
+			if diffs := deep.Equal(info.UserMetadata, minio.StringMap(encodedMetadata)); diffs != nil {
+				t.Errorf("Different user metadata from S3 gateway: %s", diffs)
+			}
+
+			// The lakeFS API does not need to perform header encoding.  Use it to
+			// check that lakeFS sees the expected values.
+			statsResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{
+				Path:         file,
+				UserMetadata: aws.Bool(true),
+			})
+			require.NoError(t, err, "Call statObject using lakeFS API")
+			require.NoError(t, VerifyResponse(statsResp.HTTPResponse, statsResp.Body), "statObject using lakeFS API")
+
+			// Because of #9089, any user metadata uploaded through the S3 gateway
+			// has a x-aws-meta- prefix.
+			strippedMetadata, err := stripKeyPrefix("X-Amz-Meta-", statsResp.JSON200.Metadata.AdditionalProperties)
+			assert.NoErrorf(t, err, "Failed to strip prefix from metadata keys in %+v", statsResp.JSON200.Metadata.AdditionalProperties)
+			if diffs := deep.Equal(strippedMetadata, metadata); diffs != nil {
+				t.Errorf("Different user metadata from API: %s", diffs)
+			}
+		})
+	}
 }
 
 func TestS3PutObjectTagging(t *testing.T) {
