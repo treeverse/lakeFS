@@ -55,6 +55,10 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
+docs/IcebergLocalTable.md
+docs/IcebergPullRequest.md
+docs/IcebergPushRequest.md
+docs/IcebergRemoteTable.md
 docs/ImportApi.md
 docs/ImportCreation.md
 docs/ImportCreationResponse.md
@@ -98,6 +102,7 @@ docs/RefList.md
 docs/RefsApi.md
 docs/RefsDump.md
 docs/RefsRestore.md
+docs/RemotesApi.md
 docs/RepositoriesApi.md
 docs/Repository.md
 docs/RepositoryCreation.md
@@ -152,6 +157,7 @@ lakefs_sdk/api/metadata_api.py
 lakefs_sdk/api/objects_api.py
 lakefs_sdk/api/pulls_api.py
 lakefs_sdk/api/refs_api.py
+lakefs_sdk/api/remotes_api.py
 lakefs_sdk/api/repositories_api.py
 lakefs_sdk/api/staging_api.py
 lakefs_sdk/api/tags_api.py
@@ -204,6 +210,10 @@ lakefs_sdk/models/group_creation.py
 lakefs_sdk/models/group_list.py
 lakefs_sdk/models/hook_run.py
 lakefs_sdk/models/hook_run_list.py
+lakefs_sdk/models/iceberg_local_table.py
+lakefs_sdk/models/iceberg_pull_request.py
+lakefs_sdk/models/iceberg_push_request.py
+lakefs_sdk/models/iceberg_remote_table.py
 lakefs_sdk/models/import_creation.py
 lakefs_sdk/models/import_creation_response.py
 lakefs_sdk/models/import_location.py
@@ -333,6 +343,10 @@ test/test_group_list.py
 test/test_health_check_api.py
 test/test_hook_run.py
 test/test_hook_run_list.py
+test/test_iceberg_local_table.py
+test/test_iceberg_pull_request.py
+test/test_iceberg_push_request.py
+test/test_iceberg_remote_table.py
 test/test_import_api.py
 test/test_import_creation.py
 test/test_import_creation_response.py
@@ -376,6 +390,7 @@ test/test_ref_list.py
 test/test_refs_api.py
 test/test_refs_dump.py
 test/test_refs_restore.py
+test/test_remotes_api.py
 test/test_repositories_api.py
 test/test_repository.py
 test/test_repository_creation.py

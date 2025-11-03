@@ -58,6 +58,10 @@ from lakefs_sdk.models.group_creation import GroupCreation
 from lakefs_sdk.models.group_list import GroupList
 from lakefs_sdk.models.hook_run import HookRun
 from lakefs_sdk.models.hook_run_list import HookRunList
+from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
+from lakefs_sdk.models.iceberg_pull_request import IcebergPullRequest
+from lakefs_sdk.models.iceberg_push_request import IcebergPushRequest
+from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
 from lakefs_sdk.models.import_creation import ImportCreation
 from lakefs_sdk.models.import_creation_response import ImportCreationResponse
 from lakefs_sdk.models.import_location import ImportLocation
