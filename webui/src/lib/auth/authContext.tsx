@@ -1,52 +1,45 @@
 import React, {createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api";
+import {buildNextFromWindow, isPublicAuthRoute, ROUTES} from "../utils";
 
 export const AUTH_STATUS = {
     AUTHENTICATED: "authenticated",
     UNAUTHENTICATED: "unauthenticated",
-    UNKNOWN: "unknown",
+    PENDING: "pending",
 } as const;
 
 export type AuthStatus = typeof AUTH_STATUS[keyof typeof AUTH_STATUS];
 
 type AuthContextType = {
     status: AuthStatus;
-    setAuthStatus: (s: AuthStatus) => void;
+    setStatus: (s: AuthStatus) => void;
     onUnauthorized: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const isPublicAuthRoute = (path: string) => {
-    if (path === "/auth/login") return true;
-    return path.startsWith("/auth/oidc");
-};
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [status, setStatus] = useState<AuthStatus>(AUTH_STATUS.UNKNOWN);
+    const [status, setStatus] = useState<AuthStatus>(AUTH_STATUS.PENDING);
     const navigate = useNavigate();
 
     const onUnauthorized = useCallback(() => {
         auth.clearCurrentUser();
         setStatus(AUTH_STATUS.UNAUTHENTICATED);
         const path = window.location.pathname;
-        const next = path + (window.location.search || "") + (window.location.hash || "");
+        const next = buildNextFromWindow();
         if (!isPublicAuthRoute(path)) {
-            navigate("/auth/login", {
-                replace: true,
-                state: { redirected: true, next },
-            });
+            navigate(ROUTES.LOGIN, { replace: true, state: { redirected: true, next } });
         }
     }, [navigate]);
 
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
-            const stored = window.sessionStorage.getItem("post_login_next");
+            const stored = window.sessionStorage.getItem("lakefs_post_login_next");
             if (stored && stored.startsWith("/")) {
-                window.sessionStorage.removeItem("post_login_next");
-                const here = window.location.pathname + (window.location.search || "") + (window.location.hash || "");
-                if (here !== stored) {
+                window.sessionStorage.removeItem("lakefs_post_login_next");
+                const next = buildNextFromWindow();
+                if (next !== stored) {
                     navigate(stored, { replace: true });
                 }
             }
@@ -56,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const value = useMemo<AuthContextType>(
         () => ({
             status,
-            setAuthStatus: setStatus,
+            setStatus,
             onUnauthorized,
         }),
         [status, onUnauthorized]

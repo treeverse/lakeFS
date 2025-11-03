@@ -9,6 +9,7 @@ import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 import {AUTH_STATUS, useAuth} from "../../lib/auth/authContext";
 import {Navigate, useLocation} from "react-router-dom";
+import {buildUrl, isTrue, normalizeNext, queryOf, stripParam} from "../../lib/utils";
 
 interface SetupResponse {
     state: string;
@@ -41,16 +42,13 @@ const withNext = (url: string, next: string) => {
     }
 };
 
-const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
-    const st = (location.state as { redirected?: boolean; next?: string } | null) ?? null;
-    const qp = new URLSearchParams(location.search);
-    const redirectedFromQuery = qp.get("redirected") === "true";
-    const redirected = Boolean(st?.redirected) || redirectedFromQuery;
-    const rawNext = st?.next ?? qp.get("next") ?? "/";
-    const next = rawNext.startsWith("/") ? rawNext : "/";
-    qp.delete("redirected");
-    const qs = qp.toString();
-    const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
+export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
+    const st = location.state ?? {};
+    const qp = queryOf(location);
+    const redirectedFromQuery = isTrue(qp.get("redirected"));
+    const redirected = Boolean(st.redirected) || redirectedFromQuery;
+    const next = normalizeNext(st.next ?? qp.get("next"));
+    const cleanUrl = buildUrl(location, stripParam(qp, "redirected"));
 
     return { redirected, redirectedFromQuery, next, cleanUrl };
 };
@@ -67,9 +65,8 @@ const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
 };
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
-    const router = useRouter();
     const location = useLocation();
-    const { setAuthStatus } = useAuth();
+    const { setStatus } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
     const loginState = (location.state as { next?: string; redirected?: boolean } | null) ?? null;
     const search = new URLSearchParams(location.search);
@@ -95,8 +92,8 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const username = formData.get('username');
                             const password = formData.get('password');
                             await auth.login(username, password);
-                            setAuthStatus(AUTH_STATUS.AUTHENTICATED);
-                            router.navigate(next, { replace: true });
+                            window.sessionStorage.setItem("lakefs_post_login_next", next);
+                            setStatus(AUTH_STATUS.AUTHENTICATED);
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {
                                 const contents = {__html: `${loginConfig.login_failed_message}` ||
@@ -137,7 +134,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                     <div className={"mt-2 mb-1"}>
                         { loginConfig.fallback_login_url ?
                             <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
-                                window.sessionStorage.setItem("post_login_next", next);
+                                window.sessionStorage.setItem("lakefs_post_login_next", next);
                                 loginConfig.login_cookie_names?.forEach(
                                     cookie => {
                                         document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
@@ -165,7 +162,7 @@ const LoginPage = () => {
     const setupResponse = response as SetupResponse | null;
     const { redirected, redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
 
-    useEffect(() => {if (next) window.sessionStorage.setItem("post_login_next", next);}, [next]);
+    useEffect(() => {if (next) window.sessionStorage.setItem("lakefs_post_login_next", next);}, [next]);
 
     if (loading) return <Loading />;
 
@@ -180,7 +177,7 @@ const LoginPage = () => {
     if (redirectedFromQuery) return <DoNavigate to={cleanUrl} replace state={{ redirected: true, next }} />;
 
     if (status === AUTH_STATUS.AUTHENTICATED) {
-        const stored = window.sessionStorage.getItem("post_login_next");
+        const stored = window.sessionStorage.getItem("lakefs_post_login_next");
         if (stored?.startsWith("/")) return <DoNavigate to={stored} replace />;
     }
 
