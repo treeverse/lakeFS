@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -23,6 +24,11 @@ If that URL does not open automatically, please open it manually and log in.
 type webLoginParams struct {
 	RedirectURL string
 }
+
+var (
+	errTryAgain     = errors.New("HTTP request failed; retry")
+	errDontTryAgain = backoff.Permanent(errors.New("failed to get token"))
+)
 
 var loginCmd = &cobra.Command{
 	Use:     "login",
@@ -58,6 +64,12 @@ var loginCmd = &cobra.Command{
 				if err != nil {
 					return nil, err
 				}
+				if resp.JSON404 != nil {
+					return nil, errTryAgain
+				}
+				if resp.JSON200 == nil {
+					return nil, errDontTryAgain
+				}
 				return resp.JSON200, nil
 			},
 			// Initial backoff is rapid, in case user is already logged in.  Then
@@ -72,8 +84,9 @@ var loginCmd = &cobra.Command{
 			DieErr(fmt.Errorf("get login token: %w", err))
 		}
 
-		// BUG(ariels): Remove!
-		fmt.Printf("TOKEN: %s\nExpires: %d\n", loginToken.Token, *loginToken.TokenExpiration)
+		if loginToken == nil {
+			Die("nil login token", 2)
+		}
 
 		cache := getTokenCacheOnce()
 		err = cache.SaveToken(loginToken)
