@@ -186,6 +186,7 @@ require (
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/samber/mo v1.11.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect

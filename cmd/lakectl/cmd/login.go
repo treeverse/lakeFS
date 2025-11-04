@@ -8,17 +8,19 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
 	// TODO(ariels): Underline the link?
-	webLoginTemplate = `Opening {{.RedirectURL|bold|blue}} where you should log in.
-
-If that URL does not open automatically, please open it manually and log in.
+	webLoginTemplate = `Opening {{.RedirectURL | blue | underline}} where you should log in.
+If it does not open automatically, please try to open it manually and log in.
 `
-	loggedInTemplate = `Logged in as {{.Username}}.`
+	loggedInTemplate = `
+[{{.Time | green}}] {{"Logged in." | green | bold}}
+`
 )
 
 type webLoginParams struct {
@@ -56,8 +58,11 @@ var loginCmd = &cobra.Command{
 		redirectURL := serverURL.ResolveReference(relativeLocation)
 
 		Write(webLoginTemplate, webLoginParams{RedirectURL: redirectURL.String()})
-		// TODO(ariels): Open redirectURL (xdg-open on Linux, something on MacOS, maybe
-		//     a library does it?)
+		err = open.Run(redirectURL.String())
+		if err != nil {
+			Warning(fmt.Sprintf("Failed to open URL: %s", err.Error()))
+			// Keep going, user can manually use the URL.
+		}
 
 		loginToken, err := backoff.RetryWithData(
 			func() (*apigen.AuthenticationToken, error) {
@@ -94,6 +99,8 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			DieErr(fmt.Errorf("save login token: %w", err))
 		}
+
+		Write(loggedInTemplate, struct{ Time string }{Time: time.Now().Format(time.DateTime)})
 	},
 }
 
