@@ -932,10 +932,10 @@ type UserData struct {
 }
 
 var (
-	textHTML                         = contenttype.MediaType{"text", "html", nil}
+	textHTML                         = contenttype.MediaType{Type: "text", Subtype: "html"}
 	releaseTokenAcceptableMediaTypes = []contenttype.MediaType{
 		textHTML,
-		{"*", "*", nil},
+		{Type: "*", Subtype: "*"},
 	}
 )
 

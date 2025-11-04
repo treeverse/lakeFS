@@ -26,8 +26,9 @@ type webLoginParams struct {
 }
 
 var (
-	errTryAgain     = errors.New("HTTP request failed; retry")
-	errDontTryAgain = backoff.Permanent(errors.New("failed to get token"))
+	errTryAgain                     = errors.New("HTTP request failed; retry")
+	errFailedToGetToken             = errors.New("failed to get token")
+	errFailedToGetTokenDontTryAgain = backoff.Permanent(errFailedToGetToken)
 )
 
 var loginCmd = &cobra.Command{
@@ -38,7 +39,7 @@ var loginCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, _ []string) {
 		serverURL, err := url.Parse(cfg.Server.EndpointURL.String())
 		if err != nil {
-			DieErr(fmt.Errorf("Get server URL %s: %w", cfg.Server.EndpointURL, err))
+			DieErr(fmt.Errorf("get server URL %s: %w", cfg.Server.EndpointURL, err))
 		}
 
 		client := getClient()
@@ -48,7 +49,7 @@ var loginCmd = &cobra.Command{
 		header := tokenRedirect.HTTPResponse.Header
 		relativeLocation, err := url.Parse(header.Get("location"))
 		if err != nil {
-			DieErr(fmt.Errorf("Parse relative redirect URL %s: %w", header.Get("location"), err))
+			DieErr(fmt.Errorf("parse relative redirect URL %s: %w", header.Get("location"), err))
 		}
 		mailbox := header.Get("x-lakefs-mailbox")
 
@@ -68,7 +69,7 @@ var loginCmd = &cobra.Command{
 					return nil, errTryAgain
 				}
 				if resp.JSON200 == nil {
-					return nil, errDontTryAgain
+					return nil, errFailedToGetTokenDontTryAgain
 				}
 				return resp.JSON200, nil
 			},
@@ -85,7 +86,7 @@ var loginCmd = &cobra.Command{
 		}
 
 		if loginToken == nil {
-			Die("nil login token", 2)
+			Die("nil login token", 1)
 		}
 
 		cache := getTokenCacheOnce()
