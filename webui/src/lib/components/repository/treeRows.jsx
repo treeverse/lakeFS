@@ -122,12 +122,14 @@ const TableRow = ({diffIndicator, depth, loading, showSummary, entry, getMore, r
                                 {pathSection}
                             </span>
                             {onExpand && <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand}/>}
-                            {loading ? <ClockIcon style={{ marginLeft: '4px', flexShrink: 0 }}/> : ""}
                         </span>
             </td>
             <td className={"change-summary"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
             <td className={"change-entry-row-actions"}>
-                <ChangeRowActions actions={rowActions} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexDirection: 'row-reverse', justifyContent: 'flex-start' }}>
+                    <ChangeRowActions actions={rowActions} />
+                    {loading && <ClockIcon style={{ flexShrink: 0 }}/>}
+                </div>
                 <ConfirmationModal show={showRevertConfirm} onHide={setShowRevertConfirm}
                                    msg={`Are you sure you wish to revert "${entry.path}" (${entry.type})?`}
                                    onConfirm={() => onRevert(entry)}/>
