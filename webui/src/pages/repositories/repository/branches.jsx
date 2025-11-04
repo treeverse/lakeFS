@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     AlertError, LinkButton,
-    Loading, PrefixSearchWidget, RefreshButton
+    Loading, PrefixSearchWidget, RefreshButton, TruncatedText
 } from "../../../lib/components/controls";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
@@ -43,7 +43,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
     const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
         <>
-            Are you sure you wish to delete branch <strong>{branch.id}</strong> ?
+            Are you sure you wish to delete branch <strong title={branch.id}><TruncatedText text={branch.id} maxLength={50} /></strong> ?
         </>
     );
     if (branch.id === ImportBranchName) {
