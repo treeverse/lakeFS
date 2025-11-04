@@ -74,6 +74,7 @@ func TestColors(t *testing.T) {
 		{name: "boldgreen", template: `{{"abc" | bold | green}}def`, want: "\x1b[1;92mabc\x1b[0mdef"},
 		{name: "greenbold", template: `{{"abc" | green | bold}}def`, want: "\x1b[92;1mabc\x1b[0mdef"},
 		{name: "redunderline", template: `{{"abc" | red | underline}}def`, want: "\x1b[91;4mabc\x1b[0mdef"},
+		{name: "red-number", template: `{{2 | red}}`, want: "\x1b[91m2\x1b[0m"},
 	}
 
 	for _, tc := range tests {

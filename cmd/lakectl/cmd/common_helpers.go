@@ -110,14 +110,10 @@ func (c ColoredText) Add(color text.Color) ColoredText {
 
 // Colored returns text as ColoredText with no Color if it is not already ColoredText.
 func Colored(text interface{}) ColoredText {
-	switch t := text.(type) {
-	case string:
-		return ColoredText{Colors: nil, Text: t}
-	case ColoredText:
-		return t
-	default:
-		panic(fmt.Sprintf("Cannot color %s of type %T", text, text))
+	if c, ok := text.(ColoredText); ok {
+		return c
 	}
+	return ColoredText{Colors: nil, Text: text}
 }
 
 func WriteTo(tpl string, data interface{}, w io.Writer) {
