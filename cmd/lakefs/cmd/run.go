@@ -25,6 +25,7 @@ import (
 	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
+	icebergcatalogfactory "github.com/treeverse/lakefs/modules/icebergcatalog/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -110,6 +111,11 @@ var runCmd = &cobra.Command{
 		err = licenseManager.ValidateLicense()
 		if err != nil {
 			logger.WithError(err).Fatal("License validation failed")
+		}
+
+		icebergSyncManager, err := icebergcatalogfactory.NewSyncManager(ctx, cfg)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create iceberg catalog sync manager")
 		}
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
@@ -250,6 +256,7 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			usageReporter,
 			licenseManager,
+			icebergSyncManager,
 		)
 
 		// init gateway server

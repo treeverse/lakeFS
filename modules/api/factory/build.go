@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/icebergcatalog"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -26,6 +27,7 @@ type ServiceDependencies struct {
 	Collector             stats.Collector
 	Logger                logging.Logger
 	LicenseManager        license.Manager
+	IcebergSyncManager    icebergcatalog.SyncManager
 }
 
 func RegisterServices(ctx context.Context, sd ServiceDependencies, router *chi.Mux) error {
