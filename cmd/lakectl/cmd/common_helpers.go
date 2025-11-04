@@ -100,7 +100,7 @@ func (c ColoredText) String() string {
 	return c.Colors.Sprint(c.Text)
 }
 
-// Add adds color to c and returns it.  It modifies c.
+// Add returns c with color added to it.
 func (c ColoredText) Add(color text.Color) ColoredText {
 	return ColoredText{
 		Colors: append(c.Colors, color),
