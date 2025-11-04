@@ -668,6 +668,9 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 	logger := logging.ContextUnavailable().WithField("component", "client_auth")
 
 	if awsIAMparams == nil {
+		if token == nil {
+			return nil
+		}
 		return []apigen.ClientOption{
 			internalidp.WithLoginTokenAuth(logger, internalidp.NewFixedLoginClient(token.Token)),
 		}
