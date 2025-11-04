@@ -113,10 +113,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("License validation failed")
 		}
 
-		icebergSyncManager, err := icebergcatalogfactory.NewSyncManager(ctx, cfg)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to create iceberg catalog sync manager")
-		}
+		icebergSyncManager := icebergcatalogfactory.NewSyncManager(cfg)
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)

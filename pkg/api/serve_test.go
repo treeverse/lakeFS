@@ -169,7 +169,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	icebergSyncManager, _ := icebergcatalogfactory.NewSyncManager(ctx, cfg)
+	icebergSyncManager := icebergcatalogfactory.NewSyncManager(cfg)
 	logger := logging.ContextUnavailable()
 	handler := api.Serve(
 		cfg,
