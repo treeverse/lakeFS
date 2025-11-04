@@ -2147,15 +2147,6 @@ components:
           default: false
           description: Creates namespace in local catalog if not exist
 
-    ReleaseToken:
-      type: object
-      required:
-        - token
-      properties:
-        token:
-          type: string
-          description: Login request token to release
-
 paths:
   /setup_comm_prefs:
     post:
@@ -3292,19 +3283,22 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/get-token/release-token:
-    post:
+  /auth/get-token/release-token/{loginRequestToken}:
+    parameters:
+      - in: path
+        # The mailbox is secret.  It is identified by the loginRequestToken
+        # - a JWT which is _not_ secret.  So it can safely go in the header.
+        name: loginRequestToken
+        required: true
+        schema:
+          type: string
+        description: login request token returned by getTokenRedirect.
+    get:                        # Called by opening a URL on the browser!
       tags:
         - auth
         - experimental
       operationId: releaseTokenToMailbox
       summary: release a token for the current (authenticated) user to the mailbox of this login request.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ReleaseToken"
       responses:
         204:
           description: token released

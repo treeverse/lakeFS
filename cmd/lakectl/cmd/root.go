@@ -26,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
+	"github.com/treeverse/lakefs/pkg/authentication/internalidp"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/git"
 	giterror "github.com/treeverse/lakefs/pkg/git/errors"
@@ -627,8 +628,8 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
-	useIAMAuth := awsIAMparams != nil && accessKeyID == "" && secretAccessKey == ""
-	if useIAMAuth {
+	useJWTAuth := accessKeyID == "" && secretAccessKey == ""
+	if useJWTAuth {
 		opts = getClientOptions(awsIAMparams, serverEndpoint)
 	}
 
@@ -664,6 +665,14 @@ func CreateTokenCacheCallback() awsiam.TokenCacheCallback {
 func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
 	token := getTokenOnce()
 
+	logger := logging.ContextUnavailable().WithField("component", "client_auth")
+
+	if awsIAMparams == nil {
+		return []apigen.ClientOption{
+			internalidp.WithLoginTokenAuth(logger, internalidp.NewFixedLoginClient(token.Token)),
+		}
+	}
+
 	tokenCacheCallback := CreateTokenCacheCallback()
 
 	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
@@ -683,7 +692,7 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 
 	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
 		awsIAMparams,
-		logging.ContextUnavailable(),
+		logger,
 		loginClient,
 		token,
 		tokenCacheCallback,

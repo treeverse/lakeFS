@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/elnormous/contenttype"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
@@ -883,6 +885,7 @@ func (c *Controller) GetTokenRedirect(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", redirect.RedirectURL)
 	w.Header().Set("X-LakeFS-Mailbox", redirect.Mailbox)
+
 	writeResponse(w, r, http.StatusOK, nil)
 }
 
@@ -894,6 +897,17 @@ func (c *Controller) GetTokenFromMailbox(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	// This call is repeated, so only log after we've found the token is valid.
+	c.LogAction(ctx, "get_token_from_mailbox", r, "", "", "")
+
+	c.Logger.
+		WithContext(r.Context()).
+		WithFields(logging.Fields{
+			"mailbox":          mailbox,
+			"token_expiration": expiresAt,
+		}).
+		Debug("Got login token")
+
 	response := apigen.AuthenticationToken{
 		Token:           token,
 		TokenExpiration: swag.Int64(expiresAt.Unix()),
@@ -901,16 +915,79 @@ func (c *Controller) GetTokenFromMailbox(w http.ResponseWriter, r *http.Request,
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Request, params apigen.ReleaseTokenToMailboxJSONRequestBody) {
+var releasedTokenTemplate = template.Must(
+	template.New("released-token").
+		Parse(`{{define "releasedToken" -}}
+<!doctype html>
+<html>
+  <title>Logged in</title>
+  <body>
+  <div>You are logged in as <code>{{.Username}}</code>.  It is safe to close this window.</div>
+  </body>
+</html>
+{{- end}}`))
+
+type UserData struct {
+	Username string
+}
+
+var (
+	textHTML                         = contenttype.MediaType{"text", "html", nil}
+	releaseTokenAcceptableMediaTypes = []contenttype.MediaType{
+		textHTML,
+		{"*", "*", nil},
+	}
+)
+
+func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Request, loginRequestToken string) {
 	ctx := r.Context()
 
-	loginRequestToken := params.Token
+	c.LogAction(ctx, "release_token_to_mailbox", r, "", "", "")
+
 	// Release will release a token for the authenticated user.
 	err := c.loginTokenProvider.Release(ctx, loginRequestToken)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusNoContent, nil)
+
+	mediaType, _, err := contenttype.GetAcceptableMediaType(r, releaseTokenAcceptableMediaTypes)
+	if err != nil {
+		c.Logger.
+			WithContext(r.Context()).
+			WithError(err).
+			WithField("accept", r.Header.Get("Accept")).
+			Warn("Failed to parse Content-Type - no user-friendly page")
+		// Keep going - errors are safe here, at worst the user will not get a pretty page.
+	}
+
+	switch {
+	case mediaType.EqualsMIME(textHTML):
+		username := ""
+		user, err := auth.GetUser(ctx)
+		if err != nil {
+			// Errors are safe here, at worst we won't tell user their name.
+			c.Logger.
+				WithContext(r.Context()).
+				WithError(err).
+				WithField("accept", r.Header.Get("Accept")).
+				Warn("Failed to get user - they won't see their logged-in name on the page")
+		}
+		if user != nil {
+			username = user.Username
+		}
+		// This endpoint is _usually_ visited by a browser.  Report to the user that
+		// they logged in, telling them the name they used to log in.
+		httputil.KeepPrivate(w)
+
+		err = releasedTokenTemplate.ExecuteTemplate(w, "releasedToken", &UserData{Username: username})
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	default:
+		writeResponse(w, r, http.StatusNoContent, nil)
+	}
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
@@ -4970,11 +5047,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("Last-Modified", lastModified)
 	w.Header().Set("Content-Type", entry.ContentType)
 	// for security, make sure the browser and any proxies en route don't cache the response
-	w.Header().Set("Cache-Control", "no-store, must-revalidate")
-	w.Header().Set("Expires", "0")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
-	w.Header().Set("Content-Security-Policy", "default-src 'none'")
+	httputil.KeepPrivate(w)
 	w.Header().Set("Content-Disposition", "attachment")
 
 	// handle partial response if byte range supplied
@@ -6234,8 +6307,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 
 	// base on content-type return plain text or json (default)
 	if r.Header.Get("Accept") == "text/plain" {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
+		httputil.KeepPrivate(w)
 		_, _ = fmt.Fprintf(w, "Usage for installation ID: %s\n", installationID)
 		for _, rec := range records {
 			_, _ = fmt.Fprintf(w, "%d-%02d: %12d\n", rec.Year, rec.Month, rec.Count)
