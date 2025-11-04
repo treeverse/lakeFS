@@ -68,8 +68,9 @@ const (
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
 
-	DumpRefsTaskIDPrefix    = "DR"
-	RestoreRefsTaskIDPrefix = "RR"
+	DumpRefsTaskIDPrefix                  = "DR"
+	RestoreRefsTaskIDPrefix               = "RR"
+	GarbageCollectionPrepareCommitsPrefix = "GCPC"
 
 	TaskExpiryTime = 24 * time.Hour
 
@@ -2700,6 +2701,64 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 		return nil, graveler.ErrReadOnlyRepository
 	}
 	return c.Store.SaveGarbageCollectionCommits(ctx, repository)
+}
+
+func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID string) (string, error) {
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+	}); err != nil {
+		return "", err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+	if repository.ReadOnly {
+		return "", graveler.ErrReadOnlyRepository
+	}
+
+	taskStatus := &GarbageCollectionPrepareStatus{}
+	taskSteps := []taskStep{
+		{
+			Name: "prepare expired commits",
+			Func: func(ctx context.Context) error {
+				gcRunMetadata, err := c.Store.SaveGarbageCollectionCommits(ctx, repository)
+				if err != nil {
+					return err
+				}
+				taskStatus.Info = &GarbageCollectionPrepareCommitsInfo{
+					RunId:               gcRunMetadata.RunID,
+					GcCommitsLocation:   gcRunMetadata.CommitsCSVLocation,
+					GcAddressesLocation: gcRunMetadata.AddressLocation,
+				}
+				return nil
+			},
+		},
+	}
+
+	taskID := NewTaskID(GarbageCollectionPrepareCommitsPrefix)
+	err = c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	if err != nil {
+		return "", err
+	}
+	return taskID, nil
+}
+
+func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	if !IsTaskID(GarbageCollectionPrepareCommitsPrefix, id) {
+		return nil, graveler.ErrNotFound
+	}
+
+	var taskStatus GarbageCollectionPrepareStatus
+	err = GetTaskStatus(ctx, c.KVStore, repository, id, &taskStatus)
+	if err != nil {
+		return nil, err
+	}
+	return &taskStatus, nil
 }
 
 // GCUncommittedMark Marks the *next* item to be scanned by the paginated call to PrepareGCUncommitted

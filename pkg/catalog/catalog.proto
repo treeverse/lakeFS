@@ -1,59 +1,73 @@
 syntax = "proto3";
-option go_package = "github.com/treevese/lakefs/catalog";
-
-import "google/protobuf/timestamp.proto";
 
 package catalog;
 
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/treevese/lakefs/catalog";
+
 message Entry {
-	string address = 1;
-	google.protobuf.Timestamp last_modified = 2;
-	int64 size = 3;
-	string e_tag = 4;
-	map<string,string> metadata = 5;
-	enum AddressType {
-		// Deprecated.
-		// Unknown address type (should only exist for old commits)
-		// is resolved (to Relative or Full) by the prefix of the address.
-		BY_PREFIX_DEPRECATED = 0;
-		RELATIVE = 1;
-		FULL = 2;
-	}
-	AddressType address_type = 6;
-	string content_type = 7;
+  string address = 1;
+  google.protobuf.Timestamp last_modified = 2;
+  int64 size = 3;
+  string e_tag = 4;
+  map<string, string> metadata = 5;
+  enum AddressType {
+    // Deprecated.
+    // Unknown address type (should only exist for old commits)
+    // is resolved (to Relative or Full) by the prefix of the address.
+    BY_PREFIX_DEPRECATED = 0;
+    RELATIVE = 1;
+    FULL = 2;
+  }
+  AddressType address_type = 6;
+  string content_type = 7;
 }
 
 // Task is a generic task status message
 message Task {
-	string id = 1;
-	bool done = 2;
-	google.protobuf.Timestamp updated_at = 3;
-	int64 progress = 4;
-	string error = 5;
+  string id = 1;
+  bool done = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  int64 progress = 4;
+  string error = 5;
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
 message RepositoryDumpInfo {
-	string commits_metarange_id = 1;
-	string tags_metarange_id = 2;
-	string branches_metarange_id = 3;
+  string commits_metarange_id = 1;
+  string tags_metarange_id = 2;
+  string branches_metarange_id = 3;
 }
 
 // RepositoryDumpStatus holds the status of a repository dump
 message RepositoryDumpStatus {
-	Task task = 1;
-	RepositoryDumpInfo info = 2;
+  Task task = 1;
+  RepositoryDumpInfo info = 2;
 }
 
 // RepositoryRestoreStatus holds the status of a repository restore
 message RepositoryRestoreStatus {
-	Task task = 1;
+  Task task = 1;
+}
+
+// GarbageCollectionPrepareCommitsInfo holds the result of a GC prepare
+// operation
+message GarbageCollectionPrepareCommitsInfo {
+  string run_id = 1;
+  string gc_commits_location = 2;
+  string gc_addresses_location = 3;
+  string gc_commits_presigned_url = 4;
+}
+
+// GarbageCollectionPrepareStatus holds the status of a GC prepare operation
+message GarbageCollectionPrepareStatus {
+  Task task = 1;
+  GarbageCollectionPrepareCommitsInfo info = 2;
 }
 
 // TaskMsg described generic message with Task field
 // used for all status messages and for cleanup messages
 message TaskMsg {
-	Task task = 1;
+  Task task = 1;
 }
-
-
