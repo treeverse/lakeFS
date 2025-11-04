@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 func TestIsValidAccessKeyID(t *testing.T) {
@@ -49,6 +52,40 @@ func TestIsValidSecretAccessKey(t *testing.T) {
 			if got := IsValidSecretAccessKey(tt.args.secretAccessKey); got != tt.want {
 				t.Errorf("IsValidSecretAccessKey() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestColors(t *testing.T) {
+	text.EnableColors()
+	defer text.DisableColors()
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{name: "plain", template: `abc`, want: "abc"},
+		{name: "red", template: `{{"abc" | red}}def`, want: "\x1b[91mabc\x1b[0mdef"},
+		{name: "yellow", template: `{{"abc" | yellow}}def`, want: "\x1b[93mabc\x1b[0mdef"},
+		{name: "green", template: `{{"abc" | green}}def`, want: "\x1b[92mabc\x1b[0mdef"},
+		{name: "blue", template: `{{"abc" | blue}}def`, want: "\x1b[94mabc\x1b[0mdef"},
+		{name: "bold", template: `{{"abc" | bold}}def`, want: "\x1b[1mabc\x1b[0mdef"},
+		{name: "underline", template: `{{"abc" | underline}}def`, want: "\x1b[4mabc\x1b[0mdef"},
+		{name: "boldgreen", template: `{{"abc" | bold | green}}def`, want: "\x1b[1;92mabc\x1b[0mdef"},
+		{name: "greenbold", template: `{{"abc" | green | bold}}def`, want: "\x1b[92;1mabc\x1b[0mdef"},
+		{name: "redunderline", template: `{{"abc" | red | underline}}def`, want: "\x1b[91;4mabc\x1b[0mdef"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			w := strings.Builder{}
+			WriteTo(tc.template, nil, &w)
+			got := w.String()
+			if got != tc.want {
+				t.Errorf("%s got %q want %q", tc.template, got, tc.want)
+			}
+			// Show off the nice colors!
+			t.Log(got)
 		})
 	}
 }
