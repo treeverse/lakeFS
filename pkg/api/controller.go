@@ -6307,17 +6307,7 @@ func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, bo
 	ctx := r.Context()
 	c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
 
-	// Convert JSON request body type to canonical request type expected by SyncManager
-	var req apigen.IcebergPullRequest
-	if b, err := json.Marshal(body); err != nil {
-		writeError(w, r, http.StatusBadRequest, err)
-		return
-	} else if err := json.Unmarshal(b, &req); err != nil {
-		writeError(w, r, http.StatusBadRequest, err)
-		return
-	}
-
-	err := c.icebergSyncManager.Pull(catalog, req)
+	err := c.icebergSyncManager.Pull(catalog, apigen.IcebergPullRequest(body))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -6328,17 +6318,7 @@ func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, bo
 	ctx := r.Context()
 	c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
 
-	// Convert JSON request body type to canonical request type expected by SyncManager
-	var req apigen.IcebergPushRequest
-	if b, err := json.Marshal(body); err != nil {
-		writeError(w, r, http.StatusBadRequest, err)
-		return
-	} else if err := json.Unmarshal(b, &req); err != nil {
-		writeError(w, r, http.StatusBadRequest, err)
-		return
-	}
-
-	err := c.icebergSyncManager.Push(catalog, req)
+	err := c.icebergSyncManager.Push(catalog, apigen.IcebergPushRequest(body))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
