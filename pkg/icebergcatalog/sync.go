@@ -2,6 +2,7 @@ package icebergcatalog
 
 import (
 	"errors"
+	
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
