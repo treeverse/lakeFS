@@ -20,7 +20,7 @@ All URIs are relative to */api/v1*
 | [**listPullRequests**](ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests |
 | [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
 | [**mergePullRequest**](ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request |
-| [**releaseTokenToMailbox**](ExperimentalApi.md#releaseTokenToMailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request. |
+| [**releaseTokenToMailbox**](ExperimentalApi.md#releaseTokenToMailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request. |
 | [**stsLogin**](ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS |
 | [**updateObjectUserMetadata**](ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata |
 | [**updatePullRequest**](ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request |
@@ -1516,7 +1516,7 @@ public class Example {
 
 <a id="releaseTokenToMailbox"></a>
 # **releaseTokenToMailbox**
-> releaseTokenToMailbox(releaseToken).execute();
+> releaseTokenToMailbox(loginRequestToken).execute();
 
 release a token for the current (authenticated) user to the mailbox of this login request.
 
@@ -1563,9 +1563,9 @@ public class Example {
     jwt_token.setBearerToken("BEARER TOKEN");
 
     ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
-    ReleaseToken releaseToken = new ReleaseToken(); // ReleaseToken | 
+    String loginRequestToken = "loginRequestToken_example"; // String | login request token returned by getTokenRedirect.
     try {
-      apiInstance.releaseTokenToMailbox(releaseToken)
+      apiInstance.releaseTokenToMailbox(loginRequestToken)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling ExperimentalApi#releaseTokenToMailbox");
@@ -1582,7 +1582,7 @@ public class Example {
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **releaseToken** | [**ReleaseToken**](ReleaseToken.md)|  | |
+| **loginRequestToken** | **String**| login request token returned by getTokenRedirect. | |
 
 ### Return type
 
@@ -1594,7 +1594,7 @@ null (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details

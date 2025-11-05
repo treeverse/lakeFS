@@ -45,7 +45,6 @@ import io.lakefs.clients.sdk.model.GroupList;
 import io.lakefs.clients.sdk.model.LoginInformation;
 import io.lakefs.clients.sdk.model.Policy;
 import io.lakefs.clients.sdk.model.PolicyList;
-import io.lakefs.clients.sdk.model.ReleaseToken;
 import io.lakefs.clients.sdk.model.User;
 import io.lakefs.clients.sdk.model.UserCreation;
 import io.lakefs.clients.sdk.model.UserList;
@@ -6873,7 +6872,7 @@ public class AuthApi {
     public APIoauthCallbackRequest oauthCallback() {
         return new APIoauthCallbackRequest();
     }
-    private okhttp3.Call releaseTokenToMailboxCall(ReleaseToken releaseToken, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call releaseTokenToMailboxCall(String loginRequestToken, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -6887,10 +6886,11 @@ public class AuthApi {
             basePath = null;
         }
 
-        Object localVarPostBody = releaseToken;
+        Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/auth/get-token/release-token";
+        String localVarPath = "/auth/get-token/release-token/{loginRequestToken}"
+            .replace("{" + "loginRequestToken" + "}", localVarApiClient.escapeString(loginRequestToken.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -6907,7 +6907,6 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
-            "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         if (localVarContentType != null) {
@@ -6915,38 +6914,38 @@ public class AuthApi {
         }
 
         String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call releaseTokenToMailboxValidateBeforeCall(ReleaseToken releaseToken, final ApiCallback _callback) throws ApiException {
-        // verify the required parameter 'releaseToken' is set
-        if (releaseToken == null) {
-            throw new ApiException("Missing the required parameter 'releaseToken' when calling releaseTokenToMailbox(Async)");
+    private okhttp3.Call releaseTokenToMailboxValidateBeforeCall(String loginRequestToken, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'loginRequestToken' is set
+        if (loginRequestToken == null) {
+            throw new ApiException("Missing the required parameter 'loginRequestToken' when calling releaseTokenToMailbox(Async)");
         }
 
-        return releaseTokenToMailboxCall(releaseToken, _callback);
+        return releaseTokenToMailboxCall(loginRequestToken, _callback);
 
     }
 
 
-    private ApiResponse<Void> releaseTokenToMailboxWithHttpInfo(ReleaseToken releaseToken) throws ApiException {
-        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(releaseToken, null);
+    private ApiResponse<Void> releaseTokenToMailboxWithHttpInfo(String loginRequestToken) throws ApiException {
+        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(loginRequestToken, null);
         return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call releaseTokenToMailboxAsync(ReleaseToken releaseToken, final ApiCallback<Void> _callback) throws ApiException {
+    private okhttp3.Call releaseTokenToMailboxAsync(String loginRequestToken, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(releaseToken, _callback);
+        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(loginRequestToken, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
 
     public class APIreleaseTokenToMailboxRequest {
-        private final ReleaseToken releaseToken;
+        private final String loginRequestToken;
 
-        private APIreleaseTokenToMailboxRequest(ReleaseToken releaseToken) {
-            this.releaseToken = releaseToken;
+        private APIreleaseTokenToMailboxRequest(String loginRequestToken) {
+            this.loginRequestToken = loginRequestToken;
         }
 
         /**
@@ -6965,7 +6964,7 @@ public class AuthApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return releaseTokenToMailboxCall(releaseToken, _callback);
+            return releaseTokenToMailboxCall(loginRequestToken, _callback);
         }
 
         /**
@@ -6982,7 +6981,7 @@ public class AuthApi {
          </table>
          */
         public void execute() throws ApiException {
-            releaseTokenToMailboxWithHttpInfo(releaseToken);
+            releaseTokenToMailboxWithHttpInfo(loginRequestToken);
         }
 
         /**
@@ -7000,7 +6999,7 @@ public class AuthApi {
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return releaseTokenToMailboxWithHttpInfo(releaseToken);
+            return releaseTokenToMailboxWithHttpInfo(loginRequestToken);
         }
 
         /**
@@ -7019,14 +7018,14 @@ public class AuthApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return releaseTokenToMailboxAsync(releaseToken, _callback);
+            return releaseTokenToMailboxAsync(loginRequestToken, _callback);
         }
     }
 
     /**
      * release a token for the current (authenticated) user to the mailbox of this login request.
      * 
-     * @param releaseToken  (required)
+     * @param loginRequestToken login request token returned by getTokenRedirect. (required)
      * @return APIreleaseTokenToMailboxRequest
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -7038,8 +7037,8 @@ public class AuthApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APIreleaseTokenToMailboxRequest releaseTokenToMailbox(ReleaseToken releaseToken) {
-        return new APIreleaseTokenToMailboxRequest(releaseToken);
+    public APIreleaseTokenToMailboxRequest releaseTokenToMailbox(String loginRequestToken) {
+        return new APIreleaseTokenToMailboxRequest(loginRequestToken);
     }
     private okhttp3.Call setGroupACLCall(String groupId, ACL ACL, final ApiCallback _callback) throws ApiException {
         String basePath = null;

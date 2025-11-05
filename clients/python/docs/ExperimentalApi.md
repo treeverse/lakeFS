@@ -20,7 +20,7 @@ Method | HTTP request | Description
 [**list_pull_requests**](ExperimentalApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 [**merge_pull_request**](ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
-[**release_token_to_mailbox**](ExperimentalApi.md#release_token_to_mailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request.
+[**release_token_to_mailbox**](ExperimentalApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 [**sts_login**](ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
 [**update_object_user_metadata**](ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 [**update_pull_request**](ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
@@ -1740,7 +1740,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **release_token_to_mailbox**
-> release_token_to_mailbox(release_token)
+> release_token_to_mailbox(login_request_token)
 
 release a token for the current (authenticated) user to the mailbox of this login request.
 
@@ -1756,7 +1756,6 @@ release a token for the current (authenticated) user to the mailbox of this logi
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.release_token import ReleaseToken
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -1804,11 +1803,11 @@ configuration = lakefs_sdk.Configuration(
 with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.ExperimentalApi(api_client)
-    release_token = lakefs_sdk.ReleaseToken() # ReleaseToken | 
+    login_request_token = 'login_request_token_example' # str | login request token returned by getTokenRedirect.
 
     try:
         # release a token for the current (authenticated) user to the mailbox of this login request.
-        api_instance.release_token_to_mailbox(release_token)
+        api_instance.release_token_to_mailbox(login_request_token)
     except Exception as e:
         print("Exception when calling ExperimentalApi->release_token_to_mailbox: %s\n" % e)
 ```
@@ -1820,7 +1819,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **release_token** | [**ReleaseToken**](ReleaseToken.md)|  | 
+ **login_request_token** | **str**| login request token returned by getTokenRedirect. | 
 
 ### Return type
 
@@ -1832,7 +1831,7 @@ void (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details
