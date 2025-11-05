@@ -18,7 +18,9 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.Error;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -67,6 +69,30 @@ public class GarbageCollectionPrepareResponseTest {
     @Test
     public void gcCommitsPresignedUrlTest() {
         // TODO: test gcCommitsPresignedUrl
+    }
+
+    /**
+     * Test the property 'completed'
+     */
+    @Test
+    public void completedTest() {
+        // TODO: test completed
+    }
+
+    /**
+     * Test the property 'updateTime'
+     */
+    @Test
+    public void updateTimeTest() {
+        // TODO: test updateTime
+    }
+
+    /**
+     * Test the property 'error'
+     */
+    @Test
+    public void errorTest() {
+        // TODO: test error
     }
 
 }

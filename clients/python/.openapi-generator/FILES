@@ -46,6 +46,7 @@ docs/ExternalPrincipalCreation.md
 docs/ExternalPrincipalList.md
 docs/FindMergeBaseResult.md
 docs/GarbageCollectionConfig.md
+docs/GarbageCollectionPrepareCreationResponse.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
 docs/GarbageCollectionRules.md
@@ -202,6 +203,7 @@ lakefs_sdk/models/external_principal_creation.py
 lakefs_sdk/models/external_principal_list.py
 lakefs_sdk/models/find_merge_base_result.py
 lakefs_sdk/models/garbage_collection_config.py
+lakefs_sdk/models/garbage_collection_prepare_creation_response.py
 lakefs_sdk/models/garbage_collection_prepare_response.py
 lakefs_sdk/models/garbage_collection_rule.py
 lakefs_sdk/models/garbage_collection_rules.py
@@ -334,6 +336,7 @@ test/test_external_principal_creation.py
 test/test_external_principal_list.py
 test/test_find_merge_base_result.py
 test/test_garbage_collection_config.py
+test/test_garbage_collection_prepare_creation_response.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py
 test/test_garbage_collection_rules.py

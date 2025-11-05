@@ -45,6 +45,7 @@ docs/ExternalPrincipalCreation.md
 docs/ExternalPrincipalList.md
 docs/FindMergeBaseResult.md
 docs/GarbageCollectionConfig.md
+docs/GarbageCollectionPrepareCreationResponse.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
 docs/GarbageCollectionRules.md
@@ -197,6 +198,7 @@ src/models/external_principal_creation.rs
 src/models/external_principal_list.rs
 src/models/find_merge_base_result.rs
 src/models/garbage_collection_config.rs
+src/models/garbage_collection_prepare_creation_response.rs
 src/models/garbage_collection_prepare_response.rs
 src/models/garbage_collection_rule.rs
 src/models/garbage_collection_rules.rs

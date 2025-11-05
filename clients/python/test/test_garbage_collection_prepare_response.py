@@ -40,13 +40,17 @@ class TestGarbageCollectionPrepareResponse(unittest.TestCase):
                 run_id = '64eaa103-d726-4a33-bcb8-7c0b4abfe09e',
                 gc_commits_location = 's3://my-storage-namespace/_lakefs/retention/commits',
                 gc_addresses_location = 's3://my-storage-namespace/_lakefs/retention/addresses',
-                gc_commits_presigned_url = ''
+                gc_commits_presigned_url = '',
+                completed = True,
+                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                error = lakefs_sdk.models.error.Error(
+                    message = '', )
             )
         else:
             return GarbageCollectionPrepareResponse(
                 run_id = '64eaa103-d726-4a33-bcb8-7c0b4abfe09e',
-                gc_commits_location = 's3://my-storage-namespace/_lakefs/retention/commits',
-                gc_addresses_location = 's3://my-storage-namespace/_lakefs/retention/addresses',
+                completed = True,
+                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """
 

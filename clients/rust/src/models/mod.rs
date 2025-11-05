@@ -68,6 +68,8 @@ pub mod find_merge_base_result;
 pub use self::find_merge_base_result::FindMergeBaseResult;
 pub mod garbage_collection_config;
 pub use self::garbage_collection_config::GarbageCollectionConfig;
+pub mod garbage_collection_prepare_creation_response;
+pub use self::garbage_collection_prepare_creation_response::GarbageCollectionPrepareCreationResponse;
 pub mod garbage_collection_prepare_response;
 pub use self::garbage_collection_prepare_response::GarbageCollectionPrepareResponse;
 pub mod garbage_collection_rule;

@@ -22,6 +22,7 @@ import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
 import java.io.File;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
+import io.lakefs.clients.sdk.model.GarbageCollectionPrepareCreationResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
 import io.lakefs.clients.sdk.model.InstallationUsageReport;
@@ -314,6 +315,33 @@ public class InternalApiTest {
     public void prepareGarbageCollectionCommitsTest() throws ApiException {
         String repository = null;
         GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * prepare gc commits
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionCommitsAsyncTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionPrepareCreationResponse response = api.prepareGarbageCollectionCommitsAsync(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get status of prepare gc commits operation
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionCommitsStatusTest() throws ApiException {
+        String repository = null;
+        String id = null;
+        GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommitsStatus(repository, id)
                 .execute();
         // TODO: test validations
     }

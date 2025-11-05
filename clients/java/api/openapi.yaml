@@ -6874,6 +6874,110 @@ paths:
       tags:
       - internal
       x-accepts: application/json
+  /repositories/{repository}/gc/prepare_commits/async:
+    post:
+      operationId: prepareGarbageCollectionCommitsAsync
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionPrepareCreationResponse'
+          description: GC prepare task started
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: prepare gc commits
+      tags:
+      - internal
+      x-accepts: application/json
+  /repositories/{repository}/gc/prepare_commits/status:
+    get:
+      operationId: prepareGarbageCollectionCommitsStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Unique identifier of the GC prepare task
+        explode: true
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionPrepareResponse'
+          description: GC prepare status
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get status of prepare gc commits operation
+      tags:
+      - internal
+      x-accepts: application/json
   /repositories/{repository}/gc/prepare_uncommited:
     post:
       operationId: prepareGarbageCollectionUncommitted
@@ -9966,8 +10070,12 @@ components:
       type: object
     GarbageCollectionPrepareResponse:
       example:
+        update_time: 2000-01-23T04:56:07.000+00:00
         run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
         gc_addresses_location: s3://my-storage-namespace/_lakefs/retention/addresses
+        completed: true
+        error:
+          message: message
         gc_commits_location: s3://my-storage-namespace/_lakefs/retention/commits
         gc_commits_presigned_url: gc_commits_presigned_url
       properties:
@@ -9988,10 +10096,20 @@ components:
         gc_commits_presigned_url:
           description: a presigned url to download the commits csv
           type: string
+        completed:
+          description: true if the task has completed (either successfully or with
+            an error)
+          type: boolean
+        update_time:
+          description: last time the task status was updated
+          format: date-time
+          type: string
+        error:
+          $ref: '#/components/schemas/Error'
       required:
-      - gc_addresses_location
-      - gc_commits_location
+      - completed
       - run_id
+      - update_time
       type: object
     PrepareGCUncommittedRequest:
       example:
@@ -10185,6 +10303,16 @@ components:
       properties:
         id:
           description: The id of the import process
+          type: string
+      required:
+      - id
+      type: object
+    GarbageCollectionPrepareCreationResponse:
+      example:
+        id: id
+      properties:
+        id:
+          description: The id of the GC prepare task
           type: string
       required:
       - id

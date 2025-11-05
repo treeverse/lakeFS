@@ -24,6 +24,8 @@ Method | HTTP request | Description
 [**internal_set_garbage_collection_rules**](InternalApi.md#internal_set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 [**post_stats_events**](InternalApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 [**prepare_garbage_collection_commits**](InternalApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+[**prepare_garbage_collection_commits_async**](InternalApi.md#prepare_garbage_collection_commits_async) | **POST** /repositories/{repository}/gc/prepare_commits/async | prepare gc commits
+[**prepare_garbage_collection_commits_status**](InternalApi.md#prepare_garbage_collection_commits_status) | **GET** /repositories/{repository}/gc/prepare_commits/status | get status of prepare gc commits operation
 [**prepare_garbage_collection_uncommitted**](InternalApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 [**restore_refs**](InternalApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 [**set_garbage_collection_rules_preflight**](InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
@@ -584,6 +586,63 @@ save lists of active commits for garbage collection
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **repository** | **String** |  | [required] |
+
+### Return type
+
+[**models::GarbageCollectionPrepareResponse**](GarbageCollectionPrepareResponse.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## prepare_garbage_collection_commits_async
+
+> models::GarbageCollectionPrepareCreationResponse prepare_garbage_collection_commits_async(repository)
+prepare gc commits
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**repository** | **String** |  | [required] |
+
+### Return type
+
+[**models::GarbageCollectionPrepareCreationResponse**](GarbageCollectionPrepareCreationResponse.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## prepare_garbage_collection_commits_status
+
+> models::GarbageCollectionPrepareResponse prepare_garbage_collection_commits_status(repository, id)
+get status of prepare gc commits operation
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**repository** | **String** |  | [required] |
+**id** | **String** | Unique identifier of the GC prepare task | [required] |
 
 ### Return type
 
