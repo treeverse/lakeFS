@@ -3947,9 +3947,9 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		// continue with the rest of the response
 	}
 	writeResponse(w, r, http.StatusCreated, apigen.GarbageCollectionPrepareResponse{
-		RunId:                 gcRunMetadata.RunID,
 		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
 		GcAddressesLocation:   gcRunMetadata.AddressLocation,
+		RunId:                 gcRunMetadata.RunID,
 		GcCommitsPresignedUrl: &presignedURL,
 	})
 }
