@@ -272,8 +272,11 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 	}
 
 	bo := backoff.WithContext(newDownloadBackoff(), ctx)
-	if err := backoff.Retry(operation, bo); err != nil {
-		return fmt.Errorf("failed to download part %d: %w", partNumber, err)
+	notification := func(err error, d time.Duration) {
+		logging.FromContext(ctx).WithError(err).Warnf("Download of '%s' part %d failed, retrying in %s", f.Name(), partNumber, d)
+	}
+	if err := backoff.RetryNotify(operation, bo, notification); err != nil {
+		return fmt.Errorf("failed to download '%s' part %d: %w", f.Name(), partNumber, err)
 	}
 
 	_, err := f.WriteAt(buf, rangeStart)
@@ -323,8 +326,11 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 	}
 
 	b := backoff.WithContext(newDownloadBackoff(), ctx)
-	if err := backoff.Retry(operation, b); err != nil {
-		return fmt.Errorf("failed to download object: %w", err)
+	notification := func(err error, d time.Duration) {
+		logging.FromContext(ctx).WithError(err).Warnf("Download of object '%s' failed, retrying in %s", dst, d)
+	}
+	if err := backoff.RetryNotify(operation, b, notification); err != nil {
+		return fmt.Errorf("failed to download '%s' object: %w", dst, err)
 	}
 	return nil
 }
