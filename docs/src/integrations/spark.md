@@ -6,7 +6,8 @@ description: Accessing data in lakeFS from Apache Spark works the same as access
 # Using lakeFS with Apache Spark
 
 There are several ways to use lakeFS with Spark:
-* [Recommended: using the lakeFS Iceberg REST Catalog](./iceberg.md): Read and write Iceberg tables using a standards-compliant catalog, built into lakeFS Enterprise.
+
+* [**Recommended:** using the lakeFS Iceberg REST Catalog](./iceberg.md): Read and write Iceberg tables using a standards-compliant catalog, built into lakeFS Enterprise.
 * [The lakeFS FileSystem](#lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
     * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode): Best of both worlds. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
 * [The S3-compatible API](#s3-compatible-api):  <span class="badge">All Storage Vendors</span>
