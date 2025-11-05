@@ -41,7 +41,7 @@ All URIs are relative to */api/v1*
 | [**listUsers**](AuthApi.md#listUsers) | **GET** /auth/users | list users |
 | [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login |
 | [**oauthCallback**](AuthApi.md#oauthCallback) | **GET** /oidc/callback |  |
-| [**releaseTokenToMailbox**](AuthApi.md#releaseTokenToMailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request. |
+| [**releaseTokenToMailbox**](AuthApi.md#releaseTokenToMailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request. |
 | [**setGroupACL**](AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group |
 | [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy |
 
@@ -3425,7 +3425,7 @@ No authorization required
 
 <a id="releaseTokenToMailbox"></a>
 # **releaseTokenToMailbox**
-> releaseTokenToMailbox(releaseToken).execute();
+> releaseTokenToMailbox(loginRequestToken).execute();
 
 release a token for the current (authenticated) user to the mailbox of this login request.
 
@@ -3472,9 +3472,9 @@ public class Example {
     jwt_token.setBearerToken("BEARER TOKEN");
 
     AuthApi apiInstance = new AuthApi(defaultClient);
-    ReleaseToken releaseToken = new ReleaseToken(); // ReleaseToken | 
+    String loginRequestToken = "loginRequestToken_example"; // String | login request token returned by getTokenRedirect.
     try {
-      apiInstance.releaseTokenToMailbox(releaseToken)
+      apiInstance.releaseTokenToMailbox(loginRequestToken)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling AuthApi#releaseTokenToMailbox");
@@ -3491,7 +3491,7 @@ public class Example {
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **releaseToken** | [**ReleaseToken**](ReleaseToken.md)|  | |
+| **loginRequestToken** | **String**| login request token returned by getTokenRedirect. | |
 
 ### Return type
 
@@ -3503,7 +3503,7 @@ null (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details

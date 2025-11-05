@@ -184,7 +184,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**oauthCallback**](docs/AuthApi.md#oauthCallback) | **GET** /oidc/callback | 
-*AuthApi* | [**releaseTokenToMailbox**](docs/AuthApi.md#releaseTokenToMailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request.
+*AuthApi* | [**releaseTokenToMailbox**](docs/AuthApi.md#releaseTokenToMailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *AuthApi* | [**setGroupACL**](docs/AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
@@ -214,7 +214,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**listPullRequests**](docs/ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests
 *ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 *ExperimentalApi* | [**mergePullRequest**](docs/ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
-*ExperimentalApi* | [**releaseTokenToMailbox**](docs/ExperimentalApi.md#releaseTokenToMailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request.
+*ExperimentalApi* | [**releaseTokenToMailbox**](docs/ExperimentalApi.md#releaseTokenToMailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *ExperimentalApi* | [**stsLogin**](docs/ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS
 *ExperimentalApi* | [**updateObjectUserMetadata**](docs/ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**updatePullRequest**](docs/ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
@@ -391,7 +391,6 @@ Class | Method | HTTP request | Description
  - [RefList](docs/RefList.md)
  - [RefsDump](docs/RefsDump.md)
  - [RefsRestore](docs/RefsRestore.md)
- - [ReleaseToken](docs/ReleaseToken.md)
  - [Repository](docs/Repository.md)
  - [RepositoryCreation](docs/RepositoryCreation.md)
  - [RepositoryDumpStatus](docs/RepositoryDumpStatus.md)

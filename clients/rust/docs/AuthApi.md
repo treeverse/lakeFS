@@ -41,7 +41,7 @@ Method | HTTP request | Description
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**oauth_callback**](AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
-[**release_token_to_mailbox**](AuthApi.md#release_token_to_mailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request.
+[**release_token_to_mailbox**](AuthApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 [**set_group_acl**](AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
@@ -1112,7 +1112,7 @@ No authorization required
 
 ## release_token_to_mailbox
 
-> release_token_to_mailbox(release_token)
+> release_token_to_mailbox(login_request_token)
 release a token for the current (authenticated) user to the mailbox of this login request.
 
 ### Parameters
@@ -1120,7 +1120,7 @@ release a token for the current (authenticated) user to the mailbox of this logi
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**release_token** | [**ReleaseToken**](ReleaseToken.md) |  | [required] |
+**login_request_token** | **String** | login request token returned by getTokenRedirect. | [required] |
 
 ### Return type
 
@@ -1132,7 +1132,7 @@ Name | Type | Description  | Required | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

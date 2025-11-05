@@ -41,7 +41,7 @@ Method | HTTP request | Description
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**oauth_callback**](AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
-[**release_token_to_mailbox**](AuthApi.md#release_token_to_mailbox) | **POST** /auth/get-token/release-token | release a token for the current (authenticated) user to the mailbox of this login request.
+[**release_token_to_mailbox**](AuthApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 [**set_group_acl**](AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
@@ -3950,7 +3950,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **release_token_to_mailbox**
-> release_token_to_mailbox(release_token)
+> release_token_to_mailbox(login_request_token)
 
 release a token for the current (authenticated) user to the mailbox of this login request.
 
@@ -3966,7 +3966,6 @@ release a token for the current (authenticated) user to the mailbox of this logi
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.release_token import ReleaseToken
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -4014,11 +4013,11 @@ configuration = lakefs_sdk.Configuration(
 with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.AuthApi(api_client)
-    release_token = lakefs_sdk.ReleaseToken() # ReleaseToken | 
+    login_request_token = 'login_request_token_example' # str | login request token returned by getTokenRedirect.
 
     try:
         # release a token for the current (authenticated) user to the mailbox of this login request.
-        api_instance.release_token_to_mailbox(release_token)
+        api_instance.release_token_to_mailbox(login_request_token)
     except Exception as e:
         print("Exception when calling AuthApi->release_token_to_mailbox: %s\n" % e)
 ```
@@ -4030,7 +4029,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **release_token** | [**ReleaseToken**](ReleaseToken.md)|  | 
+ **login_request_token** | **str**| login request token returned by getTokenRedirect. | 
 
 ### Return type
 
@@ -4042,7 +4041,7 @@ void (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details

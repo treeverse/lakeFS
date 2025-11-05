@@ -32,7 +32,6 @@ import io.lakefs.clients.sdk.model.GroupList;
 import io.lakefs.clients.sdk.model.LoginInformation;
 import io.lakefs.clients.sdk.model.Policy;
 import io.lakefs.clients.sdk.model.PolicyList;
-import io.lakefs.clients.sdk.model.ReleaseToken;
 import io.lakefs.clients.sdk.model.User;
 import io.lakefs.clients.sdk.model.UserCreation;
 import io.lakefs.clients.sdk.model.UserList;
@@ -604,8 +603,8 @@ public class AuthApiTest {
      */
     @Test
     public void releaseTokenToMailboxTest() throws ApiException {
-        ReleaseToken releaseToken = null;
-        api.releaseTokenToMailbox(releaseToken)
+        String loginRequestToken = null;
+        api.releaseTokenToMailbox(loginRequestToken)
                 .execute();
         // TODO: test validations
     }

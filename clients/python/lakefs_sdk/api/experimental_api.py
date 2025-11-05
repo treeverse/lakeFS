@@ -47,7 +47,6 @@ from lakefs_sdk.models.pull_request_basic import PullRequestBasic
 from lakefs_sdk.models.pull_request_creation import PullRequestCreation
 from lakefs_sdk.models.pull_request_creation_response import PullRequestCreationResponse
 from lakefs_sdk.models.pull_requests_list import PullRequestsList
-from lakefs_sdk.models.release_token import ReleaseToken
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_sdk.models.upload_part_copy_from import UploadPartCopyFrom
@@ -2569,17 +2568,17 @@ class ExperimentalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def release_token_to_mailbox(self, release_token : ReleaseToken, **kwargs) -> None:  # noqa: E501
+    def release_token_to_mailbox(self, login_request_token : Annotated[StrictStr, Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> None:  # noqa: E501
         """release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.release_token_to_mailbox(release_token, async_req=True)
+        >>> thread = api.release_token_to_mailbox(login_request_token, async_req=True)
         >>> result = thread.get()
 
-        :param release_token: (required)
-        :type release_token: ReleaseToken
+        :param login_request_token: login request token returned by getTokenRedirect. (required)
+        :type login_request_token: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request.
@@ -2595,20 +2594,20 @@ class ExperimentalApi:
         if '_preload_content' in kwargs:
             message = "Error! Please call the release_token_to_mailbox_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.release_token_to_mailbox_with_http_info(release_token, **kwargs)  # noqa: E501
+        return self.release_token_to_mailbox_with_http_info(login_request_token, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def release_token_to_mailbox_with_http_info(self, release_token : ReleaseToken, **kwargs) -> ApiResponse:  # noqa: E501
+    def release_token_to_mailbox_with_http_info(self, login_request_token : Annotated[StrictStr, Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> ApiResponse:  # noqa: E501
         """release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.release_token_to_mailbox_with_http_info(release_token, async_req=True)
+        >>> thread = api.release_token_to_mailbox_with_http_info(login_request_token, async_req=True)
         >>> result = thread.get()
 
-        :param release_token: (required)
-        :type release_token: ReleaseToken
+        :param login_request_token: login request token returned by getTokenRedirect. (required)
+        :type login_request_token: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -2637,7 +2636,7 @@ class ExperimentalApi:
         _params = locals()
 
         _all_params = [
-            'release_token'
+            'login_request_token'
         ]
         _all_params.extend(
             [
@@ -2665,6 +2664,9 @@ class ExperimentalApi:
 
         # process the path parameters
         _path_params = {}
+        if _params['login_request_token']:
+            _path_params['loginRequestToken'] = _params['login_request_token']
+
 
         # process the query parameters
         _query_params = []
@@ -2675,19 +2677,9 @@ class ExperimentalApi:
         _files = {}
         # process the body parameter
         _body_params = None
-        if _params['release_token'] is not None:
-            _body_params = _params['release_token']
-
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
             ['application/json'])  # noqa: E501
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
@@ -2695,7 +2687,7 @@ class ExperimentalApi:
         _response_types_map = {}
 
         return self.api_client.call_api(
-            '/auth/get-token/release-token', 'POST',
+            '/auth/get-token/release-token/{loginRequestToken}', 'GET',
             _path_params,
             _query_params,
             _header_params,

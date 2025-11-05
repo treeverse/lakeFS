@@ -31,7 +31,6 @@ import io.lakefs.clients.sdk.model.PullRequestBasic;
 import io.lakefs.clients.sdk.model.PullRequestCreation;
 import io.lakefs.clients.sdk.model.PullRequestCreationResponse;
 import io.lakefs.clients.sdk.model.PullRequestsList;
-import io.lakefs.clients.sdk.model.ReleaseToken;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
 import io.lakefs.clients.sdk.model.UpdateObjectUserMetadata;
@@ -315,8 +314,8 @@ public class ExperimentalApiTest {
      */
     @Test
     public void releaseTokenToMailboxTest() throws ApiException {
-        ReleaseToken releaseToken = null;
-        api.releaseTokenToMailbox(releaseToken)
+        String loginRequestToken = null;
+        api.releaseTokenToMailbox(loginRequestToken)
                 .execute();
         // TODO: test validations
     }

@@ -166,8 +166,6 @@ pub mod refs_dump;
 pub use self::refs_dump::RefsDump;
 pub mod refs_restore;
 pub use self::refs_restore::RefsRestore;
-pub mod release_token;
-pub use self::release_token::ReleaseToken;
 pub mod repository;
 pub use self::repository::Repository;
 pub mod repository_creation;

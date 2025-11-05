@@ -2048,6 +2048,47 @@ paths:
       - auth
       - experimental
       x-accepts: application/json
+  /auth/get-token/release-token/{loginRequestToken}:
+    get:
+      operationId: releaseTokenToMailbox
+      parameters:
+      - description: login request token returned by getTokenRedirect.
+        explode: false
+        in: path
+        name: loginRequestToken
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: token released
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "429":
+          description: too many requests
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: release a token for the current (authenticated) user to the mailbox
+        of this login request.
+      tags:
+      - auth
+      - experimental
+      x-accepts: application/json
   /repositories:
     get:
       operationId: listRepositories
