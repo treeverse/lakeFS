@@ -18,26 +18,22 @@ import pprint
 import re  # noqa: F401
 import json
 
-from datetime import datetime
+
 from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
+    from pydantic.v1 import BaseModel, Field, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictStr
-from lakefs_sdk.models.error import Error
+    from pydantic import BaseModel, Field, StrictStr
 
 class GarbageCollectionPrepareResponse(BaseModel):
     """
     GarbageCollectionPrepareResponse
     """
     run_id: StrictStr = Field(..., description="a unique identifier generated for this GC job")
-    gc_commits_location: Optional[StrictStr] = Field(None, description="location of the resulting commits csv table (partitioned by run_id)")
-    gc_addresses_location: Optional[StrictStr] = Field(None, description="location to use for expired addresses parquet table (partitioned by run_id)")
+    gc_commits_location: StrictStr = Field(..., description="location of the resulting commits csv table (partitioned by run_id)")
+    gc_addresses_location: StrictStr = Field(..., description="location to use for expired addresses parquet table (partitioned by run_id)")
     gc_commits_presigned_url: Optional[StrictStr] = Field(None, description="a presigned url to download the commits csv")
-    completed: StrictBool = Field(..., description="true if the task has completed (either successfully or with an error)")
-    update_time: datetime = Field(..., description="last time the task status was updated")
-    error: Optional[Error] = None
-    __properties = ["run_id", "gc_commits_location", "gc_addresses_location", "gc_commits_presigned_url", "completed", "update_time", "error"]
+    __properties = ["run_id", "gc_commits_location", "gc_addresses_location", "gc_commits_presigned_url"]
 
     class Config:
         """Pydantic configuration"""
@@ -63,9 +59,6 @@ class GarbageCollectionPrepareResponse(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
-        # override the default output from pydantic by calling `to_dict()` of error
-        if self.error:
-            _dict['error'] = self.error.to_dict()
         return _dict
 
     @classmethod
@@ -81,10 +74,7 @@ class GarbageCollectionPrepareResponse(BaseModel):
             "run_id": obj.get("run_id"),
             "gc_commits_location": obj.get("gc_commits_location"),
             "gc_addresses_location": obj.get("gc_addresses_location"),
-            "gc_commits_presigned_url": obj.get("gc_commits_presigned_url"),
-            "completed": obj.get("completed"),
-            "update_time": obj.get("update_time"),
-            "error": Error.from_dict(obj.get("error")) if obj.get("error") is not None else None
+            "gc_commits_presigned_url": obj.get("gc_commits_presigned_url")
         })
         return _obj
 

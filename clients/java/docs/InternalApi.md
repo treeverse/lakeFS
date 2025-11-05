@@ -1839,7 +1839,7 @@ public class Example {
 
 <a id="prepareGarbageCollectionCommitsAsync"></a>
 # **prepareGarbageCollectionCommitsAsync**
-> GarbageCollectionPrepareCreationResponse prepareGarbageCollectionCommitsAsync(repository).execute();
+> PrepareGarbageCollectionCommitsAsyncCreation prepareGarbageCollectionCommitsAsync(repository).execute();
 
 prepare gc commits
 
@@ -1888,7 +1888,7 @@ public class Example {
     InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
     try {
-      GarbageCollectionPrepareCreationResponse result = apiInstance.prepareGarbageCollectionCommitsAsync(repository)
+      PrepareGarbageCollectionCommitsAsyncCreation result = apiInstance.prepareGarbageCollectionCommitsAsync(repository)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -1910,7 +1910,7 @@ public class Example {
 
 ### Return type
 
-[**GarbageCollectionPrepareCreationResponse**](GarbageCollectionPrepareCreationResponse.md)
+[**PrepareGarbageCollectionCommitsAsyncCreation**](PrepareGarbageCollectionCommitsAsyncCreation.md)
 
 ### Authorization
 
@@ -1925,6 +1925,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **202** | GC prepare task started |  -  |
+| **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
@@ -1933,7 +1934,7 @@ public class Example {
 
 <a id="prepareGarbageCollectionCommitsStatus"></a>
 # **prepareGarbageCollectionCommitsStatus**
-> GarbageCollectionPrepareResponse prepareGarbageCollectionCommitsStatus(repository, id).execute();
+> PrepareGarbageCollectionCommitsStatus prepareGarbageCollectionCommitsStatus(repository, id).execute();
 
 get status of prepare gc commits operation
 
@@ -1981,9 +1982,9 @@ public class Example {
 
     InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
-    String id = "id_example"; // String | Unique identifier of the GC prepare task
+    String id = "id_example"; // String | Unique identifier of the prepare GC commits task
     try {
-      GarbageCollectionPrepareResponse result = apiInstance.prepareGarbageCollectionCommitsStatus(repository, id)
+      PrepareGarbageCollectionCommitsStatus result = apiInstance.prepareGarbageCollectionCommitsStatus(repository, id)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -2002,11 +2003,11 @@ public class Example {
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
-| **id** | **String**| Unique identifier of the GC prepare task | |
+| **id** | **String**| Unique identifier of the prepare GC commits task | |
 
 ### Return type
 
-[**GarbageCollectionPrepareResponse**](GarbageCollectionPrepareResponse.md)
+[**PrepareGarbageCollectionCommitsStatus**](PrepareGarbageCollectionCommitsStatus.md)
 
 ### Authorization
 
@@ -2020,7 +2021,7 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | GC prepare status |  -  |
+| **200** | prepare GC commits task status |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |

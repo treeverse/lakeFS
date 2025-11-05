@@ -36,7 +36,6 @@ from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
 from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 from lakefs_sdk.models.garbage_collection_config import GarbageCollectionConfig
-from lakefs_sdk.models.garbage_collection_prepare_creation_response import GarbageCollectionPrepareCreationResponse
 from lakefs_sdk.models.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules
 from lakefs_sdk.models.installation_usage_report import InstallationUsageReport
@@ -45,6 +44,8 @@ from lakefs_sdk.models.object_stage_creation import ObjectStageCreation
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
+from lakefs_sdk.models.prepare_garbage_collection_commits_async_creation import PrepareGarbageCollectionCommitsAsyncCreation
+from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus
 from lakefs_sdk.models.refs_dump import RefsDump
 from lakefs_sdk.models.refs_restore import RefsRestore
 from lakefs_sdk.models.repository_metadata_keys import RepositoryMetadataKeys
@@ -2955,7 +2956,7 @@ class InternalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def prepare_garbage_collection_commits_async(self, repository : StrictStr, **kwargs) -> GarbageCollectionPrepareCreationResponse:  # noqa: E501
+    def prepare_garbage_collection_commits_async(self, repository : StrictStr, **kwargs) -> PrepareGarbageCollectionCommitsAsyncCreation:  # noqa: E501
         """prepare gc commits  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -2975,7 +2976,7 @@ class InternalApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: GarbageCollectionPrepareCreationResponse
+        :rtype: PrepareGarbageCollectionCommitsAsyncCreation
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
@@ -3017,7 +3018,7 @@ class InternalApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: tuple(GarbageCollectionPrepareCreationResponse, status_code(int), headers(HTTPHeaderDict))
+        :rtype: tuple(PrepareGarbageCollectionCommitsAsyncCreation, status_code(int), headers(HTTPHeaderDict))
         """
 
         _params = locals()
@@ -3072,7 +3073,8 @@ class InternalApi:
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
-            '202': "GarbageCollectionPrepareCreationResponse",
+            '202': "PrepareGarbageCollectionCommitsAsyncCreation",
+            '400': "Error",
             '401': "Error",
             '403': "Error",
             '404': "Error",
@@ -3097,7 +3099,7 @@ class InternalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def prepare_garbage_collection_commits_status(self, repository : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the GC prepare task")], **kwargs) -> GarbageCollectionPrepareResponse:  # noqa: E501
+    def prepare_garbage_collection_commits_status(self, repository : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the prepare GC commits task")], **kwargs) -> PrepareGarbageCollectionCommitsStatus:  # noqa: E501
         """get status of prepare gc commits operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -3108,7 +3110,7 @@ class InternalApi:
 
         :param repository: (required)
         :type repository: str
-        :param id: Unique identifier of the GC prepare task (required)
+        :param id: Unique identifier of the prepare GC commits task (required)
         :type id: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -3119,7 +3121,7 @@ class InternalApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: GarbageCollectionPrepareResponse
+        :rtype: PrepareGarbageCollectionCommitsStatus
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
@@ -3128,7 +3130,7 @@ class InternalApi:
         return self.prepare_garbage_collection_commits_status_with_http_info(repository, id, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def prepare_garbage_collection_commits_status_with_http_info(self, repository : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the GC prepare task")], **kwargs) -> ApiResponse:  # noqa: E501
+    def prepare_garbage_collection_commits_status_with_http_info(self, repository : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the prepare GC commits task")], **kwargs) -> ApiResponse:  # noqa: E501
         """get status of prepare gc commits operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -3139,7 +3141,7 @@ class InternalApi:
 
         :param repository: (required)
         :type repository: str
-        :param id: Unique identifier of the GC prepare task (required)
+        :param id: Unique identifier of the prepare GC commits task (required)
         :type id: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -3163,7 +3165,7 @@ class InternalApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: tuple(GarbageCollectionPrepareResponse, status_code(int), headers(HTTPHeaderDict))
+        :rtype: tuple(PrepareGarbageCollectionCommitsStatus, status_code(int), headers(HTTPHeaderDict))
         """
 
         _params = locals()
@@ -3222,7 +3224,7 @@ class InternalApi:
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
-            '200': "GarbageCollectionPrepareResponse",
+            '200': "PrepareGarbageCollectionCommitsStatus",
             '401': "Error",
             '403': "Error",
             '404': "Error",

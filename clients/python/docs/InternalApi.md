@@ -2136,7 +2136,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **prepare_garbage_collection_commits_async**
-> GarbageCollectionPrepareCreationResponse prepare_garbage_collection_commits_async(repository)
+> PrepareGarbageCollectionCommitsAsyncCreation prepare_garbage_collection_commits_async(repository)
 
 prepare gc commits
 
@@ -2152,7 +2152,7 @@ prepare gc commits
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.garbage_collection_prepare_creation_response import GarbageCollectionPrepareCreationResponse
+from lakefs_sdk.models.prepare_garbage_collection_commits_async_creation import PrepareGarbageCollectionCommitsAsyncCreation
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -2222,7 +2222,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**GarbageCollectionPrepareCreationResponse**](GarbageCollectionPrepareCreationResponse.md)
+[**PrepareGarbageCollectionCommitsAsyncCreation**](PrepareGarbageCollectionCommitsAsyncCreation.md)
 
 ### Authorization
 
@@ -2238,6 +2238,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **202** | GC prepare task started |  -  |
+**400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
@@ -2247,7 +2248,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **prepare_garbage_collection_commits_status**
-> GarbageCollectionPrepareResponse prepare_garbage_collection_commits_status(repository, id)
+> PrepareGarbageCollectionCommitsStatus prepare_garbage_collection_commits_status(repository, id)
 
 get status of prepare gc commits operation
 
@@ -2263,7 +2264,7 @@ get status of prepare gc commits operation
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
+from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -2312,7 +2313,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.InternalApi(api_client)
     repository = 'repository_example' # str | 
-    id = 'id_example' # str | Unique identifier of the GC prepare task
+    id = 'id_example' # str | Unique identifier of the prepare GC commits task
 
     try:
         # get status of prepare gc commits operation
@@ -2331,11 +2332,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
- **id** | **str**| Unique identifier of the GC prepare task | 
+ **id** | **str**| Unique identifier of the prepare GC commits task | 
 
 ### Return type
 
-[**GarbageCollectionPrepareResponse**](GarbageCollectionPrepareResponse.md)
+[**PrepareGarbageCollectionCommitsStatus**](PrepareGarbageCollectionCommitsStatus.md)
 
 ### Authorization
 
@@ -2350,7 +2351,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | GC prepare status |  -  |
+**200** | prepare GC commits task status |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |

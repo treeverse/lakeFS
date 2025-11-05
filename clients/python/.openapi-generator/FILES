@@ -46,7 +46,6 @@ docs/ExternalPrincipalCreation.md
 docs/ExternalPrincipalList.md
 docs/FindMergeBaseResult.md
 docs/GarbageCollectionConfig.md
-docs/GarbageCollectionPrepareCreationResponse.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
 docs/GarbageCollectionRules.md
@@ -90,6 +89,8 @@ docs/Policy.md
 docs/PolicyList.md
 docs/PrepareGCUncommittedRequest.md
 docs/PrepareGCUncommittedResponse.md
+docs/PrepareGarbageCollectionCommitsAsyncCreation.md
+docs/PrepareGarbageCollectionCommitsStatus.md
 docs/PresignMultipartUpload.md
 docs/PullRequest.md
 docs/PullRequestBasic.md
@@ -203,7 +204,6 @@ lakefs_sdk/models/external_principal_creation.py
 lakefs_sdk/models/external_principal_list.py
 lakefs_sdk/models/find_merge_base_result.py
 lakefs_sdk/models/garbage_collection_config.py
-lakefs_sdk/models/garbage_collection_prepare_creation_response.py
 lakefs_sdk/models/garbage_collection_prepare_response.py
 lakefs_sdk/models/garbage_collection_rule.py
 lakefs_sdk/models/garbage_collection_rules.py
@@ -239,6 +239,8 @@ lakefs_sdk/models/pagination.py
 lakefs_sdk/models/path_list.py
 lakefs_sdk/models/policy.py
 lakefs_sdk/models/policy_list.py
+lakefs_sdk/models/prepare_garbage_collection_commits_async_creation.py
+lakefs_sdk/models/prepare_garbage_collection_commits_status.py
 lakefs_sdk/models/prepare_gc_uncommitted_request.py
 lakefs_sdk/models/prepare_gc_uncommitted_response.py
 lakefs_sdk/models/presign_multipart_upload.py
@@ -336,7 +338,6 @@ test/test_external_principal_creation.py
 test/test_external_principal_list.py
 test/test_find_merge_base_result.py
 test/test_garbage_collection_config.py
-test/test_garbage_collection_prepare_creation_response.py
 test/test_garbage_collection_prepare_response.py
 test/test_garbage_collection_rule.py
 test/test_garbage_collection_rules.py
@@ -378,6 +379,8 @@ test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py
 test/test_policy_list.py
+test/test_prepare_garbage_collection_commits_async_creation.py
+test/test_prepare_garbage_collection_commits_status.py
 test/test_prepare_gc_uncommitted_request.py
 test/test_prepare_gc_uncommitted_response.py
 test/test_presign_multipart_upload.py

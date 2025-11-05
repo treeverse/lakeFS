@@ -605,7 +605,7 @@ Name | Type | Description  | Required | Notes
 
 ## prepare_garbage_collection_commits_async
 
-> models::GarbageCollectionPrepareCreationResponse prepare_garbage_collection_commits_async(repository)
+> models::PrepareGarbageCollectionCommitsAsyncCreation prepare_garbage_collection_commits_async(repository)
 prepare gc commits
 
 ### Parameters
@@ -617,7 +617,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**models::GarbageCollectionPrepareCreationResponse**](GarbageCollectionPrepareCreationResponse.md)
+[**models::PrepareGarbageCollectionCommitsAsyncCreation**](PrepareGarbageCollectionCommitsAsyncCreation.md)
 
 ### Authorization
 
@@ -633,7 +633,7 @@ Name | Type | Description  | Required | Notes
 
 ## prepare_garbage_collection_commits_status
 
-> models::GarbageCollectionPrepareResponse prepare_garbage_collection_commits_status(repository, id)
+> models::PrepareGarbageCollectionCommitsStatus prepare_garbage_collection_commits_status(repository, id)
 get status of prepare gc commits operation
 
 ### Parameters
@@ -642,11 +642,11 @@ get status of prepare gc commits operation
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **repository** | **String** |  | [required] |
-**id** | **String** | Unique identifier of the GC prepare task | [required] |
+**id** | **String** | Unique identifier of the prepare GC commits task | [required] |
 
 ### Return type
 
-[**models::GarbageCollectionPrepareResponse**](GarbageCollectionPrepareResponse.md)
+[**models::PrepareGarbageCollectionCommitsStatus**](PrepareGarbageCollectionCommitsStatus.md)
 
 ### Authorization
 

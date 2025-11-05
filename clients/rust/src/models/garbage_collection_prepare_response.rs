@@ -16,34 +16,23 @@ pub struct GarbageCollectionPrepareResponse {
     #[serde(rename = "run_id")]
     pub run_id: String,
     /// location of the resulting commits csv table (partitioned by run_id)
-    #[serde(rename = "gc_commits_location", skip_serializing_if = "Option::is_none")]
-    pub gc_commits_location: Option<String>,
+    #[serde(rename = "gc_commits_location")]
+    pub gc_commits_location: String,
     /// location to use for expired addresses parquet table (partitioned by run_id)
-    #[serde(rename = "gc_addresses_location", skip_serializing_if = "Option::is_none")]
-    pub gc_addresses_location: Option<String>,
+    #[serde(rename = "gc_addresses_location")]
+    pub gc_addresses_location: String,
     /// a presigned url to download the commits csv
     #[serde(rename = "gc_commits_presigned_url", skip_serializing_if = "Option::is_none")]
     pub gc_commits_presigned_url: Option<String>,
-    /// true if the task has completed (either successfully or with an error)
-    #[serde(rename = "completed")]
-    pub completed: bool,
-    /// last time the task status was updated
-    #[serde(rename = "update_time")]
-    pub update_time: String,
-    #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
-    pub error: Option<Box<models::Error>>,
 }
 
 impl GarbageCollectionPrepareResponse {
-    pub fn new(run_id: String, completed: bool, update_time: String) -> GarbageCollectionPrepareResponse {
+    pub fn new(run_id: String, gc_commits_location: String, gc_addresses_location: String) -> GarbageCollectionPrepareResponse {
         GarbageCollectionPrepareResponse {
             run_id,
-            gc_commits_location: None,
-            gc_addresses_location: None,
+            gc_commits_location,
+            gc_addresses_location,
             gc_commits_presigned_url: None,
-            completed,
-            update_time,
-            error: None,
         }
     }
 }

@@ -45,7 +45,6 @@ docs/ExternalPrincipalCreation.md
 docs/ExternalPrincipalList.md
 docs/FindMergeBaseResult.md
 docs/GarbageCollectionConfig.md
-docs/GarbageCollectionPrepareCreationResponse.md
 docs/GarbageCollectionPrepareResponse.md
 docs/GarbageCollectionRule.md
 docs/GarbageCollectionRules.md
@@ -87,6 +86,8 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
+docs/PrepareGarbageCollectionCommitsAsyncCreation.md
+docs/PrepareGarbageCollectionCommitsStatus.md
 docs/PrepareGcUncommittedRequest.md
 docs/PrepareGcUncommittedResponse.md
 docs/PresignMultipartUpload.md
@@ -198,7 +199,6 @@ src/models/external_principal_creation.rs
 src/models/external_principal_list.rs
 src/models/find_merge_base_result.rs
 src/models/garbage_collection_config.rs
-src/models/garbage_collection_prepare_creation_response.rs
 src/models/garbage_collection_prepare_response.rs
 src/models/garbage_collection_rule.rs
 src/models/garbage_collection_rules.rs
@@ -236,6 +236,8 @@ src/models/pagination.rs
 src/models/path_list.rs
 src/models/policy.rs
 src/models/policy_list.rs
+src/models/prepare_garbage_collection_commits_async_creation.rs
+src/models/prepare_garbage_collection_commits_status.rs
 src/models/prepare_gc_uncommitted_request.rs
 src/models/prepare_gc_uncommitted_response.rs
 src/models/presign_multipart_upload.rs

@@ -19,9 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.Error;
 import java.io.IOException;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 
 import com.google.gson.Gson;
@@ -69,18 +67,6 @@ public class GarbageCollectionPrepareResponse {
   @SerializedName(SERIALIZED_NAME_GC_COMMITS_PRESIGNED_URL)
   private String gcCommitsPresignedUrl;
 
-  public static final String SERIALIZED_NAME_COMPLETED = "completed";
-  @SerializedName(SERIALIZED_NAME_COMPLETED)
-  private Boolean completed;
-
-  public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
-  @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
-  private OffsetDateTime updateTime;
-
-  public static final String SERIALIZED_NAME_ERROR = "error";
-  @SerializedName(SERIALIZED_NAME_ERROR)
-  private Error error;
-
   public GarbageCollectionPrepareResponse() {
   }
 
@@ -115,7 +101,7 @@ public class GarbageCollectionPrepareResponse {
    * location of the resulting commits csv table (partitioned by run_id)
    * @return gcCommitsLocation
   **/
-  @javax.annotation.Nullable
+  @javax.annotation.Nonnull
   public String getGcCommitsLocation() {
     return gcCommitsLocation;
   }
@@ -136,7 +122,7 @@ public class GarbageCollectionPrepareResponse {
    * location to use for expired addresses parquet table (partitioned by run_id)
    * @return gcAddressesLocation
   **/
-  @javax.annotation.Nullable
+  @javax.annotation.Nonnull
   public String getGcAddressesLocation() {
     return gcAddressesLocation;
   }
@@ -165,69 +151,6 @@ public class GarbageCollectionPrepareResponse {
 
   public void setGcCommitsPresignedUrl(String gcCommitsPresignedUrl) {
     this.gcCommitsPresignedUrl = gcCommitsPresignedUrl;
-  }
-
-
-  public GarbageCollectionPrepareResponse completed(Boolean completed) {
-    
-    this.completed = completed;
-    return this;
-  }
-
-   /**
-   * true if the task has completed (either successfully or with an error)
-   * @return completed
-  **/
-  @javax.annotation.Nonnull
-  public Boolean getCompleted() {
-    return completed;
-  }
-
-
-  public void setCompleted(Boolean completed) {
-    this.completed = completed;
-  }
-
-
-  public GarbageCollectionPrepareResponse updateTime(OffsetDateTime updateTime) {
-    
-    this.updateTime = updateTime;
-    return this;
-  }
-
-   /**
-   * last time the task status was updated
-   * @return updateTime
-  **/
-  @javax.annotation.Nonnull
-  public OffsetDateTime getUpdateTime() {
-    return updateTime;
-  }
-
-
-  public void setUpdateTime(OffsetDateTime updateTime) {
-    this.updateTime = updateTime;
-  }
-
-
-  public GarbageCollectionPrepareResponse error(Error error) {
-    
-    this.error = error;
-    return this;
-  }
-
-   /**
-   * Get error
-   * @return error
-  **/
-  @javax.annotation.Nullable
-  public Error getError() {
-    return error;
-  }
-
-
-  public void setError(Error error) {
-    this.error = error;
   }
 
   /**
@@ -288,16 +211,13 @@ public class GarbageCollectionPrepareResponse {
     return Objects.equals(this.runId, garbageCollectionPrepareResponse.runId) &&
         Objects.equals(this.gcCommitsLocation, garbageCollectionPrepareResponse.gcCommitsLocation) &&
         Objects.equals(this.gcAddressesLocation, garbageCollectionPrepareResponse.gcAddressesLocation) &&
-        Objects.equals(this.gcCommitsPresignedUrl, garbageCollectionPrepareResponse.gcCommitsPresignedUrl) &&
-        Objects.equals(this.completed, garbageCollectionPrepareResponse.completed) &&
-        Objects.equals(this.updateTime, garbageCollectionPrepareResponse.updateTime) &&
-        Objects.equals(this.error, garbageCollectionPrepareResponse.error)&&
+        Objects.equals(this.gcCommitsPresignedUrl, garbageCollectionPrepareResponse.gcCommitsPresignedUrl)&&
         Objects.equals(this.additionalProperties, garbageCollectionPrepareResponse.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(runId, gcCommitsLocation, gcAddressesLocation, gcCommitsPresignedUrl, completed, updateTime, error, additionalProperties);
+    return Objects.hash(runId, gcCommitsLocation, gcAddressesLocation, gcCommitsPresignedUrl, additionalProperties);
   }
 
   @Override
@@ -308,9 +228,6 @@ public class GarbageCollectionPrepareResponse {
     sb.append("    gcCommitsLocation: ").append(toIndentedString(gcCommitsLocation)).append("\n");
     sb.append("    gcAddressesLocation: ").append(toIndentedString(gcAddressesLocation)).append("\n");
     sb.append("    gcCommitsPresignedUrl: ").append(toIndentedString(gcCommitsPresignedUrl)).append("\n");
-    sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
-    sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
-    sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -338,15 +255,12 @@ public class GarbageCollectionPrepareResponse {
     openapiFields.add("gc_commits_location");
     openapiFields.add("gc_addresses_location");
     openapiFields.add("gc_commits_presigned_url");
-    openapiFields.add("completed");
-    openapiFields.add("update_time");
-    openapiFields.add("error");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
     openapiRequiredFields.add("run_id");
-    openapiRequiredFields.add("completed");
-    openapiRequiredFields.add("update_time");
+    openapiRequiredFields.add("gc_commits_location");
+    openapiRequiredFields.add("gc_addresses_location");
   }
 
  /**
@@ -372,18 +286,14 @@ public class GarbageCollectionPrepareResponse {
       if (!jsonObj.get("run_id").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `run_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("run_id").toString()));
       }
-      if ((jsonObj.get("gc_commits_location") != null && !jsonObj.get("gc_commits_location").isJsonNull()) && !jsonObj.get("gc_commits_location").isJsonPrimitive()) {
+      if (!jsonObj.get("gc_commits_location").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `gc_commits_location` to be a primitive type in the JSON string but got `%s`", jsonObj.get("gc_commits_location").toString()));
       }
-      if ((jsonObj.get("gc_addresses_location") != null && !jsonObj.get("gc_addresses_location").isJsonNull()) && !jsonObj.get("gc_addresses_location").isJsonPrimitive()) {
+      if (!jsonObj.get("gc_addresses_location").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `gc_addresses_location` to be a primitive type in the JSON string but got `%s`", jsonObj.get("gc_addresses_location").toString()));
       }
       if ((jsonObj.get("gc_commits_presigned_url") != null && !jsonObj.get("gc_commits_presigned_url").isJsonNull()) && !jsonObj.get("gc_commits_presigned_url").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `gc_commits_presigned_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("gc_commits_presigned_url").toString()));
-      }
-      // validate the optional field `error`
-      if (jsonObj.get("error") != null && !jsonObj.get("error").isJsonNull()) {
-        Error.validateJsonElement(jsonObj.get("error"));
       }
   }
 

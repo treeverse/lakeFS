@@ -231,6 +231,7 @@ pub enum PrepareGarbageCollectionCommitsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PrepareGarbageCollectionCommitsAsyncError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
@@ -1013,7 +1014,7 @@ pub async fn prepare_garbage_collection_commits(configuration: &configuration::C
     }
 }
 
-pub async fn prepare_garbage_collection_commits_async(configuration: &configuration::Configuration, repository: &str) -> Result<models::GarbageCollectionPrepareCreationResponse, Error<PrepareGarbageCollectionCommitsAsyncError>> {
+pub async fn prepare_garbage_collection_commits_async(configuration: &configuration::Configuration, repository: &str) -> Result<models::PrepareGarbageCollectionCommitsAsyncCreation, Error<PrepareGarbageCollectionCommitsAsyncError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -1046,7 +1047,7 @@ pub async fn prepare_garbage_collection_commits_async(configuration: &configurat
     }
 }
 
-pub async fn prepare_garbage_collection_commits_status(configuration: &configuration::Configuration, repository: &str, id: &str) -> Result<models::GarbageCollectionPrepareResponse, Error<PrepareGarbageCollectionCommitsStatusError>> {
+pub async fn prepare_garbage_collection_commits_status(configuration: &configuration::Configuration, repository: &str, id: &str) -> Result<models::PrepareGarbageCollectionCommitsStatus, Error<PrepareGarbageCollectionCommitsStatusError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;

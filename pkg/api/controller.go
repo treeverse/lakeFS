@@ -3946,14 +3946,11 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		c.Logger.WithError(err).Warn("Failed to presign url for GC commits")
 		// continue with the rest of the response
 	}
-	now := time.Now()
 	writeResponse(w, r, http.StatusCreated, apigen.GarbageCollectionPrepareResponse{
-		GcCommitsLocation:     &gcRunMetadata.CommitsCSVLocation,
-		GcAddressesLocation:   &gcRunMetadata.AddressLocation,
 		RunId:                 gcRunMetadata.RunID,
+		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
+		GcAddressesLocation:   gcRunMetadata.AddressLocation,
 		GcCommitsPresignedUrl: &presignedURL,
-		Completed:             true,
-		UpdateTime:            now,
 	})
 }
 
@@ -3972,7 +3969,7 @@ func (c *Controller) PrepareGarbageCollectionCommitsAsync(w http.ResponseWriter,
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusAccepted, apigen.GarbageCollectionPrepareCreationResponse{
+	writeResponse(w, r, http.StatusAccepted, apigen.PrepareGarbageCollectionCommitsAsyncCreation{
 		Id: taskID,
 	})
 }
@@ -3998,14 +3995,12 @@ func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter
 		return
 	}
 
-	resp := apigen.GarbageCollectionPrepareResponse{
-		RunId:     status.Task.Id,
+	resp := apigen.PrepareGarbageCollectionCommitsStatus{
+		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
 	}
-
 	if status.Task.UpdatedAt != nil {
-		updateTime := status.Task.UpdatedAt.AsTime()
-		resp.UpdateTime = updateTime
+		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
 	}
 
 	if status.Task.Error != "" {
@@ -4015,10 +4010,12 @@ func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter
 	}
 
 	if status.Info != nil {
-		resp.GcCommitsLocation = &status.Info.GcCommitsLocation
-		resp.GcAddressesLocation = &status.Info.GcAddressesLocation
-		resp.RunId = status.Info.RunId
-
+		resp.Result = &apigen.GarbageCollectionPrepareResponse{
+			RunId:                 status.Info.RunId,
+			GcAddressesLocation:   status.Info.GcAddressesLocation,
+			GcCommitsLocation:     status.Info.GcCommitsLocation,
+			GcCommitsPresignedUrl: nil,
+		}
 		// Generate presigned URL if task is done and we have the location
 		if status.Task.Done && status.Info.GcCommitsLocation != "" {
 			presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
@@ -4029,7 +4026,7 @@ func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter
 			if err != nil {
 				c.Logger.WithError(err).Error("Failed to presign url for prepare GC commits")
 			} else {
-				resp.GcCommitsPresignedUrl = &presignedURL
+				resp.Result.GcCommitsPresignedUrl = &presignedURL
 			}
 		}
 	}

@@ -35,7 +35,6 @@ import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
 import java.io.File;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
-import io.lakefs.clients.sdk.model.GarbageCollectionPrepareCreationResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
 import io.lakefs.clients.sdk.model.InstallationUsageReport;
@@ -44,6 +43,8 @@ import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
+import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsAsyncCreation;
+import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsStatus;
 import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.RefsRestore;
 import io.lakefs.clients.sdk.model.RepositoryMetadataKeys;
@@ -3666,16 +3667,16 @@ public class InternalApi {
     }
 
 
-    private ApiResponse<GarbageCollectionPrepareCreationResponse> prepareGarbageCollectionCommitsAsyncWithHttpInfo(String repository) throws ApiException {
+    private ApiResponse<PrepareGarbageCollectionCommitsAsyncCreation> prepareGarbageCollectionCommitsAsyncWithHttpInfo(String repository) throws ApiException {
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsAsyncValidateBeforeCall(repository, null);
-        Type localVarReturnType = new TypeToken<GarbageCollectionPrepareCreationResponse>(){}.getType();
+        Type localVarReturnType = new TypeToken<PrepareGarbageCollectionCommitsAsyncCreation>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call prepareGarbageCollectionCommitsAsyncAsync(String repository, final ApiCallback<GarbageCollectionPrepareCreationResponse> _callback) throws ApiException {
+    private okhttp3.Call prepareGarbageCollectionCommitsAsyncAsync(String repository, final ApiCallback<PrepareGarbageCollectionCommitsAsyncCreation> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsAsyncValidateBeforeCall(repository, _callback);
-        Type localVarReturnType = new TypeToken<GarbageCollectionPrepareCreationResponse>(){}.getType();
+        Type localVarReturnType = new TypeToken<PrepareGarbageCollectionCommitsAsyncCreation>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
@@ -3696,6 +3697,7 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> GC prepare task started </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3709,12 +3711,13 @@ public class InternalApi {
 
         /**
          * Execute prepareGarbageCollectionCommitsAsync request
-         * @return GarbageCollectionPrepareCreationResponse
+         * @return PrepareGarbageCollectionCommitsAsyncCreation
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> GC prepare task started </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3722,19 +3725,20 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public GarbageCollectionPrepareCreationResponse execute() throws ApiException {
-            ApiResponse<GarbageCollectionPrepareCreationResponse> localVarResp = prepareGarbageCollectionCommitsAsyncWithHttpInfo(repository);
+        public PrepareGarbageCollectionCommitsAsyncCreation execute() throws ApiException {
+            ApiResponse<PrepareGarbageCollectionCommitsAsyncCreation> localVarResp = prepareGarbageCollectionCommitsAsyncWithHttpInfo(repository);
             return localVarResp.getData();
         }
 
         /**
          * Execute prepareGarbageCollectionCommitsAsync request with HTTP info returned
-         * @return ApiResponse&lt;GarbageCollectionPrepareCreationResponse&gt;
+         * @return ApiResponse&lt;PrepareGarbageCollectionCommitsAsyncCreation&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> GC prepare task started </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3742,7 +3746,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public ApiResponse<GarbageCollectionPrepareCreationResponse> executeWithHttpInfo() throws ApiException {
+        public ApiResponse<PrepareGarbageCollectionCommitsAsyncCreation> executeWithHttpInfo() throws ApiException {
             return prepareGarbageCollectionCommitsAsyncWithHttpInfo(repository);
         }
 
@@ -3755,6 +3759,7 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> GC prepare task started </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3762,7 +3767,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public okhttp3.Call executeAsync(final ApiCallback<GarbageCollectionPrepareCreationResponse> _callback) throws ApiException {
+        public okhttp3.Call executeAsync(final ApiCallback<PrepareGarbageCollectionCommitsAsyncCreation> _callback) throws ApiException {
             return prepareGarbageCollectionCommitsAsyncAsync(repository, _callback);
         }
     }
@@ -3776,6 +3781,7 @@ public class InternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 202 </td><td> GC prepare task started </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3852,16 +3858,16 @@ public class InternalApi {
     }
 
 
-    private ApiResponse<GarbageCollectionPrepareResponse> prepareGarbageCollectionCommitsStatusWithHttpInfo(String repository, String id) throws ApiException {
+    private ApiResponse<PrepareGarbageCollectionCommitsStatus> prepareGarbageCollectionCommitsStatusWithHttpInfo(String repository, String id) throws ApiException {
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsStatusValidateBeforeCall(repository, id, null);
-        Type localVarReturnType = new TypeToken<GarbageCollectionPrepareResponse>(){}.getType();
+        Type localVarReturnType = new TypeToken<PrepareGarbageCollectionCommitsStatus>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call prepareGarbageCollectionCommitsStatusAsync(String repository, String id, final ApiCallback<GarbageCollectionPrepareResponse> _callback) throws ApiException {
+    private okhttp3.Call prepareGarbageCollectionCommitsStatusAsync(String repository, String id, final ApiCallback<PrepareGarbageCollectionCommitsStatus> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsStatusValidateBeforeCall(repository, id, _callback);
-        Type localVarReturnType = new TypeToken<GarbageCollectionPrepareResponse>(){}.getType();
+        Type localVarReturnType = new TypeToken<PrepareGarbageCollectionCommitsStatus>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
@@ -3883,7 +3889,7 @@ public class InternalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> GC prepare status </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> prepare GC commits task status </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3897,12 +3903,12 @@ public class InternalApi {
 
         /**
          * Execute prepareGarbageCollectionCommitsStatus request
-         * @return GarbageCollectionPrepareResponse
+         * @return PrepareGarbageCollectionCommitsStatus
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> GC prepare status </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> prepare GC commits task status </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3910,19 +3916,19 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public GarbageCollectionPrepareResponse execute() throws ApiException {
-            ApiResponse<GarbageCollectionPrepareResponse> localVarResp = prepareGarbageCollectionCommitsStatusWithHttpInfo(repository, id);
+        public PrepareGarbageCollectionCommitsStatus execute() throws ApiException {
+            ApiResponse<PrepareGarbageCollectionCommitsStatus> localVarResp = prepareGarbageCollectionCommitsStatusWithHttpInfo(repository, id);
             return localVarResp.getData();
         }
 
         /**
          * Execute prepareGarbageCollectionCommitsStatus request with HTTP info returned
-         * @return ApiResponse&lt;GarbageCollectionPrepareResponse&gt;
+         * @return ApiResponse&lt;PrepareGarbageCollectionCommitsStatus&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> GC prepare status </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> prepare GC commits task status </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3930,7 +3936,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public ApiResponse<GarbageCollectionPrepareResponse> executeWithHttpInfo() throws ApiException {
+        public ApiResponse<PrepareGarbageCollectionCommitsStatus> executeWithHttpInfo() throws ApiException {
             return prepareGarbageCollectionCommitsStatusWithHttpInfo(repository, id);
         }
 
@@ -3942,7 +3948,7 @@ public class InternalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> GC prepare status </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> prepare GC commits task status </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -3950,7 +3956,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public okhttp3.Call executeAsync(final ApiCallback<GarbageCollectionPrepareResponse> _callback) throws ApiException {
+        public okhttp3.Call executeAsync(final ApiCallback<PrepareGarbageCollectionCommitsStatus> _callback) throws ApiException {
             return prepareGarbageCollectionCommitsStatusAsync(repository, id, _callback);
         }
     }
@@ -3959,12 +3965,12 @@ public class InternalApi {
      * get status of prepare gc commits operation
      * 
      * @param repository  (required)
-     * @param id Unique identifier of the GC prepare task (required)
+     * @param id Unique identifier of the prepare GC commits task (required)
      * @return APIprepareGarbageCollectionCommitsStatusRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> GC prepare status </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> prepare GC commits task status </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>

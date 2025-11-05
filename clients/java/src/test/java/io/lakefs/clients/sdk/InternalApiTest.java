@@ -22,7 +22,6 @@ import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
 import java.io.File;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
-import io.lakefs.clients.sdk.model.GarbageCollectionPrepareCreationResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
 import io.lakefs.clients.sdk.model.InstallationUsageReport;
@@ -31,6 +30,8 @@ import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
+import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsAsyncCreation;
+import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsStatus;
 import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.RefsRestore;
 import io.lakefs.clients.sdk.model.RepositoryMetadataKeys;
@@ -327,7 +328,7 @@ public class InternalApiTest {
     @Test
     public void prepareGarbageCollectionCommitsAsyncTest() throws ApiException {
         String repository = null;
-        GarbageCollectionPrepareCreationResponse response = api.prepareGarbageCollectionCommitsAsync(repository)
+        PrepareGarbageCollectionCommitsAsyncCreation response = api.prepareGarbageCollectionCommitsAsync(repository)
                 .execute();
         // TODO: test validations
     }
@@ -341,7 +342,7 @@ public class InternalApiTest {
     public void prepareGarbageCollectionCommitsStatusTest() throws ApiException {
         String repository = null;
         String id = null;
-        GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommitsStatus(repository, id)
+        PrepareGarbageCollectionCommitsStatus response = api.prepareGarbageCollectionCommitsStatus(repository, id)
                 .execute();
         // TODO: test validations
     }

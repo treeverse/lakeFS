@@ -6890,8 +6890,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GarbageCollectionPrepareCreationResponse'
+                $ref: '#/components/schemas/PrepareGarbageCollectionCommitsAsyncCreation'
           description: GC prepare task started
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
         "401":
           content:
             application/json:
@@ -6933,7 +6939,7 @@ paths:
         schema:
           type: string
         style: simple
-      - description: Unique identifier of the GC prepare task
+      - description: Unique identifier of the prepare GC commits task
         explode: true
         in: query
         name: id
@@ -6946,8 +6952,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GarbageCollectionPrepareResponse'
-          description: GC prepare status
+                $ref: '#/components/schemas/PrepareGarbageCollectionCommitsStatus'
+          description: prepare GC commits task status
         "401":
           content:
             application/json:
@@ -10070,12 +10076,8 @@ components:
       type: object
     GarbageCollectionPrepareResponse:
       example:
-        update_time: 2000-01-23T04:56:07.000+00:00
         run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
         gc_addresses_location: s3://my-storage-namespace/_lakefs/retention/addresses
-        completed: true
-        error:
-          message: message
         gc_commits_location: s3://my-storage-namespace/_lakefs/retention/commits
         gc_commits_presigned_url: gc_commits_presigned_url
       properties:
@@ -10096,6 +10098,27 @@ components:
         gc_commits_presigned_url:
           description: a presigned url to download the commits csv
           type: string
+      required:
+      - gc_addresses_location
+      - gc_commits_location
+      - run_id
+      type: object
+    PrepareGarbageCollectionCommitsStatus:
+      example:
+        result:
+          run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+          gc_addresses_location: s3://my-storage-namespace/_lakefs/retention/addresses
+          gc_commits_location: s3://my-storage-namespace/_lakefs/retention/commits
+          gc_commits_presigned_url: gc_commits_presigned_url
+        update_time: 2000-01-23T04:56:07.000+00:00
+        task_id: task_id
+        completed: true
+        error:
+          message: message
+      properties:
+        task_id:
+          description: the id of the task preparing the GC commits
+          type: string
         completed:
           description: true if the task has completed (either successfully or with
             an error)
@@ -10104,11 +10127,13 @@ components:
           description: last time the task status was updated
           format: date-time
           type: string
+        result:
+          $ref: '#/components/schemas/GarbageCollectionPrepareResponse'
         error:
           $ref: '#/components/schemas/Error'
       required:
       - completed
-      - run_id
+      - task_id
       - update_time
       type: object
     PrepareGCUncommittedRequest:
@@ -10307,12 +10332,12 @@ components:
       required:
       - id
       type: object
-    GarbageCollectionPrepareCreationResponse:
+    PrepareGarbageCollectionCommitsAsyncCreation:
       example:
         id: id
       properties:
         id:
-          description: The id of the GC prepare task
+          description: The id of the prepare GC commits task
           type: string
       required:
       - id
