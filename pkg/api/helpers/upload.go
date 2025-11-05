@@ -15,9 +15,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -37,22 +35,6 @@ const DefaultUploadPartSize = MinUploadPartSize
 
 // DefaultUploadConcurrency is the default number of goroutines to spin up when uploading a multipart upload
 const DefaultUploadConcurrency = 5
-
-// Backoff parameters for upload retries
-const (
-	DefaultUploadInitialInterval = 100 * time.Millisecond
-	DefaultUploadMaxInterval     = 2 * time.Second
-	DefaultUploadMaxElapsedTime  = 30 * time.Second
-)
-
-// newUploadBackoff creates a backoff strategy for upload retries.
-func newUploadBackoff() backoff.BackOff {
-	return backoff.NewExponentialBackOff(
-		backoff.WithInitialInterval(DefaultUploadInitialInterval),
-		backoff.WithMaxInterval(DefaultUploadMaxInterval),
-		backoff.WithMaxElapsedTime(DefaultUploadMaxElapsedTime),
-	)
-}
 
 // ClientUpload uploads contents as a file via lakeFS
 func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
@@ -317,59 +299,33 @@ func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMulti
 }
 
 func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionReader, partURL string) (string, error) {
-	var etag string
-
-	operation := func() error {
-		// Reset reader position for each attempt
-		if _, err := partReader.Seek(0, io.SeekStart); err != nil {
-			return backoff.Permanent(fmt.Errorf("failed to reset reader: %w", err))
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodPut, partURL, partReader)
-		if err != nil {
-			return backoff.Permanent(err)
-		}
-		req.ContentLength = partReader.Size()
-		if u.contentType != "" {
-			req.Header.Set("Content-Type", u.contentType)
-		}
-
-		resp, err := u.uploader.HTTPClient.Do(req)
-		if err != nil {
-			return backoff.Permanent(err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if !httputil.IsSuccessStatusCode(resp) {
-			err := fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed)
-			return backoff.Permanent(err)
-		}
-
-		etag = extractEtagFromResponseHeader(resp.Header)
-		if etag == "" {
-			err := fmt.Errorf("upload etag is missing %s: %w", partURL, ErrRequestFailed)
-			return backoff.Permanent(err)
-		}
-
-		return nil
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, partURL, partReader)
+	if err != nil {
+		return "", err
+	}
+	req.ContentLength = partReader.Size()
+	if u.contentType != "" {
+		req.Header.Set("Content-Type", u.contentType)
 	}
 
-	b := backoff.WithContext(newUploadBackoff(), ctx)
-	if err := backoff.Retry(operation, b); err != nil {
-		return "", fmt.Errorf("failed to upload part: %w", err)
+	resp, err := u.uploader.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if !httputil.IsSuccessStatusCode(resp) {
+		return "", fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed)
+	}
+
+	etag := extractEtagFromResponseHeader(resp.Header)
+	if etag == "" {
+		return "", fmt.Errorf("upload etag is missing %s: %w", partURL, ErrRequestFailed)
 	}
 	return etag, nil
 }
 
 func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, error) {
-	var (
-		etag            string
-		stagingLocation *apigen.StagingLocation
-	)
-
-	// get physical address for the object upload (done once before retries)
-	var err error
-	stagingLocation, err = getPhysicalAddress(ctx, u.uploader.Client, u.repoID, u.branchID, &apigen.GetPhysicalAddressParams{
+	stagingLocation, err := getPhysicalAddress(ctx, u.uploader.Client, u.repoID, u.branchID, &apigen.GetPhysicalAddressParams{
 		Path:    u.objectPath,
 		Presign: swag.Bool(true),
 	})
@@ -378,61 +334,38 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 	}
 	preSignURL := swag.StringValue(stagingLocation.PresignedUrl)
 
-	operation := func() error {
-		// Reset reader position for each attempt
-		if _, err := u.reader.Seek(0, io.SeekStart); err != nil {
-			return backoff.Permanent(fmt.Errorf("failed to reset reader: %w", err))
-		}
-
-		var body io.ReadSeeker
-		if u.size > 0 {
-			// Passing Reader with content length == 0 results in 501 Not Implemented
-			body = u.reader
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, body)
-		if err != nil {
-			return backoff.Permanent(err)
-		}
-		req.ContentLength = u.size
-		if u.contentType != "" {
-			req.Header.Set("Content-Type", u.contentType)
-		}
-		if isAzureBlobURL(req.URL) {
-			req.Header.Set("x-ms-blob-type", "BlockBlob")
-		}
-
-		resp, err := u.uploader.HTTPClient.Do(req)
-		if err != nil {
-			return backoff.Permanent(err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		// Read response body to ensure upload completed
-		_, readErr := io.Copy(io.Discard, resp.Body)
-		if readErr != nil {
-			return readErr
-		}
-
-		if !httputil.IsSuccessStatusCode(resp) {
-			err := fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, resp.Status)
-			return backoff.Permanent(err)
-		}
-
-		etag = extractEtagFromResponseHeader(resp.Header)
-		if etag == "" {
-			err := fmt.Errorf("upload %w %s: etag is missing", ErrRequestFailed, preSignURL)
-			return backoff.Permanent(err)
-		}
-		return nil
+	var body io.ReadSeeker
+	if u.size > 0 {
+		// Passing Reader with content length == 0 results in 501 Not Implemented
+		body = u.reader
 	}
 
-	b := backoff.WithContext(newUploadBackoff(), ctx)
-	if err := backoff.Retry(operation, b); err != nil {
-		return nil, fmt.Errorf("failed to upload object: %w", err)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, body)
+	if err != nil {
+		return nil, err
+	}
+	req.ContentLength = u.size
+	if u.contentType != "" {
+		req.Header.Set("Content-Type", u.contentType)
+	}
+	if isAzureBlobURL(req.URL) {
+		req.Header.Set("x-ms-blob-type", "BlockBlob")
 	}
 
-	// Link the physical address (don't retry this as it's idempotent and the upload succeeded)
+	putResp, err := u.uploader.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = putResp.Body.Close() }()
+	if !httputil.IsSuccessStatusCode(putResp) {
+		return nil, fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, putResp.Status)
+	}
+
+	etag := extractEtagFromResponseHeader(putResp.Header)
+	if etag == "" {
+		return nil, fmt.Errorf("upload %w %s: etag is missing", ErrRequestFailed, preSignURL)
+	}
+
 	linkReqBody := apigen.LinkPhysicalAddressJSONRequestBody{
 		Checksum:  etag,
 		SizeBytes: u.size,
