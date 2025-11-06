@@ -3990,11 +3990,6 @@ func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter
 		return
 	}
 
-	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
 	resp := apigen.PrepareGarbageCollectionCommitsStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
@@ -4018,13 +4013,19 @@ func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter
 		}
 		// Generate presigned URL if task is done and we have the location
 		if status.Task.Done && status.Info.GcCommitsLocation != "" {
+			repo, err := c.Catalog.GetRepository(ctx, repository)
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+
 			presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 				StorageID:      repo.StorageID,
 				Identifier:     status.Info.GcCommitsLocation,
 				IdentifierType: block.IdentifierTypeFull,
 			}, block.PreSignModeRead, "")
 			if err != nil {
-				c.Logger.WithError(err).Error("Failed to presign url for prepare GC commits")
+				// report an error an continue fallthrough
+				c.Logger.WithError(err).Error("Failed to presign url for prepare GC commits, continuing")
 			} else {
 				resp.Result.GcCommitsPresignedUrl = &presignedURL
 			}

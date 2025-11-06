@@ -405,13 +405,12 @@ func (x *RepositoryRestoreStatus) GetTask() *Task {
 // GarbageCollectionPrepareCommitsInfo holds the result of a GC prepare
 // operation
 type GarbageCollectionPrepareCommitsInfo struct {
-	state                 protoimpl.MessageState `protogen:"open.v1"`
-	RunId                 string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	GcCommitsLocation     string                 `protobuf:"bytes,2,opt,name=gc_commits_location,json=gcCommitsLocation,proto3" json:"gc_commits_location,omitempty"`
-	GcAddressesLocation   string                 `protobuf:"bytes,3,opt,name=gc_addresses_location,json=gcAddressesLocation,proto3" json:"gc_addresses_location,omitempty"`
-	GcCommitsPresignedUrl string                 `protobuf:"bytes,4,opt,name=gc_commits_presigned_url,json=gcCommitsPresignedUrl,proto3" json:"gc_commits_presigned_url,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	RunId               string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	GcCommitsLocation   string                 `protobuf:"bytes,2,opt,name=gc_commits_location,json=gcCommitsLocation,proto3" json:"gc_commits_location,omitempty"`
+	GcAddressesLocation string                 `protobuf:"bytes,3,opt,name=gc_addresses_location,json=gcAddressesLocation,proto3" json:"gc_addresses_location,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *GarbageCollectionPrepareCommitsInfo) Reset() {
@@ -461,13 +460,6 @@ func (x *GarbageCollectionPrepareCommitsInfo) GetGcCommitsLocation() string {
 func (x *GarbageCollectionPrepareCommitsInfo) GetGcAddressesLocation() string {
 	if x != nil {
 		return x.GcAddressesLocation
-	}
-	return ""
-}
-
-func (x *GarbageCollectionPrepareCommitsInfo) GetGcCommitsPresignedUrl() string {
-	if x != nil {
-		return x.GcCommitsPresignedUrl
 	}
 	return ""
 }
@@ -606,12 +598,11 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12/\n" +
 	"\x04info\x18\x02 \x01(\v2\x1b.catalog.RepositoryDumpInfoR\x04info\"<\n" +
 	"\x17RepositoryRestoreStatus\x12!\n" +
-	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\"\xd9\x01\n" +
+	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\"\xa0\x01\n" +
 	"#GarbageCollectionPrepareCommitsInfo\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12.\n" +
 	"\x13gc_commits_location\x18\x02 \x01(\tR\x11gcCommitsLocation\x122\n" +
-	"\x15gc_addresses_location\x18\x03 \x01(\tR\x13gcAddressesLocation\x127\n" +
-	"\x18gc_commits_presigned_url\x18\x04 \x01(\tR\x15gcCommitsPresignedUrl\"\x85\x01\n" +
+	"\x15gc_addresses_location\x18\x03 \x01(\tR\x13gcAddressesLocation\"\x85\x01\n" +
 	"\x1eGarbageCollectionPrepareStatus\x12!\n" +
 	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12@\n" +
 	"\x04info\x18\x02 \x01(\v2,.catalog.GarbageCollectionPrepareCommitsInfoR\x04info\",\n" +
