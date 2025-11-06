@@ -557,7 +557,7 @@ func sendStats(cmd *cobra.Command, cmdSuffix string) {
 	}
 }
 
-func getHTTPClient() *http.Client {
+func getHTTPClient(checkRetry func(ctx context.Context, resp *http.Response, err error) (bool, error)) *http.Client {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
@@ -571,7 +571,7 @@ func getHTTPClient() *http.Client {
 	if !cfg.Server.Retries.Enabled {
 		return &http.Client{Transport: transport}
 	}
-	return NewRetryClient(cfg.Server.Retries, transport)
+	return NewRetryClient(cfg.Server.Retries, transport, checkRetry)
 }
 
 func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
@@ -610,9 +610,8 @@ func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
 	return awsiam.NewIAMAuthParams(host, opts...), nil
 }
 
-func getClient() *apigen.ClientWithResponses {
-	opts := []apigen.ClientOption{}
-	httpClient := getHTTPClient()
+func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
+	httpClient := getHTTPClient(lakectlRetryPolicy)
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
@@ -630,7 +629,7 @@ func getClient() *apigen.ClientWithResponses {
 
 	useJWTAuth := accessKeyID == "" && secretAccessKey == ""
 	if useJWTAuth {
-		opts = getClientOptions(awsIAMparams, serverEndpoint)
+		opts = append(getClientOptions(awsIAMparams, serverEndpoint), opts...)
 	}
 
 	oss := osinfo.GetOSInfo()

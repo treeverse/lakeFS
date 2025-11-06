@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -28,10 +28,14 @@ type webLoginParams struct {
 }
 
 var (
-	errTryAgain                     = errors.New("HTTP request failed; retry")
-	errFailedToGetToken             = errors.New("failed to get token")
-	errFailedToGetTokenDontTryAgain = backoff.Permanent(errFailedToGetToken)
+	loginRetryStatuses = slices.Concat(lakectlDefaultRetryStatuses,
+		[]int{http.StatusNotFound},
+	)
 )
+
+func loginRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	return CheckRetry(ctx, resp, err, loginRetryStatuses)
+}
 
 var loginCmd = &cobra.Command{
 	Use:     "login",
@@ -44,7 +48,7 @@ var loginCmd = &cobra.Command{
 			DieErr(fmt.Errorf("get server URL %s: %w", cfg.Server.EndpointURL, err))
 		}
 
-		client := getClient()
+		client := getClient(apigen.WithHTTPClient(getHTTPClient(loginRetryPolicy)))
 		tokenRedirect, err := client.GetTokenRedirectWithResponse(cmd.Context())
 		// TODO(ariels): Change back to http.StatusSeeOther after fixing lakeFS server!
 		DieOnErrorOrUnexpectedStatusCode(tokenRedirect, err, http.StatusOK)
@@ -64,34 +68,18 @@ var loginCmd = &cobra.Command{
 			// Keep going, user can manually use the URL.
 		}
 
-		loginToken, err := backoff.RetryWithData(
-			func() (*apigen.AuthenticationToken, error) {
-				resp, err := client.GetTokenFromMailboxWithResponse(cmd.Context(), mailbox)
-				if err != nil {
-					return nil, err
-				}
-				if resp.JSON404 != nil {
-					return nil, errTryAgain
-				}
-				if resp.JSON200 == nil {
-					return nil, errFailedToGetTokenDontTryAgain
-				}
-				return resp.JSON200, nil
-			},
-			// Initial backoff is rapid, in case user is already logged in.  Then
-			// slow down considerably so user can log in!
-			backoff.NewExponentialBackOff(backoff.WithInitialInterval(80*time.Millisecond),
-				backoff.WithMultiplier(1.5),
-				backoff.WithMaxInterval(time.Second),
-				backoff.WithMaxElapsedTime(20*time.Second),
-			),
-		)
-		if err != nil {
-			DieErr(fmt.Errorf("get login token: %w", err))
-		}
+		// client will retry; use this to wait for login.
+		//
+		// TODO(ariels): The timeouts on some lakectl configurations may be too low for
+		// convenient login.  Consider using a RetryClient based on a different
+		// configuration here..
+		resp, err := client.GetTokenFromMailboxWithResponse(cmd.Context(), mailbox)
 
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+
+		loginToken := resp.JSON200
 		if loginToken == nil {
-			Die("nil login token", 1)
+			Die("No login token", 1)
 		}
 
 		cache := getTokenCacheOnce()
