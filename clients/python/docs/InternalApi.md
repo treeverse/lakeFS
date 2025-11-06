@@ -24,6 +24,8 @@ Method | HTTP request | Description
 [**internal_set_garbage_collection_rules**](InternalApi.md#internal_set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 [**post_stats_events**](InternalApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 [**prepare_garbage_collection_commits**](InternalApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+[**prepare_garbage_collection_commits_async**](InternalApi.md#prepare_garbage_collection_commits_async) | **POST** /repositories/{repository}/gc/prepare_commits/async | prepare gc commits
+[**prepare_garbage_collection_commits_status**](InternalApi.md#prepare_garbage_collection_commits_status) | **GET** /repositories/{repository}/gc/prepare_commits/status | get status of prepare gc commits operation
 [**prepare_garbage_collection_uncommitted**](InternalApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 [**restore_refs**](InternalApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 [**set_garbage_collection_rules_preflight**](InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
@@ -2125,6 +2127,231 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | paths to commit dataset |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**429** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **prepare_garbage_collection_commits_async**
+> TaskCreation prepare_garbage_collection_commits_async(repository)
+
+prepare gc commits
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.task_creation import TaskCreation
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.InternalApi(api_client)
+    repository = 'repository_example' # str | 
+
+    try:
+        # prepare gc commits
+        api_response = api_instance.prepare_garbage_collection_commits_async(repository)
+        print("The response of InternalApi->prepare_garbage_collection_commits_async:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling InternalApi->prepare_garbage_collection_commits_async: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  | 
+
+### Return type
+
+[**TaskCreation**](TaskCreation.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**202** | GC prepare task started |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**429** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **prepare_garbage_collection_commits_status**
+> PrepareGarbageCollectionCommitsStatus prepare_garbage_collection_commits_status(repository, id)
+
+get status of prepare gc commits operation
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.InternalApi(api_client)
+    repository = 'repository_example' # str | 
+    id = 'id_example' # str | Unique identifier of the prepare GC commits task
+
+    try:
+        # get status of prepare gc commits operation
+        api_response = api_instance.prepare_garbage_collection_commits_status(repository, id)
+        print("The response of InternalApi->prepare_garbage_collection_commits_status:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling InternalApi->prepare_garbage_collection_commits_status: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  | 
+ **id** | **str**| Unique identifier of the prepare GC commits task | 
+
+### Return type
+
+[**PrepareGarbageCollectionCommitsStatus**](PrepareGarbageCollectionCommitsStatus.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | prepare GC commits task status |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |

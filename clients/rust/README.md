@@ -126,6 +126,8 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**internal_set_garbage_collection_rules**](docs/InternalApi.md#internal_set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 *InternalApi* | [**post_stats_events**](docs/InternalApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *InternalApi* | [**prepare_garbage_collection_commits**](docs/InternalApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+*InternalApi* | [**prepare_garbage_collection_commits_async**](docs/InternalApi.md#prepare_garbage_collection_commits_async) | **POST** /repositories/{repository}/gc/prepare_commits/async | prepare gc commits
+*InternalApi* | [**prepare_garbage_collection_commits_status**](docs/InternalApi.md#prepare_garbage_collection_commits_status) | **GET** /repositories/{repository}/gc/prepare_commits/status | get status of prepare gc commits operation
 *InternalApi* | [**prepare_garbage_collection_uncommitted**](docs/InternalApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *InternalApi* | [**restore_refs**](docs/InternalApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**set_garbage_collection_rules_preflight**](docs/InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
@@ -252,6 +254,7 @@ Class | Method | HTTP request | Description
  - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)
+ - [PrepareGarbageCollectionCommitsStatus](docs/PrepareGarbageCollectionCommitsStatus.md)
  - [PrepareGcUncommittedRequest](docs/PrepareGcUncommittedRequest.md)
  - [PrepareGcUncommittedResponse](docs/PrepareGcUncommittedResponse.md)
  - [PresignMultipartUpload](docs/PresignMultipartUpload.md)
@@ -285,6 +288,7 @@ Class | Method | HTTP request | Description
  - [StorageUri](docs/StorageUri.md)
  - [StsAuthRequest](docs/StsAuthRequest.md)
  - [TagCreation](docs/TagCreation.md)
+ - [TaskCreation](docs/TaskCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
  - [UiConfig](docs/UiConfig.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
