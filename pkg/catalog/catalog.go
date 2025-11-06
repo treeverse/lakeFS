@@ -2720,7 +2720,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	taskStatus := &GarbageCollectionPrepareStatus{}
 	taskSteps := []taskStep{
 		{
-			Name: "prepare expired commits",
+			Name: "prepare expired commits on " + repository.RepositoryID.String(),
 			Func: func(ctx context.Context) error {
 				gcRunMetadata, err := c.Store.SaveGarbageCollectionCommits(ctx, repository)
 				if err != nil {
