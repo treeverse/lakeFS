@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from "react";
+import {Navigate, useLocation} from "react-router-dom";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -7,9 +8,10 @@ import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
-import {AUTH_STATUS, useAuth} from "../../lib/auth/authContext";
-import {Navigate, useLocation} from "react-router-dom";
-import {buildUrl, isTrue, normalizeNext, queryOf, stripParam} from "../../lib/utils";
+import {AUTH_STATUS, LAKEFS_POST_LOGIN_NEXT, useAuth} from "../../lib/auth/authContext";
+import {buildUrl, normalizeNext, ROUTES, stripParam} from "../../lib/utils";
+
+type NavigateState = { redirected?: boolean; next?: string };
 
 interface SetupResponse {
     state: string;
@@ -29,23 +31,20 @@ export interface LoginConfig {
     logout_url: string;
 }
 
-type NavigateState = { redirected?: boolean; next?: string };
-
-const withNext = (url: string, next: string) => {
+/** Helper: append `next` query param safely */
+export const withNext = (url: string, next: string) => {
     const safeNext = next?.startsWith("/") ? next : "/";
-    try {
-        const u = new URL(url, window.location.origin);
-        u.searchParams.set("next", safeNext);
-        return u.toString();
-    } catch {
-        return `${url}${url.includes("?") ? "&" : "?"}next=${encodeURIComponent(safeNext)}`;
-    }
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set("next", safeNext);
+    return u.toString();
 };
 
+/** Helper: derives intent (redirected, next) and a clean URL w/o "redirected" */
 export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     const st = location.state ?? {};
-    const qp = queryOf(location);
-    const redirectedFromQuery = isTrue(qp.get("redirected"));
+    const qp = new URLSearchParams(location.search);
+
+    const redirectedFromQuery = qp.get("redirected") === "true";
     const redirected = Boolean(st.redirected) || redirectedFromQuery;
     const next = normalizeNext(st.next ?? qp.get("next"));
     const cleanUrl = buildUrl(location, stripParam(qp, "redirected"));
@@ -53,24 +52,30 @@ export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     return { redirected, redirectedFromQuery, next, cleanUrl };
 };
 
+/** Tiny component to perform navigation as an effect */
 const DoNavigate: React.FC<{ to: string; replace?: boolean; state?: NavigateState }> = ({ to, replace = true, state }) => {
     const router = useRouter();
     useEffect(() => { router.navigate(to, { replace, state }); }, [router, to, replace, state]);
     return <Loading />;
 };
 
+/** Tiny component for external redirects (SSO) */
 const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
     useEffect(() => { window.location.replace(to); }, [to]);
     return <Loading />;
 };
 
+/** Pure lakeFS login form */
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const location = useLocation();
     const { setStatus } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
-    const loginState = (location.state as { next?: string; redirected?: boolean } | null) ?? null;
-    const search = new URLSearchParams(location.search);
-    const next = loginState?.next ?? search.get("next") ?? "/";
+
+    // Resolve "next" for post-login navigation
+    const st = (location.state as NavigateState | null) ?? null;
+    const qs = new URLSearchParams(location.search);
+    const next = normalizeNext(st?.next ?? qs.get("next"));
+
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
 
@@ -92,7 +97,9 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const username = formData.get('username');
                             const password = formData.get('password');
                             await auth.login(username, password);
-                            window.sessionStorage.setItem("lakefs_post_login_next", next);
+                            // Persist next for the AuthProvider to consume and navigate
+                            window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
+                            // Signal: we are authenticated - AuthProvider handles the redirect.
                             setStatus(AUTH_STATUS.AUTHENTICATED);
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {
@@ -134,7 +141,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                     <div className={"mt-2 mb-1"}>
                         { loginConfig.fallback_login_url ?
                             <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
-                                window.sessionStorage.setItem("lakefs_post_login_next", next);
+                                window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
                                 loginConfig.login_cookie_names?.forEach(
                                     cookie => {
                                         document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
@@ -158,29 +165,25 @@ const LoginPage = () => {
     const location = useLocation();
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
-    const { status } = useAuth();
     const setupResponse = response as SetupResponse | null;
     const { redirected, redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
 
-    useEffect(() => {if (next) window.sessionStorage.setItem("lakefs_post_login_next", next);}, [next]);
+    // Persist next for post-login redirect
+    useEffect(() => {
+        if (next) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
+    }, [next]);
 
+    // Setup doesn't complete, send to /setup with redirected=true&next=...
     if (loading) return <Loading />;
 
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        const qs = new URLSearchParams(location.search);
-        qs.set("redirected", "true");
-        if (!qs.get("next")) qs.set("next", next);
-        return <Navigate to={`/setup?${qs.toString()}${location.hash ?? ""}`} replace />;
+        return <Navigate to={ROUTES.SETUP} replace />;
     }
 
     if (error) return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;
     if (redirectedFromQuery) return <DoNavigate to={cleanUrl} replace state={{ redirected: true, next }} />;
 
-    if (status === AUTH_STATUS.AUTHENTICATED) {
-        const stored = window.sessionStorage.getItem("lakefs_post_login_next");
-        if (stored?.startsWith("/")) return <DoNavigate to={stored} replace />;
-    }
-
+    // Strategy flow only when we *were redirected* here (SSO/selection)
     const loginConfig = setupResponse?.login_config;
 
     if (redirected) {
@@ -191,6 +194,7 @@ const LoginPage = () => {
         }
     }
 
+    // Default: lakeFS login form
     return <LoginForm loginConfig={loginConfig} />;
 };
 

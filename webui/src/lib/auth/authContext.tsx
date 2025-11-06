@@ -1,8 +1,9 @@
 import React, {createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api";
-import {buildNextFromWindow, isPublicAuthRoute, ROUTES} from "../utils";
+import {getCurrentRelativeUrl, isPublicAuthRoute, ROUTES} from "../utils";
 
+export const LAKEFS_POST_LOGIN_NEXT = "lakefs_post_login_next";
 export const AUTH_STATUS = {
     AUTHENTICATED: "authenticated",
     UNAUTHENTICATED: "unauthenticated",
@@ -26,21 +27,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const onUnauthorized = useCallback(() => {
         auth.clearCurrentUser();
         setStatus(AUTH_STATUS.UNAUTHENTICATED);
-        const path = window.location.pathname;
-        const next = buildNextFromWindow();
-        if (!isPublicAuthRoute(path)) {
-            navigate(ROUTES.LOGIN, { replace: true, state: { redirected: true, next } });
-        }
+
+        if (isPublicAuthRoute(window.location.pathname)) return;
+
+        navigate(ROUTES.LOGIN, {
+            replace: true,
+            state: { redirected: true, next: getCurrentRelativeUrl() },
+        });
     }, [navigate]);
 
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
-            const stored = window.sessionStorage.getItem("lakefs_post_login_next");
-            if (stored && stored.startsWith("/")) {
-                window.sessionStorage.removeItem("lakefs_post_login_next");
-                const next = buildNextFromWindow();
-                if (next !== stored) {
-                    navigate(stored, { replace: true });
+            const postLoginNext = window.sessionStorage.getItem(LAKEFS_POST_LOGIN_NEXT);
+            if (postLoginNext && postLoginNext.startsWith("/")) {
+                window.sessionStorage.removeItem(LAKEFS_POST_LOGIN_NEXT);
+                const next = getCurrentRelativeUrl();
+                if (next !== postLoginNext) {
+                    navigate(postLoginNext, { replace: true });
                 }
             }
         }

@@ -8,6 +8,7 @@ import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
+import {auth} from "../api";
 
 const NavUserInfo = () => {
     const { user, loading: userLoading, error } = useUser();
@@ -37,6 +38,7 @@ const NavUserInfo = () => {
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
                 onClick={() => {
+                    auth.clearCurrentUser();
                     window.location.replace(logoutUrl);
                 }}>
                 Logout
