@@ -44,7 +44,8 @@ import { getRepoStorageConfig } from "./utils";
 import {useDropzone} from "react-dropzone";
 import pMap from "p-map";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
+import {MetadataFields, filterEmptyMetadataFields} from "../../../lib/components/repository/metadata";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import { Link } from "../../../lib/components/nav";
 import Card from "react-bootstrap/Card";
@@ -93,7 +94,7 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
     const onSubmit = () => {
         const message = textRef.current.value;
         const metadata = {};
-        metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+        filterEmptyMetadataFields(metadataFields).forEach(pair => metadata[pair.key] = pair.value)
         setCommitting(true)
         onCommit({message, metadata}, () => {
             setCommitting(false)
@@ -219,7 +220,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         setImportPhase(ImportPhase.InProgress);
         try {
             const metadata = {};
-            metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+            filterEmptyMetadataFields(metadataFields).forEach(pair => metadata[pair.key] = pair.value)
             setImportPhase(ImportPhase.InProgress)
             await startImport(
                 setImportID,
