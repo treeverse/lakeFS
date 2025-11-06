@@ -7,16 +7,16 @@ import {
     RefreshButton
 } from "../../lib/components/controls";
 import {ConfirmationButton} from "../../lib/components/modals";
-import useUser from "../../lib/hooks/user";
 import {auth} from "../../lib/api";
 import {useState} from "react";
 import {CredentialsShowModal, CredentialsTable} from "../../lib/components/auth/credentials";
 import {useRouter} from "../../lib/hooks/router";
 import {resolveUserDisplayName} from "../../lib/utils";
+import {useAuth} from "../../lib/auth/authContext";
 
 const CredentialsContainer = () => {
     const router = useRouter();
-    const {user} = useUser();
+    const {user} = useAuth();
     const [refreshToken, setRefreshToken] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [createdKey, setCreatedKey] = useState(null);

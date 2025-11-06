@@ -26,8 +26,11 @@ export const isPublicAuthRoute = (path: string) =>
 export const getCurrentRelativeUrl = () =>
     window.location.pathname + (window.location.search || "") + (window.location.hash || "");
 
-export const normalizeNext = (v: string | null | undefined) =>
-    v && v.startsWith("/") ? v : "/";
+export const normalizeNext = (raw?: string | null) => {
+    const n = (raw ?? "").trim();
+    const safe = n.startsWith("/") ? n : "";
+    return safe && safe !== "/" ? safe : ROUTES.REPOSITORIES;
+};
 
 export const stripParam = (qp: URLSearchParams, name: string) => {
     const out = new URLSearchParams(qp);

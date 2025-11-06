@@ -1,5 +1,4 @@
 import React from "react";
-import useUser from '../hooks/user'
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import DarkModeToggle from "./darkModeToggle";
@@ -9,15 +8,17 @@ import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
 import {auth} from "../api";
+import {AUTH_STATUS, useAuth} from "../auth/authContext";
 
 const NavUserInfo = () => {
-    const { user, loading: userLoading, error } = useUser();
+    const { user, status } = useAuth();
+    const userLoading = status === AUTH_STATUS.PENDING;
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
     const versionConfig = config?.versionConfig || {};
 
     if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
-    if (!user || !!error) return (<></>);
+    if (!user) return (<></>);
     const notifyNewVersion = !versionLoading && !versionError && versionConfig.upgrade_recommended
     const NavBarTitle = () => {
         return (

@@ -1,9 +1,9 @@
 import React, {createContext, FC, useContext, useEffect, useMemo} from "react";
 
 import { config } from "../api";
-import useUser from "./user";
 import { usePluginManager } from "../../extendable/plugins/pluginsContext";
 import {useAPI} from "./api";
+import {useAuth} from "../auth/authContext";
 
 type ConfigContextType = {
     error: Error | null;
@@ -58,7 +58,7 @@ const useConfigContext = () => useContext(configContext);
 
 const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const pluginManager = usePluginManager();
-    const {user} = useUser();
+    const {user} = useAuth();
     const { response, loading, error } = useAPI(() => config.getConfig(), [user]);
 
     useEffect(() => {

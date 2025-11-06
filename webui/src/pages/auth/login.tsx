@@ -8,7 +8,7 @@ import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
-import {AUTH_STATUS, LAKEFS_POST_LOGIN_NEXT, useAuth} from "../../lib/auth/authContext";
+import {LAKEFS_POST_LOGIN_NEXT, useAuth} from "../../lib/auth/authContext";
 import {buildUrl, normalizeNext, ROUTES, stripParam} from "../../lib/utils";
 
 type NavigateState = { redirected?: boolean; next?: string };
@@ -33,9 +33,8 @@ export interface LoginConfig {
 
 /** Helper: append `next` query param safely */
 export const withNext = (url: string, next: string) => {
-    const safeNext = next?.startsWith("/") ? next : "/";
     const u = new URL(url, window.location.origin);
-    u.searchParams.set("next", safeNext);
+    u.searchParams.set("next", normalizeNext(next));
     return u.toString();
 };
 
@@ -68,7 +67,7 @@ const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
 /** Pure lakeFS login form */
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const location = useLocation();
-    const { setStatus } = useAuth();
+    const { refreshUser } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
 
     // Resolve "next" for post-login navigation
@@ -97,10 +96,8 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const username = formData.get('username');
                             const password = formData.get('password');
                             await auth.login(username, password);
-                            // Persist next for the AuthProvider to consume and navigate
                             window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
-                            // Signal: we are authenticated - AuthProvider handles the redirect.
-                            setStatus(AUTH_STATUS.AUTHENTICATED);
+                            await refreshUser({ useCache: false });
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {
                                 const contents = {__html: `${loginConfig.login_failed_message}` ||

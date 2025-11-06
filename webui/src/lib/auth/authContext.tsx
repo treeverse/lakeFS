@@ -12,8 +12,12 @@ export const AUTH_STATUS = {
 
 export type AuthStatus = typeof AUTH_STATUS[keyof typeof AUTH_STATUS];
 
+type User = { id?: string } | null;
+
 type AuthContextType = {
     status: AuthStatus;
+    user: User;
+    refreshUser: (opts?: { useCache?: boolean }) => Promise<void>;
     setStatus: (s: AuthStatus) => void;
     onUnauthorized: () => void;
 };
@@ -22,10 +26,29 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [status, setStatus] = useState<AuthStatus>(AUTH_STATUS.PENDING);
+    const [user, setUser] = useState<User>(null);
     const navigate = useNavigate();
+
+    const refreshUser = useCallback(
+        async ({ useCache = true }: { useCache?: boolean } = {}) => {
+            try {
+                const u = useCache
+                    ? await auth.getCurrentUserWithCache()
+                    : await auth.getCurrentUser();
+                const ok = Boolean(u?.id);
+                setUser(ok ? u : null);
+                setStatus(ok ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED);
+            } catch {
+                setUser(null);
+                setStatus(AUTH_STATUS.UNAUTHENTICATED);
+            }
+        },
+        []
+    );
 
     const onUnauthorized = useCallback(() => {
         auth.clearCurrentUser();
+        setUser(null);
         setStatus(AUTH_STATUS.UNAUTHENTICATED);
 
         if (isPublicAuthRoute(window.location.pathname)) return;
@@ -35,6 +58,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             state: { redirected: true, next: getCurrentRelativeUrl() },
         });
     }, [navigate]);
+
+    useEffect(() => { void refreshUser({ useCache: true }); }, [refreshUser]);
 
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
@@ -50,12 +75,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [status, navigate]);
 
     const value = useMemo<AuthContextType>(
-        () => ({
-            status,
-            setStatus,
-            onUnauthorized,
-        }),
-        [status, onUnauthorized]
+        () => ({ status, user, refreshUser, setStatus, onUnauthorized }),
+        [status, user, refreshUser, onUnauthorized]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
