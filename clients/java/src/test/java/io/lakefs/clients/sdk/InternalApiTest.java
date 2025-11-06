@@ -30,6 +30,7 @@ import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
+import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsStatus;
 import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.RefsRestore;
 import io.lakefs.clients.sdk.model.RepositoryMetadataKeys;
@@ -39,6 +40,7 @@ import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
 import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.StorageURI;
+import io.lakefs.clients.sdk.model.TaskCreation;
 import io.lakefs.clients.sdk.model.VersionConfig;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -314,6 +316,33 @@ public class InternalApiTest {
     public void prepareGarbageCollectionCommitsTest() throws ApiException {
         String repository = null;
         GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * prepare gc commits
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionCommitsAsyncTest() throws ApiException {
+        String repository = null;
+        TaskCreation response = api.prepareGarbageCollectionCommitsAsync(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get status of prepare gc commits operation
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionCommitsStatusTest() throws ApiException {
+        String repository = null;
+        String id = null;
+        PrepareGarbageCollectionCommitsStatus response = api.prepareGarbageCollectionCommitsStatus(repository, id)
                 .execute();
         // TODO: test validations
     }

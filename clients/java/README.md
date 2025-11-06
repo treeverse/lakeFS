@@ -243,6 +243,8 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**internalSetGarbageCollectionRules**](docs/InternalApi.md#internalSetGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 *InternalApi* | [**postStatsEvents**](docs/InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *InternalApi* | [**prepareGarbageCollectionCommits**](docs/InternalApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+*InternalApi* | [**prepareGarbageCollectionCommitsAsync**](docs/InternalApi.md#prepareGarbageCollectionCommitsAsync) | **POST** /repositories/{repository}/gc/prepare_commits/async | prepare gc commits
+*InternalApi* | [**prepareGarbageCollectionCommitsStatus**](docs/InternalApi.md#prepareGarbageCollectionCommitsStatus) | **GET** /repositories/{repository}/gc/prepare_commits/status | get status of prepare gc commits operation
 *InternalApi* | [**prepareGarbageCollectionUncommitted**](docs/InternalApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *InternalApi* | [**restoreRefs**](docs/InternalApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
@@ -371,6 +373,7 @@ Class | Method | HTTP request | Description
  - [PolicyList](docs/PolicyList.md)
  - [PrepareGCUncommittedRequest](docs/PrepareGCUncommittedRequest.md)
  - [PrepareGCUncommittedResponse](docs/PrepareGCUncommittedResponse.md)
+ - [PrepareGarbageCollectionCommitsStatus](docs/PrepareGarbageCollectionCommitsStatus.md)
  - [PresignMultipartUpload](docs/PresignMultipartUpload.md)
  - [PullRequest](docs/PullRequest.md)
  - [PullRequestBasic](docs/PullRequestBasic.md)
@@ -402,6 +405,7 @@ Class | Method | HTTP request | Description
  - [StorageURI](docs/StorageURI.md)
  - [StsAuthRequest](docs/StsAuthRequest.md)
  - [TagCreation](docs/TagCreation.md)
+ - [TaskCreation](docs/TaskCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
  - [UIConfig](docs/UIConfig.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)

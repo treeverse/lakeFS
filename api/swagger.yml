@@ -1559,6 +1559,28 @@ components:
         - gc_commits_location
         - gc_addresses_location
 
+    PrepareGarbageCollectionCommitsStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+          description: the id of the task preparing the GC commits
+        completed:
+          type: boolean
+          description: true if the task has completed (either successfully or with an error)
+        update_time:
+          type: string
+          format: date-time
+          description: last time the task status was updated
+        result:
+          $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        error:
+          $ref: "#/components/schemas/Error"
+      required:
+        - task_id
+        - completed
+        - update_time
+
     PrepareGCUncommittedRequest:
       type: object
       properties:
@@ -1718,6 +1740,15 @@ components:
       properties:
         id:
           description: The id of the import process
+          type: string
+      required:
+        - id
+
+    TaskCreation:
+      type: object
+      properties:
+        id:
+          description: The id of the new task
           type: string
       required:
         - id
@@ -2038,13 +2069,13 @@ components:
         token:
           type: string
           description: The license JWT token
-      
+
     IcebergNamespaceRef:
       description: Reference to one or more levels of a namespace
       type: array
       items:
         type: string
-      example: [ "accounting", "tax" ]
+      example: ["accounting", "tax"]
 
     IcebergRemoteTable:
       type: object
@@ -5997,6 +6028,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/gc/prepare_commits/async:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - internal
+      operationId: prepareGarbageCollectionCommitsAsync
+      summary: prepare gc commits
+      responses:
+        202:
+          description: GC prepare task started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCreation"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/gc/prepare_commits/status:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - internal
+      operationId: prepareGarbageCollectionCommitsStatus
+      summary: get status of prepare gc commits operation
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the prepare GC commits task
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: prepare GC commits task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrepareGarbageCollectionCommitsStatus"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:

@@ -87,6 +87,7 @@ from lakefs_sdk.models.policy import Policy
 from lakefs_sdk.models.policy_list import PolicyList
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
+from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus
 from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 from lakefs_sdk.models.pull_request import PullRequest
 from lakefs_sdk.models.pull_request_basic import PullRequestBasic
@@ -118,6 +119,7 @@ from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
 from lakefs_sdk.models.tag_creation import TagCreation
+from lakefs_sdk.models.task_creation import TaskCreation
 from lakefs_sdk.models.task_info import TaskInfo
 from lakefs_sdk.models.ui_config import UIConfig
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties

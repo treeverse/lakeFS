@@ -89,6 +89,7 @@ docs/Policy.md
 docs/PolicyList.md
 docs/PrepareGCUncommittedRequest.md
 docs/PrepareGCUncommittedResponse.md
+docs/PrepareGarbageCollectionCommitsStatus.md
 docs/PresignMultipartUpload.md
 docs/PullRequest.md
 docs/PullRequestBasic.md
@@ -126,6 +127,7 @@ docs/StorageURI.md
 docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
+docs/TaskCreation.md
 docs/TaskInfo.md
 docs/UIConfig.md
 docs/UnderlyingObjectProperties.md
@@ -237,6 +239,7 @@ lakefs_sdk/models/pagination.py
 lakefs_sdk/models/path_list.py
 lakefs_sdk/models/policy.py
 lakefs_sdk/models/policy_list.py
+lakefs_sdk/models/prepare_garbage_collection_commits_status.py
 lakefs_sdk/models/prepare_gc_uncommitted_request.py
 lakefs_sdk/models/prepare_gc_uncommitted_response.py
 lakefs_sdk/models/presign_multipart_upload.py
@@ -270,6 +273,7 @@ lakefs_sdk/models/storage_config.py
 lakefs_sdk/models/storage_uri.py
 lakefs_sdk/models/sts_auth_request.py
 lakefs_sdk/models/tag_creation.py
+lakefs_sdk/models/task_creation.py
 lakefs_sdk/models/task_info.py
 lakefs_sdk/models/ui_config.py
 lakefs_sdk/models/underlying_object_properties.py
@@ -375,6 +379,7 @@ test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py
 test/test_policy_list.py
+test/test_prepare_garbage_collection_commits_status.py
 test/test_prepare_gc_uncommitted_request.py
 test/test_prepare_gc_uncommitted_response.py
 test/test_presign_multipart_upload.py
@@ -414,6 +419,7 @@ test/test_storage_uri.py
 test/test_sts_auth_request.py
 test/test_tag_creation.py
 test/test_tags_api.py
+test/test_task_creation.py
 test/test_task_info.py
 test/test_ui_config.py
 test/test_underlying_object_properties.py

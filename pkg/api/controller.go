@@ -3954,6 +3954,86 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	})
 }
 
+func (c *Controller) PrepareGarbageCollectionCommitsAsync(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "prepare_garbage_collection_commits_async", r, repository, "", "")
+	taskID, err := c.Catalog.PrepareExpiredCommitsAsync(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter, r *http.Request, repository string, params apigen.PrepareGarbageCollectionCommitsStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	taskID := params.Id
+	status, err := c.Catalog.GetGarbageCollectionPrepareStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := apigen.PrepareGarbageCollectionCommitsStatus{
+		TaskId:    status.Task.Id,
+		Completed: status.Task.Done,
+	}
+	if status.Task.UpdatedAt != nil {
+		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
+	}
+
+	if status.Task.Error != "" {
+		resp.Error = &apigen.Error{
+			Message: status.Task.Error,
+		}
+	}
+
+	if status.Info != nil {
+		resp.Result = &apigen.GarbageCollectionPrepareResponse{
+			RunId:                 status.Info.RunId,
+			GcAddressesLocation:   status.Info.GcAddressesLocation,
+			GcCommitsLocation:     status.Info.GcCommitsLocation,
+			GcCommitsPresignedUrl: nil,
+		}
+		// Generate presigned URL if task is done and we have the location
+		if status.Task.Done && status.Info.GcCommitsLocation != "" {
+			repo, err := c.Catalog.GetRepository(ctx, repository)
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+
+			presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+				StorageID:      repo.StorageID,
+				Identifier:     status.Info.GcCommitsLocation,
+				IdentifierType: block.IdentifierTypeFull,
+			}, block.PreSignModeRead, "")
+			if err != nil {
+				// report an error an continue fallthrough
+				c.Logger.WithError(err).Error("Failed to presign url for prepare GC commits, continuing")
+			} else {
+				resp.Result.GcCommitsPresignedUrl = &presignedURL
+			}
+		}
+	}
+	writeResponse(w, r, http.StatusOK, resp)
+}
+
 func (c *Controller) InternalGetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
 	c.GetBranchProtectionRules(w, r, repository)
 }

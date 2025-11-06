@@ -158,6 +158,20 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_prepare_garbage_collection_commits_async(self) -> None:
+        """Test case for prepare_garbage_collection_commits_async
+
+        prepare gc commits  # noqa: E501
+        """
+        pass
+
+    def test_prepare_garbage_collection_commits_status(self) -> None:
+        """Test case for prepare_garbage_collection_commits_status
+
+        get status of prepare gc commits operation  # noqa: E501
+        """
+        pass
+
     def test_prepare_garbage_collection_uncommitted(self) -> None:
         """Test case for prepare_garbage_collection_uncommitted
 
