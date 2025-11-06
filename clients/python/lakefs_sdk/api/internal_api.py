@@ -44,7 +44,6 @@ from lakefs_sdk.models.object_stage_creation import ObjectStageCreation
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
-from lakefs_sdk.models.prepare_garbage_collection_commits_async_creation import PrepareGarbageCollectionCommitsAsyncCreation
 from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus
 from lakefs_sdk.models.refs_dump import RefsDump
 from lakefs_sdk.models.refs_restore import RefsRestore
@@ -55,6 +54,7 @@ from lakefs_sdk.models.setup_state import SetupState
 from lakefs_sdk.models.stats_events_list import StatsEventsList
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.storage_uri import StorageURI
+from lakefs_sdk.models.task_creation import TaskCreation
 from lakefs_sdk.models.version_config import VersionConfig
 
 from lakefs_sdk.api_client import ApiClient
@@ -2956,7 +2956,7 @@ class InternalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def prepare_garbage_collection_commits_async(self, repository : StrictStr, **kwargs) -> PrepareGarbageCollectionCommitsAsyncCreation:  # noqa: E501
+    def prepare_garbage_collection_commits_async(self, repository : StrictStr, **kwargs) -> TaskCreation:  # noqa: E501
         """prepare gc commits  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -2976,7 +2976,7 @@ class InternalApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: PrepareGarbageCollectionCommitsAsyncCreation
+        :rtype: TaskCreation
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
@@ -3018,7 +3018,7 @@ class InternalApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: tuple(PrepareGarbageCollectionCommitsAsyncCreation, status_code(int), headers(HTTPHeaderDict))
+        :rtype: tuple(TaskCreation, status_code(int), headers(HTTPHeaderDict))
         """
 
         _params = locals()
@@ -3073,7 +3073,7 @@ class InternalApi:
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
-            '202': "PrepareGarbageCollectionCommitsAsyncCreation",
+            '202': "TaskCreation",
             '400': "Error",
             '401': "Error",
             '403': "Error",

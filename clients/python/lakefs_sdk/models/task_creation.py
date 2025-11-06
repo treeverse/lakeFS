@@ -25,11 +25,11 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field, StrictStr
 
-class PrepareGarbageCollectionCommitsAsyncCreation(BaseModel):
+class TaskCreation(BaseModel):
     """
-    PrepareGarbageCollectionCommitsAsyncCreation
+    TaskCreation
     """
-    id: StrictStr = Field(..., description="The id of the prepare GC commits task")
+    id: StrictStr = Field(..., description="The id of the new task")
     __properties = ["id"]
 
     class Config:
@@ -46,8 +46,8 @@ class PrepareGarbageCollectionCommitsAsyncCreation(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> PrepareGarbageCollectionCommitsAsyncCreation:
-        """Create an instance of PrepareGarbageCollectionCommitsAsyncCreation from a JSON string"""
+    def from_json(cls, json_str: str) -> TaskCreation:
+        """Create an instance of TaskCreation from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -59,15 +59,15 @@ class PrepareGarbageCollectionCommitsAsyncCreation(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> PrepareGarbageCollectionCommitsAsyncCreation:
-        """Create an instance of PrepareGarbageCollectionCommitsAsyncCreation from a dict"""
+    def from_dict(cls, obj: dict) -> TaskCreation:
+        """Create an instance of TaskCreation from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return PrepareGarbageCollectionCommitsAsyncCreation.parse_obj(obj)
+            return TaskCreation.parse_obj(obj)
 
-        _obj = PrepareGarbageCollectionCommitsAsyncCreation.parse_obj({
+        _obj = TaskCreation.parse_obj({
             "id": obj.get("id")
         })
         return _obj

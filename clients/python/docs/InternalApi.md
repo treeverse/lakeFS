@@ -2136,7 +2136,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **prepare_garbage_collection_commits_async**
-> PrepareGarbageCollectionCommitsAsyncCreation prepare_garbage_collection_commits_async(repository)
+> TaskCreation prepare_garbage_collection_commits_async(repository)
 
 prepare gc commits
 
@@ -2152,7 +2152,7 @@ prepare gc commits
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.prepare_garbage_collection_commits_async_creation import PrepareGarbageCollectionCommitsAsyncCreation
+from lakefs_sdk.models.task_creation import TaskCreation
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -2222,7 +2222,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**PrepareGarbageCollectionCommitsAsyncCreation**](PrepareGarbageCollectionCommitsAsyncCreation.md)
+[**TaskCreation**](TaskCreation.md)
 
 ### Authorization
 

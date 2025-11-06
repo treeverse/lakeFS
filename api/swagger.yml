@@ -1744,11 +1744,11 @@ components:
       required:
         - id
 
-    PrepareGarbageCollectionCommitsAsyncCreation:
+    TaskCreation:
       type: object
       properties:
         id:
-          description: The id of the prepare GC commits task
+          description: The id of the new task
           type: string
       required:
         - id
@@ -6057,7 +6057,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PrepareGarbageCollectionCommitsAsyncCreation"
+                $ref: "#/components/schemas/TaskCreation"
         400:
           $ref: "#/components/responses/ValidationError"
         401:

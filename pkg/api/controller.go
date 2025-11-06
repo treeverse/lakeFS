@@ -3969,7 +3969,7 @@ func (c *Controller) PrepareGarbageCollectionCommitsAsync(w http.ResponseWriter,
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusAccepted, apigen.PrepareGarbageCollectionCommitsAsyncCreation{
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
 		Id: taskID,
 	})
 }

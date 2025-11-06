@@ -43,7 +43,6 @@ import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
-import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsAsyncCreation;
 import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsStatus;
 import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.RefsRestore;
@@ -54,6 +53,7 @@ import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
 import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.StorageURI;
+import io.lakefs.clients.sdk.model.TaskCreation;
 import io.lakefs.clients.sdk.model.VersionConfig;
 
 import java.lang.reflect.Type;
@@ -3667,16 +3667,16 @@ public class InternalApi {
     }
 
 
-    private ApiResponse<PrepareGarbageCollectionCommitsAsyncCreation> prepareGarbageCollectionCommitsAsyncWithHttpInfo(String repository) throws ApiException {
+    private ApiResponse<TaskCreation> prepareGarbageCollectionCommitsAsyncWithHttpInfo(String repository) throws ApiException {
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsAsyncValidateBeforeCall(repository, null);
-        Type localVarReturnType = new TypeToken<PrepareGarbageCollectionCommitsAsyncCreation>(){}.getType();
+        Type localVarReturnType = new TypeToken<TaskCreation>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call prepareGarbageCollectionCommitsAsyncAsync(String repository, final ApiCallback<PrepareGarbageCollectionCommitsAsyncCreation> _callback) throws ApiException {
+    private okhttp3.Call prepareGarbageCollectionCommitsAsyncAsync(String repository, final ApiCallback<TaskCreation> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = prepareGarbageCollectionCommitsAsyncValidateBeforeCall(repository, _callback);
-        Type localVarReturnType = new TypeToken<PrepareGarbageCollectionCommitsAsyncCreation>(){}.getType();
+        Type localVarReturnType = new TypeToken<TaskCreation>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
@@ -3711,7 +3711,7 @@ public class InternalApi {
 
         /**
          * Execute prepareGarbageCollectionCommitsAsync request
-         * @return PrepareGarbageCollectionCommitsAsyncCreation
+         * @return TaskCreation
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
@@ -3725,14 +3725,14 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public PrepareGarbageCollectionCommitsAsyncCreation execute() throws ApiException {
-            ApiResponse<PrepareGarbageCollectionCommitsAsyncCreation> localVarResp = prepareGarbageCollectionCommitsAsyncWithHttpInfo(repository);
+        public TaskCreation execute() throws ApiException {
+            ApiResponse<TaskCreation> localVarResp = prepareGarbageCollectionCommitsAsyncWithHttpInfo(repository);
             return localVarResp.getData();
         }
 
         /**
          * Execute prepareGarbageCollectionCommitsAsync request with HTTP info returned
-         * @return ApiResponse&lt;PrepareGarbageCollectionCommitsAsyncCreation&gt;
+         * @return ApiResponse&lt;TaskCreation&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
@@ -3746,7 +3746,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public ApiResponse<PrepareGarbageCollectionCommitsAsyncCreation> executeWithHttpInfo() throws ApiException {
+        public ApiResponse<TaskCreation> executeWithHttpInfo() throws ApiException {
             return prepareGarbageCollectionCommitsAsyncWithHttpInfo(repository);
         }
 
@@ -3767,7 +3767,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public okhttp3.Call executeAsync(final ApiCallback<PrepareGarbageCollectionCommitsAsyncCreation> _callback) throws ApiException {
+        public okhttp3.Call executeAsync(final ApiCallback<TaskCreation> _callback) throws ApiException {
             return prepareGarbageCollectionCommitsAsyncAsync(repository, _callback);
         }
     }

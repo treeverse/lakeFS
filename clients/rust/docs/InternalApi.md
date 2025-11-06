@@ -605,7 +605,7 @@ Name | Type | Description  | Required | Notes
 
 ## prepare_garbage_collection_commits_async
 
-> models::PrepareGarbageCollectionCommitsAsyncCreation prepare_garbage_collection_commits_async(repository)
+> models::TaskCreation prepare_garbage_collection_commits_async(repository)
 prepare gc commits
 
 ### Parameters
@@ -617,7 +617,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**models::PrepareGarbageCollectionCommitsAsyncCreation**](PrepareGarbageCollectionCommitsAsyncCreation.md)
+[**models::TaskCreation**](TaskCreation.md)
 
 ### Authorization
 

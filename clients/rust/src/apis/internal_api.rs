@@ -1014,7 +1014,7 @@ pub async fn prepare_garbage_collection_commits(configuration: &configuration::C
     }
 }
 
-pub async fn prepare_garbage_collection_commits_async(configuration: &configuration::Configuration, repository: &str) -> Result<models::PrepareGarbageCollectionCommitsAsyncCreation, Error<PrepareGarbageCollectionCommitsAsyncError>> {
+pub async fn prepare_garbage_collection_commits_async(configuration: &configuration::Configuration, repository: &str) -> Result<models::TaskCreation, Error<PrepareGarbageCollectionCommitsAsyncError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;

@@ -47,25 +47,25 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * PrepareGarbageCollectionCommitsAsyncCreation
+ * TaskCreation
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PrepareGarbageCollectionCommitsAsyncCreation {
+public class TaskCreation {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
-  public PrepareGarbageCollectionCommitsAsyncCreation() {
+  public TaskCreation() {
   }
 
-  public PrepareGarbageCollectionCommitsAsyncCreation id(String id) {
+  public TaskCreation id(String id) {
     
     this.id = id;
     return this;
   }
 
    /**
-   * The id of the prepare GC commits task
+   * The id of the new task
    * @return id
   **/
   @javax.annotation.Nonnull
@@ -91,9 +91,9 @@ public class PrepareGarbageCollectionCommitsAsyncCreation {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the PrepareGarbageCollectionCommitsAsyncCreation instance itself
+   * @return the TaskCreation instance itself
    */
-  public PrepareGarbageCollectionCommitsAsyncCreation putAdditionalProperty(String key, Object value) {
+  public TaskCreation putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -132,9 +132,9 @@ public class PrepareGarbageCollectionCommitsAsyncCreation {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PrepareGarbageCollectionCommitsAsyncCreation prepareGarbageCollectionCommitsAsyncCreation = (PrepareGarbageCollectionCommitsAsyncCreation) o;
-    return Objects.equals(this.id, prepareGarbageCollectionCommitsAsyncCreation.id)&&
-        Objects.equals(this.additionalProperties, prepareGarbageCollectionCommitsAsyncCreation.additionalProperties);
+    TaskCreation taskCreation = (TaskCreation) o;
+    return Objects.equals(this.id, taskCreation.id)&&
+        Objects.equals(this.additionalProperties, taskCreation.additionalProperties);
   }
 
   @Override
@@ -145,7 +145,7 @@ public class PrepareGarbageCollectionCommitsAsyncCreation {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PrepareGarbageCollectionCommitsAsyncCreation {\n");
+    sb.append("class TaskCreation {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -181,17 +181,17 @@ public class PrepareGarbageCollectionCommitsAsyncCreation {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to PrepareGarbageCollectionCommitsAsyncCreation
+  * @throws IOException if the JSON Element is invalid with respect to TaskCreation
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!PrepareGarbageCollectionCommitsAsyncCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in PrepareGarbageCollectionCommitsAsyncCreation is not found in the empty JSON string", PrepareGarbageCollectionCommitsAsyncCreation.openapiRequiredFields.toString()));
+        if (!TaskCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in TaskCreation is not found in the empty JSON string", TaskCreation.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : PrepareGarbageCollectionCommitsAsyncCreation.openapiRequiredFields) {
+      for (String requiredField : TaskCreation.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -206,16 +206,16 @@ public class PrepareGarbageCollectionCommitsAsyncCreation {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!PrepareGarbageCollectionCommitsAsyncCreation.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'PrepareGarbageCollectionCommitsAsyncCreation' and its subtypes
+       if (!TaskCreation.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'TaskCreation' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<PrepareGarbageCollectionCommitsAsyncCreation> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(PrepareGarbageCollectionCommitsAsyncCreation.class));
+       final TypeAdapter<TaskCreation> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(TaskCreation.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<PrepareGarbageCollectionCommitsAsyncCreation>() {
+       return (TypeAdapter<T>) new TypeAdapter<TaskCreation>() {
            @Override
-           public void write(JsonWriter out, PrepareGarbageCollectionCommitsAsyncCreation value) throws IOException {
+           public void write(JsonWriter out, TaskCreation value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -238,12 +238,12 @@ public class PrepareGarbageCollectionCommitsAsyncCreation {
            }
 
            @Override
-           public PrepareGarbageCollectionCommitsAsyncCreation read(JsonReader in) throws IOException {
+           public TaskCreation read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             PrepareGarbageCollectionCommitsAsyncCreation instance = thisAdapter.fromJsonTree(jsonObj);
+             TaskCreation instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -270,18 +270,18 @@ public class PrepareGarbageCollectionCommitsAsyncCreation {
   }
 
  /**
-  * Create an instance of PrepareGarbageCollectionCommitsAsyncCreation given an JSON string
+  * Create an instance of TaskCreation given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of PrepareGarbageCollectionCommitsAsyncCreation
-  * @throws IOException if the JSON string is invalid with respect to PrepareGarbageCollectionCommitsAsyncCreation
+  * @return An instance of TaskCreation
+  * @throws IOException if the JSON string is invalid with respect to TaskCreation
   */
-  public static PrepareGarbageCollectionCommitsAsyncCreation fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, PrepareGarbageCollectionCommitsAsyncCreation.class);
+  public static TaskCreation fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, TaskCreation.class);
   }
 
  /**
-  * Convert an instance of PrepareGarbageCollectionCommitsAsyncCreation to an JSON string
+  * Convert an instance of TaskCreation to an JSON string
   *
   * @return JSON string
   */

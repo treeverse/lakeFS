@@ -86,7 +86,6 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
-docs/PrepareGarbageCollectionCommitsAsyncCreation.md
 docs/PrepareGarbageCollectionCommitsStatus.md
 docs/PrepareGcUncommittedRequest.md
 docs/PrepareGcUncommittedResponse.md
@@ -127,6 +126,7 @@ docs/StorageUri.md
 docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
+docs/TaskCreation.md
 docs/TaskInfo.md
 docs/UiConfig.md
 docs/UnderlyingObjectProperties.md
@@ -236,7 +236,6 @@ src/models/pagination.rs
 src/models/path_list.rs
 src/models/policy.rs
 src/models/policy_list.rs
-src/models/prepare_garbage_collection_commits_async_creation.rs
 src/models/prepare_garbage_collection_commits_status.rs
 src/models/prepare_gc_uncommitted_request.rs
 src/models/prepare_gc_uncommitted_response.rs
@@ -270,6 +269,7 @@ src/models/storage_config.rs
 src/models/storage_uri.rs
 src/models/sts_auth_request.rs
 src/models/tag_creation.rs
+src/models/task_creation.rs
 src/models/task_info.rs
 src/models/ui_config.rs
 src/models/underlying_object_properties.rs

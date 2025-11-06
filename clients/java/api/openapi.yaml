@@ -6890,7 +6890,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PrepareGarbageCollectionCommitsAsyncCreation'
+                $ref: '#/components/schemas/TaskCreation'
           description: GC prepare task started
         "400":
           content:
@@ -10332,12 +10332,12 @@ components:
       required:
       - id
       type: object
-    PrepareGarbageCollectionCommitsAsyncCreation:
+    TaskCreation:
       example:
         id: id
       properties:
         id:
-          description: The id of the prepare GC commits task
+          description: The id of the new task
           type: string
       required:
       - id

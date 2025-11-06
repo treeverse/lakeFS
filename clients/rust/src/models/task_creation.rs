@@ -11,15 +11,15 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct PrepareGarbageCollectionCommitsAsyncCreation {
-    /// The id of the prepare GC commits task
+pub struct TaskCreation {
+    /// The id of the new task
     #[serde(rename = "id")]
     pub id: String,
 }
 
-impl PrepareGarbageCollectionCommitsAsyncCreation {
-    pub fn new(id: String) -> PrepareGarbageCollectionCommitsAsyncCreation {
-        PrepareGarbageCollectionCommitsAsyncCreation {
+impl TaskCreation {
+    pub fn new(id: String) -> TaskCreation {
+        TaskCreation {
             id,
         }
     }

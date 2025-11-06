@@ -16,10 +16,10 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.prepare_garbage_collection_commits_async_creation import PrepareGarbageCollectionCommitsAsyncCreation  # noqa: E501
+from lakefs_sdk.models.task_creation import TaskCreation  # noqa: E501
 
-class TestPrepareGarbageCollectionCommitsAsyncCreation(unittest.TestCase):
-    """PrepareGarbageCollectionCommitsAsyncCreation unit test stubs"""
+class TestTaskCreation(unittest.TestCase):
+    """TaskCreation unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,26 +27,26 @@ class TestPrepareGarbageCollectionCommitsAsyncCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> PrepareGarbageCollectionCommitsAsyncCreation:
-        """Test PrepareGarbageCollectionCommitsAsyncCreation
+    def make_instance(self, include_optional) -> TaskCreation:
+        """Test TaskCreation
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `PrepareGarbageCollectionCommitsAsyncCreation`
+        # uncomment below to create an instance of `TaskCreation`
         """
-        model = PrepareGarbageCollectionCommitsAsyncCreation()  # noqa: E501
+        model = TaskCreation()  # noqa: E501
         if include_optional:
-            return PrepareGarbageCollectionCommitsAsyncCreation(
+            return TaskCreation(
                 id = ''
             )
         else:
-            return PrepareGarbageCollectionCommitsAsyncCreation(
+            return TaskCreation(
                 id = '',
         )
         """
 
-    def testPrepareGarbageCollectionCommitsAsyncCreation(self):
-        """Test PrepareGarbageCollectionCommitsAsyncCreation"""
+    def testTaskCreation(self):
+        """Test TaskCreation"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

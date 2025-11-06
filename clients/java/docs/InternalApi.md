@@ -1839,7 +1839,7 @@ public class Example {
 
 <a id="prepareGarbageCollectionCommitsAsync"></a>
 # **prepareGarbageCollectionCommitsAsync**
-> PrepareGarbageCollectionCommitsAsyncCreation prepareGarbageCollectionCommitsAsync(repository).execute();
+> TaskCreation prepareGarbageCollectionCommitsAsync(repository).execute();
 
 prepare gc commits
 
@@ -1888,7 +1888,7 @@ public class Example {
     InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
     try {
-      PrepareGarbageCollectionCommitsAsyncCreation result = apiInstance.prepareGarbageCollectionCommitsAsync(repository)
+      TaskCreation result = apiInstance.prepareGarbageCollectionCommitsAsync(repository)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -1910,7 +1910,7 @@ public class Example {
 
 ### Return type
 
-[**PrepareGarbageCollectionCommitsAsyncCreation**](PrepareGarbageCollectionCommitsAsyncCreation.md)
+[**TaskCreation**](TaskCreation.md)
 
 ### Authorization
 
