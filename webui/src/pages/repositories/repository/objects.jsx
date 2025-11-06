@@ -45,7 +45,7 @@ import {useDropzone} from "react-dropzone";
 import pMap from "p-map";
 import {formatAlertText} from "../../../lib/components/repository/errors";
 import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
-import {MetadataFields} from "../../../lib/components/repository/metadata";
+import {MetadataFields, validateMetadataKeys} from "../../../lib/components/repository/metadata";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import { Link } from "../../../lib/components/nav";
 import Card from "react-bootstrap/Card";
@@ -88,10 +88,14 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
     
     const hide = () => {
         if (committing) return;
-        setShow(false)
+        setShow(false);
+        setMetadataFields([]);
     }
 
     const onSubmit = () => {
+        if (!validateMetadataKeys(metadataFields, setMetadataFields)) {
+            return;
+        }
         const message = textRef.current.value;
         const metadata = {};
         metadataFields.forEach(pair => metadata[pair.key] = pair.value)
@@ -217,6 +221,9 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   };
 
     const doImport = async () => {
+        if (!validateMetadataKeys(metadataFields, setMetadataFields)) {
+            return;
+        }
         setImportPhase(ImportPhase.InProgress);
         try {
             const metadata = {};
