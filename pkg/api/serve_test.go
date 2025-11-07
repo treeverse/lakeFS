@@ -205,7 +205,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		Collector:             collector,
 		Logger:                logger,
 		LicenseManager:        licenseManager,
-		IcebergSyncManager:    icebergSyncManager,
 	}, handler)
 	testutil.MustDo(t, "register module api factory", err)
 

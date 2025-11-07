@@ -71,11 +71,6 @@ const (
 
 	DefaultMaxDeleteObjects = 1000
 
-	// httpStatusClientClosedRequest used as internal status code when request context is cancelled
-	httpStatusClientClosedRequest = 499
-	// httpStatusClientClosedRequestText text used for client closed request status code
-	httpStatusClientClosedRequestText = "Client closed request"
-
 	pullRequestClosed = "CLOSED"
 	pullRequestOpen   = "OPEN"
 
@@ -2980,7 +2975,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
 	if httputil.IsRequestCanceled(r) {
-		cb(w, r, httpStatusClientClosedRequest, httpStatusClientClosedRequestText)
+		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
 		return true
 	}
 	if err == nil {
@@ -5851,31 +5846,11 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-	apiErr := apigen.Error{
-		Message: fmt.Sprint(v),
-	}
-	writeResponse(w, r, code, apiErr)
+	httputil.WriteError(w, r, code, v)
 }
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
-	// check first if the client canceled the request
-	if httputil.IsRequestCanceled(r) {
-		w.WriteHeader(httpStatusClientClosedRequest) // Client closed request
-		return
-	}
-	// nobody - just status code
-	if response == nil {
-		w.WriteHeader(code)
-		return
-	}
-	// encode response body as json
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(code)
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		logging.FromContext(r.Context()).WithError(err).WithField("code", code).Info("Failed to write encoded json response")
-	}
+	httputil.WriteResponse(w, r, code, response)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {
@@ -6303,24 +6278,24 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }
 
-func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalog string) {
-	ctx := r.Context()
-	c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
+func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string) {
+	//ctx := r.Context()
+	//c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
 
-	err := c.icebergSyncManager.Pull(catalog, apigen.IcebergPullRequest(body))
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusOK, body)
+	c.icebergSyncManager.Pull(w, r, body, catalogID)
+	//if c.handleAPIError(ctx, w, r, err) {
+	//	return
+	//}
+	//writeResponse(w, r, http.StatusOK, body)
 }
 
-func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalog string) {
-	ctx := r.Context()
-	c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
+func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string) {
+	//ctx := r.Context()
+	//c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
 
-	err := c.icebergSyncManager.Push(catalog, apigen.IcebergPushRequest(body))
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusOK, body)
+	c.icebergSyncManager.Push(w, r, body, catalogID)
+	//if c.handleAPIError(ctx, w, r, err) {
+	//	return
+	//}
+	//writeResponse(w, r, http.StatusOK, body)
 }

@@ -2,13 +2,15 @@ package icebergcatalog
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 type SyncManager interface {
-	Pull(catalogID string, req apigen.IcebergPullRequest) error
-	Push(catalogID string, req apigen.IcebergPushRequest) error
+	Pull(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string)
+	Push(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string)
 }
 
 var ErrNotImplemented = errors.New("not implemented")
@@ -17,10 +19,10 @@ var ErrNotImplemented = errors.New("not implemented")
 type NopSyncManager struct {
 }
 
-func (n *NopSyncManager) Pull(_ string, _ apigen.IcebergPullRequest) error {
-	return ErrNotImplemented
+func (n *NopSyncManager) Pull(w http.ResponseWriter, r *http.Request, _ apigen.PullIcebergTableJSONRequestBody, _ string) {
+	httputil.WriteError(w, r, http.StatusNotImplemented, ErrNotImplemented)
 }
 
-func (n *NopSyncManager) Push(_ string, _ apigen.IcebergPushRequest) error {
-	return ErrNotImplemented
+func (n *NopSyncManager) Push(w http.ResponseWriter, r *http.Request, _ apigen.PushIcebergTableJSONRequestBody, _ string) {
+	httputil.WriteError(w, r, http.StatusNotImplemented, ErrNotImplemented)
 }
