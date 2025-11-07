@@ -39,7 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/icebergcatalog"
+	"github.com/treeverse/lakefs/pkg/icebergsync"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -106,7 +106,7 @@ type Controller struct {
 	PathProvider    upload.PathProvider
 	usageReporter   stats.UsageReporterOperations
 	licenseManager  license.Manager
-	icebergSyncer   icebergcatalog.SyncController
+	icebergSyncer   icebergsync.Controller
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -128,7 +128,7 @@ func NewController(
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
 	licenseManager license.Manager,
-	icebergSyncer icebergcatalog.SyncController,
+	icebergSyncer icebergsync.Controller,
 ) *Controller {
 	return &Controller{
 		Config:          cfg,

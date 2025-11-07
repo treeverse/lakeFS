@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	icebergcatalogfactory "github.com/treeverse/lakefs/modules/icebergcatalog/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -92,7 +92,7 @@ func TestLocalLoad(t *testing.T) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	icebergSyncer := icebergcatalogfactory.NewSyncController(cfg)
+	icebergSyncer := apifactory.NewSyncController(cfg)
 	handler := api.Serve(
 		cfg,
 		c,

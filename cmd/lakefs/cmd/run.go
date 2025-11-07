@@ -25,7 +25,6 @@ import (
 	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
-	icebergcatalogfactory "github.com/treeverse/lakefs/modules/icebergcatalog/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -113,7 +112,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("License validation failed")
 		}
 
-		icebergSyncer := icebergcatalogfactory.NewSyncController(cfg)
+		icebergSyncer := apifactory.NewSyncController(cfg)
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)

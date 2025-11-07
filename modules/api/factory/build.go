@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/icebergsync"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -65,4 +66,8 @@ func BuildConditionFromParams(ifMatch, ifNoneMatch *string) (*graveler.Condition
 		}
 	}
 	return &condition, nil
+}
+
+func NewSyncController(_ config.Config) icebergsync.Controller {
+	return &icebergsync.NopController{}
 }

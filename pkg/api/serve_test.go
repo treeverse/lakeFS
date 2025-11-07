@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/viper"
 	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	icebergcatalogfactory "github.com/treeverse/lakefs/modules/icebergcatalog/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -169,7 +168,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	icebergSyncer := icebergcatalogfactory.NewSyncController(cfg)
+	icebergSyncer := apifactory.NewSyncController(cfg)
 	logger := logging.ContextUnavailable()
 	handler := api.Serve(
 		cfg,

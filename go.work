@@ -9,7 +9,6 @@ use (
 	./modules/catalog/factory
 	./modules/config/factory
 	./modules/gateway/factory
-	./modules/icebergcatalog/factory
 	./modules/license/factory
 	./webui
 )

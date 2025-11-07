@@ -21,7 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/icebergcatalog"
+	"github.com/treeverse/lakefs/pkg/icebergsync"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -52,7 +52,7 @@ func Serve(
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
 	licenseManager license.Manager,
-	icebergSyncer icebergcatalog.SyncController,
+	icebergSyncer icebergsync.Controller,
 ) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
