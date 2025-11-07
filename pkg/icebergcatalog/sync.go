@@ -8,21 +8,21 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
-type SyncManager interface {
+type SyncController interface {
 	Pull(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string)
 	Push(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string)
 }
 
 var ErrNotImplemented = errors.New("not implemented")
 
-// NopSyncManager is a No-Operation implementation of sync manager
-type NopSyncManager struct {
+// NopSyncController is a No-Operation implementation of sync controller
+type NopSyncController struct {
 }
 
-func (n *NopSyncManager) Pull(w http.ResponseWriter, r *http.Request, _ apigen.PullIcebergTableJSONRequestBody, _ string) {
+func (n *NopSyncController) Pull(w http.ResponseWriter, r *http.Request, _ apigen.PullIcebergTableJSONRequestBody, _ string) {
 	httputil.WriteError(w, r, http.StatusNotImplemented, ErrNotImplemented)
 }
 
-func (n *NopSyncManager) Push(w http.ResponseWriter, r *http.Request, _ apigen.PushIcebergTableJSONRequestBody, _ string) {
+func (n *NopSyncController) Push(w http.ResponseWriter, r *http.Request, _ apigen.PushIcebergTableJSONRequestBody, _ string) {
 	httputil.WriteError(w, r, http.StatusNotImplemented, ErrNotImplemented)
 }

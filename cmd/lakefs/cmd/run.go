@@ -113,7 +113,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("License validation failed")
 		}
 
-		icebergSyncManager := icebergcatalogfactory.NewSyncManager(cfg)
+		icebergSyncer := icebergcatalogfactory.NewSyncController(cfg)
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
@@ -253,7 +253,7 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			usageReporter,
 			licenseManager,
-			icebergSyncManager,
+			icebergSyncer,
 		)
 
 		// init gateway server

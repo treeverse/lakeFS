@@ -3,9 +3,10 @@ package httputil
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"net/http"
 )
 
 const (

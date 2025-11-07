@@ -90,23 +90,23 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config             config.Config
-	Catalog            *catalog.Catalog
-	Authenticator      auth.Authenticator
-	Auth               auth.Service
-	Authentication     authentication.Service
-	BlockAdapter       block.Adapter
-	MetadataManager    auth.MetadataManager
-	Migrator           Migrator
-	Collector          stats.Collector
-	Actions            actionsHandler
-	AuditChecker       AuditChecker
-	Logger             logging.Logger
-	sessionStore       sessions.Store
-	PathProvider       upload.PathProvider
-	usageReporter      stats.UsageReporterOperations
-	licenseManager     license.Manager
-	icebergSyncManager icebergcatalog.SyncManager
+	Config          config.Config
+	Catalog         *catalog.Catalog
+	Authenticator   auth.Authenticator
+	Auth            auth.Service
+	Authentication  authentication.Service
+	BlockAdapter    block.Adapter
+	MetadataManager auth.MetadataManager
+	Migrator        Migrator
+	Collector       stats.Collector
+	Actions         actionsHandler
+	AuditChecker    AuditChecker
+	Logger          logging.Logger
+	sessionStore    sessions.Store
+	PathProvider    upload.PathProvider
+	usageReporter   stats.UsageReporterOperations
+	licenseManager  license.Manager
+	icebergSyncer   icebergcatalog.SyncController
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -128,26 +128,26 @@ func NewController(
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
 	licenseManager license.Manager,
-	icebergSyncManager icebergcatalog.SyncManager,
+	icebergSyncer icebergcatalog.SyncController,
 ) *Controller {
 	return &Controller{
-		Config:             cfg,
-		Catalog:            catalog,
-		Authenticator:      authenticator,
-		Auth:               authService,
-		Authentication:     authenticationService,
-		BlockAdapter:       blockAdapter,
-		MetadataManager:    metadataManager,
-		Migrator:           migrator,
-		Collector:          collector,
-		Actions:            actions,
-		AuditChecker:       auditChecker,
-		Logger:             logger,
-		sessionStore:       sessionStore,
-		PathProvider:       pathProvider,
-		usageReporter:      usageReporter,
-		licenseManager:     licenseManager,
-		icebergSyncManager: icebergSyncManager,
+		Config:          cfg,
+		Catalog:         catalog,
+		Authenticator:   authenticator,
+		Auth:            authService,
+		Authentication:  authenticationService,
+		BlockAdapter:    blockAdapter,
+		MetadataManager: metadataManager,
+		Migrator:        migrator,
+		Collector:       collector,
+		Actions:         actions,
+		AuditChecker:    auditChecker,
+		Logger:          logger,
+		sessionStore:    sessionStore,
+		PathProvider:    pathProvider,
+		usageReporter:   usageReporter,
+		licenseManager:  licenseManager,
+		icebergSyncer:   icebergSyncer,
 	}
 }
 
@@ -6279,23 +6279,9 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string) {
-	//ctx := r.Context()
-	//c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
-
-	c.icebergSyncManager.Pull(w, r, body, catalogID)
-	//if c.handleAPIError(ctx, w, r, err) {
-	//	return
-	//}
-	//writeResponse(w, r, http.StatusOK, body)
+	c.icebergSyncer.Pull(w, r, body, catalogID)
 }
 
 func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string) {
-	//ctx := r.Context()
-	//c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
-
-	c.icebergSyncManager.Push(w, r, body, catalogID)
-	//if c.handleAPIError(ctx, w, r, err) {
-	//	return
-	//}
-	//writeResponse(w, r, http.StatusOK, body)
+	c.icebergSyncer.Push(w, r, body, catalogID)
 }

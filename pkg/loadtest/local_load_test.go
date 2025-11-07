@@ -92,7 +92,7 @@ func TestLocalLoad(t *testing.T) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	icebergSyncManager := icebergcatalogfactory.NewSyncManager(cfg)
+	icebergSyncer := icebergcatalogfactory.NewSyncController(cfg)
 	handler := api.Serve(
 		cfg,
 		c,
@@ -111,7 +111,7 @@ func TestLocalLoad(t *testing.T) {
 		upload.DefaultPathProvider,
 		stats.DefaultUsageReporter,
 		licenseManager,
-		icebergSyncManager,
+		icebergSyncer,
 	)
 
 	ts := httptest.NewServer(handler)

@@ -52,7 +52,7 @@ func Serve(
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
 	licenseManager license.Manager,
-	icebergSyncManager icebergcatalog.SyncManager,
+	icebergSyncer icebergcatalog.SyncController,
 ) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
@@ -93,7 +93,7 @@ func Serve(
 		pathProvider,
 		usageReporter,
 		licenseManager,
-		icebergSyncManager,
+		icebergSyncer,
 	)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
