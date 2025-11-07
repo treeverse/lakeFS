@@ -170,9 +170,9 @@ const LoginPage = () => {
         if (next) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
     }, [next]);
 
-    // Setup doesn't complete, send to /setup with redirected=true&next=...
     if (loading) return <Loading />;
 
+    // Setup doesn't complete, send to /setup with redirected=true&next=...
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
         return <Navigate to={ROUTES.SETUP} replace />;
     }

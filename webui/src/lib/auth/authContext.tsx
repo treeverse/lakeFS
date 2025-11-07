@@ -1,7 +1,7 @@
 import React, {createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api";
-import {getCurrentRelativeUrl, isPublicAuthRoute, ROUTES} from "../utils";
+import { getCurrentRelativeUrl, isPublicAuthRoute, ROUTES } from "../utils";
 
 export const LAKEFS_POST_LOGIN_NEXT = "lakefs_post_login_next";
 export const AUTH_STATUS = {
