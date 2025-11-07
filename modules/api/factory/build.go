@@ -68,6 +68,6 @@ func BuildConditionFromParams(ifMatch, ifNoneMatch *string) (*graveler.Condition
 	return &condition, nil
 }
 
-func NewSyncController(_ config.Config) icebergsync.Controller {
+func NewIcebergSyncController(_ config.Config) icebergsync.Controller {
 	return &icebergsync.NopController{}
 }

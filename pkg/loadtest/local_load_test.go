@@ -92,7 +92,7 @@ func TestLocalLoad(t *testing.T) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	icebergSyncer := apifactory.NewSyncController(cfg)
+	icebergSyncer := apifactory.NewIcebergSyncController(cfg)
 	handler := api.Serve(
 		cfg,
 		c,

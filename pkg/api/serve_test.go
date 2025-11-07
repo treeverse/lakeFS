@@ -168,7 +168,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	icebergSyncer := apifactory.NewSyncController(cfg)
+	icebergSyncer := apifactory.NewIcebergSyncController(cfg)
 	logger := logging.ContextUnavailable()
 	handler := api.Serve(
 		cfg,

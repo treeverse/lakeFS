@@ -112,7 +112,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("License validation failed")
 		}
 
-		icebergSyncer := apifactory.NewSyncController(cfg)
+		icebergSyncer := apifactory.NewIcebergSyncController(cfg)
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
