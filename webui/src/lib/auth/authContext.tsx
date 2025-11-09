@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setStatus(AUTH_STATUS.UNAUTHENTICATED);
             }
         },
-        [status]
+        []
     );
 
     const onUnauthenticated = useCallback(() => {
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     }, [navigate]);
 
-    useEffect(() => { void refreshUser({ useCache: true }); }, [refreshUser]);
+    useEffect(() => { void refreshUser({ useCache: false }); }, []);
 
     useEffect(() => {
         const onPageShow = (e: PageTransitionEvent) => {

@@ -8,7 +8,8 @@ import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
 import {auth} from "../api";
-import {AUTH_STATUS, useAuth} from "../auth/authContext";
+import {AUTH_STATUS, LAKEFS_POST_LOGIN_NEXT, useAuth} from "../auth/authContext";
+import {ROUTES} from "../utils";
 
 const NavUserInfo = () => {
     const { user, status } = useAuth();
@@ -40,15 +41,17 @@ const NavUserInfo = () => {
             <NavDropdown.Item
                 onClick={() => {
                     auth.clearCurrentUser();
+                    window.sessionStorage.removeItem(LAKEFS_POST_LOGIN_NEXT);
+                    window.history.replaceState(null, "", `${ROUTES.LOGIN}?redirected=true&next=%2F`);
                     window.location.replace(logoutUrl);
                 }}>
                 Logout
             </NavDropdown.Item>
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
-            <NavDropdown.Item disabled={true}>
-                {`${versionConfig.version_context} ${versionConfig.version}`}
-            </NavDropdown.Item></>}
+                <NavDropdown.Item disabled={true}>
+                    {`${versionConfig.version_context} ${versionConfig.version}`}
+                </NavDropdown.Item></>}
         </NavDropdown>
     );
 };
