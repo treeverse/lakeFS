@@ -247,30 +247,6 @@ func expectedURLExp(adapter block.Adapter) time.Time {
 	}
 }
 
-func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QualifiedKey) []string {
-	t.Helper()
-	tree := make([]string, 0)
-
-	p := qk.Format()
-	uri, err := url.Parse(p)
-	require.NoError(t, err, "URL Parse Error")
-
-	walker, err := adapter.GetWalker("", block.WalkerOptions{StorageURI: uri})
-	require.NoError(t, err, "GetWalker failed")
-
-	wwalker := block.NewWalkerWrapper(walker, uri)
-	err = wwalker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
-		_, p, _ := strings.Cut(e.Address, uri.String())
-		tree = append(tree, p)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("walking on '%s': %s", uri.String(), err)
-	}
-	sort.Strings(tree)
-	return tree
-}
-
 func NowMockDefault() time.Time {
 	return time.Date(2024, time.January, 0, 0, 0, 0, 0, time.UTC)
 }

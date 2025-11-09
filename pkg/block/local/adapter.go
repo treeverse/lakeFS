@@ -171,25 +171,6 @@ func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	return &block.PutResponse{}, nil
 }
 
-func removeEmptyDirUntil(dir string, stopAt string) {
-	if stopAt == "" {
-		return
-	}
-	if !strings.HasSuffix(stopAt, "/") {
-		stopAt += "/"
-	}
-	for strings.HasPrefix(dir, stopAt) && dir != stopAt {
-		err := os.Remove(dir)
-		if err != nil {
-			break
-		}
-		dir = filepath.Dir(dir)
-		if dir == "/" {
-			break
-		}
-	}
-}
-
 func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	source, err := l.extractParamsFromObj(sourceObj)
 	if err != nil {
