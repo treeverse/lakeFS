@@ -18,6 +18,7 @@ import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 import org.apache.http.HttpStatus
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.time.Duration
@@ -289,6 +290,9 @@ class ApiClient private (conf: APIConfigurations) {
       case e: ApiException =>
         // If async API fails with server error (500), fallback to blocking API
         if (e.getCode == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+          logger.info(
+            s"prepareGarbageCollectionCommits async API failed with 500 for repository $repoName, falling back to blocking API"
+          )
           val prepareGcCommits =
             new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
               def get(): GarbageCollectionPrepareResponse =
