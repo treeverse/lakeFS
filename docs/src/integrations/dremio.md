@@ -25,21 +25,21 @@ This is the recommended way to use lakeFS with Dremio, as it allows lakeFS to st
 To configure Dremio to work with the Iceberg REST Catalog, you need to configure the [Iceberg REST Catalog in Dremio](https://docs.dremio.com/current/data-sources/lakehouse-catalogs/iceberg-rest-catalog/).
 
 1. On the Datasets page, to the right of **Sources** in the left panel, click `+`
-1. In the **Add Data Source** dialog, under Lakehouse Catalogs, select **Iceberg REST Catalog** Source. The New Iceberg 
-REST Catalog Source dialog box appears, which contains the following tabs:
-1. In General → 
-   - Enter a name for your Iceberg REST Catalog source, specify the endpoint URI (i.e. `https://lakefs.example.com/iceberg/api`)
-   - Uncheck "Use vended credentials"
-1. In Advanced Options → Catalog Properties, add the following key-value pairs (left = key, right = value):
+1. In the **Add Data Source** dialog, under Lakehouse Catalogs, select **Iceberg REST Catalog** Source. The New Iceberg REST Catalog Source dialog box appears, which contains the following tabs:
+       1. In **General** →
+           - Enter a name for your Iceberg REST Catalog source, specify the endpoint URI (i.e. `https://lakefs.example.com/iceberg/api`)
+           - Uncheck "Use vended credentials"
+       1. In **Advanced Options** → Catalog Properties, add the following key-value pairs (left = key, right = value):
+        
+          | Key                               | Value                                                    | Notes                                                   |
+          | --------------------------------- | -------------------------------------------------------- |---------------------------------------------------------|
+          | `oauth2-server-uri`               | `https://lakefs.example.com/iceberg/api/v1/oauth/tokens` | Your lakeFS OAuth2 token endpoint (not the catalog URL). |
+          | `credential`                      | `<lakefs_access_key>:<lakefs_secret_key>`                | Your lakeFS credentials.      |
+          | `fs.s3a.aws.credentials.provider` | `org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider`  | Use static AWS credentials.                             |
+          | `fs.s3a.access.key`               | `<aws_access_key_id>`                                    | AWS key with read/write access to your data bucket.     |
+          | `fs.s3a.secret.key`               | `<aws_secret_access_key>`                                | AWS secret key.                                         |
+          | `dremio.s3.list.all.buckets`      | `false`                                                  | Avoid listing all buckets during initialization.        |
 
-   | Key                               | Value                                                    | Notes                                                   |
-   | --------------------------------- | -------------------------------------------------------- |---------------------------------------------------------|
-   | `oauth2-server-uri`               | `https://lakefs.example.com/iceberg/api/v1/oauth/tokens` | Your lakeFS OAuth2 token endpoint (not the catalog URL). |
-   | `credential`                      | `<lakefs_access_key>:<lakefs_secret_key>`                | Your lakeFS credentials.      |
-   | `fs.s3a.aws.credentials.provider` | `org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider`  | Use static AWS credentials.                             |
-   | `fs.s3a.access.key`               | `<aws_access_key_id>`                                    | AWS key with read/write access to your data bucket.     |
-   | `fs.s3a.secret.key`               | `<aws_secret_access_key>`                                | AWS secret key.                                         |
-   | `dremio.s3.list.all.buckets`      | `false`                                                  | Avoid listing all buckets during initialization.        |
 1. Click **Save** to create the Iceberg REST Catalog source.
 
 !!! note
