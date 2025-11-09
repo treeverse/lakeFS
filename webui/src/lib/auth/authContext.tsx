@@ -62,6 +62,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => { void refreshUser({ useCache: true }); }, [refreshUser]);
 
     useEffect(() => {
+        const onPageShow = (e: PageTransitionEvent) => {
+            if ((e).persisted) {
+                void refreshUser({ useCache: false });
+            }
+        };
+        window.addEventListener('pageshow', onPageShow);
+        return () => window.removeEventListener('pageshow', onPageShow);
+    }, [refreshUser]);
+
+    useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
             const postLoginNext = window.sessionStorage.getItem(LAKEFS_POST_LOGIN_NEXT);
             if (postLoginNext && postLoginNext.startsWith("/")) {
