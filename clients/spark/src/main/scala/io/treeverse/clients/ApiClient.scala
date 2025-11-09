@@ -11,11 +11,13 @@ import dev.failsafe.Policy
 import dev.failsafe.RetryPolicy
 import dev.failsafe.function.CheckedSupplier
 import io.lakefs.clients.sdk
+import io.lakefs.clients.sdk.ApiException
 import io.lakefs.clients.sdk.ConfigApi
 import io.lakefs.clients.sdk.model._
 import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
+import org.apache.http.HttpStatus
 
 import java.net.URI
 import java.time.Duration
@@ -201,12 +203,86 @@ class ApiClient private (conf: APIConfigurations) {
   def prepareGarbageCollectionCommits(
       repoName: String
   ): GarbageCollectionPrepareResponse = {
-    val prepareGcCommits =
-      new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
-        def get(): GarbageCollectionPrepareResponse =
-          internalApi.prepareGarbageCollectionCommits(repoName).execute()
+    prepareGarbageCollectionCommits(repoName, timeoutMinutes = 20)
+  }
+
+  def prepareGarbageCollectionCommits(
+      repoName: String,
+      timeoutMinutes: Int
+  ): GarbageCollectionPrepareResponse = {
+    // Start the async task
+    val startTask =
+      new dev.failsafe.function.CheckedSupplier[PrepareGarbageCollectionCommitsAsyncCreation]() {
+        def get(): PrepareGarbageCollectionCommitsAsyncCreation =
+          internalApi.prepareGarbageCollectionCommitsAsync(repoName).execute()
       }
-    retryWrapper.wrapWithRetry(prepareGcCommits)
+    val asyncCreation = retryWrapper.wrapWithRetry(startTask)
+    val taskId = asyncCreation.getId
+
+    // Poll for completion with exponential backoff
+    val startTime = System.currentTimeMillis()
+    val timeoutMs = timeoutMinutes * 60 * 1000L
+    var backoffMs = 500L
+    val maxBackoffMs = 15000L
+
+    while (true) {
+      // Check timeout before making the request
+      val elapsed = System.currentTimeMillis() - startTime
+      if (elapsed >= timeoutMs) {
+        throw new RuntimeException(
+          s"prepareGarbageCollectionCommits timed out after ${timeoutMinutes} minutes (task_id: $taskId)"
+        )
+      }
+
+      // Get status
+      val getStatus =
+        new dev.failsafe.function.CheckedSupplier[PrepareGarbageCollectionCommitsStatus]() {
+          def get(): PrepareGarbageCollectionCommitsStatus =
+            internalApi.prepareGarbageCollectionCommitsStatus(repoName, taskId).execute()
+        }
+
+      val status =
+        try {
+          retryWrapper.wrapWithRetry(getStatus)
+        } catch {
+          case e: ApiException =>
+            if (e.getCode == HttpStatus.SC_NOT_FOUND) {
+              throw new RuntimeException(
+                s"prepareGarbageCollectionCommits task not found (task_id: $taskId)",
+                e
+              )
+            } else {
+              throw e
+            }
+        }
+
+      // Check if completed
+      if (status.getCompleted) {
+        // Check for error
+        if (status.getError != null) {
+          val errorMsg = Option(status.getError.getMessage).getOrElse("Unknown error")
+          throw new RuntimeException(
+            s"prepareGarbageCollectionCommits failed (task_id: $taskId): $errorMsg"
+          )
+        }
+
+        // Return result
+        val result = status.getResult
+        if (result == null) {
+          throw new RuntimeException(
+            s"prepareGarbageCollectionCommits completed but result is null (task_id: $taskId)"
+          )
+        }
+        return result
+      }
+
+      // Wait before next poll with exponential backoff
+      Thread.sleep(backoffMs)
+      backoffMs = Math.min(backoffMs * 2, maxBackoffMs)
+    }
+
+    // Should never reach here, but satisfy compiler
+    throw new RuntimeException("Unexpected end of polling loop")
   }
 
   def getRepository(repoName: String): Repository = {
@@ -330,3 +406,4 @@ class RequestRetryWrapper(
     }
   }
 }
+
