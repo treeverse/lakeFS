@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 	"time"
