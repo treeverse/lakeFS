@@ -944,8 +944,28 @@ func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Reques
 
 	c.LogAction(ctx, "release_token_to_mailbox", r, "", "", "")
 
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		// This is typically called from a browser - send it to login, return here
+		// after.
+		c.Logger.
+			WithContext(ctx).
+			WithError(err).
+			WithField("accept", r.Header.Get("Accept")).
+			Debug("Failed to get user - redirect to login")
+		redirectURL := url.URL{
+			Path: fmt.Sprintf("/auth/login"),
+			// TODO(ariels): Use a relative URI?
+			RawQuery: fmt.Sprintf("next=%s", url.QueryEscape(r.URL.String())),
+		}
+		c.Logger.WithContext(ctx).WithField("redirect", redirectURL.String()).Info("[DEBUG] redirect")
+		w.Header().Set("Location", redirectURL.String())
+		w.WriteHeader(http.StatusTemporaryRedirect)
+		return
+	}
+
 	// Release will release a token for the authenticated user.
-	err := c.loginTokenProvider.Release(ctx, loginRequestToken)
+	err = c.loginTokenProvider.Release(ctx, loginRequestToken)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -962,19 +982,7 @@ func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Reques
 
 	switch {
 	case mediaType.EqualsMIME(textHTML):
-		username := ""
-		user, err := auth.GetUser(ctx)
-		if err != nil {
-			// Errors are safe here, at worst we won't tell user their name.
-			c.Logger.
-				WithContext(r.Context()).
-				WithError(err).
-				WithField("accept", r.Header.Get("Accept")).
-				Warn("Failed to get user - they won't see their logged-in name on the page")
-		}
-		if user != nil {
-			username = user.Username
-		}
+		username := user.Username
 		// This endpoint is _usually_ visited by a browser.  Report to the user that
 		// they logged in, telling them the name they used to log in.
 		httputil.KeepPrivate(w)
