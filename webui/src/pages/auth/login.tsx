@@ -9,7 +9,7 @@ import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 import {LAKEFS_POST_LOGIN_NEXT, useAuth} from "../../lib/auth/authContext";
-import {buildUrl, normalizeNext, ROUTES, stripParam} from "../../lib/utils";
+import {normalizeNext, ROUTES} from "../../lib/utils";
 
 type NavigateState = { redirected?: boolean; next?: string };
 
@@ -31,14 +31,12 @@ export interface LoginConfig {
     logout_url: string;
 }
 
-/** Helper: append `next` query param safely */
 export const withNext = (url: string, next: string) => {
     const u = new URL(url, window.location.origin);
     u.searchParams.set("next", normalizeNext(next));
     return u.toString();
 };
 
-/** Helper: derives intent (redirected, next) and a clean URL w/o "redirected" */
 export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     const st = location.state ?? {};
     const qp = new URLSearchParams(location.search);
@@ -46,34 +44,23 @@ export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     const redirectedFromQuery = qp.get("redirected") === "true";
     const redirected = Boolean(st.redirected) || redirectedFromQuery;
     const next = normalizeNext(st.next ?? qp.get("next"));
-    const cleanUrl = buildUrl(location, stripParam(qp, "redirected"));
+
+    qp.delete("redirected");
+    const qs = qp.toString();
+    const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
 
     return { redirected, redirectedFromQuery, next, cleanUrl };
 };
 
-/** Tiny component to perform navigation as an effect */
-const DoNavigate: React.FC<{ to: string; replace?: boolean; state?: NavigateState }> = ({ to, replace = true, state }) => {
-    const router = useRouter();
-    useEffect(() => { router.navigate(to, { replace, state }); }, [router, to, replace, state]);
-    return <Loading />;
-};
-
-/** Tiny component for external redirects (SSO) */
-const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
-    useEffect(() => { window.location.replace(to); }, [to]);
-    return <Loading />;
-};
-
-/** Pure lakeFS login form */
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const location = useLocation();
     const { refreshUser } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
 
     // Resolve "next" for post-login navigation
-    const st = (location.state as NavigateState | null) ?? null;
-    const qs = new URLSearchParams(location.search);
-    const next = normalizeNext(st?.next ?? qs.get("next"));
+    const state = (location.state as NavigateState | null) ?? null;
+    const qp = new URLSearchParams(location.search);
+    const next = normalizeNext(state?.next ?? qp.get("next"));
 
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
@@ -171,24 +158,26 @@ const LoginPage = () => {
     }, [next]);
 
     if (loading) return <Loading />;
+    if (error) return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;
 
     // Setup doesn't complete, send to /setup with redirected=true&next=...
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
         return <Navigate to={ROUTES.SETUP} replace />;
     }
 
-    if (error) return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;
-    if (redirectedFromQuery) return <DoNavigate to={cleanUrl} replace state={{ redirected: true, next }} />;
+    if (redirectedFromQuery) return <Navigate to={cleanUrl} replace state={{ redirected: true, next }} />;
 
-    // Strategy flow only when we *were redirected* here (SSO/selection)
     const loginConfig = setupResponse?.login_config;
 
+    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
+    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
+    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
+    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
+    // selection page or the default lakeFS login form, since both share the same endpoint.
     if (redirected) {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-        if (loginStrategy.element !== undefined) return loginStrategy.element;
-        if (loginConfig?.login_url && loginConfig?.login_url_method !== "none") {
-            return <ExternalRedirect to={withNext(loginConfig.login_url, next)} />;
-        }
+        if (loginStrategy.element !== undefined)
+            return loginStrategy.element;
     }
 
     // Default: lakeFS login form

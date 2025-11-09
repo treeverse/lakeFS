@@ -51,7 +51,7 @@ const initialAPIState = {
 
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
-    const { onUnauthorized } = useAuth();
+    const { onUnauthenticated } = useAuth();
 
     useEffect(() => {
         let isMounted = true;
@@ -64,7 +64,7 @@ export const useAPI = (promise, deps = []) => {
             } catch (error) {
                 if (!isMounted) return;
                 if (error instanceof AuthenticationError && error.status === 401) {
-                    onUnauthorized();
+                    onUnauthenticated();
                 }
                 setRequest({
                     loading: false,

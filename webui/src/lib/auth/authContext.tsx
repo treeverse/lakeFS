@@ -19,7 +19,7 @@ type AuthContextType = {
     user: User;
     refreshUser: (opts?: { useCache?: boolean }) => Promise<void>;
     setStatus: (s: AuthStatus) => void;
-    onUnauthorized: () => void;
+    onUnauthenticated: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const refreshUser = useCallback(
         async ({ useCache = true }: { useCache?: boolean } = {}) => {
+            if (!useCache && status !== AUTH_STATUS.AUTHENTICATED) setStatus(AUTH_STATUS.PENDING);
             try {
                 const u = useCache
                     ? await auth.getCurrentUserWithCache()
@@ -43,10 +44,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setStatus(AUTH_STATUS.UNAUTHENTICATED);
             }
         },
-        []
+        [status]
     );
 
-    const onUnauthorized = useCallback(() => {
+    const onUnauthenticated = useCallback(() => {
         auth.clearCurrentUser();
         setUser(null);
         setStatus(AUTH_STATUS.UNAUTHENTICATED);
@@ -85,8 +86,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [status, navigate]);
 
     const value = useMemo<AuthContextType>(
-        () => ({ status, user, refreshUser, setStatus, onUnauthorized }),
-        [status, user, refreshUser, onUnauthorized]
+        () => ({ status, user, refreshUser, setStatus, onUnauthenticated }),
+        [status, user, refreshUser, onUnauthenticated]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
