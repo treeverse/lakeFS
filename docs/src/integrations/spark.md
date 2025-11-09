@@ -7,18 +7,53 @@ description: Accessing data in lakeFS from Apache Spark works the same as access
 
 There are several ways to use lakeFS with Spark:
 
+* [**Recommended:** using the lakeFS Iceberg REST Catalog](./iceberg.md): Read and write Iceberg tables using a standards-compliant catalog, built into lakeFS Enterprise.
 * [The lakeFS FileSystem](#lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
     * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode): Best of both worlds. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
 * [The S3-compatible API](#s3-compatible-api):  <span class="badge">All Storage Vendors</span>
 
-!!! tip
-    See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).
 
+| Method | Metadata operations | Data operations | Supported Data Formats | Compatibility |
+|--------|---------------------|-----------------|-----------------|-----------------|
+| [Iceberg REST Catalog](#iceberg-rest-catalog) | ✅ Table-level operations only | ✅ Direct I/O to underlying storage | Apache Iceberg Tables | ✅ Any Spark environment capable of connecting to an Apache Iceberg REST Catalog (most) |
+| [lakeFS FileSystem](#lakefs-hadoop-filesystem) | ⚠️ Object-level operations require lakeFS API calls | ✅ Direct I/O to underlying storage | All | ⚠️ Any Spark environment capable of loading user provided jar files (some) |
+| [S3-compatible API](#s3-compatible-api) | N/A | 🚩 All data operations are proxied through lakeFS | All | ✅ Any Spark environment capable of connecting to an S3-compatible API (most) |
+
+
+## Iceberg REST Catalog
+
+lakeFS Iceberg REST Catalog allow you to use lakeFS as a [spec-compliant](https://github.com/apache/iceberg/blob/main/open-api/rest-catalog-open-api.yaml) Apache [Iceberg REST catalog](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/apache/iceberg/main/open-api/rest-catalog-open-api.yaml), 
+allowing Apache Spark to manage and access tables using a standard REST API.
+
+
+![lakeFS Iceberg REST Catalog](../assets/img/lakefs_iceberg_rest_catalog.png)
+
+
+!!! example
+    
+    ```scala
+    // Configure Spark to use the lakeFS REST catalog
+    spark.sql("USE my_repo.main.inventory")
+
+    // List available tables
+    spark.sql("SHOW TABLES").show()
+
+    // Query data with branch isolation
+    spark.sql("SELECT * FROM books").show()
+
+    // Switch to a feature branch
+    spark.sql("USE my_repo.new_branch.inventory")
+    spark.sql("SELECT * FROM books").show()
+    ```
+
+In this mode, lakeFS stays completely outside the data path: data itself is read and written by Spark executors, directly to the underlying object store. Metadata is managed by Iceberg at the table level, while lakeFS keeps track of new snapshots to provide versioning and isolation.
+
+[Read more about using the Iceberg REST Catalog](./iceberg.md).
 
 ## lakeFS Hadoop FileSystem
 
 In this mode, Spark will read and write objects directly from the underlying object store, reducing the load on the lakeFS server.
-It will only access the lakeFS server for metadata operations.
+It will only access the lakeFS server for metadata operations, which works for most other data formats
 
 After configuring the lakeFS Hadoop FileSystem below, use URIs of the form `lakefs://example-repo/ref/path/to/data` to
 interact with your data on lakeFS.
