@@ -1,18 +1,11 @@
 ---
-title: Python - References & Commits
-description: Navigate commit history, understand references, and track data lineage in lakeFS with Python
+title: Python - References, Commits & Tags
+description: Navigate commit history, understand references, manage tags, and track data lineage in lakeFS with Python
 ---
 
-# Working with References & Commits
+# Working with References, Commits & Tags
 
-References, commits, and commit metadata are fundamental to understanding and auditing changes in lakeFS. This guide covers navigating commit history, working with references, and using metadata for tracking and lineage.
-
-## Prerequisites
-
-- lakeFS server running and accessible
-- Python SDK installed: `pip install lakefs`
-- A repository with commit history (or create one in the examples)
-- Proper credentials configured
+References, commits, and tags are fundamental to understanding and managing versions in lakeFS. This guide covers navigating commit history, working with references, creating immutable snapshots with tags, and using metadata for tracking and lineage.
 
 ## Understanding References
 
@@ -110,20 +103,20 @@ try:
     # Get commit by ID
     commit_ref = repo.commit("abc123def456xyz")
     commit = commit_ref.get_commit()
-    
+
     print(f"Commit Details:")
     print(f"  ID: {commit.id}")
     print(f"  Message: {commit.message}")
     print(f"  Committer: {commit.committer}")
     print(f"  Timestamp: {datetime.fromtimestamp(commit.creation_date)}")
     print(f"  Parents: {', '.join(commit.parents) if commit.parents else 'None'}")
-    
+
     # Check for merge commit
     if len(commit.parents) > 1:
         print(f"  Type: Merge commit (from {len(commit.parents)} parents)")
     else:
         print(f"  Type: Regular commit")
-    
+
 except Exception as e:
     print(f"Commit not found: {e}")
 ```
@@ -204,29 +197,6 @@ for i, commit in enumerate(branch.log(max_amount=10)):
     print(f"  {i+1}. {commit.id[:8]} - {commit.message[:40]} ({timestamp})")
 ```
 
-### Get Commits with Filtering
-
-Retrieve specific commits from history:
-
-```python
-import lakefs
-
-repo = lakefs.repository("my-data-repo")
-branch = repo.branch("main")
-
-# Get commits and filter by author
-all_commits = list(branch.log(max_amount=100))
-
-data_team_commits = [
-    c for c in all_commits 
-    if c.metadata and c.metadata.get("author") == "data-team"
-]
-
-print(f"Data team commits: {len(data_team_commits)}")
-for commit in data_team_commits[:5]:
-    print(f"  {commit.id[:8]} - {commit.message}")
-```
-
 ### Track Commits by Metadata
 
 Find commits based on custom metadata:
@@ -238,13 +208,13 @@ def find_commits_by_metadata(repo_name, branch_name, key, value):
     """Find commits with specific metadata"""
     repo = lakefs.repository(repo_name)
     branch = repo.branch(branch_name)
-    
+
     matching_commits = []
-    
+
     for commit in branch.log(max_amount=1000):
         if commit.metadata and commit.metadata.get(key) == value:
             matching_commits.append(commit)
-    
+
     return matching_commits
 
 
@@ -295,11 +265,11 @@ all_changes = list(tag_v1.diff(other_ref=tag_v2))
 # Filter by change type
 added = [c for c in all_changes if c.type == "added"]
 removed = [c for c in all_changes if c.type == "removed"]
-modified = [c for c in all_changes if c.type == "modified"]
+changed = [c for c in all_changes if c.type == "changed"]
 
 print(f"Added: {len(added)}")
 print(f"Removed: {len(removed)}")
-print(f"Modified: {len(modified)}")
+print(f"Changed: {len(changed)}")
 
 # Filter by path prefix
 data_changes = [c for c in all_changes if c.path.startswith("data/")]
@@ -323,139 +293,247 @@ for change in ref1.diff(other_ref=ref2):
     print(f"  {change.type:10} {change.path}{size_info}")
 ```
 
-## Tracking Lineage and Audit Trails
+## Working with Tags
 
-### Create a Lineage Trail
+Tags are immutable pointers to specific commits in lakeFS, making them perfect for marking releases, data versions, and important snapshots.
 
-Track data through multiple transformations with metadata:
+### What are Tags?
+
+Tags mark specific commits as important (e.g., releases):
 
 ```python
 import lakefs
-import json
-from datetime import datetime
 
-def record_lineage_stage(repo_name, stage_name, description):
-    """Record a stage in data lineage"""
-    repo = lakefs.repository(repo_name)
-    branch = repo.branch("main")
-    
-    # Create a lineage marker file
-    lineage_entry = {
-        "stage": stage_name,
-        "description": description,
-        "timestamp": datetime.now().isoformat(),
-        "commit": ""  # Will be filled after commit
-    }
-    
-    # Write lineage entry
-    lineage_path = f"lineage/{stage_name}.json"
-    branch.object(lineage_path).upload(
-        data=json.dumps(lineage_entry).encode()
-    )
-    
-    # Commit with stage metadata
-    ref = branch.commit(
-        message=f"Lineage: {stage_name}",
-        metadata={
-            "lineage-stage": stage_name,
-            "lineage-description": description,
-            "lineage-timestamp": lineage_entry["timestamp"]
-        }
-    )
-    
-    print(f"Recorded lineage stage: {stage_name}")
-    print(f"  Commit: {ref.id}")
-    
-    return ref
-
-
-# Usage:
-lineage_stages = [
-    ("raw-ingest", "Ingested raw customer data"),
-    ("data-cleaning", "Cleaned and validated data"),
-    ("feature-engineering", "Created features for ML"),
-    ("model-ready", "Final dataset ready for training")
-]
-
-for stage, desc in lineage_stages:
-    record_lineage_stage("ml-repo", stage, desc)
+tag = lakefs.repository("my-repo").tag("v1.0.0").create(
+    source_ref="main"
+)
 ```
 
-### Query Lineage History
+Tags are immutable pointers to commits that allow you to:
 
-Retrieve the lineage trail:
+- **Mark releases** for versioning and distribution
+- **Create snapshots** for reproducibility and archival
+- **Reference important points** in your data history
+- **Track data lineage** across versions
+
+Unlike branches, tags never change once created, making them perfect for stable reference points.
+
+## Creating Tags
+
+### Create a Simple Tag
+
+Create a tag pointing to the current head of a branch:
 
 ```python
 import lakefs
 
-def get_data_lineage(repo_name, branch_name):
-    """Get the lineage trail for data"""
-    repo = lakefs.repository(repo_name)
-    branch = repo.branch(branch_name)
-    
-    lineage = []
-    
-    for commit in branch.log(max_amount=1000):
-        if commit.metadata and "lineage-stage" in commit.metadata:
-            lineage.append({
-                "commit": commit.id[:8],
-                "stage": commit.metadata.get("lineage-stage"),
-                "description": commit.metadata.get("lineage-description"),
-                "timestamp": commit.metadata.get("lineage-timestamp")
-            })
-    
-    return lineage
+repo = lakefs.repository("my-data-repo")
 
+# Create a tag from the main branch's head
+tag = repo.tag("v1.0.0").create(source_ref="main")
 
-# Usage:
-lineage = get_data_lineage("ml-repo", "main")
-print("Data Lineage Trail:")
-for entry in reversed(lineage):  # Show in chronological order
-    print(f"  {entry['stage']:20} - {entry['description']}")
+print(f"Created tag: v1.0.0")
+print(f"Points to commit: {tag.get_commit().id}")
 ```
 
-### Audit Trail
+### Create a Tag from a Specific Commit
 
-Create a complete audit trail for compliance:
+Create a tag pointing to any commit:
 
 ```python
 import lakefs
-from datetime import datetime
 
-def generate_audit_report(repo_name, branch_name, days_back=30):
-    """Generate audit report for a branch"""
-    repo = lakefs.repository(repo_name)
-    branch = repo.branch(branch_name)
-    
-    current_time = datetime.now().timestamp()
-    cutoff_time = current_time - (days_back * 24 * 60 * 60)
-    
-    audit_entries = []
-    
-    for commit in branch.log(max_amount=10000):
-        if commit.creation_date < cutoff_time:
-            break
-        
-        audit_entries.append({
-            "timestamp": datetime.fromtimestamp(commit.creation_date),
-            "commit_id": commit.id[:8],
-            "message": commit.message,
-            "committer": commit.committer,
-            "parents": len(commit.parents),
-            "metadata": commit.metadata or {}
-        })
-    
-    return audit_entries
+repo = lakefs.repository("my-data-repo")
+main = repo.branch("main")
 
+# Get a specific commit from history
+commits = list(main.log(max_amount=10))
 
-# Usage:
-audit_report = generate_audit_report("sensitive-repo", "main", days_back=30)
-print("Audit Report (Last 30 Days):")
-print(f"Total changes: {len(audit_report)}")
-print("\nRecent activity:")
+if commits:
+    # Tag an older commit
+    commit_to_tag = commits[0]  # Most recent
+    tag = repo.tag("v1.0.0-rc1").create(source_ref=commit_to_tag.id)
 
-for entry in audit_report[:10]:
-    print(f"  {entry['timestamp']} - {entry['committer']}: {entry['message'][:50]}")
+    print(f"Tagged commit: {commit_to_tag.id[:8]}")
+    print(f"Tag name: v1.0.0-rc1")
+```
+
+### Create a Tag from Another Tag
+
+Create a tag based on an existing tag:
+
+```python
+import lakefs
+
+repo = lakefs.repository("my-data-repo")
+
+try:
+    # Create a new tag from an existing tag
+    existing_tag = repo.tag("v1.0.0")
+    new_tag = repo.tag("stable").create(source_ref=existing_tag)
+
+    print(f"New tag 'stable' points to same commit as 'v1.0.0'")
+
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+### Conditional Tag Creation
+
+Create a tag only if it doesn't already exist:
+
+```python
+import lakefs
+from lakefs.exceptions import ConflictException
+
+repo = lakefs.repository("my-data-repo")
+tag_name = "v2.0.0"
+
+try:
+    # Create tag with exist_ok=False (will fail if exists)
+    tag = repo.tag(tag_name).create(source_ref="main", exist_ok=False)
+    print(f"Created new tag: {tag_name}")
+
+except ConflictException:
+    print(f"Tag already exists: {tag_name}")
+    tag = repo.tag(tag_name)
+    print(f"Using existing tag: {tag.get_commit().id}")
+```
+
+## Listing Tags
+
+List all tags in a repository:
+
+```python
+import lakefs
+
+repo = lakefs.repository("my-data-repo")
+
+print("All tags in repository:")
+for tag in repo.tags():
+    commit = tag.get_commit()
+    print(f"  {tag.id:20} -> {commit.id[:8]}... ({commit.message})")
+```
+
+### Get Tag Information
+
+Get detailed information about a specific tag:
+
+```python
+import lakefs
+
+repo = lakefs.repository("my-data-repo")
+tag = repo.tag("v1.0.0")
+
+try:
+    commit = tag.get_commit()
+
+    print(f"Tag: {tag.id}")
+    print(f"Commit ID: {commit.id}")
+    print(f"Message: {commit.message}")
+    print(f"Committer: {commit.committer}")
+    print(f"Created: {commit.creation_date}")
+    print(f"Metadata: {commit.metadata}")
+
+except Exception as e:
+    print(f"Tag not found: {e}")
+```
+
+## Accessing Data from Tags
+
+### List Objects in a Tagged Version
+
+List all objects in a specific tagged version:
+
+```python
+import lakefs
+
+repo = lakefs.repository("my-data-repo")
+tag_ref = repo.ref("v1.0.0")  # Use ref() for tag access
+
+# List all objects in this tag
+print(f"Objects in v1.0.0:")
+for obj in tag_ref.objects():
+    print(f"  {obj.path}")
+
+# List specific prefix
+print(f"\nModels in v1.0.0:")
+for obj in tag_ref.objects(prefix="models/"):
+    if hasattr(obj, 'path'):  # It's a file, not a folder
+        print(f"  {obj.path} ({obj.size_bytes} bytes)")
+```
+
+### Read Data from Tagged Version
+
+Read object contents from a specific tag:
+
+```python
+import lakefs
+import csv
+import io
+
+repo = lakefs.repository("my-data-repo")
+tag_ref = repo.ref("v1.0.0")
+
+# Read a CSV file from the tag
+try:
+    obj = tag_ref.object("data/dataset.csv")
+
+    with obj.reader(mode='r') as f:
+        reader = csv.reader(f)
+        headers = next(reader)
+        print(f"Headers: {headers}")
+
+        for row in reader:
+            print(f"  {row}")
+
+except Exception as e:
+    print(f"Error reading file: {e}")
+```
+
+### Compare Data Across Tagged Versions
+
+Compare what changed between two tagged versions:
+
+```python
+import lakefs
+
+repo = lakefs.repository("my-data-repo")
+tag_v1 = repo.ref("v1.0.0")
+tag_v2 = repo.ref("v2.0.0")
+
+# See what changed
+print("Changes from v1.0.0 to v2.0.0:")
+for change in tag_v1.diff(other_ref=tag_v2):
+    print(f"  {change.type:10} {change.path}")
+
+# Count change types
+changes = list(tag_v1.diff(other_ref=tag_v2))
+added = len([c for c in changes if c.type == "added"])
+removed = len([c for c in changes if c.type == "removed"])
+changed = len([c for c in changes if c.type == "changed"])
+
+print(f"\nSummary: +{added} -{removed} ~{changed}")
+```
+
+## Deleting Tags
+
+### Delete a Single Tag
+
+Remove a tag that's no longer needed:
+
+```python
+import lakefs
+
+repo = lakefs.repository("my-data-repo")
+
+try:
+    tag = repo.tag("old-release")
+    tag.delete()
+    print("Tag deleted: old-release")
+
+except Exception as e:
+    print(f"Delete failed: {e}")
 ```
 
 ## Commit Relationships
@@ -480,7 +558,7 @@ for i, commit in enumerate(branch.log(max_amount=50)):
 
 ### Trace Commit Ancestry
 
-Follow a commit back through its parents:
+Follow a commit back through its parents. This is for better understanding of commit, we will prefer to use `log` operation to trace back changes:
 
 ```python
 import lakefs
@@ -489,31 +567,31 @@ def trace_ancestry(repo_name, commit_id, depth=5):
     """Trace commit ancestry up to specified depth"""
     repo = lakefs.repository(repo_name)
     ancestry = []
-    
+
     current_id = commit_id
-    
+
     for level in range(depth):
         try:
             commit_ref = repo.commit(current_id)
             commit = commit_ref.get_commit()
-            
+
             ancestry.append({
                 "level": level,
                 "commit_id": commit.id[:8],
                 "message": commit.message,
                 "parents": commit.parents
             })
-            
+
             # Move to first parent
             if commit.parents:
                 current_id = commit.parents[0]
             else:
                 break
-                
+
         except Exception as e:
             print(f"Error at level {level}: {e}")
             break
-    
+
     return ancestry
 
 
@@ -527,142 +605,117 @@ for entry in ancestry:
 
 ## Real-World Workflows
 
-### Data Quality Change Tracking
+### ML Model Release Workflow
 
-Track when and why data quality rules changed:
+Release trained models with versioning:
 
 ```python
 import lakefs
 import json
 
-def track_quality_changes(repo_name):
-    """Find all commits that changed quality rules"""
+def release_ml_model(repo_name, model_version, model_metrics):
+    """
+    Create a versioned release of an ML model
+    """
     repo = lakefs.repository(repo_name)
-    branch = repo.branch("main")
-    
-    quality_changes = []
-    
-    for commit in branch.log(max_amount=1000):
-        # Check if commit mentions quality rules
-        if "quality" in commit.message.lower() or "validation" in commit.message.lower():
-            quality_changes.append({
-                "commit": commit.id[:8],
-                "message": commit.message,
-                "author": commit.metadata.get("author") if commit.metadata else "unknown",
-                "date": commit.creation_date
-            })
-    
-    return quality_changes
 
+    try:
+        # Create release tag
+        tag_name = f"model-v{model_version}"
+        tag = repo.tag(tag_name).create(source_ref="main")
 
-# Usage:
-changes = track_quality_changes("analytics-repo")
-print("Quality Rule Changes:")
-for change in changes:
-    print(f"  {change['commit']} - {change['message']} (by {change['author']})")
-```
+        commit = tag.get_commit()
 
-### Finding When Data Changed
+        print(f"ML Model Released: {tag_name}")
+        print(f"  Commit: {commit.id[:8]}")
 
-Locate the exact commit that changed a specific object:
+        # Read model metadata from tagged version
+        tag_ref = repo.ref(tag_name)
 
-```python
-import lakefs
-
-def find_last_change_to_object(repo_name, branch_name, object_path):
-    """Find the most recent commit that modified an object"""
-    repo = lakefs.repository(repo_name)
-    branch = repo.branch(branch_name)
-    
-    for commit in branch.log(max_amount=10000):
         try:
-            # Try to get this object at this commit
-            commit_ref = repo.commit(commit.id)
-            obj = commit_ref.object(object_path)
-            # If we get here, object exists at this commit
-            
-            # Check if it's different from the current version
-            current_obj = branch.object(object_path)
-            
-            return {
-                "last_modified": commit,
-                "modified_date": commit.creation_date,
-                "committer": commit.committer
-            }
-            
+            with tag_ref.object("models/metadata.json").reader() as f:
+                metadata = json.load(f)
+                print(f"  Model: {metadata.get('name')}")
+                print(f"  Framework: {metadata.get('framework')}")
+                print(f"  Version: {metadata.get('version')}")
         except:
-            # Object doesn't exist at this point in history
-            continue
-    
-    return None
+            print("  (No metadata file)")
+
+        # Store release info
+        release_info = {
+            "version": model_version,
+            "commit": commit.id,
+            "metrics": model_metrics,
+            "tag": tag_name
+        }
+
+        return release_info
+
+    except Exception as e:
+        print(f"Model release failed: {e}")
+        return None
 
 
 # Usage:
-change = find_last_change_to_object("data-repo", "main", "data/customer_master.csv")
-if change:
-    print(f"Last modified: {change['last_modified'].message}")
-    print(f"By: {change['committer']}")
+metrics = {
+    "accuracy": 0.945,
+    "precision": 0.92,
+    "recall": 0.96,
+    "f1": 0.939
+}
+
+release_info = release_ml_model("ml-repo", "3.2.0", metrics)
+if release_info:
+    print(f"\nModel released and can be retrieved from tag: {release_info['tag']}")
 ```
 
-### Tracking Data Origin
+### Production Deployment Workflow
 
-Record where data came from:
+Manage production data versions:
 
 ```python
 import lakefs
-import json
-from datetime import datetime
 
-def record_data_source(repo_name, data_path, source_info):
-    """Record the source of imported data"""
+def promote_to_production(repo_name, from_tag, environment):
+    """
+    Promote a tagged version to production by creating an environment tag
+    """
     repo = lakefs.repository(repo_name)
-    branch = repo.branch("main")
-    
-    # Create source metadata file
-    source_metadata = {
-        "data_path": data_path,
-        "source": source_info["source"],
-        "import_date": datetime.now().isoformat(),
-        "record_count": source_info.get("record_count"),
-        "import_method": source_info.get("method", "unknown"),
-        "validated": source_info.get("validated", False)
-    }
-    
-    # Store metadata
-    metadata_path = f".metadata/{data_path}.json"
-    branch.object(metadata_path).upload(
-        data=json.dumps(source_metadata, indent=2).encode()
-    )
-    
-    # Commit with tracking
-    ref = branch.commit(
-        message=f"Import: {data_path} from {source_info['source']}",
-        metadata={
-            "import-source": source_info["source"],
-            "import-type": "data-import",
-            "data-path": data_path
-        }
-    )
-    
-    print(f"Recorded data source: {data_path}")
-    print(f"  Source: {source_info['source']}")
-    print(f"  Commit: {ref.id[:8]}")
-    
-    return ref
+
+    try:
+        # Create environment-specific tag
+        env_tag_name = f"prod-{environment}"
+
+        # Delete old environment tag if it exists
+        try:
+            old_tag = repo.tag(env_tag_name)
+            old_tag.delete()
+            print(f"Removed old {env_tag_name} tag")
+        except:
+            pass  # Tag didn't exist
+
+        # Create new environment tag pointing to the same commit as version tag
+        source_tag = repo.tag(from_tag)
+        env_tag = repo.tag(env_tag_name).create(source_ref=source_tag)
+
+        print(f"Promoted to {environment}")
+        print(f"  Source: {from_tag}")
+        print(f"  Target: {env_tag_name}")
+        print(f"  Commit: {env_tag.get_commit().id[:8]}")
+
+        return env_tag_name
+
+    except Exception as e:
+        print(f"Promotion failed: {e}")
+        return None
 
 
 # Usage:
-ref = record_data_source(
-    "analytics-repo",
-    "customer_data/Q4_2024.csv",
-    {
-        "source": "CRM Export",
-        "record_count": 50000,
-        "method": "API",
-        "validated": True
-    }
-)
+env_tag = promote_to_production("prod-repo", "v2.1.0", "us-west-1")
+if env_tag:
+    print(f"Production data updated to use {env_tag}")
 ```
+
 
 ## Error Handling
 
@@ -694,4 +747,27 @@ try:
     commit = ref.get_commit()
 except NotFoundException:
     print("Reference expression invalid or out of range")
+```
+
+### Handling Tag Errors
+
+```python
+import lakefs
+from lakefs.exceptions import ConflictException, NotFoundException
+
+repo = lakefs.repository("my-data-repo")
+
+# Tag already exists
+try:
+    tag = repo.tag("v1.0.0").create(source_ref="main", exist_ok=False)
+except ConflictException:
+    print("Tag already exists")
+    tag = repo.tag("v1.0.0")
+
+# Tag doesn't exist
+try:
+    tag = repo.tag("non-existent-tag")
+    commit = tag.get_commit()
+except NotFoundException:
+    print("Tag not found")
 ```

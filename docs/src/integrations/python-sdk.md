@@ -16,7 +16,8 @@ Use the generated SDK when you:
 - Prefer **direct API interaction** patterns
 - Need to **access all API endpoints** programmatically
 
-For most common lakeFS operations (branches, tags, commits, objects), the **[High-Level SDK](./python.md)** is recommended as it provides a more Pythonic interface.
+!!! info
+    For most common lakeFS operations (branches, tags, commits, objects), the **[High-Level SDK](./python.md)** is recommended as it provides a more Pythonic interface.
 
 ## Installation
 
@@ -42,7 +43,7 @@ from lakefs_sdk.rest import ApiException
 
 # Configure the API client
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     username="your-access-key",
     password="your-secret-key"
 )
@@ -61,14 +62,14 @@ import os
 
 # HTTP Basic Authentication
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     username=os.environ["LAKEFS_ACCESS_KEY"],
     password=os.environ["LAKEFS_SECRET_KEY"]
 )
 
 # JWT Bearer Token
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     access_token=os.environ["LAKEFS_TOKEN"]
 )
 
@@ -84,14 +85,14 @@ import lakefs_sdk
 from lakefs_sdk.apis.repositories_api import RepositoriesApi
 
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     username="your-access-key",
     password="your-secret-key"
 )
 
 with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = RepositoriesApi(api_client)
-    
+
     try:
         response = api_instance.list_repositories()
         for repo in response.results:
@@ -107,7 +108,7 @@ import lakefs_sdk
 from lakefs_sdk.apis.repositories_api import RepositoriesApi
 
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     username="your-access-key",
     password="your-secret-key"
 )
@@ -115,7 +116,7 @@ configuration = lakefs_sdk.Configuration(
 with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = RepositoriesApi(api_client)
     repository = "my-repo"
-    
+
     try:
         repo = api_instance.get_repository(repository)
         print(f"Repository: {repo.id}")
@@ -132,7 +133,7 @@ import lakefs_sdk
 from lakefs_sdk.apis.branches_api import BranchesApi
 
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     username="your-access-key",
     password="your-secret-key"
 )
@@ -140,7 +141,7 @@ configuration = lakefs_sdk.Configuration(
 with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = BranchesApi(api_client)
     repository = "my-repo"
-    
+
     try:
         response = api_instance.list_branches(repository)
         for branch in response.results:
@@ -157,7 +158,7 @@ from lakefs_sdk.apis.commits_api import CommitsApi
 from lakefs_sdk.models.commit_creation import CommitCreation
 
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     username="your-access-key",
     password="your-secret-key"
 )
@@ -166,12 +167,12 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = CommitsApi(api_client)
     repository = "my-repo"
     branch = "main"
-    
+
     commit_creation = CommitCreation(
         message="My commit message",
         metadata={"author": "data-team"}
     )
-    
+
     try:
         commit = api_instance.commit(repository, branch, commit_creation)
         print(f"Committed: {commit.id}")
@@ -189,14 +190,14 @@ from lakefs_sdk.apis.repositories_api import RepositoriesApi
 from lakefs_sdk.rest import ApiException
 
 configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000/api/v1",
+    host="https://example.lakefs.io/api/v1",
     username="your-access-key",
     password="your-secret-key"
 )
 
 with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = RepositoriesApi(api_client)
-    
+
     try:
         response = api_instance.list_repositories()
     except ApiException as e:
@@ -213,4 +214,3 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 For complete API documentation and method signatures, see:
 
 - **[Full SDK API Reference](https://pydocs-sdk.lakefs.io)** - Complete documentation for all API classes and methods
-

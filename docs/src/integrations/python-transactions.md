@@ -7,13 +7,6 @@ description: Perform atomic operations using transactions in lakeFS with Python
 
 Transactions enable you to perform multiple operations atomically on lakeFS, similar to database transactions. This guide covers creating and managing transactions for reliable data operations.
 
-## Prerequisites
-
-- lakeFS server running and accessible
-- Python SDK installed: `pip install lakefs`
-- A repository with at least one branch (or create one in the examples)
-- Proper credentials configured
-
 ## Understanding Transactions
 
 ### What are Transactions?
@@ -45,12 +38,12 @@ try:
         # All operations happen on ephemeral branch
         tx.object("data/file1.csv").upload(data=b"id,value\n1,100\n2,200")
         tx.object("data/file2.csv").upload(data=b"id,name\n1,Alice\n2,Bob")
-        
+
         print("Upload successful - changes will be committed atomically")
-    
+
     # At this point, transaction is complete and merged
     print("Transaction committed to main")
-    
+
 except Exception as e:
     # If we get here, changes were rolled back
     print(f"Transaction failed and rolled back: {e}")
@@ -78,12 +71,12 @@ try:
     ) as tx:
         # Perform operations
         tx.object("data/customers.csv").upload(data=b"id,name,email\n1,Alice,alice@example.com")
-        
+
         print("Data imported")
-    
+
     # Transaction complete with metadata
     print("Transaction committed with tracking metadata")
-    
+
 except Exception as e:
     print(f"Import failed: {e}")
 ```
@@ -106,11 +99,11 @@ try:
         # Make changes
         tx.object("VERSION").upload(data=b"1.5.0")
         tx.object("data/prod.csv").upload(data=b"updated data")
-        
+
         print("Production release in progress")
-    
+
     print("Release tagged and deployed")
-    
+
 except Exception as e:
     print(f"Release failed: {e}")
     print("Changes rolled back, no tag created")
@@ -132,22 +125,22 @@ try:
     with branch.transact(commit_message="Data preparation pipeline") as tx:
         # Step 1: Upload raw data
         tx.object("raw/input.csv").upload(data=b"raw input data")
-        
+
         # Step 2: Upload processing script
         tx.object("scripts/transform.py").upload(
             data=b"#!/usr/bin/env python\n# Transformation logic"
         )
-        
+
         # Step 3: Upload intermediate results
         tx.object("processed/output.csv").upload(data=b"processed output")
-        
+
         # Step 4: Upload metadata
         tx.object(".metadata/pipeline_version.txt").upload(data=b"1.0")
-        
+
         print("All pipeline stages added atomically")
-    
+
     print("Pipeline committed successfully")
-    
+
 except Exception as e:
     print(f"Pipeline failed: {e}")
 ```
@@ -171,17 +164,17 @@ try:
             print(f"Current config: {config_data}")
         except:
             config_data = ""
-        
+
         # Modify data
         updated_config = config_data + "\nvalidation_enabled: true"
-        
+
         # Write updated data
         tx.object("data/config.txt").upload(data=updated_config.encode())
-        
+
         print("Config updated")
-    
+
     print("Configuration changes committed")
-    
+
 except Exception as e:
     print(f"Update failed: {e}")
 ```
@@ -200,28 +193,28 @@ try:
     with branch.transact(commit_message="Bulk update data versions") as tx:
         # List objects and modify each one
         processed_count = 0
-        
+
         for obj in tx.objects(prefix="data/"):
             # Read object
             try:
                 with obj.reader(mode='r') as f:
                     content = f.read()
-                
+
                 # Add version marker
                 versioned_content = f"# version: 2.0\n{content}"
-                
+
                 # Write back
                 tx.object(obj.path).upload(data=versioned_content.encode())
                 processed_count += 1
-                
+
             except Exception as e:
                 print(f"Error processing {obj.path}: {e}")
                 raise  # Transaction will rollback
-        
+
         print(f"Processed {processed_count} objects")
-    
+
     print(f"Bulk update committed: {processed_count} objects updated")
-    
+
 except Exception as e:
     print(f"Bulk update failed and rolled back: {e}")
 ```
@@ -240,23 +233,23 @@ try:
     with branch.transact(commit_message="Data operations") as tx:
         # First operation
         tx.object("data/file1.csv").upload(data=b"data1")
-        
+
         # Second operation that might fail
         try:
             with tx.object("data/large_file.csv").reader() as f:
                 large_content = f.read()
-            
+
             # Process large content
             if len(large_content) > 1000000:
                 raise ValueError("File too large")
-            
+
         except ValueError as e:
             print(f"Validation failed: {e}")
             raise  # This will rollback the entire transaction
-        
+
         # Third operation
         tx.object("data/file2.csv").upload(data=b"data2")
-        
+
 except Exception as e:
     print(f"Transaction rolled back: {e}")
 ```
@@ -278,16 +271,16 @@ try:
     ) as tx:
         # Perform operations
         cleanup_needed = True
-        
+
         tx.object("step1/file.csv").upload(data=b"step 1")
-        
+
         # Simulate error
         if True:  # In real code, some condition
             raise Exception("Something went wrong in step 1")
-        
+
         tx.object("step2/file.csv").upload(data=b"step 2")
         cleanup_needed = False
-        
+
 except Exception as e:
     if cleanup_needed:
         print(f"Operation failed, ephemeral branch automatically cleaned up")
@@ -315,15 +308,15 @@ try:
     with branch.transact(commit_message="Data import with validation") as tx:
         # Upload data
         data = b"id,value\n1,100\n2,200"
-        
+
         # Validate before committing
         validate_data(data)
-        
+
         # If validation passes, commit
         tx.object("data/validated.csv").upload(data=data)
-        
+
         print("Data validation passed, changes committed")
-    
+
 except ValueError as e:
     print(f"Validation error - transaction rolled back: {e}")
 except Exception as e:
@@ -348,20 +341,20 @@ def check_data_quality(repo_name, data_path, quality_rules):
     """
     repo = lakefs.repository(repo_name)
     branch = repo.branch("main")
-    
+
     try:
         with branch.transact(commit_message="Quality checked data") as tx:
             # Read data
             with tx.object(data_path).reader(mode='r') as f:
                 data = f.read()
-            
+
             # Run quality checks
             errors = []
-            
+
             # Check 1: Not empty
             if len(data) == 0:
                 errors.append("Data is empty")
-            
+
             # Check 2: Valid CSV format
             try:
                 reader = csv.reader(io.StringIO(data.decode()))
@@ -370,23 +363,23 @@ def check_data_quality(repo_name, data_path, quality_rules):
                     errors.append("Data has no rows")
             except Exception as e:
                 errors.append(f"Invalid CSV format: {e}")
-            
+
             # Check 3: Custom rules
             for rule in quality_rules:
                 if not rule(data):
                     errors.append(f"Failed custom rule: {rule.__name__}")
-            
+
             # If checks fail, raise error (transaction will rollback)
             if errors:
                 error_msg = "; ".join(errors)
                 raise ValueError(f"Quality checks failed: {error_msg}")
-            
+
             # If all pass, add quality marker
             tx.object(f"{data_path}.quality_passed").upload(data=b"true")
-            
+
             print(f"Data quality checks passed for {data_path}")
             return True
-    
+
     except Exception as e:
         print(f"Quality check failed: {e}")
         return False
@@ -427,7 +420,7 @@ def sync_database_export(repo_name, table_name, export_data, export_metadata):
     """
     repo = lakefs.repository(repo_name)
     branch = repo.branch("main")
-    
+
     try:
         with branch.transact(
             commit_message=f"Sync: {table_name}",
@@ -440,7 +433,7 @@ def sync_database_export(repo_name, table_name, export_data, export_metadata):
             # Step 1: Store the data
             data_path = f"data/{table_name}.csv"
             tx.object(data_path).upload(data=export_data)
-            
+
             # Step 2: Store metadata
             metadata = {
                 "table": table_name,
@@ -453,7 +446,7 @@ def sync_database_export(repo_name, table_name, export_data, export_metadata):
             tx.object(metadata_path).upload(
                 data=json.dumps(metadata, indent=2).encode()
             )
-            
+
             # Step 3: Update sync status
             status = {
                 "table": table_name,
@@ -464,12 +457,12 @@ def sync_database_export(repo_name, table_name, export_data, export_metadata):
             tx.object(status_path).upload(
                 data=json.dumps(status).encode()
             )
-            
+
             print(f"Synchronized {table_name}")
-        
+
         print(f"Sync committed atomically")
         return True
-        
+
     except Exception as e:
         print(f"Sync failed - rolling back: {e}")
         return False
@@ -501,7 +494,7 @@ def etl_pipeline_step(repo_name, branch_name, step_name, step_logic):
     """
     repo = lakefs.repository(repo_name)
     branch = repo.branch(branch_name)
-    
+
     try:
         with branch.transact(
             commit_message=f"ETL: {step_name}",
@@ -509,21 +502,21 @@ def etl_pipeline_step(repo_name, branch_name, step_name, step_logic):
         ) as tx:
             # Run the step logic
             result = step_logic(tx)
-            
+
             # Create checkpoint
             checkpoint = {
                 "step": step_name,
                 "status": "completed",
                 "records_processed": result.get("count", 0)
             }
-            
+
             tx.object(f".checkpoints/{step_name}.json").upload(
                 data=json.dumps(checkpoint).encode()
             )
-            
+
             print(f"Step '{step_name}' completed with checkpoint")
             return True
-            
+
     except Exception as e:
         print(f"Step '{step_name}' failed - checkpoint rolled back: {e}")
         return False
@@ -580,7 +573,7 @@ def evolve_schema(repo_name, table_name, old_schema, new_schema, migration_logic
     """
     repo = lakefs.repository(repo_name)
     branch = repo.branch("main")
-    
+
     try:
         with branch.transact(
             commit_message=f"Schema evolution: {table_name}",
@@ -595,17 +588,17 @@ def evolve_schema(repo_name, table_name, old_schema, new_schema, migration_logic
                     current_data = f.read()
             except:
                 raise ValueError(f"Table {table_name} not found")
-            
+
             # Parse CSV
             reader = csv.DictReader(io.StringIO(current_data.decode()))
             rows = list(reader)
-            
+
             # Migrate each row
             migrated_rows = []
             for row in rows:
                 migrated_row = migration_logic(row, old_schema, new_schema)
                 migrated_rows.append(migrated_row)
-            
+
             # Write migrated data
             output = io.StringIO()
             writer = csv.DictWriter(
@@ -614,19 +607,19 @@ def evolve_schema(repo_name, table_name, old_schema, new_schema, migration_logic
             )
             writer.writeheader()
             writer.writerows(migrated_rows)
-            
+
             tx.object(f"data/{table_name}.csv").upload(
                 data=output.getvalue().encode()
             )
-            
+
             # Store schema version
             tx.object(f".schema/{table_name}.json").upload(
                 data=json.dumps(new_schema).encode()
             )
-            
+
             print(f"Schema evolved for {table_name}")
             return True
-            
+
     except Exception as e:
         print(f"Schema evolution failed - rolled back: {e}")
         return False
@@ -690,14 +683,14 @@ def transact_with_retry(repo_name, branch_name, max_retries=3):
     """Retry transaction on failure"""
     repo = lakefs.repository(repo_name)
     branch = repo.branch(branch_name)
-    
+
     for attempt in range(max_retries):
         try:
             with branch.transact(commit_message=f"Attempt {attempt + 1}") as tx:
                 tx.object("data/file.csv").upload(data=b"data")
                 print("Transaction succeeded")
                 return True
-                
+
         except Exception as e:
             print(f"Attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
@@ -721,7 +714,7 @@ branch = repo.branch("main")
 try:
     with branch.transact(commit_message="Safe operation") as tx:
         tx.object("data/file.csv").upload(data=b"data")
-        
+
 except NotFoundException:
     print("Branch or repository not found")
 except ForbiddenException:

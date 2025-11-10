@@ -1,45 +1,35 @@
 ---
 title: Python
-description: Use Python to interact with your objects on lakeFS
+description: Use Python to interact with lakeFS
 ---
 
-# Use Python to interact with your objects on lakeFS
+# Use Python to interact with lakeFS
 
 !!! warning
     If your project is currently using the [legacy Python `lakefs-client`][legacy-pypi], please be aware that this version has been [deprecated][legacy-deprecated].
     As of release **v1.44.0**, it's no longer supported for new updates or features.
 
-## Overview
+## Getting Started
 
-lakeFS provides multiple Python packages and integrations to suit different use cases and preferences. Choose the integration that best fits your workflow:
+New to lakeFS Python SDK? Start with the **[High-Level SDK Guide](./python-getting-started.md)** to install and configure the recommended Python package.
+
+The High-Level SDK provides an intuitive interface for:
+
+- [Branches & Merging](./python-versioning-branches.md) - Feature branch workflows
+- [References, Commits & Tags](./python-refs.md) - References, Commits & Tags
+- [Transactions](./python-transactions.md) - Atomic operations
+- [Data Operations](./python-data-operations.md) - Batch operations and cleanup
+
+## Integration Options
+
+lakeFS provides multiple Python packages to suit different use cases and preferences:
 
 | Package | Abstraction | Best For | Installation | Learning Curve |
 |---------|-------------|----------|--------------|-----------------|
-| **High-Level SDK** | High | Versioning operations, data operations, transactions | `pip install lakefs` | Low |
-| **Generated SDK** | Low | Direct API access, full API surface, programmatic control | `pip install lakefs-sdk` | Medium |
-| **lakefs-spec** | High | File system operations, pandas/data science integration, S3-like interface | `pip install lakefs-spec` | Low |
-| **Boto3** | Medium | S3-compatible operations, existing S3 workflows, direct gateway access | `pip install boto3` | Low |
-
-## Quickstart
-
-New to lakeFS Python SDK? Start with the **[Getting Started Guide](./python-getting-started.md)** to install and configure the High-Level SDK.
-
-## Python Integration Options
-
-Choose the integration that best fits your needs:
-
-- **[High-Level SDK](./python-getting-started.md)** - Recommended for most use cases
-    - [Branches & Merging](./python-versioning-branches.md) - Feature branch workflows
-    - [Tags & Snapshots](./python-versioning-tags.md) - Version management and releases
-    - [References & Commits](./python-references-commits.md) - Commit history and lineage
-    - [Transactions](./python-transactions.md) - Atomic operations
-    - [Data Operations](./python-data-operations.md) - Batch operations and cleanup
-
-- **[Generated SDK](./python-sdk.md)** - For direct API access based on OpenAPI specification
-
-- **[lakefs-spec](./python-lakefs-spec.md)** - For file system operations and data science integration
-
-- **[Boto / S3 Gateway](./python-boto.md)** - For S3-compatible operations
+| **[High-Level SDK](./python-getting-started.md)** | High | Versioning operations, data operations, transactions | `pip install lakefs` | Low |
+| **[Generated SDK](./python-sdk.md)** | Low | Direct API access, full API surface, programmatic control | `pip install lakefs-sdk` | Medium |
+| **[lakefs-spec](./python-lakefs-spec.md)** | High | File system operations, pandas/data science integration, S3-like interface | `pip install lakefs-spec` | Low |
+| **[Boto / S3 Gateway](./python-boto.md)** | Medium | S3-compatible operations, existing S3 workflows, direct gateway access | `pip install boto3` | Low |
 
 ## References & Resources
 
