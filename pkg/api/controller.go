@@ -986,13 +986,12 @@ func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Reques
 		// This endpoint is _usually_ visited by a browser.  Report to the user that
 		// they logged in, telling them the name they used to log in.
 		httputil.KeepPrivate(w)
+		w.WriteHeader(http.StatusOK)
 
 		err = releasedTokenTemplate.ExecuteTemplate(w, "releasedToken", &UserData{Username: username})
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 	default:
 		writeResponse(w, r, http.StatusNoContent, nil)
 	}
@@ -6316,6 +6315,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	// base on content-type return plain text or json (default)
 	if r.Header.Get("Accept") == "text/plain" {
 		httputil.KeepPrivate(w)
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = fmt.Fprintf(w, "Usage for installation ID: %s\n", installationID)
 		for _, rec := range records {
 			_, _ = fmt.Fprintf(w, "%d-%02d: %12d\n", rec.Year, rec.Month, rec.Count)

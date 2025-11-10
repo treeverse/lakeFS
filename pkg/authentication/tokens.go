@@ -18,6 +18,6 @@ type LoginTokenProvider interface {
 	// called authenticated, initiated by the web browser running.
 	Release(ctx context.Context, loginRequestToken string) error
 	// GetToken returns a token waiting on mailbox.  It is called unauthenticated, initiated
-	// the requesting client, with no user on the context..
+	// the requesting client, with no user on the context.
 	GetToken(ctx context.Context, mailbox string) (string, time.Time, error)
 }
