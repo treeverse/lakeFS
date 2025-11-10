@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {Navigate, useLocation} from "react-router-dom";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
@@ -153,9 +153,7 @@ const LoginPage = () => {
     const { redirected, redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
 
     // Persist next for post-login redirect
-    useEffect(() => {
-        if (next) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
-    }, [next]);
+    if (next && next.startsWith("/")) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
 
     if (loading) return <Loading />;
     if (error) return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;

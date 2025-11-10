@@ -42,7 +42,7 @@ const NavUserInfo = () => {
                 onClick={() => {
                     auth.clearCurrentUser();
                     window.sessionStorage.removeItem(LAKEFS_POST_LOGIN_NEXT);
-                    window.history.replaceState(null, "", `${ROUTES.LOGIN}?redirected=true&next=%2F`);
+                    window.history.replaceState(null, "", `${ROUTES.LOGIN}?redirected=true`);
                     window.location.replace(logoutUrl);
                 }}>
                 Logout
