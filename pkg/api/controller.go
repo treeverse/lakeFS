@@ -954,7 +954,7 @@ func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Reques
 			WithField("accept", r.Header.Get("Accept")).
 			Debug("Failed to get user - redirect to login")
 		redirectURL := url.URL{
-			Path: fmt.Sprintf("/auth/login"),
+			Path: "/auth/login",
 			// TODO(ariels): Use a relative URI?
 			RawQuery: fmt.Sprintf("next=%s", url.QueryEscape(r.URL.String())),
 		}
