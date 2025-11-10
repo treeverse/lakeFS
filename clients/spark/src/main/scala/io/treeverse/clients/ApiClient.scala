@@ -128,6 +128,7 @@ case class APIConfigurations(
 // Only cached instances of ApiClient can be constructed.  The actual
 // constructor is private.
 class ApiClient private (conf: APIConfigurations) {
+  private final val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   val client = new sdk.ApiClient
   client.addDefaultHeader(
