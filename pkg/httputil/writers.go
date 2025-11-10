@@ -16,14 +16,16 @@ const (
 	HttpStatusClientClosedRequestText = "Client closed request"
 )
 
-func WriteError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+// WriteAPIError writes an error for a lakeFS API request
+func WriteAPIError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 	apiErr := apigen.Error{
 		Message: fmt.Sprint(v),
 	}
-	WriteResponse(w, r, code, apiErr)
+	WriteAPIResponse(w, r, code, apiErr)
 }
 
-func WriteResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
+// WriteAPIResponse writes a response for lakeFS API request
+func WriteAPIResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
 	// check first if the client canceled the request
 	if IsRequestCanceled(r) {
 		w.WriteHeader(HttpStatusClientClosedRequest) // Client closed request

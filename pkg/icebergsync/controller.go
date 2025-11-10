@@ -19,9 +19,9 @@ type NopController struct {
 }
 
 func (n *NopController) Pull(w http.ResponseWriter, r *http.Request, _ apigen.PullIcebergTableJSONRequestBody, _ string) {
-	httputil.WriteError(w, r, http.StatusNotImplemented, ErrNotImplemented)
+	httputil.WriteAPIError(w, r, http.StatusNotImplemented, ErrNotImplemented)
 }
 
 func (n *NopController) Push(w http.ResponseWriter, r *http.Request, _ apigen.PushIcebergTableJSONRequestBody, _ string) {
-	httputil.WriteError(w, r, http.StatusNotImplemented, ErrNotImplemented)
+	httputil.WriteAPIError(w, r, http.StatusNotImplemented, ErrNotImplemented)
 }

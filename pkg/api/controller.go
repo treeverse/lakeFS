@@ -5926,11 +5926,11 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-	httputil.WriteError(w, r, code, v)
+	httputil.WriteAPIError(w, r, code, v)
 }
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
-	httputil.WriteResponse(w, r, code, response)
+	httputil.WriteAPIResponse(w, r, code, response)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {
