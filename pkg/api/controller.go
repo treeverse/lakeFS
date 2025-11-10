@@ -6359,9 +6359,27 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
+
 	c.icebergSyncer.Pull(w, r, body, catalogID)
 }
 
 func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
+
 	c.icebergSyncer.Push(w, r, body, catalogID)
 }
