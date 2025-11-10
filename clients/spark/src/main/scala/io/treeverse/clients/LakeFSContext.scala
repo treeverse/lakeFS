@@ -114,8 +114,8 @@ object LakeFSContext {
   val metarangeReaderGetter = SSTableReader.forMetaRange _
 
   def newRDD(
-    sc: SparkContext,
-    params: LakeFSJobParams
+      sc: SparkContext,
+      params: LakeFSJobParams
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
     val conf = sc.hadoopConfiguration
 
@@ -152,7 +152,8 @@ object LakeFSContext {
     // range, which is a bit too much.)
 
     // TODO(ariels): Unify with similar code in LakeFSInputFormat.getSplits
-    val ranges = sc.parallelize(params.commitIDs.toSeq)
+    val ranges = sc
+      .parallelize(params.commitIDs.toSeq)
       .mapPartitions(commits => {
         val apiClient = ApiClient.get(apiConf)
         val conf = serializedConf.value
@@ -164,7 +165,9 @@ object LakeFSContext {
             None
           } else {
             val rangesReader = metarangeReaderGetter(conf, metaRangeURL, true)
-            rangesReader.newIterator().map(rd => new Range(new String(rd.id), rd.message.estimatedSize))
+            rangesReader
+              .newIterator()
+              .map(rd => new Range(new String(rd.id), rd.message.estimatedSize))
           }
         })
       })
@@ -183,7 +186,9 @@ object LakeFSContext {
         val sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
         // TODO(ariels): Do we need to validate that this reader is good?  Assume _not_, this is
         // not InputFormat code so it should have slightly nicer error reports.
-        sstableReader.newIterator().map((entry) => (entry.key, new WithIdentifier(entry.id, entry.message, range.id)))
+        sstableReader
+          .newIterator()
+          .map((entry) => (entry.key, new WithIdentifier(entry.id, entry.message, range.id)))
       })
     })
   }
