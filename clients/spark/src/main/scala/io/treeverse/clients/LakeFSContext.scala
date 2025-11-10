@@ -2,14 +2,14 @@ package io.treeverse.clients
 
 import io.treeverse.lakefs.catalog.Entry
 import org.apache.commons.lang3.StringUtils
-import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapred.InvalidJobConfException
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkContext, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.util.SerializableConfiguration
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -64,6 +64,8 @@ class LakeFSJobParams private (
 }
 
 object LakeFSContext {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
   val LAKEFS_CONF_API_URL_KEY = "lakefs.api.url"
   val LAKEFS_CONF_API_ACCESS_KEY_KEY = "lakefs.api.access_key"
   val LAKEFS_CONF_API_SECRET_KEY_KEY = "lakefs.api.secret_key"
@@ -179,11 +181,22 @@ object LakeFSContext {
       ranges.flatMap((range: Range) => {
         val path = new Path(apiClient.getRangeURL(repoName, range.id))
         val fs = path.getFileSystem(conf)
-        // TODO(ariels): Delete localFile when task (or just this map...) ends!
         val localFile = File.createTempFile("lakefs.", ".range")
+
         fs.copyToLocalFile(false, path, new Path(localFile.getAbsolutePath), true)
         val companion = Entry.messageCompanion
+        // localFile owned by sstableReader which will delete it when closed.
         val sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
+        Option(TaskContext.get()).foreach(_.addTaskCompletionListener((tc: TaskContext) => {
+          try {
+            sstableReader.close()
+          } catch {
+            case e: Exception => {
+              logger.warn(s"close SSTable reader for $localFile (keep going): $e")
+            }
+          }
+          tc
+        }))
         // TODO(ariels): Do we need to validate that this reader is good?  Assume _not_, this is
         // not InputFormat code so it should have slightly nicer error reports.
         sstableReader
