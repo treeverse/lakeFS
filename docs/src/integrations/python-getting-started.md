@@ -91,7 +91,6 @@ clt = Client(
 Once you have initialized the SDK, explore the different operations:
 
 - **[Branches & Merging](./python-versioning-branches.md)** - Work with branches for feature development and experimentation
-- **[Tags & Snapshots](./python-versioning-tags.md)** - Mark important data versions with immutable tags
-- **[References & Commits](./python-refs.md)** - Navigate commit history and track lineage
+- **[References, Commits & Tags](./python-refs.md)** - Navigate commit history, work with commits, and manage tags
 - **[Transactions](./python-transactions.md)** - Perform atomic operations
 - **[Data Operations](./python-data-operations.md)** - Upload, download, and manage objects

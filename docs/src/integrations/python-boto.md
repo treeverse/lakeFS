@@ -45,7 +45,7 @@ import boto3
 # Create S3 client pointing to lakeFS
 s3 = boto3.client(
     's3',
-    endpoint_url='https://example.laekfs.io',
+    endpoint_url='https://example.lakefs.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key',
     region_name='us-east-1'
@@ -90,7 +90,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='https://example.laekfs.io',
+    endpoint_url='https://example.lakefs.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key'
 )
@@ -132,7 +132,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='https://example.laekfs.io',
+    endpoint_url='https://example.lakefs.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key'
 )
@@ -165,7 +165,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='https://example.laekfs.io',
+    endpoint_url='https://example.lakefs.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key'
 )
@@ -196,7 +196,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='https://example.laekfs.io',
+    endpoint_url='https://example.lakefs.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key'
 )
@@ -220,7 +220,7 @@ import boto3
 
 s3 = boto3.client(
     's3',
-    endpoint_url='https://example.laekfs.io',
+    endpoint_url='https://example.lakefs.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key'
 )
@@ -258,7 +258,7 @@ import io
 def etl_pipeline():
     s3 = boto3.client(
         's3',
-        endpoint_url='https://example.laekfs.io',
+        endpoint_url='https://example.lakefs.io',
         aws_access_key_id='your-access-key',
         aws_secret_access_key='your-secret-key'
     )
@@ -302,7 +302,7 @@ def backup_to_lakeFS(local_dir, repo, branch, prefix):
     """Backup local directory to lakeFS"""
     s3 = boto3.client(
         's3',
-        endpoint_url='https://example.laekfs.io',
+        endpoint_url='https://example.lakefs.io',
         aws_access_key_id='your-access-key',
         aws_secret_access_key='your-secret-key'
     )
@@ -348,7 +348,7 @@ def migrate_s3_to_lakefs(s3_bucket, prefix, repo, branch):
     # Connect to lakeFS
     s3_dest = boto3.client(
         's3',
-        endpoint_url='https://example.laekfs.io',
+        endpoint_url='https://example.lakefs.io',
         aws_access_key_id='your-access-key',
         aws_secret_access_key='your-secret-key'
     )
@@ -393,7 +393,7 @@ def read_from_commit(repo, commit_id, key):
     """Read object from specific commit"""
     s3 = boto3.client(
         's3',
-        endpoint_url='https://example.laekfs.io',
+        endpoint_url='https://example.lakefs.io',
         aws_access_key_id='your-access-key',
         aws_secret_access_key='your-secret-key'
     )
@@ -418,7 +418,7 @@ from botocore.exceptions import ClientError
 
 s3 = boto3.client(
     's3',
-    endpoint_url='https://example.laekfs.io',
+    endpoint_url='https://example.lakefs.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key'
 )
