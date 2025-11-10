@@ -189,15 +189,15 @@ nav:
       - Data Processing & Compute:
           - Apache Spark: integrations/spark.md
           - Apache Iceberg: integrations/iceberg.md
-          - Apache Hive: integrations/hive.md
           - Presto / Trino: integrations/presto_trino.md
+          - DuckDB: integrations/duckdb.md
           - Dremio: integrations/dremio.md
           - Databricks: integrations/databricks.md
           - Cloudera: integrations/cloudera.md
-          - DuckDB: integrations/duckdb.md
           - Delta Lake: integrations/delta.md
           - Amazon Athena: integrations/athena.md
           - Apache Kafka: integrations/kafka.md
+          - Apache Hive: integrations/hive.md
       - ML & AI:
           - Amazon SageMaker: integrations/sagemaker.md
           - Vertex AI: integrations/vertex_ai.md
@@ -205,6 +205,8 @@ nav:
           - HuggingFace Datasets: integrations/huggingface_datasets.md
           - MLflow: integrations/mlflow.md
           - Kubeflow: integrations/kubeflow.md
+      - Vector Databases:
+          - LanceDB: integrations/lancedb.md
       - Catalogs & Metadata:
           - Iceberg REST Catalog: integrations/iceberg-rest-catalog.md
           - Glue Data Catalog: integrations/glue_metastore.md
@@ -228,6 +230,7 @@ nav:
           - AWS CLI: integrations/aws_cli.md
           - Git: integrations/git.md
           - R: integrations/r.md
+          - MATLAB: integrations/matlab.md
   - Concepts:
       - Architecture: understand/architecture.md
       - Model: understand/model.md

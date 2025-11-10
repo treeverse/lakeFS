@@ -18,6 +18,9 @@ pub struct Statement {
     pub resource: String,
     #[serde(rename = "action")]
     pub action: Vec<String>,
+    /// Optional conditions for when this statement applies.
+    #[serde(rename = "condition", skip_serializing_if = "Option::is_none")]
+    pub condition: Option<std::collections::HashMap<String, std::collections::HashMap<String, Vec<String>>>>,
 }
 
 impl Statement {
@@ -26,6 +29,7 @@ impl Statement {
             effect,
             resource,
             action,
+            condition: None,
         }
     }
 }

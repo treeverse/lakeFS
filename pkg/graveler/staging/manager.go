@@ -116,15 +116,12 @@ func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key gravele
 
 func (m *Manager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
 	oldValueProto := &graveler.StagedEntryData{}
-	var oldValue *graveler.Value
 	pred, err := kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, oldValueProto)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			oldValue = nil
-		} else {
-			return err
-		}
-	} else {
+	if err != nil && !errors.Is(err, kv.ErrNotFound) {
+		return err
+	}
+	var oldValue *graveler.Value
+	if !errors.Is(err, kv.ErrNotFound) {
 		oldValue = graveler.StagedEntryFromProto(oldValueProto)
 	}
 	updatedValue, err := updateFunc(oldValue)

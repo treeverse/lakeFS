@@ -88,23 +88,54 @@ type Pagination struct {
 	After   string
 }
 
+// ColoredText is text with an array of colors applied to it.  Without it go-pretty cannot
+// render combinations, e.g. bold-green.
+type ColoredText struct {
+	Colors text.Colors
+	Text   interface{} // Usually just a string, but anything goes
+}
+
+// String converts c to a string with ANSI control codes.
+func (c ColoredText) String() string {
+	return c.Colors.Sprint(c.Text)
+}
+
+// Add returns c with color added to it.
+func (c ColoredText) Add(color text.Color) ColoredText {
+	return ColoredText{
+		Colors: append(c.Colors, color),
+		Text:   c.Text,
+	}
+}
+
+// Colored returns text as ColoredText with no Color if it is not already ColoredText.
+func Colored(text interface{}) ColoredText {
+	if c, ok := text.(ColoredText); ok {
+		return c
+	}
+	return ColoredText{Colors: nil, Text: text}
+}
+
 func WriteTo(tpl string, data interface{}, w io.Writer) {
 	templ := template.New("output")
 	templ.Funcs(template.FuncMap{
-		"red": func(arg interface{}) string {
-			return text.FgHiRed.Sprint(arg)
+		"red": func(arg interface{}) ColoredText {
+			return Colored(arg).Add(text.FgHiRed)
 		},
-		"yellow": func(arg interface{}) string {
-			return text.FgHiYellow.Sprint(arg)
+		"yellow": func(arg interface{}) ColoredText {
+			return Colored(arg).Add(text.FgHiYellow)
 		},
-		"green": func(arg interface{}) string {
-			return text.FgHiGreen.Sprint(arg)
+		"green": func(arg interface{}) ColoredText {
+			return Colored(arg).Add(text.FgHiGreen)
 		},
-		"blue": func(arg interface{}) string {
-			return text.FgHiBlue.Sprint(arg)
+		"blue": func(arg interface{}) ColoredText {
+			return Colored(arg).Add(text.FgHiBlue)
 		},
-		"bold": func(arg interface{}) string {
-			return text.Bold.Sprint(arg)
+		"bold": func(arg interface{}) ColoredText {
+			return Colored(arg).Add(text.Bold)
+		},
+		"underline": func(arg interface{}) ColoredText {
+			return Colored(arg).Add(text.Underline)
 		},
 		"date": func(ts int64) string {
 			return time.Unix(ts, 0).String()

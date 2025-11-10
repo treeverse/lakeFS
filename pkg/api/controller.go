@@ -25,6 +25,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -286,7 +287,7 @@ func (c *Controller) UploadPart(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -362,7 +363,7 @@ func (c *Controller) UploadPartCopy(w http.ResponseWriter, r *http.Request,
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -467,7 +468,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -535,7 +536,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	// verify physical address
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
 		return
@@ -746,8 +747,13 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.LoginJSONRequestBody) {
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
-	if errors.Is(err, ErrAuthenticatingRequest) {
-		writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+	if err != nil {
+		if errors.Is(err, ErrAuthenticatingRequest) {
+			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+			return
+		}
+		c.Logger.WithError(err).Error("Unexpected error during user authentication")
+		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
@@ -936,15 +942,6 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	ifAbsent := false
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		ifAbsent = true
-	}
-
 	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
 	if storage == nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage config found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
@@ -966,7 +963,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		writeTime = time.Unix(*mtime, 0)
 	}
 	fullPhysicalAddress := swag.StringValue(body.Staging.PhysicalAddress)
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
 
 	if addressType == catalog.AddressTypeRelative {
 		// if the address is in the storage namespace, verify it has been produced by lakeFS
@@ -998,8 +995,18 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
+	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	opts := []graveler.SetOptionsFunc{
+		graveler.WithForce(swag.BoolValue(body.Force)),
+	}
+	if condition != nil {
+		opts = append(opts, graveler.WithCondition(*condition))
+	}
 	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, opts...)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1021,12 +1028,18 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 // normalizePhysicalAddress return relative address based on storage namespace if possible. If address doesn't match
 // the storage namespace prefix, the return address type is full.
-func normalizePhysicalAddress(storageNamespace, physicalAddress string) (string, catalog.AddressType) {
+func (c *Controller) normalizePhysicalAddress(storageNamespace, physicalAddress string) (string, catalog.AddressType) {
 	prefix := storageNamespace
 	if !strings.HasSuffix(prefix, catalog.DefaultPathDelimiter) {
 		prefix += catalog.DefaultPathDelimiter
 	}
-	if strings.HasPrefix(physicalAddress, prefix) {
+	dataPrefix := prefix + c.PathProvider.CommonPrefix()
+	if !strings.HasSuffix(dataPrefix, catalog.DefaultPathDelimiter) {
+		dataPrefix += catalog.DefaultPathDelimiter
+	}
+	if strings.HasPrefix(physicalAddress, dataPrefix) {
+		// if the address is in the "data" path, treat it as a relative address.
+		// note that it's relative to the storage namespace (add it'll include the "data" prefix).
 		return physicalAddress[len(prefix):], catalog.AddressTypeRelative
 	}
 	return physicalAddress, catalog.AddressTypeFull
@@ -1395,11 +1408,23 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 func serializePolicy(p *model.Policy) apigen.Policy {
 	stmts := make([]apigen.Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
-		stmts = append(stmts, apigen.Statement{
+		st := apigen.Statement{
 			Action:   s.Action,
 			Effect:   s.Effect,
 			Resource: s.Resource,
-		})
+		}
+		if len(s.Condition) > 0 {
+			st.Condition = &apigen.Statement_Condition{
+				AdditionalProperties: map[string]apigen.PolicyCondition{},
+			}
+
+			for operator, fields := range s.Condition {
+				st.Condition.AdditionalProperties[operator] = apigen.PolicyCondition{
+					AdditionalProperties: fields,
+				}
+			}
+		}
+		stmts = append(stmts, st)
 	}
 	createdAt := p.CreatedAt.Unix()
 	return apigen.Policy{
@@ -1407,6 +1432,28 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 		CreationDate: &createdAt, // TODO(barak): check if CreationDate should be required
 		Statement:    stmts,
 	}
+}
+
+// apiStatementsToModelStatements converts API statements to model statements, handling condition conversion
+func apiStatementsToModelStatements(apiStatements []apigen.Statement) model.Statements {
+	stmts := make(model.Statements, len(apiStatements))
+	for i, apiStatement := range apiStatements {
+		condition := make(map[string]map[string][]string)
+		if apiStatement.Condition != nil && len(apiStatement.Condition.AdditionalProperties) > 0 {
+			// Convert API structure with AdditionalProperties to model structure
+			// map[string]struct{ AdditionalProperties map[string][]string } -> map[string]map[string][]string
+			for operator, operatorFields := range apiStatement.Condition.AdditionalProperties {
+				condition[operator] = operatorFields.AdditionalProperties
+			}
+		}
+		stmts[i] = model.Statement{
+			Effect:    apiStatement.Effect,
+			Action:    apiStatement.Action,
+			Resource:  apiStatement.Resource,
+			Condition: condition,
+		}
+	}
+	return stmts
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
@@ -1516,14 +1563,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 		return
 	}
 
-	stmts := make(model.Statements, len(body.Statement))
-	for i, apiStatement := range body.Statement {
-		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
-			Action:   apiStatement.Action,
-			Resource: apiStatement.Resource,
-		}
-	}
+	stmts := apiStatementsToModelStatements(body.Statement)
 
 	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
@@ -1615,14 +1655,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 	ctx := r.Context()
 	c.LogAction(ctx, "update_policy", r, "", "", "")
 
-	stmts := make(model.Statements, len(body.Statement))
-	for i, apiStatement := range body.Statement {
-		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
-			Action:   apiStatement.Action,
-			Resource: apiStatement.Resource,
-		}
-	}
+	stmts := apiStatementsToModelStatements(body.Statement)
 
 	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
@@ -3019,7 +3052,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
-		errors.Is(err, license.ErrNotImplemented):
+		errors.Is(err, license.ErrNotImplemented),
+		errors.Is(err, catalog.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
@@ -3432,16 +3466,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
-	// once before uploading the body to save resources and time,
-	//	and then graveler will check again when passed a SetOptions.
-	allowOverwrite := true
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		// check if exists
+	if params.IfNoneMatch != nil && *params.IfNoneMatch == "*" {
 		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
 		if err == nil {
 			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
@@ -3451,7 +3476,15 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		allowOverwrite = false
+	}
+	var setOpts []graveler.SetOptionsFunc
+	// Handle preconditions
+	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if condition != nil {
+		setOpts = append(setOpts, graveler.WithCondition(*condition))
 	}
 
 	// read request body parse multipart for "content" and upload the data
@@ -3542,7 +3575,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force)))
+	setOpts = append(setOpts, graveler.WithForce(swag.BoolValue(params.Force)))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
@@ -3619,7 +3653,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		writeTime = time.Unix(*body.Mtime, 0)
 	}
 
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	physicalAddress, addressType := c.normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
@@ -3918,6 +3952,86 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		RunId:                 gcRunMetadata.RunID,
 		GcCommitsPresignedUrl: &presignedURL,
 	})
+}
+
+func (c *Controller) PrepareGarbageCollectionCommitsAsync(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "prepare_garbage_collection_commits_async", r, repository, "", "")
+	taskID, err := c.Catalog.PrepareExpiredCommitsAsync(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter, r *http.Request, repository string, params apigen.PrepareGarbageCollectionCommitsStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.PrepareGarbageCollectionCommitsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	taskID := params.Id
+	status, err := c.Catalog.GetGarbageCollectionPrepareStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := apigen.PrepareGarbageCollectionCommitsStatus{
+		TaskId:    status.Task.Id,
+		Completed: status.Task.Done,
+	}
+	if status.Task.UpdatedAt != nil {
+		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
+	}
+
+	if status.Task.Error != "" {
+		resp.Error = &apigen.Error{
+			Message: status.Task.Error,
+		}
+	}
+
+	if status.Info != nil {
+		resp.Result = &apigen.GarbageCollectionPrepareResponse{
+			RunId:                 status.Info.RunId,
+			GcAddressesLocation:   status.Info.GcAddressesLocation,
+			GcCommitsLocation:     status.Info.GcCommitsLocation,
+			GcCommitsPresignedUrl: nil,
+		}
+		// Generate presigned URL if task is done and we have the location
+		if status.Task.Done && status.Info.GcCommitsLocation != "" {
+			repo, err := c.Catalog.GetRepository(ctx, repository)
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+
+			presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+				StorageID:      repo.StorageID,
+				Identifier:     status.Info.GcCommitsLocation,
+				IdentifierType: block.IdentifierTypeFull,
+			}, block.PreSignModeRead, "")
+			if err != nil {
+				// report an error an continue fallthrough
+				c.Logger.WithError(err).Error("Failed to presign url for prepare GC commits, continuing")
+			} else {
+				resp.Result.GcCommitsPresignedUrl = &presignedURL
+			}
+		}
+	}
+	writeResponse(w, r, http.StatusOK, resp)
 }
 
 func (c *Controller) InternalGetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
@@ -4882,6 +4996,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		return
 	}
 
+	var clientIP string
 	objList := make([]apigen.ObjectStats, 0, len(res))
 	for _, entry := range res {
 		qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
@@ -4913,6 +5028,9 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 			}
 			if swag.BoolValue(params.Presign) {
+				if clientIP == "" {
+					clientIP = httputil.ExtractClientIP(r.Header, r.RemoteAddr)
+				}
 				// check if the user has read permissions for this object
 				authResponse, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
 					Username: user.Username,
@@ -4922,6 +5040,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 							Resource: permissions.ObjectArn(repository, entry.Path),
 						},
 					},
+					ClientIP: clientIP,
 				})
 				if c.handleAPIError(ctx, w, r, err) {
 					return
@@ -5505,8 +5624,32 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 	}
 
 	customViewers := uiConfig.GetCustomViewers()
+	if len(customViewers) == 0 {
+		return &apigen.UIConfig{
+			CustomViewers: nil,
+		}
+	}
+
+	apigenViewers := make([]apigen.CustomViewer, len(customViewers))
+	for i, cv := range customViewers {
+		var extensions *[]string
+		if len(cv.Extensions) > 0 {
+			extensions = &cv.Extensions
+		}
+		var contentTypes *[]string
+		if len(cv.ContentTypes) > 0 {
+			contentTypes = &cv.ContentTypes
+		}
+		apigenViewers[i] = apigen.CustomViewer{
+			Name:         cv.Name,
+			Url:          cv.URL,
+			Extensions:   extensions,
+			ContentTypes: contentTypes,
+		}
+	}
+
 	return &apigen.UIConfig{
-		CustomViewers: &customViewers,
+		CustomViewers: &apigenViewers,
 	}
 }
 
@@ -5938,9 +6081,13 @@ func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, p
 		cb(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}
+
+	clientIP := httputil.ExtractClientIP(r.Header, r.RemoteAddr)
+
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
 		Username:            user.Username,
 		RequiredPermissions: perms,
+		ClientIP:            clientIP,
 	})
 	if err != nil {
 		cb(w, r, http.StatusInternalServerError, err)
@@ -6020,6 +6167,15 @@ func extractLakeFSMetadata(header http.Header) map[string]string {
 
 func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	// verify user is authenticated
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "usage_report_summary", r, "", "", "")
 
 	installationID := c.usageReporter.InstallationID()
 	if installationID == "" {
@@ -6204,4 +6360,12 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	c.Authentication.OauthCallback(w, r, c.sessionStore)
+}
+
+func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalog string) {
+	writeError(w, r, http.StatusNotImplemented, "Not implemented")
+}
+
+func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalog string) {
+	writeError(w, r, http.StatusNotImplemented, "Not implemented")
 }

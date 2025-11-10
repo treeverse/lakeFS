@@ -33,6 +33,7 @@ from lakefs_sdk.api.metadata_api import MetadataApi
 from lakefs_sdk.api.objects_api import ObjectsApi
 from lakefs_sdk.api.pulls_api import PullsApi
 from lakefs_sdk.api.refs_api import RefsApi
+from lakefs_sdk.api.remotes_api import RemotesApi
 from lakefs_sdk.api.repositories_api import RepositoriesApi
 from lakefs_sdk.api.staging_api import StagingApi
 from lakefs_sdk.api.tags_api import TagsApi
@@ -92,6 +93,10 @@ from lakefs_sdk.models.group_creation import GroupCreation
 from lakefs_sdk.models.group_list import GroupList
 from lakefs_sdk.models.hook_run import HookRun
 from lakefs_sdk.models.hook_run_list import HookRunList
+from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
+from lakefs_sdk.models.iceberg_pull_request import IcebergPullRequest
+from lakefs_sdk.models.iceberg_push_request import IcebergPushRequest
+from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
 from lakefs_sdk.models.import_creation import ImportCreation
 from lakefs_sdk.models.import_creation_response import ImportCreationResponse
 from lakefs_sdk.models.import_location import ImportLocation
@@ -117,6 +122,7 @@ from lakefs_sdk.models.policy import Policy
 from lakefs_sdk.models.policy_list import PolicyList
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
+from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus
 from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 from lakefs_sdk.models.pull_request import PullRequest
 from lakefs_sdk.models.pull_request_basic import PullRequestBasic
@@ -148,6 +154,7 @@ from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
 from lakefs_sdk.models.tag_creation import TagCreation
+from lakefs_sdk.models.task_creation import TaskCreation
 from lakefs_sdk.models.task_info import TaskInfo
 from lakefs_sdk.models.ui_config import UIConfig
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties

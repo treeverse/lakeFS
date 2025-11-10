@@ -90,7 +90,16 @@ components:
       required: false
       schema:
         type: string
-    
+
+    IfMatch:
+      in: header
+      name: If-Match
+      description: Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
+      example: "2e9ec317e197e02e4264d128c2e7e681"
+      required: false
+      schema:
+        type: string
+
     NoTombstone:
       in: query
       name: no_tombstone
@@ -1224,6 +1233,18 @@ components:
         description:
           type: string
 
+    PolicyCondition:
+      type: object
+      description: Condition operator (e.g., IpAddress)
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        IpAddress:
+          - 192.168.0.1/32
+          - 192.168.0.2/32
+
     Statement:
       type: object
       required:
@@ -1241,6 +1262,11 @@ components:
           items:
             type: string
           minItems: 1
+        condition:
+          type: object
+          description: Optional conditions for when this statement applies.
+          additionalProperties:
+            $ref: "#/components/schemas/PolicyCondition"
 
     Policy:
       type: object
@@ -1533,6 +1559,28 @@ components:
         - gc_commits_location
         - gc_addresses_location
 
+    PrepareGarbageCollectionCommitsStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+          description: the id of the task preparing the GC commits
+        completed:
+          type: boolean
+          description: true if the task has completed (either successfully or with an error)
+        update_time:
+          type: string
+          format: date-time
+          description: last time the task status was updated
+        result:
+          $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        error:
+          $ref: "#/components/schemas/Error"
+      required:
+        - task_id
+        - completed
+        - update_time
+
     PrepareGCUncommittedRequest:
       type: object
       properties:
@@ -1692,6 +1740,15 @@ components:
       properties:
         id:
           description: The id of the import process
+          type: string
+      required:
+        - id
+
+    TaskCreation:
+      type: object
+      properties:
+        id:
+          description: The id of the new task
           type: string
       required:
         - id
@@ -2012,6 +2069,75 @@ components:
         token:
           type: string
           description: The license JWT token
+
+    IcebergNamespaceRef:
+      description: Reference to one or more levels of a namespace
+      type: array
+      items:
+        type: string
+      example: ["accounting", "tax"]
+
+    IcebergRemoteTable:
+      type: object
+      required:
+        - namespace
+        - table
+      properties:
+        namespace:
+          $ref: "#/components/schemas/IcebergNamespaceRef"
+        table:
+          type: string
+          description: Remote table name
+
+    IcebergLocalTable:
+      type: object
+      required:
+        - namespace
+        - table
+        - repository_id
+        - reference_id
+      properties:
+        namespace:
+          $ref: "#/components/schemas/IcebergNamespaceRef"
+        table:
+          type: string
+          description: Remote table name
+        repository_id:
+          type: string
+          description: lakeFS repository ID
+        reference_id:
+          type: string
+          description: lakeFS reference ID (branch or commit)
+
+    IcebergPushRequest:
+      type: object
+      required:
+        - source
+        - destination
+      properties:
+        source:
+          $ref: "#/components/schemas/IcebergLocalTable"
+        destination:
+          $ref: "#/components/schemas/IcebergRemoteTable"
+        force_update:
+          type: boolean
+          default: false
+          description: Override exiting table in remote if exists
+        create_namespace:
+          type: boolean
+          default: false
+          description: Creates namespace in remote catalog if not exist
+
+    IcebergPullRequest:
+      type: object
+      required:
+        - source
+        - destination
+      properties:
+        source:
+          $ref: "#/components/schemas/IcebergRemoteTable"
+        destination:
+          $ref: "#/components/schemas/IcebergLocalTable"
 
 paths:
   /setup_comm_prefs:
@@ -4877,6 +5003,7 @@ paths:
 
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
+        - $ref: "#/components/parameters/IfMatch"
 
       responses:
         200:
@@ -4906,6 +5033,8 @@ paths:
           $ref: "#/components/responses/PreconditionFailed"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5114,6 +5243,7 @@ paths:
 
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
+        - $ref: "#/components/parameters/IfMatch"
         - in: query
           name: storageClass
           description: Deprecated, this capability will not be supported in future releases.
@@ -5146,6 +5276,8 @@ paths:
           $ref: "#/components/responses/PreconditionFailed"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -5907,6 +6039,75 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/gc/prepare_commits/async:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - internal
+      operationId: prepareGarbageCollectionCommitsAsync
+      summary: prepare gc commits
+      responses:
+        202:
+          description: GC prepare task started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCreation"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/gc/prepare_commits/status:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - internal
+      operationId: prepareGarbageCollectionCommitsStatus
+      summary: get status of prepare gc commits operation
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the prepare GC commits task
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: prepare GC commits task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrepareGarbageCollectionCommitsStatus"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/gc/prepare_uncommited:
     parameters:
       - in: path
@@ -6397,5 +6598,59 @@ paths:
           description: successfully got token
         401:
           description: failed to exchange authorization code for token
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /iceberg/remotes/{catalog}/push:
+    parameters:
+      - in: path
+        name: catalog
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - remotes
+      operationId: pushIcebergTable
+      summary: register existing lakeFS table in remote catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IcebergPushRequest"
+      responses:
+        204:
+          description: successfully pushed table to remote
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /iceberg/remotes/{catalog}/pull:
+    parameters:
+      - in: path
+        name: catalog
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - remotes
+      operationId: pullIcebergTable
+      summary: take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IcebergPullRequest"
+      responses:
+        204:
+          description: successfully pulled table from remote
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"

@@ -243,6 +243,8 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**internalSetGarbageCollectionRules**](docs/InternalApi.md#internalSetGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 *InternalApi* | [**postStatsEvents**](docs/InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *InternalApi* | [**prepareGarbageCollectionCommits**](docs/InternalApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+*InternalApi* | [**prepareGarbageCollectionCommitsAsync**](docs/InternalApi.md#prepareGarbageCollectionCommitsAsync) | **POST** /repositories/{repository}/gc/prepare_commits/async | prepare gc commits
+*InternalApi* | [**prepareGarbageCollectionCommitsStatus**](docs/InternalApi.md#prepareGarbageCollectionCommitsStatus) | **GET** /repositories/{repository}/gc/prepare_commits/status | get status of prepare gc commits operation
 *InternalApi* | [**prepareGarbageCollectionUncommitted**](docs/InternalApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *InternalApi* | [**restoreRefs**](docs/InternalApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
@@ -273,6 +275,8 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**findMergeBase**](docs/RefsApi.md#findMergeBase) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 *RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
+*RemotesApi* | [**pullIcebergTable**](docs/RemotesApi.md#pullIcebergTable) | **POST** /iceberg/remotes/{catalog}/pull | take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
+*RemotesApi* | [**pushIcebergTable**](docs/RemotesApi.md#pushIcebergTable) | **POST** /iceberg/remotes/{catalog}/push | register existing lakeFS table in remote catalog
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
 *RepositoriesApi* | [**deleteGCRules**](docs/RepositoriesApi.md#deleteGCRules) | **DELETE** /repositories/{repository}/settings/gc_rules | 
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
@@ -340,6 +344,10 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
+ - [IcebergLocalTable](docs/IcebergLocalTable.md)
+ - [IcebergPullRequest](docs/IcebergPullRequest.md)
+ - [IcebergPushRequest](docs/IcebergPushRequest.md)
+ - [IcebergRemoteTable](docs/IcebergRemoteTable.md)
  - [ImportCreation](docs/ImportCreation.md)
  - [ImportCreationResponse](docs/ImportCreationResponse.md)
  - [ImportLocation](docs/ImportLocation.md)
@@ -365,6 +373,7 @@ Class | Method | HTTP request | Description
  - [PolicyList](docs/PolicyList.md)
  - [PrepareGCUncommittedRequest](docs/PrepareGCUncommittedRequest.md)
  - [PrepareGCUncommittedResponse](docs/PrepareGCUncommittedResponse.md)
+ - [PrepareGarbageCollectionCommitsStatus](docs/PrepareGarbageCollectionCommitsStatus.md)
  - [PresignMultipartUpload](docs/PresignMultipartUpload.md)
  - [PullRequest](docs/PullRequest.md)
  - [PullRequestBasic](docs/PullRequestBasic.md)
@@ -396,6 +405,7 @@ Class | Method | HTTP request | Description
  - [StorageURI](docs/StorageURI.md)
  - [StsAuthRequest](docs/StsAuthRequest.md)
  - [TagCreation](docs/TagCreation.md)
+ - [TaskCreation](docs/TaskCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
  - [UIConfig](docs/UIConfig.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)

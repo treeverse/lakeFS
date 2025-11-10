@@ -54,6 +54,10 @@ docs/GroupList.md
 docs/HealthCheckApi.md
 docs/HookRun.md
 docs/HookRunList.md
+docs/IcebergLocalTable.md
+docs/IcebergPullRequest.md
+docs/IcebergPushRequest.md
+docs/IcebergRemoteTable.md
 docs/ImportApi.md
 docs/ImportCreation.md
 docs/ImportCreationResponse.md
@@ -82,6 +86,7 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
+docs/PrepareGarbageCollectionCommitsStatus.md
 docs/PrepareGcUncommittedRequest.md
 docs/PrepareGcUncommittedResponse.md
 docs/PresignMultipartUpload.md
@@ -97,6 +102,7 @@ docs/RefList.md
 docs/RefsApi.md
 docs/RefsDump.md
 docs/RefsRestore.md
+docs/RemotesApi.md
 docs/RepositoriesApi.md
 docs/Repository.md
 docs/RepositoryCreation.md
@@ -120,6 +126,7 @@ docs/StorageUri.md
 docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
+docs/TaskCreation.md
 docs/TaskInfo.md
 docs/UiConfig.md
 docs/UnderlyingObjectProperties.md
@@ -152,6 +159,7 @@ src/apis/mod.rs
 src/apis/objects_api.rs
 src/apis/pulls_api.rs
 src/apis/refs_api.rs
+src/apis/remotes_api.rs
 src/apis/repositories_api.rs
 src/apis/staging_api.rs
 src/apis/tags_api.rs
@@ -199,6 +207,10 @@ src/models/group_creation.rs
 src/models/group_list.rs
 src/models/hook_run.rs
 src/models/hook_run_list.rs
+src/models/iceberg_local_table.rs
+src/models/iceberg_pull_request.rs
+src/models/iceberg_push_request.rs
+src/models/iceberg_remote_table.rs
 src/models/import_creation.rs
 src/models/import_creation_response.rs
 src/models/import_location.rs
@@ -224,6 +236,7 @@ src/models/pagination.rs
 src/models/path_list.rs
 src/models/policy.rs
 src/models/policy_list.rs
+src/models/prepare_garbage_collection_commits_status.rs
 src/models/prepare_gc_uncommitted_request.rs
 src/models/prepare_gc_uncommitted_response.rs
 src/models/presign_multipart_upload.rs
@@ -256,6 +269,7 @@ src/models/storage_config.rs
 src/models/storage_uri.rs
 src/models/sts_auth_request.rs
 src/models/tag_creation.rs
+src/models/task_creation.rs
 src/models/task_info.rs
 src/models/ui_config.rs
 src/models/underlying_object_properties.rs
