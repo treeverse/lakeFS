@@ -172,7 +172,7 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
-		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), buildLocalConfig(syncFlags, cfg))
+		s := local.NewSyncManager(sigCtx, client, getHTTPClient(lakectlRetryPolicy), buildLocalConfig(syncFlags, cfg))
 
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {

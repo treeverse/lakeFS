@@ -365,6 +365,31 @@ public class AuthApiTest {
     }
 
     /**
+     * receive the token after user has authenticated on redirect URL.
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getTokenFromMailboxTest() throws ApiException {
+        String mailbox = null;
+        AuthenticationToken response = api.getTokenFromMailbox(mailbox)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * start acquiring a token by logging in on a browser
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getTokenRedirectTest() throws ApiException {
+        Error response = api.getTokenRedirect()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * get user
      *
      * @throws ApiException if the Api call fails
@@ -567,6 +592,19 @@ public class AuthApiTest {
     @Test
     public void oauthCallbackTest() throws ApiException {
         Error response = api.oauthCallback()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * release a token for the current (authenticated) user to the mailbox of this login request.
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void releaseTokenToMailboxTest() throws ApiException {
+        String loginRequestToken = null;
+        api.releaseTokenToMailbox(loginRequestToken)
                 .execute();
         // TODO: test validations
     }

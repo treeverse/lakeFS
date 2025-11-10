@@ -96,6 +96,20 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_token_from_mailbox(self) -> None:
+        """Test case for get_token_from_mailbox
+
+        receive the token after user has authenticated on redirect URL.  # noqa: E501
+        """
+        pass
+
+    def test_get_token_redirect(self) -> None:
+        """Test case for get_token_redirect
+
+        start acquiring a token by logging in on a browser  # noqa: E501
+        """
+        pass
+
     def test_hard_reset_branch(self) -> None:
         """Test case for hard_reset_branch
 
@@ -121,6 +135,13 @@ class TestExperimentalApi(unittest.TestCase):
         """Test case for merge_pull_request
 
         merge pull request  # noqa: E501
+        """
+        pass
+
+    def test_release_token_to_mailbox(self) -> None:
+        """Test case for release_token_to_mailbox
+
+        release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
         """
         pass
 

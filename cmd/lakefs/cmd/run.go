@@ -132,6 +132,11 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("failed to create authentication service")
 		}
 
+		loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create login token provider")
+		}
+
 		blockstoreType := baseCfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
@@ -250,6 +255,7 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			usageReporter,
 			licenseManager,
+			loginTokenProvider,
 		)
 
 		// init gateway server

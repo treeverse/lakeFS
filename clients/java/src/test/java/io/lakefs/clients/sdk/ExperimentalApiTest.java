@@ -210,6 +210,31 @@ public class ExperimentalApiTest {
     }
 
     /**
+     * receive the token after user has authenticated on redirect URL.
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getTokenFromMailboxTest() throws ApiException {
+        String mailbox = null;
+        AuthenticationToken response = api.getTokenFromMailbox(mailbox)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * start acquiring a token by logging in on a browser
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getTokenRedirectTest() throws ApiException {
+        Error response = api.getTokenRedirect()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * hard reset branch
      *
      * Relocate branch to refer to ref.  Branch must not contain uncommitted data.
@@ -278,6 +303,19 @@ public class ExperimentalApiTest {
         String repository = null;
         String pullRequest = null;
         MergeResult response = api.mergePullRequest(repository, pullRequest)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * release a token for the current (authenticated) user to the mailbox of this login request.
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void releaseTokenToMailboxTest() throws ApiException {
+        String loginRequestToken = null;
+        api.releaseTokenToMailbox(loginRequestToken)
                 .execute();
         // TODO: test validations
     }

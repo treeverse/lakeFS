@@ -269,6 +269,29 @@ pub enum GetPolicyError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`get_token_from_mailbox`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GetTokenFromMailboxError {
+    Status401(models::Error),
+    Status404(models::Error),
+    Status429(),
+    Status501(models::Error),
+    DefaultResponse(models::Error),
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`get_token_redirect`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GetTokenRedirectError {
+    Status401(models::Error),
+    Status429(),
+    Status501(models::Error),
+    DefaultResponse(models::Error),
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`get_user`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -390,6 +413,17 @@ pub enum LoginError {
 #[serde(untagged)]
 pub enum OauthCallbackError {
     Status401(),
+    DefaultResponse(models::Error),
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`release_token_to_mailbox`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ReleaseTokenToMailboxError {
+    Status401(models::Error),
+    Status429(),
+    Status501(models::Error),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -1179,6 +1213,60 @@ pub async fn get_policy(configuration: &configuration::Configuration, policy_id:
     }
 }
 
+pub async fn get_token_from_mailbox(configuration: &configuration::Configuration, mailbox: &str) -> Result<models::AuthenticationToken, Error<GetTokenFromMailboxError>> {
+    let local_var_configuration = configuration;
+
+    let local_var_client = &local_var_configuration.client;
+
+    let local_var_uri_str = format!("{}/auth/get-token/mailboxes/{mailbox}", local_var_configuration.base_path, mailbox=crate::apis::urlencode(mailbox));
+    let mut local_var_req_builder = local_var_client.request(reqwest::Method::GET, local_var_uri_str.as_str());
+
+    if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
+        local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
+    }
+
+    let local_var_req = local_var_req_builder.build()?;
+    let local_var_resp = local_var_client.execute(local_var_req).await?;
+
+    let local_var_status = local_var_resp.status();
+    let local_var_content = local_var_resp.text().await?;
+
+    if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
+        serde_json::from_str(&local_var_content).map_err(Error::from)
+    } else {
+        let local_var_entity: Option<GetTokenFromMailboxError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
+        Err(Error::ResponseError(local_var_error))
+    }
+}
+
+pub async fn get_token_redirect(configuration: &configuration::Configuration, ) -> Result<models::Error, Error<GetTokenRedirectError>> {
+    let local_var_configuration = configuration;
+
+    let local_var_client = &local_var_configuration.client;
+
+    let local_var_uri_str = format!("{}/auth/get-token/start", local_var_configuration.base_path);
+    let mut local_var_req_builder = local_var_client.request(reqwest::Method::GET, local_var_uri_str.as_str());
+
+    if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
+        local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
+    }
+
+    let local_var_req = local_var_req_builder.build()?;
+    let local_var_resp = local_var_client.execute(local_var_req).await?;
+
+    let local_var_status = local_var_resp.status();
+    let local_var_content = local_var_resp.text().await?;
+
+    if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
+        serde_json::from_str(&local_var_content).map_err(Error::from)
+    } else {
+        let local_var_entity: Option<GetTokenRedirectError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
+        Err(Error::ResponseError(local_var_error))
+    }
+}
+
 pub async fn get_user(configuration: &configuration::Configuration, user_id: &str) -> Result<models::User, Error<GetUserError>> {
     let local_var_configuration = configuration;
 
@@ -1643,6 +1731,39 @@ pub async fn oauth_callback(configuration: &configuration::Configuration, ) -> R
         serde_json::from_str(&local_var_content).map_err(Error::from)
     } else {
         let local_var_entity: Option<OauthCallbackError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
+        Err(Error::ResponseError(local_var_error))
+    }
+}
+
+pub async fn release_token_to_mailbox(configuration: &configuration::Configuration, login_request_token: &str) -> Result<(), Error<ReleaseTokenToMailboxError>> {
+    let local_var_configuration = configuration;
+
+    let local_var_client = &local_var_configuration.client;
+
+    let local_var_uri_str = format!("{}/auth/get-token/release-token/{loginRequestToken}", local_var_configuration.base_path, loginRequestToken=crate::apis::urlencode(login_request_token));
+    let mut local_var_req_builder = local_var_client.request(reqwest::Method::GET, local_var_uri_str.as_str());
+
+    if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
+        local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
+    }
+    if let Some(ref local_var_auth_conf) = local_var_configuration.basic_auth {
+        local_var_req_builder = local_var_req_builder.basic_auth(local_var_auth_conf.0.to_owned(), local_var_auth_conf.1.to_owned());
+    };
+    if let Some(ref local_var_token) = local_var_configuration.bearer_access_token {
+        local_var_req_builder = local_var_req_builder.bearer_auth(local_var_token.to_owned());
+    };
+
+    let local_var_req = local_var_req_builder.build()?;
+    let local_var_resp = local_var_client.execute(local_var_req).await?;
+
+    let local_var_status = local_var_resp.status();
+    let local_var_content = local_var_resp.text().await?;
+
+    if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
+        Ok(())
+    } else {
+        let local_var_entity: Option<ReleaseTokenToMailboxError> = serde_json::from_str(&local_var_content).ok();
         let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
         Err(Error::ResponseError(local_var_error))
     }

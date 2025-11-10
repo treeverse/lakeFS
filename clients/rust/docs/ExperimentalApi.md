@@ -14,10 +14,13 @@ Method | HTTP request | Description
 [**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**get_license**](ExperimentalApi.md#get_license) | **GET** /license | 
 [**get_pull_request**](ExperimentalApi.md#get_pull_request) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
+[**get_token_from_mailbox**](ExperimentalApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
+[**get_token_redirect**](ExperimentalApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**list_pull_requests**](ExperimentalApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 [**merge_pull_request**](ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
+[**release_token_to_mailbox**](ExperimentalApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 [**sts_login**](ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
 [**update_object_user_metadata**](ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 [**update_pull_request**](ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
@@ -327,6 +330,59 @@ Name | Type | Description  | Required | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
+## get_token_from_mailbox
+
+> models::AuthenticationToken get_token_from_mailbox(mailbox)
+receive the token after user has authenticated on redirect URL.
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**mailbox** | **String** | mailbox returned by getTokenRedirect | [required] |
+
+### Return type
+
+[**models::AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## get_token_redirect
+
+> models::Error get_token_redirect()
+start acquiring a token by logging in on a browser
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**models::Error**](Error.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
 ## hard_reset_branch
 
 > hard_reset_branch(repository, branch, r#ref, force)
@@ -439,6 +495,34 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::MergeResult**](MergeResult.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## release_token_to_mailbox
+
+> release_token_to_mailbox(login_request_token)
+release a token for the current (authenticated) user to the mailbox of this login request.
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**login_request_token** | **String** | login request token returned by getTokenRedirect. | [required] |
+
+### Return type
+
+ (empty response body)
 
 ### Authorization
 
