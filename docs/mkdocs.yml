@@ -73,25 +73,25 @@ markdown_extensions:
   - admonition
   - codehilite
   - pymdownx.highlight:
-        anchor_linenums: true
-        line_spans: __span
-        pygments_lang_class: true
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.emoji:  # support emojis
+  - pymdownx.emoji: # support emojis
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - pymdownx.superfences:  # support mermaid diagrams
+  - pymdownx.superfences: # support mermaid diagrams
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:  # support linking to tabs
+  - pymdownx.tabbed: # support linking to tabs
       alternate_style: true
       slugify: !!python/object/apply:pymdownx.slugs.slugify
         kwds:
           case: lower
-  - pymdownx.tasklist:  # support TODO lists
+  - pymdownx.tasklist: # support TODO lists
       custom_checkbox: true
   - pymdownx.critic
   - pymdownx.caret
@@ -105,7 +105,7 @@ plugins:
       version_selector: true
   - search
   - render_swagger:
-      allow_arbitrary_locations : true
+      allow_arbitrary_locations: true
   - meta
   - glightbox
   - redirects:
@@ -113,152 +113,158 @@ plugins:
         reference/mount-csi-driver.md: reference/mount.md#mount-csi-driver-everest-on-kubernetes
         howto/unity-delta-sharing.md: integrations/unity-catalog.md
 
-
-
 ############################################################
 # This section is used to generate the navigation sidebar  #
 ############################################################
 nav:
   - Welcome to lakeFS: index.md
   - Quickstart:
-    - Overview: quickstart/index.md
-    - "1\uFE0F\u20E3 Run lakeFS": quickstart/launch.md
-    - "2\uFE0F\u20E3 Query the data": quickstart/query.md
-    - "3\uFE0F\u20E3 Create a branch": quickstart/branch.md
-    - "4\uFE0F\u20E3 Commit and Merge": quickstart/commit-and-merge.md
-    - "5\uFE0F\u20E3 Roll back Changes": quickstart/rollback.md
-    - "6\uFE0F\u20E3 Using Actions and Hooks": quickstart/actions-and-hooks.md
-    - "7\uFE0F\u20E3 Work with data locally": quickstart/work-with-data-locally.md
-    - ➡️ Learn more: quickstart/learning-more-lakefs.md
+      - Overview: quickstart/index.md
+      - "1\uFE0F\u20E3 Run lakeFS": quickstart/launch.md
+      - "2\uFE0F\u20E3 Query the data": quickstart/query.md
+      - "3\uFE0F\u20E3 Create a branch": quickstart/branch.md
+      - "4\uFE0F\u20E3 Commit and Merge": quickstart/commit-and-merge.md
+      - "5\uFE0F\u20E3 Roll back Changes": quickstart/rollback.md
+      - "6\uFE0F\u20E3 Using Actions and Hooks": quickstart/actions-and-hooks.md
+      - "7\uFE0F\u20E3 Work with data locally": quickstart/work-with-data-locally.md
+      - ➡️ Learn more: quickstart/learning-more-lakefs.md
   - Use Cases:
-    - CI/CD for Data Lakes: understand/use_cases/cicd_for_data.md
-    - ETL Testing Environment: understand/use_cases/etl_testing.md
-    - Reproducibility: understand/use_cases/reproducibility.md
+      - CI/CD for Data Lakes: understand/use_cases/cicd_for_data.md
+      - ETL Testing Environment: understand/use_cases/etl_testing.md
+      - Reproducibility: understand/use_cases/reproducibility.md
   - User Guides:
-    - Installing:
-      - Overview: howto/deploy/index.md
-      - AWS: howto/deploy/aws.md
-      - Azure: howto/deploy/azure.md
-      - GCP: howto/deploy/gcp.md
-      - On-Premises: howto/deploy/onprem.md
-    - Upgrading: howto/deploy/upgrade.md
-    - Work with Data locally: howto/local-checkouts.md
-    - Sizing Guide: howto/sizing-guide.md
+      - Installing:
+          - Overview: howto/deploy/index.md
+          - AWS: howto/deploy/aws.md
+          - Azure: howto/deploy/azure.md
+          - GCP: howto/deploy/gcp.md
+          - On-Premises: howto/deploy/onprem.md
+      - Upgrading: howto/deploy/upgrade.md
+      - Work with Data locally: howto/local-checkouts.md
+      - Sizing Guide: howto/sizing-guide.md
   - Data Management:
-    - Git-Like Versioning:
-      - Pull Requests: howto/pull-requests.md
-      - Branch Protection: howto/protect-branches.md
-      - Rollback & Revert: understand/use_cases/rollback.md
-      - Merge Strategies: understand/how/merge.md
-    - Import & Export Data:
-      - Importing Data: howto/import.md
-      - Export Data: howto/export.md
-      - Copying data to/from lakeFS: howto/copying.md
-      - Data Catalogs Exports: howto/catalog_exports.md
-    - lakeFS Mount: reference/mount.md
-    - Actions and Hooks:
-      - Overview: howto/hooks/index.md
-      - Airflow Hooks: howto/hooks/airflow.md
-      - Lua Hooks: howto/hooks/lua.md
-      - Webhooks: howto/hooks/webhooks.md
-    - Garbage Collection:
-      - Overview: howto/garbage-collection/gc.md
-      - Managed Garbage Collection: howto/garbage-collection/managed-gc.md
-      - Standalone Garbage Collection: howto/garbage-collection/standalone-gc.md
-    - Metadata search: datamanagment/metadata-search.md
-    - Multiple Storage Backends: howto/multiple-storage-backends.md
-    - Transactional Mirroring: howto/mirroring.md
-    - Backup and Restore: howto/backup-and-restore.md
-    - Advanced Operations:
-      - Private Link: howto/private-link.md
-      - S3 Virtual-host addressing: howto/virtual-host-addressing.md
-      - Monitoring & Auditing:
-        - Monitoring using Prometheus: reference/monitor.md
-        - Auditing: reference/auditing.md
-      - Migrating away: howto/migrate-away.md
+      - Git-Like Versioning:
+          - Pull Requests: howto/pull-requests.md
+          - Branch Protection: howto/protect-branches.md
+          - Rollback & Revert: understand/use_cases/rollback.md
+          - Merge Strategies: understand/how/merge.md
+      - Import & Export Data:
+          - Importing Data: howto/import.md
+          - Export Data: howto/export.md
+          - Copying data to/from lakeFS: howto/copying.md
+          - Data Catalogs Exports: howto/catalog_exports.md
+      - lakeFS Mount: reference/mount.md
+      - Actions and Hooks:
+          - Overview: howto/hooks/index.md
+          - Airflow Hooks: howto/hooks/airflow.md
+          - Lua Hooks: howto/hooks/lua.md
+          - Webhooks: howto/hooks/webhooks.md
+      - Garbage Collection:
+          - Overview: howto/garbage-collection/gc.md
+          - Managed Garbage Collection: howto/garbage-collection/managed-gc.md
+          - Standalone Garbage Collection: howto/garbage-collection/standalone-gc.md
+      - Metadata search: datamanagment/metadata-search.md
+      - Multiple Storage Backends: howto/multiple-storage-backends.md
+      - Transactional Mirroring: howto/mirroring.md
+      - Backup and Restore: howto/backup-and-restore.md
+      - Advanced Operations:
+          - Private Link: howto/private-link.md
+          - S3 Virtual-host addressing: howto/virtual-host-addressing.md
+          - Monitoring & Auditing:
+              - Monitoring using Prometheus: reference/monitor.md
+              - Auditing: reference/auditing.md
+          - Migrating away: howto/migrate-away.md
   - lakeFS Enterprise &nbsp; 🚀:
-    - Features: enterprise/index.md
-    - lakeFS Cloud: cloud/index.md
-    - On-Premises:
-      - Quickstart: enterprise/getstarted/quickstart.md 
-      - Installation: enterprise/getstarted/install.md
-      - Migrating from lakeFS OSS: enterprise/getstarted/migrate-from-oss.md
-      - Upgrading: enterprise/upgrade.md
-      - Architecture: enterprise/architecture.md
-      - Troubleshooting: enterprise/troubleshooting.md
-      - Configuration Reference: enterprise/configuration.md    
+      - Features: enterprise/index.md
+      - lakeFS Cloud: cloud/index.md
+      - On-Premises:
+          - Quickstart: enterprise/getstarted/quickstart.md
+          - Installation: enterprise/getstarted/install.md
+          - Migrating from lakeFS OSS: enterprise/getstarted/migrate-from-oss.md
+          - Upgrading: enterprise/upgrade.md
+          - Architecture: enterprise/architecture.md
+          - Troubleshooting: enterprise/troubleshooting.md
+          - Configuration Reference: enterprise/configuration.md
   - Integrations:
-    - Data Processing & Compute:
-      - Apache Spark: integrations/spark.md
-      - Apache Iceberg: integrations/iceberg.md
-      - Presto / Trino: integrations/presto_trino.md
-      - DuckDB: integrations/duckdb.md
-      - Dremio: integrations/dremio.md
-      - Databricks: integrations/databricks.md
-      - Cloudera: integrations/cloudera.md
-      - Delta Lake: integrations/delta.md
-      - Amazon Athena: integrations/athena.md
-      - Apache Kafka: integrations/kafka.md
-      - Apache Hive: integrations/hive.md
-    - ML & AI:
-      - Amazon SageMaker: integrations/sagemaker.md
-      - Vertex AI: integrations/vertex_ai.md
-      - Red Hat OpenShift AI: integrations/red_hat_openshift_ai.md
-      - HuggingFace Datasets: integrations/huggingface_datasets.md
-      - MLflow: integrations/mlflow.md
-      - Kubeflow: integrations/kubeflow.md
-    - Vector Databases:
-      - LanceDB: integrations/lancedb.md
-    - Catalogs & Metadata:
-      - Iceberg REST Catalog: integrations/iceberg-rest-catalog.md
-      - Glue Data Catalog: integrations/glue_metastore.md
-      - Glue / Hive metastore: integrations/glue_hive_metastore.md
-      - Unity Catalog: integrations/unity-catalog.md
-    - Orchestration & ETL:
-      - Apache Airflow: integrations/airflow.md
-      - Airbyte: integrations/airbyte.md
-    - Dev & Tools:
-      - Python: integrations/python.md
-      - AWS CLI: integrations/aws_cli.md
-      - Git: integrations/git.md
-      - R: integrations/r.md
-      - MATLAB: integrations/matlab.md
-
+      - Data Processing & Compute:
+          - Apache Spark: integrations/spark.md
+          - Apache Iceberg: integrations/iceberg.md
+          - Presto / Trino: integrations/presto_trino.md
+          - DuckDB: integrations/duckdb.md
+          - Dremio: integrations/dremio.md
+          - Databricks: integrations/databricks.md
+          - Cloudera: integrations/cloudera.md
+          - Delta Lake: integrations/delta.md
+          - Amazon Athena: integrations/athena.md
+          - Apache Kafka: integrations/kafka.md
+          - Apache Hive: integrations/hive.md
+      - ML & AI:
+          - Amazon SageMaker: integrations/sagemaker.md
+          - Vertex AI: integrations/vertex_ai.md
+          - Red Hat OpenShift AI: integrations/red_hat_openshift_ai.md
+          - HuggingFace Datasets: integrations/huggingface_datasets.md
+          - MLflow: integrations/mlflow.md
+          - Kubeflow: integrations/kubeflow.md
+      - Vector Databases:
+          - LanceDB: integrations/lancedb.md
+      - Catalogs & Metadata:
+          - Iceberg REST Catalog: integrations/iceberg-rest-catalog.md
+          - Glue Data Catalog: integrations/glue_metastore.md
+          - Glue / Hive metastore: integrations/glue_hive_metastore.md
+          - Unity Catalog: integrations/unity-catalog.md
+      - Orchestration & ETL:
+          - Apache Airflow: integrations/airflow.md
+          - Airbyte: integrations/airbyte.md
+      - Dev & Tools:
+          - Python:
+              - Overview: integrations/python.md
+              - High-Level SDK:
+                  - Getting Started: integrations/python-getting-started.md
+                  - Branches & Merging: integrations/python-versioning-branches.md
+                  - References, Commits & Tags: integrations/python-refs.md
+                  - Transactions: integrations/python-transactions.md
+                  - Data Operations: integrations/python-data-operations.md
+              - Generated SDK: integrations/python-sdk.md
+              - lakefs-spec: integrations/python-lakefs-spec.md
+              - Boto / S3 Gateway: integrations/python-boto.md
+          - AWS CLI: integrations/aws_cli.md
+          - Git: integrations/git.md
+          - R: integrations/r.md
+          - MATLAB: integrations/matlab.md
   - Concepts:
-    - Architecture: understand/architecture.md
-    - Model: understand/model.md
-    - Data Structure: understand/data-structure.md
-    - Performance Best Practices: understand/performance-best-practices.md
-    - Internals:
-      - Versioning Internals: understand/how/versioning-internals.md
-      - Database structure: understand/how/kv.md
-    - FAQ: understand/faq.md
-    - Glossary: understand/glossary.md
+      - Architecture: understand/architecture.md
+      - Model: understand/model.md
+      - Data Structure: understand/data-structure.md
+      - Performance Best Practices: understand/performance-best-practices.md
+      - Internals:
+          - Versioning Internals: understand/how/versioning-internals.md
+          - Database structure: understand/how/kv.md
+      - FAQ: understand/faq.md
+      - Glossary: understand/glossary.md
   - Security:
-    - Overview: security/index.md
-    - Authentication:  
-      - Authentication: security/authentication.md
-      - Single Sign On (SSO): security/sso.md
-      - AWS IAM Roles: security/external-principals-aws.md
-      - Remote Authenticator: security/remote-authenticator.md
-      - Short-Lived Tokens (STS): security/sts-login.md
-      - SCIM: howto/scim.md
-    - Authorization:
-        - Role-Based Access Control (RBAC): security/rbac.md
-        - Access Control Lists (ACLs): security/access-control-lists.md
-        - ACL Server Implementation: security/ACL-server-implementation.md
-    - Presigned URLs: security/presigned-url.md
-    
-  - Reference:
-    - lakeFS API: reference/api.md
-    - lakectl (lakeFS command-line tool): reference/cli.md
-    - lakeFS Server Configuration: reference/configuration.md
-    - S3 Gateway API: reference/s3.md
-    - Spark Client: reference/spark-client.md
-    - Authorization API: security/authorization-yaml.md
-  - Community:
-    - About the lakeFS Project: project/index.md
-    - Contributing: 
-      - Code: project/contributing.md
-      - Documentation: project/docs.md
+      - Overview: security/index.md
+      - Authentication:
+          - Authentication: security/authentication.md
+          - Single Sign On (SSO): security/sso.md
+          - AWS IAM Roles: security/external-principals-aws.md
+          - Remote Authenticator: security/remote-authenticator.md
+          - Short-Lived Tokens (STS): security/sts-login.md
+          - SCIM: howto/scim.md
+      - Authorization:
+          - Role-Based Access Control (RBAC): security/rbac.md
+          - Access Control Lists (ACLs): security/access-control-lists.md
+          - ACL Server Implementation: security/ACL-server-implementation.md
+      - Presigned URLs: security/presigned-url.md
 
+  - Reference:
+      - lakeFS API: reference/api.md
+      - lakectl (lakeFS command-line tool): reference/cli.md
+      - lakeFS Server Configuration: reference/configuration.md
+      - S3 Gateway API: reference/s3.md
+      - Spark Client: reference/spark-client.md
+      - Authorization API: security/authorization-yaml.md
+  - Community:
+      - About the lakeFS Project: project/index.md
+      - Contributing:
+          - Code: project/contributing.md
+          - Documentation: project/docs.md
