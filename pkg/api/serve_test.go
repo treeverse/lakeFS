@@ -168,8 +168,28 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
+	icebergSyncer := apifactory.NewIcebergSyncController(cfg)
 	logger := logging.ContextUnavailable()
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logger, nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
+	handler := api.Serve(
+		cfg,
+		c,
+		authenticator,
+		authService,
+		authenticationService,
+		c.BlockAdapter,
+		meta,
+		migrator,
+		collector,
+		actionsService,
+		auditChecker,
+		logger,
+		nil,
+		nil,
+		upload.DefaultPathProvider,
+		stats.DefaultUsageReporter,
+		licenseManager,
+		icebergSyncer,
+	)
 
 	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
 	cloud.Reset()
