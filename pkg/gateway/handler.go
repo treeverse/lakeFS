@@ -115,8 +115,6 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 		traceRequestHeaders,
 		isAdvancedAuth)
 
-	h = loggingMiddleware(h)
-
 	h = EnrichWithOperation(sc,
 		MetricsMiddleware(
 			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
@@ -125,6 +123,8 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 	if middleware != nil {
 		h = middleware(h)
 	}
+
+	h = loggingMiddleware(h)
 
 	logging.ContextUnavailable().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomains,
