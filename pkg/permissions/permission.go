@@ -98,6 +98,19 @@ func (o *BranchPermission) Permission(params PermissionParams) Node {
 	}
 }
 
+type RepoPermission struct {
+	Action string
+}
+
+func (r *RepoPermission) Permission(params PermissionParams) Node {
+	return Node{
+		Permission: Permission{
+			Action:   r.Action,
+			Resource: RepoArn(*params.Repository),
+		},
+	}
+}
+
 var readObjectPermission = ObjectPermission{Action: ReadObjectAction}
 var writeObjectPermission = ObjectPermission{Action: WriteObjectAction}
 var createBranchPermission = BranchPermission{Action: CreateBranchAction}
@@ -106,28 +119,38 @@ var readBranchPermission = BranchPermission{Action: ReadBranchAction}
 var revertBranchPermission = BranchPermission{Action: RevertBranchAction}
 var createCommitPermission = BranchPermission{Action: CreateCommitAction}
 var importCancelPermission = BranchPermission{Action: ImportCancelAction}
+var prepareGCUncommittedPermission = RepoPermission{Action: PrepareGarbageCollectionUncommittedAction}
+var getGCRulesPermission = RepoPermission{Action: GetGarbageCollectionRulesAction}
+var setGCRulesPermission = RepoPermission{Action: SetGarbageCollectionRulesAction}
+var prepareGCCommitsPermission = RepoPermission{Action: PrepareGarbageCollectionCommitsAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
-	"HeadObject":               &readObjectPermission,
-	"GetObject":                &readObjectPermission,
-	"StatObject":               &readObjectPermission,
-	"GetUnderlyingProperties":  &readObjectPermission,
-	"StageObject":              &writeObjectPermission,
-	"CreateSymlinkFile":        &writeObjectPermission,
-	"UpdateObjectUserMetadata": &writeObjectPermission,
-	"UploadObject":             &writeObjectPermission,
-	"UploadObjectPreflight":    &writeObjectPermission,
-	"CreateBranch":             &createBranchPermission,
-	"DeleteBranch":             &deleteBranchPermission,
-	"GetBranch":                &readBranchPermission,
-	"RevertBranch":             &revertBranchPermission,
-	"LogCommits":               &readBranchPermission,
-	"ResetBranch":              &revertBranchPermission,
-	"MergeIntoBranch":          &createCommitPermission,
-	"HardResetBranch":          &revertBranchPermission,
-	"ImportStatus":             &readBranchPermission,
-	"Commit":                   &createCommitPermission,
-	"ImportCancel":             &importCancelPermission,
+	"HeadObject":                          &readObjectPermission,
+	"GetObject":                           &readObjectPermission,
+	"StatObject":                          &readObjectPermission,
+	"GetUnderlyingProperties":             &readObjectPermission,
+	"StageObject":                         &writeObjectPermission,
+	"CreateSymlinkFile":                   &writeObjectPermission,
+	"UpdateObjectUserMetadata":            &writeObjectPermission,
+	"UploadObject":                        &writeObjectPermission,
+	"UploadObjectPreflight":               &writeObjectPermission,
+	"CreateBranch":                        &createBranchPermission,
+	"DeleteBranch":                        &deleteBranchPermission,
+	"GetBranch":                           &readBranchPermission,
+	"RevertBranch":                        &revertBranchPermission,
+	"LogCommits":                          &readBranchPermission,
+	"ResetBranch":                         &revertBranchPermission,
+	"MergeIntoBranch":                     &createCommitPermission,
+	"HardResetBranch":                     &revertBranchPermission,
+	"ImportStatus":                        &readBranchPermission,
+	"Commit":                              &createCommitPermission,
+	"ImportCancel":                        &importCancelPermission,
+	"PrepareGarbageCollectionUncommitted": &prepareGCUncommittedPermission,
+	"GetGCRules":                          &getGCRulesPermission,
+	"SetGCRules":                          &setGCRulesPermission,
+	"DeleteGCRules":                       &setGCRulesPermission,
+	"SetGarbageCollectionRulesPreflight":  &setGCRulesPermission,
+	"PrepareGarbageCollectionCommits":     &prepareGCCommitsPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {
