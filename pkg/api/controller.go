@@ -39,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/icebergsync"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -69,11 +70,6 @@ const (
 	entryTypeCommonPrefix = "common_prefix"
 
 	DefaultMaxDeleteObjects = 1000
-
-	// httpStatusClientClosedRequest used as internal status code when request context is cancelled
-	httpStatusClientClosedRequest = 499
-	// httpStatusClientClosedRequestText text used for client closed request status code
-	httpStatusClientClosedRequestText = "Client closed request"
 
 	pullRequestClosed = "CLOSED"
 	pullRequestOpen   = "OPEN"
@@ -110,11 +106,30 @@ type Controller struct {
 	PathProvider    upload.PathProvider
 	usageReporter   stats.UsageReporterOperations
 	licenseManager  license.Manager
+	icebergSyncer   icebergsync.Controller
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
+func NewController(
+	cfg config.Config,
+	catalog *catalog.Catalog,
+	authenticator auth.Authenticator,
+	authService auth.Service,
+	authenticationService authentication.Service,
+	blockAdapter block.Adapter,
+	metadataManager auth.MetadataManager,
+	migrator Migrator,
+	collector stats.Collector,
+	actions actionsHandler,
+	auditChecker AuditChecker,
+	logger logging.Logger,
+	sessionStore sessions.Store,
+	pathProvider upload.PathProvider,
+	usageReporter stats.UsageReporterOperations,
+	licenseManager license.Manager,
+	icebergSyncer icebergsync.Controller,
+) *Controller {
 	return &Controller{
 		Config:          cfg,
 		Catalog:         catalog,
@@ -132,6 +147,7 @@ func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator au
 		PathProvider:    pathProvider,
 		usageReporter:   usageReporter,
 		licenseManager:  licenseManager,
+		icebergSyncer:   icebergSyncer,
 	}
 }
 
@@ -2959,7 +2975,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
 	if httputil.IsRequestCanceled(r) {
-		cb(w, r, httpStatusClientClosedRequest, httpStatusClientClosedRequestText)
+		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
 		return true
 	}
 	if err == nil {
@@ -5910,31 +5926,11 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-	apiErr := apigen.Error{
-		Message: fmt.Sprint(v),
-	}
-	writeResponse(w, r, code, apiErr)
+	httputil.WriteAPIError(w, r, code, v)
 }
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
-	// check first if the client canceled the request
-	if httputil.IsRequestCanceled(r) {
-		w.WriteHeader(httpStatusClientClosedRequest) // Client closed request
-		return
-	}
-	// nobody - just status code
-	if response == nil {
-		w.WriteHeader(code)
-		return
-	}
-	// encode response body as json
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(code)
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		logging.FromContext(r.Context()).WithError(err).WithField("code", code).Info("Failed to write encoded json response")
-	}
+	httputil.WriteAPIResponse(w, r, code, response)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {
@@ -6362,10 +6358,28 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }
 
-func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalog string) {
-	writeError(w, r, http.StatusNotImplemented, "Not implemented")
+func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
+
+	c.icebergSyncer.Pull(w, r, body, catalogID)
 }
 
-func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalog string) {
-	writeError(w, r, http.StatusNotImplemented, "Not implemented")
+func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
+
+	c.icebergSyncer.Push(w, r, body, catalogID)
 }
