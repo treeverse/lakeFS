@@ -42,9 +42,39 @@ To configure Dremio to work with the Iceberg REST Catalog, you need to configure
 
 1. Click **Save** to create the Iceberg REST Catalog source.
 
-!!! note
-    The lakeFS Iceberg catalog manages table metadata, but data access is performed directly by Dremio via your storage
-    backend (for example, S3). The configuration above enables direct access.
+#### Data Bucket Permissions 
+
+The lakeFS Iceberg Catalog manages table metadata, while Dremio reads and writes data files directly from your underlying 
+storage (for example, Amazon S3).
+
+You must ensure that the IAM role or user Dremio uses has read/write access to your data bucket.
+The following AWS IAM policy provides the required permissions for direct access: 
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "DremioIcebergAccess",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::<lakefs_repo_storage_namespace>/_managed/", 
+                "arn:aws:s3:::<lakefs_repo_storage_namespace>/_managed/*"
+            ]
+        },
+        {
+            "Sid": "BucketLevelRequiredForDremio",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetBucketLocation",
+                "s3:ListBucket"
+            ],
+            "Resource": "arn:aws:s3:::<lakefs_repo_storage_namespace_bucket_name>"
+        }
+    ]
+}
+```
 
 !!! tip
     To learn more about the Iceberg REST Catalog, see the [Iceberg REST Catalog](./iceberg.md#iceberg-rest-catalog) documentation.
