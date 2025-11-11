@@ -63,6 +63,8 @@ export const useAPI = (promise, deps = []) => {
                 setRequest({ loading: false, error: null, response });
             } catch (error) {
                 if (!isMounted) return;
+                // On 401 we delegate to onUnauthenticated(), which redirects to /auth/login
+                // with { redirected: true, next } so the login page can apply SSO and return.
                 if (error instanceof AuthenticationError && error.status === 401) {
                     onUnauthenticated();
                 }

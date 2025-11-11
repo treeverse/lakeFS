@@ -45,7 +45,12 @@ export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     const redirected = Boolean(st.redirected) || redirectedFromQuery;
     const next = normalizeNext(st.next ?? qp.get("next"));
 
+    // If `redirected=true` appears in the URL, we drop it from the query and carry
+    // `redirected: true` in history state for exactly one render. On the next render
+    // the URL is clean, while `redirected` from state triggers the login strategy.
+    // Any subsequent navigation replaces the history entry, so the state does not persist.
     qp.delete("redirected");
+
     const qs = qp.toString();
     const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
 
@@ -158,20 +163,16 @@ const LoginPage = () => {
     if (loading) return <Loading />;
     if (error) return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;
 
-    // Setup doesn't complete, send to /setup with redirected=true&next=...
+    // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        return <Navigate to={ROUTES.SETUP} replace />;
+        return <Navigate to={{ pathname: ROUTES.SETUP, search: location.search }} replace />;
     }
 
     if (redirectedFromQuery) return <Navigate to={cleanUrl} replace state={{ redirected: true, next }} />;
 
     const loginConfig = setupResponse?.login_config;
 
-    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
-    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
-    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
-    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
-    // selection page or the default lakeFS login form, since both share the same endpoint.
+    // `redirected` comes from history state (not from the URL) to trigger the strategy once.
     if (redirected) {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
         if (loginStrategy.element !== undefined)

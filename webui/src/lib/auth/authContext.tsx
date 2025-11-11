@@ -47,6 +47,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         []
     );
 
+    // When we get a 401, clear local auth and navigate to the login page.
+    // We set `redirected: true` and pass `next` (the current URL) so the login page
+    // knows this is an auth-driven redirect: it should apply the configured login
+    // strategy (e.g. auto-redirect to SSO) and, after successful auth, return to `next`.
     const onUnauthenticated = useCallback(() => {
         auth.clearCurrentUser();
         setUser(null);
