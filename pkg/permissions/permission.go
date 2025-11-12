@@ -126,6 +126,9 @@ var prepareGCCommitsPermission = RepoPermission{Action: PrepareGarbageCollection
 var readRepositoryPermission = RepoPermission{Action: ReadRepositoryAction}
 var updateRepositoryPermission = RepoPermission{Action: UpdateRepositoryAction}
 var deleteRepositoryPermission = RepoPermission{Action: DeleteRepositoryAction}
+var writePullRequestPermission = RepoPermission{Action: WritePullRequestAction}
+var listPullRequestsPermission = RepoPermission{Action: ListPullRequestsAction}
+var readPullRequestPermission = RepoPermission{Action: ReadPullRequestAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
 	"HeadObject":                          &readObjectPermission,
@@ -159,6 +162,10 @@ var permissionByOp = map[string]PermissionDescriptor{
 	"SetRepositoryMetadata":               &updateRepositoryPermission,
 	"DeleteRepositoryMetadata":            &updateRepositoryPermission,
 	"DeleteRepository":                    &deleteRepositoryPermission,
+	"UpdatePullRequest":                   &writePullRequestPermission,
+	"CreatePullRequest":                   &writePullRequestPermission,
+	"ListPullRequests":                    &listPullRequestsPermission,
+	"GetPullRequest":                      &readPullRequestPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {

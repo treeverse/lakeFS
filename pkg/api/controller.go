@@ -5406,12 +5406,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 }
 
 func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, repository string, params apigen.ListPullRequestsParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ListPullRequestsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "ListPullRequests", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -5448,12 +5443,7 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 }
 
 func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.WritePullRequestAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "CreatePullRequest", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -5484,12 +5474,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 }
 
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadPullRequestAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetPullRequest", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -5516,12 +5501,7 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 }
 
 func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.UpdatePullRequestJSONRequestBody, repository string, pullRequestID string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.WritePullRequestAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "UpdatePullRequest", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
