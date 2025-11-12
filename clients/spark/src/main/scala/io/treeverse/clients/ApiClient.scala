@@ -149,7 +149,7 @@ class ApiClient private (conf: APIConfigurations) {
   private val commitsApi = new sdk.CommitsApi(client)
   private val metadataApi = new sdk.MetadataApi(client)
   private val branchesApi = new sdk.BranchesApi(client)
-  private val internalApi = new sdk.InternalApi(client)
+  private var internalApi = new sdk.InternalApi(client)
   private val configApi = new ConfigApi(client)
 
   private val retryWrapper = new RequestRetryWrapper(client.getReadTimeout)
@@ -388,6 +388,14 @@ class ApiClient private (conf: APIConfigurations) {
     }
     val response = retryWrapper.wrapWithRetry(getBranch)
     response.getCommitId
+  }
+
+  /** Set the internalApi member. This method is intended for testing purposes only.
+    * It allows test code to inject a mock or spy of the InternalApi to test
+    * prepareGarbageCollectionCommits and other methods that use internalApi.
+    */
+  private[clients] def setInternalApiForTesting(newInternalApi: sdk.InternalApi): Unit = {
+    internalApi = newInternalApi
   }
 
   // Instances of case classes are compared by structure and not by reference https://docs.scala-lang.org/tour/case-classes.html.
