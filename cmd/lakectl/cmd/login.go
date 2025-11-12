@@ -11,6 +11,7 @@ import (
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 const (
@@ -58,7 +59,7 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			DieErr(fmt.Errorf("parse relative redirect URL %s: %w", header.Get("location"), err))
 		}
-		mailbox := header.Get("x-lakefs-mailbox")
+		mailbox := header.Get(httputil.LoginMailboxHeaderName)
 
 		redirectURL := serverURL.ResolveReference(relativeLocation)
 

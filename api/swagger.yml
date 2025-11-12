@@ -3286,12 +3286,13 @@ paths:
   /auth/get-token/release-token/{loginRequestToken}:
     parameters:
       - in: path
-        # The mailbox is secret.  It is identified by the loginRequestToken
-        # - a JWT which is _not_ secret.  So it can safely go in the header.
+        # The mailbox is secret.  It is identified by the loginRequestToken - a JWT which is
+        # _not_ secret.  So this JWT can safely go in a header.
         name: loginRequestToken
         required: true
         schema:
           type: string
+          maxLength: 1024
         description: login request token returned by getTokenRedirect.
     get:                        # Called by opening a URL on the browser!
       tags:
