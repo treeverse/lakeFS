@@ -2,15 +2,19 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"slices"
 	"time"
 
+	"github.com/manifoldco/promptui"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
@@ -32,10 +36,52 @@ var (
 	loginRetryStatuses = slices.Concat(lakectlDefaultRetryStatuses,
 		[]int{http.StatusNotFound},
 	)
+
+	errNoProtocol = errors.New(`missing protocol, try e.g. "https://..."`)
+	errNoHost     = errors.New(`missing host, e.g. "https://honey-badger.lakefscloud.us-east-1.io/"`)
 )
 
 func loginRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	return CheckRetry(ctx, resp, err, loginRetryStatuses)
+}
+
+func validateURL(maybeURL string) error {
+	u, err := url.Parse(maybeURL)
+	if err != nil {
+		return err
+	}
+	switch {
+	case u.Scheme == "":
+		return errNoProtocol
+	case u.Host == "":
+		return errNoHost
+	default:
+		return nil
+	}
+}
+
+func readLoginServerURL() (string, error) {
+	prompt := promptui.Prompt{
+		Label:    "lakeFS server URL",
+		Validate: validateURL,
+	}
+	serverURLString, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+	serverURL, err := url.Parse(serverURLString)
+	if err != nil { // Unlikely, validateURL should have done this!
+		return "", err
+	}
+	if serverURL.Path == "" {
+		serverURL.Path += "/api/v1"
+	}
+	return serverURL.String(), err
+}
+
+func configureLogin(serverURL string) error {
+	viper.Set("server.endpoint_url", serverURL)
+	return viper.SafeWriteConfig()
 }
 
 var loginCmd = &cobra.Command{
@@ -44,7 +90,20 @@ var loginCmd = &cobra.Command{
 	Long:    "Connect to lakeFS using a web browser.",
 	Example: "lakectl login",
 	Run: func(cmd *cobra.Command, _ []string) {
-		serverURL, err := url.Parse(cfg.Server.EndpointURL.String())
+		var err error
+
+		writeConfigFile := false
+		serverEndpointURL := string(cfg.Server.EndpointURL)
+		if serverEndpointURL == "" {
+			serverEndpointURL, err = readLoginServerURL()
+			if err != nil {
+				DieFmt("No server endpoint URL: %s", err)
+			}
+			Write("Read URL {{. | yellow}}\n", serverEndpointURL)
+			cfg.Server.EndpointURL = config.OnlyString(serverEndpointURL)
+			writeConfigFile = true
+		}
+		serverURL, err := url.Parse(serverEndpointURL)
 		if err != nil {
 			DieErr(fmt.Errorf("get server URL %s: %w", cfg.Server.EndpointURL, err))
 		}
@@ -74,7 +133,7 @@ var loginCmd = &cobra.Command{
 		//
 		// TODO(ariels): The timeouts on some lakectl configurations may be too low for
 		// convenient login.  Consider using a RetryClient based on a different
-		// configuration here..
+		// configuration here.
 		resp, err := client.GetTokenFromMailboxWithResponse(cmd.Context(), mailbox)
 
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -91,6 +150,13 @@ var loginCmd = &cobra.Command{
 		}
 
 		Write(loggedInTemplate, struct{ Time string }{Time: time.Now().Format(time.DateTime)})
+
+		if writeConfigFile {
+			err = configureLogin(serverEndpointURL)
+			if err != nil {
+				Warning(fmt.Sprintf("Failed to save login configuration: %s.", err))
+			}
+		}
 	},
 }
 
