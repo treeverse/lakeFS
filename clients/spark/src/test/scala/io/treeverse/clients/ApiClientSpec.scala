@@ -80,6 +80,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
     val apiUrl = "http://localhost:8000/api/v1"
     val accessKey = "test-access-key"
     val secretKey = "test-secret-key"
+    val testGcCommitsLocation = "s3://test-bucket/gc-commits.csv"
 
     it("should fallback to sync API when async API returns 500") {
       val conf = APIConfigurations(apiUrl, accessKey, secretKey)
@@ -95,7 +96,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
 
       // Create mock request builder for sync API
       val syncResponse = new GarbageCollectionPrepareResponse()
-      syncResponse.setGcCommitsLocation("s3://test-bucket/gc-commits.csv")
+      syncResponse.setGcCommitsLocation(testGcCommitsLocation)
       val syncApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsRequest])
       Mockito.when(syncApiBuilder.execute()).thenReturn(syncResponse)
       Mockito.when(mockInternalApi.prepareGarbageCollectionCommits(anyString())).thenReturn(syncApiBuilder)
@@ -114,7 +115,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
 
       // Verify result
       result should not be null
-      result.getGcCommitsLocation should be("s3://test-bucket/gc-commits.csv")
+      result.getGcCommitsLocation should be(testGcCommitsLocation)
     }
 
     it("should successfully complete async API call without fallback") {
@@ -138,7 +139,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       val status = new PrepareGarbageCollectionCommitsStatus()
       status.setCompleted(true)
       val result = new GarbageCollectionPrepareResponse()
-      result.setGcCommitsLocation("s3://test-bucket/gc-commits.csv")
+      result.setGcCommitsLocation(testGcCommitsLocation)
       status.setResult(result)
 
       val statusApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsStatusRequest])
@@ -162,7 +163,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
 
       // Verify result
       response should not be null
-      response.getGcCommitsLocation should be("s3://test-bucket/gc-commits.csv")
+      response.getGcCommitsLocation should be(testGcCommitsLocation)
     }
 
     it("should throw exception on non-500 API error without fallback") {
