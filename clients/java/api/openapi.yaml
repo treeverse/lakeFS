@@ -2058,6 +2058,7 @@ paths:
         name: loginRequestToken
         required: true
         schema:
+          maxLength: 1024
           type: string
         style: simple
       responses:

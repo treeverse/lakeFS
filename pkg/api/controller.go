@@ -867,7 +867,7 @@ func (c *Controller) GetTokenRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Location", redirect.RedirectURL)
-	w.Header().Set("X-LakeFS-Mailbox", redirect.Mailbox)
+	w.Header().Set(httputil.LoginMailboxHeaderName, redirect.Mailbox)
 
 	writeResponse(w, r, http.StatusOK, nil)
 }

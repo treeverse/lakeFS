@@ -24,9 +24,9 @@ except ImportError:
 
 from typing_extensions import Annotated
 try:
-    from pydantic.v1 import Field, StrictBool, StrictInt, StrictStr, conint
+    from pydantic.v1 import Field, StrictBool, StrictInt, StrictStr, conint, constr
 except ImportError:
-    from pydantic import Field, StrictBool, StrictInt, StrictStr, conint
+    from pydantic import Field, StrictBool, StrictInt, StrictStr, conint, constr
 
 from typing import Optional
 
@@ -2568,7 +2568,7 @@ class ExperimentalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def release_token_to_mailbox(self, login_request_token : Annotated[StrictStr, Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> None:  # noqa: E501
+    def release_token_to_mailbox(self, login_request_token : Annotated[constr(strict=True, max_length=1024), Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> None:  # noqa: E501
         """release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -2597,7 +2597,7 @@ class ExperimentalApi:
         return self.release_token_to_mailbox_with_http_info(login_request_token, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def release_token_to_mailbox_with_http_info(self, login_request_token : Annotated[StrictStr, Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> ApiResponse:  # noqa: E501
+    def release_token_to_mailbox_with_http_info(self, login_request_token : Annotated[constr(strict=True, max_length=1024), Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> ApiResponse:  # noqa: E501
         """release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
