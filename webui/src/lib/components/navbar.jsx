@@ -1,6 +1,4 @@
 import React from "react";
-import useUser from '../hooks/user'
-import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import DarkModeToggle from "./darkModeToggle";
@@ -9,15 +7,19 @@ import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
+import {auth} from "../api";
+import {AUTH_STATUS, LAKEFS_POST_LOGIN_NEXT, useAuth} from "../auth/authContext";
+import {ROUTES} from "../utils";
 
 const NavUserInfo = () => {
-    const { user, loading: userLoading, error } = useUser();
+    const { user, status } = useAuth();
+    const userLoading = status === AUTH_STATUS.PENDING;
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
     const versionConfig = config?.versionConfig || {};
 
     if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
-    if (!user || !!error) return (<></>);
+    if (!user) return (<></>);
     const notifyNewVersion = !versionLoading && !versionError && versionConfig.upgrade_recommended
     const NavBarTitle = () => {
         return (
@@ -37,17 +39,19 @@ const NavUserInfo = () => {
                     </>
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
-                onClick={()=> {
+                onClick={() => {
                     auth.clearCurrentUser();
-                    window.location = logoutUrl;
+                    window.sessionStorage.removeItem(LAKEFS_POST_LOGIN_NEXT);
+                    window.history.replaceState(null, "", `${ROUTES.LOGIN}?redirected=true`);
+                    window.location.replace(logoutUrl);
                 }}>
                 Logout
             </NavDropdown.Item>
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
-            <NavDropdown.Item disabled={true}>
-                {`${versionConfig.version_context} ${versionConfig.version}`}
-            </NavDropdown.Item></>}
+                <NavDropdown.Item disabled={true}>
+                    {`${versionConfig.version_context} ${versionConfig.version}`}
+                </NavDropdown.Item></>}
         </NavDropdown>
     );
 };
@@ -63,8 +67,8 @@ const TopNavLink = ({ href, children }) => {
     );
 };
 
-const TopNav = ({logged = true}) => {
-    return logged && (
+const TopNav = () => {
+    return (
         <Navbar variant="dark" bg="dark" expand="md" className="border-bottom">
             <Container fluid={true}>
                 <Link component={Navbar.Brand} href="/">
