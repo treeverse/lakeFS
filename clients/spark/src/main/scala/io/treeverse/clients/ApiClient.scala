@@ -391,9 +391,9 @@ class ApiClient private (conf: APIConfigurations) {
   }
 
   /** Set the internalApi member. This method is intended for testing purposes only.
-    * It allows test code to inject a mock or spy of the InternalApi to test
-    * prepareGarbageCollectionCommits and other methods that use internalApi.
-    */
+   *  It allows test code to inject a mock or spy of the InternalApi to test
+   *  prepareGarbageCollectionCommits and other methods that use internalApi.
+   */
   private[clients] def setInternalApiForTesting(newInternalApi: sdk.InternalApi): Unit = {
     internalApi = newInternalApi
   }
