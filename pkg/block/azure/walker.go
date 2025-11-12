@@ -2,7 +2,6 @@ package azure
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
@@ -57,18 +56,6 @@ func isBlobItemFolder(blobItem *container.BlobItem) bool {
 		return false
 	}
 	return *isFolder == "true"
-}
-
-// extractBlobItemEtag etag set by content md5 with fallback to use Etag value
-func extractBlobItemEtag(blobItem *container.BlobItem) string {
-	if blobItem.Properties.ContentMD5 != nil {
-		return hex.EncodeToString(blobItem.Properties.ContentMD5)
-	}
-	if blobItem.Properties.ETag != nil {
-		etag := string(*blobItem.Properties.ETag)
-		return strings.TrimFunc(etag, func(r rune) bool { return r == '"' || r == ' ' })
-	}
-	return ""
 }
 
 //
@@ -140,7 +127,7 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-				ETag:        extractBlobItemEtag(blobInfo),
+				ETag:        extractBlobEtag(blobInfo.Properties.ContentMD5, blobInfo.Properties.ETag),
 				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
 			}

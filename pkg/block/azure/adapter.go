@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -424,19 +425,24 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return block.Properties{}, err
 	}
-	// Extract ETag using the same logic as Walker: prefer ContentMD5, fallback to ETag
-	var etag string
-	if props.ContentMD5 != nil {
-		etag = hex.EncodeToString(props.ContentMD5)
-	} else if props.ETag != nil {
-		etag = string(*props.ETag)
-		etag = strings.TrimFunc(etag, func(r rune) bool { return r == '"' || r == ' ' })
-	}
+	etag := extractBlobEtag(props.ContentMD5, props.ETag)
 	return block.Properties{
 		StorageClass: props.AccessTier,
 		LastModified: apiutil.Value(props.LastModified),
 		ETag:         etag,
 	}, nil
+}
+
+// extractBlobEtag etag set by content md5 with fallback to use Etag value
+func extractBlobEtag(contentMD5 []byte, etag *azcore.ETag) string {
+	if contentMD5 != nil {
+		return hex.EncodeToString(contentMD5)
+	}
+	if etag != nil {
+		etag := string(*etag)
+		return strings.TrimFunc(etag, func(r rune) bool { return r == '"' || r == ' ' })
+	}
+	return ""
 }
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
