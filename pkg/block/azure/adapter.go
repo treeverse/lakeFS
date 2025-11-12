@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -423,9 +424,18 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return block.Properties{}, err
 	}
+	// Extract ETag using the same logic as Walker: prefer ContentMD5, fallback to ETag
+	var etag string
+	if props.ContentMD5 != nil {
+		etag = hex.EncodeToString(props.ContentMD5)
+	} else if props.ETag != nil {
+		etag = string(*props.ETag)
+		etag = strings.TrimFunc(etag, func(r rune) bool { return r == '"' || r == ' ' })
+	}
 	return block.Properties{
 		StorageClass: props.AccessTier,
 		LastModified: apiutil.Value(props.LastModified),
+		ETag:         etag,
 	}, nil
 }
 

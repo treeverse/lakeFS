@@ -2,11 +2,7 @@ package local
 
 import (
 	"context"
-	// MD5 required for ETag computation.
-	"crypto/md5" //nolint:gosec
-	"encoding/hex"
 	"encoding/json"
-	"io"
 	"io/fs"
 	"net/url"
 	"os"
@@ -100,7 +96,7 @@ func (l *Walker) Walk(_ context.Context, storageURI *url.URL, options block.Walk
 	})
 	for i := startIndex; i < len(entries); i++ {
 		ent := *entries[i]
-		etag, err := calcFileETag(ent)
+		etag, err := calcFileETag(ent.FullKey)
 		if err != nil {
 			return err
 		}
@@ -166,22 +162,6 @@ func (l *Walker) scanEntries(root string, options block.WalkOptions) ([]*block.O
 		return entries[i].FullKey < entries[j].FullKey
 	})
 	return entries, nil
-}
-
-func calcFileETag(ent block.ObjectStoreEntry) (string, error) {
-	f, err := os.Open(ent.FullKey)
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = f.Close() }()
-	// MD5 required for ETag computation.
-	hash := md5.New() //nolint:gosec
-	_, err = io.Copy(hash, f)
-	if err != nil {
-		return "", err
-	}
-	etag := hex.EncodeToString(hash.Sum(nil))
-	return etag, nil
 }
 
 func (l *Walker) Marker() block.Mark {

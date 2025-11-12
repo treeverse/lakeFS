@@ -162,6 +162,7 @@ type ListMultipartUploadsOpts struct {
 type Properties struct {
 	StorageClass *string
 	LastModified time.Time
+	ETag         string
 }
 
 type BlockstoreMetadata struct {
