@@ -127,7 +127,7 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-				ETag:        extractBlobEtag(blobInfo.Properties.ContentMD5, blobInfo.Properties.ETag),
+				ETag:        calcETag(blobInfo.Properties.ContentMD5, blobInfo.Properties.ETag),
 				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
 			}

@@ -425,7 +425,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return block.Properties{}, err
 	}
-	etag := extractBlobEtag(props.ContentMD5, props.ETag)
+	etag := calcETag(props.ContentMD5, props.ETag)
 	return block.Properties{
 		StorageClass: props.AccessTier,
 		LastModified: apiutil.Value(props.LastModified),
@@ -433,8 +433,8 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	}, nil
 }
 
-// extractBlobEtag etag set by content md5 with fallback to use Etag value
-func extractBlobEtag(contentMD5 []byte, etag *azcore.ETag) string {
+// calcETag etag set by content md5 with fallback to use etag value
+func calcETag(contentMD5 []byte, etag *azcore.ETag) string {
 	if contentMD5 != nil {
 		return hex.EncodeToString(contentMD5)
 	}
