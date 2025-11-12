@@ -123,6 +123,9 @@ var prepareGCUncommittedPermission = RepoPermission{Action: PrepareGarbageCollec
 var getGCRulesPermission = RepoPermission{Action: GetGarbageCollectionRulesAction}
 var setGCRulesPermission = RepoPermission{Action: SetGarbageCollectionRulesAction}
 var prepareGCCommitsPermission = RepoPermission{Action: PrepareGarbageCollectionCommitsAction}
+var readRepositoryPermission = RepoPermission{Action: ReadRepositoryAction}
+var updateRepositoryPermission = RepoPermission{Action: UpdateRepositoryAction}
+var deleteRepositoryPermission = RepoPermission{Action: DeleteRepositoryAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
 	"HeadObject":                          &readObjectPermission,
@@ -151,6 +154,11 @@ var permissionByOp = map[string]PermissionDescriptor{
 	"DeleteGCRules":                       &setGCRulesPermission,
 	"SetGarbageCollectionRulesPreflight":  &setGCRulesPermission,
 	"PrepareGarbageCollectionCommits":     &prepareGCCommitsPermission,
+	"GetRepository":                       &readRepositoryPermission,
+	"GetRepositoryMetadata":               &readRepositoryPermission,
+	"SetRepositoryMetadata":               &updateRepositoryPermission,
+	"DeleteRepositoryMetadata":            &updateRepositoryPermission,
+	"DeleteRepository":                    &deleteRepositoryPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {

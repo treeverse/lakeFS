@@ -2379,12 +2379,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageID, stor
 }
 
 func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string, params apigen.DeleteRepositoryParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.DeleteRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "DeleteRepository", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2397,12 +2392,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 }
 
 func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetRepository", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2432,12 +2422,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 }
 
 func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetRepositoryMetadata", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2450,12 +2435,7 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.SetRepositoryMetadataJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.UpdateRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "SetRepositoryMetadata", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2468,12 +2448,7 @@ func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) DeleteRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.DeleteRepositoryMetadataJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.UpdateRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "DeleteRepositoryMetadata", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
