@@ -3,7 +3,6 @@ import { useOutletContext } from "react-router-dom";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {auth} from "../../../../lib/api";
 import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
-import useUser from "../../../../lib/hooks/user";
 import {ConfirmationButtonWithContext} from "../../../../lib/components/modals";
 import {
     ActionGroup,
@@ -12,12 +11,13 @@ import {
     RefreshButton
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
+import {useAuth} from "../../../../lib/auth/authContext";
 
 const EMAIL_TRUNCATION_THRESHOLD_LENGTH = 40;
 
 
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
-    const {user} = useUser();
+    const {user} = useAuth();
     const [refresh, setRefresh] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [createdKey, setCreatedKey] = useState(null);

@@ -1,4 +1,5 @@
 import React, {useState} from "react";
+import {Navigate, useLocation} from "react-router-dom";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -6,8 +7,11 @@ import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../l
 import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
-import {useNavigate} from "react-router-dom";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
+import {LAKEFS_POST_LOGIN_NEXT, useAuth} from "../../lib/auth/authContext";
+import {normalizeNext, ROUTES} from "../../lib/utils";
+
+type NavigateState = { redirected?: boolean; next?: string };
 
 interface SetupResponse {
     state: string;
@@ -27,11 +31,42 @@ export interface LoginConfig {
     logout_url: string;
 }
 
+export const withNext = (url: string, next: string) => {
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set("next", normalizeNext(next));
+    return u.toString();
+};
+
+export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
+    const st = location.state ?? {};
+    const qp = new URLSearchParams(location.search);
+
+    const redirectedFromQuery = qp.get("redirected") === "true";
+    const redirected = Boolean(st.redirected) || redirectedFromQuery;
+    const next = normalizeNext(st.next ?? qp.get("next"));
+
+    // If `redirected=true` appears in the URL, we drop it from the query and carry
+    // `redirected: true` in history state for exactly one render. On the next render
+    // the URL is clean, while `redirected` from state triggers the login strategy.
+    // Any subsequent navigation replaces the history entry, so the state does not persist.
+    qp.delete("redirected");
+
+    const qs = qp.toString();
+    const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
+
+    return { redirected, redirectedFromQuery, next, cleanUrl };
+};
+
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
-    const router = useRouter();
-    const navigate = useNavigate();
+    const location = useLocation();
+    const { refreshUser } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
-    const { next } = router.query;
+
+    // Resolve "next" for post-login navigation
+    const state = (location.state as NavigateState | null) ?? null;
+    const qp = new URLSearchParams(location.search);
+    const next = normalizeNext(state?.next ?? qp.get("next"));
+
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
 
@@ -53,8 +88,8 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const username = formData.get('username');
                             const password = formData.get('password');
                             await auth.login(username, password);
-                            router.push(next || '/');
-                            navigate(0);
+                            window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
+                            await refreshUser({ useCache: false });
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {
                                 const contents = {__html: `${loginConfig.login_failed_message}` ||
@@ -95,13 +130,14 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                     <div className={"mt-2 mb-1"}>
                         { loginConfig.fallback_login_url ?
                             <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
+                                window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
                                 loginConfig.login_cookie_names?.forEach(
                                     cookie => {
                                         document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
                                     }
                                 );
                                 if (loginConfig.fallback_login_url) {
-                                    window.location.href = loginConfig.fallback_login_url;
+                                    window.location.href = withNext(loginConfig.fallback_login_url, next);
                                 }
                             }}>{loginConfig.fallback_login_label || 'Try another way to login'}</Button>
                             : ""
@@ -115,47 +151,36 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
 
 const LoginPage = () => {
     const router = useRouter();
+    const location = useLocation();
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
+    const setupResponse = response as SetupResponse | null;
+    const { redirected, redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
 
-    if (loading) {
-        return <Loading />;
-    }
+    // Persist next for post-login redirect
+    if (next && next.startsWith("/")) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
 
-    if (error) {
-        return <AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()} />;
-    }
+    if (loading) return <Loading />;
+    if (error) return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    const setupResponse = response as SetupResponse | null;
     if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
-        return null;
+        return <Navigate to={{ pathname: ROUTES.SETUP, search: location.search }} replace />;
     }
+
+    if (redirectedFromQuery) return <Navigate to={cleanUrl} replace state={{ redirected: true, next }} />;
+
     const loginConfig = setupResponse?.login_config;
-    if (!loginConfig) {
-        return null;
-    }
 
-    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
-    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
-    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
-    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
-    // selection page or the default lakeFS login form, since both share the same endpoint.
-    if (router.query.redirected)  {
-        delete router.query.redirected;
+    // `redirected` comes from history state (not from the URL) to trigger the strategy once.
+    if (redirected) {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-        // Return the element (component or null)
-        if (loginStrategy.element !== undefined) {
+        if (loginStrategy.element !== undefined)
             return loginStrategy.element;
-        }
     }
 
-    // Default: show the lakeFS login form when the user navigates directly at '/auth/login'
-    // (no router.query.redirected flag) or when loginStrategyPlugin.element is undefined.
-    return (
-        <LoginForm loginConfig={loginConfig}/>
-    );
+    // Default: lakeFS login form
+    return <LoginForm loginConfig={loginConfig} />;
 };
 
 export default LoginPage;

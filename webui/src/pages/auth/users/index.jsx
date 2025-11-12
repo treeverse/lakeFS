@@ -5,7 +5,6 @@ import Button from "react-bootstrap/Button";
 
 import {useAPI} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
-import useUser from "../../../lib/hooks/user";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import {Paginator} from "../../../lib/components/pagination";
@@ -27,6 +26,7 @@ import {disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE} from "../validatio
 import {resolveUserDisplayName} from "../../../lib/utils";
 import {allUsersFromLakeFS} from "../../../lib/components/auth/users";
 import {useRouter} from "../../../lib/hooks/router";
+import {useAuth} from "../../../lib/auth/authContext";
 
 const DEFAULT_LISTING_AMOUNT = 100;
 const DECIMAL_RADIX = 10;
@@ -34,7 +34,7 @@ const USER_NOT_FOUND = "unknown";
 export const GetUserEmailByIdContext = createContext();
 
 const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
-    const { user } = useUser();
+    const { user } = useAuth();
     const currentUser = user;
 
     const router = useRouter();
