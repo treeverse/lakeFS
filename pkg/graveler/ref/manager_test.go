@@ -69,6 +69,16 @@ func NewStorageConfigMock(bcID string) config.StorageConfig {
 	}
 }
 
+type NoOpBatchingExecutor struct{}
+
+func (n *NoOpBatchingExecutor) BatchFor(_ context.Context, _ string, _ time.Duration, exec batch.Executer) (interface{}, error) {
+	return exec.Execute()
+}
+
+func NopExecutor() *NoOpBatchingExecutor {
+	return &NoOpBatchingExecutor{}
+}
+
 // TestManager_GetRepositoryCache test get repository information while using cache. Match the number of times we
 // call get repository vs number of times we fetch the data.
 func TestManager_GetRepositoryCache(t *testing.T) {
@@ -86,7 +96,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 		Jitter: 0,
 	}
 	cfg := ref.ManagerConfig{
-		Executor:              batch.NopExecutor(),
+		Executor:              NopExecutor(),
 		KVStore:               mockStore,
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,
@@ -133,7 +143,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 		Expiry: 20 * time.Millisecond,
 	}
 	cfg := ref.ManagerConfig{
-		Executor:              batch.NopExecutor(),
+		Executor:              NopExecutor(),
 		KVStore:               mockStore,
 		AddressProvider:       ident.NewHexAddressProvider(),
 		RepositoryCacheConfig: cacheConfig,

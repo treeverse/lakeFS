@@ -32,18 +32,6 @@ type Batcher interface {
 	BatchFor(ctx context.Context, key string, dur time.Duration, exec Executer) (interface{}, error)
 }
 
-type NoOpBatchingExecutor struct{}
-
-// contextKey used to keep values on context.Context
-type contextKey string
-
-// SkipBatchContextKey existence on a context will eliminate the request batching
-const SkipBatchContextKey contextKey = "skip_batch"
-
-func (n *NoOpBatchingExecutor) BatchFor(_ context.Context, _ string, _ time.Duration, exec Executer) (interface{}, error) {
-	return exec.Execute()
-}
-
 // ConditionalExecutor will batch requests only if SkipBatchContextKey is not on the context
 // of the batch request.
 type ConditionalExecutor struct {
@@ -59,9 +47,6 @@ func (c *ConditionalExecutor) Run(ctx context.Context) {
 }
 
 func (c *ConditionalExecutor) BatchFor(ctx context.Context, key string, timeout time.Duration, exec Executer) (interface{}, error) {
-	if ctx.Value(SkipBatchContextKey) != nil {
-		return exec.Execute()
-	}
 	return c.executor.BatchFor(ctx, key, timeout, exec)
 }
 
@@ -100,10 +85,6 @@ type Executor struct {
 	waitingOnKey map[string]*Waiters
 	Logger       logging.Logger
 	Delay        DelayFn
-}
-
-func NopExecutor() *NoOpBatchingExecutor {
-	return &NoOpBatchingExecutor{}
 }
 
 func NewExecutor(logger logging.Logger) *Executor {
