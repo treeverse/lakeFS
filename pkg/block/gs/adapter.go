@@ -321,6 +321,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		return props, err
 	}
 	props.LastModified = attrs.Updated
+	props.ETag = hex.EncodeToString(attrs.MD5)
 	return props, nil
 }
 
