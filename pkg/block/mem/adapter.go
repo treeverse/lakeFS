@@ -230,6 +230,8 @@ func (a *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	if !ok {
 		return block.Properties{}, ErrNoDataForKey
 	}
+	data, _ := a.getNoLock(obj)
+	props.Size = int64(len(data))
 	return props, nil
 }
 
