@@ -1,4 +1,4 @@
-import React, {useCallback} from "react";
+import React from "react";
 
 import {PlusIcon, XIcon} from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
@@ -8,31 +8,32 @@ import Col from "react-bootstrap/Col";
 
 /**
  * MetadataFields is a component that allows the user to add/remove key-value pairs of metadata.
- * @param {Array<{key: string, value: string}>} metadataFields - initial metadata fields to display
+ * @param {Array<{key: string, value: string}>} metadataFields - current metadata fields to display
  * @param {Function} setMetadataFields - callback to update the metadata fields
-*/
+ * @param rest - any other props to pass to the component
+ */
 export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) => {
     const onChangeKey = (i) => {
         return e => {
-            const key = e.currentTarget.value;
-            setMetadataFields(prev => [...prev.slice(0,i), {...prev[i], key}, ...prev.slice(i+1)]);
+            const newKey = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i), {...prev[i], key: newKey}, ...prev.slice(i+1)]);
         };
     };
 
     const onChangeValue = (i) => {
         return e => {
-            const value = e.currentTarget.value;
-            setMetadataFields(prev => [...prev.slice(0,i),  {...prev[i], value}, ...prev.slice(i+1)]);
+            const newValue = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i),  {...prev[i], value: newValue}, ...prev.slice(i+1)]);
         };
     };
 
-    const onRemovePair = (i) => {
+    const onRemoveKeyValue = (i) => {
         return () => setMetadataFields(prev => [...prev.slice(0, i), ...prev.slice(i + 1)]);
     };
 
-    const onAddPair = useCallback(() => {
+    const onAddKeyValue = () => {
         setMetadataFields(prev => [...prev, {key: "", value: ""}])
-    }, [setMetadataFields]);
+    };
 
     return (
         <div className="mt-3 mb-3" {...rest}>
@@ -48,7 +49,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) =>
                             </Col>
                             <Col md={{span: 1}}>
                                 <Form.Text>
-                                    <Button size="sm" variant="secondary" onClick={onRemovePair(i)}>
+                                    <Button size="sm" variant="secondary" onClick={onRemoveKeyValue(i)}>
                                         <XIcon/>
                                     </Button>
                                 </Form.Text>
@@ -57,7 +58,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) =>
                     </Form.Group>
                 )
             })}
-            <Button onClick={onAddPair} size="sm" variant="secondary">
+            <Button onClick={onAddKeyValue} size="sm" variant="secondary">
                 <PlusIcon/>{' '}
                 Add Metadata field
             </Button>
