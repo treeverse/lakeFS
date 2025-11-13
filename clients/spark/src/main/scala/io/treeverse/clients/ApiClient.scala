@@ -216,12 +216,12 @@ class ApiClient private (conf: APIConfigurations) {
     try {
       // Start the async task
       val startTask =
-        new dev.failsafe.function.CheckedSupplier[PrepareGarbageCollectionCommitsAsyncCreation]() {
-          def get(): PrepareGarbageCollectionCommitsAsyncCreation =
+        new dev.failsafe.function.CheckedSupplier[TaskCreation]() {
+          def get(): TaskCreation =
             internalApi.prepareGarbageCollectionCommitsAsync(repoName).execute()
         }
-      val asyncCreation = retryWrapper.wrapWithRetry(startTask)
-      val taskId = asyncCreation.getId
+      val taskCreation = retryWrapper.wrapWithRetry(startTask)
+      val taskId = taskCreation.getId
 
       // Poll for completion with exponential backoff
       val startTime = System.currentTimeMillis()

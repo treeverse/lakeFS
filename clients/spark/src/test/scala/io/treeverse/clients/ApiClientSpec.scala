@@ -3,7 +3,7 @@ package io.treeverse.clients
 import io.lakefs.clients.sdk.ApiException
 import io.lakefs.clients.sdk.model.{
   GarbageCollectionPrepareResponse,
-  PrepareGarbageCollectionCommitsAsyncCreation,
+  TaskCreation,
   PrepareGarbageCollectionCommitsStatus
 }
 import org.apache.http.HttpStatus
@@ -128,11 +128,11 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       val taskId = "test-task-id"
 
       // Mock async API creation
-      val asyncCreation = new PrepareGarbageCollectionCommitsAsyncCreation()
-      asyncCreation.setId(taskId)
+      val taskCreation = new TaskCreation()
+      taskCreation.setId(taskId)
 
       val asyncApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsAsyncRequest])
-      Mockito.when(asyncApiBuilder.execute()).thenReturn(asyncCreation)
+      Mockito.when(asyncApiBuilder.execute()).thenReturn(taskCreation)
       Mockito.when(mockInternalApi.prepareGarbageCollectionCommitsAsync(anyString())).thenReturn(asyncApiBuilder)
 
       // Mock status API to return completed status immediately
