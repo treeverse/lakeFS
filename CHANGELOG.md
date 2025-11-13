@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.72.0
+
+:new: What's new:
+
+- API: prepare GC commits async (#9643)
+- Improve download robustness with retry logic (#9629)
+
+:bug: Bugs fixed:
+
+- WebUI: Making PRs (Pull Requests) with no changes closable (#9294)
+- Allow non-ASCII values in S3 PutObject user metadata (#9604)
+- Support multiple template colors in lakectl console output (#9642)
+
 # v1.71.0
 
 :new: What's new:
