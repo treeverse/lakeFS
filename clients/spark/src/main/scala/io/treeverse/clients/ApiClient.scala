@@ -11,11 +11,14 @@ import dev.failsafe.Policy
 import dev.failsafe.RetryPolicy
 import dev.failsafe.function.CheckedSupplier
 import io.lakefs.clients.sdk
+import io.lakefs.clients.sdk.ApiException
 import io.lakefs.clients.sdk.ConfigApi
 import io.lakefs.clients.sdk.model._
 import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
+import org.apache.http.HttpStatus
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.time.Duration
@@ -125,6 +128,7 @@ case class APIConfigurations(
 // Only cached instances of ApiClient can be constructed.  The actual
 // constructor is private.
 class ApiClient private (conf: APIConfigurations) {
+  private final val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   val client = new sdk.ApiClient
   client.addDefaultHeader(
@@ -145,7 +149,7 @@ class ApiClient private (conf: APIConfigurations) {
   private val commitsApi = new sdk.CommitsApi(client)
   private val metadataApi = new sdk.MetadataApi(client)
   private val branchesApi = new sdk.BranchesApi(client)
-  private val internalApi = new sdk.InternalApi(client)
+  private var internalApi = new sdk.InternalApi(client)
   private val configApi = new ConfigApi(client)
 
   private val retryWrapper = new RequestRetryWrapper(client.getReadTimeout)
@@ -201,12 +205,108 @@ class ApiClient private (conf: APIConfigurations) {
   def prepareGarbageCollectionCommits(
       repoName: String
   ): GarbageCollectionPrepareResponse = {
-    val prepareGcCommits =
-      new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
-        def get(): GarbageCollectionPrepareResponse =
-          internalApi.prepareGarbageCollectionCommits(repoName).execute()
+    prepareGarbageCollectionCommits(repoName, timeoutMinutes = 20)
+  }
+
+  def prepareGarbageCollectionCommits(
+      repoName: String,
+      timeoutMinutes: Int
+  ): GarbageCollectionPrepareResponse = {
+    // Try async API first, fallback to blocking API on server internal error
+    try {
+      // Start the async task
+      val startTask =
+        new dev.failsafe.function.CheckedSupplier[TaskCreation]() {
+          def get(): TaskCreation =
+            internalApi.prepareGarbageCollectionCommitsAsync(repoName).execute()
+        }
+      val taskCreation = retryWrapper.wrapWithRetry(startTask)
+      val taskId = taskCreation.getId
+
+      // Poll for completion with exponential backoff
+      val startTime = System.currentTimeMillis()
+      val timeoutMs = timeoutMinutes * 60 * 1000L
+      var backoffMs = 500L
+      val maxBackoffMs = 15000L
+
+      while (true) {
+        // Check timeout before making the request
+        val elapsed = System.currentTimeMillis() - startTime
+        if (elapsed >= timeoutMs) {
+          throw new RuntimeException(
+            s"prepareGarbageCollectionCommits timed out after ${timeoutMinutes} minutes (task_id: $taskId)"
+          )
+        }
+
+        // Get status
+        val getStatus =
+          new dev.failsafe.function.CheckedSupplier[PrepareGarbageCollectionCommitsStatus]() {
+            def get(): PrepareGarbageCollectionCommitsStatus =
+              internalApi.prepareGarbageCollectionCommitsStatus(repoName, taskId).execute()
+          }
+
+        val status =
+          try {
+            retryWrapper.wrapWithRetry(getStatus)
+          } catch {
+            case e: ApiException =>
+              if (e.getCode == HttpStatus.SC_NOT_FOUND) {
+                throw new RuntimeException(
+                  s"prepareGarbageCollectionCommits task not found (task_id: $taskId)",
+                  e
+                )
+              } else {
+                throw e
+              }
+          }
+
+        // Check if completed
+        if (status.getCompleted) {
+          // Check for error
+          if (status.getError != null) {
+            val errorMsg = Option(status.getError.getMessage).getOrElse("Unknown error")
+            throw new RuntimeException(
+              s"prepareGarbageCollectionCommits failed (task_id: $taskId): $errorMsg"
+            )
+          }
+
+          // Return result
+          val result = status.getResult
+          if (result == null) {
+            throw new RuntimeException(
+              s"prepareGarbageCollectionCommits completed but result is null (task_id: $taskId)"
+            )
+          }
+          return result
+        }
+
+        // Wait before next poll with exponential backoff
+        Thread.sleep(backoffMs)
+        backoffMs = Math.min(backoffMs * 2, maxBackoffMs)
       }
-    retryWrapper.wrapWithRetry(prepareGcCommits)
+
+      // Should never reach here, but satisfy compiler
+      throw new RuntimeException("Unexpected end of polling loop")
+    } catch {
+      case e: ApiException =>
+        // If async API fails with server error (500), fallback to blocking API
+        if (e.getCode == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+          logger.info(
+            s"prepareGarbageCollectionCommits async API failed with 500 for repository $repoName, falling back to blocking API"
+          )
+          val prepareGcCommits =
+            new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
+              def get(): GarbageCollectionPrepareResponse =
+                internalApi.prepareGarbageCollectionCommits(repoName).execute()
+            }
+          retryWrapper.wrapWithRetry(prepareGcCommits)
+        } else {
+          throw e
+        }
+      case e: RuntimeException =>
+        // Re-throw runtime exceptions (timeouts, task not found, etc.)
+        throw e
+    }
   }
 
   def getRepository(repoName: String): Repository = {
@@ -288,6 +388,14 @@ class ApiClient private (conf: APIConfigurations) {
     }
     val response = retryWrapper.wrapWithRetry(getBranch)
     response.getCommitId
+  }
+
+  /** Set the internalApi member. This method is intended for testing purposes only.
+   *  It allows test code to inject a mock or spy of the InternalApi to test
+   *  prepareGarbageCollectionCommits and other methods that use internalApi.
+   */
+  private[clients] def setInternalApiForTesting(newInternalApi: sdk.InternalApi): Unit = {
+    internalApi = newInternalApi
   }
 
   // Instances of case classes are compared by structure and not by reference https://docs.scala-lang.org/tour/case-classes.html.
