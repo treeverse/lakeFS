@@ -370,6 +370,7 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	// No properties, just return that it exists
 	return block.Properties{
 		LastModified: stat.ModTime(),
+		Size:         stat.Size(),
 	}, nil
 }
 
