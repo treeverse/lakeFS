@@ -65,7 +65,7 @@ func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithP
 	sKey := encodeKey(key)
 	value, ok := s.m[string(partitionKey)][sKey]
 	if !ok {
-		return nil, fmt.Errorf("partition=%s, key=%s, encoding=%s: %w", partitionKey, string(key), sKey, kv.ErrNotFound)
+		return nil, fmt.Errorf("partition=%s, key=%s, encoding=%s: %w", partitionKey, key, sKey, kv.ErrNotFound)
 	}
 	return &kv.ValueWithPredicate{
 		Value:     value.Value,
@@ -122,17 +122,17 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 	switch valuePredicate {
 	case nil:
 		if currOK {
-			return fmt.Errorf("key=%s: %w", string(key), kv.ErrPredicateFailed)
+			return fmt.Errorf("key=%s: %w", key, kv.ErrPredicateFailed)
 		}
 
 	case kv.PrecondConditionalExists:
 		if !currOK {
-			return fmt.Errorf("key=%s: %w", string(key), kv.ErrPredicateFailed)
+			return fmt.Errorf("key=%s: %w", key, kv.ErrPredicateFailed)
 		}
 
 	default: // check for predicate
 		if !bytes.Equal(valuePredicate.([]byte), curr.Value) {
-			return fmt.Errorf("%w: partition=%s, key=%s, encoding=%s", kv.ErrPredicateFailed, partitionKey, string(key), sKey)
+			return fmt.Errorf("%w: partition=%s, key=%s, encoding=%s", kv.ErrPredicateFailed, partitionKey, key, sKey)
 		}
 	}
 
