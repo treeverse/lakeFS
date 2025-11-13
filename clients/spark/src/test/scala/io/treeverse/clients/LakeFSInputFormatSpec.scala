@@ -6,6 +6,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.mapreduce.JobContext
 import org.mockito
 import org.mockito.Mockito
+import org.mockito.ArgumentMatchers
 import org.scalatest.funspec._
 import org.scalatest.matchers.should._
 import org.scalatestplus.mockito.MockitoSugar
@@ -57,14 +58,14 @@ class LakeFSCommitInputFormatSpec
       readers(e._1) = metarangeReader
     })
     Mockito
-      .when(mockClient.getRangeURL(mockito.Matchers.eq(repoName), mockito.Matchers.anyString()))
+      .when(mockClient.getRangeURL(ArgumentMatchers.eq(repoName), ArgumentMatchers.anyString()))
       .thenAnswer(new mockito.stubbing.Answer[String] {
         override def answer(i: mockito.invocation.InvocationOnMock): String =
           "s3a://bucket/" + i.getArguments()(1).asInstanceOf[String]
 
       })
     Mockito
-      .when(mockClient.getMetaRangeURL(mockito.Matchers.eq(repoName), mockito.Matchers.anyString))
+      .when(mockClient.getMetaRangeURL(ArgumentMatchers.eq(repoName), ArgumentMatchers.anyString))
       .thenAnswer(new mockito.stubbing.Answer[String] {
         override def answer(i: mockito.invocation.InvocationOnMock): String =
           i.getArguments()(1).asInstanceOf[String].replace("c", "mr")
@@ -134,13 +135,13 @@ class LakeFSAllRangesInputFormatSpec
     .when(mockClient.getStorageNamespace(repoName, StorageClientType.HadoopFS))
     .thenReturn("s3a://bucket/")
   Mockito
-    .when(mockFileSystem.exists(mockito.Matchers.eq(new Path("s3a://bucket/_lakefs"))))
+    .when(mockFileSystem.exists(ArgumentMatchers.eq(new Path("s3a://bucket/_lakefs"))))
     .thenReturn(true)
   it("should return ranges files as splits") {
     Mockito
       .when(
-        mockFileSystem.listFiles(mockito.Matchers.eq(new Path("s3a://bucket/_lakefs")),
-                                 mockito.Matchers.eq(false)
+        mockFileSystem.listFiles(ArgumentMatchers.eq(new Path("s3a://bucket/_lakefs")),
+                                 ArgumentMatchers.eq(false)
                                 )
       )
       .thenReturn(

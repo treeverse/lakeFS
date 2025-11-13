@@ -51,7 +51,7 @@ dependencyOverrides ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.lakefs" % "sdk" % "1.53.1",
+  "io.lakefs" % "sdk" % "1.72.0",
   "org.apache.spark" %% "spark-sql" % "3.1.2" % "provided",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
@@ -78,7 +78,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.16" % "test",
   "org.scalatestplus" %% "scalacheck-1-17" % "3.2.16.0" % "test",
   "org.scalatestplus" %% "mockito-4-11" % "3.2.16.0" % "test",
-  "org.mockito" % "mockito-all" % "1.10.19" % "test",
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
   "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
   "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
