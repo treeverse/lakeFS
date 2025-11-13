@@ -1,9 +1,7 @@
-import React, {useCallback, useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 
 import {
     ClockIcon, FileDirectoryFillIcon, FoldDownIcon, FoldUpIcon,
-    PlusIcon,
-    XIcon
 } from "@primer/octicons-react";
 
 import {useAPIWithPagination} from "../../hooks/api";
@@ -11,14 +9,10 @@ import {useExpandCollapseDirs} from "../../hooks/useExpandCollapseDirs";
 import {AlertError, TooltipButton} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow} from "./treeRows";
-import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import Alert from "react-bootstrap/Alert";
 import {refs} from "../../api";
-import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -253,58 +247,3 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
 export const defaultGetMoreChanges = (repo, leftRefId, rightRefId, delimiter) => (afterUpdated, path, useDelimiter= true, amount = -1) => {
     return refs.diff(repo.id, leftRefId, rightRefId, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
 };
-
-export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) => {
-    const onChangeKey = useCallback((i) => {
-        return e => {
-            const key = e.currentTarget.value;
-            setMetadataFields(prev => [...prev.slice(0,i), {...prev[i], key}, ...prev.slice(i+1)]);
-            e.preventDefault()
-        };
-    }, [setMetadataFields]);
-
-    const onChangeValue = useCallback((i) => {
-        return e => {
-            const value = e.currentTarget.value;
-            setMetadataFields(prev => [...prev.slice(0,i),  {...prev[i], value}, ...prev.slice(i+1)]);
-        };
-    }, [setMetadataFields]);
-
-    const onRemovePair = useCallback((i) => {
-        return () => setMetadataFields(prev => [...prev.slice(0, i), ...prev.slice(i + 1)])
-    }, [setMetadataFields])
-
-    const onAddPair = useCallback(() => {
-        setMetadataFields(prev => [...prev, {key: "", value: ""}])
-    }, [setMetadataFields])
-
-    return (
-        <div className="mt-3 mb-3" {...rest}>
-            {metadataFields.map((f, i) => {
-                return (
-                    <Form.Group key={`commit-metadata-field-${i}`} className="mb-3">
-                        <Row>
-                            <Col md={{span: 5}}>
-                                <Form.Control type="text" placeholder="Key" defaultValue={f.key} onChange={onChangeKey(i)}/>
-                            </Col>
-                            <Col md={{span: 5}}>
-                                <Form.Control type="text" placeholder="Value" defaultValue={f.value}  onChange={onChangeValue(i)}/>
-                            </Col>
-                            <Col md={{span: 1}}>
-                                <Form.Text>
-                                    <Button size="sm" variant="secondary" onClick={onRemovePair(i)}>
-                                        <XIcon/>
-                                    </Button>
-                                </Form.Text>
-                            </Col>
-                        </Row>
-                    </Form.Group>
-                )
-            })}
-            <Button onClick={onAddPair} size="sm" variant="secondary">
-                <PlusIcon/>{' '}
-                Add Metadata field
-            </Button>
-        </div>
-    )
-}
