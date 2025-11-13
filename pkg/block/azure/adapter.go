@@ -448,6 +448,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		StorageClass: props.AccessTier,
 		LastModified: apiutil.Value(props.LastModified),
 		ETag:         etag,
+		Size:         apiutil.Value(props.ContentLength),
 	}, nil
 }
 

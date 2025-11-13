@@ -347,6 +347,7 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	return block.Properties{
 		LastModified: stat.ModTime(),
 		ETag:         etag,
+		Size:         stat.Size(),
 	}, nil
 }
 

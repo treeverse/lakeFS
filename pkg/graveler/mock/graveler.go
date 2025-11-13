@@ -563,6 +563,21 @@ func (mr *MockVersionControllerMockRecorder) GCNewRunID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GCNewRunID", reflect.TypeOf((*MockVersionController)(nil).GCNewRunID))
 }
 
+// GetAllCommits mocks base method.
+func (m *MockVersionController) GetAllCommits(ctx context.Context, repository *graveler.RepositoryRecord) (map[graveler.CommitID]*graveler.Commit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllCommits", ctx, repository)
+	ret0, _ := ret[0].(map[graveler.CommitID]*graveler.Commit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllCommits indicates an expected call of GetAllCommits.
+func (mr *MockVersionControllerMockRecorder) GetAllCommits(ctx, repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllCommits", reflect.TypeOf((*MockVersionController)(nil).GetAllCommits), ctx, repository)
+}
+
 // GetBranch mocks base method.
 func (m *MockVersionController) GetBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (*graveler.Branch, error) {
 	m.ctrl.T.Helper()
