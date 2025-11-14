@@ -19,11 +19,11 @@ import re  # noqa: F401
 import json
 
 
-
+from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field
+    from pydantic.v1 import BaseModel, Field, StrictBool
 except ImportError:
-    from pydantic import BaseModel, Field
+    from pydantic import BaseModel, Field, StrictBool
 from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
 from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
 
@@ -33,7 +33,9 @@ class IcebergPullRequest(BaseModel):
     """
     source: IcebergRemoteTable = Field(...)
     destination: IcebergLocalTable = Field(...)
-    __properties = ["source", "destination"]
+    force_update: Optional[StrictBool] = Field(False, description="Override exiting local table if exists")
+    create_namespace: Optional[StrictBool] = Field(False, description="Creates namespace in local catalog if not exist")
+    __properties = ["source", "destination", "force_update", "create_namespace"]
 
     class Config:
         """Pydantic configuration"""
@@ -78,7 +80,9 @@ class IcebergPullRequest(BaseModel):
 
         _obj = IcebergPullRequest.parse_obj({
             "source": IcebergRemoteTable.from_dict(obj.get("source")) if obj.get("source") is not None else None,
-            "destination": IcebergLocalTable.from_dict(obj.get("destination")) if obj.get("destination") is not None else None
+            "destination": IcebergLocalTable.from_dict(obj.get("destination")) if obj.get("destination") is not None else None,
+            "force_update": obj.get("force_update") if obj.get("force_update") is not None else False,
+            "create_namespace": obj.get("create_namespace") if obj.get("create_namespace") is not None else False
         })
         return _obj
 
