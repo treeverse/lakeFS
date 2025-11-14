@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.TaskContext
 import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 
+import org.slf4j.{Logger, LoggerFactory}
 import java.io.{ByteArrayInputStream, Closeable, DataInputStream, File}
 
 class Item[T](val key: Array[Byte], val id: Array[Byte], val message: T)
@@ -101,6 +102,8 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
     val companion: GeneratedMessageCompanion[Proto],
     val own: Boolean = true
 ) extends Closeable {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
   private val fp = new java.io.RandomAccessFile(file, "r")
   private val reader = new BlockReadableFile(fp)
 
@@ -110,7 +113,13 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
   def close(): Unit = {
     fp.close()
     if (own) {
-      file.delete()
+      try {
+        file.delete()
+      } catch {
+        case e: Exception => {
+          logger.warn(s"delete owned file ${file.getName()} (keep going): $e")
+        }
+      }
     }
   }
 
