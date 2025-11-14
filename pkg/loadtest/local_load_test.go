@@ -109,7 +109,7 @@ func TestLocalLoad(t *testing.T) {
 		nil,
 		nil,
 		upload.DefaultPathProvider,
-		stats.DefaultUsageReporter,
+		&stats.NopUsageReporter{},
 		licenseManager,
 		icebergSyncer,
 	)

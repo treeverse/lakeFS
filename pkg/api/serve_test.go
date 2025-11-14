@@ -186,7 +186,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		nil,
 		nil,
 		upload.DefaultPathProvider,
-		stats.DefaultUsageReporter,
+		&stats.NopUsageReporter{},
 		licenseManager,
 		icebergSyncer,
 	)
