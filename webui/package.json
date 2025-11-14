@@ -90,7 +90,7 @@
     "eslint-plugin-compat": "^4.2.0",
     "eslint-plugin-react": "^7.33.2",
     "happy-dom": "^20.0.10",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "jsonwebtoken": "^9.0.2",
     "mime-types": "^3.0.1",
     "playwright": "^1.40.1",
