@@ -128,12 +128,8 @@ func TestUsageReporter(t *testing.T) {
 	}
 }
 
-func TestDefaultUsageReporter(t *testing.T) {
-	reporter := stats.DefaultUsageReporter
-	if reporter == nil {
-		t.Fatal("expected an instance")
-	}
-
+func TestNopUsageReporter(t *testing.T) {
+	reporter := &stats.NopUsageReporter{}
 	if reporter.InstallationID() != "" {
 		t.Fatalf("expected installation id to be empty, got '%s'", reporter.InstallationID())
 	}

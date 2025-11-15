@@ -6175,7 +6175,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 
 	installationID := c.usageReporter.InstallationID()
 	if installationID == "" {
-		writeError(w, r, http.StatusNotFound, "usage report is not enabled")
+		writeError(w, r, http.StatusNotFound, "installation not found")
 		return
 	}
 

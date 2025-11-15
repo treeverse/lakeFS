@@ -25,9 +25,6 @@ var (
 	// usageCounters is a list of all usage counters.
 	usageCounters []*UsageCounter
 
-	// DefaultUsageReporter is the default usage reporter. It does nothing.
-	DefaultUsageReporter UsageReporterOperations = &NopUsageReporter{}
-
 	ErrInvalidUsageKeyFormat = errors.New("invalid usage key format")
 )
 
@@ -75,7 +72,7 @@ type UsageReporter struct {
 	storage        kv.Store
 }
 
-// NopUsageReporter is a usage reporter that does nothing.
+// NopUsageReporter is a usage reporter that does nothing - used only for testing.
 type NopUsageReporter struct{}
 
 func (n *NopUsageReporter) Records(_ context.Context) ([]*UsageRecord, error) {

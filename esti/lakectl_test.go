@@ -1057,7 +1057,7 @@ func TestLakectlUsage(t *testing.T) {
 	r := strings.NewReplacer("{lakectl}", Lakectl(), "{repo}", repoName, "{storage}", storage, "{branch}", "main")
 	runCmd(t, r.Replace("{lakectl} repo create lakefs://{repo} {storage}"), false, false, nil)
 	runCmd(t, r.Replace("{lakectl} repo list"), false, false, nil)
-	RunCmdAndVerifyFailureWithFile(t, r.Replace("{lakectl} usage summary"), false, "lakectl_usage_summary", vars)
+	RunCmdAndVerifyContainsText(t, r.Replace("{lakectl} usage summary"), false, "Usage report for installation ID:", vars)
 }
 
 func TestLakectlBranchProtection(t *testing.T) {

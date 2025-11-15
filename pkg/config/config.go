@@ -556,6 +556,7 @@ type BaseConfig struct {
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
 	UsageReport struct {
+		// Deprecated: Value ignored
 		Enabled       bool          `mapstructure:"enabled"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
 	} `mapstructure:"usage_report"`
@@ -606,10 +607,6 @@ func SetDefaults(cfgType string, c Config) {
 
 func Unmarshal(c Config) error {
 	return viper.UnmarshalExact(&c, decoderConfig())
-}
-
-func UnmarshalKey(key string, rawVal any) error {
-	return viper.UnmarshalKey(key, rawVal, decoderConfig())
 }
 
 func decoderConfig() viper.DecoderConfigOption {
