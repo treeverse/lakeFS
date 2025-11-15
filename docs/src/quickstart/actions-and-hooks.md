@@ -27,11 +27,11 @@ _Hooks_ can be either a [Lua](../howto/hooks/lua.md) script that lakeFS will exe
     ```yaml
     name: Check Commit Message and Metadata
     on:
-        pre-commit:
+      pre-commit:
         branches:
-        - etl**
+          - etl**
     hooks:
-    - id: check_metadata
+      - id: check_metadata
         type: lua
         properties:
         script: |
