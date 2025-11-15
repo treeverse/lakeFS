@@ -55,4 +55,20 @@ public class IcebergPullRequestTest {
         // TODO: test destination
     }
 
+    /**
+     * Test the property 'forceUpdate'
+     */
+    @Test
+    public void forceUpdateTest() {
+        // TODO: test forceUpdate
+    }
+
+    /**
+     * Test the property 'createNamespace'
+     */
+    @Test
+    public void createNamespaceTest() {
+        // TODO: test createNamespace
+    }
+
 }

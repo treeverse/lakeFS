@@ -10845,16 +10845,26 @@ components:
           - tax
           repository_id: repository_id
           table: table
+        create_namespace: false
         source:
           namespace:
           - accounting
           - tax
           table: table
+        force_update: false
       properties:
         source:
           $ref: '#/components/schemas/IcebergRemoteTable'
         destination:
           $ref: '#/components/schemas/IcebergLocalTable'
+        force_update:
+          default: false
+          description: Override exiting local table if exists
+          type: boolean
+        create_namespace:
+          default: false
+          description: Creates namespace in local catalog if not exist
+          type: boolean
       required:
       - destination
       - source

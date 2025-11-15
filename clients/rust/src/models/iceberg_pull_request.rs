@@ -16,6 +16,12 @@ pub struct IcebergPullRequest {
     pub source: Box<models::IcebergRemoteTable>,
     #[serde(rename = "destination")]
     pub destination: Box<models::IcebergLocalTable>,
+    /// Override exiting local table if exists
+    #[serde(rename = "force_update", skip_serializing_if = "Option::is_none")]
+    pub force_update: Option<bool>,
+    /// Creates namespace in local catalog if not exist
+    #[serde(rename = "create_namespace", skip_serializing_if = "Option::is_none")]
+    pub create_namespace: Option<bool>,
 }
 
 impl IcebergPullRequest {
@@ -23,6 +29,8 @@ impl IcebergPullRequest {
         IcebergPullRequest {
             source: Box::new(source),
             destination: Box::new(destination),
+            force_update: None,
+            create_namespace: None,
         }
     }
 }
