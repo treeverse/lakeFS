@@ -2138,6 +2138,14 @@ components:
           $ref: "#/components/schemas/IcebergRemoteTable"
         destination:
           $ref: "#/components/schemas/IcebergLocalTable"
+        force_update:
+          type: boolean
+          default: false
+          description: Override exiting local table if exists
+        create_namespace:
+          type: boolean
+          default: false
+          description: Creates namespace in local catalog if not exist
 
 paths:
   /setup_comm_prefs:

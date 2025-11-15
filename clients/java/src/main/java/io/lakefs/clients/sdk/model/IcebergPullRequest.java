@@ -61,6 +61,14 @@ public class IcebergPullRequest {
   @SerializedName(SERIALIZED_NAME_DESTINATION)
   private IcebergLocalTable destination;
 
+  public static final String SERIALIZED_NAME_FORCE_UPDATE = "force_update";
+  @SerializedName(SERIALIZED_NAME_FORCE_UPDATE)
+  private Boolean forceUpdate = false;
+
+  public static final String SERIALIZED_NAME_CREATE_NAMESPACE = "create_namespace";
+  @SerializedName(SERIALIZED_NAME_CREATE_NAMESPACE)
+  private Boolean createNamespace = false;
+
   public IcebergPullRequest() {
   }
 
@@ -103,6 +111,48 @@ public class IcebergPullRequest {
 
   public void setDestination(IcebergLocalTable destination) {
     this.destination = destination;
+  }
+
+
+  public IcebergPullRequest forceUpdate(Boolean forceUpdate) {
+    
+    this.forceUpdate = forceUpdate;
+    return this;
+  }
+
+   /**
+   * Override exiting local table if exists
+   * @return forceUpdate
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForceUpdate() {
+    return forceUpdate;
+  }
+
+
+  public void setForceUpdate(Boolean forceUpdate) {
+    this.forceUpdate = forceUpdate;
+  }
+
+
+  public IcebergPullRequest createNamespace(Boolean createNamespace) {
+    
+    this.createNamespace = createNamespace;
+    return this;
+  }
+
+   /**
+   * Creates namespace in local catalog if not exist
+   * @return createNamespace
+  **/
+  @javax.annotation.Nullable
+  public Boolean getCreateNamespace() {
+    return createNamespace;
+  }
+
+
+  public void setCreateNamespace(Boolean createNamespace) {
+    this.createNamespace = createNamespace;
   }
 
   /**
@@ -161,13 +211,15 @@ public class IcebergPullRequest {
     }
     IcebergPullRequest icebergPullRequest = (IcebergPullRequest) o;
     return Objects.equals(this.source, icebergPullRequest.source) &&
-        Objects.equals(this.destination, icebergPullRequest.destination)&&
+        Objects.equals(this.destination, icebergPullRequest.destination) &&
+        Objects.equals(this.forceUpdate, icebergPullRequest.forceUpdate) &&
+        Objects.equals(this.createNamespace, icebergPullRequest.createNamespace)&&
         Objects.equals(this.additionalProperties, icebergPullRequest.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(source, destination, additionalProperties);
+    return Objects.hash(source, destination, forceUpdate, createNamespace, additionalProperties);
   }
 
   @Override
@@ -176,6 +228,8 @@ public class IcebergPullRequest {
     sb.append("class IcebergPullRequest {\n");
     sb.append("    source: ").append(toIndentedString(source)).append("\n");
     sb.append("    destination: ").append(toIndentedString(destination)).append("\n");
+    sb.append("    forceUpdate: ").append(toIndentedString(forceUpdate)).append("\n");
+    sb.append("    createNamespace: ").append(toIndentedString(createNamespace)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -201,6 +255,8 @@ public class IcebergPullRequest {
     openapiFields = new HashSet<String>();
     openapiFields.add("source");
     openapiFields.add("destination");
+    openapiFields.add("force_update");
+    openapiFields.add("create_namespace");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
