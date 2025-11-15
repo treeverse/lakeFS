@@ -100,7 +100,12 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         <>
             <Modal show={mergeState.show} onHide={hide} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Merge branch {source} into {dest}</Modal.Title>
+                    <Modal.Title style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', minWidth: 0 }}>
+                        <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Merge branch</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={source}>{source}</span>
+                        <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>into</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} title={dest}>{dest}</span>
+                    </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form className="mb-2">
