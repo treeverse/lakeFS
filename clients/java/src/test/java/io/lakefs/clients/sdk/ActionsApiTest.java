@@ -103,4 +103,19 @@ public class ActionsApiTest {
         // TODO: test validations
     }
 
+    /**
+     * manually trigger an action
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void triggerActionTest() throws ApiException {
+        String repository = null;
+        String ref = null;
+        String action = null;
+        api.triggerAction(repository, ref, action)
+                .execute();
+        // TODO: test validations
+    }
+
 }

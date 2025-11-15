@@ -147,6 +147,7 @@ Class | Method | HTTP request | Description
 *ActionsApi* | [**getRunHookOutput**](docs/ActionsApi.md#getRunHookOutput) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output | get run hook output
 *ActionsApi* | [**listRepositoryRuns**](docs/ActionsApi.md#listRepositoryRuns) | **GET** /repositories/{repository}/actions/runs | list runs
 *ActionsApi* | [**listRunHooks**](docs/ActionsApi.md#listRunHooks) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks | list run hooks
+*ActionsApi* | [**triggerAction**](docs/ActionsApi.md#triggerAction) | **POST** /repositories/{repository}/refs/{ref}/actions/{action}/triggers | manually trigger an action
 *AuthApi* | [**addGroupMembership**](docs/AuthApi.md#addGroupMembership) | **PUT** /auth/groups/{groupId}/members/{userId} | add group membership
 *AuthApi* | [**attachPolicyToGroup**](docs/AuthApi.md#attachPolicyToGroup) | **PUT** /auth/groups/{groupId}/policies/{policyId} | attach policy to group
 *AuthApi* | [**attachPolicyToUser**](docs/AuthApi.md#attachPolicyToUser) | **PUT** /auth/users/{userId}/policies/{policyId} | attach policy to user
