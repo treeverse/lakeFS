@@ -2,7 +2,7 @@ import React, {useCallback, useRef, useState} from "react";
 import {refs as refsAPI} from "../../../lib/api";
 import {RefTypeBranch} from "../../../constants";
 import {ActionGroup, ActionsBar, AlertError, RefreshButton} from "../controls";
-import {MetadataFields} from "./changes";
+import {MetadataFields} from "./metadata";
 import {GitMergeIcon} from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
