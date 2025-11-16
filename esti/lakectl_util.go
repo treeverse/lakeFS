@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -42,7 +43,8 @@ var (
 )
 
 func lakectlLocation() string {
-	return viper.GetString("binaries_dir") + "/lakectl"
+	binDir := viper.GetString("binaries_dir")
+	return filepath.Join(binDir, "lakectl")
 }
 
 func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
