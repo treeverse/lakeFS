@@ -42,9 +42,13 @@ var (
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 )
 
-func lakectlLocation() string {
+func lakeBinaryLocation(name string) string {
 	binDir := viper.GetString("binaries_dir")
-	return filepath.Join(binDir, "lakectl")
+	return filepath.Join(binDir, name)
+}
+
+func lakectlLocation() string {
+	return lakeBinaryLocation("lakectl")
 }
 
 func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {

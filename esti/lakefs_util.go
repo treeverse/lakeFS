@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -27,8 +26,7 @@ func LakefsWithParamsWithBasicAuth(connectionString string, basicAuth bool) stri
 }
 
 func lakefsLocation() string {
-	binDir := viper.GetString("binaries_dir")
-	return filepath.Join(binDir, "lakefs")
+	return lakeBinaryLocation("lakefs")
 }
 
 func LakefsWithBasicAuth() string {
