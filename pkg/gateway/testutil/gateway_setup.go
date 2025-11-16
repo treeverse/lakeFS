@@ -47,6 +47,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	cfg := &configfactory.ConfigImpl{}
 	_, err = config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
+	cfg.Committed.LocalCache.Dir = path.Join(t.TempDir(), "cache")
 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:       cfg,
