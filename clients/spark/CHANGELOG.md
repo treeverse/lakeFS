@@ -1,7 +1,7 @@
 # Changelog
 
 ## v0.17.0
-* Support using lakeFS async API for prepare commits - better handling large commits
+* Support using lakeFS async API for prepare commits - better handling large number of commits
 
 ## v0.16.0
 * Improved credentials handling for compatibility with Hadoop 3.2.x/3.3.x
