@@ -341,9 +341,6 @@ The following table maintenance operations are not supported in the current vers
 
 The following features are planned for future releases:
 
-1. **Catalog Sync**:
-    - Support for pushing/pulling tables to/from other catalogs
-    - Integration with AWS Glue and other Iceberg-compatible catalogs
 1. **Table Import**:
     - Support for importing existing Iceberg tables from other catalogs
     - Bulk import capabilities for large-scale migrations
@@ -411,6 +408,172 @@ sequenceDiagram
     - [Iceberg REST Catalog API Specification](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/apache/iceberg/main/open-api/rest-catalog-open-api.yaml)
     - [Iceberg Official Documentation](https://iceberg.apache.org/docs/latest/)
     - [lakeFS Enterprise Features](../enterprise/index.md)
+
+## Catalog Sync
+
+Catalog Sync allows you to synchronize Iceberg tables between the lakeFS catalog and external catalogs such as AWS Glue Data Catalog or other Iceberg REST-compatible catalogs.
+This enables workflows where some users or tools need to access data through other external catalogs.
+
+### Use Cases
+
+**Collaboration with External Tools**: Share data with users who rely on tools that only support specific catalogs.
+For example, data engineers can work with tables in lakeFS while data analysts query the same data through AWS Glue using Athena, all while maintaining isolation and version control.
+
+```mermaid
+sequenceDiagram
+    actor Alice (Data Engineer)
+    actor Bob (Data Analyst)
+    participant lakeFS
+    participant AWS Glue
+    Alice->>lakeFS: Update tables on branch 'dev'
+    Alice->>lakeFS: Push tables to Glue
+    lakeFS->>AWS Glue: Register tables in 'dev' database
+    Alice->>Bob: Please review: glue/dev
+    Bob->>AWS Glue: SELECT * FROM dev.table (via Athena)
+    Bob->>Alice: Approved!
+    Alice->>lakeFS: Merge 'dev' into 'main'
+```
+
+**Isolated Pipelines**: Run data pipelines using tools that require external catalogs while maintaining isolation through lakeFS branches.
+Create a branch, push tables to an external catalog, run your pipeline, pull the changes back, and merge into main.
+
+```mermaid
+sequenceDiagram
+    participant Orchestrator
+    participant lakeFS
+    participant External Catalog
+    participant Pipeline Tool
+    Orchestrator->>lakeFS: Create branch 'etl-2024-01-15'
+    Orchestrator->>lakeFS: Push tables to external catalog
+    lakeFS->>External Catalog: Register tables
+    Orchestrator->>Pipeline Tool: Run ETL pipeline
+    Pipeline Tool->>External Catalog: Read/write tables
+    Orchestrator->>lakeFS: Pull updated tables
+    lakeFS->>External Catalog: Read updated metadata
+    Orchestrator->>lakeFS: Merge 'etl-2024-01-15' into 'main'
+```
+
+### Configuration
+
+Remote catalogs are configured in your lakeFS configuration file.
+Each remote catalog requires a unique identifier and type-specific connection properties.
+
+#### AWS Glue Data Catalog
+
+Configure an AWS Glue catalog by specifying the region and AWS credentials:
+
+```yaml
+catalog:
+  remotes:
+    - id: aws_glue_us_east_1
+      type: glue
+      properties:
+        region: us-east-1
+        access_key_id: <your-glue-key>
+        secret_access_key: <your-glue-secret>
+```
+
+#### Iceberg REST Catalog
+
+Configure a generic Iceberg REST catalog with OAuth2 authentication:
+
+```yaml
+catalog:
+  remotes:
+    - id: remote_catalog
+      type: rest
+      properties:
+        uri: https://catalog.example.com/api
+        warehouse: my-warehouse
+        credential: <client-id>:<client-secret>
+        oauth2-server-uri: https://auth.example.com/oauth/token
+        scope: catalog
+```
+
+### Push to remote
+
+Push operations register a table from lakeFS into a remote catalog.
+The table's metadata and data remain in lakeFS-managed storage, which are used as the pushed table's location.
+
+**API Endpoint**: `POST /iceberg/remotes/{catalog-id}/push`
+
+**Parameters**:
+- `source`: The lakeFS table location (repository, branch/reference, namespace, table name)
+- `destination`: The remote catalog location (namespace, table name)
+- `force_update`: (optional, default: `false`) Override the table if it already exists in the remote catalog
+- `create_namespace`: (optional, default: `false`) Create the namespace in the remote catalog if it doesn't exist
+
+**Example**:
+
+```bash
+curl -X POST "https://lakefs.example.com/iceberg/remotes/aws_glue_us_east_1/push" \
+  -H "Authorization: Bearer $LAKEFS_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": {
+      "repository_id": "my-repo",
+      "reference_id": "main",
+      "namespace": ["default", "features"],
+      "table": "image_properties"
+    },
+    "destination": {
+      "namespace": ["main_features"],
+      "table": "image_properties"
+    },
+    "force_update": true,
+    "create_namespace": true
+  }'
+```
+
+This example pushes the table `my-repo.main.default.features.image_properties` from lakeFS to the AWS Glue catalog as `main_features.image_properties`,
+creating the namespace if needed and overwriting any existing table.
+
+### Pull from remote
+
+Pull operations update a lakeFS table with changes from a remote catalog.
+This is useful after external tools have modified a table previously pushed from lakeFS.
+
+**API Endpoint**: `POST /iceberg/remotes/{catalog-id}/pull`
+
+**Parameters**:
+- `source`: The remote catalog location (namespace, table name)
+- `destination`: The lakeFS table location (repository, branch/reference, namespace, table name)
+- `force_update`: (optional, default: `false`) Override the table in lakeFS if metadata conflicts exist
+- `create_namespace`: (optional, default: `false`) Create the namespace in lakeFS if it doesn't exist
+
+**Example**:
+
+```bash
+curl -X POST "https://lakefs.example.com/iceberg/remotes/aws_glue_us_east_1/pull" \
+  -H "Authorization: Bearer $LAKEFS_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": {
+      "namespace": ["main_features"],
+      "table": "image_properties"
+    },
+    "destination": {
+      "repository_id": "my-repo",
+      "reference_id": "main",
+      "namespace": ["default", "features"],
+      "table": "image_properties"
+    }
+  }'
+```
+
+This example pulls changes from the Glue table `main_features.image_properties` back into the lakeFS table `my-repo.main.default.features.image_properties`.
+
+### Important Notes
+
+1. **Storage Location**: Pulled tables' `metadata.json` file must reside in a storage location to which lakeFS has read access to.
+
+2. **Atomicity**: Push and pull operations are not atomic. If an operation fails partway through, manual intervention may be required.
+
+3. **Authentication**: Ensure the credentials configured for remote catalogs have appropriate permissions:
+    - For AWS Glue: `glue:CreateTable`, `glue:UpdateTable`, `glue:GetTable`, `glue:CreateDatabase` (if `create_namespace` is used)
+    - For REST catalogs: Appropriate OAuth scopes for table and namespace operations
+
+4. **Namespace Format**: Namespaces are represented as arrays of strings to support nested namespaces (e.g., `["accounting", "tax"]` represents `accounting.tax`).
 
 ---
 
