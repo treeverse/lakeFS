@@ -129,6 +129,9 @@ var deleteRepositoryPermission = RepoPermission{Action: DeleteRepositoryAction}
 var writePullRequestPermission = RepoPermission{Action: WritePullRequestAction}
 var listPullRequestsPermission = RepoPermission{Action: ListPullRequestsAction}
 var readPullRequestPermission = RepoPermission{Action: ReadPullRequestAction}
+var listBranchesPermission = RepoPermission{Action: ListBranchesAction}
+var listTagsPermission = RepoPermission{Action: ListTagsAction}
+var listObjectsPermission = RepoPermission{Action: ListObjectsAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
 	"HeadObject":                          &readObjectPermission,
@@ -166,6 +169,9 @@ var permissionByOp = map[string]PermissionDescriptor{
 	"CreatePullRequest":                   &writePullRequestPermission,
 	"ListPullRequests":                    &listPullRequestsPermission,
 	"GetPullRequest":                      &readPullRequestPermission,
+	"ListBranches":                        &listBranchesPermission,
+	"ListTags":                            &listTagsPermission,
+	"ListObjects":                         &listObjectsPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {
