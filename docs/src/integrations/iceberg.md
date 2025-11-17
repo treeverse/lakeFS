@@ -463,11 +463,11 @@ Each remote catalog requires a unique identifier and type-specific connection pr
 Configure an AWS Glue catalog by specifying the region and AWS credentials:
 
 ```yaml
-catalog:
+iceberg_catalog:
   remotes:
     - id: aws_glue_us_east_1
       type: glue
-      properties:
+      glue:
         region: us-east-1
         access_key_id: <your-glue-key>
         secret_access_key: <your-glue-secret>
@@ -475,19 +475,28 @@ catalog:
 
 #### Iceberg REST Catalog
 
-Configure a generic Iceberg REST catalog with OAuth2 authentication:
+Configure a generic Iceberg REST catalog with basic authentication:
 
 ```yaml
-catalog:
+iceberg_catalog:
   remotes:
     - id: remote_catalog
       type: rest
-      properties:
-        uri: https://catalog.example.com/api
-        warehouse: my-warehouse
+      rest:
+        uri: https://catalog.example.com/iceberg/api
         credential: <client-id>:<client-secret>
-        oauth2-server-uri: https://auth.example.com/oauth/token
-        scope: catalog
+```
+
+Or with OAuth token authentication:
+
+```yaml
+iceberg_catalog:
+  remotes:
+    - id: remote_catalog
+      type: rest
+      rest:
+        uri: https://catalog.example.com/iceberg/api
+        oauth_token: <your-oauth-token>
 ```
 
 ### Push to remote
