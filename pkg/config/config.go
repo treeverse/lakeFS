@@ -223,10 +223,10 @@ type BlockstoreAzure struct {
 	StorageAccount   string        `mapstructure:"storage_account"`
 	StorageAccessKey string        `mapstructure:"storage_access_key"`
 	// Deprecated: Value ignored
-	AuthMethod         string        `mapstructure:"auth_method"`
-	PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
-	DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
-	DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
+	AuthMethodDeprecated string        `mapstructure:"auth_method"`
+	PreSignedExpiry      time.Duration `mapstructure:"pre_signed_expiry"`
+	DisablePreSigned     bool          `mapstructure:"disable_pre_signed"`
+	DisablePreSignedUI   bool          `mapstructure:"disable_pre_signed_ui"`
 	// Deprecated: Value ignored
 	ChinaCloudDeprecated bool   `mapstructure:"china_cloud"`
 	TestEndpointURL      string `mapstructure:"test_endpoint_url"`
@@ -370,7 +370,7 @@ func (b *Blockstore) BlockstoreGSParams() (blockparams.GS, error) {
 }
 
 func (b *Blockstore) BlockstoreAzureParams() (blockparams.Azure, error) {
-	if b.Azure.AuthMethod != "" {
+	if b.Azure.AuthMethodDeprecated != "" {
 		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
 	if b.Azure.ChinaCloudDeprecated {
@@ -556,8 +556,9 @@ type BaseConfig struct {
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
 	UsageReport struct {
-		Enabled       bool          `mapstructure:"enabled"`
-		FlushInterval time.Duration `mapstructure:"flush_interval"`
+		// Deprecated: Value ignored
+		EnabledDeprecated bool          `mapstructure:"enabled"`
+		FlushInterval     time.Duration `mapstructure:"flush_interval"`
 	} `mapstructure:"usage_report"`
 }
 
@@ -606,10 +607,6 @@ func SetDefaults(cfgType string, c Config) {
 
 func Unmarshal(c Config) error {
 	return viper.UnmarshalExact(&c, decoderConfig())
-}
-
-func UnmarshalKey(key string, rawVal any) error {
-	return viper.UnmarshalKey(key, rawVal, decoderConfig())
 }
 
 func decoderConfig() viper.DecoderConfigOption {
