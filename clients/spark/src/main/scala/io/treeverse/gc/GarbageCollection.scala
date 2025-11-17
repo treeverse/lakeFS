@@ -44,7 +44,8 @@ object GarbageCollection {
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
     val dataPath = new Path(storageNamespace, DATA_PREFIX)
-    val parallelism = sc.hadoopConfiguration.getInt(LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM, sc.defaultParallelism)
+    val parallelism =
+      sc.hadoopConfiguration.getInt(LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM, sc.defaultParallelism)
 
     val configMapper = new ConfigMapper(
       sc.broadcast(
