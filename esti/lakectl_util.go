@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -41,8 +42,13 @@ var (
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 )
 
+func lakeBinaryLocation(name string) string {
+	binDir := viper.GetString("binaries_dir")
+	return filepath.Join(binDir, name)
+}
+
 func lakectlLocation() string {
-	return viper.GetString("binaries_dir") + "/lakectl"
+	return lakeBinaryLocation("lakectl")
 }
 
 func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
