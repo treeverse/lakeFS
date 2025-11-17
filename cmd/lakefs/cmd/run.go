@@ -167,12 +167,11 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// usage report setup - default usage reporter ids a no-op
-		usageReporter := stats.DefaultUsageReporter
-		if baseCfg.UsageReport.Enabled {
-			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)
-			ur.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
-			usageReporter = ur
+		// Setup usage reporter - it is no longer possible to disable it
+		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)
+		usageReporter.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
+		if viper.IsSet("usage_report.enabled") {
+			logger.Warn("usage_report.enabled is deprecated. Value is ignored.")
 		}
 
 		deleteScheduler := gocron.NewScheduler(time.UTC)
