@@ -2,6 +2,7 @@ package pyramid
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -88,7 +89,14 @@ func (tfs *TierFS) handleExistingFiles() error {
 		dir += string(filepath.Separator)
 	}
 	// walk the local dir and add all files to the cache
+	log := tfs.logger.WithField("dir", dir)
 	if err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if errors.Is(err, os.ErrNotExist) {
+			log.WithField("path", p).
+				WithError(err).
+				Warn("skipping not found file; another lakeFS might be sharing this cache directory - which is UNSUPPORTED")
+			return nil
+		}
 		if err != nil {
 			return err
 		}
