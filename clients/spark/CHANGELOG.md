@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.17.0
+* Support using lakeFS async API for prepare commits - better handling large commits
+
+## v0.16.0
+* Improved credentials handling for compatibility with Hadoop 3.2.x/3.3.x
+
 ## v0.15.0 - 2025-07-21
 * GC: Add support for GCP (#9305)
 
