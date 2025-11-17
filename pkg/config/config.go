@@ -223,7 +223,7 @@ type BlockstoreAzure struct {
 	StorageAccount   string        `mapstructure:"storage_account"`
 	StorageAccessKey string        `mapstructure:"storage_access_key"`
 	// Deprecated: Value ignored
-	AuthMethodDeprecated string        `mapstructure:"auth_method_deprecated"`
+	AuthMethodDeprecated string        `mapstructure:"auth_method"`
 	PreSignedExpiry      time.Duration `mapstructure:"pre_signed_expiry"`
 	DisablePreSigned     bool          `mapstructure:"disable_pre_signed"`
 	DisablePreSignedUI   bool          `mapstructure:"disable_pre_signed_ui"`
@@ -557,7 +557,7 @@ type BaseConfig struct {
 	} `mapstructure:"security"`
 	UsageReport struct {
 		// Deprecated: Value ignored
-		EnabledDeprecated bool          `mapstructure:"enabled" deprecated:"true"`
+		EnabledDeprecated bool          `mapstructure:"enabled"`
 		FlushInterval     time.Duration `mapstructure:"flush_interval"`
 	} `mapstructure:"usage_report"`
 }
