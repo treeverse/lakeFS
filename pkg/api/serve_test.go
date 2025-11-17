@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"strconv"
 	"sync"
 	"testing"
@@ -121,6 +122,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	cfg := &configfactory.ConfigImpl{}
 	baseCfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
+	cfg.Committed.LocalCache.Dir = path.Join(t.TempDir(), "cache")
 	kvStore := kvtest.GetStore(ctx, t)
 	actionsStore := actions.NewActionsKVStore(kvStore)
 	idGen := &actions.DecreasingIDGenerator{}
