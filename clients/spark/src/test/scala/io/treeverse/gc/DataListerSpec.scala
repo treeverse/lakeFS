@@ -52,7 +52,7 @@ class ParallelDataListerSpec
             )
           )
           val df =
-            new ParallelDataLister().listData(configMapper, path).sort("base_address")
+            new ParallelDataLister().listData(configMapper, path, 3).sort("base_address")
           df.count should be(100)
           val slices =
             df.select(substring(col("base_address"), 0, 7).as("slice_id"))
@@ -81,7 +81,7 @@ class ParallelDataListerSpec
             )
           )
           val df =
-            new ParallelDataLister().listData(configMapper, path).sort("base_address")
+            new ParallelDataLister().listData(configMapper, path, 3).sort("base_address")
           df.count() should be(1)
           df.head.getString(0) should be(s"$sliceID/$filename")
         })
@@ -127,7 +127,7 @@ class NaiveDataListerSpec
               HadoopUtils.getHadoopConfigurationValues(spark.sparkContext.hadoopConfiguration)
             )
           )
-          val df = new NaiveDataLister().listData(configMapper, path).sort("base_address")
+          val df = new NaiveDataLister().listData(configMapper, path, 3).sort("base_address")
           df.count should be(10)
           df.sort("base_address").head.getString(0) should be("object01")
           df.head.getString(0) should be("object01")

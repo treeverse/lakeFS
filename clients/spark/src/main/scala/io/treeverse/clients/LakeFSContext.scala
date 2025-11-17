@@ -76,6 +76,9 @@ object LakeFSContext {
   val LAKEFS_CONF_JOB_COMMIT_IDS_KEY = "lakefs.job.commit_ids"
   val LAKEFS_CONF_JOB_SOURCE_NAME_KEY = "lakefs.job.source_name"
 
+  // Read parallelism.  Defaults to default parallelism.
+  val LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM = "lakefs.job.range_read_parallelism"
+
   val LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = "lakefs.gc.commit.num_partitions"
   val LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = "lakefs.gc.range.num_partitions"
   val LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = "lakefs.gc.address.num_partitions"
@@ -149,13 +152,15 @@ object LakeFSContext {
     // This can go to executors.
     val serializedConf = new SerializableConfiguration(conf)
 
+    val parallelism = conf.getInt(LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM, sc.defaultParallelism)
+
     // ApiClient is not serializable, so create a new one for each partition on its executor.
     // (If we called X.flatMap directly, we would fetch the client from the cache for each
     // range, which is a bit too much.)
 
     // TODO(ariels): Unify with similar code in LakeFSInputFormat.getSplits
     val ranges = sc
-      .parallelize(params.commitIDs.toSeq)
+      .parallelize(params.commitIDs.toSeq, parallelism)
       .mapPartitions(commits => {
         val apiClient = ApiClient.get(apiConf)
         val conf = serializedConf.value
