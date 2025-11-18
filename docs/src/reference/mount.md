@@ -285,9 +285,6 @@ CFAPI uses an OS-managed caching system optimized for cloud storage:
 - **Full Download**: Currently, accessing any part of a file, triggers a full download
 - **Automatic Eviction**: The OS "dehydrates" (clears content) under storage pressure. All data is deleted after unmount
 
-!!! warning "Windows File Explorer Performance"
-    Windows File Explorer may perform slowly as it recursively indexes the entire directory structure. Consider using command-line tools or applications that don't trigger full directory indexing.
-
 ### Requirements
 
 - Everest Mount supports the windows's native [Cloud Filter API](https://learn.microsoft.com/en-us/windows/win32/cfapi/cloud-files-api-portal). No need in additional installations.
