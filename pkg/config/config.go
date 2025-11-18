@@ -441,6 +441,7 @@ type AuthConfig interface {
 	// UseUILoginPlaceholders Added this function to the interface because its implementation requires parameters from both BaseAuth and
 	// AuthUIConfig, so neither struct alone could implement it.
 	UseUILoginPlaceholders() bool
+	GetLoginURL() string
 }
 
 type UIConfig interface {
@@ -789,6 +790,13 @@ func (b *BaseAuth) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesn't support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
 	return b.AuthenticationAPI.ExternalPrincipalsEnabled
+}
+
+func (u *AuthUIConfig) GetLoginURL() string {
+	if u.LoginURL != "" {
+		return u.LoginURL
+	}
+	return "/auth/login"
 }
 
 func (u *AuthUIConfig) IsAuthBasic() bool {
