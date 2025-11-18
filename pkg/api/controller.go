@@ -3187,12 +3187,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 }
 
 func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "CreateCommitRecord", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3226,12 +3221,7 @@ func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.C
 }
 
 func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.DiffBranchParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ListObjectsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "DiffBranch", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3701,12 +3691,7 @@ func getCommitOverrides(commitOverrides *apigen.CommitOverrides) *graveler.Commi
 }
 
 func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository, commitID string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadCommitAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetCommit", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -4352,12 +4337,7 @@ func writeSymlink(ctx context.Context, repo *catalog.Repository, branch, path st
 }
 
 func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository, leftRef, rightRef string, params apigen.DiffRefsParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ListObjectsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "DiffRefs", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -4964,12 +4944,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 }
 
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ListCommitsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "FindMergeBase", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()

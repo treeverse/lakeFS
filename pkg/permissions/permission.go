@@ -132,6 +132,9 @@ var readPullRequestPermission = RepoPermission{Action: ReadPullRequestAction}
 var listBranchesPermission = RepoPermission{Action: ListBranchesAction}
 var listTagsPermission = RepoPermission{Action: ListTagsAction}
 var listObjectsPermission = RepoPermission{Action: ListObjectsAction}
+var readCommitPermission = RepoPermission{Action: ReadCommitAction}
+var listCommitsPermission = RepoPermission{Action: ListCommitsAction}
+var createCommitRepoPermission = RepoPermission{Action: CreateCommitAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
 	"HeadObject":                          &readObjectPermission,
@@ -172,6 +175,11 @@ var permissionByOp = map[string]PermissionDescriptor{
 	"ListBranches":                        &listBranchesPermission,
 	"ListTags":                            &listTagsPermission,
 	"ListObjects":                         &listObjectsPermission,
+	"GetCommit":                           &readCommitPermission,
+	"FindMergeBase":                       &listCommitsPermission,
+	"CreateCommitRecord":                  &createCommitRepoPermission,
+	"DiffBranch":                          &listObjectsPermission,
+	"DiffRefs":                            &listObjectsPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {
