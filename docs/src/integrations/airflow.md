@@ -7,7 +7,7 @@ description: Easily build reproducible data pipelines with Airflow and lakeFS us
 
 [Apache Airflow](https://airflow.apache.org/) is a platform that allows users to programmatically author, schedule, and monitor workflows.
 
-<iframe width="420" height="315" src="https://www.youtube.com/embed/HuQQUvmVjhU"></iframe>
+<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/HuQQUvmVjhU"></iframe>
 
 To run Airflow with lakeFS, you need to follow a few steps.
 
