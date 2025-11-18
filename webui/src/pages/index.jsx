@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import {
     BrowserRouter as Router,
     Routes,
     Route,
     Navigate,
+    useLocation,
 } from "react-router-dom";
 import {WithLoginConfigContext} from "../lib/hooks/conf";
 
@@ -47,6 +48,17 @@ import RepositoryActionPage from "./repositories/repository/actions/run";
 import {WithAppContext} from "../lib/hooks/appContext";
 import {AuthProvider} from "../lib/auth/authContext";
 import RequiresAuth from "../lib/components/requiresAuth";
+
+// Component to handle browser redirection - to exit the React app.
+const Redirect = () => {
+    const location = useLocation();
+    // Break out of React to the actual URL - do not use Navigate.
+    useEffect(() => {
+	window.location.replace(location.pathname);
+    }, [location.pathname]);
+
+  return <div>Redirecting...</div>;
+};
 
 export const IndexPage = () => {
     return (
@@ -115,7 +127,8 @@ export const IndexPage = () => {
                                         </Route>
                                     </Route>
                                 </Route>
-                                <Route path="*" element={<Navigate to="/repositories" replace/>}/>
+                                <Route path="api/v1/auth/get-token/release-token/*" element={<Redirect />}/>
+				<Route path="*" element={<Navigate to="/repositories" replace/>}/>
                             </Route>
                             <Route path="auth" element={<Layout/>}>
                                 <Route path="login" element={<LoginPage/>}/>
