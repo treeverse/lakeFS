@@ -490,7 +490,7 @@ iceberg_catalog:
         credential: <client-id>:<client-secret>
 ```
 
-Or with OAuth token authentication:
+Or with OAuth2 client credentials flow:
 
 ```yaml
 iceberg_catalog:
@@ -499,7 +499,9 @@ iceberg_catalog:
       type: rest
       rest:
         uri: https://catalog.example.com/iceberg/api
-        oauth_token: <your-oauth-token>
+        credential: <client-id>:<client-secret>
+        oauth_server_uri: https://auth.example.com/oauth/tokens
+        oauth_scope: catalog:read catalog:write
 ```
 
 ### Push to remote
