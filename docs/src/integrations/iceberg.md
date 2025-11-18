@@ -425,13 +425,13 @@ sequenceDiagram
     actor Bob (Data Analyst)
     participant lakeFS
     participant AWS Glue
-    Alice->>lakeFS: Update tables on branch 'dev'
-    Alice->>lakeFS: Push tables to Glue
+    Alice (Data Engineer)->>lakeFS: Update tables on branch 'dev'
+    Alice (Data Engineer)->>lakeFS: Push tables to Glue
     lakeFS->>AWS Glue: Register tables in 'dev' database
-    Alice->>Bob: Please review: glue/dev
-    Bob->>AWS Glue: SELECT * FROM dev.table (via Athena)
-    Bob->>Alice: Approved!
-    Alice->>lakeFS: Merge 'dev' into 'main'
+    Alice (Data Engineer)->>Bob (Data Analyst): Please review: glue/dev
+    Bob (Data Analyst)->>AWS Glue: SELECT * FROM dev.table (via Athena)
+    Bob (Data Analyst)->>Alice (Data Engineer): Approved!
+    Alice (Data Engineer)->>lakeFS: Merge 'dev' into 'main'
 ```
 
 **Isolated Pipelines**: Run data pipelines using tools that require external catalogs while maintaining isolation through lakeFS branches.
@@ -455,8 +455,11 @@ sequenceDiagram
 
 ### Configuration
 
-Remote catalogs are configured in your lakeFS configuration file.
+Remote catalogs are configured in your [lakeFS configuration file](../reference/configuration.md).
 Each remote catalog requires a unique identifier and type-specific connection properties.
+
+!!! note
+    In case you need help configuring a remote catalog, contact [support](mailto:support@treeverse.io).
 
 #### AWS Glue Data Catalog
 
@@ -529,13 +532,14 @@ curl -X POST "https://lakefs.example.com/iceberg/remotes/aws_glue_us_east_1/push
       "namespace": ["main_features"],
       "table": "image_properties"
     },
-    "force_update": true,
-    "create_namespace": true
+    "create_namespace": true,
+    "force_update": true
   }'
 ```
 
-This example pushes the table `my-repo.main.default.features.image_properties` from lakeFS to the AWS Glue catalog as `main_features.image_properties`,
-creating the namespace if needed and overwriting any existing table.
+This example pushes the table `my-repo.main.default.features.image_properties` from lakeFS to the AWS Glue catalog as `main_features.image_properties`.
+It creates the remote namespace if needed (since `create_namespace: true`),
+and overwrites any existing table or possible recent updates committed to it (since `force_update: true`).
 
 ### Pull from remote
 
@@ -567,16 +571,21 @@ curl -X POST "https://lakefs.example.com/iceberg/remotes/aws_glue_us_east_1/pull
       "namespace": ["default", "features"],
       "table": "image_properties"
     }
+    "create_namespace": true,
+    "force_update": true
   }'
 ```
 
 This example pulls changes from the Glue table `main_features.image_properties` back into the lakeFS table `my-repo.main.default.features.image_properties`.
+It creates the namespace in lakeFS if needed (since `create_namespace: true`),
+and overwrites any existing table or possible recent updates committed to it (since `force_update: true`).
 
 ### Important Notes
 
-1. **Storage Location**: Pulled tables' `metadata.json` file must reside in a storage location to which lakeFS has read access to.
+1. **Storage Location**: Pulled tables' `metadata.json` file must reside in a storage location to which lakeFS has read access to, or the `pull` operation will fail.
 
-2. **Atomicity**: Push and pull operations are not atomic. If an operation fails partway through, manual intervention may be required.
+2. **Atomicity**: Push and pull operations are not atomic. If an operation fails partway through, manual intervention may be required
+   (contact [support](mailto:support@treeverse.io) in such a case if needed).
 
 3. **Authentication**: Ensure the credentials configured for remote catalogs have appropriate permissions:
     - For AWS Glue: `glue:CreateTable`, `glue:UpdateTable`, `glue:GetTable`, `glue:CreateDatabase` (if `create_namespace` is used)
