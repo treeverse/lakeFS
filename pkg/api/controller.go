@@ -2553,12 +2553,7 @@ func (c *Controller) SetGCRules(w http.ResponseWriter, r *http.Request, body api
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params apigen.ListRepositoryRunsParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadActionsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "ListRepositoryRuns", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2621,12 +2616,7 @@ func runResultToActionRun(val *actions.RunResult) apigen.ActionRun {
 }
 
 func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, runID string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadActionsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetRun", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2660,12 +2650,7 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, 
 }
 
 func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository, runID string, params apigen.ListRunHooksParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadActionsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "ListRunHooks", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2725,12 +2710,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository, runID, hookRunID string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadActionsAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetRunHookOutput", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
