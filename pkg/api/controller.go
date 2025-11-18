@@ -2461,12 +2461,7 @@ func (c *Controller) DeleteRepositoryMetadata(w http.ResponseWriter, r *http.Req
 }
 
 func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.GetBranchProtectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetBranchProtectionRules", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2485,12 +2480,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 }
 
 func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Request, body apigen.SetBranchProtectionRulesJSONRequestBody, repository string, params apigen.SetBranchProtectionRulesParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.SetBranchProtectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "SetBranchProtectionRules", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3782,12 +3772,7 @@ func (c *Controller) InternalGetBranchProtectionRules(w http.ResponseWriter, r *
 }
 
 func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.InternalDeleteBranchProtectionRuleJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.SetBranchProtectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "InternalDeleteBranchProtectionRule", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3812,12 +3797,7 @@ func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r
 }
 
 func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.SetBranchProtectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "CreateBranchProtectionRulePreflight", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 
@@ -3828,12 +3808,7 @@ func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, 
 }
 
 func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.InternalCreateBranchProtectionRuleJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.SetBranchProtectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "InternalCreateBranchProtectionRule", permissions.PermissionParams{Repository: &repository}, nil) {
 		return
 	}
 	ctx := r.Context()

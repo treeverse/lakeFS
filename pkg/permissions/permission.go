@@ -135,6 +135,8 @@ var listObjectsPermission = RepoPermission{Action: ListObjectsAction}
 var readCommitPermission = RepoPermission{Action: ReadCommitAction}
 var listCommitsPermission = RepoPermission{Action: ListCommitsAction}
 var createCommitRepoPermission = RepoPermission{Action: CreateCommitAction}
+var getBranchProtectionRulesPermission = RepoPermission{Action: GetBranchProtectionRulesAction}
+var setBranchProtectionRulesPermission = RepoPermission{Action: SetBranchProtectionRulesAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
 	"HeadObject":                          &readObjectPermission,
@@ -180,6 +182,11 @@ var permissionByOp = map[string]PermissionDescriptor{
 	"CreateCommitRecord":                  &createCommitRepoPermission,
 	"DiffBranch":                          &listObjectsPermission,
 	"DiffRefs":                            &listObjectsPermission,
+	"GetBranchProtectionRules":            &getBranchProtectionRulesPermission,
+	"SetBranchProtectionRules":            &setBranchProtectionRulesPermission,
+	"InternalCreateBranchProtectionRule":  &setBranchProtectionRulesPermission,
+	"CreateBranchProtectionRulePreflight": &setBranchProtectionRulesPermission,
+	"InternalDeleteBranchProtectionRule":  &setBranchProtectionRulesPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {
