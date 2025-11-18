@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -16,9 +15,16 @@ const (
 	HttpStatusClientClosedRequestText = "Client closed request"
 )
 
+// ErrorResponse represents an error message response in our API
+// we do not include the generated code for this struct to enable import code without
+// dependence on the generated code
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
 // WriteAPIError writes an error for a lakeFS API request
 func WriteAPIError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-	apiErr := apigen.Error{
+	apiErr := ErrorResponse{
 		Message: fmt.Sprint(v),
 	}
 	WriteAPIResponse(w, r, code, apiErr)
