@@ -66,7 +66,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
-	github.com/alitto/pond v1.8.3
+	github.com/alitto/pond/v2 v2.5.0
 	github.com/antonmedv/expr v1.15.3
 	github.com/aws/aws-sdk-go-v2 v1.39.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.12
@@ -95,6 +95,15 @@ require (
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/catalog/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/webui v0.0.0-20251118224848-d2be664caf31
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )

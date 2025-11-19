@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alitto/pond"
+	"github.com/alitto/pond/v2"
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
@@ -241,7 +241,7 @@ type Catalog struct {
 	BlockAdapter          block.Adapter
 	Store                 Store
 	managers              []io.Closer
-	workPool              *pond.WorkerPool
+	workPool              pond.Pool
 	PathProvider          *upload.PathPartitionProvider
 	BackgroundLimiter     ratelimit.Limiter
 	KVStore               kv.Store
@@ -408,7 +408,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, deleteSensor)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
-	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
+	workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
 	closers = append(closers, &ctxCloser{cancelFn})
 	return &Catalog{
 		BlockAdapter:          tierFSParams.Adapter,
@@ -1518,7 +1518,8 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 		defer close(outCh)
 
 		// workers to check if commit record in path
-		workerGroup, ctx := c.workPool.GroupContext(ctx)
+		workerGroup := c.workPool.NewGroupContext(ctx)
+		ctx := workerGroup.Context()
 
 		current := 0
 	readLoop:
@@ -1539,7 +1540,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 			// submit work to the pool
 			commitOrder := current
 			current++
-			workerGroup.Submit(func() error {
+			workerGroup.SubmitErr(func() error {
 				pathInCommit, err := c.checkPathListInCommit(ctx, repository, commitRecord, paths, commitCache)
 				if err != nil {
 					return err
@@ -1554,8 +1555,6 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 		}
 		// wait until workers are done or the first non-nil error was returned from a worker
 		if err := workerGroup.Wait(); err != nil {
-			// Wait until all workers are done regardless of the error.
-			workerGroup.TaskGroup.Wait()
 			return err
 		}
 		return it.Err()
@@ -2391,9 +2390,10 @@ func (c *Catalog) importAsync(ctx context.Context, repository *graveler.Reposito
 	}
 	defer importManager.Close()
 
-	wg, wgCtx := c.workPool.GroupContext(ctx)
+	wg := c.workPool.NewGroupContext(ctx)
+	wgCtx := wg.Context()
 	for _, source := range params.Paths {
-		wg.Submit(func() error {
+		wg.SubmitErr(func() error {
 			uri, err := url.Parse(source.Path)
 			if err != nil {
 				return fmt.Errorf("could not parse storage URI %s: %w", uri, err)
@@ -3120,7 +3120,7 @@ func (c *Catalog) Close() error {
 			_ = multierror.Append(errs, err)
 		}
 	}
-	c.workPool.StopAndWaitFor(workersMaxDrainDuration)
+	c.workPool.StopAndWait()
 	if c.deleteSensor != nil {
 		c.deleteSensor.Close()
 	}
