@@ -100,6 +100,7 @@ type Controller struct {
 	Migrator        Migrator
 	Collector       stats.Collector
 	Actions         actionsHandler
+	AsyncOperations AsyncOperationsHandler
 	AuditChecker    AuditChecker
 	Logger          logging.Logger
 	sessionStore    sessions.Store
@@ -3331,6 +3332,14 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	commitResponse(w, r, newCommit)
 }
 
+func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body apigen.CommitJSONRequestBody, repository, branch string) {
+	// TODO: Implement async commit
+}
+
+func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitStatusParams) {
+	// TODO: Implement commit status check
+}
+
 func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -5269,6 +5278,14 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusOK, apigen.MergeResult{
 		Reference: reference,
 	})
+}
+
+func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request, body apigen.MergeIntoBranchJSONRequestBody, repository, sourceRef, destinationBranch string) {
+	// TODO: Implement async merge
+}
+
+func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
+	// TODO: Implement merge status check
 }
 
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
