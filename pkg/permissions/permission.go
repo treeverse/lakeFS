@@ -98,6 +98,19 @@ func (o *BranchPermission) Permission(params PermissionParams) Node {
 	}
 }
 
+type RepoPermission struct {
+	Action string
+}
+
+func (r *RepoPermission) Permission(params PermissionParams) Node {
+	return Node{
+		Permission: Permission{
+			Action:   r.Action,
+			Resource: RepoArn(*params.Repository),
+		},
+	}
+}
+
 var readObjectPermission = ObjectPermission{Action: ReadObjectAction}
 var writeObjectPermission = ObjectPermission{Action: WriteObjectAction}
 var createBranchPermission = BranchPermission{Action: CreateBranchAction}
@@ -106,28 +119,79 @@ var readBranchPermission = BranchPermission{Action: ReadBranchAction}
 var revertBranchPermission = BranchPermission{Action: RevertBranchAction}
 var createCommitPermission = BranchPermission{Action: CreateCommitAction}
 var importCancelPermission = BranchPermission{Action: ImportCancelAction}
+var prepareGCUncommittedPermission = RepoPermission{Action: PrepareGarbageCollectionUncommittedAction}
+var getGCRulesPermission = RepoPermission{Action: GetGarbageCollectionRulesAction}
+var setGCRulesPermission = RepoPermission{Action: SetGarbageCollectionRulesAction}
+var prepareGCCommitsPermission = RepoPermission{Action: PrepareGarbageCollectionCommitsAction}
+var readRepositoryPermission = RepoPermission{Action: ReadRepositoryAction}
+var updateRepositoryPermission = RepoPermission{Action: UpdateRepositoryAction}
+var deleteRepositoryPermission = RepoPermission{Action: DeleteRepositoryAction}
+var writePullRequestPermission = RepoPermission{Action: WritePullRequestAction}
+var listPullRequestsPermission = RepoPermission{Action: ListPullRequestsAction}
+var readPullRequestPermission = RepoPermission{Action: ReadPullRequestAction}
+var listBranchesPermission = RepoPermission{Action: ListBranchesAction}
+var listTagsPermission = RepoPermission{Action: ListTagsAction}
+var listObjectsPermission = RepoPermission{Action: ListObjectsAction}
+var readCommitPermission = RepoPermission{Action: ReadCommitAction}
+var listCommitsPermission = RepoPermission{Action: ListCommitsAction}
+var createCommitRepoPermission = RepoPermission{Action: CreateCommitAction}
+var getBranchProtectionRulesPermission = RepoPermission{Action: GetBranchProtectionRulesAction}
+var setBranchProtectionRulesPermission = RepoPermission{Action: SetBranchProtectionRulesAction}
+var readActionsPermission = RepoPermission{Action: ReadActionsAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
-	"HeadObject":               &readObjectPermission,
-	"GetObject":                &readObjectPermission,
-	"StatObject":               &readObjectPermission,
-	"GetUnderlyingProperties":  &readObjectPermission,
-	"StageObject":              &writeObjectPermission,
-	"CreateSymlinkFile":        &writeObjectPermission,
-	"UpdateObjectUserMetadata": &writeObjectPermission,
-	"UploadObject":             &writeObjectPermission,
-	"UploadObjectPreflight":    &writeObjectPermission,
-	"CreateBranch":             &createBranchPermission,
-	"DeleteBranch":             &deleteBranchPermission,
-	"GetBranch":                &readBranchPermission,
-	"RevertBranch":             &revertBranchPermission,
-	"LogCommits":               &readBranchPermission,
-	"ResetBranch":              &revertBranchPermission,
-	"MergeIntoBranch":          &createCommitPermission,
-	"HardResetBranch":          &revertBranchPermission,
-	"ImportStatus":             &readBranchPermission,
-	"Commit":                   &createCommitPermission,
-	"ImportCancel":             &importCancelPermission,
+	"HeadObject":                          &readObjectPermission,
+	"GetObject":                           &readObjectPermission,
+	"StatObject":                          &readObjectPermission,
+	"GetUnderlyingProperties":             &readObjectPermission,
+	"StageObject":                         &writeObjectPermission,
+	"CreateSymlinkFile":                   &writeObjectPermission,
+	"UpdateObjectUserMetadata":            &writeObjectPermission,
+	"UploadObject":                        &writeObjectPermission,
+	"UploadObjectPreflight":               &writeObjectPermission,
+	"CreateBranch":                        &createBranchPermission,
+	"DeleteBranch":                        &deleteBranchPermission,
+	"GetBranch":                           &readBranchPermission,
+	"RevertBranch":                        &revertBranchPermission,
+	"LogCommits":                          &readBranchPermission,
+	"ResetBranch":                         &revertBranchPermission,
+	"MergeIntoBranch":                     &createCommitPermission,
+	"HardResetBranch":                     &revertBranchPermission,
+	"ImportStatus":                        &readBranchPermission,
+	"Commit":                              &createCommitPermission,
+	"ImportCancel":                        &importCancelPermission,
+	"PrepareGarbageCollectionUncommitted": &prepareGCUncommittedPermission,
+	"GetGCRules":                          &getGCRulesPermission,
+	"SetGCRules":                          &setGCRulesPermission,
+	"DeleteGCRules":                       &setGCRulesPermission,
+	"SetGarbageCollectionRulesPreflight":  &setGCRulesPermission,
+	"PrepareGarbageCollectionCommits":     &prepareGCCommitsPermission,
+	"GetRepository":                       &readRepositoryPermission,
+	"GetRepositoryMetadata":               &readRepositoryPermission,
+	"SetRepositoryMetadata":               &updateRepositoryPermission,
+	"DeleteRepositoryMetadata":            &updateRepositoryPermission,
+	"DeleteRepository":                    &deleteRepositoryPermission,
+	"UpdatePullRequest":                   &writePullRequestPermission,
+	"CreatePullRequest":                   &writePullRequestPermission,
+	"ListPullRequests":                    &listPullRequestsPermission,
+	"GetPullRequest":                      &readPullRequestPermission,
+	"ListBranches":                        &listBranchesPermission,
+	"ListTags":                            &listTagsPermission,
+	"ListObjects":                         &listObjectsPermission,
+	"GetCommit":                           &readCommitPermission,
+	"FindMergeBase":                       &listCommitsPermission,
+	"CreateCommitRecord":                  &createCommitRepoPermission,
+	"DiffBranch":                          &listObjectsPermission,
+	"DiffRefs":                            &listObjectsPermission,
+	"GetBranchProtectionRules":            &getBranchProtectionRulesPermission,
+	"SetBranchProtectionRules":            &setBranchProtectionRulesPermission,
+	"InternalCreateBranchProtectionRule":  &setBranchProtectionRulesPermission,
+	"CreateBranchProtectionRulePreflight": &setBranchProtectionRulesPermission,
+	"InternalDeleteBranchProtectionRule":  &setBranchProtectionRulesPermission,
+	"ListRepositoryRuns":                  &readActionsPermission,
+	"GetRun":                              &readActionsPermission,
+	"ListRunHooks":                        &readActionsPermission,
+	"GetRunHookOutput":                    &readActionsPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {
