@@ -132,9 +132,10 @@ jobs:
           build-args: VERSION=${{ needs.gen-code.outputs.tag }}
           context: .
           cache-from: |
-            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
+            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs-${{ github.ref_name }}
+            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs-master
           cache-to: |
-            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
+            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs-${{ github.ref_name }},mode=max
 
   login-to-amazon-ecr:
     runs-on: ubuntu-22.04
