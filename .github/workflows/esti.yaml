@@ -122,19 +122,17 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and Push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.gen-code.outputs.tag }}
           build-args: VERSION=${{ needs.gen-code.outputs.tag }}
           context: .
-          cache-from: |
-            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
-          cache-to: |
-            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   login-to-amazon-ecr:
     runs-on: ubuntu-22.04
@@ -280,9 +278,9 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Build and Push to Amazon ECR
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}

@@ -606,10 +606,10 @@ func SetDefaults(cfgType string, c Config) {
 }
 
 func Unmarshal(c Config) error {
-	return viper.UnmarshalExact(&c, decoderConfig())
+	return viper.UnmarshalExact(&c, DecoderConfig())
 }
 
-func decoderConfig() viper.DecoderConfigOption {
+func DecoderConfig() viper.DecoderConfigOption {
 	hook := viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
 			DecodeStrings,
