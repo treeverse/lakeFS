@@ -1,9 +1,11 @@
 import uuid
 import pytest
 
+from lakefs.exceptions import BadRequestException
 import lakefs
 
 from tests.integration.conftest import _setup_repo, get_storage_namespace
+from tests.utests.common import expect_exception_context
 
 _NUM_PREFIXES = 10
 _NUM_ELEM_PER_PREFIX = 20
@@ -49,3 +51,18 @@ def test_repositories(storage_namespace):
     assert len(repos) == 10
     for i, repo in enumerate(repos):
         assert repo.properties.id == f"{repo_base_name}{i}"
+
+
+def test_repository_create_storage_id(storage_namespace):
+    repo_id = f"test-repo{uuid.uuid4()}"
+    storage_id = ""
+    repo = lakefs.repository(repo_id).create(storage_namespace=storage_namespace, storage_id=storage_id)
+    assert repo.properties.id == repo_id
+    assert repo.properties.storage_namespace == storage_namespace
+    assert repo.properties.storage_id == storage_id
+
+def test_repository_create_storage_id_invalid_value(storage_namespace):
+    repo_id = f"test-repo{uuid.uuid4()}"
+    storage_id = "invalidvalue"
+    with expect_exception_context(BadRequestException):
+        lakefs.repository(repo_id).create(storage_namespace=storage_namespace, storage_id=storage_id)
