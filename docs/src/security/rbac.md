@@ -127,6 +127,25 @@ The `IpAddress` condition operator matches the client's source IP address agains
 }
 ```
 
+**Example - Deny access from IPs NOT in allowed ranges:**
+
+```json
+{
+  "statement": [
+    {
+      "action": ["fs:*"],
+      "effect": "deny",
+      "resource": "*",
+      "condition": {
+        "NotIpAddress": {
+          "SourceIp": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+        }
+      }
+    }
+  ]
+}
+```
+
 **IP Address Extraction:**
 
 lakeFS extracts the client IP address from the request using the following priority:

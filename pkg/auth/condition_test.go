@@ -155,7 +155,7 @@ func TestIpAddressOperators_Evaluate(t *testing.T) {
 			contextMap:           map[string]string{"SourceIp": "192.168.1.1"},
 			shouldErr:            false,
 			expectedIpAddress:    false,
-			expectedNotIpAddress: false,
+			expectedNotIpAddress: true,
 		},
 	}
 
