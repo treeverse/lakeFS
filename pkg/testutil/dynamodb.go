@@ -93,6 +93,9 @@ func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {
 	}
 	tb.Cleanup(func() {
 		defer store.Close()
+		if wrappedStore, ok := store.(*kv.StoreMetricsWrapper); ok {
+			store = wrappedStore.Store
+		}
 		err = store.(*dynamodb.Store).DropTable()
 		if err != nil {
 			tb.Fatalf("failed to delete table from DB %v %s", table, err)
