@@ -76,7 +76,6 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 
 	// Check each field in the condition against context values (AND logic between fields)
 	for fieldName, conditionValues := range fields {
-
 		// No field or empty value for the field - condition fails
 		contextValue, hasField := conditionCtx.Fields[fieldName]
 		if !hasField {
