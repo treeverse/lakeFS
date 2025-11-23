@@ -169,7 +169,10 @@ abstract class LakeFSBaseInputFormat extends InputFormat[Array[Byte], WithIdenti
     new EntryRecordReader(Entry.messageCompanion)
   }
 }
-private class Range(val id: String, val estimatedSize: Long) {
+
+class Range(val id: String, val estimatedSize: Long) extends Serializable {
+  // non-private so Spark will serialize it.
+
   override def hashCode(): Int = {
     id.hashCode()
   }
