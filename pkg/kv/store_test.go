@@ -3,6 +3,7 @@ package kv_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"sort"
 	"testing"
 
@@ -108,10 +109,13 @@ func TestRegister(t *testing.T) {
 }
 
 func TestDrivers(t *testing.T) {
-	kv.UnregisterAllDrivers()
+	preloadedDrivers := kv.Drivers()
 	kv.Register("driver1", &MockDriver{Name: "driver1"})
 	kv.Register("driver2", &MockDriver{Name: "driver2"})
 	all := kv.Drivers()
+	all = slices.DeleteFunc(all, func(name string) bool {
+		return slices.Contains(preloadedDrivers, name)
+	})
 	sort.Strings(all)
 	expectedDrivers := []string{"driver1", "driver2"}
 	if diff := deep.Equal(all, expectedDrivers); diff != nil {
