@@ -19,6 +19,9 @@ import (
 )
 
 const (
+	configureLoginTemplate = `{{"No .lakectl.yaml found.  If using lakeFS Enterprise, enter its URL:" | yellow}}
+
+`
 	// TODO(ariels): Underline the link?
 	webLoginTemplate = `Opening {{.RedirectURL | blue | underline}} where you should log in.
 If it does not open automatically, please try to open it manually and log in.
@@ -61,6 +64,8 @@ func validateURL(maybeURL string) error {
 }
 
 func readLoginServerURL() (string, error) {
+	Write(configureLoginTemplate, nil)
+
 	prompt := promptui.Prompt{
 		Label:    "lakeFS server URL",
 		Validate: validateURL,
@@ -72,9 +77,6 @@ func readLoginServerURL() (string, error) {
 	serverURL, err := url.Parse(serverURLString)
 	if err != nil { // Unlikely, validateURL should have done this!
 		return "", err
-	}
-	if serverURL.Path == "" {
-		serverURL.Path += "/api/v1"
 	}
 	return serverURL.String(), err
 }
