@@ -53,6 +53,8 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
 *AuthApi* | [**get_group_acl**](docs/AuthApi.md#get_group_acl) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**get_policy**](docs/AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
+*AuthApi* | [**get_token_from_mailbox**](docs/AuthApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
+*AuthApi* | [**get_token_redirect**](docs/AuthApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 *AuthApi* | [**get_user**](docs/AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
 *AuthApi* | [**list_group_members**](docs/AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 *AuthApi* | [**list_group_policies**](docs/AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
@@ -65,6 +67,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**oauth_callback**](docs/AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
+*AuthApi* | [**release_token_to_mailbox**](docs/AuthApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *AuthApi* | [**set_group_acl**](docs/AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherry_pick**](docs/BranchesApi.md#cherry_pick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
@@ -88,10 +91,13 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**get_external_principal**](docs/ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 *ExperimentalApi* | [**get_license**](docs/ExperimentalApi.md#get_license) | **GET** /license | 
 *ExperimentalApi* | [**get_pull_request**](docs/ExperimentalApi.md#get_pull_request) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
+*ExperimentalApi* | [**get_token_from_mailbox**](docs/ExperimentalApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
+*ExperimentalApi* | [**get_token_redirect**](docs/ExperimentalApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 *ExperimentalApi* | [**hard_reset_branch**](docs/ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**list_pull_requests**](docs/ExperimentalApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 *ExperimentalApi* | [**list_user_external_principals**](docs/ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 *ExperimentalApi* | [**merge_pull_request**](docs/ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
+*ExperimentalApi* | [**release_token_to_mailbox**](docs/ExperimentalApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *ExperimentalApi* | [**sts_login**](docs/ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
 *ExperimentalApi* | [**update_object_user_metadata**](docs/ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**update_pull_request**](docs/ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request

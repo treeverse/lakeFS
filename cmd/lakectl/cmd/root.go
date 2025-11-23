@@ -26,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
+	"github.com/treeverse/lakefs/pkg/authentication/internalidp"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/git"
 	giterror "github.com/treeverse/lakefs/pkg/git/errors"
@@ -91,8 +92,9 @@ type Configuration struct {
 		} `mapstructure:"http2"`
 	} `mapstructure:"network"`
 	Server struct {
-		EndpointURL lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
-		Retries     RetriesCfg              `mapstructure:"retries"`
+		EndpointURL  lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
+		Retries      RetriesCfg              `mapstructure:"retries"`
+		LoginRetries RetriesCfg              `mapstructure:"login_retries"`
 	} `mapstructure:"server"`
 	Options struct {
 		Parallelism int `mapstructure:"parallelism"`
@@ -181,6 +183,10 @@ const (
 	defaultMaxAttempts      = 4
 	defaultMaxRetryInterval = 30 * time.Second
 	defaultMinRetryInterval = 200 * time.Millisecond
+
+	defaultBrowserLoginMaxAttempts      = 75
+	defaultBrowserLoginMaxRetryInterval = 1 * time.Second
+	defaultBrowserLoginMinRetryInterval = 50 * time.Millisecond
 )
 
 const (
@@ -556,7 +562,11 @@ func sendStats(cmd *cobra.Command, cmdSuffix string) {
 	}
 }
 
-func getHTTPClient() *http.Client {
+func getHTTPClient(checkRetry func(ctx context.Context, resp *http.Response, err error) (bool, error)) *http.Client {
+	return getHTTPClientWithRetryConfig(checkRetry, cfg.Server.Retries)
+}
+
+func getHTTPClientWithRetryConfig(checkRetry func(ctx context.Context, resp *http.Response, err error) (bool, error), retriesCfg RetriesCfg) *http.Client {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
@@ -567,10 +577,10 @@ func getHTTPClient() *http.Client {
 		transport.TLSClientConfig.NextProtos = []string{}
 	}
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
-	if !cfg.Server.Retries.Enabled {
+	if !retriesCfg.Enabled {
 		return &http.Client{Transport: transport}
 	}
-	return NewRetryClient(cfg.Server.Retries, transport)
+	return NewRetryClient(retriesCfg, transport, checkRetry)
 }
 
 func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
@@ -609,9 +619,8 @@ func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
 	return awsiam.NewIAMAuthParams(host, opts...), nil
 }
 
-func getClient() *apigen.ClientWithResponses {
-	opts := []apigen.ClientOption{}
-	httpClient := getHTTPClient()
+func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
+	httpClient := getHTTPClient(lakectlRetryPolicy)
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
@@ -627,9 +636,9 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
-	useIAMAuth := awsIAMparams != nil && accessKeyID == "" && secretAccessKey == ""
-	if useIAMAuth {
-		opts = getClientOptions(awsIAMparams, serverEndpoint)
+	useJWTAuth := accessKeyID == "" && secretAccessKey == ""
+	if useJWTAuth {
+		opts = append(getClientOptions(awsIAMparams, serverEndpoint), opts...)
 	}
 
 	oss := osinfo.GetOSInfo()
@@ -664,6 +673,17 @@ func CreateTokenCacheCallback() awsiam.TokenCacheCallback {
 func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
 	token := getTokenOnce()
 
+	logger := logging.ContextUnavailable().WithField("component", "client_auth")
+
+	if awsIAMparams == nil {
+		if token == nil {
+			return nil
+		}
+		return []apigen.ClientOption{
+			internalidp.WithLoginTokenAuth(logger, internalidp.NewFixedLoginClient(token.Token)),
+		}
+	}
+
 	tokenCacheCallback := CreateTokenCacheCallback()
 
 	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
@@ -683,7 +703,7 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 
 	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
 		awsIAMparams,
-		logging.ContextUnavailable(),
+		logger,
 		loginClient,
 		token,
 		tokenCacheCallback,
@@ -904,11 +924,15 @@ func initConfig() {
 
 	// set defaults
 	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
+	viper.SetDefault("network.http2.enabled", defaultHTTP2Enabled)
 	viper.SetDefault("server.retries.enabled", true)
 	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)
-	viper.SetDefault("network.http2.enabled", defaultHTTP2Enabled)
 	viper.SetDefault("server.retries.max_wait_interval", defaultMaxRetryInterval)
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
+	viper.SetDefault("server.login_retries.enabled", true)
+	viper.SetDefault("server.login_retries.max_attempts", defaultBrowserLoginMaxAttempts)
+	viper.SetDefault("server.login_retries.max_wait_interval", defaultBrowserLoginMaxRetryInterval)
+	viper.SetDefault("server.login_retries.min_wait_interval", defaultBrowserLoginMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
 	viper.SetDefault("local.symlink_support", false)
