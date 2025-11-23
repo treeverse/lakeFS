@@ -3217,6 +3217,103 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /auth/get-token/start:
+    get:
+      tags:
+        - auth
+        - experimental
+      security: []              # This a way to log in, no auth available.
+      operationId: getTokenRedirect
+      summary: start acquiring a token by logging in on a browser
+      responses:
+        303:
+          description: login on this page, await results on the mailbox URL
+          headers:
+            Location:
+              schema:
+                type: string
+              description: open this URL on the browser
+            X-LakeFS-Mailbox:
+              schema:
+                type: string
+              description: GET the token from this mailbox.  Keep the mailbox SECRET!
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        429:
+          description: too many requests
+        501:
+          description: Not implemented in this edition.
+          $ref: "#/components/responses/NotImplemented"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/get-token/mailboxes/{mailbox}:
+    parameters:
+      - in: path
+        name: mailbox
+        required: true
+        schema:
+          type: string
+        description: mailbox returned by getTokenRedirect
+    get:
+      tags:
+        - auth
+        - experimental
+      security: []              # This a way to log in, no auth available.
+      operationId: getTokenFromMailbox
+      summary: receive the token after user has authenticated on redirect URL.
+      responses:
+        200:
+          description: user successfully logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationToken"
+        401:
+          description: bad mailbox or user has not logged in yet
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          description: not found or user has not logged in yet
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        501:
+          description: not implemented in this edition.
+          $ref: "#/components/responses/NotImplemented"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/get-token/release-token/{loginRequestToken}:
+    parameters:
+      - in: path
+        # The mailbox is secret.  It is identified by the loginRequestToken - a JWT which is
+        # _not_ secret.  So this JWT can safely go in a header.
+        name: loginRequestToken
+        required: true
+        schema:
+          type: string
+          maxLength: 1024
+        description: login request token returned by getTokenRedirect.
+    get:                        # Called by opening a URL on the browser!
+      tags:
+        - auth
+        - experimental
+      operationId: releaseTokenToMailbox
+      summary: release a token for the current (authenticated) user to the mailbox of this login request.
+      responses:
+        204:
+          description: token released
+        401:
+          description: bad token or user has not logged in yet
+          $ref: "#/components/responses/Unauthorized"
+        429:
+          description: too many requests
+        501:
+          description: not implemented in this edition.
+          $ref: "#/components/responses/NotImplemented"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories:
     get:
       tags:
