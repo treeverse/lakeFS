@@ -958,11 +958,9 @@ func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Reques
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
-		thisURL := &*r.URL
 		q := redirectURL.Query()
-		q.Set("next", thisURL.String()) // Encode query-escapes this string.
+		q.Set("next", r.URL.String()) // Encode query-escapes this string.
 		redirectURL.RawQuery = q.Encode()
-		c.Logger.WithContext(ctx).WithField("redirect", redirectURL.String()).Info("[DEBUG] redirect")
 		w.Header().Set("Location", redirectURL.String())
 		w.WriteHeader(http.StatusTemporaryRedirect)
 		return
