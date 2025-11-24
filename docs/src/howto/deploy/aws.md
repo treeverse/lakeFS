@@ -29,6 +29,7 @@ To successfully deploy and operate lakeFS on AWS, you should be comfortable with
 - Permissions to provision networking and compute resources in your AWS account (for example, VPC, subnets, security groups, EC2, ECS, or EKS).
 
 ### Core AWS services used by lakeFS
+
 - **Amazon S3** – bucket layout, prefixes, encryption options, and lifecycle rules.
 - **Metadata backend**, either:
   - **Amazon DynamoDB** – tables, throughput configuration, backups, and monitoring; or  
