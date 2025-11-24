@@ -23,6 +23,7 @@ This guide walks you through the options available and how to configure them, fi
 To successfully deploy and operate lakeFS on AWS, you should be comfortable with the following topics and have the corresponding level of access.
 
 ### AWS account administration
+
 - Ability to create and modify IAM roles and policies.
 - Ability to create and configure S3 buckets and prefixes.
 - Permissions to provision networking and compute resources in your AWS account (for example, VPC, subnets, security groups, EC2, ECS, or EKS).
