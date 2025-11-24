@@ -237,7 +237,6 @@ pub enum GetCredentialsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetCurrentUserError {
-    Status400(models::Error),
     UnknownValue(serde_json::Value),
 }
 
@@ -306,7 +305,6 @@ pub enum GetTokenFromMailboxError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetTokenRedirectError {
-    Status400(models::Error),
     Status401(models::Error),
     Status429(),
     Status501(models::Error),
@@ -445,7 +443,6 @@ pub enum LoginError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum OauthCallbackError {
-    Status400(models::Error),
     Status401(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),

@@ -27,7 +27,6 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 
 
-import io.lakefs.clients.sdk.model.Error;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -98,7 +97,6 @@ public class HealthCheckApi {
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
         final String[] localVarAccepts = {
-            "application/json"
         };
         final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
         if (localVarAccept != null) {
@@ -149,7 +147,6 @@ public class HealthCheckApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> NoContent </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
@@ -163,7 +160,6 @@ public class HealthCheckApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> NoContent </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public void execute() throws ApiException {
@@ -178,7 +174,6 @@ public class HealthCheckApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> NoContent </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
@@ -194,7 +189,6 @@ public class HealthCheckApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> NoContent </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
@@ -210,7 +204,6 @@ public class HealthCheckApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> NoContent </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
      </table>
      */
     public APIhealthCheckRequest healthCheck() {

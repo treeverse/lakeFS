@@ -80,7 +80,6 @@ pub enum DumpRefsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetAuthCapabilitiesError {
-    Status400(models::Error),
     Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
@@ -90,7 +89,6 @@ pub enum GetAuthCapabilitiesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetGarbageCollectionConfigError {
-    Status400(models::Error),
     Status401(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -99,7 +97,6 @@ pub enum GetGarbageCollectionConfigError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetLakeFsVersionError {
-    Status400(models::Error),
     Status401(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -120,7 +117,6 @@ pub enum GetMetadataObjectError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetSetupStateError {
-    Status400(models::Error),
     Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
@@ -130,7 +126,6 @@ pub enum GetSetupStateError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetStorageConfigError {
-    Status400(models::Error),
     Status401(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -139,7 +134,6 @@ pub enum GetStorageConfigError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetUsageReportSummaryError {
-    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),

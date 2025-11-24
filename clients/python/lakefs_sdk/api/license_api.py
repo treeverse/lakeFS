@@ -157,7 +157,6 @@ class LicenseApi:
 
         _response_types_map = {
             '200': "License",
-            '400': "Error",
             '401': "Error",
             '501': "Error",
         }

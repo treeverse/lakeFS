@@ -2197,8 +2197,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SetupState"
-        400:
-          $ref: "#/components/responses/BadRequest"
         429:
           description: too many requests
         default:
@@ -2249,8 +2247,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
-        400:
-          $ref: "#/components/responses/BadRequest"
   /auth/login:
     post:
       tags:
@@ -2361,8 +2357,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthCapabilities"
-        400:
-          $ref: "#/components/responses/BadRequest"
+
         429:
           description: too many requests
         default:
@@ -3309,8 +3304,6 @@ paths:
               schema:
                 type: string
               description: GET the token from this mailbox.  Keep the mailbox SECRET!
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -6729,8 +6722,6 @@ paths:
         204:
           description: NoContent
 
-        400:
-          $ref: "#/components/responses/BadRequest"
   /config:
     get:
       tags:
@@ -6744,8 +6735,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Config"
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
   /config/version:
@@ -6762,8 +6751,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VersionConfig"
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
   /config/storage:
@@ -6780,8 +6767,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageConfig"
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
   /config/garbage-collection:
@@ -6797,8 +6782,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionConfig"
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
 
@@ -6842,8 +6825,6 @@ paths:
             application/text:
               schema:
                 type: string
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6867,8 +6848,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/License"
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         501:
@@ -6885,8 +6864,6 @@ paths:
       responses:
         302:
           description: successfully got token
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           description: failed to exchange authorization code for token
         default:

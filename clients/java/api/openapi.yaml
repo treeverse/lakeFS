@@ -70,12 +70,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetupState'
           description: lakeFS setup state
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "429":
           description: too many requests
         default:
@@ -140,12 +134,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/CurrentUser'
           description: user
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
       summary: get current user
       tags:
       - auth
@@ -305,12 +293,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthCapabilities'
           description: auth capabilities
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "429":
           description: too many requests
         default:
@@ -2187,12 +2169,6 @@ paths:
               schema:
                 type: string
               style: simple
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -8233,12 +8209,6 @@ paths:
       responses:
         "204":
           description: NoContent
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
       security: []
       tags:
       - healthCheck
@@ -8254,12 +8224,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Config'
           description: lakeFS configuration
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -8281,12 +8245,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/VersionConfig'
           description: lakeFS version
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -8308,12 +8266,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/StorageConfig'
           description: lakeFS storage configuration
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -8334,12 +8286,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/GarbageCollectionConfig'
           description: lakeFS garbage collection config
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -8399,12 +8345,6 @@ paths:
               schema:
                 type: string
           description: Usage report
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -8440,12 +8380,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/License'
           description: lakeFS configuration
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -8474,12 +8408,6 @@ paths:
       responses:
         "302":
           description: successfully got token
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           description: failed to exchange authorization code for token
         default:

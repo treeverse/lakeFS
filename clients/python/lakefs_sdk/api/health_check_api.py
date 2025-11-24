@@ -147,10 +147,6 @@ class HealthCheckApi:
         _files = {}
         # process the body parameter
         _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
         # authentication setting
         _auth_settings = []  # noqa: E501
 

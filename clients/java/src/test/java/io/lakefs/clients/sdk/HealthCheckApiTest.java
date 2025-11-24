@@ -14,7 +14,6 @@
 package io.lakefs.clients.sdk;
 
 import io.lakefs.clients.sdk.ApiException;
-import io.lakefs.clients.sdk.model.Error;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

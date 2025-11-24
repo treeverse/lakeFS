@@ -3436,7 +3436,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
@@ -3451,7 +3450,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public CurrentUser execute() throws ApiException {
@@ -3467,7 +3465,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public ApiResponse<CurrentUser> executeWithHttpInfo() throws ApiException {
@@ -3483,7 +3480,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<CurrentUser> _callback) throws ApiException {
@@ -3499,7 +3495,6 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
      </table>
      */
     public APIgetCurrentUserRequest getCurrentUser() {
@@ -4477,7 +4472,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -4496,7 +4490,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -4516,7 +4509,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -4536,7 +4528,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -4556,7 +4547,6 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -6963,7 +6953,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -6980,7 +6969,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -6998,7 +6986,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -7016,7 +7003,6 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -7034,7 +7020,6 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>

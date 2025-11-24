@@ -2790,7 +2790,6 @@ class AuthApi:
 
         _response_types_map = {
             '200': "CurrentUser",
-            '400': "Error",
         }
 
         return self.api_client.call_api(
@@ -3632,7 +3631,6 @@ class AuthApi:
 
         _response_types_map = {
             '303': None,
-            '400': "Error",
             '401': "Error",
             '429': None,
             '501': "Error",
@@ -5530,7 +5528,6 @@ class AuthApi:
 
         _response_types_map = {
             '302': None,
-            '400': "Error",
             '401': None,
         }
 

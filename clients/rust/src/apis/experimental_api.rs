@@ -120,7 +120,6 @@ pub enum GetExternalPrincipalError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetLicenseError {
-    Status400(models::Error),
     Status401(models::Error),
     Status501(models::Error),
     DefaultResponse(models::Error),
@@ -156,7 +155,6 @@ pub enum GetTokenFromMailboxError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetTokenRedirectError {
-    Status400(models::Error),
     Status401(models::Error),
     Status429(),
     Status501(models::Error),

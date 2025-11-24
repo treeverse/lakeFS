@@ -1098,7 +1098,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1115,7 +1114,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1133,7 +1131,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1151,7 +1148,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1169,7 +1165,6 @@ public class InternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -1256,7 +1251,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          */
@@ -1272,7 +1266,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          */
@@ -1289,7 +1282,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          */
@@ -1306,7 +1298,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          */
@@ -1323,7 +1314,6 @@ public class InternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
@@ -1410,7 +1400,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -1428,7 +1417,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -1447,7 +1435,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -1466,7 +1453,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -1485,7 +1471,6 @@ public class InternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      * @deprecated
@@ -1789,7 +1774,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1806,7 +1790,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1824,7 +1807,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1842,7 +1824,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
@@ -1860,7 +1841,6 @@ public class InternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -1948,7 +1928,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -1966,7 +1945,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -1985,7 +1963,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -2004,7 +1981,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
          </table>
          * @deprecated
@@ -2023,7 +1999,6 @@ public class InternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      * @deprecated
@@ -2112,7 +2087,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> Usage report </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2131,7 +2105,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> Usage report </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2151,7 +2124,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> Usage report </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2171,7 +2143,6 @@ public class InternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> Usage report </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2191,7 +2162,6 @@ public class InternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> Usage report </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>

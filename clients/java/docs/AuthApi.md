@@ -1810,7 +1810,6 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | user |  -  |
-| **400** | Bad Request |  -  |
 
 <a id="getExternalPrincipal"></a>
 # **getExternalPrincipal**
@@ -2311,7 +2310,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **303** | login on this page, await results on the mailbox URL |  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  |
-| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **429** | too many requests |  -  |
 | **501** | Not Implemented |  -  |
@@ -3453,7 +3451,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **302** | successfully got token |  -  |
-| **400** | Bad Request |  -  |
 | **401** | failed to exchange authorization code for token |  -  |
 | **0** | Internal Server Error |  -  |
 

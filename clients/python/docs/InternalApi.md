@@ -655,7 +655,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | auth capabilities |  -  |
-**400** | Bad Request |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -761,7 +760,6 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS garbage collection config |  -  |
-**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -866,7 +864,6 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS version |  -  |
-**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1049,7 +1046,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS setup state |  -  |
-**400** | Bad Request |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -1155,7 +1151,6 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS storage configuration |  -  |
-**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1259,7 +1254,6 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | Usage report |  -  |
-**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |

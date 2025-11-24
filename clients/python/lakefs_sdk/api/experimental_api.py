@@ -1469,7 +1469,6 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "License",
-            '400': "Error",
             '401': "Error",
             '501': "Error",
         }
@@ -1895,7 +1894,6 @@ class ExperimentalApi:
 
         _response_types_map = {
             '303': None,
-            '400': "Error",
             '401': "Error",
             '429': None,
             '501': "Error",

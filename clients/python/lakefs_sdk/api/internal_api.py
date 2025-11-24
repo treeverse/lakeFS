@@ -928,7 +928,6 @@ class InternalApi:
 
         _response_types_map = {
             '200': "AuthCapabilities",
-            '400': "Error",
             '429': None,
         }
 
@@ -1062,7 +1061,6 @@ class InternalApi:
 
         _response_types_map = {
             '200': "GarbageCollectionConfig",
-            '400': "Error",
             '401': "Error",
         }
 
@@ -1198,7 +1196,6 @@ class InternalApi:
 
         _response_types_map = {
             '200': "VersionConfig",
-            '400': "Error",
             '401': "Error",
         }
 
@@ -1497,7 +1494,6 @@ class InternalApi:
 
         _response_types_map = {
             '200': "SetupState",
-            '400': "Error",
             '429': None,
         }
 
@@ -1633,7 +1629,6 @@ class InternalApi:
 
         _response_types_map = {
             '200': "StorageConfig",
-            '400': "Error",
             '401': "Error",
         }
 
@@ -1765,7 +1760,6 @@ class InternalApi:
 
         _response_types_map = {
             '200': "InstallationUsageReport",
-            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,

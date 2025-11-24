@@ -19,7 +19,6 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetConfigError {
-    Status400(models::Error),
     Status401(models::Error),
     UnknownValue(serde_json::Value),
 }
