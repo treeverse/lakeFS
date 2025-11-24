@@ -16,7 +16,7 @@ With lakeFS, you can apply concepts to your data lake such as **branching** to c
 
 ???+ note "📽️ lakeFS in under 2 minutes"
     <div class="video-wrapper">
-        <iframe width="1280" height="720" src="https://www.youtube.com/embed/GTxsyeoLccw" frameborder="0" allowfullscreen></iframe>
+        <iframe data-uc-allowed="true" width="1280" height="720" src="https://www.youtube.com/embed/GTxsyeoLccw" frameborder="0" allowfullscreen></iframe>
     </div>
 
 ## How Do I Get Started?

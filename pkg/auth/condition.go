@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	OperatorNameIpAddress = "IpAddress"
+	OperatorNameIpAddress    = "IpAddress"
+	OperatorNameNotIpAddress = "NotIpAddress"
 )
 
 var (
@@ -36,7 +37,10 @@ type ConditionOperator interface {
 
 // IpAddressOperator handles IP address matching with CIDR notation support
 // Dynamically checks all field names that contain IP addresses in the condition
-type IpAddressOperator struct{}
+type IpAddressOperator struct {
+	// negate determines whether to negate the matching result
+	negate bool
+}
 
 // Validate implements ConditionOperator.
 func (op *IpAddressOperator) Validate(fields map[string][]string) error {
@@ -114,13 +118,14 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 			return false, fmt.Errorf("%w in field %s: %s", ErrInvalidIPCIDRFormat, fieldName, value)
 		}
 
-		// If this field didn't match any values, entire condition fails (AND logic between fields)
-		if !fieldMatched {
+		// For IpAddress: fail if field didn't match
+		// For NotIpAddress: fail if field matched
+		if fieldMatched == op.negate {
 			return false, nil
 		}
 	}
 
-	// All fields matched
+	// All fields processed successfully - condition passes
 	return true, nil
 }
 
@@ -128,7 +133,9 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 func OperatorFactory(operatorName string) (ConditionOperator, error) {
 	switch operatorName {
 	case OperatorNameIpAddress:
-		return &IpAddressOperator{}, nil
+		return &IpAddressOperator{negate: false}, nil
+	case OperatorNameNotIpAddress:
+		return &IpAddressOperator{negate: true}, nil
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedConditionOperator, operatorName)
 	}

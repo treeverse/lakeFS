@@ -134,6 +134,11 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("failed to create authentication service")
 		}
 
+		loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create login token provider")
+		}
+
 		blockstoreType := baseCfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
@@ -167,12 +172,11 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// usage report setup - default usage reporter ids a no-op
-		usageReporter := stats.DefaultUsageReporter
-		if baseCfg.UsageReport.Enabled {
-			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)
-			ur.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
-			usageReporter = ur
+		// Setup usage reporter - it is no longer possible to disable it
+		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)
+		usageReporter.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
+		if viper.IsSet("usage_report.enabled") {
+			logger.Warn("usage_report.enabled is deprecated. Value is ignored.")
 		}
 
 		deleteScheduler := gocron.NewScheduler(time.UTC)
@@ -253,6 +257,7 @@ var runCmd = &cobra.Command{
 			usageReporter,
 			licenseManager,
 			icebergSyncer,
+			loginTokenProvider,
 		)
 
 		// init gateway server

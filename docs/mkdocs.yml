@@ -103,6 +103,10 @@ plugins:
       redirect_maps:
         reference/mount-csi-driver.md: reference/mount.md#mount-csi-driver-everest-on-kubernetes
         howto/unity-delta-sharing.md: integrations/unity-catalog.md
+        integrations/index.md: https://docs.lakefs.io/v1.60/integrations/
+        understand/data_lifecycle_management/production.md: https://docs.lakefs.io/v1.60/understand/data_lifecycle_management/production/
+        understand/use_cases/index.md: https://docs.lakefs.io/v1.60/understand/use_cases/
+        understand/data_lifecycle_management/data-devenv.md: https://docs.lakefs.io/v1.60/understand/data_lifecycle_management/data-devenv/
 
 ############################################################
 # This section is used to generate the navigation sidebar  #

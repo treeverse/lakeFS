@@ -11,7 +11,7 @@ status: enterprise
 
 Everest is a complementary binary to lakeFS that allows you to virtually mount a remote lakeFS repository onto a local directory or within a Kubernetes environment. Once mounted, you can access data as if it resides on your local filesystem, using any tool, library, or framework.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe data-uc-allowed="true" width="560" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## Use Cases
 
@@ -284,9 +284,6 @@ CFAPI uses an OS-managed caching system optimized for cloud storage:
 - **Local Cache**: Subsequent reads are served directly from the local cache without reaching lakeFS
 - **Full Download**: Currently, accessing any part of a file, triggers a full download
 - **Automatic Eviction**: The OS "dehydrates" (clears content) under storage pressure. All data is deleted after unmount
-
-!!! warning "Windows File Explorer Performance"
-    Windows File Explorer may perform slowly as it recursively indexes the entire directory structure. Consider using command-line tools or applications that don't trigger full directory indexing.
 
 ### Requirements
 

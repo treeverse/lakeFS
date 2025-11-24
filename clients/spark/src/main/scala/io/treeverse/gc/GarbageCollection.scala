@@ -6,6 +6,7 @@ import org.apache.commons.lang3.time.DateUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.storage.StorageLevel
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -43,6 +44,8 @@ object GarbageCollection {
     val sc = spark.sparkContext
     val oldDataPath = new Path(storageNamespace)
     val dataPath = new Path(storageNamespace, DATA_PREFIX)
+    val parallelism =
+      sc.hadoopConfiguration.getInt(LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM, sc.defaultParallelism)
 
     val configMapper = new ConfigMapper(
       sc.broadcast(
@@ -54,7 +57,7 @@ object GarbageCollection {
       )
     )
     // Read objects from data path (new repository structure)
-    var dataDF = new ParallelDataLister().listData(configMapper, dataPath)
+    var dataDF = new ParallelDataLister().listData(configMapper, dataPath, parallelism)
     dataDF = dataDF
       .withColumn(
         "address",
@@ -65,7 +68,7 @@ object GarbageCollection {
 
     // TODO (niro): implement parallel lister for old repositories (https://github.com/treeverse/lakeFS/issues/4620)
     val oldDataDF = new NaiveDataLister()
-      .listData(configMapper, oldDataPath)
+      .listData(configMapper, oldDataPath, parallelism)
       .withColumn("address", col("base_address"))
       .filter(!col("address").isin(excludeFromOldData: _*))
     dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime)
@@ -195,7 +198,7 @@ object GarbageCollection {
           .repartition(dataDF.col("address"))
           .except(committedDF)
           .except(uncommittedDF)
-          .cache()
+          .persist(StorageLevel.MEMORY_AND_DISK)
 
         committedDF.unpersist()
         uncommittedDF.unpersist()

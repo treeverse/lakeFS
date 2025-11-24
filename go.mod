@@ -24,7 +24,7 @@ require (
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/manifoldco/promptui v0.9.0
-	github.com/matoous/go-nanoid/v2 v2.0.0
+	github.com/matoous/go-nanoid/v2 v2.1.0
 	github.com/minio/minio-go/v7 v7.0.63
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/ory/dockertest/v3 v3.12.0
@@ -66,7 +66,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
-	github.com/alitto/pond v1.8.3
+	github.com/alitto/pond/v2 v2.5.0
 	github.com/antonmedv/expr v1.15.3
 	github.com/aws/aws-sdk-go-v2 v1.39.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.12
@@ -95,6 +95,15 @@ require (
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/catalog/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20251118224848-d2be664caf31
+	github.com/treeverse/lakefs/webui v0.0.0-20251118224848-d2be664caf31
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
@@ -138,8 +147,9 @@ require (
 	github.com/barweiss/go-tuple v1.1.2 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
-	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
+	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
+	github.com/elnormous/contenttype v1.0.4 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -185,6 +195,7 @@ require (
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/samber/mo v1.11.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect

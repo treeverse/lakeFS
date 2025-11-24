@@ -2204,6 +2204,32 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
 
 
 
+### lakectl login
+
+Use a web browser to log into lakeFS
+
+<h4>Synopsis</h4>
+
+Connect to lakeFS using a web browser.
+
+```
+lakectl login [flags]
+```
+
+<h4>Examples</h4>
+
+```
+lakectl login
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for login
+```
+
+
+
 ### lakectl merge
 
 Merge & commit changes from source branch into destination branch

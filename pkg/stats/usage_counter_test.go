@@ -127,31 +127,3 @@ func TestUsageReporter(t *testing.T) {
 		total += newUsage
 	}
 }
-
-func TestDefaultUsageReporter(t *testing.T) {
-	reporter := stats.DefaultUsageReporter
-	if reporter == nil {
-		t.Fatal("expected an instance")
-	}
-
-	if reporter.InstallationID() != "" {
-		t.Fatalf("expected installation id to be empty, got '%s'", reporter.InstallationID())
-	}
-
-	ctx := context.Background()
-	tm, err := reporter.Flush(ctx)
-	if err != nil {
-		t.Fatal("Flush() expected no error")
-	}
-	if !tm.IsZero() {
-		t.Fatalf("expected time to be zero, got %s", tm)
-	}
-
-	records, err := reporter.Records(ctx)
-	if err != nil {
-		t.Fatal("Records() expected no error")
-	}
-	if len(records) != 0 {
-		t.Fatalf("expected no records, got %d", len(records))
-	}
-}
