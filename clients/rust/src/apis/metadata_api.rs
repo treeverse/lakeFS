@@ -19,6 +19,7 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetMetaRangeError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -30,6 +31,7 @@ pub enum GetMetaRangeError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetRangeError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),

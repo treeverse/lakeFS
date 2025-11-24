@@ -19,6 +19,7 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CreateUserExternalPrincipalError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status409(models::Error),
@@ -31,6 +32,7 @@ pub enum CreateUserExternalPrincipalError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteUserExternalPrincipalError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -55,6 +57,7 @@ pub enum ExternalPrincipalLoginError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetExternalPrincipalError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -66,6 +69,7 @@ pub enum GetExternalPrincipalError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ListUserExternalPrincipalsError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
