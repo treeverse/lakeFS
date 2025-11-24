@@ -1333,6 +1333,7 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "ExternalPrincipal",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -1758,6 +1759,7 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "AuthenticationToken",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -2227,6 +2229,7 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "PullRequestsList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -2392,6 +2395,7 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "ExternalPrincipalList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -2829,6 +2833,7 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "AuthenticationToken",
+            '400': "Error",
             '401': "Error",
             '429': None,
         }
@@ -3344,6 +3349,7 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "UploadTo",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,

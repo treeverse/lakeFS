@@ -19,6 +19,7 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CreateBranchProtectionRulePreflightError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status409(models::Error),
@@ -44,6 +45,7 @@ pub enum CreateCommitRecordError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CreateSymlinkFileError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -55,6 +57,7 @@ pub enum CreateSymlinkFileError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteRepositoryMetadataError {
+    Status400(models::Error),
     Status401(models::Error),
     Status429(),
     DefaultResponse(models::Error),
@@ -102,6 +105,7 @@ pub enum GetLakeFsVersionError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetMetadataObjectError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -130,7 +134,6 @@ pub enum GetStorageConfigError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetUsageReportSummaryError {
-    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -142,6 +145,7 @@ pub enum GetUsageReportSummaryError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InternalCreateBranchProtectionRuleError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -153,6 +157,7 @@ pub enum InternalCreateBranchProtectionRuleError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InternalDeleteBranchProtectionRuleError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -164,6 +169,7 @@ pub enum InternalDeleteBranchProtectionRuleError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InternalDeleteGarbageCollectionRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -175,6 +181,7 @@ pub enum InternalDeleteGarbageCollectionRulesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InternalGetBranchProtectionRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -186,6 +193,7 @@ pub enum InternalGetBranchProtectionRulesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InternalGetGarbageCollectionRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -197,6 +205,7 @@ pub enum InternalGetGarbageCollectionRulesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InternalSetGarbageCollectionRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -219,6 +228,7 @@ pub enum PostStatsEventsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PrepareGarbageCollectionCommitsError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
@@ -244,6 +254,7 @@ pub enum PrepareGarbageCollectionCommitsAsyncError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PrepareGarbageCollectionCommitsStatusError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
@@ -281,6 +292,7 @@ pub enum RestoreRefsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SetGarbageCollectionRulesPreflightError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -292,6 +304,7 @@ pub enum SetGarbageCollectionRulesPreflightError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SetRepositoryMetadataError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -314,6 +327,7 @@ pub enum SetupError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SetupCommPrefsError {
+    Status400(models::Error),
     Status409(models::Error),
     Status412(models::Error),
     Status429(),
@@ -338,6 +352,7 @@ pub enum StageObjectError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum UploadObjectPreflightError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),

@@ -181,6 +181,7 @@ class ActionsApi:
 
         _response_types_map = {
             '200': "ActionRun",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -338,6 +339,7 @@ class ActionsApi:
 
         _response_types_map = {
             '200': "bytearray",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -511,6 +513,7 @@ class ActionsApi:
 
         _response_types_map = {
             '200': "ActionRunList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -676,6 +679,7 @@ class ActionsApi:
 
         _response_types_map = {
             '200': "HookRunList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
