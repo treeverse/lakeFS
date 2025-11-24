@@ -28,6 +28,12 @@ paths:
       responses:
         "200":
           description: communication preferences saved successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "409":
           content:
             application/json:
@@ -154,6 +160,12 @@ paths:
                 example: access_token=abcde12356; Path=/; HttpOnly
                 type: string
               style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -245,6 +257,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthenticationToken'
           description: successful STS login
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -328,6 +346,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserList'
           description: user list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -405,6 +429,12 @@ paths:
       responses:
         "204":
           description: user deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -446,6 +476,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: user
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -510,6 +546,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/GroupList'
           description: group list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -542,6 +584,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Group'
           description: group
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -581,6 +629,12 @@ paths:
       responses:
         "204":
           description: group deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -622,6 +676,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Group'
           description: group
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -686,6 +746,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PolicyList'
           description: policy list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -764,6 +830,12 @@ paths:
       responses:
         "204":
           description: policy deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -805,6 +877,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Policy'
           description: policy
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -930,6 +1008,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserList'
           description: group member list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -969,6 +1053,12 @@ paths:
       responses:
         "204":
           description: membership deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1013,6 +1103,12 @@ paths:
       responses:
         "201":
           description: membership added successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1084,6 +1180,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/CredentialsList'
           description: credential list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1125,6 +1227,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/CredentialsWithSecret'
           description: credentials
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1170,6 +1278,12 @@ paths:
       responses:
         "204":
           description: credentials deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1218,6 +1332,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Credentials'
           description: credentials
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1289,6 +1409,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/GroupList'
           description: group list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1370,6 +1496,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PolicyList'
           description: policy list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1415,6 +1547,12 @@ paths:
       responses:
         "204":
           description: policy detached successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1459,6 +1597,12 @@ paths:
       responses:
         "201":
           description: policy attached successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1504,6 +1648,12 @@ paths:
       responses:
         "204":
           description: external principal detached successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1556,6 +1706,12 @@ paths:
       responses:
         "201":
           description: external principal attached successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1636,6 +1792,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExternalPrincipalList'
           description: external principals list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1680,6 +1842,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExternalPrincipal'
           description: external principal
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1753,6 +1921,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PolicyList'
           description: policy list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1798,6 +1972,12 @@ paths:
       responses:
         "204":
           description: policy detached successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1842,6 +2022,12 @@ paths:
       responses:
         "201":
           description: policy attached successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1884,6 +2070,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ACL'
           description: ACL of group
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -1927,6 +2119,12 @@ paths:
       responses:
         "201":
           description: ACL successfully changed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2016,6 +2214,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthenticationToken'
           description: user successfully logged in
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2139,6 +2343,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/RepositoryList'
           description: repository list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2237,6 +2447,12 @@ paths:
       responses:
         "204":
           description: repository deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2330,6 +2546,12 @@ paths:
       responses:
         "204":
           description: repository metadata keys deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2366,6 +2588,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/RepositoryMetadata'
           description: repository metadata
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2411,6 +2639,12 @@ paths:
       responses:
         "204":
           description: repository metadata set successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2450,6 +2684,12 @@ paths:
       responses:
         "204":
           description: deleted garbage collection rules successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2496,6 +2736,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/GarbageCollectionRules'
           description: repository GC rules
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2539,6 +2785,12 @@ paths:
       responses:
         "204":
           description: set garbage collection rules successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -2596,6 +2848,12 @@ paths:
                 description: ETag of the branch protection rules
                 type: string
               style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3056,6 +3314,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/RefList'
           description: tag list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3174,6 +3438,12 @@ paths:
       responses:
         "204":
           description: tag deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3228,6 +3498,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Ref'
           description: tag
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3308,6 +3584,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/RefList'
           description: branch list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3503,6 +3785,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommitList'
           description: commit log
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3703,6 +3991,12 @@ paths:
       responses:
         "204":
           description: branch deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -3757,6 +4051,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Ref'
           description: branch
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -4279,6 +4579,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/DiffList'
           description: diff of branch uncommitted changes
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -4397,6 +4703,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/DiffList'
           description: diff between refs
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -4446,6 +4758,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Commit'
           description: commit
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5016,6 +5334,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/UploadTo'
           description: presigned URL to use for upload
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5098,6 +5422,12 @@ paths:
                 description: "ETag of the uploaded part, pass in completion"
                 type: string
               style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5162,6 +5492,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/StagingLocation'
           description: physical address for staging area
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5331,6 +5667,12 @@ paths:
       responses:
         "204":
           description: import canceled successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5399,6 +5741,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ImportStatus'
           description: import status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5521,6 +5869,12 @@ paths:
           description: User has permissions to upload this object. This does not guarantee
             that the upload will be successful or even possible. It indicates only
             the permission at the time of calling this endpoint
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5596,6 +5950,12 @@ paths:
       responses:
         "204":
           description: object deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5878,6 +6238,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ObjectErrorList'
           description: Delete objects response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6169,6 +6535,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnderlyingObjectProperties'
           description: object metadata on underlying storage
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6272,6 +6644,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ObjectStatsList'
           description: object listing
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6329,6 +6707,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/StorageURI'
           description: location created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6407,6 +6791,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActionRunList'
           description: list action runs
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6456,6 +6846,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActionRun'
           description: action run result
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6525,6 +6921,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/HookRunList'
           description: list specific run hooks
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6582,6 +6984,12 @@ paths:
                 format: binary
                 type: string
           description: run hook output
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6664,6 +7072,12 @@ paths:
               schema:
                 type: string
               style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6720,6 +7134,12 @@ paths:
               schema:
                 type: string
               style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6776,6 +7196,12 @@ paths:
               schema:
                 type: string
               style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6815,6 +7241,12 @@ paths:
         "204":
           description: User has permissions to set garbage collection rules on this
             repository
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6854,6 +7286,12 @@ paths:
       responses:
         "204":
           description: deleted garbage collection rules successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6896,6 +7334,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/GarbageCollectionRules'
           description: gc rule list
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6940,6 +7384,12 @@ paths:
       responses:
         "204":
           description: set garbage collection rules successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -6982,6 +7432,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/GarbageCollectionPrepareResponse'
           description: paths to commit dataset
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7092,6 +7548,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PrepareGarbageCollectionCommitsStatus'
           description: prepare GC commits task status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7197,6 +7659,12 @@ paths:
         "204":
           description: User has permissions to create a branch protection rule in
             this repository
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7247,6 +7715,12 @@ paths:
       responses:
         "204":
           description: branch protection rule deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7291,6 +7765,12 @@ paths:
                   $ref: '#/components/schemas/BranchProtectionRule'
                 type: array
           description: branch protection rules
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7335,6 +7815,12 @@ paths:
       responses:
         "204":
           description: branch protection rule created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7419,6 +7905,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PullRequestsList'
           description: list of pull requests
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7853,12 +8345,6 @@ paths:
               schema:
                 type: string
           description: Usage report
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
         "401":
           content:
             application/json:
@@ -7953,6 +8439,12 @@ paths:
       responses:
         "204":
           description: successfully pushed table to remote
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -7995,6 +8487,12 @@ paths:
       responses:
         "204":
           description: successfully pulled table from remote
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:

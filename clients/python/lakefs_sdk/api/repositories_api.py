@@ -907,6 +907,7 @@ class RepositoriesApi:
 
         _response_types_map = {
             '200': "List[BranchProtectionRule]",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -1048,6 +1049,7 @@ class RepositoriesApi:
 
         _response_types_map = {
             '200': "GarbageCollectionRules",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -1331,6 +1333,7 @@ class RepositoriesApi:
 
         _response_types_map = {
             '200': "Dict[str, str]",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -1496,6 +1499,7 @@ class RepositoriesApi:
 
         _response_types_map = {
             '200': "RepositoryList",
+            '400': "Error",
             '401': "Error",
             '429': None,
         }

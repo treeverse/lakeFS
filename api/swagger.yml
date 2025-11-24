@@ -2208,6 +2208,8 @@ paths:
       responses:
         200:
           description: communication preferences saved successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         409:
           description: setup was already completed
           content:
@@ -2313,6 +2315,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthenticationToken"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -2374,6 +2378,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthenticationToken"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -2395,6 +2401,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthCapabilities"
+
         429:
           description: too many requests
         default:
@@ -2417,6 +2424,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -2474,6 +2483,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2490,6 +2501,8 @@ paths:
       responses:
         204:
           description: user deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2516,6 +2529,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GroupList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -2539,6 +2554,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Group"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2567,6 +2584,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Group"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2583,6 +2602,8 @@ paths:
       responses:
         204:
           description: group deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2609,6 +2630,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolicyList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -2663,6 +2686,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Policy"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2707,6 +2732,8 @@ paths:
       responses:
         204:
           description: policy deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2739,6 +2766,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -2766,6 +2795,8 @@ paths:
       responses:
         201:
           description: membership added successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2783,6 +2814,8 @@ paths:
       responses:
         204:
           description: membership deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2815,6 +2848,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CredentialsList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2836,6 +2871,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CredentialsWithSecret"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2865,6 +2902,8 @@ paths:
       responses:
         204:
           description: credentials deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2886,6 +2925,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Credentials"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2918,6 +2959,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GroupList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2956,6 +2999,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolicyList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2985,6 +3030,8 @@ paths:
       responses:
         201:
           description: policy attached successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3001,6 +3048,8 @@ paths:
       responses:
         204:
           description: policy detached successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3038,6 +3087,8 @@ paths:
       responses:
         201:
           description: external principal attached successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3058,6 +3109,8 @@ paths:
       responses:
         204:
           description: external principal detached successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3092,6 +3145,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExternalPrincipalList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3122,6 +3177,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExternalPrincipal"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3154,6 +3211,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolicyList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3183,6 +3242,8 @@ paths:
       responses:
         201:
           description: policy attached successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3200,6 +3261,8 @@ paths:
       responses:
         204:
           description: policy detached successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3231,6 +3294,8 @@ paths:
       responses:
         201:
           description: ACL successfully changed
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3252,6 +3317,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ACL"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3313,6 +3380,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthenticationToken"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           description: bad mailbox or user has not logged in yet
           $ref: "#/components/responses/Unauthorized"
@@ -3376,6 +3445,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RepositoryList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -3462,6 +3533,8 @@ paths:
       responses:
         204:
           description: repository deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3490,6 +3563,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RepositoryMetadata"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3514,6 +3589,8 @@ paths:
       responses:
         204:
           description: repository metadata set successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3538,6 +3615,8 @@ paths:
       responses:
         204:
           description: repository metadata keys deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         429:
@@ -3564,6 +3643,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionRules"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3585,6 +3666,8 @@ paths:
       responses:
         204:
           description: set garbage collection rules successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -3602,6 +3685,8 @@ paths:
       responses:
         204:
           description: deleted garbage collection rules successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -3639,6 +3724,8 @@ paths:
               schema:
                 type: string
                 description: ETag of the branch protection rules
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3894,6 +3981,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RefList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3960,6 +4049,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Ref"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3982,6 +4073,8 @@ paths:
       responses:
         204:
           description: tag deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -4022,6 +4115,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RefList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -4127,6 +4222,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CommitList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -4352,6 +4449,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Ref"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -4375,6 +4474,8 @@ paths:
       responses:
         204:
           description: branch deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -4778,6 +4879,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DiffList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -4836,6 +4939,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DiffList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -4869,6 +4974,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Commit"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5234,6 +5341,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UploadTo"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5291,6 +5400,8 @@ paths:
               schema:
                 type: string
                 description: ETag of the uploaded part, pass in completion
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5336,6 +5447,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5428,6 +5541,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ImportStatus"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5481,6 +5596,8 @@ paths:
       responses:
         204:
           description: import canceled successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -5519,6 +5636,8 @@ paths:
       responses:
         204:
           description: User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -5655,6 +5774,8 @@ paths:
       responses:
         204:
           description: object deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -5703,6 +5824,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectErrorList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -5895,6 +6018,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnderlyingObjectProperties"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5945,6 +6070,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectStatsList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5984,6 +6111,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageURI"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6024,6 +6153,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ActionRunList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6057,6 +6188,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ActionRun"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6092,6 +6225,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HookRunList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6131,6 +6266,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6190,6 +6327,8 @@ paths:
             Location:
               schema:
                 type: string
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6228,6 +6367,8 @@ paths:
               schema:
                 type: string
               description: redirect to S3
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6266,6 +6407,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageURI"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6289,6 +6432,8 @@ paths:
       responses:
         204:
           description: User has permissions to set garbage collection rules on this repository
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6318,6 +6463,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionRules"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6342,6 +6489,8 @@ paths:
       responses:
         204:
           description: set garbage collection rules successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6359,6 +6508,8 @@ paths:
       responses:
         204:
           description: deleted garbage collection rules successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6387,6 +6538,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -6456,6 +6609,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PrepareGarbageCollectionCommitsStatus"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -6518,6 +6673,8 @@ paths:
       responses:
         204:
           description: User has permissions to create a branch protection rule in this repository
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6551,6 +6708,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BranchProtectionRule"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6574,6 +6733,8 @@ paths:
       responses:
         204:
           description: branch protection rule created successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6601,6 +6762,8 @@ paths:
       responses:
         204:
           description: branch protection rule deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6641,6 +6804,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PullRequestsList"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6914,8 +7079,6 @@ paths:
             application/text:
               schema:
                 type: string
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -6980,6 +7143,8 @@ paths:
       responses:
         204:
           description: successfully pushed table to remote
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -7007,6 +7172,8 @@ paths:
       responses:
         204:
           description: successfully pulled table from remote
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

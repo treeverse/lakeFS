@@ -214,6 +214,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | object deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
@@ -318,6 +319,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | Delete objects response |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
@@ -528,6 +530,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | object metadata on underlying storage |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -744,6 +747,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | object listing |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |

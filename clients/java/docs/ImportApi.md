@@ -100,6 +100,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | import canceled successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
@@ -298,6 +299,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | import status |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |

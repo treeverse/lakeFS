@@ -31,6 +31,7 @@ pub enum CreateRepositoryError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteGcRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
@@ -43,6 +44,7 @@ pub enum DeleteGcRulesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteRepositoryError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -77,6 +79,7 @@ pub enum DumpSubmitError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetBranchProtectionRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -88,6 +91,7 @@ pub enum GetBranchProtectionRulesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetGcRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -111,6 +115,7 @@ pub enum GetRepositoryError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetRepositoryMetadataError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -122,6 +127,7 @@ pub enum GetRepositoryMetadataError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ListRepositoriesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status429(),
     DefaultResponse(models::Error),
@@ -170,6 +176,7 @@ pub enum SetBranchProtectionRulesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SetGcRulesError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),

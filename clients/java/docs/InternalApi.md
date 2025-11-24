@@ -123,6 +123,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | User has permissions to create a branch protection rule in this repository |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
@@ -318,6 +319,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | location created |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -414,6 +416,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | repository metadata keys deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -843,6 +846,7 @@ public class Example {
 |-------------|-------------|------------------|
 | **200** | object content |  * Content-Length -  <br>  |
 | **302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1079,7 +1083,6 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | Usage report |  -  |
-| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1174,6 +1177,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | branch protection rule created successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1268,6 +1272,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | branch protection rule deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1362,6 +1367,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | deleted garbage collection rules successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1455,6 +1461,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | branch protection rules |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1550,6 +1557,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | gc rule list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1646,6 +1654,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | set garbage collection rules successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1831,6 +1840,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | paths to commit dataset |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
@@ -2022,6 +2032,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | prepare GC commits task status |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
@@ -2308,6 +2319,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | User has permissions to set garbage collection rules on this repository |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -2404,6 +2416,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | repository metadata set successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -2533,6 +2546,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | communication preferences saved successfully |  -  |
+| **400** | Bad Request |  -  |
 | **409** | setup was already completed |  -  |
 | **412** | wrong setup state for this operation |  -  |
 | **429** | too many requests |  -  |
@@ -2730,6 +2744,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
