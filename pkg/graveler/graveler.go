@@ -24,6 +24,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const defaultSharedWorkers = 5
+
 var kvRetriesCounter = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "graveler_kv_retries",
@@ -210,27 +212,29 @@ func WithStageOnly(v bool) GetOptionsFunc {
 	}
 }
 
-type ConditionFunc func(currentValue *Value) error
-type SetOptions struct {
-	// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
-	// By default, 0 - we try BranchWriteMaxTries
-	MaxTries int
-	// Force set to true will bypass repository read-only protection.
-	Force bool
-	// AllowEmpty set to true will allow committing an empty commit.
-	AllowEmpty bool
-	// Hidden Will create the branch with the hidden property
-	Hidden bool
-	// SquashMerge causes merge commits to be "squashed", losing parent
-	// information about the merged-from branch.
-	SquashMerge bool
-	// NoTombstone will try to remove entry without setting a tombstone in KV
-	NoTombstone bool
-	// Condition is a function that validates the current value before performing the Set.
-	// If the condition returns an error, the Set operation fails with that error.
-	// If the condition succeeds, the Set is performed using SetIf with the current value.
-	Condition ConditionFunc
-}
+type (
+	ConditionFunc func(currentValue *Value) error
+	SetOptions    struct {
+		// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
+		// By default, 0 - we try BranchWriteMaxTries
+		MaxTries int
+		// Force set to true will bypass repository read-only protection.
+		Force bool
+		// AllowEmpty set to true will allow committing an empty commit.
+		AllowEmpty bool
+		// Hidden Will create the branch with the hidden property
+		Hidden bool
+		// SquashMerge causes merge commits to be "squashed", losing parent
+		// information about the merged-from branch.
+		SquashMerge bool
+		// NoTombstone will try to remove entry without setting a tombstone in KV
+		NoTombstone bool
+		// Condition is a function that validates the current value before performing the Set.
+		// If the condition returns an error, the Set operation fails with that error.
+		// If the condition succeeds, the Set is performed using SetIf with the current value.
+		Condition ConditionFunc
+	}
+)
 
 type SetOptionsFunc func(opts *SetOptions)
 
@@ -1227,7 +1231,7 @@ func NewGraveler(cfg GravelerConfig) *Graveler {
 	workPool := cfg.WorkPool
 	if workPool == nil {
 		// Create a default work pool with 5 workers for basic operations
-		workPool = pond.NewPool(5)
+		workPool = pond.NewPool(defaultSharedWorkers)
 	}
 
 	return &Graveler{
@@ -2041,7 +2045,6 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 
 		// Submit delete tasks to workpool
 		for _, key := range keys {
-			key := key // capture loop variable
 			workerGroup.SubmitErr(func() error {
 				return deleteFunc(ctx, repository, key, BranchRecord{branchID, branch})
 			})
