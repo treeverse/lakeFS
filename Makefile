@@ -10,10 +10,10 @@ CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.4
 OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+PY_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python-static/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
-PY_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python-static/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 BUF_CLI_VERSION=v1.54.0
@@ -92,9 +92,10 @@ tools: ## Install tools
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
 client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
-	rm -rf clients/python
-	mkdir -p clients/python
-	cp clients/python-static/.openapi-generator-ignore clients/python
+	@rm -rf clients/python
+	@mkdir -p clients/python
+	@cp clients/python-static/.openapi-generator-ignore clients/python
+	@echo "Generating Python client SDK"
 	$(PY_OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
@@ -108,8 +109,9 @@ client-python: api/swagger.yml  ## Generate SDK for Python client - openapi gene
 		-o /mnt/clients/python
 
 sdk-rust: api/swagger.yml  ## Generate SDK for Rust client - openapi generator version 7.1.0
-	rm -rf clients/rust
-	mkdir -p clients/rust
+	@rm -rf clients/rust
+	@mkdir -p clients/rust
+	@echo "Generating Rust client SDK"
 	$(OPENAPI_RUST_GENERATOR) generate \
 		-i /mnt/api/swagger.yml \
 		-g rust \
@@ -117,9 +119,10 @@ sdk-rust: api/swagger.yml  ## Generate SDK for Rust client - openapi generator v
 		-o /mnt/clients/rust
 
 client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and Scala) client
-	rm -rf clients/java
-	mkdir -p clients/java
-	cp api/java-gen-ignore clients/java/.openapi-generator-ignore
+	@rm -rf clients/java
+	@mkdir -p clients/java
+	@cp api/java-gen-ignore clients/java/.openapi-generator-ignore
+	@echo "Generating Java client SDK"
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/api/swagger.yml \
 		-g java \
