@@ -148,6 +148,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | membership added successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -257,6 +258,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | policy attached successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -366,6 +368,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | policy attached successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -476,6 +479,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | credentials |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -587,6 +591,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | group |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -922,6 +927,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | external principal attached successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
@@ -1032,6 +1038,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | credentials deleted successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1139,6 +1146,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | group deleted successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1248,6 +1256,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | membership deleted successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1355,6 +1364,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | policy deleted successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1462,6 +1472,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | user deleted successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1571,6 +1582,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | external principal detached successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1680,6 +1692,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | policy detached successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1789,6 +1802,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | policy detached successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -1976,6 +1990,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | credentials |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -2082,6 +2097,7 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user |  -  |
+**400** | Bad Request |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -2188,6 +2204,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | external principal |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -2298,6 +2315,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -2408,6 +2426,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | ACL of group |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Group not found, or group found but has no ACL |  -  |
 **429** | too many requests |  -  |
@@ -2518,6 +2537,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -2590,6 +2610,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user successfully logged in |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -2659,6 +2680,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **303** | login on this page, await results on the mailbox URL |  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |
@@ -2769,6 +2791,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -2885,6 +2908,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group member list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -3000,6 +3024,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -3114,6 +3139,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -3227,6 +3253,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -3342,6 +3369,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | credential list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -3458,6 +3486,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | external principals list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -3574,6 +3603,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -3692,6 +3722,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -3806,6 +3837,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user list |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -3878,6 +3910,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | successful login |  * Set-Cookie -  <br>  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -3944,6 +3977,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **302** | successfully got token |  -  |
+**400** | Bad Request |  -  |
 **401** | failed to exchange authorization code for token |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -4159,6 +4193,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | ACL successfully changed |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |

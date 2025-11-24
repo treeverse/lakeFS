@@ -492,6 +492,7 @@ class TagsApi:
 
         _response_types_map = {
             '200': "Ref",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -657,6 +658,7 @@ class TagsApi:
 
         _response_types_map = {
             '200': "RefList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,

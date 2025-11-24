@@ -19,6 +19,7 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetRunError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -30,6 +31,7 @@ pub enum GetRunError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetRunHookOutputError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -41,6 +43,7 @@ pub enum GetRunHookOutputError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ListRepositoryRunsError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -52,6 +55,7 @@ pub enum ListRepositoryRunsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ListRunHooksError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),

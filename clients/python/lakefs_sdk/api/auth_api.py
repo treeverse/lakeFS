@@ -622,6 +622,7 @@ class AuthApi:
 
         _response_types_map = {
             '201': "CredentialsWithSecret",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -770,6 +771,7 @@ class AuthApi:
 
         _response_types_map = {
             '201': "Group",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -2654,6 +2656,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "Credentials",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -2787,6 +2790,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "CurrentUser",
+            '400': "Error",
         }
 
         return self.api_client.call_api(
@@ -2925,6 +2929,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "ExternalPrincipal",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -3066,6 +3071,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "Group",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -3207,6 +3213,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "ACL",
+            '400': "Error",
             '401': "Error",
             '404': "ErrorNoACL",
             '429': None,
@@ -3348,6 +3355,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "Policy",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -3489,6 +3497,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "AuthenticationToken",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -3623,6 +3632,7 @@ class AuthApi:
 
         _response_types_map = {
             '303': None,
+            '400': "Error",
             '401': "Error",
             '429': None,
             '501': "Error",
@@ -3764,6 +3774,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "User",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -3929,6 +3940,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "UserList",
+            '400': "Error",
             '401': "Error",
             '429': None,
         }
@@ -4093,6 +4105,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "PolicyList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -4250,6 +4263,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "GroupList",
+            '400': "Error",
             '401': "Error",
             '429': None,
         }
@@ -4406,6 +4420,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "PolicyList",
+            '400': "Error",
             '401': "Error",
             '429': None,
         }
@@ -4570,6 +4585,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "CredentialsList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -4735,6 +4751,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "ExternalPrincipalList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -4900,6 +4917,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "GroupList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -5073,6 +5091,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "PolicyList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -5230,6 +5249,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "UserList",
+            '400': "Error",
             '401': "Error",
             '429': None,
         }
@@ -5377,6 +5397,7 @@ class AuthApi:
 
         _response_types_map = {
             '200': "AuthenticationToken",
+            '400': "Error",
             '401': "Error",
             '429': None,
         }
@@ -5509,6 +5530,7 @@ class AuthApi:
 
         _response_types_map = {
             '302': None,
+            '400': "Error",
             '401': None,
         }
 

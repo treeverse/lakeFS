@@ -113,6 +113,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | meta-range URI |  * Location - redirect to S3 <br>  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -225,6 +226,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | range URI |  * Location - redirect to S3 <br>  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |

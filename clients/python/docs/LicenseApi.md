@@ -107,6 +107,7 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS configuration |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |

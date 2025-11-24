@@ -157,6 +157,7 @@ class ConfigApi:
 
         _response_types_map = {
             '200': "Config",
+            '400': "Error",
             '401': "Error",
         }
 

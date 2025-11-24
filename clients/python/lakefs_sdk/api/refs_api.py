@@ -241,6 +241,7 @@ class RefsApi:
 
         _response_types_map = {
             '200': "DiffList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -617,6 +618,7 @@ class RefsApi:
 
         _response_types_map = {
             '200': "CommitList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,

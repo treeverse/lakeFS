@@ -70,6 +70,7 @@ pub enum CreatePullRequestError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CreateUserExternalPrincipalError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status409(models::Error),
@@ -82,6 +83,7 @@ pub enum CreateUserExternalPrincipalError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteUserExternalPrincipalError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -106,6 +108,7 @@ pub enum ExternalPrincipalLoginError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetExternalPrincipalError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -117,6 +120,7 @@ pub enum GetExternalPrincipalError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetLicenseError {
+    Status400(models::Error),
     Status401(models::Error),
     Status501(models::Error),
     DefaultResponse(models::Error),
@@ -139,6 +143,7 @@ pub enum GetPullRequestError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetTokenFromMailboxError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -151,6 +156,7 @@ pub enum GetTokenFromMailboxError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetTokenRedirectError {
+    Status400(models::Error),
     Status401(models::Error),
     Status429(),
     Status501(models::Error),
@@ -175,6 +181,7 @@ pub enum HardResetBranchError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ListPullRequestsError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -186,6 +193,7 @@ pub enum ListPullRequestsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ListUserExternalPrincipalsError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -223,6 +231,7 @@ pub enum ReleaseTokenToMailboxError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum StsLoginError {
+    Status400(models::Error),
     Status401(models::Error),
     Status429(),
     DefaultResponse(models::Error),
@@ -258,6 +267,7 @@ pub enum UpdatePullRequestError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum UploadPartError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -269,6 +279,7 @@ pub enum UploadPartError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum UploadPartCopyError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),

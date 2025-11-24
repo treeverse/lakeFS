@@ -19,6 +19,7 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetLicenseError {
+    Status400(models::Error),
     Status401(models::Error),
     Status501(models::Error),
     DefaultResponse(models::Error),

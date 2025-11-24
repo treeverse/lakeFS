@@ -558,6 +558,7 @@ class ObjectsApi:
 
         _response_types_map = {
             '200': "ObjectErrorList",
+            '400': "Error",
             '401': "Error",
             '403': "Error",
             '404': "Error",
@@ -903,6 +904,7 @@ class ObjectsApi:
 
         _response_types_map = {
             '200': "UnderlyingObjectProperties",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
@@ -1256,6 +1258,7 @@ class ObjectsApi:
 
         _response_types_map = {
             '200': "ObjectStatsList",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,

@@ -33,6 +33,7 @@ pub enum CreateTagError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteTagError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
@@ -45,6 +46,7 @@ pub enum DeleteTagError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetTagError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
@@ -56,6 +58,7 @@ pub enum GetTagError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ListTagsError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),

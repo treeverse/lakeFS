@@ -19,6 +19,7 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum HealthCheckError {
+    Status400(models::Error),
     UnknownValue(serde_json::Value),
 }
 

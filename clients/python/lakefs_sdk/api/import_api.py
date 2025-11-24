@@ -505,6 +505,7 @@ class ImportApi:
 
         _response_types_map = {
             '200': "ImportStatus",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
