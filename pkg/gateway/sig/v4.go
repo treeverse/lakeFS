@@ -35,7 +35,8 @@ const (
 	v4shortTimeFormat        = "20060102"
 	maxExpires               = 604800
 
-	v4AmzAlgorithm     = "X-Amz-Algorithm"
+	v4AmzAlgorithm = "X-Amz-Algorithm"
+	//nolint:gosec
 	v4AmzCredential    = "X-Amz-Credential"
 	v4AmzSignature     = "X-Amz-Signature"
 	v4AmzDate          = "X-Amz-Date"
