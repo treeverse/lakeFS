@@ -99,6 +99,8 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 		if err == nil {
 			c.chosen = method
 			return sigContext, nil
+		} else if !errors.Is(err, ErrHeaderMalformed) {
+			return nil, err
 		}
 	}
 	return nil, gwErrors.ErrMissingFields
