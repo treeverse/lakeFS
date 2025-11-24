@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"slices"
@@ -19,9 +20,7 @@ import (
 )
 
 const (
-	configureLoginTemplate = `{{"No .lakectl.yaml found.  If using lakeFS Enterprise, enter its URL:" | yellow}}
-
-`
+	warningNotificationTmpl = `{{ . | yellow }}`
 	// TODO(ariels): Underline the link?
 	webLoginTemplate = `Opening {{.RedirectURL | blue | underline}} where you should log in.
 If it does not open automatically, please try to open it manually and log in.
@@ -63,20 +62,46 @@ func validateURL(maybeURL string) error {
 	}
 }
 
-func readLoginServerURL() (string, error) {
-	Write(configureLoginTemplate, nil)
+func isIPAddress(hostname string) bool {
+	return net.ParseIP(hostname) != nil
+}
 
-	prompt := promptui.Prompt{
-		Label:    "lakeFS server URL",
-		Validate: validateURL,
-	}
-	serverURLString, err := prompt.Run()
-	if err != nil {
-		return "", err
-	}
-	serverURL, err := url.Parse(serverURLString)
-	if err != nil { // Unlikely, validateURL should have done this!
-		return "", err
+func readLoginServerURL() (string, error) {
+	var (
+		ok        = false
+		serverURL *url.URL
+		err       error
+	)
+	Write(warningNotificationTmpl, "No .lakectl.yaml found.  On lakeFS Enterprise, enter the server URL to log in.\n")
+	for !ok {
+		prompt := promptui.Prompt{
+			Label:    "lakeFS server URL",
+			Validate: validateURL,
+		}
+		serverURLString, err := prompt.Run()
+		if err != nil {
+			return "", err
+		}
+		serverURL, err = url.Parse(serverURLString)
+		if err != nil { // Unlikely, validateURL should have done this!
+			return "", err
+		}
+
+		host := serverURL.Hostname()
+		if isIPAddress(host) {
+			prompt = promptui.Prompt{
+				IsConfirm: true,
+				Default:   "n",
+				Label:     "Numeric IP addresses will not work with OIDC; are you sure? ",
+			}
+			_, err := prompt.Run()
+			if err != nil && !errors.Is(err, promptui.ErrAbort) {
+				return "", err
+			}
+			ok = !errors.Is(err, promptui.ErrAbort)
+		} else {
+			ok = true
+		}
 	}
 	return serverURL.String(), err
 }
