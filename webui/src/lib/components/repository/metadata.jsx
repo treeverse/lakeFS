@@ -5,6 +5,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import { getFieldError } from './metadataHelpers'
 
 /**
  * MetadataFields is a component that allows the user to add/remove key-value pairs of metadata.
@@ -42,7 +43,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) =>
     return (
         <div className="mt-3 mb-3" {...rest}>
             {metadataFields.map((f, i) => {
-                const showError = isEmptyKey(f.key) && f.touched;
+                const fieldError = getFieldError(f)
                 return (
                     <Form.Group key={`commit-metadata-field-${i}`} className="mb-3">
                         <Row>
@@ -53,13 +54,9 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) =>
                                     value={f.key}
                                     onChange={onChangeKey(i)}
                                     onBlur={onBlurKey(i)}
-                                    isInvalid={showError}
+                                    isInvalid={fieldError}
                                 />
-                                {showError && (
-                                    <Form.Control.Feedback type="invalid">
-                                        Key is required
-                                    </Form.Control.Feedback>
-                                )}
+                                {fieldError && <Form.Control.Feedback type="invalid">{fieldError}</Form.Control.Feedback>}
                             </Col>
                             <Col md={{span: 5}}>
                                 <Form.Control type="text" placeholder="Value" value={f.value}  onChange={onChangeValue(i)}/>
@@ -82,23 +79,3 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) =>
         </div>
     )
 }
-
-const isEmptyKey = (key) => !key || key.trim() === "";
-
-/**
- * Validates metadata fields and marks empty keys as touched to show validation errors.
- * Use this before submitting to ensure all keys are filled in.
- *
- * @param {Array<{key: string, value: string, touched: boolean}>} metadataFields - Array of metadata field objects
- * @param {Function} setMetadataFields - Setter function to update metadata fields
- * @returns {boolean} True if validation passed (no empty keys), false if validation failed
- */
-export const validateMetadataKeys = (metadataFields, setMetadataFields) => {
-    const hasEmptyKeys = metadataFields.some(f => isEmptyKey(f.key));
-    if (!hasEmptyKeys) return true;
-
-    setMetadataFields(prev =>
-        prev.map(f => isEmptyKey(f.key) ? {...f, touched: true} : f)
-    );
-    return false;
-};

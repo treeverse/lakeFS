@@ -1,8 +1,8 @@
 import React from "react";
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MetadataFields, validateMetadataKeys } from './metadata';
+import { MetadataFields } from './metadata';
 
 /**
  * MetadataFieldsWrapper is a component wrapper used for testing the MetadataFields component.
@@ -98,32 +98,3 @@ describe('MetadataFields validation flow', () => {
     });
 });
 
-describe('validateMetadataKeys', () => {
-    it('returns true for empty array', () => {
-        const setMetadataFields = vi.fn();
-        expect(validateMetadataKeys([], setMetadataFields)).toBe(true);
-        expect(setMetadataFields).not.toHaveBeenCalled();
-    });
-
-    it('returns true when all keys are valid', () => {
-        const setMetadataFields = vi.fn();
-        const fields = [
-            { key: "key1", value: "value1", touched: false },
-            { key: "key2", value: "", touched: false },
-        ];
-
-        expect(validateMetadataKeys(fields, setMetadataFields)).toBe(true);
-        expect(setMetadataFields).not.toHaveBeenCalled();
-    });
-
-    it('returns false when any key is empty or whitespace', () => {
-        const setMetadataFields = vi.fn();
-        const fields = [
-            { key: "", value: "value", touched: false },
-            { key: "   ", value: "value", touched: false },
-        ];
-
-        expect(validateMetadataKeys(fields, setMetadataFields)).toBe(false);
-        expect(setMetadataFields).toHaveBeenCalledTimes(1);
-    });
-});
