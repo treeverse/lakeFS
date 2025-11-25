@@ -26,7 +26,8 @@ To successfully deploy and operate lakeFS on AWS, you should be comfortable with
 
 - Ability to create and modify IAM roles and policies.
 - Ability to create and configure S3 buckets and prefixes.
-- Permissions to provision networking and compute resources in your AWS account (for example, VPC, subnets, security groups, EC2, ECS, or EKS).
+- Permissions to provision networking and compute resources in your AWS account (for example, VPC, subnets, security groups, load balancers, EC2, ECS, or EKS).
+
 
 ### Core AWS services used by lakeFS
 
