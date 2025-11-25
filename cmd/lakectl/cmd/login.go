@@ -72,7 +72,6 @@ func readLoginServerURL() (string, error) {
 		serverURL *url.URL
 		err       error
 	)
-	Write(warningNotificationTmpl, "No .lakectl.yaml found.  On lakeFS Enterprise, enter the server URL to log in.\n")
 	for !ok {
 		prompt := promptui.Prompt{
 			Label:    "lakeFS server URL",
@@ -122,11 +121,12 @@ var loginCmd = &cobra.Command{
 		writeConfigFile := false
 		serverEndpointURL := string(cfg.Server.EndpointURL)
 		if serverEndpointURL == "" {
+			Write(warningNotificationTmpl, "Server URL not configured.  On lakeFS Enterprise, enter the server URL to log in.\n")
 			serverEndpointURL, err = readLoginServerURL()
 			if err != nil {
 				DieFmt("No server endpoint URL: %s", err)
 			}
-			Write("Read URL {{. | yellow}}\n", serverEndpointURL)
+			Write("Logging into lakeFS at {{. | yellow}}\n", serverEndpointURL)
 			cfg.Server.EndpointURL = config.OnlyString(serverEndpointURL)
 			writeConfigFile = true
 		}
