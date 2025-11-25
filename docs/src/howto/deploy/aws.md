@@ -33,9 +33,11 @@ To successfully deploy and operate lakeFS on AWS, you should be comfortable with
 
 - **Amazon S3** – bucket layout, prefixes, encryption options, and lifecycle rules.
 - **Metadata backend**, either:
-  - **Amazon DynamoDB** – tables, throughput configuration, backups, and monitoring; or  
-  - **PostgreSQL / Amazon RDS for PostgreSQL** – database creation, connectivity, storage configuration, and backups.
-- **Amazon CloudWatch** – viewing logs and basic metrics for troubleshooting.
+  - **Amazon DynamoDB**
+  - **PostgreSQL / Amazon RDS for PostgreSQL**
+  - **Amazon MemoryDB**
+
+  For any metadata backend you choose, you should be able to perform configuration, connectivity, storage and persistence configuration, backups, and monitoring.
 
 ### Optional: Container and orchestration skills
 
