@@ -37,6 +37,7 @@ To successfully deploy and operate lakeFS on AWS, you should be comfortable with
 - **Amazon CloudWatch** – viewing logs and basic metrics for troubleshooting.
 
 ### Optional: Container and orchestration skills
+
 Depending on the chosen deployment model:
 - **Kubernetes / Amazon EKS** – understanding of Deployments, Services, Ingress, kubectl, and optionally Helm.
 - **Amazon ECS or EC2 with containers** – understanding task definitions, services, container logs, and IAM roles for tasks.
