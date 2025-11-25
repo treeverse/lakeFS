@@ -5,6 +5,9 @@ description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing 
 
 # lakeFS Enterprise Features
 
+!!! info "Changelog"
+    For the latest updates and changes to lakeFS Enterprise features, see the [changelog](https://changelog.lakefs.io/changelog/).
+
 ## What is lakeFS Enterprise?
 
 lakeFS Enterprise is a commercially-supported version of lakeFS, offering additional features and functionalities that meet the needs of organizations from a production-grade system.
