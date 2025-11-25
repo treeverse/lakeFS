@@ -954,13 +954,13 @@ func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Reques
 			WithField("accept", r.Header.Get("Accept")).
 			Debug("Failed to get user - redirect to login")
 
-		redirectURL, err := url.Parse(c.Config.AuthConfig().GetLoginURL())
-		if c.handleAPIError(ctx, w, r, err) {
-			return
+		q := make(url.Values)
+		q.Set("next", r.URL.String())
+		q.Set("redirected", "true")
+		redirectURL := url.URL{
+			Path:     "/auth/login",
+			RawQuery: q.Encode(),
 		}
-		q := redirectURL.Query()
-		q.Set("next", r.URL.String()) // Encode query-escapes this string.
-		redirectURL.RawQuery = q.Encode()
 		w.Header().Set("Location", redirectURL.String())
 		w.WriteHeader(http.StatusTemporaryRedirect)
 		return
