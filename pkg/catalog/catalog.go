@@ -261,8 +261,6 @@ const (
 	ListPullsLimitMax        = 1000
 	ListEntriesLimitMax      = 10000
 	sharedWorkers            = 30
-	pendingTasksPerWorker    = 3
-	workersMaxDrainDuration  = 5 * time.Second
 )
 
 type ImportPathType string
@@ -405,10 +403,19 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		}
 		deleteSensor = graveler.NewDeleteSensor(baseCfg.Graveler.CompactionSensorThreshold, cb)
 	}
-	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, deleteSensor)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
+
+	gStore := graveler.NewGraveler(graveler.GravelerConfig{
+		CommittedManager:         committedManager,
+		StagingManager:           stagingManager,
+		RefManager:               refManager,
+		GarbageCollectionManager: gcManager,
+		ProtectedBranchesManager: protectedBranchesManager,
+		DeleteSensor:             deleteSensor,
+		WorkPool:                 workPool,
+	})
 	closers = append(closers, &ctxCloser{cancelFn})
 	return &Catalog{
 		BlockAdapter:          tierFSParams.Adapter,
