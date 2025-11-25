@@ -56,20 +56,25 @@ jobs:
           touch ./webui/dist/index.html
           time_out=$(mktemp)
           bench_report=$(mktemp)
-          /usr/bin/time -o "$time_out" make test
-          jq -n -R < "$time_out" 'reduce (inputs | split(" ")) as $kv ({}; .[$kv[0]] = {value: $kv[1]}) | {"test-go-runtime": .}' > "$bench_report"
-          echo BENCH_REPORT=$(echo "$bench_report") >> $GITHUB_ENV
+          /usr/bin/time -p -o "$time_out" make test
+          jq -n -R < "$time_out" 'reduce (inputs | split(" ")) as $kv ({}; .[$kv[0]] = {value: ($kv[1] | tonumber)}) | {"test-go-runtime": .}' > "$bench_report"
+          echo bench_report=$(echo "$bench_report") >> $GITHUB_ENV
       - name: Report times to Bencher
         # OK to fail here, it's just a bencher report
         continue-on-error: true
         run: |
-          bench_report=${{env.BENCH_REPORT}}
           ref=${{github.ref_name}}
           release_slug=$(uname -s -m | tr '[:upper:]' '[:lower:]' | sed 's/[ _]/-/g')
           gh release download --skip-existing -O ./bencher  -p '*linux-x86-64'   -R bencherdev/bencher v0.5.8
           chmod +x ./bencher
           ./bencher run  --adapter json \
-            --file=${bench_report} \
-            --project lakeFS \
+            --file="${bench_report}" \
+            --project lakefs \
             --branch "$ref" \
             --testbed "github-${release_slug}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: What we reported
+        continue-on-error: true
+        run: |
+          cat "${bench_report}"
