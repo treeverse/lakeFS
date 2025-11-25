@@ -1,5 +1,19 @@
 # Changelog
 
+# v1.73.0
+
+:new: What's new:
+
+- Graveler: parallel delete using workpool (#9716)
+- GC: Use async prepare gc commits with fallback to blocking API (#9654)
+- Create LakeFS commits RDD directly without using an input format (#9657)
+- Add ETag to the Adapter.GetProperties result (#9661)
+- Deprecate disable usage report (#9675)
+
+:bug: Bugs fixed:
+
+- Fix UI showing wrong field removed when deleting metadata field (#9669)
+
 # v1.72.0
 
 :new: What's new:
