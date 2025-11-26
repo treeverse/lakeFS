@@ -54,8 +54,9 @@ const Redirect = () => {
     const location = useLocation();
     // Break out of React to the actual URL - do not use Navigate.
     useEffect(() => {
-	window.location.replace(location.pathname);
-    }, [location.pathname]);
+	const fullPath = location.pathname + location.search + location.hash;
+	window.location.replace(fullPath);
+    }, [location.pathname, location.search, location.hash]);
 
   return <div>Redirecting...</div>;
 };

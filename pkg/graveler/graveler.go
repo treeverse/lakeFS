@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alitto/pond/v2"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
@@ -23,6 +24,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const defaultSharedWorkers = 5
+
 var kvRetriesCounter = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "graveler_kv_retries",
@@ -30,6 +33,17 @@ var kvRetriesCounter = promauto.NewCounterVec(
 	},
 	[]string{"operation"},
 )
+
+// GravelerConfig holds the configuration for creating a Graveler instance
+type GravelerConfig struct {
+	CommittedManager         CommittedManager
+	StagingManager           StagingManager
+	RefManager               RefManager
+	GarbageCollectionManager GarbageCollectionManager
+	ProtectedBranchesManager ProtectedBranchesManager
+	DeleteSensor             *DeleteSensor
+	WorkPool                 pond.Pool
+}
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=graveler.go -destination=mock/graveler.go -package=mock
 
@@ -198,27 +212,29 @@ func WithStageOnly(v bool) GetOptionsFunc {
 	}
 }
 
-type ConditionFunc func(currentValue *Value) error
-type SetOptions struct {
-	// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
-	// By default, 0 - we try BranchWriteMaxTries
-	MaxTries int
-	// Force set to true will bypass repository read-only protection.
-	Force bool
-	// AllowEmpty set to true will allow committing an empty commit.
-	AllowEmpty bool
-	// Hidden Will create the branch with the hidden property
-	Hidden bool
-	// SquashMerge causes merge commits to be "squashed", losing parent
-	// information about the merged-from branch.
-	SquashMerge bool
-	// NoTombstone will try to remove entry without setting a tombstone in KV
-	NoTombstone bool
-	// Condition is a function that validates the current value before performing the Set.
-	// If the condition returns an error, the Set operation fails with that error.
-	// If the condition succeeds, the Set is performed using SetIf with the current value.
-	Condition ConditionFunc
-}
+type (
+	ConditionFunc func(currentValue *Value) error
+	SetOptions    struct {
+		// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
+		// By default, 0 - we try BranchWriteMaxTries
+		MaxTries int
+		// Force set to true will bypass repository read-only protection.
+		Force bool
+		// AllowEmpty set to true will allow committing an empty commit.
+		AllowEmpty bool
+		// Hidden Will create the branch with the hidden property
+		Hidden bool
+		// SquashMerge causes merge commits to be "squashed", losing parent
+		// information about the merged-from branch.
+		SquashMerge bool
+		// NoTombstone will try to remove entry without setting a tombstone in KV
+		NoTombstone bool
+		// Condition is a function that validates the current value before performing the Set.
+		// If the condition returns an error, the Set operation fails with that error.
+		// If the condition succeeds, the Set is performed using SetIf with the current value.
+		Condition ConditionFunc
+	}
+)
 
 type SetOptionsFunc func(opts *SetOptions)
 
@@ -1205,22 +1221,30 @@ type Graveler struct {
 	logger              logging.Logger
 	BranchUpdateBackOff backoff.BackOff
 	deleteSensor        *DeleteSensor
+	workPool            pond.Pool
 }
 
-func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager, deleteSensor *DeleteSensor) *Graveler {
+func NewGraveler(cfg GravelerConfig) *Graveler {
 	branchUpdateBackOff := backoff.NewExponentialBackOff()
 	branchUpdateBackOff.MaxInterval = BranchUpdateMaxInterval
 
+	workPool := cfg.WorkPool
+	if workPool == nil {
+		// Create a default work pool with 5 workers for basic operations
+		workPool = pond.NewPool(defaultSharedWorkers)
+	}
+
 	return &Graveler{
 		hooks:                    &HooksNoOp{},
-		CommittedManager:         committedManager,
-		RefManager:               refManager,
-		StagingManager:           stagingManager,
+		CommittedManager:         cfg.CommittedManager,
+		RefManager:               cfg.RefManager,
+		StagingManager:           cfg.StagingManager,
 		BranchUpdateBackOff:      branchUpdateBackOff,
-		protectedBranchesManager: protectedBranchesManager,
-		garbageCollectionManager: gcManager,
+		protectedBranchesManager: cfg.ProtectedBranchesManager,
+		garbageCollectionManager: cfg.GarbageCollectionManager,
 		logger:                   logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
-		deleteSensor:             deleteSensor,
+		deleteSensor:             cfg.DeleteSensor,
+		workPool:                 workPool,
 	}
 }
 
@@ -1991,8 +2015,7 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 	return err
 }
 
-// DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Return error can be of type
-// 'multi-error' holds DeleteError with each key/error that failed as part of the batch.
+// DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Returns the first error encountered during deletion.
 func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key, opts ...SetOptionsFunc) error {
 	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
 	if err != nil {
@@ -2011,20 +2034,24 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
 
-	var m *multierror.Error
 	log := g.log(ctx).WithField("operation", "delete_keys")
 	deleteFunc := g.deleteUnsafe
 	if options.NoTombstone {
 		deleteFunc = g.deleteNoTombstoneUnsafe
 	}
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
+		// Use workpool for parallel deletion
+		workerGroup := g.workPool.NewGroupContext(ctx)
+
+		// Submit delete tasks to workpool
 		for _, key := range keys {
-			err = deleteFunc(ctx, repository, key, BranchRecord{branchID, branch})
-			if err != nil {
-				m = multierror.Append(m, &DeleteError{Key: key, Err: err})
-			}
+			workerGroup.SubmitErr(func() error {
+				return deleteFunc(ctx, repository, key, BranchRecord{branchID, branch})
+			})
 		}
-		return m.ErrorOrNil()
+
+		// Wait for the first error or completion
+		return workerGroup.Wait()
 	}, "delete_keys")
 	return err
 }
