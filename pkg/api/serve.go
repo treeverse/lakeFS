@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	LoggerServiceName = "rest_apii"
+	LoggerServiceName = "rest_api"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
