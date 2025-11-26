@@ -134,6 +134,7 @@ func NewController(
 	licenseManager license.Manager,
 	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
+	asyncOperations AsyncOperationsHandler,
 ) *Controller {
 	return &Controller{
 		Config:             cfg,
@@ -154,6 +155,7 @@ func NewController(
 		licenseManager:     licenseManager,
 		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
+		AsyncOperations:    asyncOperations,
 	}
 }
 
