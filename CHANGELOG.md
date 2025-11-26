@@ -1,5 +1,19 @@
 # Changelog
 
+## (next - minor version bump)
+
+:new: What's new:
+
+- If `lakectl` is not configured, running `lakectl login` now runs a
+  dialogue to configure the server endpoint URL.  On Enterprise, this allows
+  running `lakectl login` zero configuration. (#9659)
+- Remove default configuration of server.endpoint_url in lakectl.  Its value
+  was http://localhost:8000 which is not generally useful. (#9659)
+
+  This is technically a **breaking change**.  It may affect some CI
+  workflows, or some configurations relying on port forwarding.  As one
+  workaround, the environment variable `LAKECTL_SERVER_ENDPOINT_URL`
+
 ## v1.73.0
 
 :new: What's new:
