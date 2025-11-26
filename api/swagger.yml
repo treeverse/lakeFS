@@ -4338,6 +4338,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4356,7 +4358,7 @@ paths:
     get:
       tags:
         - commits
-      operationId: commitStatus
+      operationId: commitAsyncStatus
       summary: get status of async commit operation
       parameters:
         - in: query
@@ -4372,6 +4374,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CommitAsyncStatus"
+        400:
+          $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -4388,6 +4392,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4786,6 +4792,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4811,7 +4819,7 @@ paths:
     get:
       tags:
         - refs
-      operationId: mergeIntoBranchStatus
+      operationId: mergeIntoBranchAsyncStatus
       summary: get status of async merge operation
       parameters:
         - in: query
@@ -4827,6 +4835,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MergeAsyncStatus"
+        400:
+          $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -4847,6 +4857,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 

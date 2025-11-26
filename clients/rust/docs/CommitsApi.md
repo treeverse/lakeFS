@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**commit**](CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 [**commit_async**](CommitsApi.md#commit_async) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
-[**commit_status**](CommitsApi.md#commit_status) | **GET** /repositories/{repository}/branches/{branch}/commits/status | get status of async commit operation
+[**commit_async_status**](CommitsApi.md#commit_async_status) | **GET** /repositories/{repository}/branches/{branch}/commits/status | get status of async commit operation
 [**get_commit**](CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 
 
@@ -73,9 +73,9 @@ Name | Type | Description  | Required | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## commit_status
+## commit_async_status
 
-> models::CommitAsyncStatus commit_status(repository, branch, id)
+> models::CommitAsyncStatus commit_async_status(repository, branch, id)
 get status of async commit operation
 
 ### Parameters

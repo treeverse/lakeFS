@@ -75,20 +75,23 @@ pub enum MergeIntoBranchAsyncError {
     Status403(models::Error),
     Status404(models::Error),
     Status429(),
+    Status501(models::Error),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`merge_into_branch_status`]
+/// struct for typed errors of method [`merge_into_branch_async_status`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum MergeIntoBranchStatusError {
+pub enum MergeIntoBranchAsyncStatusError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
     Status409(models::Error),
     Status412(models::Error),
     Status429(),
+    Status501(models::Error),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -309,7 +312,7 @@ pub async fn merge_into_branch_async(configuration: &configuration::Configuratio
     }
 }
 
-pub async fn merge_into_branch_status(configuration: &configuration::Configuration, repository: &str, source_ref: &str, destination_branch: &str, id: &str) -> Result<models::MergeAsyncStatus, Error<MergeIntoBranchStatusError>> {
+pub async fn merge_into_branch_async_status(configuration: &configuration::Configuration, repository: &str, source_ref: &str, destination_branch: &str, id: &str) -> Result<models::MergeAsyncStatus, Error<MergeIntoBranchAsyncStatusError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -337,7 +340,7 @@ pub async fn merge_into_branch_status(configuration: &configuration::Configurati
     if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
         serde_json::from_str(&local_var_content).map_err(Error::from)
     } else {
-        let local_var_entity: Option<MergeIntoBranchStatusError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_entity: Option<MergeIntoBranchAsyncStatusError> = serde_json::from_str(&local_var_content).ok();
         let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
         Err(Error::ResponseError(local_var_error))
     }

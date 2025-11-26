@@ -75,11 +75,11 @@ public class CommitsApiTest {
      * @throws ApiException if the Api call fails
      */
     @Test
-    public void commitStatusTest() throws ApiException {
+    public void commitAsyncStatusTest() throws ApiException {
         String repository = null;
         String branch = null;
         String id = null;
-        CommitAsyncStatus response = api.commitStatus(repository, branch, id)
+        CommitAsyncStatus response = api.commitAsyncStatus(repository, branch, id)
                 .execute();
         // TODO: test validations
     }

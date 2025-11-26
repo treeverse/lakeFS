@@ -974,6 +974,7 @@ class RefsApi:
             '403': "Error",
             '404': "Error",
             '429': None,
+            '501': "Error",
         }
 
         return self.api_client.call_api(
@@ -994,13 +995,13 @@ class RefsApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def merge_into_branch_status(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge task")], **kwargs) -> MergeAsyncStatus:  # noqa: E501
+    def merge_into_branch_async_status(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge task")], **kwargs) -> MergeAsyncStatus:  # noqa: E501
         """get status of async merge operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.merge_into_branch_status(repository, source_ref, destination_branch, id, async_req=True)
+        >>> thread = api.merge_into_branch_async_status(repository, source_ref, destination_branch, id, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -1024,18 +1025,18 @@ class RefsApi:
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
-            message = "Error! Please call the merge_into_branch_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
+            message = "Error! Please call the merge_into_branch_async_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.merge_into_branch_status_with_http_info(repository, source_ref, destination_branch, id, **kwargs)  # noqa: E501
+        return self.merge_into_branch_async_status_with_http_info(repository, source_ref, destination_branch, id, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def merge_into_branch_status_with_http_info(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge task")], **kwargs) -> ApiResponse:  # noqa: E501
+    def merge_into_branch_async_status_with_http_info(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge task")], **kwargs) -> ApiResponse:  # noqa: E501
         """get status of async merge operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.merge_into_branch_status_with_http_info(repository, source_ref, destination_branch, id, async_req=True)
+        >>> thread = api.merge_into_branch_async_status_with_http_info(repository, source_ref, destination_branch, id, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -1096,7 +1097,7 @@ class RefsApi:
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method merge_into_branch_status" % _key
+                    " to method merge_into_branch_async_status" % _key
                 )
             _params[_key] = _val
         del _params['kwargs']
@@ -1136,12 +1137,14 @@ class RefsApi:
 
         _response_types_map = {
             '200': "MergeAsyncStatus",
+            '400': "Error",
             '401': "Error",
             '403': "Error",
             '404': "Error",
             '409': "Error",
             '412': "Error",
             '429': None,
+            '501': "Error",
         }
 
         return self.api_client.call_api(

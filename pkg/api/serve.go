@@ -54,7 +54,7 @@ func Serve(
 	licenseManager license.Manager,
 	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
-	asyncOperations AsyncOperationsHandler,
+	asyncOperations catalog.AsyncOperationsHandler,
 ) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()

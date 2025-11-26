@@ -3971,6 +3971,12 @@ paths:
           description: Resource Not Found
         "429":
           description: too many requests
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
         default:
           content:
             application/json:
@@ -3984,7 +3990,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/commits/status:
     get:
-      operationId: commitStatus
+      operationId: commitAsyncStatus
       parameters:
       - explode: false
         in: path
@@ -4015,6 +4021,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommitAsyncStatus'
           description: commit task status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
         "401":
           content:
             application/json:
@@ -4047,6 +4059,12 @@ paths:
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
         "429":
           description: too many requests
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
         default:
           content:
             application/json:
@@ -4733,6 +4751,12 @@ paths:
           description: Resource Not Found
         "429":
           description: too many requests
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
         default:
           content:
             application/json:
@@ -4746,7 +4770,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status:
     get:
-      operationId: mergeIntoBranchStatus
+      operationId: mergeIntoBranchAsyncStatus
       parameters:
       - explode: false
         in: path
@@ -4786,6 +4810,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/MergeAsyncStatus'
           description: merge task status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
         "401":
           content:
             application/json:
@@ -4818,6 +4848,12 @@ paths:
           description: precondition failed (e.g. a pre-merge hook returned a failure)
         "429":
           description: too many requests
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
         default:
           content:
             application/json:

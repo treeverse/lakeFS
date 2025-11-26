@@ -71,3 +71,7 @@ func BuildConditionFromParams(ifMatch, ifNoneMatch *string) (*graveler.Condition
 func NewIcebergSyncController(_ config.Config) icebergsync.Controller {
 	return &icebergsync.NopController{}
 }
+
+func NewAsyncOperationsHandler(_ *catalog.Catalog) catalog.AsyncOperationsHandler {
+	return catalog.NewOSSAsyncOperationsHandler()
+}

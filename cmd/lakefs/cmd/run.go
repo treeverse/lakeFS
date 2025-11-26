@@ -172,6 +172,8 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
+		asyncOperationsHandler := apifactory.NewAsyncOperationsHandler(c)
+
 		// Setup usage reporter - it is no longer possible to disable it
 		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)
 		usageReporter.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
@@ -258,6 +260,7 @@ var runCmd = &cobra.Command{
 			licenseManager,
 			icebergSyncer,
 			loginTokenProvider,
+			asyncOperationsHandler,
 		)
 
 		// init gateway server

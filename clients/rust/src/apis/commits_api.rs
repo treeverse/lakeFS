@@ -39,20 +39,23 @@ pub enum CommitAsyncError {
     Status403(models::Error),
     Status404(models::Error),
     Status429(),
+    Status501(models::Error),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`commit_status`]
+/// struct for typed errors of method [`commit_async_status`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CommitStatusError {
+pub enum CommitAsyncStatusError {
+    Status400(models::Error),
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
     Status409(models::Error),
     Status412(models::Error),
     Status429(),
+    Status501(models::Error),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -144,7 +147,7 @@ pub async fn commit_async(configuration: &configuration::Configuration, reposito
     }
 }
 
-pub async fn commit_status(configuration: &configuration::Configuration, repository: &str, branch: &str, id: &str) -> Result<models::CommitAsyncStatus, Error<CommitStatusError>> {
+pub async fn commit_async_status(configuration: &configuration::Configuration, repository: &str, branch: &str, id: &str) -> Result<models::CommitAsyncStatus, Error<CommitAsyncStatusError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -172,7 +175,7 @@ pub async fn commit_status(configuration: &configuration::Configuration, reposit
     if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
         serde_json::from_str(&local_var_content).map_err(Error::from)
     } else {
-        let local_var_entity: Option<CommitStatusError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_entity: Option<CommitAsyncStatusError> = serde_json::from_str(&local_var_content).ok();
         let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
         Err(Error::ResponseError(local_var_error))
     }

@@ -110,7 +110,7 @@ type Controller struct {
 	licenseManager     license.Manager
 	icebergSyncer      icebergsync.Controller
 	loginTokenProvider authentication.LoginTokenProvider
-	AsyncOperations    AsyncOperationsHandler
+	AsyncOperations    catalog.AsyncOperationsHandler
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -134,7 +134,7 @@ func NewController(
 	licenseManager license.Manager,
 	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
-	asyncOperations AsyncOperationsHandler,
+	asyncOperations catalog.AsyncOperationsHandler,
 ) *Controller {
 	return &Controller{
 		Config:             cfg,
@@ -3380,7 +3380,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 	})
 }
 
-func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitStatusParams) {
+func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitAsyncStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -5406,7 +5406,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
+func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchAsyncStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,

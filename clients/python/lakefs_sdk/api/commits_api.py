@@ -386,6 +386,7 @@ class CommitsApi:
             '403': "Error",
             '404': "Error",
             '429': None,
+            '501': "Error",
         }
 
         return self.api_client.call_api(
@@ -406,13 +407,13 @@ class CommitsApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def commit_status(self, repository : StrictStr, branch : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the commit task")], **kwargs) -> CommitAsyncStatus:  # noqa: E501
+    def commit_async_status(self, repository : StrictStr, branch : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the commit task")], **kwargs) -> CommitAsyncStatus:  # noqa: E501
         """get status of async commit operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.commit_status(repository, branch, id, async_req=True)
+        >>> thread = api.commit_async_status(repository, branch, id, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -434,18 +435,18 @@ class CommitsApi:
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
-            message = "Error! Please call the commit_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
+            message = "Error! Please call the commit_async_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.commit_status_with_http_info(repository, branch, id, **kwargs)  # noqa: E501
+        return self.commit_async_status_with_http_info(repository, branch, id, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def commit_status_with_http_info(self, repository : StrictStr, branch : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the commit task")], **kwargs) -> ApiResponse:  # noqa: E501
+    def commit_async_status_with_http_info(self, repository : StrictStr, branch : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the commit task")], **kwargs) -> ApiResponse:  # noqa: E501
         """get status of async commit operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.commit_status_with_http_info(repository, branch, id, async_req=True)
+        >>> thread = api.commit_async_status_with_http_info(repository, branch, id, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -503,7 +504,7 @@ class CommitsApi:
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method commit_status" % _key
+                    " to method commit_async_status" % _key
                 )
             _params[_key] = _val
         del _params['kwargs']
@@ -540,12 +541,14 @@ class CommitsApi:
 
         _response_types_map = {
             '200': "CommitAsyncStatus",
+            '400': "Error",
             '401': "Error",
             '403': "Error",
             '404': "Error",
             '409': "Error",
             '412': "Error",
             '429': None,
+            '501': "Error",
         }
 
         return self.api_client.call_api(
