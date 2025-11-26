@@ -44,14 +44,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/icebergsync"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
-	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -5406,7 +5404,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (c *Controller) mergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
+func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
