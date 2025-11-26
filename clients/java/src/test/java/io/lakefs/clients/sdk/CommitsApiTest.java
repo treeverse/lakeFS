@@ -15,8 +15,10 @@ package io.lakefs.clients.sdk;
 
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.Commit;
+import io.lakefs.clients.sdk.model.CommitAsyncStatus;
 import io.lakefs.clients.sdk.model.CommitCreation;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.TaskCreation;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +48,38 @@ public class CommitsApiTest {
         String sourceMetarange = null;
         Commit response = api.commit(repository, branch, commitCreation)
                 .sourceMetarange(sourceMetarange)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * create commit asynchronously
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void commitAsyncTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        CommitCreation commitCreation = null;
+        String sourceMetarange = null;
+        TaskCreation response = api.commitAsync(repository, branch, commitCreation)
+                .sourceMetarange(sourceMetarange)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get status of async commit operation
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void commitStatusTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String id = null;
+        CommitAsyncStatus response = api.commitStatus(repository, branch, id)
                 .execute();
         // TODO: test validations
     }

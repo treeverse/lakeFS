@@ -174,6 +174,7 @@ type Task struct {
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Progress      int64                  `protobuf:"varint,4,opt,name=progress,proto3" json:"progress,omitempty"`
 	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	ErrorCode     string                 `protobuf:"bytes,6,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"` // error classification code for HTTP status mapping
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -239,6 +240,13 @@ func (x *Task) GetProgress() int64 {
 func (x *Task) GetError() string {
 	if x != nil {
 		return x.Error
+	}
+	return ""
+}
+
+func (x *Task) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
 	}
 	return ""
 }
@@ -517,6 +525,266 @@ func (x *GarbageCollectionPrepareStatus) GetInfo() *GarbageCollectionPrepareComm
 	return nil
 }
 
+// CommitAsyncInfo holds the result of an async commit operation
+type CommitAsyncInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Parents       []string               `protobuf:"bytes,2,rep,name=parents,proto3" json:"parents,omitempty"`
+	Committer     string                 `protobuf:"bytes,3,opt,name=committer,proto3" json:"committer,omitempty"`
+	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
+	CreationDate  *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
+	MetaRangeId   string                 `protobuf:"bytes,6,opt,name=meta_range_id,json=metaRangeId,proto3" json:"meta_range_id,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Generation    int64                  `protobuf:"varint,8,opt,name=generation,proto3" json:"generation,omitempty"`
+	Version       int32                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitAsyncInfo) Reset() {
+	*x = CommitAsyncInfo{}
+	mi := &file_catalog_catalog_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitAsyncInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitAsyncInfo) ProtoMessage() {}
+
+func (x *CommitAsyncInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitAsyncInfo.ProtoReflect.Descriptor instead.
+func (*CommitAsyncInfo) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CommitAsyncInfo) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CommitAsyncInfo) GetParents() []string {
+	if x != nil {
+		return x.Parents
+	}
+	return nil
+}
+
+func (x *CommitAsyncInfo) GetCommitter() string {
+	if x != nil {
+		return x.Committer
+	}
+	return ""
+}
+
+func (x *CommitAsyncInfo) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *CommitAsyncInfo) GetCreationDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreationDate
+	}
+	return nil
+}
+
+func (x *CommitAsyncInfo) GetMetaRangeId() string {
+	if x != nil {
+		return x.MetaRangeId
+	}
+	return ""
+}
+
+func (x *CommitAsyncInfo) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *CommitAsyncInfo) GetGeneration() int64 {
+	if x != nil {
+		return x.Generation
+	}
+	return 0
+}
+
+func (x *CommitAsyncInfo) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+// CommitAsyncStatus holds the status of an async commit operation
+type CommitAsyncStatus struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	Info          *CommitAsyncInfo       `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitAsyncStatus) Reset() {
+	*x = CommitAsyncStatus{}
+	mi := &file_catalog_catalog_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitAsyncStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitAsyncStatus) ProtoMessage() {}
+
+func (x *CommitAsyncStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitAsyncStatus.ProtoReflect.Descriptor instead.
+func (*CommitAsyncStatus) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CommitAsyncStatus) GetTask() *Task {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
+func (x *CommitAsyncStatus) GetInfo() *CommitAsyncInfo {
+	if x != nil {
+		return x.Info
+	}
+	return nil
+}
+
+// MergeAsyncInfo holds the result of an async merge operation
+type MergeAsyncInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reference     string                 `protobuf:"bytes,1,opt,name=reference,proto3" json:"reference,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MergeAsyncInfo) Reset() {
+	*x = MergeAsyncInfo{}
+	mi := &file_catalog_catalog_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MergeAsyncInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MergeAsyncInfo) ProtoMessage() {}
+
+func (x *MergeAsyncInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MergeAsyncInfo.ProtoReflect.Descriptor instead.
+func (*MergeAsyncInfo) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *MergeAsyncInfo) GetReference() string {
+	if x != nil {
+		return x.Reference
+	}
+	return ""
+}
+
+// MergeAsyncStatus holds the status of an async merge operation
+type MergeAsyncStatus struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	Info          *MergeAsyncInfo        `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MergeAsyncStatus) Reset() {
+	*x = MergeAsyncStatus{}
+	mi := &file_catalog_catalog_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MergeAsyncStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MergeAsyncStatus) ProtoMessage() {}
+
+func (x *MergeAsyncStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MergeAsyncStatus.ProtoReflect.Descriptor instead.
+func (*MergeAsyncStatus) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *MergeAsyncStatus) GetTask() *Task {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
+func (x *MergeAsyncStatus) GetInfo() *MergeAsyncInfo {
+	if x != nil {
+		return x.Info
+	}
+	return nil
+}
+
 // TaskMsg described generic message with Task field
 // used for all status messages and for cleanup messages
 type TaskMsg struct {
@@ -528,7 +796,7 @@ type TaskMsg struct {
 
 func (x *TaskMsg) Reset() {
 	*x = TaskMsg{}
-	mi := &file_catalog_catalog_proto_msgTypes[7]
+	mi := &file_catalog_catalog_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -540,7 +808,7 @@ func (x *TaskMsg) String() string {
 func (*TaskMsg) ProtoMessage() {}
 
 func (x *TaskMsg) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[7]
+	mi := &file_catalog_catalog_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -553,7 +821,7 @@ func (x *TaskMsg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskMsg.ProtoReflect.Descriptor instead.
 func (*TaskMsg) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{7}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *TaskMsg) GetTask() *Task {
@@ -582,14 +850,16 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\vAddressType\x12\x18\n" +
 	"\x14BY_PREFIX_DEPRECATED\x10\x00\x12\f\n" +
 	"\bRELATIVE\x10\x01\x12\b\n" +
-	"\x04FULL\x10\x02\"\x97\x01\n" +
+	"\x04FULL\x10\x02\"\xb6\x01\n" +
 	"\x04Task\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04done\x18\x02 \x01(\bR\x04done\x129\n" +
 	"\n" +
 	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
 	"\bprogress\x18\x04 \x01(\x03R\bprogress\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error\"\xa6\x01\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\x06 \x01(\tR\terrorCode\"\xa6\x01\n" +
 	"\x12RepositoryDumpInfo\x120\n" +
 	"\x14commits_metarange_id\x18\x01 \x01(\tR\x12commitsMetarangeId\x12*\n" +
 	"\x11tags_metarange_id\x18\x02 \x01(\tR\x0ftagsMetarangeId\x122\n" +
@@ -605,7 +875,30 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\x15gc_addresses_location\x18\x03 \x01(\tR\x13gcAddressesLocation\"\x85\x01\n" +
 	"\x1eGarbageCollectionPrepareStatus\x12!\n" +
 	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12@\n" +
-	"\x04info\x18\x02 \x01(\v2,.catalog.GarbageCollectionPrepareCommitsInfoR\x04info\",\n" +
+	"\x04info\x18\x02 \x01(\v2,.catalog.GarbageCollectionPrepareCommitsInfoR\x04info\"\x93\x03\n" +
+	"\x0fCommitAsyncInfo\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\aparents\x18\x02 \x03(\tR\aparents\x12\x1c\n" +
+	"\tcommitter\x18\x03 \x01(\tR\tcommitter\x12\x18\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\x12?\n" +
+	"\rcreation_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12\"\n" +
+	"\rmeta_range_id\x18\x06 \x01(\tR\vmetaRangeId\x12B\n" +
+	"\bmetadata\x18\a \x03(\v2&.catalog.CommitAsyncInfo.MetadataEntryR\bmetadata\x12\x1e\n" +
+	"\n" +
+	"generation\x18\b \x01(\x03R\n" +
+	"generation\x12\x18\n" +
+	"\aversion\x18\t \x01(\x05R\aversion\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +
+	"\x11CommitAsyncStatus\x12!\n" +
+	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12,\n" +
+	"\x04info\x18\x02 \x01(\v2\x18.catalog.CommitAsyncInfoR\x04info\".\n" +
+	"\x0eMergeAsyncInfo\x12\x1c\n" +
+	"\treference\x18\x01 \x01(\tR\treference\"b\n" +
+	"\x10MergeAsyncStatus\x12!\n" +
+	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12+\n" +
+	"\x04info\x18\x02 \x01(\v2\x17.catalog.MergeAsyncInfoR\x04info\",\n" +
 	"\aTaskMsg\x12!\n" +
 	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04taskB$Z\"github.com/treevese/lakefs/catalogb\x06proto3"
 
@@ -622,7 +915,7 @@ func file_catalog_catalog_proto_rawDescGZIP() []byte {
 }
 
 var file_catalog_catalog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_catalog_catalog_proto_goTypes = []any{
 	(Entry_AddressType)(0),                      // 0: catalog.Entry.AddressType
 	(*Entry)(nil),                               // 1: catalog.Entry
@@ -632,26 +925,37 @@ var file_catalog_catalog_proto_goTypes = []any{
 	(*RepositoryRestoreStatus)(nil),             // 5: catalog.RepositoryRestoreStatus
 	(*GarbageCollectionPrepareCommitsInfo)(nil), // 6: catalog.GarbageCollectionPrepareCommitsInfo
 	(*GarbageCollectionPrepareStatus)(nil),      // 7: catalog.GarbageCollectionPrepareStatus
-	(*TaskMsg)(nil),                             // 8: catalog.TaskMsg
-	nil,                                         // 9: catalog.Entry.MetadataEntry
-	(*timestamppb.Timestamp)(nil),               // 10: google.protobuf.Timestamp
+	(*CommitAsyncInfo)(nil),                     // 8: catalog.CommitAsyncInfo
+	(*CommitAsyncStatus)(nil),                   // 9: catalog.CommitAsyncStatus
+	(*MergeAsyncInfo)(nil),                      // 10: catalog.MergeAsyncInfo
+	(*MergeAsyncStatus)(nil),                    // 11: catalog.MergeAsyncStatus
+	(*TaskMsg)(nil),                             // 12: catalog.TaskMsg
+	nil,                                         // 13: catalog.Entry.MetadataEntry
+	nil,                                         // 14: catalog.CommitAsyncInfo.MetadataEntry
+	(*timestamppb.Timestamp)(nil),               // 15: google.protobuf.Timestamp
 }
 var file_catalog_catalog_proto_depIdxs = []int32{
-	10, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
-	9,  // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
+	15, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
+	13, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
 	0,  // 2: catalog.Entry.address_type:type_name -> catalog.Entry.AddressType
-	10, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
+	15, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
 	2,  // 4: catalog.RepositoryDumpStatus.task:type_name -> catalog.Task
 	3,  // 5: catalog.RepositoryDumpStatus.info:type_name -> catalog.RepositoryDumpInfo
 	2,  // 6: catalog.RepositoryRestoreStatus.task:type_name -> catalog.Task
 	2,  // 7: catalog.GarbageCollectionPrepareStatus.task:type_name -> catalog.Task
 	6,  // 8: catalog.GarbageCollectionPrepareStatus.info:type_name -> catalog.GarbageCollectionPrepareCommitsInfo
-	2,  // 9: catalog.TaskMsg.task:type_name -> catalog.Task
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	15, // 9: catalog.CommitAsyncInfo.creation_date:type_name -> google.protobuf.Timestamp
+	14, // 10: catalog.CommitAsyncInfo.metadata:type_name -> catalog.CommitAsyncInfo.MetadataEntry
+	2,  // 11: catalog.CommitAsyncStatus.task:type_name -> catalog.Task
+	8,  // 12: catalog.CommitAsyncStatus.info:type_name -> catalog.CommitAsyncInfo
+	2,  // 13: catalog.MergeAsyncStatus.task:type_name -> catalog.Task
+	10, // 14: catalog.MergeAsyncStatus.info:type_name -> catalog.MergeAsyncInfo
+	2,  // 15: catalog.TaskMsg.task:type_name -> catalog.Task
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_catalog_catalog_proto_init() }
@@ -665,7 +969,7 @@ func file_catalog_catalog_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_catalog_catalog_proto_rawDesc), len(file_catalog_catalog_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

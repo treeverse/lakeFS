@@ -31,6 +31,7 @@ message Task {
   google.protobuf.Timestamp updated_at = 3;
   int64 progress = 4;
   string error = 5;
+  string error_code = 6; // error classification code for HTTP status mapping
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
@@ -63,6 +64,37 @@ message GarbageCollectionPrepareCommitsInfo {
 message GarbageCollectionPrepareStatus {
   Task task = 1;
   GarbageCollectionPrepareCommitsInfo info = 2;
+}
+
+// CommitAsyncInfo holds the result of an async commit operation
+message CommitAsyncInfo {
+  string id = 1;
+  repeated string parents = 2;
+  string committer = 3;
+  string message = 4;
+  google.protobuf.Timestamp creation_date = 5;
+  string meta_range_id = 6;
+  map<string, string> metadata = 7;
+  int64 generation = 8;
+  int32 version = 9;
+
+}
+
+// CommitAsyncStatus holds the status of an async commit operation
+message CommitAsyncStatus {
+  Task task = 1;
+  CommitAsyncInfo info = 2;
+}
+
+// MergeAsyncInfo holds the result of an async merge operation
+message MergeAsyncInfo {
+  string reference = 1;
+}
+
+// MergeAsyncStatus holds the status of an async merge operation
+message MergeAsyncStatus {
+  Task task = 1;
+  MergeAsyncInfo info = 2;
 }
 
 // TaskMsg described generic message with Task field

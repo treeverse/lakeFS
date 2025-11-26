@@ -2,21 +2,21 @@ package catalog
 
 import (
 	"errors"
-	"fmt"
 
-	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/catalogerrors"
 )
 
 // Define errors we raise from this package - do not convert underlying errors, optionally wrap if needed to consolidate
 var (
 	ErrUnknownDiffType          = errors.New("unknown graveler difference type")
-	ErrPathRequiredValue        = fmt.Errorf("missing path: %w", graveler.ErrRequiredValue)
 	ErrInvalidMetadataSrcFormat = errors.New("invalid metadata src format")
 	ErrExpired                  = errors.New("expired from storage")
 
 	// ErrItClosed is used to determine the reason for the end of the walk
 	ErrItClosed = errors.New("iterator closed")
 
-	ErrNotImplemented     = errors.New("functionality not implemented")
+	// Re-export from catalogerrors for backward compatibility
+	ErrPathRequiredValue  = catalogerrors.ErrPathRequiredValue
+	ErrNotImplemented     = catalogerrors.ErrNotImplemented
 	ErrNonEmptyRepository = errors.New("non empty repository")
 )

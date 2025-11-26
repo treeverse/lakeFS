@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -18,12 +17,12 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/elnormous/contenttype"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
@@ -31,6 +30,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/apierrors"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
@@ -42,14 +42,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/icebergsync"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
-	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -2976,121 +2974,8 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
-	// verify if request canceled even if there is no error, early exit point
-	if httputil.IsRequestCanceled(r) {
-		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
-		return true
-	}
-	if err == nil {
-		return false
-	}
-
-	log := c.Logger.WithContext(ctx).WithError(err)
-
-	// order of case is important, more specific errors should be first
-	switch {
-	case errors.Is(err, graveler.ErrLinkAddressInvalid),
-		errors.Is(err, graveler.ErrLinkAddressExpired):
-		log.Debug("Expired or invalid address token")
-		cb(w, r, http.StatusBadRequest, err)
-
-	case errors.Is(err, graveler.ErrNotFound),
-		errors.Is(err, actions.ErrNotFound),
-		errors.Is(err, auth.ErrNotFound),
-		errors.Is(err, kv.ErrNotFound),
-		errors.Is(err, config.ErrNoStorageConfig):
-		log.Debug("Not found")
-		cb(w, r, http.StatusNotFound, err)
-
-	case errors.Is(err, block.ErrForbidden),
-		errors.Is(err, graveler.ErrProtectedBranch),
-		errors.Is(err, graveler.ErrReadOnlyRepository),
-		errors.Is(err, graveler.ErrDeleteDefaultBranch):
-		cb(w, r, http.StatusForbidden, err)
-
-	case errors.Is(err, authentication.ErrSessionExpired):
-		cb(w, r, http.StatusForbidden, "session expired")
-
-	case errors.Is(err, authentication.ErrInvalidTokenFormat):
-		cb(w, r, http.StatusUnauthorized, "invalid token format")
-
-	case errors.Is(err, graveler.ErrDirtyBranch),
-		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
-		errors.Is(err, graveler.ErrInvalidValue),
-		errors.Is(err, validator.ErrInvalidValue),
-		errors.Is(err, catalog.ErrPathRequiredValue),
-		errors.Is(err, graveler.ErrNoChanges),
-		errors.Is(err, permissions.ErrInvalidServiceName),
-		errors.Is(err, permissions.ErrInvalidAction),
-		errors.Is(err, model.ErrValidationError),
-		errors.Is(err, graveler.ErrInvalidRef),
-		errors.Is(err, actions.ErrParamConflict),
-		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
-		errors.Is(err, graveler.ErrParentOutOfRange),
-		errors.Is(err, graveler.ErrCherryPickMergeNoParent),
-		errors.Is(err, graveler.ErrInvalidMergeStrategy),
-		errors.Is(err, block.ErrInvalidAddress),
-		errors.Is(err, block.ErrOperationNotSupported),
-		errors.Is(err, auth.ErrInvalidRequest),
-		errors.Is(err, authentication.ErrInvalidRequest),
-		errors.Is(err, graveler.ErrSameBranch),
-		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
-		errors.Is(err, catalog.ErrInvalidImportSource):
-		log.Debug("Bad request")
-		cb(w, r, http.StatusBadRequest, err)
-
-	case errors.Is(err, graveler.ErrNotUnique),
-		errors.Is(err, graveler.ErrConflictFound),
-		errors.Is(err, graveler.ErrRevertMergeNoParent):
-		log.Debug("Conflict")
-		cb(w, r, http.StatusConflict, err)
-
-	case errors.Is(err, graveler.ErrLockNotAcquired):
-		log.Debug("Lock not acquired")
-		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
-
-	case errors.Is(err, graveler.ErrRepositoryInDeletion):
-		cb(w, r, http.StatusGone, err)
-
-	case errors.Is(err, block.ErrDataNotFound):
-		log.Debug("No data")
-		cb(w, r, http.StatusGone, "No data")
-
-	case errors.Is(err, auth.ErrAlreadyExists):
-		log.Debug("Already exists")
-		cb(w, r, http.StatusConflict, "Already exists")
-
-	case errors.Is(err, graveler.ErrTooManyTries):
-		log.Debug("Retried too many times")
-		cb(w, r, http.StatusTooManyRequests, "Too many attempts, try again later")
-	case errors.Is(err, kv.ErrSlowDown):
-		log.Debug("KV Throttling")
-		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
-	case errors.Is(err, graveler.ErrPreconditionFailed):
-		log.Debug("Precondition failed")
-		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
-	case errors.Is(err, authentication.ErrNotImplemented),
-		errors.Is(err, auth.ErrNotImplemented),
-		errors.Is(err, license.ErrNotImplemented),
-		errors.Is(err, catalog.ErrNotImplemented):
-		cb(w, r, http.StatusNotImplemented, "Not implemented")
-	case errors.Is(err, authentication.ErrInsufficientPermissions):
-		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
-		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-	case errors.Is(err, actions.ErrActionFailed):
-		log.WithError(err).Debug("Precondition failed, aborted by action failure")
-		cb(w, r, http.StatusPreconditionFailed, err)
-	default:
-		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
-		cb(w, r, http.StatusInternalServerError, err)
-	}
-
-	return true
-}
-
 func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) bool {
-	return c.handleAPIErrorCallback(ctx, w, r, err, writeError)
+	return apierrors.HandleAPIErrorCallback(ctx, c.Logger, w, r, err, writeError)
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body apigen.ResetBranchJSONRequestBody, repository, branch string) {
@@ -3333,6 +3218,86 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		return
 	}
 	commitResponse(w, r, newCommit)
+}
+
+func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body apigen.CommitAsyncJSONRequestBody, repository, branch string, params apigen.CommitAsyncParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_commit_async", r, repository, branch, "")
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing user")
+		return
+	}
+	var metadata map[string]string
+	if body.Metadata != nil {
+		metadata = body.Metadata.AdditionalProperties
+	}
+
+	taskID, err := c.AsyncOperations.SubmitCommit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	taskID := params.Id
+	status, err := c.AsyncOperations.GetCommitStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := apigen.CommitAsyncStatus{
+		TaskId:    status.Task.Id,
+		Completed: status.Task.Done,
+	}
+	if status.Task.UpdatedAt != nil {
+		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
+	}
+
+	if status.Task.Error != "" {
+		resp.Error = &apigen.Error{
+			Message: status.Task.Error,
+		}
+	}
+
+	if status.Info != nil {
+		resp.Result = &apigen.Commit{
+			Id:           status.Info.Id,
+			Parents:      status.Info.Parents,
+			Committer:    status.Info.Committer,
+			Message:      status.Info.Message,
+			CreationDate: status.Info.CreationDate.AsTime().Unix(),
+			MetaRangeId:  status.Info.MetaRangeId,
+			Metadata: &apigen.Commit_Metadata{
+				AdditionalProperties: status.Info.Metadata,
+			},
+			Generation: apiutil.Ptr(status.Info.Generation),
+			Version:    apiutil.Ptr(int(status.Info.Version)),
+		}
+	}
+
+	statusCode := getStatusCodeFromTaskError(status.Task.ErrorCode)
+	writeResponse(w, r, statusCode, resp)
 }
 
 func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
@@ -4745,7 +4710,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
-		c.handleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		apierrors.HandleAPIErrorCallback(ctx, c.Logger, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 			writeResponse(w, r, code, nil)
 		})
 		return
@@ -5273,6 +5238,86 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusOK, apigen.MergeResult{
 		Reference: reference,
 	})
+}
+
+func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request, body apigen.MergeIntoBranchAsyncJSONRequestBody, repository, sourceRef, destinationBranch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, destinationBranch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "merge_branches_async", r, repository, destinationBranch, sourceRef)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "user not found")
+		return
+	}
+	metadata := map[string]string{}
+	if body.Metadata != nil {
+		metadata = body.Metadata.AdditionalProperties
+	}
+
+	taskID, err := c.AsyncOperations.SubmitMerge(ctx,
+		repository, destinationBranch, sourceRef,
+		user.Committer(),
+		swag.StringValue(body.Message),
+		metadata,
+		swag.StringValue(body.Strategy),
+		graveler.WithForce(swag.BoolValue(body.Force)),
+		graveler.WithAllowEmpty(swag.BoolValue(body.AllowEmpty)),
+		graveler.WithSquashMerge(swag.BoolValue(body.SquashMerge)),
+	)
+
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) mergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, destinationBranch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	taskID := params.Id
+	status, err := c.AsyncOperations.GetMergeStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := apigen.MergeAsyncStatus{
+		TaskId:    status.Task.Id,
+		Completed: status.Task.Done,
+	}
+	if status.Task.UpdatedAt != nil {
+		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
+	}
+
+	if status.Task.Error != "" {
+		resp.Error = &apigen.Error{
+			Message: status.Task.Error,
+		}
+	}
+
+	if status.Info != nil {
+		resp.Result = &apigen.MergeResult{
+			Reference: status.Info.Reference,
+		}
+	}
+
+	statusCode := getStatusCodeFromTaskError(status.Task.ErrorCode)
+	writeResponse(w, r, statusCode, resp)
 }
 
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
@@ -5935,6 +5980,17 @@ func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{})
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
 	httputil.WriteAPIResponse(w, r, code, response)
+}
+
+func getStatusCodeFromTaskError(errorCode string) int {
+	if errorCode == "" {
+		return http.StatusOK
+	}
+	code, err := strconv.Atoi(errorCode)
+	if err != nil {
+		return http.StatusInternalServerError
+	}
+	return code
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {

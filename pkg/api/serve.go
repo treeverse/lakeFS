@@ -95,7 +95,6 @@ func Serve(
 		usageReporter,
 		licenseManager,
 		icebergSyncer,
-		loginTokenProvider,
 	)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 

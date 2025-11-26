@@ -9,6 +9,7 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/pkg/catalogerrors"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -18,8 +19,9 @@ import (
 const ImportCanceled = "Canceled"
 
 var (
-	ErrImportClosed        = errors.New("import closed")
-	ErrInvalidImportSource = errors.New("invalid import source")
+	ErrImportClosed = errors.New("import closed")
+	// Re-export from catalogerrors for backward compatibility
+	ErrInvalidImportSource = catalogerrors.ErrInvalidImportSource
 )
 
 type Import struct {

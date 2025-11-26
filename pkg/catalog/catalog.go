@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -24,6 +25,7 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	"github.com/treeverse/lakefs/pkg/apierrors"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -71,6 +73,8 @@ const (
 	DumpRefsTaskIDPrefix                  = "DR"
 	RestoreRefsTaskIDPrefix               = "RR"
 	GarbageCollectionPrepareCommitsPrefix = "GCPC"
+	CommitAsyncPrefix                     = "CA"
+	MergeAsyncPrefix                      = "MA"
 
 	TaskExpiryTime = 24 * time.Hour
 
@@ -1378,6 +1382,76 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	return catalogCommitLog, nil
 }
 
+func (c *Catalog) CommitAsync(ctx context.Context, repositoryID, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string, allowEmpty bool, opts ...graveler.SetOptionsFunc) (string, error) {
+	branchID := graveler.BranchID(branch)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+	}); err != nil {
+		return "", err
+	}
+
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+	if repository.ReadOnly {
+		return "", graveler.ErrReadOnlyRepository
+	}
+
+	taskStatus := &CommitAsyncStatus{}
+	taskSteps := []TaskStep{
+		{
+			Name: "commit on " + repository.RepositoryID.String() + "/" + branch,
+			Func: func(ctx context.Context) error {
+				p := graveler.CommitParams{
+					Committer:  committer,
+					Message:    message,
+					Date:       date,
+					Metadata:   map[string]string(metadata),
+					AllowEmpty: allowEmpty,
+				}
+				if sourceMetarange != nil {
+					x := graveler.MetaRangeID(*sourceMetarange)
+					p.SourceMetaRange = &x
+				}
+				commitID, err := c.Store.Commit(ctx, repository, branchID, p, opts...)
+				if err != nil {
+					return err
+				}
+				commitInfo := &CommitAsyncInfo{
+					Id:        commitID.String(),
+					Committer: committer,
+					Message:   message,
+					Metadata:  metadata,
+				}
+				// in order to return commit log we need the commit creation time and parents
+				commit, err := c.Store.GetCommit(ctx, repository, commitID)
+				if err != nil {
+					taskStatus.Info = commitInfo
+					return graveler.ErrCommitNotFound
+				}
+				for _, parent := range commit.Parents {
+					commitInfo.Parents = append(commitInfo.Parents, parent.String())
+				}
+				commitInfo.CreationDate = timestamppb.New(commit.CreationDate.UTC())
+				commitInfo.MetaRangeId = string(commit.MetaRangeID)
+				commitInfo.Version = int32(commit.Version)
+				commitInfo.Generation = int64(commit.Generation)
+				taskStatus.Info = commitInfo
+				return nil
+			},
+		},
+	}
+
+	taskID := NewTaskID(CommitAsyncPrefix)
+	err = c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	if err != nil {
+		return "", err
+	}
+	return taskID, nil
+}
+
 func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, commitID string, version int, committer string, message string, metaRangeID string, creationDate int64, parents []string, metadata map[string]string, generation int32, opts ...graveler.SetOptionsFunc) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -2097,7 +2171,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 	}
 
 	taskStatus := &RepositoryDumpStatus{}
-	taskSteps := []taskStep{
+	taskSteps := []TaskStep{
 		{
 			Name: "dump commits",
 			Func: func(ctx context.Context) error {
@@ -2137,7 +2211,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 
 	// create refs dump task and update initial status.
 	taskID := NewTaskID(DumpRefsTaskIDPrefix)
-	err = c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
@@ -2178,7 +2252,7 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 
 	// create refs restore task and update initial status
 	taskStatus := &RepositoryRestoreStatus{}
-	taskSteps := []taskStep{
+	taskSteps := []TaskStep{
 		{
 			Name: "load commits",
 			Func: func(ctx context.Context) error {
@@ -2199,7 +2273,7 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 		},
 	}
 	taskID := NewTaskID(RestoreRefsTaskIDPrefix)
-	if err := c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus); err != nil {
+	if err := c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus); err != nil {
 		return "", err
 	}
 	return taskID, nil
@@ -2222,10 +2296,10 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 	return &status, nil
 }
 
-// runBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
+// RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
 // the task status is updated after each step, and the task is marked as completed if the step is the last one.
 // initial update if the task is done before running the steps.
-func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []taskStep, taskStatus protoreflect.ProtoMessage) error {
+func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
 	// Allocate Task and set if on the taskStatus's 'Task' field.
 	// We continue to update this field while running each step.
 	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
@@ -2253,7 +2327,19 @@ func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			if err != nil {
 				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
 				task.Done = true
-				task.Error = err.Error()
+				// Use HandleAPIErrorCallback to classify the error and set error code
+				apierrors.HandleAPIErrorCallback(ctx, log, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+					task.ErrorCode = fmt.Sprintf("%d", code)
+					// Convert v to string for the error message
+					switch e := v.(type) {
+					case string:
+						task.Error = e
+					case error:
+						task.Error = e.Error()
+					default:
+						task.Error = fmt.Sprintf("%v", v)
+					}
+				})
 			} else if stepIdx == len(steps)-1 {
 				task.Done = true
 			}
@@ -2718,7 +2804,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	}
 
 	taskStatus := &GarbageCollectionPrepareStatus{}
-	taskSteps := []taskStep{
+	taskSteps := []TaskStep{
 		{
 			Name: "prepare expired commits on " + repository.RepositoryID.String(),
 			Func: func(ctx context.Context) error {
@@ -2737,24 +2823,34 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	}
 
 	taskID := NewTaskID(GarbageCollectionPrepareCommitsPrefix)
-	err = c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
 	return taskID, nil
 }
 
-func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
+// GetTaskStatusGeneric is a generic function to retrieve task status for any task type
+// It validates the task ID against the given prefix and retrieves the status into the provided statusMsg
+func (c *Catalog) GetTaskStatusGeneric(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if !IsTaskID(GarbageCollectionPrepareCommitsPrefix, id) {
-		return nil, graveler.ErrNotFound
+	if !IsTaskID(prefix, taskID) {
+		return graveler.ErrNotFound
 	}
 
+	err = GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
 	var taskStatus GarbageCollectionPrepareStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &taskStatus)
+	err := c.GetTaskStatusGeneric(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus)
 	if err != nil {
 		return nil, err
 	}
