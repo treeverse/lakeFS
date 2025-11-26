@@ -559,6 +559,7 @@ jobs:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000
 
     steps:
       - name: Check-out code

@@ -923,7 +923,6 @@ func initConfig() {
 	}
 
 	// set defaults
-	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
 	viper.SetDefault("network.http2.enabled", defaultHTTP2Enabled)
 	viper.SetDefault("server.retries.enabled", true)
 	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)
