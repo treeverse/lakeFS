@@ -19,8 +19,7 @@ import (
 const ImportCanceled = "Canceled"
 
 var (
-	ErrImportClosed = errors.New("import closed")
-	// Re-export from catalogerrors for backward compatibility
+	ErrImportClosed        = errors.New("import closed")
 	ErrInvalidImportSource = catalogerrors.ErrInvalidImportSource
 )
 

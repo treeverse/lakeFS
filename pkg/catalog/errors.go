@@ -11,12 +11,10 @@ var (
 	ErrUnknownDiffType          = errors.New("unknown graveler difference type")
 	ErrInvalidMetadataSrcFormat = errors.New("invalid metadata src format")
 	ErrExpired                  = errors.New("expired from storage")
-
 	// ErrItClosed is used to determine the reason for the end of the walk
-	ErrItClosed = errors.New("iterator closed")
-
-	// Re-export from catalogerrors for backward compatibility
-	ErrPathRequiredValue  = catalogerrors.ErrPathRequiredValue
-	ErrNotImplemented     = catalogerrors.ErrNotImplemented
+	ErrItClosed           = errors.New("iterator closed")
 	ErrNonEmptyRepository = errors.New("non empty repository")
+
+	ErrPathRequiredValue = catalogerrors.ErrPathRequiredValue
+	ErrNotImplemented    = catalogerrors.ErrNotImplemented
 )

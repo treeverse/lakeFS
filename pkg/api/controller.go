@@ -3426,7 +3426,7 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskError(status.Task.ErrorCode)
+	statusCode := getStatusCodeFromTaskErrorCode(status.Task.ErrorCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -5387,7 +5387,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	taskID, err := c.AsyncOperations.SubmitMerge(ctx,
+	taskID, err := c.AsyncOperations.SubmitMergeIntoBranch(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Committer(),
 		swag.StringValue(body.Message),
@@ -5417,7 +5417,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 	}
 	ctx := r.Context()
 	taskID := params.Id
-	status, err := c.AsyncOperations.GetMergeStatus(ctx, repository, taskID)
+	status, err := c.AsyncOperations.GetMergeIntoBranchStatus(ctx, repository, taskID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5442,7 +5442,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskError(status.Task.ErrorCode)
+	statusCode := getStatusCodeFromTaskErrorCode(status.Task.ErrorCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -6108,7 +6108,7 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	httputil.WriteAPIResponse(w, r, code, response)
 }
 
-func getStatusCodeFromTaskError(errorCode string) int {
+func getStatusCodeFromTaskErrorCode(errorCode string) int {
 	if errorCode == "" {
 		return http.StatusOK
 	}

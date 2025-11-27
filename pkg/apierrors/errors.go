@@ -21,21 +21,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 )
 
-// HandleAPIErrorCallback handles API errors with a custom callback function.
-// This function is used by both synchronous and asynchronous operations to ensure
-// consistent error classification and handling.
-//
-// For synchronous operations (HTTP requests):
-//   - Pass w, r, and a callback that writes the error response
-//
-// For asynchronous operations (background tasks):
-//   - Pass nil for w and r
-//   - Use a callback that stores the error code and message in the task status
-//
-// The callback receives the status code and error message/value.
 func HandleAPIErrorCallback(ctx context.Context, logger logging.Logger, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
-	// Only check if r is not nil (for sync operations)
 	if r != nil && httputil.IsRequestCanceled(r) {
 		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
 		return true

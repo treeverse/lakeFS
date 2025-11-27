@@ -7,10 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-// AsyncOperationsHandler manages asynchronous operations for commits and merges
 type AsyncOperationsHandler interface {
-	// SubmitCommit starts an async commit operation and returns a task ID
-	// Parameters match the Commit function signature
 	SubmitCommit(
 		ctx context.Context,
 		repository string,
@@ -24,16 +21,13 @@ type AsyncOperationsHandler interface {
 		opts ...graveler.SetOptionsFunc,
 	) (taskID string, err error)
 
-	// GetCommitStatus returns the status of an async commit operation
 	GetCommitStatus(
 		ctx context.Context,
 		repository string,
 		taskID string,
 	) (*CommitAsyncStatus, error)
 
-	// SubmitMerge starts an async merge operation and returns a task ID
-	// Parameters match the MergeAsync function signature
-	SubmitMerge(
+	SubmitMergeIntoBranch(
 		ctx context.Context,
 		repositoryID string,
 		destinationBranch string,
@@ -45,23 +39,19 @@ type AsyncOperationsHandler interface {
 		opts ...graveler.SetOptionsFunc,
 	) (taskID string, err error)
 
-	// GetMergeStatus returns the status of an async merge operation
-	GetMergeStatus(
+	GetMergeIntoBranchStatus(
 		ctx context.Context,
 		repository string,
 		taskID string,
 	) (*MergeAsyncStatus, error)
 }
 
-// OSSAsyncOperationsHandler is the OSS implementation that returns "not implemented" for all operations
 type OSSAsyncOperationsHandler struct{}
 
-// NewOSSAsyncOperationsHandler creates a new OSS async operations handler
 func NewOSSAsyncOperationsHandler() *OSSAsyncOperationsHandler {
 	return &OSSAsyncOperationsHandler{}
 }
 
-// SubmitCommit returns not implemented error for OSS
 func (h *OSSAsyncOperationsHandler) SubmitCommit(
 	ctx context.Context,
 	repository string,
@@ -77,7 +67,6 @@ func (h *OSSAsyncOperationsHandler) SubmitCommit(
 	return "", auth.ErrNotImplemented
 }
 
-// GetCommitStatus returns not implemented error for OSS
 func (h *OSSAsyncOperationsHandler) GetCommitStatus(
 	ctx context.Context,
 	repository string,
@@ -86,8 +75,7 @@ func (h *OSSAsyncOperationsHandler) GetCommitStatus(
 	return nil, auth.ErrNotImplemented
 }
 
-// SubmitMerge returns not implemented error for OSS
-func (h *OSSAsyncOperationsHandler) SubmitMerge(
+func (h *OSSAsyncOperationsHandler) SubmitMergeIntoBranch(
 	ctx context.Context,
 	repositoryID string,
 	destinationBranch string,
@@ -101,8 +89,7 @@ func (h *OSSAsyncOperationsHandler) SubmitMerge(
 	return "", auth.ErrNotImplemented
 }
 
-// GetMergeStatus returns not implemented error for OSS
-func (h *OSSAsyncOperationsHandler) GetMergeStatus(
+func (h *OSSAsyncOperationsHandler) GetMergeIntoBranchStatus(
 	ctx context.Context,
 	repository string,
 	taskID string,

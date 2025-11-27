@@ -8,12 +8,7 @@ import (
 )
 
 var (
-	// ErrPathRequiredValue indicates missing path
-	ErrPathRequiredValue = fmt.Errorf("missing path: %w", graveler.ErrRequiredValue)
-
-	// ErrNotImplemented indicates functionality not implemented
-	ErrNotImplemented = errors.New("functionality not implemented")
-
-	// ErrInvalidImportSource indicates invalid import source
+	ErrPathRequiredValue   = fmt.Errorf("missing path: %w", graveler.ErrRequiredValue)
+	ErrNotImplemented      = errors.New("functionality not implemented")
 	ErrInvalidImportSource = errors.New("invalid import source")
 )

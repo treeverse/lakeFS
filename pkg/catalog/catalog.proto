@@ -66,7 +66,6 @@ message GarbageCollectionPrepareStatus {
   GarbageCollectionPrepareCommitsInfo info = 2;
 }
 
-// CommitAsyncInfo holds the result of an async commit operation
 message CommitAsyncInfo {
   string id = 1;
   repeated string parents = 2;
@@ -80,18 +79,15 @@ message CommitAsyncInfo {
 
 }
 
-// CommitAsyncStatus holds the status of an async commit operation
 message CommitAsyncStatus {
   Task task = 1;
   CommitAsyncInfo info = 2;
 }
 
-// MergeAsyncInfo holds the result of an async merge operation
 message MergeAsyncInfo {
   string reference = 1;
 }
 
-// MergeAsyncStatus holds the status of an async merge operation
 message MergeAsyncStatus {
   Task task = 1;
   MergeAsyncInfo info = 2;
