@@ -50,30 +50,18 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "1.24"
+      - name: Install Bencher
+        uses: bencherdev/bencher@61e6a2c2e0b4c8f61c87bef598ba9dbafa51c689 # Stable digest for v0.5.8
+        continue-on-error: true
       - name: Run Go tests
         run: |
           mkdir ./webui/dist
           touch ./webui/dist/index.html
-          time_out=$(mktemp)
-          bench_report=$(mktemp)
-          /usr/bin/time -p -o "$time_out" make test-go
-          jq -n -R < "$time_out" 'reduce (inputs | split(" ")) as $kv ({}; .[$kv[0]] = {value: ($kv[1] | tonumber)}) | {"test-go-runtime": .}' > "$bench_report"
-          echo bench_report=$(echo "$bench_report") >> $GITHUB_ENV
-      - name: Install Bencher
-        uses: bencherdev/bencher@61e6a2c2e0b4c8f61c87bef598ba9dbafa51c689 # Stable digest for v0.5.8
-        continue-on-error: true
-      - name: Report times to Bencher
-        # OK to fail here, it's just a bencher report
-        continue-on-error: true
-        run: |
-          ref=${{github.ref_name}}
+          ref=${{ github.ref_name }}
           release_slug=$(uname -s -m | tr '[:upper:]' '[:lower:]' | sed 's/[ _]/-/g')
-          bencher run  --adapter json \
-            --file="${bench_report}" \
-            --project lakefs \
-            --branch "$ref" \
-            --testbed "github-${release_slug}"
-      - name: What we reported
-        continue-on-error: true
-        run: |
-          cat "${bench_report}"
+          bencher run --build-time \
+                     --adapter json \
+                      --project lakefs \
+                      --branch "$ref" \
+                      --testbed "github-${release_slug}" \
+                      make test-go
