@@ -2276,7 +2276,11 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 				// Classify the error using the API callback (handleAPIErrorCallback from the controller)
 				// before the original error is lost when stored in protobuf, and populate the task's error details.
 				c.APIErrorCB(ctx, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-					task.StatusCode = int32(code)
+					if code >= 0 && code <= 999 {
+						task.StatusCode = int32(code)
+					} else {
+						task.StatusCode = 500
+					}
 					switch e := v.(type) {
 					case string:
 						task.ErrorMsg = e

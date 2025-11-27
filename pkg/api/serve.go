@@ -45,6 +45,7 @@ func Serve(
 	migrator Migrator,
 	collector stats.Collector,
 	actions actionsHandler,
+	asyncOperations catalog.AsyncOperationsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	gatewayDomains []string,
@@ -54,7 +55,6 @@ func Serve(
 	licenseManager license.Manager,
 	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
-	asyncOperations catalog.AsyncOperationsHandler,
 ) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
@@ -89,6 +89,7 @@ func Serve(
 		migrator,
 		collector,
 		actions,
+		asyncOperations,
 		auditChecker,
 		logger,
 		sessionStore,
@@ -97,7 +98,6 @@ func Serve(
 		licenseManager,
 		icebergSyncer,
 		loginTokenProvider,
-		asyncOperations,
 	)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 

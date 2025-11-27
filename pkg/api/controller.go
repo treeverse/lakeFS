@@ -102,6 +102,7 @@ type Controller struct {
 	Migrator           Migrator
 	Collector          stats.Collector
 	Actions            actionsHandler
+	AsyncOpsHandler    catalog.AsyncOperationsHandler
 	AuditChecker       AuditChecker
 	Logger             logging.Logger
 	sessionStore       sessions.Store
@@ -110,7 +111,6 @@ type Controller struct {
 	licenseManager     license.Manager
 	icebergSyncer      icebergsync.Controller
 	loginTokenProvider authentication.LoginTokenProvider
-	AsyncOperations    catalog.AsyncOperationsHandler
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -126,6 +126,7 @@ func NewController(
 	migrator Migrator,
 	collector stats.Collector,
 	actions actionsHandler,
+	asyncOpsHandler catalog.AsyncOperationsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	sessionStore sessions.Store,
@@ -134,7 +135,6 @@ func NewController(
 	licenseManager license.Manager,
 	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
-	asyncOperations catalog.AsyncOperationsHandler,
 ) *Controller {
 	controller := &Controller{
 		Config:             cfg,
@@ -147,6 +147,7 @@ func NewController(
 		Migrator:           migrator,
 		Collector:          collector,
 		Actions:            actions,
+		AsyncOpsHandler:    asyncOpsHandler,
 		AuditChecker:       auditChecker,
 		Logger:             logger,
 		sessionStore:       sessionStore,
@@ -155,7 +156,6 @@ func NewController(
 		licenseManager:     licenseManager,
 		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
-		AsyncOperations:    asyncOperations,
 	}
 	catalog.APIErrorCB = controller.handleAPIErrorCallback
 	return controller
@@ -3453,7 +3453,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_commit", r, repository, branch, "")
+	c.LogAction(ctx, "commit", r, repository, branch, "")
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "missing user")
@@ -3481,7 +3481,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_commit_async", r, repository, branch, "")
+	c.LogAction(ctx, "commit_async", r, repository, branch, "")
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "user not found")
@@ -3492,7 +3492,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	taskID, err := c.AsyncOperations.SubmitCommit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
+	taskID, err := c.AsyncOpsHandler.SubmitCommit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3511,9 +3511,9 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
+	c.LogAction(ctx, "commit_async_status", r, repository, branch, "")
 	taskID := params.Id
-	status, err := c.AsyncOperations.GetCommitStatus(ctx, repository, taskID)
+	status, err := c.AsyncOpsHandler.GetCommitStatus(ctx, repository, taskID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5452,7 +5452,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "merge_branches", r, repository, destinationBranch, sourceRef)
+	c.LogAction(ctx, "merge_into_branch", r, repository, destinationBranch, sourceRef)
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "user not found")
@@ -5498,7 +5498,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "merge_branches_async", r, repository, destinationBranch, sourceRef)
+	c.LogAction(ctx, "merge_into_branch_async", r, repository, destinationBranch, sourceRef)
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "user not found")
@@ -5509,7 +5509,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	taskID, err := c.AsyncOperations.SubmitMergeIntoBranch(ctx,
+	taskID, err := c.AsyncOpsHandler.SubmitMergeIntoBranch(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Committer(),
 		swag.StringValue(body.Message),
@@ -5538,9 +5538,9 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
+	c.LogAction(ctx, "merge_into_branch_async_status", r, repository, destinationBranch, sourceRef)
 	taskID := params.Id
-	status, err := c.AsyncOperations.GetMergeIntoBranchStatus(ctx, repository, taskID)
+	status, err := c.AsyncOpsHandler.GetMergeIntoBranchStatus(ctx, repository, taskID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
