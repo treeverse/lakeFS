@@ -73,5 +73,5 @@ func NewIcebergSyncController(_ config.Config) icebergsync.Controller {
 }
 
 func NewAsyncOperationsHandler(_ *catalog.Catalog) catalog.AsyncOperationsHandler {
-	return catalog.NewOSSAsyncOperationsHandler()
+	return catalog.NewNoopAsyncOperationsHandler()
 }

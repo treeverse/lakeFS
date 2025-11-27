@@ -7,7 +7,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
-	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalogerrors"
@@ -68,7 +68,7 @@ func HandleAPIErrorCallback(ctx context.Context, logger logging.Logger, w http.R
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
 		errors.Is(err, permissions.ErrInvalidAction),
-		errors.Is(err, authmodel.ErrValidationError),
+		errors.Is(err, model.ErrValidationError),
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
@@ -109,23 +109,29 @@ func HandleAPIErrorCallback(ctx context.Context, logger logging.Logger, w http.R
 	case errors.Is(err, graveler.ErrTooManyTries):
 		log.Debug("Retried too many times")
 		cb(w, r, http.StatusTooManyRequests, "Too many attempts, try again later")
+
 	case errors.Is(err, kv.ErrSlowDown):
 		log.Debug("KV Throttling")
 		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
+
 	case errors.Is(err, graveler.ErrPreconditionFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
+
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
 		errors.Is(err, license.ErrNotImplemented),
 		errors.Is(err, catalogerrors.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
+
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+
 	case errors.Is(err, actions.ErrActionFailed):
 		log.WithError(err).Debug("Precondition failed, aborted by action failure")
 		cb(w, r, http.StatusPreconditionFailed, err)
+
 	default:
 		logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)

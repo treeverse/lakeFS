@@ -3,14 +3,13 @@ package catalog
 import (
 	"context"
 
-	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 type AsyncOperationsHandler interface {
 	SubmitCommit(
 		ctx context.Context,
-		repository string,
+		repositoryID string,
 		branch string,
 		message string,
 		committer string,
@@ -23,7 +22,7 @@ type AsyncOperationsHandler interface {
 
 	GetCommitStatus(
 		ctx context.Context,
-		repository string,
+		repositoryID string,
 		taskID string,
 	) (*CommitAsyncStatus, error)
 
@@ -41,20 +40,20 @@ type AsyncOperationsHandler interface {
 
 	GetMergeIntoBranchStatus(
 		ctx context.Context,
-		repository string,
+		repositoryID string,
 		taskID string,
 	) (*MergeAsyncStatus, error)
 }
 
-type OSSAsyncOperationsHandler struct{}
+type NoopAsyncOperationsHandler struct{}
 
-func NewOSSAsyncOperationsHandler() *OSSAsyncOperationsHandler {
-	return &OSSAsyncOperationsHandler{}
+func NewNoopAsyncOperationsHandler() *NoopAsyncOperationsHandler {
+	return &NoopAsyncOperationsHandler{}
 }
 
-func (h *OSSAsyncOperationsHandler) SubmitCommit(
+func (h *NoopAsyncOperationsHandler) SubmitCommit(
 	ctx context.Context,
-	repository string,
+	repositoryID string,
 	branch string,
 	message string,
 	committer string,
@@ -64,18 +63,18 @@ func (h *OSSAsyncOperationsHandler) SubmitCommit(
 	allowEmpty bool,
 	opts ...graveler.SetOptionsFunc,
 ) (string, error) {
-	return "", auth.ErrNotImplemented
+	return "", ErrNotImplemented
 }
 
-func (h *OSSAsyncOperationsHandler) GetCommitStatus(
+func (h *NoopAsyncOperationsHandler) GetCommitStatus(
 	ctx context.Context,
-	repository string,
+	repositoryID string,
 	taskID string,
 ) (*CommitAsyncStatus, error) {
-	return nil, auth.ErrNotImplemented
+	return nil, ErrNotImplemented
 }
 
-func (h *OSSAsyncOperationsHandler) SubmitMergeIntoBranch(
+func (h *NoopAsyncOperationsHandler) SubmitMergeIntoBranch(
 	ctx context.Context,
 	repositoryID string,
 	destinationBranch string,
@@ -86,13 +85,13 @@ func (h *OSSAsyncOperationsHandler) SubmitMergeIntoBranch(
 	strategy string,
 	opts ...graveler.SetOptionsFunc,
 ) (string, error) {
-	return "", auth.ErrNotImplemented
+	return "", ErrNotImplemented
 }
 
-func (h *OSSAsyncOperationsHandler) GetMergeIntoBranchStatus(
+func (h *NoopAsyncOperationsHandler) GetMergeIntoBranchStatus(
 	ctx context.Context,
-	repository string,
+	repositoryID string,
 	taskID string,
 ) (*MergeAsyncStatus, error) {
-	return nil, auth.ErrNotImplemented
+	return nil, ErrNotImplemented
 }

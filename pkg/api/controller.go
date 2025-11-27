@@ -3363,7 +3363,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 	c.LogAction(ctx, "create_commit_async", r, repository, branch, "")
 	user, err := auth.GetUser(ctx)
 	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, "missing user")
+		writeError(w, r, http.StatusUnauthorized, "user not found")
 		return
 	}
 	var metadata map[string]string
@@ -3390,6 +3390,7 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 	ctx := r.Context()
+	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
 	taskID := params.Id
 	status, err := c.AsyncOperations.GetCommitStatus(ctx, repository, taskID)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5416,6 +5417,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
+	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
 	taskID := params.Id
 	status, err := c.AsyncOperations.GetMergeIntoBranchStatus(ctx, repository, taskID)
 	if c.handleAPIError(ctx, w, r, err) {
