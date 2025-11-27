@@ -56,7 +56,7 @@ jobs:
           touch ./webui/dist/index.html
           time_out=$(mktemp)
           bench_report=$(mktemp)
-          /usr/bin/time -p -o "$time_out" make test
+          /usr/bin/time -p -o "$time_out" make test-go
           jq -n -R < "$time_out" 'reduce (inputs | split(" ")) as $kv ({}; .[$kv[0]] = {value: ($kv[1] | tonumber)}) | {"test-go-runtime": .}' > "$bench_report"
           echo bench_report=$(echo "$bench_report") >> $GITHUB_ENV
       - name: Install Bencher
