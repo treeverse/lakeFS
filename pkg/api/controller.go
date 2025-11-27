@@ -18,7 +18,6 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -32,7 +31,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
-	"github.com/treeverse/lakefs/pkg/apierrors"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
@@ -44,12 +42,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/icebergsync"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -136,7 +136,7 @@ func NewController(
 	loginTokenProvider authentication.LoginTokenProvider,
 	asyncOperations catalog.AsyncOperationsHandler,
 ) *Controller {
-	return &Controller{
+	controller := &Controller{
 		Config:             cfg,
 		Catalog:            catalog,
 		Authenticator:      authenticator,
@@ -157,6 +157,8 @@ func NewController(
 		loginTokenProvider: loginTokenProvider,
 		AsyncOperations:    asyncOperations,
 	}
+	catalog.APIErrorCB = controller.handleAPIErrorCallback
+	return controller
 }
 
 func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
@@ -3104,8 +3106,127 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+	// verify if request canceled even if there is no error, early exit point
+	if r != nil && httputil.IsRequestCanceled(r) {
+		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
+		return true
+	}
+	if err == nil {
+		return false
+	}
+
+	log := c.Logger.WithContext(ctx).WithError(err)
+
+	// order of case is important, more specific errors should be first
+	switch {
+	case errors.Is(err, graveler.ErrLinkAddressInvalid),
+		errors.Is(err, graveler.ErrLinkAddressExpired):
+		log.Debug("Expired or invalid address token")
+		cb(w, r, http.StatusBadRequest, err)
+
+	case errors.Is(err, graveler.ErrNotFound),
+		errors.Is(err, actions.ErrNotFound),
+		errors.Is(err, auth.ErrNotFound),
+		errors.Is(err, kv.ErrNotFound),
+		errors.Is(err, config.ErrNoStorageConfig):
+		log.Debug("Not found")
+		cb(w, r, http.StatusNotFound, err)
+
+	case errors.Is(err, block.ErrForbidden),
+		errors.Is(err, graveler.ErrProtectedBranch),
+		errors.Is(err, graveler.ErrReadOnlyRepository),
+		errors.Is(err, graveler.ErrDeleteDefaultBranch):
+		cb(w, r, http.StatusForbidden, err)
+
+	case errors.Is(err, authentication.ErrSessionExpired):
+		cb(w, r, http.StatusForbidden, "session expired")
+
+	case errors.Is(err, authentication.ErrInvalidTokenFormat):
+		cb(w, r, http.StatusUnauthorized, "invalid token format")
+
+	case errors.Is(err, graveler.ErrDirtyBranch),
+		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
+		errors.Is(err, graveler.ErrInvalidValue),
+		errors.Is(err, validator.ErrInvalidValue),
+		errors.Is(err, catalog.ErrPathRequiredValue),
+		errors.Is(err, graveler.ErrNoChanges),
+		errors.Is(err, permissions.ErrInvalidServiceName),
+		errors.Is(err, permissions.ErrInvalidAction),
+		errors.Is(err, model.ErrValidationError),
+		errors.Is(err, graveler.ErrInvalidRef),
+		errors.Is(err, actions.ErrParamConflict),
+		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
+		errors.Is(err, graveler.ErrParentOutOfRange),
+		errors.Is(err, graveler.ErrCherryPickMergeNoParent),
+		errors.Is(err, graveler.ErrInvalidMergeStrategy),
+		errors.Is(err, block.ErrInvalidAddress),
+		errors.Is(err, block.ErrOperationNotSupported),
+		errors.Is(err, auth.ErrInvalidRequest),
+		errors.Is(err, authentication.ErrInvalidRequest),
+		errors.Is(err, graveler.ErrSameBranch),
+		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
+		errors.Is(err, catalog.ErrInvalidImportSource):
+		log.Debug("Bad request")
+		cb(w, r, http.StatusBadRequest, err)
+
+	case errors.Is(err, graveler.ErrNotUnique),
+		errors.Is(err, graveler.ErrConflictFound),
+		errors.Is(err, graveler.ErrRevertMergeNoParent):
+		log.Debug("Conflict")
+		cb(w, r, http.StatusConflict, err)
+
+	case errors.Is(err, graveler.ErrLockNotAcquired):
+		log.Debug("Lock not acquired")
+		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
+
+	case errors.Is(err, graveler.ErrRepositoryInDeletion):
+		cb(w, r, http.StatusGone, err)
+
+	case errors.Is(err, block.ErrDataNotFound):
+		log.Debug("No data")
+		cb(w, r, http.StatusGone, "No data")
+
+	case errors.Is(err, auth.ErrAlreadyExists):
+		log.Debug("Already exists")
+		cb(w, r, http.StatusConflict, "Already exists")
+
+	case errors.Is(err, graveler.ErrTooManyTries):
+		log.Debug("Retried too many times")
+		cb(w, r, http.StatusTooManyRequests, "Too many attempts, try again later")
+
+	case errors.Is(err, kv.ErrSlowDown):
+		log.Debug("KV Throttling")
+		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
+
+	case errors.Is(err, graveler.ErrPreconditionFailed):
+		log.Debug("Precondition failed")
+		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
+
+	case errors.Is(err, authentication.ErrNotImplemented),
+		errors.Is(err, auth.ErrNotImplemented),
+		errors.Is(err, license.ErrNotImplemented),
+		errors.Is(err, catalog.ErrNotImplemented):
+		cb(w, r, http.StatusNotImplemented, "Not implemented")
+
+	case errors.Is(err, authentication.ErrInsufficientPermissions):
+		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
+		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+
+	case errors.Is(err, actions.ErrActionFailed):
+		log.WithError(err).Debug("Precondition failed, aborted by action failure")
+		cb(w, r, http.StatusPreconditionFailed, err)
+
+	default:
+		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
+		cb(w, r, http.StatusInternalServerError, err)
+	}
+
+	return true
+}
+
 func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) bool {
-	return apierrors.HandleAPIErrorCallback(ctx, c.Logger, w, r, err, writeError)
+	return c.handleAPIErrorCallback(ctx, w, r, err, writeError)
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body apigen.ResetBranchJSONRequestBody, repository, branch string) {
@@ -3405,9 +3526,9 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
 	}
 
-	if status.Task.Error != "" {
+	if status.Task.ErrorMsg != "" {
 		resp.Error = &apigen.Error{
-			Message: status.Task.Error,
+			Message: status.Task.ErrorMsg,
 		}
 	}
 
@@ -3427,7 +3548,7 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskErrorCode(status.Task.ErrorCode)
+	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -4114,9 +4235,9 @@ func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
 	}
 
-	if status.Task.Error != "" {
+	if status.Task.ErrorMsg != "" {
 		resp.Error = &apigen.Error{
-			Message: status.Task.Error,
+			Message: status.Task.ErrorMsg,
 		}
 	}
 
@@ -4518,8 +4639,8 @@ func (c *Controller) DumpStatus(w http.ResponseWriter, r *http.Request, reposito
 		Done:       status.Task.Done,
 		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
-	if status.Task.Error != "" {
-		response.Error = apiutil.Ptr(status.Task.Error)
+	if status.Task.ErrorMsg != "" {
+		response.Error = apiutil.Ptr(status.Task.ErrorMsg)
 	}
 	if status.Task.Done && status.Info != nil {
 		response.Refs = &apigen.RefsDump{
@@ -4619,8 +4740,8 @@ func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repos
 		Done:       status.Task.Done,
 		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
-	if status.Task.Error != "" {
-		response.Error = apiutil.Ptr(status.Task.Error)
+	if status.Task.ErrorMsg != "" {
+		response.Error = apiutil.Ptr(status.Task.ErrorMsg)
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -4841,7 +4962,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
-		apierrors.HandleAPIErrorCallback(ctx, c.Logger, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		c.handleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 			writeResponse(w, r, code, nil)
 		})
 		return
@@ -5432,9 +5553,9 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
 	}
 
-	if status.Task.Error != "" {
+	if status.Task.ErrorMsg != "" {
 		resp.Error = &apigen.Error{
-			Message: status.Task.Error,
+			Message: status.Task.ErrorMsg,
 		}
 	}
 
@@ -5444,7 +5565,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskErrorCode(status.Task.ErrorCode)
+	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -6110,15 +6231,11 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	httputil.WriteAPIResponse(w, r, code, response)
 }
 
-func getStatusCodeFromTaskErrorCode(errorCode string) int {
-	if errorCode == "" {
+func getStatusCodeFromTaskErrorCode(errorCode int32) int {
+	if errorCode == 0 {
 		return http.StatusOK
 	}
-	code, err := strconv.Atoi(errorCode)
-	if err != nil {
-		return http.StatusInternalServerError
-	}
-	return code
+	return int(errorCode)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {

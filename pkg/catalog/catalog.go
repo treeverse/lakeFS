@@ -25,7 +25,6 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
-	"github.com/treeverse/lakefs/pkg/apierrors"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -255,6 +254,8 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
+	// The API callback (handleAPIErrorCallback from the controller) is used to classify the error inside the RunBackgroundTaskSteps function.
+	APIErrorCB func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool
 }
 
 const (
@@ -435,6 +436,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
+		// Initiate the API callback function
+		APIErrorCB: func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+			if err == nil {
+				return false
+			}
+			cb(w, r, http.StatusInternalServerError, err)
+			return true
+		},
 	}, nil
 }
 
@@ -2264,15 +2273,17 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			if err != nil {
 				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
 				task.Done = true
-				apierrors.HandleAPIErrorCallback(ctx, log, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-					task.ErrorCode = fmt.Sprintf("%d", code)
+				// Classify the error using the API callback (handleAPIErrorCallback from the controller)
+				// before the original error is lost when stored in protobuf, and populate the task's error details.
+				c.APIErrorCB(ctx, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+					task.StatusCode = int32(code)
 					switch e := v.(type) {
 					case string:
-						task.Error = e
+						task.ErrorMsg = e
 					case error:
-						task.Error = e.Error()
+						task.ErrorMsg = e.Error()
 					default:
-						task.Error = fmt.Sprintf("%v", v)
+						task.ErrorMsg = fmt.Sprintf("%v", v)
 					}
 				})
 			} else if stepIdx == len(steps)-1 {

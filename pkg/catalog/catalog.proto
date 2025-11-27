@@ -31,7 +31,7 @@ message Task {
   google.protobuf.Timestamp updated_at = 3;
   int64 progress = 4;
   string error_msg = 5;
-  string error_code = 6; // error classification code for HTTP status mapping
+  int32 status_code = 6; // error classification code for HTTP status mapping
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump

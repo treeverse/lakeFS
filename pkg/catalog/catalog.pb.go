@@ -173,8 +173,8 @@ type Task struct {
 	Done          bool                   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Progress      int64                  `protobuf:"varint,4,opt,name=progress,proto3" json:"progress,omitempty"`
-	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-	ErrorCode     string                 `protobuf:"bytes,6,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"` // error classification code for HTTP status mapping
+	ErrorMsg      string                 `protobuf:"bytes,5,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
+	StatusCode    int32                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"` // error classification code for HTTP status mapping
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -237,18 +237,18 @@ func (x *Task) GetProgress() int64 {
 	return 0
 }
 
-func (x *Task) GetError() string {
+func (x *Task) GetErrorMsg() string {
 	if x != nil {
-		return x.Error
+		return x.ErrorMsg
 	}
 	return ""
 }
 
-func (x *Task) GetErrorCode() string {
+func (x *Task) GetStatusCode() int32 {
 	if x != nil {
-		return x.ErrorCode
+		return x.StatusCode
 	}
-	return ""
+	return 0
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
@@ -846,16 +846,16 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\vAddressType\x12\x18\n" +
 	"\x14BY_PREFIX_DEPRECATED\x10\x00\x12\f\n" +
 	"\bRELATIVE\x10\x01\x12\b\n" +
-	"\x04FULL\x10\x02\"\xb6\x01\n" +
+	"\x04FULL\x10\x02\"\xbf\x01\n" +
 	"\x04Task\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04done\x18\x02 \x01(\bR\x04done\x129\n" +
 	"\n" +
 	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
-	"\bprogress\x18\x04 \x01(\x03R\bprogress\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error\x12\x1d\n" +
-	"\n" +
-	"error_code\x18\x06 \x01(\tR\terrorCode\"\xa6\x01\n" +
+	"\bprogress\x18\x04 \x01(\x03R\bprogress\x12\x1b\n" +
+	"\terror_msg\x18\x05 \x01(\tR\berrorMsg\x12\x1f\n" +
+	"\vstatus_code\x18\x06 \x01(\x05R\n" +
+	"statusCode\"\xa6\x01\n" +
 	"\x12RepositoryDumpInfo\x120\n" +
 	"\x14commits_metarange_id\x18\x01 \x01(\tR\x12commitsMetarangeId\x12*\n" +
 	"\x11tags_metarange_id\x18\x02 \x01(\tR\x0ftagsMetarangeId\x122\n" +
