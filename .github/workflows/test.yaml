@@ -42,7 +42,7 @@ jobs:
     name: Run Go tests
     runs-on: ubuntu-22.04
     env:
-      BENCHER_API_TOKEN: ${{secrets.BENCHER_API_TOKEN}}
+      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -59,21 +59,20 @@ jobs:
           /usr/bin/time -p -o "$time_out" make test
           jq -n -R < "$time_out" 'reduce (inputs | split(" ")) as $kv ({}; .[$kv[0]] = {value: ($kv[1] | tonumber)}) | {"test-go-runtime": .}' > "$bench_report"
           echo bench_report=$(echo "$bench_report") >> $GITHUB_ENV
+      - name: Install Bencher
+        uses: bencherdev/bencher@61e6a2c2e0b4c8f61c87bef598ba9dbafa51c689 # Stable digest for v0.5.8
+        continue-on-error: true
       - name: Report times to Bencher
         # OK to fail here, it's just a bencher report
         continue-on-error: true
         run: |
           ref=${{github.ref_name}}
           release_slug=$(uname -s -m | tr '[:upper:]' '[:lower:]' | sed 's/[ _]/-/g')
-          gh release download --skip-existing -O ./bencher  -p '*linux-x86-64'   -R bencherdev/bencher v0.5.8
-          chmod +x ./bencher
-          ./bencher run  --adapter json \
+          bencher run  --adapter json \
             --file="${bench_report}" \
             --project lakefs \
             --branch "$ref" \
             --testbed "github-${release_slug}"
-        env:
-          GH_TOKEN: ${{ github.token }}
       - name: What we reported
         continue-on-error: true
         run: |
