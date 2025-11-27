@@ -183,14 +183,14 @@ func TestParseExpires(t *testing.T) {
 	}
 }
 
-func TestHasRequiredParams(t *testing.T) {
+func TestIsV4PresignedRequest(t *testing.T) {
 	testCases := []struct {
-		name     string
-		query    url.Values
-		expected bool
+		name          string
+		query         url.Values
+		expectedError error
 	}{
 		{
-			name: "all required params present",
+			name: "valid V4 presigned request",
 			query: url.Values{
 				v4AmzAlgorithm:     {"AWS4-HMAC-SHA256"},
 				v4AmzCredential:    {"AKIAIOSFODNN7EXAMPLE/20230101/us-east-1/s3/aws4_request"},
@@ -199,10 +199,10 @@ func TestHasRequiredParams(t *testing.T) {
 				v4AmzSignedHeaders: {"host"},
 				v4AmzExpires:       {"3600"},
 			},
-			expected: true,
+			expectedError: nil,
 		},
 		{
-			name: "missing a parameter",
+			name: "missing algorithm - not a V4 request",
 			query: url.Values{
 				v4AmzCredential:    {"AKIAIOSFODNN7EXAMPLE/20230101/us-east-1/s3/aws4_request"},
 				v4AmzSignature:     {"abcd1234"},
@@ -210,32 +210,54 @@ func TestHasRequiredParams(t *testing.T) {
 				v4AmzSignedHeaders: {"host"},
 				v4AmzExpires:       {"3600"},
 			},
-			expected: false,
+			expectedError: ErrBadAuthorizationFormat,
 		},
 		{
-			name: "parameter is present but empty",
+			name: "invalid algorithm",
+			query: url.Values{
+				v4AmzAlgorithm:     {"AWS4-HMAC-SHA512"},
+				v4AmzCredential:    {"AKIAIOSFODNN7EXAMPLE/20230101/us-east-1/s3/aws4_request"},
+				v4AmzSignature:     {"abcd1234"},
+				v4AmzDate:          {"20230101T120000Z"},
+				v4AmzSignedHeaders: {"host"},
+				v4AmzExpires:       {"3600"},
+			},
+			expectedError: errors.ErrInvalidQuerySignatureAlgo,
+		},
+		{
+			name: "missing required param (credential)",
+			query: url.Values{
+				v4AmzAlgorithm:     {"AWS4-HMAC-SHA256"},
+				v4AmzSignature:     {"abcd1234"},
+				v4AmzDate:          {"20230101T120000Z"},
+				v4AmzSignedHeaders: {"host"},
+				v4AmzExpires:       {"3600"},
+			},
+			expectedError: errors.ErrMissingFields,
+		},
+		{
+			name: "missing required param (expires)",
 			query: url.Values{
 				v4AmzAlgorithm:     {"AWS4-HMAC-SHA256"},
 				v4AmzCredential:    {"AKIAIOSFODNN7EXAMPLE/20230101/us-east-1/s3/aws4_request"},
 				v4AmzSignature:     {"abcd1234"},
 				v4AmzDate:          {"20230101T120000Z"},
 				v4AmzSignedHeaders: {"host"},
-				v4AmzExpires:       {""},
 			},
-			expected: true, // Key exists in map, even if empty
+			expectedError: errors.ErrMissingFields,
 		},
 		{
-			name:     "empty query params",
-			query:    url.Values{},
-			expected: false,
+			name:          "empty query params - not a V4 request",
+			query:         url.Values{},
+			expectedError: ErrBadAuthorizationFormat,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := hasRequiredParams(tc.query)
-			if result != tc.expected {
-				t.Errorf("expected %v, got %v", tc.expected, result)
+			err := isV4PresignedRequest(tc.query)
+			if err != tc.expectedError {
+				t.Errorf("expected error %v, got %v", tc.expectedError, err)
 			}
 		})
 	}

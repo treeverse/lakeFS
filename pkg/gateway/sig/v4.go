@@ -87,23 +87,30 @@ func parseExpires(expiresStr string) (int64, error) {
 	return expires, nil
 }
 
-func hasRequiredParams(values url.Values) bool {
-	var requiredPresignedParams = []string{
-		v4AmzAlgorithm,
+func isV4PresignedRequest(query url.Values) error {
+	algorithm, ok := query[v4AmzAlgorithm]
+	if !ok {
+		// Not a V4 presigned request, try next auth method
+		return ErrBadAuthorizationFormat
+	}
+	if len(algorithm) == 0 || !strings.EqualFold(algorithm[0], V4authHeaderPrefix) {
+		return errors.ErrInvalidQuerySignatureAlgo
+	}
+
+	requiredParams := []string{
 		v4AmzCredential,
 		v4AmzSignature,
 		v4AmzDate,
 		v4AmzSignedHeaders,
 		v4AmzExpires,
 	}
-
-	for _, param := range requiredPresignedParams {
-		if _, ok := values[param]; !ok {
-			return false
+	for _, param := range requiredParams {
+		if _, ok := query[param]; !ok {
+			return errors.ErrMissingFields
 		}
 	}
 
-	return true
+	return nil
 }
 
 func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
@@ -138,16 +145,12 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	}
 
 	query := r.URL.Query()
-	// otherwise, see if we have all the required query parameters
-	if !hasRequiredParams(query) {
-		return ctx, errors.ErrInvalidQueryParams
-	}
-	ctx.IsPresigned = true
 
-	algorithm := query.Get(v4AmzAlgorithm)
-	if len(algorithm) == 0 || !strings.EqualFold(algorithm, V4authHeaderPrefix) {
-		return ctx, errors.ErrInvalidQuerySignatureAlgo
+	if err := isV4PresignedRequest(query); err != nil {
+		return ctx, err
 	}
+
+	ctx.IsPresigned = true
 	credentialScope := query.Get(v4AmzCredential)
 	if len(credentialScope) == 0 {
 		return ctx, errors.ErrMissingCredTag
