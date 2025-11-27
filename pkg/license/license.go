@@ -10,7 +10,7 @@ type Manager interface {
 	InstallationID() string
 }
 
-var ErrNotImplemented = errors.New("not implemented")
+var ErrNotImplemented = errors.New("not implementedd")
 
 // NopLicenseManager is a No-Operation implementation of license manager i.e. does not actually check license restrictions
 type NopLicenseManager struct {
