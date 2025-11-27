@@ -33,7 +33,7 @@ const (
 	v4scopeTerminator        = "aws4_request"
 	v4timeFormat             = "20060102T150405Z"
 	v4shortTimeFormat        = "20060102"
-	maxExpires               = 604800
+	AmzPresignMaxExpires     = 7 * 24 * time.Hour // 7 days or 604800 seconds
 
 	v4AmzAlgorithm = "X-Amz-Algorithm"
 	//nolint:gosec
@@ -81,29 +81,36 @@ func parseExpires(expiresStr string) (int64, error) {
 	if expires < 0 {
 		return 0, errors.ErrNegativeExpires
 	}
-	if expires > maxExpires {
+	if expires > int64(AmzPresignMaxExpires.Seconds()) {
 		return 0, errors.ErrMaximumExpires
 	}
 	return expires, nil
 }
 
-func hasRequiredParams(values url.Values) bool {
-	var requiredPresignedParams = []string{
-		v4AmzAlgorithm,
+func isV4PresignedRequest(query url.Values) error {
+	algorithm, ok := query[v4AmzAlgorithm]
+	if !ok {
+		// Not a V4 presigned request, try next auth method
+		return ErrBadAuthorizationFormat
+	}
+	if len(algorithm) == 0 || !strings.EqualFold(algorithm[0], V4authHeaderPrefix) {
+		return errors.ErrInvalidQuerySignatureAlgo
+	}
+
+	requiredParams := []string{
 		v4AmzCredential,
 		v4AmzSignature,
 		v4AmzDate,
 		v4AmzSignedHeaders,
 		v4AmzExpires,
 	}
-
-	for _, param := range requiredPresignedParams {
-		if _, ok := values[param]; !ok {
-			return false
+	for _, param := range requiredParams {
+		if _, ok := query[param]; !ok {
+			return errors.ErrMissingFields
 		}
 	}
 
-	return true
+	return nil
 }
 
 func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
@@ -138,16 +145,13 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	}
 
 	query := r.URL.Query()
-	// otherwise, see if we have all the required query parameters
-	if !hasRequiredParams(query) {
-		return ctx, errors.ErrInvalidQueryParams
-	}
-	ctx.IsPresigned = true
 
-	algorithm := query.Get(v4AmzAlgorithm)
-	if len(algorithm) == 0 || !strings.EqualFold(algorithm, V4authHeaderPrefix) {
-		return ctx, errors.ErrInvalidQuerySignatureAlgo
+	// If we couldn't find the auth header, try to parse the request as a presigned URL
+	if err := isV4PresignedRequest(query); err != nil {
+		return ctx, err
 	}
+
+	ctx.IsPresigned = true
 	credentialScope := query.Get(v4AmzCredential)
 	if len(credentialScope) == 0 {
 		return ctx, errors.ErrMissingCredTag
@@ -357,9 +361,9 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 
 func (ctx *verificationCtx) verifyExpiration() error {
 	if !ctx.AuthValue.IsPresigned {
-		// TODO: we currently don't have handling for this
 		return nil
 	}
+
 	// Get and validate the request timestamp
 	amzDate, err := ctx.getAmzDate()
 	if err != nil {

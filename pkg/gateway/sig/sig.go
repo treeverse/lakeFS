@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	ErrHeaderMalformed = errors.New("header malformed")
+	ErrHeaderMalformed        = errors.New("header malformed")
+	ErrBadAuthorizationFormat = errors.New("authorization format not supported by this authenticator")
 
 	// reservedObjectNames - if object matches reserved string, no need to encode them
 	reservedObjectNames = regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")
@@ -99,7 +100,10 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 		if err == nil {
 			c.chosen = method
 			return sigContext, nil
-		} else if !errors.Is(err, ErrHeaderMalformed) {
+		} else if !errors.Is(err, ErrHeaderMalformed) && !errors.Is(err, ErrBadAuthorizationFormat) {
+			// ErrHeaderMalformed and ErrBadAuthorizationFormat indicate "wrong auth format, try next method".
+			// All other errors mean the request matched this method's format but failed validation,
+			// so return immediately without trying remaining methods.
 			return nil, err
 		}
 	}
