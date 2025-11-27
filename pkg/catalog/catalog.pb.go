@@ -525,7 +525,6 @@ func (x *GarbageCollectionPrepareStatus) GetInfo() *GarbageCollectionPrepareComm
 	return nil
 }
 
-// CommitAsyncInfo holds the result of an async commit operation
 type CommitAsyncInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -634,7 +633,6 @@ func (x *CommitAsyncInfo) GetVersion() int32 {
 	return 0
 }
 
-// CommitAsyncStatus holds the status of an async commit operation
 type CommitAsyncStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
@@ -687,7 +685,6 @@ func (x *CommitAsyncStatus) GetInfo() *CommitAsyncInfo {
 	return nil
 }
 
-// MergeAsyncInfo holds the result of an async merge operation
 type MergeAsyncInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Reference     string                 `protobuf:"bytes,1,opt,name=reference,proto3" json:"reference,omitempty"`
@@ -732,7 +729,6 @@ func (x *MergeAsyncInfo) GetReference() string {
 	return ""
 }
 
-// MergeAsyncStatus holds the status of an async merge operation
 type MergeAsyncStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
