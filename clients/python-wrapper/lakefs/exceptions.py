@@ -111,12 +111,6 @@ class PermissionException(NotAuthorizedException, PermissionError):
     """
 
 
-class InvalidRangeException(ServerException, OSError):
-    """
-    Raised when the reference could not be found in the lakeFS server
-    """
-
-
 class ImportManagerException(LakeFSException):
     """
     Import manager exceptions that are not originated from the SDK
@@ -136,14 +130,13 @@ _STATUS_CODE_TO_EXCEPTION = {
     http.HTTPStatus.NOT_FOUND.value: NotFoundException,
     http.HTTPStatus.METHOD_NOT_ALLOWED.value: UnsupportedOperationException,
     http.HTTPStatus.CONFLICT.value: ConflictException,
-    http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value: InvalidRangeException
 }
 
 
 @contextmanager
 def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], LakeFSException]] = None):
     """
-    Contexts which converts lakefs_sdk API exceptions to LakeFS exceptions and handles them.
+    Context that converts lakefs_sdk API exceptions to LakeFS exceptions and handles them.
 
     :param custom_handler: Optional handler which can be used to provide custom behavior for specific exceptions.
         If custom_handler returns an exception, this function will raise the exception at the end of the
