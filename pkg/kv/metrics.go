@@ -95,6 +95,23 @@ func (s *StoreMetricsWrapper) Close() {
 	s.Store.Close()
 }
 
-func storeMetrics(store Store, storeType string) *StoreMetricsWrapper {
+// StoreTransactionerMetricsWrapper wraps any StoreTransactioner with metrics
+type StoreTransactionerMetricsWrapper struct {
+	StoreMetricsWrapper
+	Transactioner
+}
+
+func (s *StoreTransactionerMetricsWrapper) Transact(ctx context.Context, fn func(operations Operations) error, opts TransactionOpts) error {
+	// TODO(ariels): Wrap the passed-in Operations struct to measure _its_ latenceis.
+	return s.Transactioner.Transact(ctx, fn, opts)
+}
+
+func storeMetrics(store Store, storeType string) Store {
+	if transactionStore, ok := store.(TransactionerStore); ok {
+		return &StoreTransactionerMetricsWrapper{
+			StoreMetricsWrapper: StoreMetricsWrapper{Store: transactionStore, StoreType: storeType},
+			Transactioner:       transactionStore,
+		}
+	}
 	return &StoreMetricsWrapper{Store: store, StoreType: storeType}
 }
