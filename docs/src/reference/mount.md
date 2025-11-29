@@ -308,6 +308,18 @@ Verify exclusions:
 Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
 ```
 
+#### Exclude Mount Directory from Windows Search Indexing
+
+Windows Search automatically tries to index the newly available files recursively walking through the directory structure.
+For large repositories this can take a long time and impact performance, so it's recommended to exclude the mount directory from indexing.
+
+**How Exclude Your Mount Folder (Recommended)**
+
+1. Open Settings > Privacy & security > Searching Windows
+2. Under **"Excluded Folders"**, click **"Add an excluded folder"**
+3. Select your mount directory (e.g., C:\Users\me\mounted)
+4. The indexer will stop trying to index that location
+
 ## Everest on Kubernetes (CSI Driver)
 
 !!! warning "Private Preview"
