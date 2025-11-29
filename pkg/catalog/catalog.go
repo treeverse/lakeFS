@@ -240,6 +240,10 @@ type Config struct {
 	ConflictResolvers []graveler.ConflictResolver
 }
 
+// APIErrorHandler is a callback function used to classify and handle errors in background tasks.
+// It returns true if the error was handled.
+type APIErrorHandler func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool
+
 type Catalog struct {
 	BlockAdapter          block.Adapter
 	Store                 Store
@@ -254,8 +258,7 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
-	// The API callback (handleAPIErrorCallback from the controller) is used to classify the error inside the RunBackgroundTaskSteps function.
-	APIErrorCB func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool
+	APIErrorCB            APIErrorHandler
 }
 
 const (
