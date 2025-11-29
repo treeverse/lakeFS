@@ -444,7 +444,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			if err == nil {
 				return false
 			}
-			cb(w, r, http.StatusInternalServerError, "hello")
+			cb(w, r, http.StatusInternalServerError, err)
 			return true
 		},
 	}, nil
