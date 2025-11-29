@@ -75,7 +75,7 @@ message CommitAsyncInfo {
   string meta_range_id = 6;
   map<string, string> metadata = 7;
   int64 generation = 8;
-  int32 version = 9;
+  int64 version = 9;
 
 }
 

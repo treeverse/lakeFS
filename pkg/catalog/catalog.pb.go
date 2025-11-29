@@ -535,7 +535,7 @@ type CommitAsyncInfo struct {
 	MetaRangeId   string                 `protobuf:"bytes,6,opt,name=meta_range_id,json=metaRangeId,proto3" json:"meta_range_id,omitempty"`
 	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Generation    int64                  `protobuf:"varint,8,opt,name=generation,proto3" json:"generation,omitempty"`
-	Version       int32                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
+	Version       int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -626,7 +626,7 @@ func (x *CommitAsyncInfo) GetGeneration() int64 {
 	return 0
 }
 
-func (x *CommitAsyncInfo) GetVersion() int32 {
+func (x *CommitAsyncInfo) GetVersion() int64 {
 	if x != nil {
 		return x.Version
 	}
@@ -883,7 +883,7 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\n" +
 	"generation\x18\b \x01(\x03R\n" +
 	"generation\x12\x18\n" +
-	"\aversion\x18\t \x01(\x05R\aversion\x1a;\n" +
+	"\aversion\x18\t \x01(\x03R\aversion\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +
