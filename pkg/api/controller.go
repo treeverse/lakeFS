@@ -102,6 +102,7 @@ type Controller struct {
 	Migrator           Migrator
 	Collector          stats.Collector
 	Actions            actionsHandler
+	asyncOpsHandler    catalog.AsyncOperationsHandler
 	AuditChecker       AuditChecker
 	Logger             logging.Logger
 	sessionStore       sessions.Store
@@ -125,6 +126,7 @@ func NewController(
 	migrator Migrator,
 	collector stats.Collector,
 	actions actionsHandler,
+	asyncOpsHandler catalog.AsyncOperationsHandler,
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	sessionStore sessions.Store,
@@ -134,7 +136,7 @@ func NewController(
 	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
 ) *Controller {
-	return &Controller{
+	controller := &Controller{
 		Config:             cfg,
 		Catalog:            catalog,
 		Authenticator:      authenticator,
@@ -145,6 +147,7 @@ func NewController(
 		Migrator:           migrator,
 		Collector:          collector,
 		Actions:            actions,
+		asyncOpsHandler:    asyncOpsHandler,
 		AuditChecker:       auditChecker,
 		Logger:             logger,
 		sessionStore:       sessionStore,
@@ -154,6 +157,8 @@ func NewController(
 		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
 	}
+	catalog.APIErrorCB = controller.handleAPIErrorCallback
+	return controller
 }
 
 func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
@@ -3103,7 +3108,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 
 func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
-	if httputil.IsRequestCanceled(r) {
+	if r != nil && httputil.IsRequestCanceled(r) {
 		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
 		return true
 	}
@@ -3189,23 +3194,29 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrTooManyTries):
 		log.Debug("Retried too many times")
 		cb(w, r, http.StatusTooManyRequests, "Too many attempts, try again later")
+
 	case errors.Is(err, kv.ErrSlowDown):
 		log.Debug("KV Throttling")
 		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
+
 	case errors.Is(err, graveler.ErrPreconditionFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
+
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
 		errors.Is(err, license.ErrNotImplemented),
 		errors.Is(err, catalog.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
+
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+
 	case errors.Is(err, actions.ErrActionFailed):
 		log.WithError(err).Debug("Precondition failed, aborted by action failure")
 		cb(w, r, http.StatusPreconditionFailed, err)
+
 	default:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
@@ -3458,6 +3469,87 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		return
 	}
 	commitResponse(w, r, newCommit)
+}
+
+func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body apigen.CommitAsyncJSONRequestBody, repository, branch string, params apigen.CommitAsyncParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_commit_async", r, repository, branch, "")
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "user not found")
+		return
+	}
+	var metadata map[string]string
+	if body.Metadata != nil {
+		metadata = body.Metadata.AdditionalProperties
+	}
+
+	taskID, err := c.asyncOpsHandler.SubmitCommit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitAsyncStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
+	taskID := params.Id
+	status, err := c.asyncOpsHandler.GetCommitStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := apigen.CommitAsyncStatus{
+		TaskId:    status.Task.Id,
+		Completed: status.Task.Done,
+	}
+	if status.Task.UpdatedAt != nil {
+		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
+	}
+
+	if status.Task.ErrorMsg != "" {
+		resp.Error = &apigen.Error{
+			Message: status.Task.ErrorMsg,
+		}
+	}
+
+	if status.Info != nil {
+		resp.Result = &apigen.Commit{
+			Id:           status.Info.Id,
+			Parents:      status.Info.Parents,
+			Committer:    status.Info.Committer,
+			Message:      status.Info.Message,
+			CreationDate: status.Info.CreationDate.AsTime().Unix(),
+			MetaRangeId:  status.Info.MetaRangeId,
+			Metadata: &apigen.Commit_Metadata{
+				AdditionalProperties: status.Info.Metadata,
+			},
+			Generation: apiutil.Ptr(status.Info.Generation),
+			Version:    apiutil.Ptr(int(status.Info.Version)),
+		}
+	}
+
+	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
+	writeResponse(w, r, statusCode, resp)
 }
 
 func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
@@ -4143,9 +4235,9 @@ func (c *Controller) PrepareGarbageCollectionCommitsStatus(w http.ResponseWriter
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
 	}
 
-	if status.Task.Error != "" {
+	if status.Task.ErrorMsg != "" {
 		resp.Error = &apigen.Error{
-			Message: status.Task.Error,
+			Message: status.Task.ErrorMsg,
 		}
 	}
 
@@ -4547,8 +4639,8 @@ func (c *Controller) DumpStatus(w http.ResponseWriter, r *http.Request, reposito
 		Done:       status.Task.Done,
 		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
-	if status.Task.Error != "" {
-		response.Error = apiutil.Ptr(status.Task.Error)
+	if status.Task.ErrorMsg != "" {
+		response.Error = apiutil.Ptr(status.Task.ErrorMsg)
 	}
 	if status.Task.Done && status.Info != nil {
 		response.Refs = &apigen.RefsDump{
@@ -4648,8 +4740,8 @@ func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repos
 		Done:       status.Task.Done,
 		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
-	if status.Task.Error != "" {
-		response.Error = apiutil.Ptr(status.Task.Error)
+	if status.Task.ErrorMsg != "" {
+		response.Error = apiutil.Ptr(status.Task.ErrorMsg)
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -5396,6 +5488,87 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	})
 }
 
+func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request, body apigen.MergeIntoBranchAsyncJSONRequestBody, repository, sourceRef, destinationBranch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, destinationBranch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "merge_branches_async", r, repository, destinationBranch, sourceRef)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "user not found")
+		return
+	}
+	metadata := map[string]string{}
+	if body.Metadata != nil {
+		metadata = body.Metadata.AdditionalProperties
+	}
+
+	taskID, err := c.asyncOpsHandler.SubmitMergeIntoBranch(ctx,
+		repository, destinationBranch, sourceRef,
+		user.Committer(),
+		swag.StringValue(body.Message),
+		metadata,
+		swag.StringValue(body.Strategy),
+		graveler.WithForce(swag.BoolValue(body.Force)),
+		graveler.WithAllowEmpty(swag.BoolValue(body.AllowEmpty)),
+		graveler.WithSquashMerge(swag.BoolValue(body.SquashMerge)),
+	)
+
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchAsyncStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.BranchArn(repository, destinationBranch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
+	taskID := params.Id
+	status, err := c.asyncOpsHandler.GetMergeIntoBranchStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := apigen.MergeAsyncStatus{
+		TaskId:    status.Task.Id,
+		Completed: status.Task.Done,
+	}
+	if status.Task.UpdatedAt != nil {
+		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
+	}
+
+	if status.Task.ErrorMsg != "" {
+		resp.Error = &apigen.Error{
+			Message: status.Task.ErrorMsg,
+		}
+	}
+
+	if status.Info != nil {
+		resp.Result = &apigen.MergeResult{
+			Reference: status.Info.Reference,
+		}
+	}
+
+	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
+	writeResponse(w, r, statusCode, resp)
+}
+
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -6056,6 +6229,13 @@ func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{})
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
 	httputil.WriteAPIResponse(w, r, code, response)
+}
+
+func getStatusCodeFromTaskErrorCode(errorCode int32) int {
+	if errorCode == 0 {
+		return http.StatusOK
+	}
+	return int(errorCode)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {

@@ -62,6 +62,7 @@ from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 from lakefs_sdk.models.cherry_pick_creation import CherryPickCreation
 from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.models.commit import Commit
+from lakefs_sdk.models.commit_async_status import CommitAsyncStatus
 from lakefs_sdk.models.commit_creation import CommitCreation
 from lakefs_sdk.models.commit_list import CommitList
 from lakefs_sdk.models.commit_overrides import CommitOverrides
@@ -107,6 +108,7 @@ from lakefs_sdk.models.license import License
 from lakefs_sdk.models.login_config import LoginConfig
 from lakefs_sdk.models.login_information import LoginInformation
 from lakefs_sdk.models.merge import Merge
+from lakefs_sdk.models.merge_async_status import MergeAsyncStatus
 from lakefs_sdk.models.merge_result import MergeResult
 from lakefs_sdk.models.meta_range_creation import MetaRangeCreation
 from lakefs_sdk.models.meta_range_creation_response import MetaRangeCreationResponse

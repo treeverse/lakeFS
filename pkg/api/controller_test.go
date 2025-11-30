@@ -5654,8 +5654,9 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 		if restoreStatus.Error == nil {
 			t.Fatal("Expected restore to fail, got nil Error")
 		}
-		if !strings.Contains(*restoreStatus.Error, graveler.ErrNotFound.Error()) {
-			t.Fatal("Expected restore to fail with not found error")
+		const expectedErr = "No data"
+		if *restoreStatus.Error != expectedErr {
+			t.Fatalf("Expected restore to fail with '%s', got '%s'", expectedErr, *restoreStatus.Error)
 		}
 	})
 
