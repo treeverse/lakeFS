@@ -758,6 +758,8 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--log-format`: Set logging output format.
 -   `--log-output`: Set logging output(s).
 -   `--presign`: Use pre-signed URLs for direct object store access (default: `true`).
+-   `--writeback-max-object-size`: maximum object size for writeback upload to lakeFS (in bytes), 0 uses default (5GiB) (default: 5368709120).
+-   `--writeback-min-object-size`: minimum object size for writeback upload to lakeFS (in bytes), 0 uses default (5MiB) (default: 5242880).
 
 <h4>`everest umount`</h4>
 
