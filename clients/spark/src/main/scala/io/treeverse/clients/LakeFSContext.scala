@@ -11,7 +11,6 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.util.SerializableConfiguration
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 object LakeFSJobParams {
@@ -186,7 +185,7 @@ object LakeFSContext {
       ranges.flatMap((range: Range) => {
         val path = new Path(apiClient.getRangeURL(repoName, range.id))
         val fs = path.getFileSystem(conf)
-        val localFile = File.createTempFile("lakefs.", ".range")
+        val localFile = StorageUtils.createTempFile(conf, "lakefs.", ".range")
 
         fs.copyToLocalFile(false, path, new Path(localFile.getAbsolutePath), true)
         val companion = Entry.messageCompanion

@@ -17,7 +17,6 @@ import scalapb.GeneratedMessageCompanion
 
 import java.io.DataInput
 import java.io.DataOutput
-import java.io.File
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
@@ -92,7 +91,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   var item: Item[Proto] = _
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
-    localFile = File.createTempFile("lakefs.", ".range")
+    localFile = StorageUtils.createTempFile(context.getConfiguration, "lakefs.", ".range")
     // Cleanup the local file - using the same technic as other data sources:
     // https://github.com/apache/spark/blob/c0b1735c0bfeb1ff645d146e262d7ccd036a590e/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/text/TextFileFormat.scala#L123
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => localFile.delete()))
