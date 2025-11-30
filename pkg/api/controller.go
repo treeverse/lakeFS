@@ -188,7 +188,7 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_userr", r, "", "", "")
+	c.LogAction(ctx, "delete_user", r, "", "", "")
 	err := c.Auth.DeleteUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "user not found")
