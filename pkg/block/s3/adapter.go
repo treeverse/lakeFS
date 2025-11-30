@@ -620,6 +620,116 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	return waiter.Wait(ctx, headInput, maxWaitDur)
 }
 
+//--------- ADDED THIS FOR DELETE VERIFICATION ---------
+
+// VerifyDeleted checks if objects have been deleted and retries deletion if they still exist
+// Returns list of objects that still exist after all retry attempts
+func (a *Adapter) VerifyDeleted(ctx context.Context, objs []block.ObjectPointer) ([]block.ObjectPointer, error) {
+	if len(objs) == 0 {
+		return nil, nil
+	}
+
+	a.log(ctx).WithField("num_objects", len(objs)).Info("starting delete verification")
+
+	toVerify := objs
+	backoff := 500 * time.Millisecond
+	MaxBackoff := 5 * time.Second
+	MaxRetries := 3
+
+	for attempt := 0; attempt <= MaxRetries; attempt++ {
+		if attempt > 0 {
+			a.log(ctx).WithFields(logging.Fields{
+				"attempt":      attempt,
+				"backoff":      backoff,
+				"num_to_check": len(toVerify),
+			}).Info("retrying delete verification")
+			time.Sleep(backoff)
+			backoff = minDuration(backoff*2, MaxBackoff)
+		}
+
+		var stillExists []block.ObjectPointer
+
+		// Check each object with HEAD request
+		for _, obj := range toVerify {
+			bucket, key, _, err := a.extractParamsFromObj(obj)
+			if err != nil {
+				a.log(ctx).WithError(err).WithField("identifier", obj.Identifier).Error("failed to extract params during verification")
+				stillExists = append(stillExists, obj)
+				continue
+			}
+
+			client := a.clients.Get(ctx, bucket)
+			exists, err := a.checkObjectExists(ctx, client, bucket, key)
+
+			if err != nil {
+				a.log(ctx).WithError(err).WithFields(logging.Fields{
+					"bucket": bucket,
+					"key":    key,
+				}).Warn("verification check failed, will retry")
+				stillExists = append(stillExists, obj)
+				continue
+			}
+
+			if exists {
+				a.log(ctx).WithFields(logging.Fields{
+					"bucket": bucket,
+					"key":    key,
+				}).Debug("object still exists after delete")
+				stillExists = append(stillExists, obj)
+			}
+		}
+
+		// If all verified as deleted, we're done!
+		if len(stillExists) == 0 {
+			a.log(ctx).WithField("attempt", attempt).Info("all deletes verified successfully")
+			return nil, nil
+		}
+
+		// If we have more retries, try deleting again
+		if attempt < MaxRetries {
+			a.log(ctx).WithField("num_to_retry", len(stillExists)).Info("retrying deletion for objects that still exist")
+			for _, obj := range stillExists {
+				if err := a.Remove(ctx, obj); err != nil {
+					a.log(ctx).WithError(err).WithField("identifier", obj.Identifier).Warn("retry delete failed")
+				}
+			}
+			toVerify = stillExists
+		} else {
+			// Out of retries
+			toVerify = stillExists
+		}
+	}
+
+	a.log(ctx).WithField("num_failed", len(toVerify)).Error("some objects still exist after all verification retries")
+	return toVerify, fmt.Errorf("verification failed: %d objects still exist after %d retries", len(toVerify), MaxRetries)
+}
+
+// checkObjectExists uses HeadObject to check if an object exists (metadata only, cheaper than GET)
+func (a *Adapter) checkObjectExists(ctx context.Context, client *s3.Client, bucket, key string) (bool, error) {
+	headInput := &s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	}
+
+	_, err := client.HeadObject(ctx, headInput)
+	if err != nil {
+		if isErrNotFound(err) {
+			return false, nil // Object doesn't exist - this is what we want!
+		}
+		return false, err // Some other error occurred
+	}
+
+	return true, nil // Object exists - delete didn't work
+}
+
+// minDuration returns the smaller of two durations
+func minDuration(a, b time.Duration) time.Duration {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, byteRange *string) (*block.UploadPartResponse, error) {
 	srcKey, err := resolveNamespace(sourceObj)
 	if err != nil {
