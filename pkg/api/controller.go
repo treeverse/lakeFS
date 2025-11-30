@@ -115,6 +115,22 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
+type APIErrorHandler struct {
+	controller *Controller
+}
+
+func (h *APIErrorHandler) HandleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool {
+	return h.controller.handleAPIErrorCallback(ctx, w, r, err, cb)
+}
+
+func (h *APIErrorHandler) GetHandlerType() string {
+	return "controller.handleAPIErrorCallback"
+}
+
+func NewAPIErrorHandler(controller *Controller) *APIErrorHandler {
+	return &APIErrorHandler{controller: controller}
+}
+
 func NewController(
 	cfg config.Config,
 	catalog *catalog.Catalog,
@@ -157,7 +173,7 @@ func NewController(
 		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
 	}
-	catalog.APIErrorCB = controller.handleAPIErrorCallback
+	catalog.APIErrorCB = NewAPIErrorHandler(controller)
 	return controller
 }
 
