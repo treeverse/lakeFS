@@ -183,7 +183,6 @@ Everest achieves high-performance data access through:
 
 -   **Direct Object Store Access**: By default, Everest uses pre-signed URLs to read and write data directly to and from the underlying object store, bypassing the lakeFS server for data transfer. Only metadata operations go through the lakeFS server.
 -   **Lazy Metadata Loading**: Directory listings are fetched on-demand, allowing you to work with repositories containing billions of files without upfront overhead.
--   **Partial Reads**: The experimental `--partial-reads` flag enables reading only the accessed portions of large files, which is useful for file formats like Parquet that support column pruning.
 -   **Cache Sizing**: Setting an appropriate `--cache-size` prevents frequent eviction and re-fetching. As a rule of thumb, size your cache to accommodate your working set.
 -   **Network Bandwidth**: Since data is fetched directly from object storage, ensure your network connection has adequate bandwidth for your workload.
 
@@ -757,7 +756,6 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--log-format`: Set logging output format.
 -   `--log-output`: Set logging output(s).
 -   `--presign`: Use pre-signed URLs for direct object store access (default: `true`).
--   `--partial-reads`: (Experimental) Fetch only the accessed parts of large files. This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, and tar that do not need to read the entire file.
 
 <h4>`everest umount`</h4>
 
@@ -832,10 +830,7 @@ When using write mode (`--write-mode`), be aware of the following limitations an
 <h4>Modified Behavior</h4>
 
 -   **Metadata Operations:** Modifying file metadata (`chmod`, `chown`, `chgrp`, time attributes) results in a no-op. The file metadata will not be changed.
--   **Deletion Implementation:** When calling `remove`, Everest marks a file as a tombstone using [Extended Attributes](https://en.wikipedia.org/wiki/Extended_file_attributes) APIs.
--   **Deletion Race Conditions:** Removal is not an atomic operation. Calling `remove` and `open` simultaneously on the same file may result in a race condition where the `open` operation might succeed.
--   **Type Reuse Restriction:** A deleted file's name cannot be reused as a directory, and vice-versa. For example, this sequence is not allowed: `touch foo; rm foo; mkdir foo;`.
--   **Directory Removal:** Calling `remove` on a directory will fail explicitly with an error. Use appropriate directory removal commands instead.
+-   **Directory Removal:** Calling `remove` on a directory is not supported. Use appropriate directory removal commands (e.g. `rm -r`) instead, and on the next commit, the directory will be deleted.
 
 <h4>Functionality Limitations</h4>
 
