@@ -2288,7 +2288,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 					case string:
 						task.ErrorMsg = e
 					case error:
-						task.ErrorMsg = e.Error()
+						task.ErrorMsg = fmt.Sprint(err)
 					default:
 						task.ErrorMsg = fmt.Sprintf("%v", v)
 					}
