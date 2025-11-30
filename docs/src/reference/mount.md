@@ -313,7 +313,7 @@ Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
 Windows Search automatically tries to index the newly available files recursively walking through the directory structure.
 For large repositories this can take a long time and impact performance, so it's recommended to exclude the mount directory from indexing.
 
-**How Exclude Your Mount Folder (Recommended)**
+**How To Exclude Your Mount Folder (Recommended)**
 
 1. Open Settings > Privacy & security > Searching Windows
 2. Under **"Excluded Folders"**, click **"Add an excluded folder"**
