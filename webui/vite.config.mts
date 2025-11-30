@@ -9,6 +9,7 @@ export default ({ command }) => {
     test: {
       environment: 'happy-dom',
       exclude: ["./test/e2e/**/*", "./node_modules/**/*"],
+      setupFiles: './test/setup.js',
     },
     plugins: [
       replace({
