@@ -183,7 +183,6 @@ Everest achieves high-performance data access through:
 
 -   **Direct Object Store Access**: By default, Everest uses pre-signed URLs to read and write data directly to and from the underlying object store, bypassing the lakeFS server for data transfer. Only metadata operations go through the lakeFS server.
 -   **Lazy Metadata Loading**: Directory listings are fetched on-demand, allowing you to work with repositories containing billions of files without upfront overhead.
--   **Partial Reads**: The experimental `--partial-reads` flag enables reading only the accessed portions of large files, which is useful for file formats like Parquet that support column pruning.
 -   **Cache Sizing**: Setting an appropriate `--cache-size` prevents frequent eviction and re-fetching. As a rule of thumb, size your cache to accommodate your working set.
 -   **Network Bandwidth**: Since data is fetched directly from object storage, ensure your network connection has adequate bandwidth for your workload.
 
@@ -750,6 +749,8 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--cache-dir`: Directory to cache files.
 -   `--cache-size`: Size of the local cache in bytes.
 -   `--cache-create-provided-dir`: If `cache-dir` is provided and does not exist, create it.
+-   `--db-path`: Path for the Everest database (default: [cache-dir]/tree.db).
+-   `--entry-map-cache-size`: Number of cached entries in the entry map (default: 256).
 -   `--listen`: Address for the mount server to listen on.
 -   `--no-spawn`: Do not spawn a new server; assume one is already running.
 -   `--protocol`: Protocol to use (default: `nfs`), for Windows use --cfapi.
@@ -757,7 +758,6 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 -   `--log-format`: Set logging output format.
 -   `--log-output`: Set logging output(s).
 -   `--presign`: Use pre-signed URLs for direct object store access (default: `true`).
--   `--partial-reads`: (Experimental) Fetch only the accessed parts of large files. This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, and tar that do not need to read the entire file.
 
 <h4>`everest umount`</h4>
 
