@@ -174,7 +174,7 @@ type Task struct {
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Progress      int64                  `protobuf:"varint,4,opt,name=progress,proto3" json:"progress,omitempty"`
 	ErrorMsg      string                 `protobuf:"bytes,5,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
-	StatusCode    int32                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"` // error classification code for HTTP status mapping
+	StatusCode    int64                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -244,7 +244,7 @@ func (x *Task) GetErrorMsg() string {
 	return ""
 }
 
-func (x *Task) GetStatusCode() int32 {
+func (x *Task) GetStatusCode() int64 {
 	if x != nil {
 		return x.StatusCode
 	}
@@ -854,7 +854,7 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
 	"\bprogress\x18\x04 \x01(\x03R\bprogress\x12\x1b\n" +
 	"\terror_msg\x18\x05 \x01(\tR\berrorMsg\x12\x1f\n" +
-	"\vstatus_code\x18\x06 \x01(\x05R\n" +
+	"\vstatus_code\x18\x06 \x01(\x03R\n" +
 	"statusCode\"\xa6\x01\n" +
 	"\x12RepositoryDumpInfo\x120\n" +
 	"\x14commits_metarange_id\x18\x01 \x01(\tR\x12commitsMetarangeId\x12*\n" +

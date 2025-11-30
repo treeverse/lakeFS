@@ -2263,10 +2263,10 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
 	// Validate that APIErrorCB is properly configured
 	if c.APIErrorCB == nil {
-		return fmt.Errorf("APIErrorCB must be set to run background tasks")
+		return ErrAPIErrorCBNotSet
 	}
 	if c.APIErrorCB.GetHandlerType() != "controller.handleAPIErrorCallback" {
-		return fmt.Errorf("APIErrorCB handler type mismatch, expected 'controller.handleAPIErrorCallback', got '%s'", c.APIErrorCB.GetHandlerType())
+		return fmt.Errorf("%w: expected 'controller.handleAPIErrorCallback', got '%s'", ErrAPIErrorCBHandlerTypeMismatch, c.APIErrorCB.GetHandlerType())
 	}
 
 	// Allocate Task and set if on the taskStatus's 'Task' field.
@@ -2299,7 +2299,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 				// Classify the error using the API callback (handleAPIErrorCallback from the controller)
 				// before the original error is lost when stored in protobuf, and populate the task's error details.
 				c.APIErrorCB.HandleAPIError(ctx, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v any) {
-					task.StatusCode = int32(code)
+					task.StatusCode = int64(code)
 					switch e := v.(type) {
 					case string:
 						task.ErrorMsg = e

@@ -6247,7 +6247,7 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	httputil.WriteAPIResponse(w, r, code, response)
 }
 
-func getStatusCodeFromTaskErrorCode(errorCode int32) int {
+func getStatusCodeFromTaskErrorCode(errorCode int64) int {
 	if errorCode == 0 {
 		return http.StatusOK
 	}
