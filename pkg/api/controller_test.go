@@ -2892,11 +2892,40 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 			t.Errorf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
 		}
 
+		require.Equal(t, "bytes 0-9/37", resp.HTTPResponse.Header.Get("Content-Range"))
+
 		etag := resp.HTTPResponse.Header.Get("ETag")
 		require.Equal(t, etag, expectedEtag)
 
 		body := string(resp.Body)
 		if body != "this is fi" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("get object range end after len", func(t *testing.T) {
+		rng := "bytes=0-200"
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
+		}
+
+		if resp.HTTPResponse.ContentLength != 37 {
+			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+
+		require.Equal(t, "bytes 0-36/37", resp.HTTPResponse.Header.Get("Content-Range"))
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		require.Equal(t, etag, expectedEtag)
+
+		body := string(resp.Body)
+		if body != "this is file content made up of bytes" {
 			t.Errorf("got unexpected body: '%s'", body)
 		}
 	})
@@ -2913,6 +2942,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		if resp.HTTPResponse.StatusCode != http.StatusRequestedRangeNotSatisfiable {
 			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusRequestedRangeNotSatisfiable)
 		}
+		require.Equal(t, "bytes */37", resp.HTTPResponse.Header.Get("Content-Range"))
 	})
 
 	t.Run("get properties", func(t *testing.T) {
@@ -3534,6 +3564,41 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 		if statResp.JSON404 == nil {
 			t.Fatalf("expected file to be gone now")
+		}
+	})
+
+	t.Run("delete entries batch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		const branch = "main"
+		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, "batch-delete-bucket"), branch, false)
+		testutil.Must(t, err)
+
+		// Create multiple entries
+		paths := []string{"batch/file1", "batch/file2", "batch/file3"}
+		for _, path := range paths {
+			testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, branch, catalog.DBEntry{
+				Path:            path,
+				PhysicalAddress: onBlock(deps, path),
+				CreationDate:    time.Now(),
+				Size:            100,
+				Checksum:        "checksum",
+			}))
+		}
+
+		// Commit the entries
+		_, err = deps.catalog.Commit(ctx, repo, branch, "add batch files", "testuser", nil, nil, nil, false)
+		testutil.Must(t, err)
+
+		// Delete entries using DeleteEntries (which calls DeleteBatch)
+		err = deps.catalog.DeleteEntries(ctx, repo, branch, paths)
+		testutil.Must(t, err)
+
+		// Verify entries are deleted
+		for _, path := range paths {
+			_, err := deps.catalog.GetEntry(ctx, repo, branch, path, catalog.GetEntryParams{})
+			if !errors.Is(err, graveler.ErrNotFound) {
+				t.Fatalf("expected entry %s to be deleted, but got error: %v", path, err)
+			}
 		}
 	})
 }

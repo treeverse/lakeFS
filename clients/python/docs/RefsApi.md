@@ -129,6 +129,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | diff between refs |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
@@ -372,6 +373,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | commit log |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |

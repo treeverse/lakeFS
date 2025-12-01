@@ -27,6 +27,8 @@ All URIs are relative to */api/v1*
 | [**getGroup**](AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group |
 | [**getGroupACL**](AuthApi.md#getGroupACL) | **GET** /auth/groups/{groupId}/acl | get ACL of group |
 | [**getPolicy**](AuthApi.md#getPolicy) | **GET** /auth/policies/{policyId} | get policy |
+| [**getTokenFromMailbox**](AuthApi.md#getTokenFromMailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL. |
+| [**getTokenRedirect**](AuthApi.md#getTokenRedirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser |
 | [**getUser**](AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user |
 | [**listGroupMembers**](AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members |
 | [**listGroupPolicies**](AuthApi.md#listGroupPolicies) | **GET** /auth/groups/{groupId}/policies | list group policies |
@@ -39,6 +41,7 @@ All URIs are relative to */api/v1*
 | [**listUsers**](AuthApi.md#listUsers) | **GET** /auth/users | list users |
 | [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login |
 | [**oauthCallback**](AuthApi.md#oauthCallback) | **GET** /oidc/callback |  |
+| [**releaseTokenToMailbox**](AuthApi.md#releaseTokenToMailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request. |
 | [**setGroupACL**](AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group |
 | [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy |
 
@@ -132,6 +135,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | membership added successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -226,6 +230,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | policy attached successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -320,6 +325,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | policy attached successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -413,6 +419,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | credentials |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -507,6 +514,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | group |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -793,6 +801,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | external principal attached successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
@@ -888,6 +897,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | credentials deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -980,6 +990,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | group deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1074,6 +1085,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | membership deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1166,6 +1178,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | policy deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1258,6 +1271,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | user deleted successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1352,6 +1366,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | external principal detached successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1446,6 +1461,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | policy detached successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1540,6 +1556,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **204** | policy detached successfully |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1703,6 +1720,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | credentials |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1881,6 +1899,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | external principal |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -1974,6 +1993,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | group |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -2067,6 +2087,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | ACL of group |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Group not found, or group found but has no ACL |  -  |
 | **429** | too many requests |  -  |
@@ -2160,9 +2181,138 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | policy |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="getTokenFromMailbox"></a>
+# **getTokenFromMailbox**
+> AuthenticationToken getTokenFromMailbox(mailbox).execute();
+
+receive the token after user has authenticated on redirect URL.
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    String mailbox = "mailbox_example"; // String | mailbox returned by getTokenRedirect
+    try {
+      AuthenticationToken result = apiInstance.getTokenFromMailbox(mailbox)
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#getTokenFromMailbox");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **mailbox** | **String**| mailbox returned by getTokenRedirect | |
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | user successfully logged in |  -  |
+| **400** | Bad Request |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **429** | too many requests |  -  |
+| **501** | Not Implemented |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="getTokenRedirect"></a>
+# **getTokenRedirect**
+> Error getTokenRedirect().execute();
+
+start acquiring a token by logging in on a browser
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    try {
+      Error result = apiInstance.getTokenRedirect()
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#getTokenRedirect");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**Error**](Error.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **303** | login on this page, await results on the mailbox URL |  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  |
+| **401** | Unauthorized |  -  |
+| **429** | too many requests |  -  |
+| **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getUser"></a>
@@ -2253,6 +2403,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | user |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -2355,6 +2506,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | group member list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -2456,6 +2608,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | policy list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -2556,6 +2709,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | group list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -2655,6 +2809,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | policy list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -2756,6 +2911,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | credential list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -2858,6 +3014,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | external principals list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -2960,6 +3117,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | group list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -3065,6 +3223,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | policy list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
@@ -3165,6 +3324,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | user list |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -3230,6 +3390,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | successful login |  * Set-Cookie -  <br>  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -3291,6 +3452,98 @@ No authorization required
 |-------------|-------------|------------------|
 | **302** | successfully got token |  -  |
 | **401** | failed to exchange authorization code for token |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="releaseTokenToMailbox"></a>
+# **releaseTokenToMailbox**
+> releaseTokenToMailbox(loginRequestToken).execute();
+
+release a token for the current (authenticated) user to the mailbox of this login request.
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    String loginRequestToken = "loginRequestToken_example"; // String | login request token returned by getTokenRedirect.
+    try {
+      apiInstance.releaseTokenToMailbox(loginRequestToken)
+            .execute();
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#releaseTokenToMailbox");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **loginRequestToken** | **String**| login request token returned by getTokenRedirect. | |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **204** | token released |  -  |
+| **401** | Unauthorized |  -  |
+| **429** | too many requests |  -  |
+| **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setGroupACL"></a>
@@ -3382,6 +3635,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **201** | ACL successfully changed |  -  |
+| **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |

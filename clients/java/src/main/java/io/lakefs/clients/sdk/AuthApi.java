@@ -185,6 +185,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> membership added successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -202,6 +203,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> membership added successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -220,6 +222,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> membership added successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -239,6 +242,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> membership added successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -260,6 +264,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> membership added successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -362,6 +367,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -379,6 +385,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -397,6 +404,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -416,6 +424,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -437,6 +446,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -539,6 +549,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -556,6 +567,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -574,6 +586,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -593,6 +606,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -614,6 +628,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> policy attached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -710,6 +725,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -728,6 +744,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -747,6 +764,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -766,6 +784,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -786,6 +805,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> credentials </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -886,6 +906,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -904,6 +925,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -923,6 +945,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -942,6 +965,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -961,6 +985,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> group </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1435,6 +1460,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -1453,6 +1479,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -1472,6 +1499,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -1492,6 +1520,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -1514,6 +1543,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -1617,6 +1647,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> credentials deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1634,6 +1665,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> credentials deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1652,6 +1684,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> credentials deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1671,6 +1704,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> credentials deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1692,6 +1726,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> credentials deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1786,6 +1821,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> group deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1803,6 +1839,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> group deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1821,6 +1858,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> group deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1840,6 +1878,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> group deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1860,6 +1899,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> group deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1962,6 +2002,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> membership deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1979,6 +2020,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> membership deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1997,6 +2039,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> membership deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2016,6 +2059,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> membership deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2037,6 +2081,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> membership deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2131,6 +2176,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2148,6 +2194,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2166,6 +2213,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2185,6 +2233,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2205,6 +2254,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> policy deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2299,6 +2349,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> user deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2316,6 +2367,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> user deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2334,6 +2386,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> user deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2353,6 +2406,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> user deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2373,6 +2427,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> user deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2478,6 +2533,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2495,6 +2551,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2513,6 +2570,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2532,6 +2590,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2553,6 +2612,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2655,6 +2715,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2672,6 +2733,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2690,6 +2752,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2709,6 +2772,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2730,6 +2794,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2832,6 +2897,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2849,6 +2915,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2867,6 +2934,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2886,6 +2954,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -2907,6 +2976,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> policy detached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3196,6 +3266,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3214,6 +3285,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3233,6 +3305,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3252,6 +3325,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credentials </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3273,6 +3347,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> credentials </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3515,6 +3590,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3533,6 +3609,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3552,6 +3629,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3571,6 +3649,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3591,6 +3670,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3687,6 +3767,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3705,6 +3786,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3724,6 +3806,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3743,6 +3826,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3763,6 +3847,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> group </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3859,6 +3944,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3877,6 +3963,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3896,6 +3983,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3915,6 +4003,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3935,6 +4024,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4031,6 +4121,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4049,6 +4140,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4068,6 +4160,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4087,6 +4180,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4107,6 +4201,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> policy </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4115,6 +4210,351 @@ public class AuthApi {
      */
     public APIgetPolicyRequest getPolicy(String policyId) {
         return new APIgetPolicyRequest(policyId);
+    }
+    private okhttp3.Call getTokenFromMailboxCall(String mailbox, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/get-token/mailboxes/{mailbox}"
+            .replace("{" + "mailbox" + "}", localVarApiClient.escapeString(mailbox.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getTokenFromMailboxValidateBeforeCall(String mailbox, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'mailbox' is set
+        if (mailbox == null) {
+            throw new ApiException("Missing the required parameter 'mailbox' when calling getTokenFromMailbox(Async)");
+        }
+
+        return getTokenFromMailboxCall(mailbox, _callback);
+
+    }
+
+
+    private ApiResponse<AuthenticationToken> getTokenFromMailboxWithHttpInfo(String mailbox) throws ApiException {
+        okhttp3.Call localVarCall = getTokenFromMailboxValidateBeforeCall(mailbox, null);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call getTokenFromMailboxAsync(String mailbox, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getTokenFromMailboxValidateBeforeCall(mailbox, _callback);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIgetTokenFromMailboxRequest {
+        private final String mailbox;
+
+        private APIgetTokenFromMailboxRequest(String mailbox) {
+            this.mailbox = mailbox;
+        }
+
+        /**
+         * Build call for getTokenFromMailbox
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> user successfully logged in </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getTokenFromMailboxCall(mailbox, _callback);
+        }
+
+        /**
+         * Execute getTokenFromMailbox request
+         * @return AuthenticationToken
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> user successfully logged in </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public AuthenticationToken execute() throws ApiException {
+            ApiResponse<AuthenticationToken> localVarResp = getTokenFromMailboxWithHttpInfo(mailbox);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getTokenFromMailbox request with HTTP info returned
+         * @return ApiResponse&lt;AuthenticationToken&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> user successfully logged in </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<AuthenticationToken> executeWithHttpInfo() throws ApiException {
+            return getTokenFromMailboxWithHttpInfo(mailbox);
+        }
+
+        /**
+         * Execute getTokenFromMailbox request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> user successfully logged in </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+            return getTokenFromMailboxAsync(mailbox, _callback);
+        }
+    }
+
+    /**
+     * receive the token after user has authenticated on redirect URL.
+     * 
+     * @param mailbox mailbox returned by getTokenRedirect (required)
+     * @return APIgetTokenFromMailboxRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> user successfully logged in </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIgetTokenFromMailboxRequest getTokenFromMailbox(String mailbox) {
+        return new APIgetTokenFromMailboxRequest(mailbox);
+    }
+    private okhttp3.Call getTokenRedirectCall(final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/get-token/start";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getTokenRedirectValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        return getTokenRedirectCall(_callback);
+
+    }
+
+
+    private ApiResponse<Error> getTokenRedirectWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getTokenRedirectValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<Error>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call getTokenRedirectAsync(final ApiCallback<Error> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getTokenRedirectValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<Error>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIgetTokenRedirectRequest {
+
+        private APIgetTokenRedirectRequest() {
+        }
+
+        /**
+         * Build call for getTokenRedirect
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getTokenRedirectCall(_callback);
+        }
+
+        /**
+         * Execute getTokenRedirect request
+         * @return Error
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public Error execute() throws ApiException {
+            ApiResponse<Error> localVarResp = getTokenRedirectWithHttpInfo();
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getTokenRedirect request with HTTP info returned
+         * @return ApiResponse&lt;Error&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Error> executeWithHttpInfo() throws ApiException {
+            return getTokenRedirectWithHttpInfo();
+        }
+
+        /**
+         * Execute getTokenRedirect request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Error> _callback) throws ApiException {
+            return getTokenRedirectAsync(_callback);
+        }
+    }
+
+    /**
+     * start acquiring a token by logging in on a browser
+     * 
+     * @return APIgetTokenRedirectRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 303 </td><td> login on this page, await results on the mailbox URL </td><td>  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIgetTokenRedirectRequest getTokenRedirect() {
+        return new APIgetTokenRedirectRequest();
     }
     private okhttp3.Call getUserCall(String userId, final ApiCallback _callback) throws ApiException {
         String basePath = null;
@@ -4203,6 +4643,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4221,6 +4662,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4240,6 +4682,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4259,6 +4702,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4279,6 +4723,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> user </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4420,6 +4865,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4437,6 +4883,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4455,6 +4902,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4473,6 +4921,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4492,6 +4941,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4632,6 +5082,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4650,6 +5101,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4669,6 +5121,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4688,6 +5141,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4708,6 +5162,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -4841,6 +5296,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4858,6 +5314,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4876,6 +5333,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4894,6 +5352,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -4912,6 +5371,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -5044,6 +5504,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -5061,6 +5522,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -5079,6 +5541,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -5097,6 +5560,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -5115,6 +5579,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -5255,6 +5720,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credential list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5273,6 +5739,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credential list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5292,6 +5759,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credential list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5311,6 +5779,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> credential list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5331,6 +5800,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> credential list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5472,6 +5942,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5490,6 +5961,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5509,6 +5981,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5528,6 +6001,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5548,6 +6022,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5689,6 +6164,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5707,6 +6183,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5726,6 +6203,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5745,6 +6223,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5765,6 +6244,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> group list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5921,6 +6401,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5939,6 +6420,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5958,6 +6440,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5977,6 +6460,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -5997,6 +6481,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> policy list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -6130,6 +6615,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6147,6 +6633,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6165,6 +6652,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6183,6 +6671,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> user list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6201,6 +6690,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> user list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6300,6 +6790,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6317,6 +6808,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6335,6 +6827,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6353,6 +6846,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6371,6 +6865,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -6532,6 +7027,174 @@ public class AuthApi {
     public APIoauthCallbackRequest oauthCallback() {
         return new APIoauthCallbackRequest();
     }
+    private okhttp3.Call releaseTokenToMailboxCall(String loginRequestToken, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/get-token/release-token/{loginRequestToken}"
+            .replace("{" + "loginRequestToken" + "}", localVarApiClient.escapeString(loginRequestToken.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call releaseTokenToMailboxValidateBeforeCall(String loginRequestToken, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'loginRequestToken' is set
+        if (loginRequestToken == null) {
+            throw new ApiException("Missing the required parameter 'loginRequestToken' when calling releaseTokenToMailbox(Async)");
+        }
+
+        return releaseTokenToMailboxCall(loginRequestToken, _callback);
+
+    }
+
+
+    private ApiResponse<Void> releaseTokenToMailboxWithHttpInfo(String loginRequestToken) throws ApiException {
+        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(loginRequestToken, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call releaseTokenToMailboxAsync(String loginRequestToken, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = releaseTokenToMailboxValidateBeforeCall(loginRequestToken, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIreleaseTokenToMailboxRequest {
+        private final String loginRequestToken;
+
+        private APIreleaseTokenToMailboxRequest(String loginRequestToken) {
+            this.loginRequestToken = loginRequestToken;
+        }
+
+        /**
+         * Build call for releaseTokenToMailbox
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return releaseTokenToMailboxCall(loginRequestToken, _callback);
+        }
+
+        /**
+         * Execute releaseTokenToMailbox request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public void execute() throws ApiException {
+            releaseTokenToMailboxWithHttpInfo(loginRequestToken);
+        }
+
+        /**
+         * Execute releaseTokenToMailbox request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return releaseTokenToMailboxWithHttpInfo(loginRequestToken);
+        }
+
+        /**
+         * Execute releaseTokenToMailbox request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return releaseTokenToMailboxAsync(loginRequestToken, _callback);
+        }
+    }
+
+    /**
+     * release a token for the current (authenticated) user to the mailbox of this login request.
+     * 
+     * @param loginRequestToken login request token returned by getTokenRedirect. (required)
+     * @return APIreleaseTokenToMailboxRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> token released </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIreleaseTokenToMailboxRequest releaseTokenToMailbox(String loginRequestToken) {
+        return new APIreleaseTokenToMailboxRequest(loginRequestToken);
+    }
     private okhttp3.Call setGroupACLCall(String groupId, ACL ACL, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -6625,6 +7288,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -6642,6 +7306,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -6660,6 +7325,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -6679,6 +7345,7 @@ public class AuthApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -6700,6 +7367,7 @@ public class AuthApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>

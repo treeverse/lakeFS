@@ -2,13 +2,16 @@ package io.treeverse.clients
 
 import io.treeverse.lakefs.catalog.Entry
 import org.apache.commons.lang3.StringUtils
-import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapred.InvalidJobConfException
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkContext, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.apache.spark.util.SerializableConfiguration
+import org.slf4j.{Logger, LoggerFactory}
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 object LakeFSJobParams {
@@ -61,6 +64,8 @@ class LakeFSJobParams private (
 }
 
 object LakeFSContext {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
   val LAKEFS_CONF_API_URL_KEY = "lakefs.api.url"
   val LAKEFS_CONF_API_ACCESS_KEY_KEY = "lakefs.api.access_key"
   val LAKEFS_CONF_API_SECRET_KEY_KEY = "lakefs.api.secret_key"
@@ -70,6 +75,9 @@ object LakeFSContext {
   val LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY = "lakefs.job.storage_namespace"
   val LAKEFS_CONF_JOB_COMMIT_IDS_KEY = "lakefs.job.commit_ids"
   val LAKEFS_CONF_JOB_SOURCE_NAME_KEY = "lakefs.job.source_name"
+
+  // Read parallelism.  Defaults to default parallelism.
+  val LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM = "lakefs.job.range_read_parallelism"
 
   val LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = "lakefs.gc.commit.num_partitions"
   val LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = "lakefs.gc.range.num_partitions"
@@ -108,15 +116,14 @@ object LakeFSContext {
   val DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = 1
   val DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = 120
 
+  val metarangeReaderGetter = SSTableReader.forMetaRange _
+
   def newRDD(
       sc: SparkContext,
       params: LakeFSJobParams
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
-    val inputFormatClass =
-      if (params.commitIDs.nonEmpty) classOf[LakeFSCommitInputFormat]
-      else classOf[LakeFSAllRangesInputFormat]
+    val conf = sc.hadoopConfiguration
 
-    val conf = new Configuration(sc.hadoopConfiguration)
     conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, params.repoName)
     conf.setStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY, params.commitIDs.toArray: _*)
 
@@ -131,12 +138,77 @@ object LakeFSContext {
       throw new InvalidJobConfException(s"$LAKEFS_CONF_API_SECRET_KEY_KEY must not be empty")
     }
     conf.set(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, params.sourceName)
-    sc.newAPIHadoopRDD(
-      conf,
-      inputFormatClass,
-      classOf[Array[Byte]],
-      classOf[WithIdentifier[Entry]]
+
+    val apiConf = APIConfigurations(
+      conf.get(LAKEFS_CONF_API_URL_KEY),
+      conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
+      conf.get(LAKEFS_CONF_API_SECRET_KEY_KEY),
+      conf.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY),
+      conf.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY),
+      conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, "input_format")
     )
+    val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
+
+    // This can go to executors.
+    val serializedConf = new SerializableConfiguration(conf)
+
+    val parallelism = conf.getInt(LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM, sc.defaultParallelism)
+
+    // ApiClient is not serializable, so create a new one for each partition on its executor.
+    // (If we called X.flatMap directly, we would fetch the client from the cache for each
+    // range, which is a bit too much.)
+
+    // TODO(ariels): Unify with similar code in LakeFSInputFormat.getSplits
+    val ranges = sc
+      .parallelize(params.commitIDs.toSeq, parallelism)
+      .mapPartitions(commits => {
+        val apiClient = ApiClient.get(apiConf)
+        val conf = serializedConf.value
+        commits.flatMap(commitID => {
+          val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
+          if (metaRangeURL == "") {
+            // a commit with no meta range is an empty commit.
+            // this only happens for the first commit in the repository.
+            None
+          } else {
+            val rangesReader = metarangeReaderGetter(conf, metaRangeURL, true)
+            rangesReader
+              .newIterator()
+              .map(rd => new Range(new String(rd.id), rd.message.estimatedSize))
+          }
+        })
+      })
+      .distinct
+
+    ranges.mapPartitions(ranges => {
+      val apiClient = ApiClient.get(apiConf)
+      val conf = serializedConf.value
+      ranges.flatMap((range: Range) => {
+        val path = new Path(apiClient.getRangeURL(repoName, range.id))
+        val fs = path.getFileSystem(conf)
+        val localFile = File.createTempFile("lakefs.", ".range")
+
+        fs.copyToLocalFile(false, path, new Path(localFile.getAbsolutePath), true)
+        val companion = Entry.messageCompanion
+        // localFile owned by sstableReader which will delete it when closed.
+        val sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
+        Option(TaskContext.get()).foreach(_.addTaskCompletionListener((tc: TaskContext) => {
+          try {
+            sstableReader.close()
+          } catch {
+            case e: Exception => {
+              logger.warn(s"close SSTable reader for $localFile (keep going): $e")
+            }
+          }
+          tc
+        }))
+        // TODO(ariels): Do we need to validate that this reader is good?  Assume _not_, this is
+        // not InputFormat code so it should have slightly nicer error reports.
+        sstableReader
+          .newIterator()
+          .map((entry) => (entry.key, new WithIdentifier(entry.id, entry.message, range.id)))
+      })
+    })
   }
 
   /** Returns all entries in all ranges of the given commit, as an RDD.

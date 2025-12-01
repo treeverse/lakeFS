@@ -53,6 +53,7 @@ func Serve(
 	usageReporter stats.UsageReporterOperations,
 	licenseManager license.Manager,
 	icebergSyncer icebergsync.Controller,
+	loginTokenProvider authentication.LoginTokenProvider,
 ) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
@@ -94,6 +95,7 @@ func Serve(
 		usageReporter,
 		licenseManager,
 		icebergSyncer,
+		loginTokenProvider,
 	)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 

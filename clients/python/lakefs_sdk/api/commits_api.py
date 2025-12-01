@@ -356,6 +356,7 @@ class CommitsApi:
 
         _response_types_map = {
             '200': "Commit",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,

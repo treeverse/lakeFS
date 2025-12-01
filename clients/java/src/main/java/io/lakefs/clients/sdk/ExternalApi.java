@@ -185,6 +185,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -203,6 +204,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -222,6 +224,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -242,6 +245,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -264,6 +268,7 @@ public class ExternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
@@ -370,6 +375,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -387,6 +393,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -405,6 +412,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -424,6 +432,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -445,6 +454,7 @@ public class ExternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -729,6 +739,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -747,6 +758,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -766,6 +778,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -785,6 +798,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -805,6 +819,7 @@ public class ExternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -946,6 +961,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -964,6 +980,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -983,6 +1000,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1002,6 +1020,7 @@ public class ExternalApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1022,6 +1041,7 @@ public class ExternalApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
