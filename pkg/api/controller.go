@@ -6265,7 +6265,7 @@ func checkAndMarkTaskExpired(task *catalog.Task) {
 	}
 
 	updatedAt := task.UpdatedAt.AsTime()
-	if time.Now().Sub(updatedAt) > asyncTaskStatusExpiryDuration {
+	if time.Since(updatedAt) > asyncTaskStatusExpiryDuration {
 		task.Done = true
 		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %v. Please retry the operation.", asyncTaskStatusExpiryDuration)
 		task.StatusCode = http.StatusGone
