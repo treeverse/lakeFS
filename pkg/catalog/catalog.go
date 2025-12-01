@@ -240,28 +240,9 @@ type Config struct {
 	ConflictResolvers []graveler.ConflictResolver
 }
 
-// APIErrorHandlerInterface is an interface for handling API errors in background tasks.
-type APIErrorHandlerInterface interface {
-	// HandleAPIError classifies and handles errors in background tasks.
-	// It returns true if the error was handled.
-	HandleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool
-	// GetHandlerType returns a string identifier for the handler type, used for validation.
-	GetHandlerType() string
-}
-
-type defaultAPIErrorHandler struct{}
-
-func (h *defaultAPIErrorHandler) HandleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool {
-	if err == nil {
-		return false
-	}
-	cb(w, r, http.StatusInternalServerError, err)
-	return true
-}
-
-func (h *defaultAPIErrorHandler) GetHandlerType() string {
-	return "catalog.defaultAPIErrorHandler"
-}
+// APIErrorHandler is a callback function used to classify and handle errors in background tasks.
+// It returns true if the error was handled.
+type APIErrorHandler func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool
 
 type Catalog struct {
 	BlockAdapter          block.Adapter
@@ -277,7 +258,7 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
-	APIErrorCB            APIErrorHandlerInterface
+	APIErrorCB            APIErrorHandler
 }
 
 const (
@@ -458,7 +439,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
-		APIErrorCB:            &defaultAPIErrorHandler{},
+		// Initiate the API callback function
+		APIErrorCB: func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+			if err == nil {
+				return false
+			}
+			cb(w, r, http.StatusInternalServerError, err)
+			return true
+		},
 	}, nil
 }
 
@@ -2259,16 +2247,8 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 
 // RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
 // the task status is updated after each step, and the task is marked as completed if the step is the last one.
-// initial update if thRunBackgroundTaskStepse task is done before running the steps.
+// initial update if the task is done before running the steps.
 func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
-	// Validate that APIErrorCB is properly configured
-	if c.APIErrorCB == nil {
-		return ErrAPIErrorCBNotSet
-	}
-	if c.APIErrorCB.GetHandlerType() != "controller.handleAPIErrorCallback" {
-		return fmt.Errorf("%w: expected 'controller.handleAPIErrorCallback', got '%s'", ErrAPIErrorCBHandlerTypeMismatch, c.APIErrorCB.GetHandlerType())
-	}
-
 	// Allocate Task and set if on the taskStatus's 'Task' field.
 	// We continue to update this field while running each step.
 	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
@@ -2298,7 +2278,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 				task.Done = true
 				// Classify the error using the API callback (handleAPIErrorCallback from the controller)
 				// before the original error is lost when stored in protobuf, and populate the task's error details.
-				c.APIErrorCB.HandleAPIError(ctx, nil, nil, err, SetTaskStatusCodeAndError(task))
+				c.APIErrorCB(ctx, nil, nil, err, SetTaskStatusCodeAndError(task))
 			} else if stepIdx == len(steps)-1 {
 				task.Done = true
 			}

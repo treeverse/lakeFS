@@ -115,22 +115,6 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
-type APIErrorHandler struct {
-	controller *Controller
-}
-
-func (h *APIErrorHandler) HandleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool {
-	return h.controller.handleAPIErrorCallback(ctx, w, r, err, cb)
-}
-
-func (h *APIErrorHandler) GetHandlerType() string {
-	return "controller.handleAPIErrorCallback"
-}
-
-func NewAPIErrorHandler(controller *Controller) *APIErrorHandler {
-	return &APIErrorHandler{controller: controller}
-}
-
 func NewController(
 	cfg config.Config,
 	catalog *catalog.Catalog,
@@ -173,7 +157,7 @@ func NewController(
 		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
 	}
-	catalog.APIErrorCB = NewAPIErrorHandler(controller)
+	catalog.APIErrorCB = controller.HandleAPIErrorCallback
 	return controller
 }
 
@@ -3122,7 +3106,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+func (c *Controller) HandleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
 	if httputil.IsRequestCanceled(r) {
 		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
@@ -3242,7 +3226,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 }
 
 func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) bool {
-	return c.handleAPIErrorCallback(ctx, w, r, err, writeError)
+	return c.HandleAPIErrorCallback(ctx, w, r, err, writeError)
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body apigen.ResetBranchJSONRequestBody, repository, branch string) {
@@ -3541,7 +3525,7 @@ func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, reposi
 		})
 		return
 	}
-	c.handleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
+	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 
 	resp := apigen.CommitStatus{
 		TaskId:    status.Task.Id,
@@ -4987,7 +4971,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
-		c.handleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		c.HandleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 			writeResponse(w, r, code, nil)
 		})
 		return
@@ -5577,7 +5561,7 @@ func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Reques
 		})
 		return
 	}
-	c.handleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
+	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 
 	resp := apigen.MergeStatus{
 		TaskId:    status.Task.Id,
