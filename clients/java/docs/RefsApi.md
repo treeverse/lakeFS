@@ -652,7 +652,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Not Found |  -  |
 | **409** | Conflict |  -  |
-| **410** | Expired |  -  |
+| **410** | Operation Expired |  -  |
 | **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
 | **429** | too many requests |  -  |
 | **501** | Not Implemented |  -  |

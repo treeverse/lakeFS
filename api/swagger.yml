@@ -171,12 +171,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-    Expired:
-      description: Resource Expired
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
 
   schemas:
     Pagination:
@@ -4411,7 +4405,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CommitStatus"
         410:
-          description: Expired
+          description: Operation Expired
           content:
             application/json:
               schema:
@@ -4910,7 +4904,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MergeStatus"
         410:
-          description: Expired
+          description: Operation Expired
           content:
             application/json:
               schema:

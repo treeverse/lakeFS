@@ -3528,8 +3528,10 @@ func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
-	checkAndMarkTaskExpired(status, time.Now())
+	if c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task)) {
+		status.Task.Done = true
+	}
+	checkAndMarkTaskExpired(status.Task)
 
 	resp := apigen.CommitStatus{
 		TaskId:    status.Task.Id,
@@ -5566,8 +5568,10 @@ func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
-	checkAndMarkTaskExpired(status, time.Now())
+	if c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task)) {
+		status.Task.Done = true
+	}
+	checkAndMarkTaskExpired(status.Task)
 
 	resp := apigen.MergeStatus{
 		TaskId:    status.Task.Id,
@@ -6255,18 +6259,13 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	httputil.WriteAPIResponse(w, r, code, response)
 }
 
-type asyncStatus interface {
-	GetTask() *catalog.Task
-}
-
-func checkAndMarkTaskExpired(status asyncStatus, now time.Time) {
-	task := status.GetTask()
+func checkAndMarkTaskExpired(task *catalog.Task) {
 	if task == nil || task.UpdatedAt == nil {
 		return
 	}
 
 	updatedAt := task.UpdatedAt.AsTime()
-	if now.Sub(updatedAt) > asyncTaskStatusExpiryDuration {
+	if time.Now().Sub(updatedAt) > asyncTaskStatusExpiryDuration {
 		task.Done = true
 		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %v. Please retry the operation.", asyncTaskStatusExpiryDuration)
 		task.StatusCode = http.StatusGone

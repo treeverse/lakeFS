@@ -632,7 +632,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Expired </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -656,7 +656,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Expired </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -681,7 +681,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Expired </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -706,7 +706,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Expired </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -734,7 +734,7 @@ public class CommitsApi {
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-        <tr><td> 410 </td><td> Expired </td><td>  -  </td></tr>
+        <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>

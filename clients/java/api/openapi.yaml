@@ -4056,7 +4056,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommitStatus'
-          description: Expired
+          description: Operation Expired
         "412":
           content:
             application/json:
@@ -4855,7 +4855,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MergeStatus'
-          description: Expired
+          description: Operation Expired
         "412":
           content:
             application/json:
@@ -9032,12 +9032,6 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Not Implemented
-    Expired:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-      description: Resource Expired
   schemas:
     Pagination:
       example:

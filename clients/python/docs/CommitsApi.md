@@ -363,7 +363,7 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Not Found |  -  |
 **409** | Conflict |  -  |
-**410** | Expired |  -  |
+**410** | Operation Expired |  -  |
 **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |
