@@ -52,7 +52,7 @@ func TestVerifyExpiration(t *testing.T) {
 			name:          "presigned URL future request beyond clock skew",
 			isPresigned:   true,
 			expires:       3600,
-			requestTime:   now.Add(10 * time.Minute),
+			requestTime:   now.Add(AmzMaxClockSkew + 1*time.Minute),
 			expectedError: errors.ErrRequestNotReadyYet,
 		},
 		{

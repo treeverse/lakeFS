@@ -34,7 +34,7 @@ const (
 	v4timeFormat             = "20060102T150405Z"
 	v4shortTimeFormat        = "20060102"
 
-	AmzPresignMaxExpires = 7 * 24 * time.Hour // 7 days or 604800 seconds
+	AmzPresignMaxExpires = 7 * 24 * time.Hour // Maximum expiry duration for presigned URLs (7 days or 604800 seconds)
 	AmzMaxClockSkew      = 15 * time.Minute   // Maximum allowed clock skew (15 minutes for AWS S3 compatibility)
 
 	v4AmzAlgorithm = "X-Amz-Algorithm"
