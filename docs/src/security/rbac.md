@@ -13,7 +13,7 @@ search:
     Available in **lakeFS Cloud** and **lakeFS Enterprise**
 
 
-<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/Ekjv9FumIPg"></iframe>
+<iframe width="420" height="315" src="https://www.youtube.com/embed/Ekjv9FumIPg"></iframe>
 
 ## RBAC Model
 

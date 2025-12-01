@@ -34,7 +34,7 @@ GPU usage and prevent them from sitting idle. Many deep learning tasks involve a
 same images are accessed multiple times. Localizing the data can eliminate redundant round trip times to access remote
 storage, resulting in cost savings.
 
-<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
+<iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
 
 ## **lakeFS Mount**: Efficiently expose lakeFS Data as a local directory
 

@@ -9,7 +9,7 @@ description: Import existing data into a lakeFS repository
 
 # Importing data into lakeFS
 
-<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/R6K8tvtFCxQ"></iframe>
+<iframe width="420" height="315" src="https://www.youtube.com/embed/R6K8tvtFCxQ"></iframe>
 
 ## Prerequisites
 

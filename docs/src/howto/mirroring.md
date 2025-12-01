@@ -19,7 +19,7 @@ Unlike conventional mirroring, data isn't simply copied between regions - lakeFS
 
 ![mirroring architecture](../assets/img/mirroring/arch.png)
 
-<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/NhOWGVjQrrA"></iframe>
+<iframe width="420" height="315" src="https://www.youtube.com/embed/NhOWGVjQrrA"></iframe>
 
 ## Uses cases
 

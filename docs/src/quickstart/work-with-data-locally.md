@@ -18,7 +18,7 @@ lakeFS provides 2 ways to expose versioned data locally
     lakeFS Mount is available for [lakeFS Enterprise](../enterprise/index.md) and [lakeFS Cloud](../cloud/index.md) customers. You can try it out by [signing up](https://info.lakefs.io/thanks-lakefs-mounts)
 
 
-<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
+<iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
 
 ### Getting started with lakeFS Mount
 
@@ -64,7 +64,7 @@ Prerequisites:
 Alternatively, we can use [lakectl local](../howto/local-checkouts.md#sync-a-local-directory-with-lakefs) to bring a subset of our lakeFS data to a local directory within the lakeFS
 container and edit an image dataset used for ML model development. Unlike lakeFS Mount, using `lakectl local` requires copying data to/from lakeFS and your local machine.
 
-<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
+<iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
 
 Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/blog/guide-lakectl-local-machine-learning/)
 

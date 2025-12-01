@@ -13,7 +13,7 @@ status: enterprise
 
 Everest is a complementary binary to lakeFS that allows you to virtually mount a remote lakeFS repository onto a local directory or within a Kubernetes environment. Once mounted, you can access data as if it resides on your local filesystem, using any tool, library, or framework.
 
-<iframe data-uc-allowed="true" width="560" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## Use Cases
 

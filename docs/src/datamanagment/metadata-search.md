@@ -31,7 +31,7 @@ To enable simple and scalable search, lakeFS exposes object metadata as versione
 clients like DuckDB, PyIceberg, Spark, Trino, and others - enabling fast, expressive queries across any lakeFS version. 
 See [How It Works](#how-it-works) for details. 
 
-<iframe data-uc-allowed="true" width="560" height="315" src="https://www.youtube.com/embed/6JkQK51AaqY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>```
+<iframe width="560" height="315" src="https://www.youtube.com/embed/6JkQK51AaqY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>```
 
 ## Benefits
 
