@@ -283,14 +283,13 @@ class ObjectReader(LakeFSIOBase):
         if 'b' not in self.mode:
             return retval.decode('utf-8')
         return retval
-    
+
     def _update_object_size(self, response):
         # Try to update the object size using the response headers.
         # Attempt to get the content-range header and extract the total size from it.
         # If it doesn't exist, use the content-length header.
-        # The reason we don't rely on content-length initially is because the server returns bytes read as 
+        # The reason we don't rely on content-length initially is because the server returns bytes read as
         # when partial read.
-        # As a last resort, we will stat the object to get its size.
         content_range = response.headers.get('Content-Range')
         content_length = response.headers.get('Content-Length')
         if content_range is not None:
@@ -299,13 +298,13 @@ class ObjectReader(LakeFSIOBase):
                 self._size = int(content_length.strip(''))
         elif content_length is not None: # Fallback to Content-Length header
             self._size = int(content_length)
-    
+
     def _read(self, read_range: str) -> str | bytes:
         # This is done in order to behave like python's file descriptor. trying to read beyond the file's size.
         if self._size is not None and self._pos >= self._size:
             return b''
-        
-        try:            
+
+        try:
             with api_exception_handler(_io_exception_handler):
                 response = self._client.sdk_client.objects_api.get_object_with_http_info(
                     self._obj.repo,
@@ -724,7 +723,7 @@ class StoredObject(_BaseLakeFSObject):
         :return: A Reader object
         """
         return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client, **kwargs)
-        
+
     def stat(self, pre_sign: Optional[bool] = None, **kwargs) -> ObjectInfo:
         """
         Return the Stat object representing this object
