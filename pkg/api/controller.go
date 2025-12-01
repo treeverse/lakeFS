@@ -3124,7 +3124,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 
 func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
-	if r != nil && httputil.IsRequestCanceled(r) {
+	if httputil.IsRequestCanceled(r) {
 		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
 		return true
 	}
@@ -3517,7 +3517,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 	})
 }
 
-func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitAsyncStatusParams) {
+func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -3530,11 +3530,20 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
 	taskID := params.Id
 	status, err := c.asyncOpsHandler.GetCommitStatus(ctx, repository, taskID)
-	if c.handleAPIError(ctx, w, r, err) {
+	if status == nil {
+		writeResponse(w, r, http.StatusInternalServerError, apigen.CommitStatus{
+			TaskId:     taskID,
+			Completed:  true,
+			UpdateTime: time.Now(),
+			Error: &apigen.Error{
+				Message: "failed to get commit status",
+			},
+		})
 		return
 	}
+	c.handleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 
-	resp := apigen.CommitAsyncStatus{
+	resp := apigen.CommitStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
 	}
@@ -3564,7 +3573,7 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
+	statusCode := getStatusCodeFromTaskStatusCode(status.Task.StatusCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -5544,7 +5553,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchAsyncStatusParams) {
+func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -5557,11 +5566,20 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
 	taskID := params.Id
 	status, err := c.asyncOpsHandler.GetMergeIntoBranchStatus(ctx, repository, taskID)
-	if c.handleAPIError(ctx, w, r, err) {
+	if status == nil {
+		writeResponse(w, r, http.StatusInternalServerError, apigen.MergeStatus{
+			TaskId:     taskID,
+			Completed:  true,
+			UpdateTime: time.Now(),
+			Error: &apigen.Error{
+				Message: "failed to get merge status",
+			},
+		})
 		return
 	}
+	c.handleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 
-	resp := apigen.MergeAsyncStatus{
+	resp := apigen.MergeStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
 	}
@@ -5581,7 +5599,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
+	statusCode := getStatusCodeFromTaskStatusCode(status.Task.StatusCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -6247,11 +6265,11 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	httputil.WriteAPIResponse(w, r, code, response)
 }
 
-func getStatusCodeFromTaskErrorCode(errorCode int64) int {
-	if errorCode == 0 {
+func getStatusCodeFromTaskStatusCode(statusCode int64) int {
+	if statusCode == 0 {
 		return http.StatusOK
 	}
-	return int(errorCode)
+	return int(statusCode)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {

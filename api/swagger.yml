@@ -1581,7 +1581,7 @@ components:
         - completed
         - update_time
 
-    MergeAsyncStatus:
+    MergeStatus:
       type: object
       properties:
         task_id:
@@ -1603,7 +1603,7 @@ components:
         - completed
         - update_time
 
-    CommitAsyncStatus:
+    CommitStatus:
       type: object
       properties:
         task_id:
@@ -4358,7 +4358,7 @@ paths:
     get:
       tags:
         - commits
-      operationId: commitAsyncStatus
+      operationId: commitStatus
       summary: get status of async commit operation
       parameters:
         - in: query
@@ -4373,29 +4373,61 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CommitAsyncStatus"
+                $ref: "#/components/schemas/CommitStatus"
         400:
-          $ref: "#/components/responses/ValidationError"
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
         401:
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
         403:
-          $ref: "#/components/responses/Forbidden"
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
         404:
-          $ref: "#/components/responses/NotFound"
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
         409:
-          $ref: "#/components/responses/Conflict"
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
         412:
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/CommitStatus"
         429:
           description: too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
         501:
-          $ref: "#/components/responses/NotImplemented"
+          description: Not Implemented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
         default:
-          $ref: "#/components/responses/ServerError"
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitStatus"
 
   /repositories/{repository}/commits:
     parameters:
@@ -4819,7 +4851,7 @@ paths:
     get:
       tags:
         - refs
-      operationId: mergeIntoBranchAsyncStatus
+      operationId: mergeIntoBranchStatus
       summary: get status of async merge operation
       parameters:
         - in: query
@@ -4834,33 +4866,61 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MergeAsyncStatus"
+                $ref: "#/components/schemas/MergeStatus"
         400:
-          $ref: "#/components/responses/ValidationError"
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeStatus"
         401:
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeStatus"
         403:
-          $ref: "#/components/responses/Forbidden"
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeStatus"
         404:
-          $ref: "#/components/responses/NotFound"
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeStatus"
         409:
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/MergeStatus"
         412:
           description: precondition failed (e.g. a pre-merge hook returned a failure)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/MergeStatus"
         429:
           description: too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeStatus"
         501:
-          $ref: "#/components/responses/NotImplemented"
+          description: Not Implemented
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeStatus"
         default:
-          $ref: "#/components/responses/ServerError"
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeStatus"
 
   /repositories/{repository}/branches/{branch}/diff:
     parameters:

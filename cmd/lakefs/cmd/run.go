@@ -172,7 +172,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		asyncOperationsHandler := catalogfactory.NewAsyncOperationsHandler(c)
+		asyncOperationsHandler := catalogfactory.BuildAsyncOperationsHandler(c)
 
 		// Setup usage reporter - it is no longer possible to disable it
 		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)

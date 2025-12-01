@@ -3990,7 +3990,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/commits/status:
     get:
-      operationId: commitAsyncStatus
+      operationId: commitStatus
       parameters:
       - explode: false
         in: path
@@ -4019,57 +4019,61 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitAsyncStatus'
+                $ref: '#/components/schemas/CommitStatus'
           description: commit task status
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/CommitStatus'
           description: Validation Error
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/CommitStatus'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/CommitStatus'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
+                $ref: '#/components/schemas/CommitStatus'
+          description: Not Found
         "409":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Conflicts With Target
+                $ref: '#/components/schemas/CommitStatus'
+          description: Conflict
         "412":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/CommitStatus'
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
         "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitStatus'
           description: too many requests
         "501":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/CommitStatus'
           description: Not Implemented
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/CommitStatus'
           description: Internal Server Error
       summary: get status of async commit operation
       tags:
@@ -4770,7 +4774,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status:
     get:
-      operationId: mergeIntoBranchAsyncStatus
+      operationId: mergeIntoBranchStatus
       parameters:
       - explode: false
         in: path
@@ -4808,57 +4812,61 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeAsyncStatus'
+                $ref: '#/components/schemas/MergeStatus'
           description: merge task status
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/MergeStatus'
           description: Validation Error
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/MergeStatus'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/MergeStatus'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
+                $ref: '#/components/schemas/MergeStatus'
+          description: Not Found
         "409":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/MergeStatus'
           description: Conflict
         "412":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/MergeStatus'
           description: precondition failed (e.g. a pre-merge hook returned a failure)
         "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeStatus'
           description: too many requests
         "501":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/MergeStatus'
           description: Not Implemented
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/MergeStatus'
           description: Internal Server Error
       summary: get status of async merge operation
       tags:
@@ -11120,7 +11128,7 @@ components:
       - task_id
       - update_time
       type: object
-    MergeAsyncStatus:
+    MergeStatus:
       example:
         result:
           reference: reference
@@ -11150,7 +11158,7 @@ components:
       - task_id
       - update_time
       type: object
-    CommitAsyncStatus:
+    CommitStatus:
       example:
         result:
           generation: 6

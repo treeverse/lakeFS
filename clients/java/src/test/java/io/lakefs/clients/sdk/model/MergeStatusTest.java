@@ -27,17 +27,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for MergeAsyncStatus
+ * Model tests for MergeStatus
  */
-public class MergeAsyncStatusTest {
-    private final MergeAsyncStatus model = new MergeAsyncStatus();
+public class MergeStatusTest {
+    private final MergeStatus model = new MergeStatus();
 
     /**
-     * Model tests for MergeAsyncStatus
+     * Model tests for MergeStatus
      */
     @Test
-    public void testMergeAsyncStatus() {
-        // TODO: test MergeAsyncStatus
+    public void testMergeStatus() {
+        // TODO: test MergeStatus
     }
 
     /**

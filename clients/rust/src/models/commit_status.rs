@@ -11,7 +11,7 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CommitAsyncStatus {
+pub struct CommitStatus {
     /// the id of the async commit task
     #[serde(rename = "task_id")]
     pub task_id: String,
@@ -27,9 +27,9 @@ pub struct CommitAsyncStatus {
     pub error: Option<Box<models::Error>>,
 }
 
-impl CommitAsyncStatus {
-    pub fn new(task_id: String, completed: bool, update_time: String) -> CommitAsyncStatus {
-        CommitAsyncStatus {
+impl CommitStatus {
+    pub fn new(task_id: String, completed: bool, update_time: String) -> CommitStatus {
+        CommitStatus {
             task_id,
             completed,
             update_time,

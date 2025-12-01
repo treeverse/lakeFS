@@ -28,8 +28,8 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.sdk.model.Commit;
-import io.lakefs.clients.sdk.model.CommitAsyncStatus;
 import io.lakefs.clients.sdk.model.CommitCreation;
+import io.lakefs.clients.sdk.model.CommitStatus;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.TaskCreation;
 
@@ -521,7 +521,7 @@ public class CommitsApi {
     public APIcommitAsyncRequest commitAsync(String repository, String branch, CommitCreation commitCreation) {
         return new APIcommitAsyncRequest(repository, branch, commitCreation);
     }
-    private okhttp3.Call commitAsyncStatusCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call commitStatusCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -572,54 +572,54 @@ public class CommitsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call commitAsyncStatusValidateBeforeCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call commitStatusValidateBeforeCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling commitAsyncStatus(Async)");
+            throw new ApiException("Missing the required parameter 'repository' when calling commitStatus(Async)");
         }
 
         // verify the required parameter 'branch' is set
         if (branch == null) {
-            throw new ApiException("Missing the required parameter 'branch' when calling commitAsyncStatus(Async)");
+            throw new ApiException("Missing the required parameter 'branch' when calling commitStatus(Async)");
         }
 
         // verify the required parameter 'id' is set
         if (id == null) {
-            throw new ApiException("Missing the required parameter 'id' when calling commitAsyncStatus(Async)");
+            throw new ApiException("Missing the required parameter 'id' when calling commitStatus(Async)");
         }
 
-        return commitAsyncStatusCall(repository, branch, id, _callback);
+        return commitStatusCall(repository, branch, id, _callback);
 
     }
 
 
-    private ApiResponse<CommitAsyncStatus> commitAsyncStatusWithHttpInfo(String repository, String branch, String id) throws ApiException {
-        okhttp3.Call localVarCall = commitAsyncStatusValidateBeforeCall(repository, branch, id, null);
-        Type localVarReturnType = new TypeToken<CommitAsyncStatus>(){}.getType();
+    private ApiResponse<CommitStatus> commitStatusWithHttpInfo(String repository, String branch, String id) throws ApiException {
+        okhttp3.Call localVarCall = commitStatusValidateBeforeCall(repository, branch, id, null);
+        Type localVarReturnType = new TypeToken<CommitStatus>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call commitAsyncStatusAsync(String repository, String branch, String id, final ApiCallback<CommitAsyncStatus> _callback) throws ApiException {
+    private okhttp3.Call commitStatusAsync(String repository, String branch, String id, final ApiCallback<CommitStatus> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = commitAsyncStatusValidateBeforeCall(repository, branch, id, _callback);
-        Type localVarReturnType = new TypeToken<CommitAsyncStatus>(){}.getType();
+        okhttp3.Call localVarCall = commitStatusValidateBeforeCall(repository, branch, id, _callback);
+        Type localVarReturnType = new TypeToken<CommitStatus>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
 
-    public class APIcommitAsyncStatusRequest {
+    public class APIcommitStatusRequest {
         private final String repository;
         private final String branch;
         private final String id;
 
-        private APIcommitAsyncStatusRequest(String repository, String branch, String id) {
+        private APIcommitStatusRequest(String repository, String branch, String id) {
             this.repository = repository;
             this.branch = branch;
             this.id = id;
         }
 
         /**
-         * Build call for commitAsyncStatus
+         * Build call for commitStatus
          * @param _callback ApiCallback API callback
          * @return Call to execute
          * @throws ApiException If fail to serialize the request body object
@@ -630,8 +630,8 @@ public class CommitsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -639,12 +639,12 @@ public class CommitsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return commitAsyncStatusCall(repository, branch, id, _callback);
+            return commitStatusCall(repository, branch, id, _callback);
         }
 
         /**
-         * Execute commitAsyncStatus request
-         * @return CommitAsyncStatus
+         * Execute commitStatus request
+         * @return CommitStatus
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
@@ -653,22 +653,22 @@ public class CommitsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public CommitAsyncStatus execute() throws ApiException {
-            ApiResponse<CommitAsyncStatus> localVarResp = commitAsyncStatusWithHttpInfo(repository, branch, id);
+        public CommitStatus execute() throws ApiException {
+            ApiResponse<CommitStatus> localVarResp = commitStatusWithHttpInfo(repository, branch, id);
             return localVarResp.getData();
         }
 
         /**
-         * Execute commitAsyncStatus request with HTTP info returned
-         * @return ApiResponse&lt;CommitAsyncStatus&gt;
+         * Execute commitStatus request with HTTP info returned
+         * @return ApiResponse&lt;CommitStatus&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
@@ -677,20 +677,20 @@ public class CommitsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public ApiResponse<CommitAsyncStatus> executeWithHttpInfo() throws ApiException {
-            return commitAsyncStatusWithHttpInfo(repository, branch, id);
+        public ApiResponse<CommitStatus> executeWithHttpInfo() throws ApiException {
+            return commitStatusWithHttpInfo(repository, branch, id);
         }
 
         /**
-         * Execute commitAsyncStatus request (asynchronously)
+         * Execute commitStatus request (asynchronously)
          * @param _callback The callback to be executed when the API call finishes
          * @return The request call
          * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -701,16 +701,16 @@ public class CommitsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public okhttp3.Call executeAsync(final ApiCallback<CommitAsyncStatus> _callback) throws ApiException {
-            return commitAsyncStatusAsync(repository, branch, id, _callback);
+        public okhttp3.Call executeAsync(final ApiCallback<CommitStatus> _callback) throws ApiException {
+            return commitStatusAsync(repository, branch, id, _callback);
         }
     }
 
@@ -720,7 +720,7 @@ public class CommitsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param id Unique identifier of the commit task (required)
-     * @return APIcommitAsyncStatusRequest
+     * @return APIcommitStatusRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
@@ -728,16 +728,16 @@ public class CommitsApi {
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APIcommitAsyncStatusRequest commitAsyncStatus(String repository, String branch, String id) {
-        return new APIcommitAsyncStatusRequest(repository, branch, id);
+    public APIcommitStatusRequest commitStatus(String repository, String branch, String id) {
+        return new APIcommitStatusRequest(repository, branch, id);
     }
     private okhttp3.Call getCommitCall(String repository, String commitId, final ApiCallback _callback) throws ApiException {
         String basePath = null;

@@ -44,19 +44,19 @@ pub enum CommitAsyncError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`commit_async_status`]
+/// struct for typed errors of method [`commit_status`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CommitAsyncStatusError {
-    Status400(models::Error),
-    Status401(models::Error),
-    Status403(models::Error),
-    Status404(models::Error),
-    Status409(models::Error),
-    Status412(models::Error),
-    Status429(),
-    Status501(models::Error),
-    DefaultResponse(models::Error),
+pub enum CommitStatusError {
+    Status400(models::CommitStatus),
+    Status401(models::CommitStatus),
+    Status403(models::CommitStatus),
+    Status404(models::CommitStatus),
+    Status409(models::CommitStatus),
+    Status412(models::CommitStatus),
+    Status429(models::CommitStatus),
+    Status501(models::CommitStatus),
+    DefaultResponse(models::CommitStatus),
     UnknownValue(serde_json::Value),
 }
 
@@ -147,7 +147,7 @@ pub async fn commit_async(configuration: &configuration::Configuration, reposito
     }
 }
 
-pub async fn commit_async_status(configuration: &configuration::Configuration, repository: &str, branch: &str, id: &str) -> Result<models::CommitAsyncStatus, Error<CommitAsyncStatusError>> {
+pub async fn commit_status(configuration: &configuration::Configuration, repository: &str, branch: &str, id: &str) -> Result<models::CommitStatus, Error<CommitStatusError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -175,7 +175,7 @@ pub async fn commit_async_status(configuration: &configuration::Configuration, r
     if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
         serde_json::from_str(&local_var_content).map_err(Error::from)
     } else {
-        let local_var_entity: Option<CommitAsyncStatusError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_entity: Option<CommitStatusError> = serde_json::from_str(&local_var_content).ok();
         let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
         Err(Error::ResponseError(local_var_error))
     }
