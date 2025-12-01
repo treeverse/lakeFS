@@ -666,7 +666,7 @@ func (x *CommitAsyncStatus) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CommitStatus.ProtoReflect.Descriptor instead.
+// Deprecated: Use CommitAsyncStatus.ProtoReflect.Descriptor instead.
 func (*CommitAsyncStatus) Descriptor() ([]byte, []int) {
 	return file_catalog_catalog_proto_rawDescGZIP(), []int{8}
 }
@@ -922,7 +922,7 @@ var file_catalog_catalog_proto_goTypes = []any{
 	(*GarbageCollectionPrepareCommitsInfo)(nil), // 6: catalog.GarbageCollectionPrepareCommitsInfo
 	(*GarbageCollectionPrepareStatus)(nil),      // 7: catalog.GarbageCollectionPrepareStatus
 	(*CommitAsyncInfo)(nil),                     // 8: catalog.CommitAsyncInfo
-	(*CommitAsyncStatus)(nil),                   // 9: catalog.CommitStatus
+	(*CommitAsyncStatus)(nil),                   // 9: catalog.CommitAsyncStatus
 	(*MergeAsyncInfo)(nil),                      // 10: catalog.MergeAsyncInfo
 	(*MergeAsyncStatus)(nil),                    // 11: catalog.MergeAsyncStatus
 	(*TaskMsg)(nil),                             // 12: catalog.TaskMsg
@@ -942,8 +942,8 @@ var file_catalog_catalog_proto_depIdxs = []int32{
 	6,  // 8: catalog.GarbageCollectionPrepareStatus.info:type_name -> catalog.GarbageCollectionPrepareCommitsInfo
 	15, // 9: catalog.CommitAsyncInfo.creation_date:type_name -> google.protobuf.Timestamp
 	14, // 10: catalog.CommitAsyncInfo.metadata:type_name -> catalog.CommitAsyncInfo.MetadataEntry
-	2,  // 11: catalog.CommitStatus.task:type_name -> catalog.Task
-	8,  // 12: catalog.CommitStatus.info:type_name -> catalog.CommitAsyncInfo
+	2,  // 11: catalog.CommitAsyncStatus.task:type_name -> catalog.Task
+	8,  // 12: catalog.CommitAsyncStatus.info:type_name -> catalog.CommitAsyncInfo
 	2,  // 13: catalog.MergeAsyncStatus.task:type_name -> catalog.Task
 	10, // 14: catalog.MergeAsyncStatus.info:type_name -> catalog.MergeAsyncInfo
 	2,  // 15: catalog.TaskMsg.task:type_name -> catalog.Task
