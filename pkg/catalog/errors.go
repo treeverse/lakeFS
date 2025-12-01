@@ -19,7 +19,4 @@ var (
 
 	ErrNotImplemented     = errors.New("functionality not implemented")
 	ErrNonEmptyRepository = errors.New("non empty repository")
-
-	ErrAPIErrorCBNotSet              = errors.New("APIErrorCB must be set to run background tasks")
-	ErrAPIErrorCBHandlerTypeMismatch = errors.New("APIErrorCB handler type mismatch")
 )

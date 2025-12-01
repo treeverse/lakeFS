@@ -11,7 +11,7 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct MergeAsyncStatus {
+pub struct MergeStatus {
     /// the id of the async merge task
     #[serde(rename = "task_id")]
     pub task_id: String,
@@ -27,9 +27,9 @@ pub struct MergeAsyncStatus {
     pub error: Option<Box<models::Error>>,
 }
 
-impl MergeAsyncStatus {
-    pub fn new(task_id: String, completed: bool, update_time: String) -> MergeAsyncStatus {
-        MergeAsyncStatus {
+impl MergeStatus {
+    pub fn new(task_id: String, completed: bool, update_time: String) -> MergeStatus {
+        MergeStatus {
             task_id,
             completed,
             update_time,

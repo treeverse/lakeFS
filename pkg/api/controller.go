@@ -117,22 +117,6 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
-type APIErrorHandler struct {
-	controller *Controller
-}
-
-func (h *APIErrorHandler) HandleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool {
-	return h.controller.handleAPIErrorCallback(ctx, w, r, err, cb)
-}
-
-func (h *APIErrorHandler) GetHandlerType() string {
-	return "controller.handleAPIErrorCallback"
-}
-
-func NewAPIErrorHandler(controller *Controller) *APIErrorHandler {
-	return &APIErrorHandler{controller: controller}
-}
-
 func NewController(
 	cfg config.Config,
 	catalog *catalog.Catalog,
@@ -175,7 +159,7 @@ func NewController(
 		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
 	}
-	catalog.APIErrorCB = NewAPIErrorHandler(controller)
+	catalog.APIErrorCB = controller.HandleAPIErrorCallback
 	return controller
 }
 
@@ -3124,9 +3108,9 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+func (c *Controller) HandleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
-	if r != nil && httputil.IsRequestCanceled(r) {
+	if httputil.IsRequestCanceled(r) {
 		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
 		return true
 	}
@@ -3244,7 +3228,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 }
 
 func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) bool {
-	return c.handleAPIErrorCallback(ctx, w, r, err, writeError)
+	return c.HandleAPIErrorCallback(ctx, w, r, err, writeError)
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body apigen.ResetBranchJSONRequestBody, repository, branch string) {
@@ -3519,7 +3503,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 	})
 }
 
-func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitAsyncStatusParams) {
+func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -3532,13 +3516,22 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
 	taskID := params.Id
 	status, err := c.asyncOpsHandler.GetCommitStatus(ctx, repository, taskID)
-	if c.handleAPIError(ctx, w, r, err) {
+	if status == nil {
+		writeResponse(w, r, http.StatusInternalServerError, apigen.CommitStatus{
+			TaskId:     taskID,
+			Completed:  true,
+			UpdateTime: time.Now(),
+			Error: &apigen.Error{
+				Message: "failed to get commit status",
+			},
+		})
 		return
 	}
 
+	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 	checkAndMarkTaskExpired(status, time.Now())
 
-	resp := apigen.CommitAsyncStatus{
+	resp := apigen.CommitStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
 	}
@@ -4982,7 +4975,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
-		c.handleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		c.HandleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 			writeResponse(w, r, code, nil)
 		})
 		return
@@ -5548,7 +5541,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchAsyncStatusParams) {
+func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -5561,13 +5554,22 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
 	taskID := params.Id
 	status, err := c.asyncOpsHandler.GetMergeIntoBranchStatus(ctx, repository, taskID)
-	if c.handleAPIError(ctx, w, r, err) {
+	if status == nil {
+		writeResponse(w, r, http.StatusInternalServerError, apigen.MergeStatus{
+			TaskId:     taskID,
+			Completed:  true,
+			UpdateTime: time.Now(),
+			Error: &apigen.Error{
+				Message: "failed to get merge status",
+			},
+		})
 		return
 	}
 
+	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 	checkAndMarkTaskExpired(status, time.Now())
 
-	resp := apigen.MergeAsyncStatus{
+	resp := apigen.MergeStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
 	}

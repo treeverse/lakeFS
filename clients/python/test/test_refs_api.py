@@ -62,8 +62,8 @@ class TestRefsApi(unittest.TestCase):
         """
         pass
 
-    def test_merge_into_branch_async_status(self) -> None:
-        """Test case for merge_into_branch_async_status
+    def test_merge_into_branch_status(self) -> None:
+        """Test case for merge_into_branch_status
 
         get status of async merge operation  # noqa: E501
         """

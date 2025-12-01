@@ -9,7 +9,7 @@ All URIs are relative to */api/v1*
 | [**logCommits**](RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits. |
 | [**mergeIntoBranch**](RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references |
 | [**mergeIntoBranchAsync**](RefsApi.md#mergeIntoBranchAsync) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously |
-| [**mergeIntoBranchAsyncStatus**](RefsApi.md#mergeIntoBranchAsyncStatus) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status | get status of async merge operation |
+| [**mergeIntoBranchStatus**](RefsApi.md#mergeIntoBranchStatus) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status | get status of async merge operation |
 
 
 <a id="diffRefs"></a>
@@ -553,9 +553,9 @@ public class Example {
 | **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a id="mergeIntoBranchAsyncStatus"></a>
-# **mergeIntoBranchAsyncStatus**
-> MergeAsyncStatus mergeIntoBranchAsyncStatus(repository, sourceRef, destinationBranch, id).execute();
+<a id="mergeIntoBranchStatus"></a>
+# **mergeIntoBranchStatus**
+> MergeStatus mergeIntoBranchStatus(repository, sourceRef, destinationBranch, id).execute();
 
 get status of async merge operation
 
@@ -607,11 +607,11 @@ public class Example {
     String destinationBranch = "destinationBranch_example"; // String | destination branch name
     String id = "id_example"; // String | Unique identifier of the merge task
     try {
-      MergeAsyncStatus result = apiInstance.mergeIntoBranchAsyncStatus(repository, sourceRef, destinationBranch, id)
+      MergeStatus result = apiInstance.mergeIntoBranchStatus(repository, sourceRef, destinationBranch, id)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling RefsApi#mergeIntoBranchAsyncStatus");
+      System.err.println("Exception when calling RefsApi#mergeIntoBranchStatus");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -632,7 +632,7 @@ public class Example {
 
 ### Return type
 
-[**MergeAsyncStatus**](MergeAsyncStatus.md)
+[**MergeStatus**](MergeStatus.md)
 
 ### Authorization
 
@@ -650,9 +650,9 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
-| **404** | Resource Not Found |  -  |
+| **404** | Not Found |  -  |
 | **409** | Conflict |  -  |
-| **410** | task status expired |  -  |
+| **410** | Expired |  -  |
 | **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
 | **429** | too many requests |  -  |
 | **501** | Not Implemented |  -  |
