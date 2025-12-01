@@ -1142,6 +1142,7 @@ class RefsApi:
             '403': "Error",
             '404': "Error",
             '409': "Error",
+            '410': "Error",
             '412': "Error",
             '429': None,
             '501': "Error",

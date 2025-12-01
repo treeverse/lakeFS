@@ -652,6 +652,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict |  -  |
+| **410** | task status expired |  -  |
 | **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
 | **429** | too many requests |  -  |
 | **501** | Not Implemented |  -  |

@@ -53,6 +53,7 @@ pub enum CommitAsyncStatusError {
     Status403(models::Error),
     Status404(models::Error),
     Status409(models::Error),
+    Status410(models::Error),
     Status412(models::Error),
     Status429(),
     Status501(models::Error),

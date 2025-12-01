@@ -632,6 +632,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> task status expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -655,6 +656,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> task status expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -679,6 +681,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> task status expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -703,6 +706,7 @@ public class CommitsApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 410 </td><td> task status expired </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
@@ -730,6 +734,7 @@ public class CommitsApi {
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 410 </td><td> task status expired </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>

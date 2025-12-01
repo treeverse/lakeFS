@@ -363,6 +363,7 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**410** | task status expired |  -  |
 **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |

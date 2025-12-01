@@ -171,6 +171,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    Expired:
+      description: Resource Expired
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
 
   schemas:
     Pagination:
@@ -4384,6 +4390,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        410:
+          $ref: "#/components/responses/Expired"
         412:
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
           content:
@@ -4849,6 +4857,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        410:
+          $ref: "#/components/responses/Expired"
         412:
           description: precondition failed (e.g. a pre-merge hook returned a failure)
           content:

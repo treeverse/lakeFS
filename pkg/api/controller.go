@@ -62,6 +62,8 @@ const (
 	defaultSTSTTLSeconds = 3600
 	maxSTSTTLSeconds     = 3600 * 12
 
+	asyncTaskStatusExpiryDuration = 20 * time.Minute
+
 	lakeFSPrefix = "symlinks"
 
 	actionStatusCompleted = "completed"
@@ -3534,6 +3536,8 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 
+	checkAndMarkTaskExpired(status, time.Now())
+
 	resp := apigen.CommitAsyncStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
@@ -3564,7 +3568,7 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
+	statusCode := getStatusCodeFromTaskStatusCode(status.Task.StatusCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -5561,6 +5565,8 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	checkAndMarkTaskExpired(status, time.Now())
+
 	resp := apigen.MergeAsyncStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
@@ -5581,7 +5587,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskErrorCode(status.Task.StatusCode)
+	statusCode := getStatusCodeFromTaskStatusCode(status.Task.StatusCode)
 	writeResponse(w, r, statusCode, resp)
 }
 
@@ -6247,11 +6253,29 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	httputil.WriteAPIResponse(w, r, code, response)
 }
 
-func getStatusCodeFromTaskErrorCode(errorCode int64) int {
-	if errorCode == 0 {
+type asyncStatus interface {
+	GetTask() *catalog.Task
+}
+
+func checkAndMarkTaskExpired(status asyncStatus, now time.Time) {
+	task := status.GetTask()
+	if task == nil || task.UpdatedAt == nil {
+		return
+	}
+
+	updatedAt := task.UpdatedAt.AsTime()
+	if now.Sub(updatedAt) > asyncTaskStatusExpiryDuration {
+		task.Done = true
+		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %v. Please retry the operation.", asyncTaskStatusExpiryDuration)
+		task.StatusCode = http.StatusGone
+	}
+}
+
+func getStatusCodeFromTaskStatusCode(statusCode int64) int {
+	if statusCode == 0 {
 		return http.StatusOK
 	}
-	return int(errorCode)
+	return int(statusCode)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {

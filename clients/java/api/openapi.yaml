@@ -4051,6 +4051,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: task status expired
         "412":
           content:
             application/json:
@@ -4840,6 +4846,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Conflict
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: task status expired
         "412":
           content:
             application/json:
