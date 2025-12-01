@@ -29,6 +29,7 @@ from lakefs.exceptions import (
     ForbiddenException,
     PermissionException,
     ObjectExistsException,
+    InvalidRangeException,
 )
 from lakefs.models import ObjectInfo
 
@@ -298,27 +299,30 @@ class ObjectReader(LakeFSIOBase):
                 self._size = int(content_length.strip(''))
         elif content_length is not None: # Fallback to Content-Length header
             self._size = int(content_length)
-        else: # last resort - stat object (should not happen)
-            self._size = self._obj.stat().size_bytes
     
     def _read(self, read_range: str) -> str | bytes:
         # This is done in order to behave like python's file descriptor. trying to read beyond the file's size.
         if self._size is not None and self._pos >= self._size:
             return b''
-            
-        with api_exception_handler(_io_exception_handler):
-            response = self._client.sdk_client.objects_api.get_object_with_http_info(
-                self._obj.repo,
-                self._obj.ref,
-                self._obj.path,
-                range=read_range,
-                presign=self.pre_sign,
-                **self._kwargs
-            )
-            
-            # Update object size from response. We must do it on every read to avoid inconsistency.
+        
+        try:            
+            with api_exception_handler(_io_exception_handler):
+                response = self._client.sdk_client.objects_api.get_object_with_http_info(
+                    self._obj.repo,
+                    self._obj.ref,
+                    self._obj.path,
+                    range=read_range,
+                    presign=self.pre_sign,
+                    **self._kwargs
+                )
+                # Update object size from response. We must do it on every read to avoid inconsistency.
+                self._update_object_size(response)
+                return response.data
+
+        except InvalidRangeException:
+            # Update object size from response
             self._update_object_size(response)
-            return response.data
+            return b''
 
     def read(self, n: int = None) -> str | bytes:
         """
@@ -720,7 +724,7 @@ class StoredObject(_BaseLakeFSObject):
         :return: A Reader object
         """
         return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client, **kwargs)
-
+        
     def stat(self, pre_sign: Optional[bool] = None, **kwargs) -> ObjectInfo:
         """
         Return the Stat object representing this object

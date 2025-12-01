@@ -111,6 +111,12 @@ class PermissionException(NotAuthorizedException, PermissionError):
     """
 
 
+class InvalidRangeException(ServerException, OSError):
+    """
+    Raised when an object's read request start position exceeds file size 
+    """
+
+
 class ImportManagerException(LakeFSException):
     """
     Import manager exceptions that are not originated from the SDK
@@ -130,6 +136,7 @@ _STATUS_CODE_TO_EXCEPTION = {
     http.HTTPStatus.NOT_FOUND.value: NotFoundException,
     http.HTTPStatus.METHOD_NOT_ALLOWED.value: UnsupportedOperationException,
     http.HTTPStatus.CONFLICT.value: ConflictException,
+    http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value: InvalidRangeException
 }
 
 
