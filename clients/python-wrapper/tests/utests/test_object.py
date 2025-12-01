@@ -6,6 +6,7 @@ import urllib3
 import pytest
 
 import lakefs_sdk.api
+from lakefs_sdk import ApiResponse
 
 from lakefs.client import SINGLE_STORAGE_ID
 from lakefs.object import ReadModes
@@ -125,21 +126,23 @@ class TestObjectReader:
         start_pos = 0
         end_pos = ""
 
-        def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
+        def monkey_get_object_with_http_response(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
+            resp = ApiResponse(status_code=200, headers=dict())
             assert repository == test_kwargs.repository_id
             assert ref == test_kwargs.reference_id
             assert path == test_kwargs.path
             assert presign
-
+            
+            resp.data = data[start_pos:]
             if isinstance(end_pos, int):
-                return data[start_pos:end_pos]
-            return data[start_pos:]
+                resp.data = data[start_pos:end_pos]
+            return resp
 
-        patch_setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
+        patch_setattr(lakefs_sdk.api.ObjectsApi, "get_object_with_http_info", monkey_get_object_with_http_response)
         assert fd.read() == data
         assert fd.tell() == object_stats.size_bytes
 
-        # Test reading from middle
+        # Test reading from the middle
         start_pos = 132
         fd.seek(start_pos)
         read_size = 456
@@ -184,15 +187,16 @@ class TestObjectReader:
                 # Read whole file
                 start_pos = 0
 
-                def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
+                def monkey_get_object_with_http_response(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
+                    resp = ApiResponse(status_code=200, headers=dict(), data=b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82")
                     assert repository == test_kwargs.repository_id
                     assert ref == test_kwargs.reference_id
                     assert path == test_kwargs.path
                     assert range is None
                     assert presign
-                    return b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+                    return resp
 
-                monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
+                monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object_with_http_info", monkey_get_object_with_http_response)
                 res = fd.read()
                 if 'b' not in mode:
                     assert res == data.decode('utf-8')
