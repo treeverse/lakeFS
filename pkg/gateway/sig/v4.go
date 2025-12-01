@@ -33,7 +33,9 @@ const (
 	v4scopeTerminator        = "aws4_request"
 	v4timeFormat             = "20060102T150405Z"
 	v4shortTimeFormat        = "20060102"
-	AmzPresignMaxExpires     = 7 * 24 * time.Hour // 7 days or 604800 seconds
+
+	AmzPresignMaxExpires = 7 * 24 * time.Hour // 7 days or 604800 seconds
+	AmzMaxClockSkew      = 15 * time.Minute   // Maximum allowed clock skew (15 minutes for AWS S3 compatibility)
 
 	v4AmzAlgorithm = "X-Amz-Algorithm"
 	//nolint:gosec
@@ -378,11 +380,12 @@ func (ctx *verificationCtx) verifyExpiration() error {
 	now := time.Now().UTC()
 	timeDiff := now.Sub(requestTime)
 
-	// Check for requests from the future and allow small clock skew
-	if timeDiff < 0 && timeDiff.Abs() > 5*time.Minute {
+	// Check for requests signed more than 15 minutes in the future (matches S3 behavior)
+	if timeDiff < 0 && timeDiff.Abs() > AmzMaxClockSkew {
 		return errors.ErrRequestNotReadyYet
 	}
 
+	// Calculate expiration from the signed time, not current time
 	expirationTime := requestTime.Add(time.Duration(ctx.AuthValue.Expires) * time.Second)
 	if now.After(expirationTime) {
 		return errors.ErrExpiredPresignRequest
