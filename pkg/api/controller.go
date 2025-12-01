@@ -5064,6 +5064,9 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
+			if errors.Is(err, httputil.ErrUnsatisfiableRange) {
+				w.Header().Set("Content-Range", fmt.Sprintf("bytes */%d", entry.Size))
+			}
 			writeError(w, r, http.StatusRequestedRangeNotSatisfiable, "Requested Range Not Satisfiable")
 			return
 		}
