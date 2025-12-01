@@ -2892,11 +2892,40 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 			t.Errorf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
 		}
 
+		require.Equal(t, "bytes 0-9/37", resp.HTTPResponse.Header.Get("Content-Range"))
+
 		etag := resp.HTTPResponse.Header.Get("ETag")
 		require.Equal(t, etag, expectedEtag)
 
 		body := string(resp.Body)
 		if body != "this is fi" {
+			t.Errorf("got unexpected body: '%s'", body)
+		}
+	})
+
+	t.Run("get object range end after len", func(t *testing.T) {
+		rng := "bytes=0-200"
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
+			Path:  "foo/bar",
+			Range: &rng,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
+		}
+
+		if resp.HTTPResponse.ContentLength != 37 {
+			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+
+		require.Equal(t, "bytes 0-36/37", resp.HTTPResponse.Header.Get("Content-Range"))
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		require.Equal(t, etag, expectedEtag)
+
+		body := string(resp.Body)
+		if body != "this is file content made up of bytes" {
 			t.Errorf("got unexpected body: '%s'", body)
 		}
 	})
@@ -2913,6 +2942,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		if resp.HTTPResponse.StatusCode != http.StatusRequestedRangeNotSatisfiable {
 			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusRequestedRangeNotSatisfiable)
 		}
+		require.Equal(t, "bytes */37", resp.HTTPResponse.Header.Get("Content-Range"))
 	})
 
 	t.Run("get properties", func(t *testing.T) {
