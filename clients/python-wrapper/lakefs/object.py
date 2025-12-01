@@ -188,8 +188,6 @@ class ObjectReader(LakeFSIOBase):
     ObjectReader provides read-only functionality for lakeFS objects with IO semantics.
     This Object is instantiated and returned for immutable reference types (Commit, Tag...)
     """
-    _readlines_buf: io.BytesIO
-
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
                  client: Optional[Client] = None, **kwargs) -> None:
         if mode not in get_args(ReadModes):
@@ -199,6 +197,7 @@ class ObjectReader(LakeFSIOBase):
         self._readlines_buf = io.BytesIO(b"")
         self._is_closed = False
         self._kwargs = kwargs
+        self._size = None
 
     @property
     def pre_sign(self):
@@ -285,18 +284,43 @@ class ObjectReader(LakeFSIOBase):
             return retval.decode('utf-8')
         return retval
 
+    def _update_object_size(self, response):
+        # Try to update the object size using the response headers.
+        # Attempt to get the content-range header and extract the total size from it.
+        # If it doesn't exist, use the content-length header.
+        # The reason we don't rely on content-length initially is because the server returns bytes read as
+        # when partial read.
+        content_range = response.headers.get('Content-Range')
+        content_length = response.headers.get('Content-Length')
+        if content_range is not None:
+            _, _, content_length = content_range.rpartition("/")
+            if content_length != content_range:  # make sure we were able to split
+                self._size = int(content_length.strip(''))
+        elif content_length is not None: # Fallback to Content-Length header
+            self._size = int(content_length)
+
     def _read(self, read_range: str) -> str | bytes:
+        # This is done in order to behave like python's file descriptor. trying to read beyond the file's size.
+        if self._size is not None and self._pos >= self._size:
+            return b''
+
         try:
             with api_exception_handler(_io_exception_handler):
-                return self._client.sdk_client.objects_api.get_object(self._obj.repo,
-                                                                      self._obj.ref,
-                                                                      self._obj.path,
-                                                                      range=read_range,
-                                                                      presign=self.pre_sign,
-                                                                      **self._kwargs)
+                response = self._client.sdk_client.objects_api.get_object_with_http_info(
+                    self._obj.repo,
+                    self._obj.ref,
+                    self._obj.path,
+                    range=read_range,
+                    presign=self.pre_sign,
+                    **self._kwargs
+                )
+                # Update object size from response. We must do it on every read to avoid inconsistency.
+                self._update_object_size(response)
+                return response.data
 
         except InvalidRangeException:
-            # This is done in order to behave like the built-in open() function
+            # Update object size from response
+            self._update_object_size(response)
             return b''
 
     def read(self, n: int = None) -> str | bytes:
@@ -321,7 +345,6 @@ class ObjectReader(LakeFSIOBase):
         read_range = self._get_range_string(start=self._pos, read_bytes=n)
         contents = self._read(read_range)
         self._pos += len(contents)  # Update pointer position
-
         return self._cast_by_mode(contents)
 
     def readline(self, limit: int = -1):
