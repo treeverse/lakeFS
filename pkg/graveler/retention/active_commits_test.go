@@ -174,7 +174,7 @@ type testRepoCommits struct {
 
 func fingerprint[T ~string](s T) T {
 	h := fnv.New64a()
-	h.Sum([]byte(s))
+	h.Write([]byte(s)) // Write cannot fail for a hash func.
 	fingerprint := h.Sum64()
 	return T(fmt.Sprintf("%016x-%s", fingerprint, s))
 }

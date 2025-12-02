@@ -71,7 +71,7 @@ func TestStartingPointIterator(t *testing.T) {
 			branchIterator := testutil.NewFakeBranchIterator(branchRecords)
 			commitIterator := testutil.NewFakeCommitIterator(commitRecords)
 			it := NewGCStartingPointIterator(commitIterator, branchIterator)
-			it.Close()
+			defer it.Close()
 			i := 0
 			for it.Next() {
 				val := it.Value()
