@@ -71,6 +71,7 @@ func TestStartingPointIterator(t *testing.T) {
 			branchIterator := testutil.NewFakeBranchIterator(branchRecords)
 			commitIterator := testutil.NewFakeCommitIterator(commitRecords)
 			it := NewGCStartingPointIterator(commitIterator, branchIterator)
+			it.Close()
 			i := 0
 			for it.Next() {
 				val := it.Value()
@@ -89,7 +90,6 @@ func TestStartingPointIterator(t *testing.T) {
 			if it.Err() != nil {
 				t.Fatalf("unexpected error: %v", it.Err())
 			}
-			it.Close()
 			if i != len(expected) {
 				t.Fatalf("got unexpected number of results. expected=%d, got=%d", len(expected), i)
 			}

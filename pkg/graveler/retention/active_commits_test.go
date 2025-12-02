@@ -369,12 +369,16 @@ func TestActiveCommits(t *testing.T) {
 
 			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
 
-			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
+			startingPoints := NewGCStartingPointIterator(
 				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
-				testutil.NewFakeBranchIterator(branches)), &repositoryCommitGetter{
-				refManager: refManagerMock,
-				repository: repositoryRecord,
-			}, garbageCollectionRules)
+				testutil.NewFakeBranchIterator(branches))
+			defer startingPoints.Close()
+
+			gcCommits, err := GetGarbageCollectionCommits(ctx, startingPoints,
+				&repositoryCommitGetter{
+					refManager: refManagerMock,
+					repository: repositoryRecord,
+				}, garbageCollectionRules)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
 			}
