@@ -16,10 +16,10 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit_status import CommitStatus  # noqa: E501
+from lakefs_sdk.models.merge_async_status import MergeAsyncStatus  # noqa: E501
 
-class TestCommitStatus(unittest.TestCase):
-    """CommitStatus unit test stubs"""
+class TestMergeAsyncStatus(unittest.TestCase):
+    """MergeAsyncStatus unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,46 +27,34 @@ class TestCommitStatus(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> CommitStatus:
-        """Test CommitStatus
+    def make_instance(self, include_optional) -> MergeAsyncStatus:
+        """Test MergeAsyncStatus
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `CommitStatus`
+        # uncomment below to create an instance of `MergeAsyncStatus`
         """
-        model = CommitStatus()  # noqa: E501
+        model = MergeAsyncStatus()  # noqa: E501
         if include_optional:
-            return CommitStatus(
+            return MergeAsyncStatus(
                 task_id = '',
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
-                result = lakefs_sdk.models.commit.Commit(
-                    id = '', 
-                    parents = [
-                        ''
-                        ], 
-                    committer = '', 
-                    message = '', 
-                    creation_date = 56, 
-                    meta_range_id = '', 
-                    metadata = {
-                        'key' : ''
-                        }, 
-                    generation = 56, 
-                    version = 0, ),
+                result = lakefs_sdk.models.merge_result.MergeResult(
+                    reference = '', ),
                 error = lakefs_sdk.models.error.Error(
                     message = '', )
             )
         else:
-            return CommitStatus(
+            return MergeAsyncStatus(
                 task_id = '',
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """
 
-    def testCommitStatus(self):
-        """Test CommitStatus"""
+    def testMergeAsyncStatus(self):
+        """Test MergeAsyncStatus"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

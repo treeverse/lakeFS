@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**log_commits**](RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 [**merge_into_branch**](RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 [**merge_into_branch_async**](RefsApi.md#merge_into_branch_async) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
-[**merge_into_branch_status**](RefsApi.md#merge_into_branch_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status | get status of async merge operation
+[**merge_into_branch_async_status**](RefsApi.md#merge_into_branch_async_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 
 
 # **diff_refs**
@@ -624,8 +624,8 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **merge_into_branch_status**
-> MergeStatus merge_into_branch_status(repository, source_ref, destination_branch, id)
+# **merge_into_branch_async_status**
+> MergeAsyncStatus merge_into_branch_async_status(repository, source_ref, destination_branch, id)
 
 get status of async merge operation
 
@@ -641,7 +641,7 @@ get status of async merge operation
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.merge_status import MergeStatus
+from lakefs_sdk.models.merge_async_status import MergeAsyncStatus
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -692,15 +692,15 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     repository = 'repository_example' # str | 
     source_ref = 'source_ref_example' # str | source ref
     destination_branch = 'destination_branch_example' # str | destination branch name
-    id = 'id_example' # str | Unique identifier of the merge task
+    id = 'id_example' # str | Unique identifier of the merge async task
 
     try:
         # get status of async merge operation
-        api_response = api_instance.merge_into_branch_status(repository, source_ref, destination_branch, id)
-        print("The response of RefsApi->merge_into_branch_status:\n")
+        api_response = api_instance.merge_into_branch_async_status(repository, source_ref, destination_branch, id)
+        print("The response of RefsApi->merge_into_branch_async_status:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling RefsApi->merge_into_branch_status: %s\n" % e)
+        print("Exception when calling RefsApi->merge_into_branch_async_status: %s\n" % e)
 ```
 
 
@@ -713,11 +713,11 @@ Name | Type | Description  | Notes
  **repository** | **str**|  | 
  **source_ref** | **str**| source ref | 
  **destination_branch** | **str**| destination branch name | 
- **id** | **str**| Unique identifier of the merge task | 
+ **id** | **str**| Unique identifier of the merge async task | 
 
 ### Return type
 
-[**MergeStatus**](MergeStatus.md)
+[**MergeAsyncStatus**](MergeAsyncStatus.md)
 
 ### Authorization
 
@@ -736,9 +736,9 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
-**404** | Not Found |  -  |
-**409** | Conflict |  -  |
-**412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
+**404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
+**412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |

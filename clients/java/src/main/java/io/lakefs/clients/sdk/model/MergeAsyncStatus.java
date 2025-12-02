@@ -50,10 +50,10 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * MergeStatus
+ * MergeAsyncStatus
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class MergeStatus {
+public class MergeAsyncStatus {
   public static final String SERIALIZED_NAME_TASK_ID = "task_id";
   @SerializedName(SERIALIZED_NAME_TASK_ID)
   private String taskId;
@@ -74,10 +74,10 @@ public class MergeStatus {
   @SerializedName(SERIALIZED_NAME_ERROR)
   private Error error;
 
-  public MergeStatus() {
+  public MergeAsyncStatus() {
   }
 
-  public MergeStatus taskId(String taskId) {
+  public MergeAsyncStatus taskId(String taskId) {
     
     this.taskId = taskId;
     return this;
@@ -98,7 +98,7 @@ public class MergeStatus {
   }
 
 
-  public MergeStatus completed(Boolean completed) {
+  public MergeAsyncStatus completed(Boolean completed) {
     
     this.completed = completed;
     return this;
@@ -119,7 +119,7 @@ public class MergeStatus {
   }
 
 
-  public MergeStatus updateTime(OffsetDateTime updateTime) {
+  public MergeAsyncStatus updateTime(OffsetDateTime updateTime) {
     
     this.updateTime = updateTime;
     return this;
@@ -140,7 +140,7 @@ public class MergeStatus {
   }
 
 
-  public MergeStatus result(MergeResult result) {
+  public MergeAsyncStatus result(MergeResult result) {
     
     this.result = result;
     return this;
@@ -161,7 +161,7 @@ public class MergeStatus {
   }
 
 
-  public MergeStatus error(Error error) {
+  public MergeAsyncStatus error(Error error) {
     
     this.error = error;
     return this;
@@ -194,9 +194,9 @@ public class MergeStatus {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the MergeStatus instance itself
+   * @return the MergeAsyncStatus instance itself
    */
-  public MergeStatus putAdditionalProperty(String key, Object value) {
+  public MergeAsyncStatus putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -235,13 +235,13 @@ public class MergeStatus {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MergeStatus mergeStatus = (MergeStatus) o;
-    return Objects.equals(this.taskId, mergeStatus.taskId) &&
-        Objects.equals(this.completed, mergeStatus.completed) &&
-        Objects.equals(this.updateTime, mergeStatus.updateTime) &&
-        Objects.equals(this.result, mergeStatus.result) &&
-        Objects.equals(this.error, mergeStatus.error)&&
-        Objects.equals(this.additionalProperties, mergeStatus.additionalProperties);
+    MergeAsyncStatus mergeAsyncStatus = (MergeAsyncStatus) o;
+    return Objects.equals(this.taskId, mergeAsyncStatus.taskId) &&
+        Objects.equals(this.completed, mergeAsyncStatus.completed) &&
+        Objects.equals(this.updateTime, mergeAsyncStatus.updateTime) &&
+        Objects.equals(this.result, mergeAsyncStatus.result) &&
+        Objects.equals(this.error, mergeAsyncStatus.error)&&
+        Objects.equals(this.additionalProperties, mergeAsyncStatus.additionalProperties);
   }
 
   @Override
@@ -252,7 +252,7 @@ public class MergeStatus {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MergeStatus {\n");
+    sb.append("class MergeAsyncStatus {\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
@@ -298,17 +298,17 @@ public class MergeStatus {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to MergeStatus
+  * @throws IOException if the JSON Element is invalid with respect to MergeAsyncStatus
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!MergeStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in MergeStatus is not found in the empty JSON string", MergeStatus.openapiRequiredFields.toString()));
+        if (!MergeAsyncStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in MergeAsyncStatus is not found in the empty JSON string", MergeAsyncStatus.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : MergeStatus.openapiRequiredFields) {
+      for (String requiredField : MergeAsyncStatus.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -331,16 +331,16 @@ public class MergeStatus {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!MergeStatus.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'MergeStatus' and its subtypes
+       if (!MergeAsyncStatus.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'MergeAsyncStatus' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<MergeStatus> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(MergeStatus.class));
+       final TypeAdapter<MergeAsyncStatus> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(MergeAsyncStatus.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<MergeStatus>() {
+       return (TypeAdapter<T>) new TypeAdapter<MergeAsyncStatus>() {
            @Override
-           public void write(JsonWriter out, MergeStatus value) throws IOException {
+           public void write(JsonWriter out, MergeAsyncStatus value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -363,12 +363,12 @@ public class MergeStatus {
            }
 
            @Override
-           public MergeStatus read(JsonReader in) throws IOException {
+           public MergeAsyncStatus read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             MergeStatus instance = thisAdapter.fromJsonTree(jsonObj);
+             MergeAsyncStatus instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -395,18 +395,18 @@ public class MergeStatus {
   }
 
  /**
-  * Create an instance of MergeStatus given an JSON string
+  * Create an instance of MergeAsyncStatus given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of MergeStatus
-  * @throws IOException if the JSON string is invalid with respect to MergeStatus
+  * @return An instance of MergeAsyncStatus
+  * @throws IOException if the JSON string is invalid with respect to MergeAsyncStatus
   */
-  public static MergeStatus fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, MergeStatus.class);
+  public static MergeAsyncStatus fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, MergeAsyncStatus.class);
   }
 
  /**
-  * Convert an instance of MergeStatus to an JSON string
+  * Convert an instance of MergeAsyncStatus to an JSON string
   *
   * @return JSON string
   */

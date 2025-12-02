@@ -27,17 +27,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for CommitStatus
+ * Model tests for CommitAsyncStatus
  */
-public class CommitStatusTest {
-    private final CommitStatus model = new CommitStatus();
+public class CommitAsyncStatusTest {
+    private final CommitAsyncStatus model = new CommitAsyncStatus();
 
     /**
-     * Model tests for CommitStatus
+     * Model tests for CommitAsyncStatus
      */
     @Test
-    public void testCommitStatus() {
-        // TODO: test CommitStatus
+    public void testCommitAsyncStatus() {
+        // TODO: test CommitAsyncStatus
     }
 
     /**

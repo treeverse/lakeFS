@@ -36,8 +36,8 @@ from lakefs_sdk.models.commit_list import CommitList
 from lakefs_sdk.models.diff_list import DiffList
 from lakefs_sdk.models.find_merge_base_result import FindMergeBaseResult
 from lakefs_sdk.models.merge import Merge
+from lakefs_sdk.models.merge_async_status import MergeAsyncStatus
 from lakefs_sdk.models.merge_result import MergeResult
-from lakefs_sdk.models.merge_status import MergeStatus
 from lakefs_sdk.models.task_creation import TaskCreation
 
 from lakefs_sdk.api_client import ApiClient
@@ -995,13 +995,13 @@ class RefsApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def merge_into_branch_status(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge task")], **kwargs) -> MergeStatus:  # noqa: E501
+    def merge_into_branch_async_status(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge async task")], **kwargs) -> MergeAsyncStatus:  # noqa: E501
         """get status of async merge operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.merge_into_branch_status(repository, source_ref, destination_branch, id, async_req=True)
+        >>> thread = api.merge_into_branch_async_status(repository, source_ref, destination_branch, id, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -1010,7 +1010,7 @@ class RefsApi:
         :type source_ref: str
         :param destination_branch: destination branch name (required)
         :type destination_branch: str
-        :param id: Unique identifier of the merge task (required)
+        :param id: Unique identifier of the merge async task (required)
         :type id: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -1021,22 +1021,22 @@ class RefsApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: MergeStatus
+        :rtype: MergeAsyncStatus
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
-            message = "Error! Please call the merge_into_branch_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
+            message = "Error! Please call the merge_into_branch_async_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.merge_into_branch_status_with_http_info(repository, source_ref, destination_branch, id, **kwargs)  # noqa: E501
+        return self.merge_into_branch_async_status_with_http_info(repository, source_ref, destination_branch, id, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def merge_into_branch_status_with_http_info(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge task")], **kwargs) -> ApiResponse:  # noqa: E501
+    def merge_into_branch_async_status_with_http_info(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge async task")], **kwargs) -> ApiResponse:  # noqa: E501
         """get status of async merge operation  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.merge_into_branch_status_with_http_info(repository, source_ref, destination_branch, id, async_req=True)
+        >>> thread = api.merge_into_branch_async_status_with_http_info(repository, source_ref, destination_branch, id, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -1045,7 +1045,7 @@ class RefsApi:
         :type source_ref: str
         :param destination_branch: destination branch name (required)
         :type destination_branch: str
-        :param id: Unique identifier of the merge task (required)
+        :param id: Unique identifier of the merge async task (required)
         :type id: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -1069,7 +1069,7 @@ class RefsApi:
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: tuple(MergeStatus, status_code(int), headers(HTTPHeaderDict))
+        :rtype: tuple(MergeAsyncStatus, status_code(int), headers(HTTPHeaderDict))
         """
 
         _params = locals()
@@ -1097,7 +1097,7 @@ class RefsApi:
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method merge_into_branch_status" % _key
+                    " to method merge_into_branch_async_status" % _key
                 )
             _params[_key] = _val
         del _params['kwargs']
@@ -1115,12 +1115,12 @@ class RefsApi:
         if _params['destination_branch']:
             _path_params['destinationBranch'] = _params['destination_branch']
 
+        if _params['id']:
+            _path_params['id'] = _params['id']
+
 
         # process the query parameters
         _query_params = []
-        if _params.get('id') is not None:  # noqa: E501
-            _query_params.append(('id', _params['id']))
-
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
@@ -1136,19 +1136,19 @@ class RefsApi:
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
-            '200': "MergeStatus",
-            '400': "MergeStatus",
-            '401': "MergeStatus",
-            '403': "MergeStatus",
-            '404': "MergeStatus",
-            '409': "MergeStatus",
-            '412': "MergeStatus",
-            '429': "MergeStatus",
-            '501': "MergeStatus",
+            '200': "MergeAsyncStatus",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "Error",
+            '412': "Error",
+            '429': None,
+            '501': "Error",
         }
 
         return self.api_client.call_api(
-            '/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status', 'GET',
+            '/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status', 'GET',
             _path_params,
             _query_params,
             _header_params,

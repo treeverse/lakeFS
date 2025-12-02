@@ -27,9 +27,9 @@ except ImportError:
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.models.error import Error
 
-class CommitStatus(BaseModel):
+class CommitAsyncStatus(BaseModel):
     """
-    CommitStatus
+    CommitAsyncStatus
     """
     task_id: StrictStr = Field(..., description="the id of the async commit task")
     completed: StrictBool = Field(..., description="true if the task has completed (either successfully or with an error)")
@@ -52,8 +52,8 @@ class CommitStatus(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> CommitStatus:
-        """Create an instance of CommitStatus from a JSON string"""
+    def from_json(cls, json_str: str) -> CommitAsyncStatus:
+        """Create an instance of CommitAsyncStatus from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -71,15 +71,15 @@ class CommitStatus(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> CommitStatus:
-        """Create an instance of CommitStatus from a dict"""
+    def from_dict(cls, obj: dict) -> CommitAsyncStatus:
+        """Create an instance of CommitAsyncStatus from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return CommitStatus.parse_obj(obj)
+            return CommitAsyncStatus.parse_obj(obj)
 
-        _obj = CommitStatus.parse_obj({
+        _obj = CommitAsyncStatus.parse_obj({
             "task_id": obj.get("task_id"),
             "completed": obj.get("completed"),
             "update_time": obj.get("update_time"),

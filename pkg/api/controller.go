@@ -3501,7 +3501,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 	})
 }
 
-func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitStatusParams) {
+func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, repository, branch, id string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -3512,10 +3512,10 @@ func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
-	taskID := params.Id
+	taskID := id
 	status, err := c.asyncOpsHandler.GetCommitStatus(ctx, repository, taskID)
 	if status == nil {
-		writeResponse(w, r, http.StatusInternalServerError, apigen.CommitStatus{
+		writeResponse(w, r, http.StatusInternalServerError, apigen.CommitAsyncStatus{
 			TaskId:     taskID,
 			Completed:  true,
 			UpdateTime: time.Now(),
@@ -3527,7 +3527,7 @@ func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, reposi
 	}
 	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 
-	resp := apigen.CommitStatus{
+	resp := apigen.CommitAsyncStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
 	}
@@ -5537,7 +5537,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
+func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch, id string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -5548,10 +5548,10 @@ func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Reques
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
-	taskID := params.Id
+	taskID := id
 	status, err := c.asyncOpsHandler.GetMergeIntoBranchStatus(ctx, repository, taskID)
 	if status == nil {
-		writeResponse(w, r, http.StatusInternalServerError, apigen.MergeStatus{
+		writeResponse(w, r, http.StatusInternalServerError, apigen.MergeAsyncStatus{
 			TaskId:     taskID,
 			Completed:  true,
 			UpdateTime: time.Now(),
@@ -5563,7 +5563,7 @@ func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Reques
 	}
 	c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task))
 
-	resp := apigen.MergeStatus{
+	resp := apigen.MergeAsyncStatus{
 		TaskId:    status.Task.Id,
 		Completed: status.Task.Done,
 	}
