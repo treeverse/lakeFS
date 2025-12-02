@@ -3559,7 +3559,7 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 			Metadata: &apigen.Commit_Metadata{
 				AdditionalProperties: status.Info.Metadata,
 			},
-			Generation: apiutil.Ptr(status.Info.Generation),
+			Generation: apiutil.Ptr(int64(status.Info.Generation)),
 			Version:    apiutil.Ptr(int(status.Info.Version)),
 		}
 	}

@@ -8536,7 +8536,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: precondition failed (e.g. a pre-merge hook returned a failure)
+          description: precondition failed
         "429":
           description: too many requests
         default:

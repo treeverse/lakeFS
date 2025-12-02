@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/treeverse/lakefs/graveler";
+option go_package = "github.com/treeverse/lakefs/pkg/graveler";
 
 import "google/protobuf/timestamp.proto";
 

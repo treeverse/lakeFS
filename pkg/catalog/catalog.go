@@ -2270,7 +2270,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 				// Classify the error using the API callback (ConvertApiErrorToStatusCodeAndErrorMsg from the controller)
 				// before the original error is lost when stored in protobuf, and populate the task's error details.
 				statusCode, errorMsg, _ := c.apiErrorCallback(log, err)
-				task.StatusCode = int64(statusCode)
+				task.StatusCode = int32(statusCode)
 				task.ErrorMsg = errorMsg
 			} else if stepIdx == len(steps)-1 {
 				task.Done = true

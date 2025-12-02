@@ -1600,7 +1600,7 @@ components:
           $ref: "#/components/schemas/Error"
         status_code:
           type: integer
-          description: the status code of the error if it exists
+          description: an http status code that correlates with the underlying error if exists
       required:
         - task_id
         - completed
@@ -1625,7 +1625,7 @@ components:
           $ref: "#/components/schemas/Error"
         status_code:
           type: integer
-          description: the status code of the error if it exists
+          description: an http status code that correlates with the underlying error if exists
       required:
         - task_id
         - completed
@@ -6955,7 +6955,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MergeResult"
         412:
-          description: precondition failed (e.g. a pre-merge hook returned a failure)
+          description: precondition failed
           content:
             application/json:
               schema:

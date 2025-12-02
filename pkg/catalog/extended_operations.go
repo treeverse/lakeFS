@@ -24,7 +24,7 @@ type ExtendedOperations interface {
 		ctx context.Context,
 		repositoryID string,
 		taskID string,
-	) (*CommitAsyncStatus, error)
+	) (*CommitAsyncStatusData, error)
 
 	SubmitMergeIntoBranch(
 		ctx context.Context,
@@ -42,7 +42,7 @@ type ExtendedOperations interface {
 		ctx context.Context,
 		repositoryID string,
 		taskID string,
-	) (*MergeAsyncStatus, error)
+	) (*MergeAsyncStatusData, error)
 }
 
 type NoopExtendedOperations struct{}
@@ -70,7 +70,7 @@ func (h *NoopExtendedOperations) GetCommitStatus(
 	ctx context.Context,
 	repositoryID string,
 	taskID string,
-) (*CommitAsyncStatus, error) {
+) (*CommitAsyncStatusData, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -92,6 +92,6 @@ func (h *NoopExtendedOperations) GetMergeIntoBranchStatus(
 	ctx context.Context,
 	repositoryID string,
 	taskID string,
-) (*MergeAsyncStatus, error) {
+) (*MergeAsyncStatusData, error) {
 	return nil, ErrNotImplemented
 }

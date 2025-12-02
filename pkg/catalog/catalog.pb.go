@@ -7,7 +7,7 @@
 package catalog
 
 import (
-	graveler "github.com/treeverse/lakefs/graveler"
+	graveler "github.com/treeverse/lakefs/pkg/graveler"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
