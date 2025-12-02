@@ -45,17 +45,11 @@ const (
 	// The heuristic asks for 3*amount results since some will filter out
 	maxAmountNoMerges = 333
 	noMergesHeuristic = 3
-
-	defaultPollInterval = 3 * time.Second // default interval while pulling tasks status
-	minimumPollInterval = time.Second     // minimum interval while pulling tasks status
-	defaultPollTimeout  = time.Hour       // default expiry for pull status with no update
 )
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
-
-var ErrTaskNotCompleted = errors.New("task not completed")
 
 //nolint:gochecknoinits
 func init() {

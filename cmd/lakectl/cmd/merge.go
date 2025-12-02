@@ -62,14 +62,46 @@ var mergeCmd = &cobra.Command{
 			AllowEmpty:  &allowEmpty,
 			SquashMerge: &squash,
 		}
+		ctx := cmd.Context()
+		var (
+			ref string
+			err error
+		)
 
-		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
-		if resp != nil && resp.JSON409 != nil {
-			Die("Conflict found.", 1)
-		}
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+		// # try asynchronous merge first
+		startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
+		// TODO (niro): We will need to implement timeout and cancel logic here
+		if startResp.JSON501 == nil { // Async supported or error
+			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
+			if startResp.JSON202 == nil {
+				Die("Bad response from server", 1)
+			}
+
+			taskID := startResp.JSON202.Id
+			err := pollAsyncOperationStatus(ctx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
+				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
+				if err != nil {
+					return nil, err
+				}
+				if resp.JSON200 == nil {
+					Die("Bad response from server", 1)
+				}
+				ref = resp.JSON200.Result.Reference
+				return &resp.JSON200.AsyncTaskStatus, nil
+			})
+			if err != nil {
+				DieErr(err)
+			}
+		} else {
+			resp, err := client.MergeIntoBranchWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
+			if resp != nil && resp.JSON409 != nil {
+				Die("Conflict found.", 1)
+			}
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
+			ref = resp.JSON200.Reference
 		}
 
 		Write(mergeCreateTemplate, struct {
@@ -80,7 +112,9 @@ var mergeCmd = &cobra.Command{
 				FromRef: sourceRef.Ref,
 				ToRef:   destinationRef.Ref,
 			},
-			Result: resp.JSON200,
+			Result: &apigen.MergeResult{
+				Reference: ref,
+			},
 		})
 	},
 }
