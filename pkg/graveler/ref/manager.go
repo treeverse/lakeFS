@@ -662,11 +662,11 @@ func (m *Manager) FindMergeBase(ctx context.Context, repository *graveler.Reposi
 
 func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID, firstParent bool, since *time.Time) (graveler.CommitIterator, error) {
 	return NewCommitIterator(ctx, &CommitIteratorConfig{
-		repository:  repository,
-		start:       from,
-		firstParent: firstParent,
-		since:       since,
-		manager:     m,
+		Repository:  repository,
+		Start:       from,
+		FirstParent: firstParent,
+		Since:       since,
+		Manager:     m,
 	}), nil
 }
 

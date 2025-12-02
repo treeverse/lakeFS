@@ -9,7 +9,7 @@ import (
 )
 
 type CommitIterator struct {
-	manager     graveler.RefManager
+	manager     CommitGetter
 	ctx         context.Context
 	repository  *graveler.RepositoryRecord
 	start       graveler.CommitID
@@ -63,11 +63,11 @@ func (c *commitsPriorityQueue) Pop() interface{} {
 }
 
 type CommitIteratorConfig struct {
-	repository  *graveler.RepositoryRecord
-	start       graveler.CommitID
-	firstParent bool
-	manager     graveler.RefManager
-	since       *time.Time
+	Repository  *graveler.RepositoryRecord
+	Start       graveler.CommitID
+	FirstParent bool
+	Manager     CommitGetter
+	Since       *time.Time
 }
 
 // NewCommitIterator returns an iterator over all commits in the given repository.
@@ -75,13 +75,13 @@ type CommitIteratorConfig struct {
 func NewCommitIterator(ctx context.Context, config *CommitIteratorConfig) *CommitIterator {
 	return &CommitIterator{
 		ctx:         ctx,
-		repository:  config.repository,
-		start:       config.start,
+		repository:  config.Repository,
+		start:       config.Start,
 		queue:       make(commitsPriorityQueue, 0),
 		visit:       make(map[graveler.CommitID]struct{}),
-		manager:     config.manager,
-		firstParent: config.firstParent,
-		since:       config.since,
+		manager:     config.Manager,
+		firstParent: config.FirstParent,
+		since:       config.Since,
 	}
 }
 
@@ -112,7 +112,7 @@ func (ci *CommitIterator) Next() bool {
 		}
 		// skip commits that are older than since time
 		if ci.since == nil || !rec.CreationDate.Before(*ci.since) {
-			ci.queue.Push(rec)
+			heap.Push(&ci.queue, rec)
 		}
 	}
 
