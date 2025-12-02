@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -334,7 +335,7 @@ func getApiErrorCallback(cfg Config) ApiErrorCallback {
 		if err == nil {
 			return 0, "", false
 		}
-		return 500, err.Error(), true
+		return http.StatusInternalServerError, err.Error(), true
 	}
 }
 
