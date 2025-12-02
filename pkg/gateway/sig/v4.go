@@ -33,6 +33,17 @@ const (
 	v4scopeTerminator        = "aws4_request"
 	v4timeFormat             = "20060102T150405Z"
 	v4shortTimeFormat        = "20060102"
+
+	AmzPresignMaxExpires = 7 * 24 * time.Hour // Maximum expiry duration for presigned URLs (7 days or 604800 seconds)
+	AmzMaxClockSkew      = 15 * time.Minute   // Maximum allowed clock skew (15 minutes for AWS S3 compatibility)
+
+	v4AmzAlgorithm = "X-Amz-Algorithm"
+	//nolint:gosec
+	v4AmzCredential    = "X-Amz-Credential"
+	v4AmzSignature     = "X-Amz-Signature"
+	v4AmzDate          = "X-Amz-Date"
+	v4AmzSignedHeaders = "X-Amz-SignedHeaders"
+	v4AmzExpires       = "X-Amz-Expires"
 )
 
 var (
@@ -43,12 +54,14 @@ var (
 type V4Auth struct {
 	AccessKeyID         string
 	Date                string
+	Expires             int64
 	Region              string
 	Service             string
 	SignedHeaders       []string
 	SignedHeadersString string
 	Signature           string
 	ChecksumAlgorithm   string
+	IsPresigned         bool
 }
 
 func (a V4Auth) GetAccessKeyID() string {
@@ -59,6 +72,47 @@ func splitHeaders(headers string) []string {
 	headerValues := strings.Split(headers, ";")
 	sort.Strings(headerValues)
 	return headerValues
+}
+
+func parseExpires(expiresStr string) (int64, error) {
+	expires, err := strconv.ParseInt(expiresStr, 10, 64)
+	if err != nil {
+		// handles both empty string and non-int string
+		return 0, errors.ErrMalformedExpires
+	}
+	if expires < 0 {
+		return 0, errors.ErrNegativeExpires
+	}
+	if expires > int64(AmzPresignMaxExpires.Seconds()) {
+		return 0, errors.ErrMaximumExpires
+	}
+	return expires, nil
+}
+
+func isV4PresignedRequest(query url.Values) error {
+	algorithm, ok := query[v4AmzAlgorithm]
+	if !ok {
+		// Not a V4 presigned request, try next auth method
+		return ErrBadAuthorizationFormat
+	}
+	if len(algorithm) == 0 || !strings.EqualFold(algorithm[0], V4authHeaderPrefix) {
+		return errors.ErrInvalidQuerySignatureAlgo
+	}
+
+	requiredParams := []string{
+		v4AmzCredential,
+		v4AmzSignature,
+		v4AmzDate,
+		v4AmzSignedHeaders,
+		v4AmzExpires,
+	}
+	for _, param := range requiredParams {
+		if _, ok := query[param]; !ok {
+			return errors.ErrMissingFields
+		}
+	}
+
+	return nil
 }
 
 func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
@@ -88,16 +142,19 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 		signatureHeaders := result["SignatureHeaders"]
 		ctx.SignedHeaders = splitHeaders(signatureHeaders)
 		ctx.SignedHeadersString = signatureHeaders
+		ctx.IsPresigned = false
 		return ctx, nil
 	}
 
-	// otherwise, see if we have all the required query parameters
 	query := r.URL.Query()
-	algorithm := query.Get("X-Amz-Algorithm")
-	if len(algorithm) == 0 || !strings.EqualFold(algorithm, V4authHeaderPrefix) {
-		return ctx, errors.ErrInvalidQuerySignatureAlgo
+
+	// If we couldn't find the auth header, try to parse the request as a presigned URL
+	if err := isV4PresignedRequest(query); err != nil {
+		return ctx, err
 	}
-	credentialScope := query.Get("X-Amz-Credential")
+
+	ctx.IsPresigned = true
+	credentialScope := query.Get(v4AmzCredential)
 	if len(credentialScope) == 0 {
 		return ctx, errors.ErrMissingCredTag
 	}
@@ -116,7 +173,13 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	ctx.Region = credsResult["Region"]
 	ctx.Service = credsResult["Service"]
 
-	ctx.SignedHeadersString = query.Get("X-Amz-SignedHeaders")
+	expires, err := parseExpires(query.Get(v4AmzExpires))
+	if err != nil {
+		return ctx, err
+	}
+	ctx.Expires = expires
+
+	ctx.SignedHeadersString = query.Get(v4AmzSignedHeaders)
 	headers := splitHeaders(ctx.SignedHeadersString)
 	ctx.SignedHeaders = headers
 	ctx.Signature = query.Get(v4SignatureHeader)
@@ -142,6 +205,11 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 	// compare signatures
 	if !Equal([]byte(signature), []byte(auth.Signature)) {
 		return errors.ErrSignatureDoesNotMatch
+	}
+
+	// check that the request hasn't expired
+	if err := ctx.verifyExpiration(); err != nil {
+		return err
 	}
 
 	// wrap body with verifier
@@ -291,6 +359,39 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	}
 
 	return amzDate, nil
+}
+
+func (ctx *verificationCtx) verifyExpiration() error {
+	if !ctx.AuthValue.IsPresigned {
+		return nil
+	}
+
+	// Get and validate the request timestamp
+	amzDate, err := ctx.getAmzDate()
+	if err != nil {
+		return err
+	}
+
+	requestTime, err := time.Parse(v4timeFormat, amzDate)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now().UTC()
+	timeDiff := now.Sub(requestTime)
+
+	// Check for requests signed more than 15 minutes in the future (matches S3 behavior)
+	if timeDiff < 0 && timeDiff.Abs() > AmzMaxClockSkew {
+		return errors.ErrRequestNotReadyYet
+	}
+
+	// Calculate expiration from the signed time, not current time
+	expirationTime := requestTime.Add(time.Duration(ctx.AuthValue.Expires) * time.Second)
+	if now.After(expirationTime) {
+		return errors.ErrExpiredPresignRequest
+	}
+
+	return nil
 }
 
 func sign(key []byte, msg string) []byte {
