@@ -10,6 +10,7 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import CompareBranchesSelection from "./compareBranchesSelection";
+import {usePluginManager} from "../../../extendable/plugins/pluginManager";
 
 const CompareBranchesActionsBar = (
     {repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff}
@@ -43,6 +44,7 @@ const CompareBranchesActionsBar = (
 };
 
 const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
+    const pluginManager = usePluginManager();
     const textRef = useRef(null);
     const [metadataFields, setMetadataFields] = useState([])
     const initialMerge = {
@@ -87,7 +89,14 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         }
         setMergeState({merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy})
         try {
-            await refsAPI.merge(repo.id, source, dest, strategy, message, metadata);
+            await pluginManager.commitMergeStrategy.merge(repo.id, source, dest, {
+                message: message || undefined,
+                metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+                strategy: strategy || undefined,
+                force: false,
+                allow_empty: false,
+                squash_merge: false
+            });
             setMergeState({
                 merging: mergeState.merging,
                 show: mergeState.show,
