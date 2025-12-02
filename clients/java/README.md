@@ -196,11 +196,11 @@ Class | Method | HTTP request | Description
 *BranchesApi* | [**resetBranch**](docs/BranchesApi.md#resetBranch) | **PUT** /repositories/{repository}/branches/{branch} | reset branch
 *BranchesApi* | [**revertBranch**](docs/BranchesApi.md#revertBranch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
-*CommitsApi* | [**commitAsync**](docs/CommitsApi.md#commitAsync) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
-*CommitsApi* | [**commitAsyncStatus**](docs/CommitsApi.md#commitAsyncStatus) | **GET** /repositories/{repository}/branches/{branch}/commits/async/{id}/status | get status of async commit operation
 *CommitsApi* | [**getCommit**](docs/CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *ConfigApi* | [**getConfig**](docs/ConfigApi.md#getConfig) | **GET** /config | 
 *ExperimentalApi* | [**abortPresignMultipartUpload**](docs/ExperimentalApi.md#abortPresignMultipartUpload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
+*ExperimentalApi* | [**commitAsync**](docs/ExperimentalApi.md#commitAsync) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
+*ExperimentalApi* | [**commitAsyncStatus**](docs/ExperimentalApi.md#commitAsyncStatus) | **GET** /repositories/{repository}/branches/{branch}/commits/async/{id}/status | get status of async commit operation
 *ExperimentalApi* | [**completePresignMultipartUpload**](docs/ExperimentalApi.md#completePresignMultipartUpload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
 *ExperimentalApi* | [**createPresignMultipartUpload**](docs/ExperimentalApi.md#createPresignMultipartUpload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 *ExperimentalApi* | [**createPullRequest**](docs/ExperimentalApi.md#createPullRequest) | **POST** /repositories/{repository}/pulls | create pull request
@@ -215,6 +215,8 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**listPullRequests**](docs/ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests
 *ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+*ExperimentalApi* | [**mergeIntoBranchAsync**](docs/ExperimentalApi.md#mergeIntoBranchAsync) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
+*ExperimentalApi* | [**mergeIntoBranchAsyncStatus**](docs/ExperimentalApi.md#mergeIntoBranchAsyncStatus) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 *ExperimentalApi* | [**mergePullRequest**](docs/ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 *ExperimentalApi* | [**releaseTokenToMailbox**](docs/ExperimentalApi.md#releaseTokenToMailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *ExperimentalApi* | [**stsLogin**](docs/ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS
@@ -283,8 +285,6 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**findMergeBase**](docs/RefsApi.md#findMergeBase) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 *RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
-*RefsApi* | [**mergeIntoBranchAsync**](docs/RefsApi.md#mergeIntoBranchAsync) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
-*RefsApi* | [**mergeIntoBranchAsyncStatus**](docs/RefsApi.md#mergeIntoBranchAsyncStatus) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 *RemotesApi* | [**pullIcebergTable**](docs/RemotesApi.md#pullIcebergTable) | **POST** /iceberg/remotes/{catalog}/pull | take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
 *RemotesApi* | [**pushIcebergTable**](docs/RemotesApi.md#pushIcebergTable) | **POST** /iceberg/remotes/{catalog}/push | register existing lakeFS table in remote catalog
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository

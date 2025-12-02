@@ -3985,7 +3985,7 @@ paths:
           description: Internal Server Error
       summary: create commit asynchronously
       tags:
-      - commits
+      - experimental
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/commits/async/{id}/status:
@@ -4073,7 +4073,7 @@ paths:
           description: Internal Server Error
       summary: get status of async commit operation
       tags:
-      - commits
+      - experimental
       x-accepts: application/json
   /repositories/{repository}/commits:
     post:
@@ -4765,7 +4765,7 @@ paths:
           description: Internal Server Error
       summary: merge references asynchronously
       tags:
-      - refs
+      - experimental
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status:
@@ -4862,7 +4862,7 @@ paths:
           description: Internal Server Error
       summary: get status of async merge operation
       tags:
-      - refs
+      - experimental
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/diff:
     get:

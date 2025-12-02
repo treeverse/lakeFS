@@ -8,8 +8,6 @@ Method | HTTP request | Description
 [**find_merge_base**](RefsApi.md#find_merge_base) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 [**log_commits**](RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 [**merge_into_branch**](RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
-[**merge_into_branch_async**](RefsApi.md#merge_into_branch_async) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
-[**merge_into_branch_async_status**](RefsApi.md#merge_into_branch_async_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 
 
 
@@ -142,68 +140,6 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-
-## merge_into_branch_async
-
-> models::TaskCreation merge_into_branch_async(repository, source_ref, destination_branch, merge)
-merge references asynchronously
-
-### Parameters
-
-
-Name | Type | Description  | Required | Notes
-------------- | ------------- | ------------- | ------------- | -------------
-**repository** | **String** |  | [required] |
-**source_ref** | **String** | source ref | [required] |
-**destination_branch** | **String** | destination branch name | [required] |
-**merge** | Option<[**Merge**](Merge.md)> |  |  |
-
-### Return type
-
-[**models::TaskCreation**](TaskCreation.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-
-## merge_into_branch_async_status
-
-> models::MergeAsyncStatus merge_into_branch_async_status(repository, source_ref, destination_branch, id)
-get status of async merge operation
-
-### Parameters
-
-
-Name | Type | Description  | Required | Notes
-------------- | ------------- | ------------- | ------------- | -------------
-**repository** | **String** |  | [required] |
-**source_ref** | **String** | source ref | [required] |
-**destination_branch** | **String** | destination branch name | [required] |
-**id** | **String** | Unique identifier of the merge async task | [required] |
-
-### Return type
-
-[**models::MergeAsyncStatus**](MergeAsyncStatus.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

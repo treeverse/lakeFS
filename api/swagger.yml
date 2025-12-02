@@ -4314,7 +4314,7 @@ paths:
           schema:
             type: string
       tags:
-        - commits
+        - experimental
       operationId: commitAsync
       summary: create commit asynchronously
       requestBody:
@@ -4365,7 +4365,7 @@ paths:
           type: string
     get:
       tags:
-        - commits
+        - experimental
       operationId: commitAsyncStatus
       summary: get status of async commit operation
       responses:
@@ -4764,7 +4764,7 @@ paths:
         description: destination branch name
     post:
       tags:
-        - refs
+        - experimental
       operationId: mergeIntoBranchAsync
       summary: merge references asynchronously
       requestBody:
@@ -4821,7 +4821,7 @@ paths:
           type: string
     get:
       tags:
-        - refs
+        - experimental
       operationId: mergeIntoBranchAsyncStatus
       summary: get status of async merge operation
       responses:

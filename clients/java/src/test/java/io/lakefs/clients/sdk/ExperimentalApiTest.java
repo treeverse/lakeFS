@@ -16,6 +16,8 @@ package io.lakefs.clients.sdk;
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
+import io.lakefs.clients.sdk.model.CommitAsyncStatus;
+import io.lakefs.clients.sdk.model.CommitCreation;
 import io.lakefs.clients.sdk.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.ExternalLoginInformation;
@@ -23,6 +25,8 @@ import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
 import io.lakefs.clients.sdk.model.License;
+import io.lakefs.clients.sdk.model.Merge;
+import io.lakefs.clients.sdk.model.MergeAsyncStatus;
 import io.lakefs.clients.sdk.model.MergeResult;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PresignMultipartUpload;
@@ -33,6 +37,7 @@ import io.lakefs.clients.sdk.model.PullRequestCreationResponse;
 import io.lakefs.clients.sdk.model.PullRequestsList;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
+import io.lakefs.clients.sdk.model.TaskCreation;
 import io.lakefs.clients.sdk.model.UpdateObjectUserMetadata;
 import io.lakefs.clients.sdk.model.UploadPartCopyFrom;
 import io.lakefs.clients.sdk.model.UploadPartFrom;
@@ -69,6 +74,38 @@ public class ExperimentalApiTest {
         AbortPresignMultipartUpload abortPresignMultipartUpload = null;
         api.abortPresignMultipartUpload(repository, branch, uploadId, path)
                 .abortPresignMultipartUpload(abortPresignMultipartUpload)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * create commit asynchronously
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void commitAsyncTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        CommitCreation commitCreation = null;
+        String sourceMetarange = null;
+        TaskCreation response = api.commitAsync(repository, branch, commitCreation)
+                .sourceMetarange(sourceMetarange)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get status of async commit operation
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void commitAsyncStatusTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String id = null;
+        CommitAsyncStatus response = api.commitAsyncStatus(repository, branch, id)
                 .execute();
         // TODO: test validations
     }
@@ -289,6 +326,39 @@ public class ExperimentalApiTest {
                 .prefix(prefix)
                 .after(after)
                 .amount(amount)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * merge references asynchronously
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void mergeIntoBranchAsyncTest() throws ApiException {
+        String repository = null;
+        String sourceRef = null;
+        String destinationBranch = null;
+        Merge merge = null;
+        TaskCreation response = api.mergeIntoBranchAsync(repository, sourceRef, destinationBranch)
+                .merge(merge)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get status of async merge operation
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void mergeIntoBranchAsyncStatusTest() throws ApiException {
+        String repository = null;
+        String sourceRef = null;
+        String destinationBranch = null;
+        String id = null;
+        MergeAsyncStatus response = api.mergeIntoBranchAsyncStatus(repository, sourceRef, destinationBranch, id)
                 .execute();
         // TODO: test validations
     }

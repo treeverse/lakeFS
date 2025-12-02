@@ -7,6 +7,7 @@
 package catalog
 
 import (
+	graveler "github.com/treeverse/lakefs/graveler"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -174,7 +175,7 @@ type Task struct {
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Progress      int64                  `protobuf:"varint,4,opt,name=progress,proto3" json:"progress,omitempty"`
 	ErrorMsg      string                 `protobuf:"bytes,5,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
-	StatusCode    int64                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
+	StatusCode    int32                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -244,7 +245,7 @@ func (x *Task) GetErrorMsg() string {
 	return ""
 }
 
-func (x *Task) GetStatusCode() int64 {
+func (x *Task) GetStatusCode() int32 {
 	if x != nil {
 		return x.StatusCode
 	}
@@ -525,35 +526,28 @@ func (x *GarbageCollectionPrepareStatus) GetInfo() *GarbageCollectionPrepareComm
 	return nil
 }
 
-type CommitAsyncInfo struct {
+type CommitAsyncStatusData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Parents       []string               `protobuf:"bytes,2,rep,name=parents,proto3" json:"parents,omitempty"`
-	Committer     string                 `protobuf:"bytes,3,opt,name=committer,proto3" json:"committer,omitempty"`
-	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
-	CreationDate  *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
-	MetaRangeId   string                 `protobuf:"bytes,6,opt,name=meta_range_id,json=metaRangeId,proto3" json:"meta_range_id,omitempty"`
-	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Generation    int64                  `protobuf:"varint,8,opt,name=generation,proto3" json:"generation,omitempty"`
-	Version       int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
+	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	Info          *graveler.CommitData   `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CommitAsyncInfo) Reset() {
-	*x = CommitAsyncInfo{}
+func (x *CommitAsyncStatusData) Reset() {
+	*x = CommitAsyncStatusData{}
 	mi := &file_catalog_catalog_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CommitAsyncInfo) String() string {
+func (x *CommitAsyncStatusData) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CommitAsyncInfo) ProtoMessage() {}
+func (*CommitAsyncStatusData) ProtoMessage() {}
 
-func (x *CommitAsyncInfo) ProtoReflect() protoreflect.Message {
+func (x *CommitAsyncStatusData) ProtoReflect() protoreflect.Message {
 	mi := &file_catalog_catalog_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -565,148 +559,47 @@ func (x *CommitAsyncInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CommitAsyncInfo.ProtoReflect.Descriptor instead.
-func (*CommitAsyncInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use CommitAsyncStatusData.ProtoReflect.Descriptor instead.
+func (*CommitAsyncStatusData) Descriptor() ([]byte, []int) {
 	return file_catalog_catalog_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *CommitAsyncInfo) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *CommitAsyncInfo) GetParents() []string {
-	if x != nil {
-		return x.Parents
-	}
-	return nil
-}
-
-func (x *CommitAsyncInfo) GetCommitter() string {
-	if x != nil {
-		return x.Committer
-	}
-	return ""
-}
-
-func (x *CommitAsyncInfo) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *CommitAsyncInfo) GetCreationDate() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreationDate
-	}
-	return nil
-}
-
-func (x *CommitAsyncInfo) GetMetaRangeId() string {
-	if x != nil {
-		return x.MetaRangeId
-	}
-	return ""
-}
-
-func (x *CommitAsyncInfo) GetMetadata() map[string]string {
-	if x != nil {
-		return x.Metadata
-	}
-	return nil
-}
-
-func (x *CommitAsyncInfo) GetGeneration() int64 {
-	if x != nil {
-		return x.Generation
-	}
-	return 0
-}
-
-func (x *CommitAsyncInfo) GetVersion() int64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-type CommitAsyncStatus struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
-	Info          *CommitAsyncInfo       `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CommitAsyncStatus) Reset() {
-	*x = CommitAsyncStatus{}
-	mi := &file_catalog_catalog_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CommitAsyncStatus) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CommitAsyncStatus) ProtoMessage() {}
-
-func (x *CommitAsyncStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CommitAsyncStatus.ProtoReflect.Descriptor instead.
-func (*CommitAsyncStatus) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *CommitAsyncStatus) GetTask() *Task {
+func (x *CommitAsyncStatusData) GetTask() *Task {
 	if x != nil {
 		return x.Task
 	}
 	return nil
 }
 
-func (x *CommitAsyncStatus) GetInfo() *CommitAsyncInfo {
+func (x *CommitAsyncStatusData) GetInfo() *graveler.CommitData {
 	if x != nil {
 		return x.Info
 	}
 	return nil
 }
 
-type MergeAsyncInfo struct {
+type MergeData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Reference     string                 `protobuf:"bytes,1,opt,name=reference,proto3" json:"reference,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MergeAsyncInfo) Reset() {
-	*x = MergeAsyncInfo{}
-	mi := &file_catalog_catalog_proto_msgTypes[9]
+func (x *MergeData) Reset() {
+	*x = MergeData{}
+	mi := &file_catalog_catalog_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MergeAsyncInfo) String() string {
+func (x *MergeData) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MergeAsyncInfo) ProtoMessage() {}
+func (*MergeData) ProtoMessage() {}
 
-func (x *MergeAsyncInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[9]
+func (x *MergeData) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -717,41 +610,41 @@ func (x *MergeAsyncInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MergeAsyncInfo.ProtoReflect.Descriptor instead.
-func (*MergeAsyncInfo) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{9}
+// Deprecated: Use MergeData.ProtoReflect.Descriptor instead.
+func (*MergeData) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *MergeAsyncInfo) GetReference() string {
+func (x *MergeData) GetReference() string {
 	if x != nil {
 		return x.Reference
 	}
 	return ""
 }
 
-type MergeAsyncStatus struct {
+type MergeAsyncStatusData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
-	Info          *MergeAsyncInfo        `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	Info          *MergeData             `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MergeAsyncStatus) Reset() {
-	*x = MergeAsyncStatus{}
-	mi := &file_catalog_catalog_proto_msgTypes[10]
+func (x *MergeAsyncStatusData) Reset() {
+	*x = MergeAsyncStatusData{}
+	mi := &file_catalog_catalog_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MergeAsyncStatus) String() string {
+func (x *MergeAsyncStatusData) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MergeAsyncStatus) ProtoMessage() {}
+func (*MergeAsyncStatusData) ProtoMessage() {}
 
-func (x *MergeAsyncStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[10]
+func (x *MergeAsyncStatusData) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -762,19 +655,19 @@ func (x *MergeAsyncStatus) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MergeAsyncStatus.ProtoReflect.Descriptor instead.
-func (*MergeAsyncStatus) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{10}
+// Deprecated: Use MergeAsyncStatusData.ProtoReflect.Descriptor instead.
+func (*MergeAsyncStatusData) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *MergeAsyncStatus) GetTask() *Task {
+func (x *MergeAsyncStatusData) GetTask() *Task {
 	if x != nil {
 		return x.Task
 	}
 	return nil
 }
 
-func (x *MergeAsyncStatus) GetInfo() *MergeAsyncInfo {
+func (x *MergeAsyncStatusData) GetInfo() *MergeData {
 	if x != nil {
 		return x.Info
 	}
@@ -792,7 +685,7 @@ type TaskMsg struct {
 
 func (x *TaskMsg) Reset() {
 	*x = TaskMsg{}
-	mi := &file_catalog_catalog_proto_msgTypes[11]
+	mi := &file_catalog_catalog_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -804,7 +697,7 @@ func (x *TaskMsg) String() string {
 func (*TaskMsg) ProtoMessage() {}
 
 func (x *TaskMsg) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[11]
+	mi := &file_catalog_catalog_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -817,7 +710,7 @@ func (x *TaskMsg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskMsg.ProtoReflect.Descriptor instead.
 func (*TaskMsg) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{11}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *TaskMsg) GetTask() *Task {
@@ -831,7 +724,7 @@ var File_catalog_catalog_proto protoreflect.FileDescriptor
 
 const file_catalog_catalog_proto_rawDesc = "" +
 	"\n" +
-	"\x15catalog/catalog.proto\x12\acatalog\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa5\x03\n" +
+	"\x15catalog/catalog.proto\x12\acatalog\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17graveler/graveler.proto\"\xa5\x03\n" +
 	"\x05Entry\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12?\n" +
 	"\rlast_modified\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastModified\x12\x12\n" +
@@ -854,7 +747,7 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
 	"\bprogress\x18\x04 \x01(\x03R\bprogress\x12\x1b\n" +
 	"\terror_msg\x18\x05 \x01(\tR\berrorMsg\x12\x1f\n" +
-	"\vstatus_code\x18\x06 \x01(\x03R\n" +
+	"\vstatus_code\x18\x06 \x01(\x05R\n" +
 	"statusCode\"\xa6\x01\n" +
 	"\x12RepositoryDumpInfo\x120\n" +
 	"\x14commits_metarange_id\x18\x01 \x01(\tR\x12commitsMetarangeId\x12*\n" +
@@ -871,30 +764,15 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\x15gc_addresses_location\x18\x03 \x01(\tR\x13gcAddressesLocation\"\x85\x01\n" +
 	"\x1eGarbageCollectionPrepareStatus\x12!\n" +
 	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12@\n" +
-	"\x04info\x18\x02 \x01(\v2,.catalog.GarbageCollectionPrepareCommitsInfoR\x04info\"\x93\x03\n" +
-	"\x0fCommitAsyncInfo\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\aparents\x18\x02 \x03(\tR\aparents\x12\x1c\n" +
-	"\tcommitter\x18\x03 \x01(\tR\tcommitter\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage\x12?\n" +
-	"\rcreation_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12\"\n" +
-	"\rmeta_range_id\x18\x06 \x01(\tR\vmetaRangeId\x12B\n" +
-	"\bmetadata\x18\a \x03(\v2&.catalog.CommitAsyncInfo.MetadataEntryR\bmetadata\x12\x1e\n" +
-	"\n" +
-	"generation\x18\b \x01(\x03R\n" +
-	"generation\x12\x18\n" +
-	"\aversion\x18\t \x01(\x03R\aversion\x1a;\n" +
-	"\rMetadataEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"d\n" +
-	"\x11CommitAsyncStatus\x12!\n" +
-	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12,\n" +
-	"\x04info\x18\x02 \x01(\v2\x18.catalog.CommitAsyncInfoR\x04info\".\n" +
-	"\x0eMergeAsyncInfo\x12\x1c\n" +
-	"\treference\x18\x01 \x01(\tR\treference\"b\n" +
-	"\x10MergeAsyncStatus\x12!\n" +
-	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12+\n" +
-	"\x04info\x18\x02 \x01(\v2\x17.catalog.MergeAsyncInfoR\x04info\",\n" +
+	"\x04info\x18\x02 \x01(\v2,.catalog.GarbageCollectionPrepareCommitsInfoR\x04info\"x\n" +
+	"\x15CommitAsyncStatusData\x12!\n" +
+	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12<\n" +
+	"\x04info\x18\x02 \x01(\v2(.io.treeverse.lakefs.graveler.CommitDataR\x04info\")\n" +
+	"\tMergeData\x12\x1c\n" +
+	"\treference\x18\x01 \x01(\tR\treference\"a\n" +
+	"\x14MergeAsyncStatusData\x12!\n" +
+	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04task\x12&\n" +
+	"\x04info\x18\x02 \x01(\v2\x12.catalog.MergeDataR\x04info\",\n" +
 	"\aTaskMsg\x12!\n" +
 	"\x04task\x18\x01 \x01(\v2\r.catalog.TaskR\x04taskB$Z\"github.com/treevese/lakefs/catalogb\x06proto3"
 
@@ -911,7 +789,7 @@ func file_catalog_catalog_proto_rawDescGZIP() []byte {
 }
 
 var file_catalog_catalog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_catalog_catalog_proto_goTypes = []any{
 	(Entry_AddressType)(0),                      // 0: catalog.Entry.AddressType
 	(*Entry)(nil),                               // 1: catalog.Entry
@@ -921,37 +799,34 @@ var file_catalog_catalog_proto_goTypes = []any{
 	(*RepositoryRestoreStatus)(nil),             // 5: catalog.RepositoryRestoreStatus
 	(*GarbageCollectionPrepareCommitsInfo)(nil), // 6: catalog.GarbageCollectionPrepareCommitsInfo
 	(*GarbageCollectionPrepareStatus)(nil),      // 7: catalog.GarbageCollectionPrepareStatus
-	(*CommitAsyncInfo)(nil),                     // 8: catalog.CommitAsyncInfo
-	(*CommitAsyncStatus)(nil),                   // 9: catalog.CommitAsyncStatus
-	(*MergeAsyncInfo)(nil),                      // 10: catalog.MergeAsyncInfo
-	(*MergeAsyncStatus)(nil),                    // 11: catalog.MergeAsyncStatus
-	(*TaskMsg)(nil),                             // 12: catalog.TaskMsg
-	nil,                                         // 13: catalog.Entry.MetadataEntry
-	nil,                                         // 14: catalog.CommitAsyncInfo.MetadataEntry
-	(*timestamppb.Timestamp)(nil),               // 15: google.protobuf.Timestamp
+	(*CommitAsyncStatusData)(nil),               // 8: catalog.CommitAsyncStatusData
+	(*MergeData)(nil),                           // 9: catalog.MergeData
+	(*MergeAsyncStatusData)(nil),                // 10: catalog.MergeAsyncStatusData
+	(*TaskMsg)(nil),                             // 11: catalog.TaskMsg
+	nil,                                         // 12: catalog.Entry.MetadataEntry
+	(*timestamppb.Timestamp)(nil),               // 13: google.protobuf.Timestamp
+	(*graveler.CommitData)(nil),                 // 14: io.treeverse.lakefs.graveler.CommitData
 }
 var file_catalog_catalog_proto_depIdxs = []int32{
-	15, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
-	13, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
+	13, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
+	12, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
 	0,  // 2: catalog.Entry.address_type:type_name -> catalog.Entry.AddressType
-	15, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
+	13, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
 	2,  // 4: catalog.RepositoryDumpStatus.task:type_name -> catalog.Task
 	3,  // 5: catalog.RepositoryDumpStatus.info:type_name -> catalog.RepositoryDumpInfo
 	2,  // 6: catalog.RepositoryRestoreStatus.task:type_name -> catalog.Task
 	2,  // 7: catalog.GarbageCollectionPrepareStatus.task:type_name -> catalog.Task
 	6,  // 8: catalog.GarbageCollectionPrepareStatus.info:type_name -> catalog.GarbageCollectionPrepareCommitsInfo
-	15, // 9: catalog.CommitAsyncInfo.creation_date:type_name -> google.protobuf.Timestamp
-	14, // 10: catalog.CommitAsyncInfo.metadata:type_name -> catalog.CommitAsyncInfo.MetadataEntry
-	2,  // 11: catalog.CommitAsyncStatus.task:type_name -> catalog.Task
-	8,  // 12: catalog.CommitAsyncStatus.info:type_name -> catalog.CommitAsyncInfo
-	2,  // 13: catalog.MergeAsyncStatus.task:type_name -> catalog.Task
-	10, // 14: catalog.MergeAsyncStatus.info:type_name -> catalog.MergeAsyncInfo
-	2,  // 15: catalog.TaskMsg.task:type_name -> catalog.Task
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	2,  // 9: catalog.CommitAsyncStatusData.task:type_name -> catalog.Task
+	14, // 10: catalog.CommitAsyncStatusData.info:type_name -> io.treeverse.lakefs.graveler.CommitData
+	2,  // 11: catalog.MergeAsyncStatusData.task:type_name -> catalog.Task
+	9,  // 12: catalog.MergeAsyncStatusData.info:type_name -> catalog.MergeData
+	2,  // 13: catalog.TaskMsg.task:type_name -> catalog.Task
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_catalog_catalog_proto_init() }
@@ -965,7 +840,7 @@ func file_catalog_catalog_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_catalog_catalog_proto_rawDesc), len(file_catalog_catalog_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   14,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

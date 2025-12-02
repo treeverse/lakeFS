@@ -19,10 +19,8 @@ import io.lakefs.clients.sdk.model.DiffList;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.FindMergeBaseResult;
 import io.lakefs.clients.sdk.model.Merge;
-import io.lakefs.clients.sdk.model.MergeAsyncStatus;
 import io.lakefs.clients.sdk.model.MergeResult;
 import java.time.OffsetDateTime;
-import io.lakefs.clients.sdk.model.TaskCreation;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -124,39 +122,6 @@ public class RefsApiTest {
         Merge merge = null;
         MergeResult response = api.mergeIntoBranch(repository, sourceRef, destinationBranch)
                 .merge(merge)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * merge references asynchronously
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void mergeIntoBranchAsyncTest() throws ApiException {
-        String repository = null;
-        String sourceRef = null;
-        String destinationBranch = null;
-        Merge merge = null;
-        TaskCreation response = api.mergeIntoBranchAsync(repository, sourceRef, destinationBranch)
-                .merge(merge)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * get status of async merge operation
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void mergeIntoBranchAsyncStatusTest() throws ApiException {
-        String repository = null;
-        String sourceRef = null;
-        String destinationBranch = null;
-        String id = null;
-        MergeAsyncStatus response = api.mergeIntoBranchAsyncStatus(repository, sourceRef, destinationBranch, id)
                 .execute();
         // TODO: test validations
     }

@@ -5,6 +5,8 @@ All URIs are relative to */api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**abort_presign_multipart_upload**](ExperimentalApi.md#abort_presign_multipart_upload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
+[**commit_async**](ExperimentalApi.md#commit_async) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
+[**commit_async_status**](ExperimentalApi.md#commit_async_status) | **GET** /repositories/{repository}/branches/{branch}/commits/async/{id}/status | get status of async commit operation
 [**complete_presign_multipart_upload**](ExperimentalApi.md#complete_presign_multipart_upload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
 [**create_presign_multipart_upload**](ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 [**create_pull_request**](ExperimentalApi.md#create_pull_request) | **POST** /repositories/{repository}/pulls | create pull request
@@ -19,6 +21,8 @@ Method | HTTP request | Description
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**list_pull_requests**](ExperimentalApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+[**merge_into_branch_async**](ExperimentalApi.md#merge_into_branch_async) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
+[**merge_into_branch_async_status**](ExperimentalApi.md#merge_into_branch_async_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 [**merge_pull_request**](ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 [**release_token_to_mailbox**](ExperimentalApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 [**sts_login**](ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
@@ -143,6 +147,245 @@ void (empty response body)
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **commit_async**
+> TaskCreation commit_async(repository, branch, commit_creation, source_metarange=source_metarange)
+
+create commit asynchronously
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.commit_creation import CommitCreation
+from lakefs_sdk.models.task_creation import TaskCreation
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+    repository = 'repository_example' # str | 
+    branch = 'branch_example' # str | 
+    commit_creation = lakefs_sdk.CommitCreation() # CommitCreation | 
+    source_metarange = 'source_metarange_example' # str | The source metarange to commit. Branch must not have uncommitted changes. (optional)
+
+    try:
+        # create commit asynchronously
+        api_response = api_instance.commit_async(repository, branch, commit_creation, source_metarange=source_metarange)
+        print("The response of ExperimentalApi->commit_async:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->commit_async: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  | 
+ **branch** | **str**|  | 
+ **commit_creation** | [**CommitCreation**](CommitCreation.md)|  | 
+ **source_metarange** | **str**| The source metarange to commit. Branch must not have uncommitted changes. | [optional] 
+
+### Return type
+
+[**TaskCreation**](TaskCreation.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**202** | commit task started |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**429** | too many requests |  -  |
+**501** | Not Implemented |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **commit_async_status**
+> CommitAsyncStatus commit_async_status(repository, branch, id)
+
+get status of async commit operation
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.commit_async_status import CommitAsyncStatus
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+    repository = 'repository_example' # str | 
+    branch = 'branch_example' # str | 
+    id = 'id_example' # str | Unique identifier of the commit async task
+
+    try:
+        # get status of async commit operation
+        api_response = api_instance.commit_async_status(repository, branch, id)
+        print("The response of ExperimentalApi->commit_async_status:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->commit_async_status: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  | 
+ **branch** | **str**|  | 
+ **id** | **str**| Unique identifier of the commit async task | 
+
+### Return type
+
+[**CommitAsyncStatus**](CommitAsyncStatus.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | commit task status |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
+**412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+**429** | too many requests |  -  |
+**501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1625,6 +1868,247 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **merge_into_branch_async**
+> TaskCreation merge_into_branch_async(repository, source_ref, destination_branch, merge=merge)
+
+merge references asynchronously
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.merge import Merge
+from lakefs_sdk.models.task_creation import TaskCreation
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+    repository = 'repository_example' # str | 
+    source_ref = 'source_ref_example' # str | source ref
+    destination_branch = 'destination_branch_example' # str | destination branch name
+    merge = lakefs_sdk.Merge() # Merge |  (optional)
+
+    try:
+        # merge references asynchronously
+        api_response = api_instance.merge_into_branch_async(repository, source_ref, destination_branch, merge=merge)
+        print("The response of ExperimentalApi->merge_into_branch_async:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->merge_into_branch_async: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  | 
+ **source_ref** | **str**| source ref | 
+ **destination_branch** | **str**| destination branch name | 
+ **merge** | [**Merge**](Merge.md)|  | [optional] 
+
+### Return type
+
+[**TaskCreation**](TaskCreation.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**202** | merge task started |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**429** | too many requests |  -  |
+**501** | Not Implemented |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **merge_into_branch_async_status**
+> MergeAsyncStatus merge_into_branch_async_status(repository, source_ref, destination_branch, id)
+
+get status of async merge operation
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.merge_async_status import MergeAsyncStatus
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+    repository = 'repository_example' # str | 
+    source_ref = 'source_ref_example' # str | source ref
+    destination_branch = 'destination_branch_example' # str | destination branch name
+    id = 'id_example' # str | Unique identifier of the merge async task
+
+    try:
+        # get status of async merge operation
+        api_response = api_instance.merge_into_branch_async_status(repository, source_ref, destination_branch, id)
+        print("The response of ExperimentalApi->merge_into_branch_async_status:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->merge_into_branch_async_status: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  | 
+ **source_ref** | **str**| source ref | 
+ **destination_branch** | **str**| destination branch name | 
+ **id** | **str**| Unique identifier of the merge async task | 
+
+### Return type
+
+[**MergeAsyncStatus**](MergeAsyncStatus.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | merge task status |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
+**412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+**429** | too many requests |  -  |
+**501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
