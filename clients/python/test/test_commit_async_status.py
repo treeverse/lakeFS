@@ -55,7 +55,8 @@ class TestCommitAsyncStatus(unittest.TestCase):
                     generation = 56, 
                     version = 0, ),
                 error = lakefs_sdk.models.error.Error(
-                    message = '', )
+                    message = '', ),
+                status_code = 56
             )
         else:
             return CommitAsyncStatus(

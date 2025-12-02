@@ -164,6 +164,7 @@ var runCmd = &cobra.Command{
 			KVStore:           kvStore,
 			PathProvider:      upload.DefaultPathProvider,
 			ConflictResolvers: catalogfactory.BuildConflictResolvers(cfg, blockStore),
+			ApiErrorCallback:  api.ConvertApiErrorToStatusCodeAndErrorMsg,
 		}
 
 		c, err := catalog.New(ctx, catalogConfig)
@@ -172,7 +173,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		asyncOperationsHandler := catalogfactory.BuildAsyncOperationsHandler(c)
+		asyncOperationsHandler := catalogfactory.BuildExtendedOperations(c)
 
 		// Setup usage reporter - it is no longer possible to disable it
 		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)

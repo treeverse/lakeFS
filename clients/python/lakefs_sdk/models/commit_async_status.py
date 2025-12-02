@@ -21,9 +21,9 @@ import json
 from datetime import datetime
 from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
+    from pydantic.v1 import BaseModel, Field, StrictBool, StrictInt, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictStr
+    from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.models.error import Error
 
@@ -36,7 +36,8 @@ class CommitAsyncStatus(BaseModel):
     update_time: datetime = Field(..., description="last time the task status was updated")
     result: Optional[Commit] = None
     error: Optional[Error] = None
-    __properties = ["task_id", "completed", "update_time", "result", "error"]
+    status_code: Optional[StrictInt] = Field(None, description="the status code of the error if it exists")
+    __properties = ["task_id", "completed", "update_time", "result", "error", "status_code"]
 
     class Config:
         """Pydantic configuration"""
@@ -84,7 +85,8 @@ class CommitAsyncStatus(BaseModel):
             "completed": obj.get("completed"),
             "update_time": obj.get("update_time"),
             "result": Commit.from_dict(obj.get("result")) if obj.get("result") is not None else None,
-            "error": Error.from_dict(obj.get("error")) if obj.get("error") is not None else None
+            "error": Error.from_dict(obj.get("error")) if obj.get("error") is not None else None,
+            "status_code": obj.get("status_code")
         })
         return _obj
 

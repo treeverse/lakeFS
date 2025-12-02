@@ -11125,6 +11125,7 @@ components:
         result:
           reference: reference
         update_time: 2000-01-23T04:56:07.000+00:00
+        status_code: 0
         task_id: task_id
         completed: true
         error:
@@ -11145,6 +11146,9 @@ components:
           $ref: '#/components/schemas/MergeResult'
         error:
           $ref: '#/components/schemas/Error'
+        status_code:
+          description: the status code of the error if it exists
+          type: integer
       required:
       - completed
       - task_id
@@ -11166,6 +11170,7 @@ components:
           - parents
           - parents
         update_time: 2000-01-23T04:56:07.000+00:00
+        status_code: 0
         task_id: task_id
         completed: true
         error:
@@ -11186,6 +11191,9 @@ components:
           $ref: '#/components/schemas/Commit'
         error:
           $ref: '#/components/schemas/Error'
+        status_code:
+          description: the status code of the error if it exists
+          type: integer
       required:
       - completed
       - task_id

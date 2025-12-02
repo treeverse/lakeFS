@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **update_time** | **String** | last time the task status was updated | 
 **result** | Option<[**models::Commit**](Commit.md)> |  | [optional]
 **error** | Option<[**models::Error**](Error.md)> |  | [optional]
+**status_code** | Option<**i32**> | the status code of the error if it exists | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

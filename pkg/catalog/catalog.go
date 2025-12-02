@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -238,11 +237,11 @@ type Config struct {
 	PathProvider          *upload.PathPartitionProvider
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
 	ConflictResolvers []graveler.ConflictResolver
+	ApiErrorCallback  ApiErrorCallback
 }
 
-// APIErrorHandler is a callback function used to classify and handle errors in background tasks.
-// It returns true if the error was handled.
-type APIErrorHandler func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool
+// ApiErrorCallback is a callback function used to classify errors and convert them to status codes and error messages.
+type ApiErrorCallback func(logger logging.Logger, err error) (int, string, bool)
 
 type Catalog struct {
 	BlockAdapter          block.Adapter
@@ -258,7 +257,7 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
-	APIErrorCB            APIErrorHandler
+	apiErrorCallback      ApiErrorCallback
 }
 
 const (
@@ -323,6 +322,19 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 	return ref.BranchApproximateOwnershipParams{
 		AcquireInterval: cfg.Acquire,
 		RefreshInterval: cfg.Refresh,
+	}
+}
+
+func getApiErrorCallback(cfg Config) ApiErrorCallback {
+	if cfg.ApiErrorCallback != nil {
+		return cfg.ApiErrorCallback
+	}
+	// Default implementation
+	return func(logger logging.Logger, err error) (int, string, bool) {
+		if err == nil {
+			return 0, "", false
+		}
+		return 500, err.Error(), true
 	}
 }
 
@@ -440,13 +452,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
 		// Initiate the API callback function
-		APIErrorCB: func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
-			if err == nil {
-				return false
-			}
-			cb(w, r, http.StatusInternalServerError, err)
-			return true
-		},
+		apiErrorCallback: getApiErrorCallback(cfg),
 	}, nil
 }
 
@@ -2168,16 +2174,8 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 }
 
 func (c *Catalog) DumpRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryDumpStatus, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	if !IsTaskID(DumpRefsTaskIDPrefix, id) {
-		return nil, graveler.ErrNotFound
-	}
-
 	var taskStatus RepositoryDumpStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, DumpRefsTaskIDPrefix, &taskStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -2229,16 +2227,8 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 }
 
 func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryRestoreStatus, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	if !IsTaskID(RestoreRefsTaskIDPrefix, id) {
-		return nil, graveler.ErrNotFound
-	}
-
 	var status RepositoryRestoreStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &status)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, RestoreRefsTaskIDPrefix, &status)
 	if err != nil {
 		return nil, err
 	}
@@ -2276,9 +2266,11 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			if err != nil {
 				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
 				task.Done = true
-				// Classify the error using the API callback (handleAPIErrorCallback from the controller)
+				// Classify the error using the API callback (ConvertApiErrorToStatusCodeAndErrorMsg from the controller)
 				// before the original error is lost when stored in protobuf, and populate the task's error details.
-				c.APIErrorCB(ctx, nil, nil, err, SetTaskStatusCodeAndError(task))
+				statusCode, errorMsg, _ := c.apiErrorCallback(log, err)
+				task.StatusCode = int64(statusCode)
+				task.ErrorMsg = errorMsg
 			} else if stepIdx == len(steps)-1 {
 				task.Done = true
 			}
@@ -2769,7 +2761,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	return taskID, nil
 }
 
-func (c *Catalog) GetTaskStatus(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage) error {
+func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -2777,17 +2769,12 @@ func (c *Catalog) GetTaskStatus(ctx context.Context, repositoryID string, taskID
 	if !IsTaskID(prefix, taskID) {
 		return graveler.ErrNotFound
 	}
-
-	err = GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg)
-	if err != nil {
-		return err
-	}
-	return nil
+	return GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg)
 }
 
 func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
 	var taskStatus GarbageCollectionPrepareStatus
-	err := c.GetTaskStatus(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus)
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ message Task {
   google.protobuf.Timestamp updated_at = 3;
   int64 progress = 4;
   string error_msg = 5;
-  int64 status_code = 6;
+  int32 status_code = 6;
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump

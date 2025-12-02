@@ -1598,6 +1598,9 @@ components:
           $ref: "#/components/schemas/MergeResult"
         error:
           $ref: "#/components/schemas/Error"
+        status_code:
+          type: integer
+          description: the status code of the error if it exists
       required:
         - task_id
         - completed
@@ -1620,6 +1623,9 @@ components:
           $ref: "#/components/schemas/Commit"
         error:
           $ref: "#/components/schemas/Error"
+        status_code:
+          type: integer
+          description: the status code of the error if it exists
       required:
         - task_id
         - completed

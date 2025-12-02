@@ -25,6 +25,9 @@ pub struct MergeAsyncStatus {
     pub result: Option<Box<models::MergeResult>>,
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<Box<models::Error>>,
+    /// the status code of the error if it exists
+    #[serde(rename = "status_code", skip_serializing_if = "Option::is_none")]
+    pub status_code: Option<i32>,
 }
 
 impl MergeAsyncStatus {
@@ -35,6 +38,7 @@ impl MergeAsyncStatus {
             update_time,
             result: None,
             error: None,
+            status_code: None,
         }
     }
 }

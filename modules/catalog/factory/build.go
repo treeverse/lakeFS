@@ -11,6 +11,6 @@ func BuildConflictResolvers(cfg config.Config, block block.Adapter) []graveler.C
 	return nil
 }
 
-func BuildAsyncOperationsHandler(_ *catalog.Catalog) catalog.AsyncOperationsHandler {
-	return catalog.NewNoopAsyncOperationsHandler()
+func BuildExtendedOperations(_ *catalog.Catalog) catalog.ExtendedOperations {
+	return catalog.NewNoopExtendedOperations()
 }

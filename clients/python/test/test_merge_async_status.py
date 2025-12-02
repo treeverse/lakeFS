@@ -43,7 +43,8 @@ class TestMergeAsyncStatus(unittest.TestCase):
                 result = lakefs_sdk.models.merge_result.MergeResult(
                     reference = '', ),
                 error = lakefs_sdk.models.error.Error(
-                    message = '', )
+                    message = '', ),
+                status_code = 56
             )
         else:
             return MergeAsyncStatus(

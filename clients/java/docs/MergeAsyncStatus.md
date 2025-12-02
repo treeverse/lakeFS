@@ -12,6 +12,7 @@
 |**updateTime** | **OffsetDateTime** | last time the task status was updated |  |
 |**result** | [**MergeResult**](MergeResult.md) |  |  [optional] |
 |**error** | [**Error**](Error.md) |  |  [optional] |
+|**statusCode** | **Integer** | the status code of the error if it exists |  [optional] |
 
 
 

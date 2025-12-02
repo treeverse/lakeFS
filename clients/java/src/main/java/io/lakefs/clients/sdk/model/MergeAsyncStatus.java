@@ -74,6 +74,10 @@ public class MergeAsyncStatus {
   @SerializedName(SERIALIZED_NAME_ERROR)
   private Error error;
 
+  public static final String SERIALIZED_NAME_STATUS_CODE = "status_code";
+  @SerializedName(SERIALIZED_NAME_STATUS_CODE)
+  private Integer statusCode;
+
   public MergeAsyncStatus() {
   }
 
@@ -181,6 +185,27 @@ public class MergeAsyncStatus {
     this.error = error;
   }
 
+
+  public MergeAsyncStatus statusCode(Integer statusCode) {
+    
+    this.statusCode = statusCode;
+    return this;
+  }
+
+   /**
+   * the status code of the error if it exists
+   * @return statusCode
+  **/
+  @javax.annotation.Nullable
+  public Integer getStatusCode() {
+    return statusCode;
+  }
+
+
+  public void setStatusCode(Integer statusCode) {
+    this.statusCode = statusCode;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -240,13 +265,14 @@ public class MergeAsyncStatus {
         Objects.equals(this.completed, mergeAsyncStatus.completed) &&
         Objects.equals(this.updateTime, mergeAsyncStatus.updateTime) &&
         Objects.equals(this.result, mergeAsyncStatus.result) &&
-        Objects.equals(this.error, mergeAsyncStatus.error)&&
+        Objects.equals(this.error, mergeAsyncStatus.error) &&
+        Objects.equals(this.statusCode, mergeAsyncStatus.statusCode)&&
         Objects.equals(this.additionalProperties, mergeAsyncStatus.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, completed, updateTime, result, error, additionalProperties);
+    return Objects.hash(taskId, completed, updateTime, result, error, statusCode, additionalProperties);
   }
 
   @Override
@@ -258,6 +284,7 @@ public class MergeAsyncStatus {
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    result: ").append(toIndentedString(result)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
+    sb.append("    statusCode: ").append(toIndentedString(statusCode)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -286,6 +313,7 @@ public class MergeAsyncStatus {
     openapiFields.add("update_time");
     openapiFields.add("result");
     openapiFields.add("error");
+    openapiFields.add("status_code");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

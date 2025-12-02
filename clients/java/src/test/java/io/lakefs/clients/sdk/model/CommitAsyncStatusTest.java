@@ -80,4 +80,12 @@ public class CommitAsyncStatusTest {
         // TODO: test error
     }
 
+    /**
+     * Test the property 'statusCode'
+     */
+    @Test
+    public void statusCodeTest() {
+        // TODO: test statusCode
+    }
+
 }

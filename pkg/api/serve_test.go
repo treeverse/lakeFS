@@ -186,7 +186,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		migrator,
 		collector,
 		actionsService,
-		catalog.NewNoopAsyncOperationsHandler(),
+		catalog.NewNoopExtendedOperations(),
 		auditChecker,
 		logger,
 		nil,
