@@ -19,8 +19,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.Commit;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.MergeResult;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -50,10 +50,10 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * CommitStatus
+ * MergeAsyncStatus
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CommitStatus {
+public class MergeAsyncStatus {
   public static final String SERIALIZED_NAME_TASK_ID = "task_id";
   @SerializedName(SERIALIZED_NAME_TASK_ID)
   private String taskId;
@@ -68,23 +68,27 @@ public class CommitStatus {
 
   public static final String SERIALIZED_NAME_RESULT = "result";
   @SerializedName(SERIALIZED_NAME_RESULT)
-  private Commit result;
+  private MergeResult result;
 
   public static final String SERIALIZED_NAME_ERROR = "error";
   @SerializedName(SERIALIZED_NAME_ERROR)
   private Error error;
 
-  public CommitStatus() {
+  public static final String SERIALIZED_NAME_STATUS_CODE = "status_code";
+  @SerializedName(SERIALIZED_NAME_STATUS_CODE)
+  private Integer statusCode;
+
+  public MergeAsyncStatus() {
   }
 
-  public CommitStatus taskId(String taskId) {
+  public MergeAsyncStatus taskId(String taskId) {
     
     this.taskId = taskId;
     return this;
   }
 
    /**
-   * the id of the async commit task
+   * the id of the async merge task
    * @return taskId
   **/
   @javax.annotation.Nonnull
@@ -98,7 +102,7 @@ public class CommitStatus {
   }
 
 
-  public CommitStatus completed(Boolean completed) {
+  public MergeAsyncStatus completed(Boolean completed) {
     
     this.completed = completed;
     return this;
@@ -119,7 +123,7 @@ public class CommitStatus {
   }
 
 
-  public CommitStatus updateTime(OffsetDateTime updateTime) {
+  public MergeAsyncStatus updateTime(OffsetDateTime updateTime) {
     
     this.updateTime = updateTime;
     return this;
@@ -140,7 +144,7 @@ public class CommitStatus {
   }
 
 
-  public CommitStatus result(Commit result) {
+  public MergeAsyncStatus result(MergeResult result) {
     
     this.result = result;
     return this;
@@ -151,17 +155,17 @@ public class CommitStatus {
    * @return result
   **/
   @javax.annotation.Nullable
-  public Commit getResult() {
+  public MergeResult getResult() {
     return result;
   }
 
 
-  public void setResult(Commit result) {
+  public void setResult(MergeResult result) {
     this.result = result;
   }
 
 
-  public CommitStatus error(Error error) {
+  public MergeAsyncStatus error(Error error) {
     
     this.error = error;
     return this;
@@ -181,6 +185,27 @@ public class CommitStatus {
     this.error = error;
   }
 
+
+  public MergeAsyncStatus statusCode(Integer statusCode) {
+    
+    this.statusCode = statusCode;
+    return this;
+  }
+
+   /**
+   * the status code of the error if it exists
+   * @return statusCode
+  **/
+  @javax.annotation.Nullable
+  public Integer getStatusCode() {
+    return statusCode;
+  }
+
+
+  public void setStatusCode(Integer statusCode) {
+    this.statusCode = statusCode;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -194,9 +219,9 @@ public class CommitStatus {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the CommitStatus instance itself
+   * @return the MergeAsyncStatus instance itself
    */
-  public CommitStatus putAdditionalProperty(String key, Object value) {
+  public MergeAsyncStatus putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -235,29 +260,31 @@ public class CommitStatus {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CommitStatus commitStatus = (CommitStatus) o;
-    return Objects.equals(this.taskId, commitStatus.taskId) &&
-        Objects.equals(this.completed, commitStatus.completed) &&
-        Objects.equals(this.updateTime, commitStatus.updateTime) &&
-        Objects.equals(this.result, commitStatus.result) &&
-        Objects.equals(this.error, commitStatus.error)&&
-        Objects.equals(this.additionalProperties, commitStatus.additionalProperties);
+    MergeAsyncStatus mergeAsyncStatus = (MergeAsyncStatus) o;
+    return Objects.equals(this.taskId, mergeAsyncStatus.taskId) &&
+        Objects.equals(this.completed, mergeAsyncStatus.completed) &&
+        Objects.equals(this.updateTime, mergeAsyncStatus.updateTime) &&
+        Objects.equals(this.result, mergeAsyncStatus.result) &&
+        Objects.equals(this.error, mergeAsyncStatus.error) &&
+        Objects.equals(this.statusCode, mergeAsyncStatus.statusCode)&&
+        Objects.equals(this.additionalProperties, mergeAsyncStatus.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, completed, updateTime, result, error, additionalProperties);
+    return Objects.hash(taskId, completed, updateTime, result, error, statusCode, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CommitStatus {\n");
+    sb.append("class MergeAsyncStatus {\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    result: ").append(toIndentedString(result)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
+    sb.append("    statusCode: ").append(toIndentedString(statusCode)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -286,6 +313,7 @@ public class CommitStatus {
     openapiFields.add("update_time");
     openapiFields.add("result");
     openapiFields.add("error");
+    openapiFields.add("status_code");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -298,17 +326,17 @@ public class CommitStatus {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to CommitStatus
+  * @throws IOException if the JSON Element is invalid with respect to MergeAsyncStatus
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!CommitStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in CommitStatus is not found in the empty JSON string", CommitStatus.openapiRequiredFields.toString()));
+        if (!MergeAsyncStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in MergeAsyncStatus is not found in the empty JSON string", MergeAsyncStatus.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : CommitStatus.openapiRequiredFields) {
+      for (String requiredField : MergeAsyncStatus.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -319,7 +347,7 @@ public class CommitStatus {
       }
       // validate the optional field `result`
       if (jsonObj.get("result") != null && !jsonObj.get("result").isJsonNull()) {
-        Commit.validateJsonElement(jsonObj.get("result"));
+        MergeResult.validateJsonElement(jsonObj.get("result"));
       }
       // validate the optional field `error`
       if (jsonObj.get("error") != null && !jsonObj.get("error").isJsonNull()) {
@@ -331,16 +359,16 @@ public class CommitStatus {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!CommitStatus.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'CommitStatus' and its subtypes
+       if (!MergeAsyncStatus.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'MergeAsyncStatus' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<CommitStatus> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(CommitStatus.class));
+       final TypeAdapter<MergeAsyncStatus> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(MergeAsyncStatus.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<CommitStatus>() {
+       return (TypeAdapter<T>) new TypeAdapter<MergeAsyncStatus>() {
            @Override
-           public void write(JsonWriter out, CommitStatus value) throws IOException {
+           public void write(JsonWriter out, MergeAsyncStatus value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -363,12 +391,12 @@ public class CommitStatus {
            }
 
            @Override
-           public CommitStatus read(JsonReader in) throws IOException {
+           public MergeAsyncStatus read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             CommitStatus instance = thisAdapter.fromJsonTree(jsonObj);
+             MergeAsyncStatus instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -395,18 +423,18 @@ public class CommitStatus {
   }
 
  /**
-  * Create an instance of CommitStatus given an JSON string
+  * Create an instance of MergeAsyncStatus given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of CommitStatus
-  * @throws IOException if the JSON string is invalid with respect to CommitStatus
+  * @return An instance of MergeAsyncStatus
+  * @throws IOException if the JSON string is invalid with respect to MergeAsyncStatus
   */
-  public static CommitStatus fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, CommitStatus.class);
+  public static MergeAsyncStatus fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, MergeAsyncStatus.class);
   }
 
  /**
-  * Convert an instance of CommitStatus to an JSON string
+  * Convert an instance of MergeAsyncStatus to an JSON string
   *
   * @return JSON string
   */

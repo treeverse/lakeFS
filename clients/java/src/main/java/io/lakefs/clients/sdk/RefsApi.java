@@ -32,8 +32,8 @@ import io.lakefs.clients.sdk.model.DiffList;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.FindMergeBaseResult;
 import io.lakefs.clients.sdk.model.Merge;
+import io.lakefs.clients.sdk.model.MergeAsyncStatus;
 import io.lakefs.clients.sdk.model.MergeResult;
-import io.lakefs.clients.sdk.model.MergeStatus;
 import java.time.OffsetDateTime;
 import io.lakefs.clients.sdk.model.TaskCreation;
 
@@ -1305,7 +1305,7 @@ public class RefsApi {
     public APImergeIntoBranchAsyncRequest mergeIntoBranchAsync(String repository, String sourceRef, String destinationBranch) {
         return new APImergeIntoBranchAsyncRequest(repository, sourceRef, destinationBranch);
     }
-    private okhttp3.Call mergeIntoBranchStatusCall(String repository, String sourceRef, String destinationBranch, String id, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call mergeIntoBranchAsyncStatusCall(String repository, String sourceRef, String destinationBranch, String id, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -1322,20 +1322,17 @@ public class RefsApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status"
+        String localVarPath = "/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status"
             .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
             .replace("{" + "sourceRef" + "}", localVarApiClient.escapeString(sourceRef.toString()))
-            .replace("{" + "destinationBranch" + "}", localVarApiClient.escapeString(destinationBranch.toString()));
+            .replace("{" + "destinationBranch" + "}", localVarApiClient.escapeString(destinationBranch.toString()))
+            .replace("{" + "id" + "}", localVarApiClient.escapeString(id.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        if (id != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("id", id));
-        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -1357,53 +1354,53 @@ public class RefsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call mergeIntoBranchStatusValidateBeforeCall(String repository, String sourceRef, String destinationBranch, String id, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call mergeIntoBranchAsyncStatusValidateBeforeCall(String repository, String sourceRef, String destinationBranch, String id, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling mergeIntoBranchStatus(Async)");
+            throw new ApiException("Missing the required parameter 'repository' when calling mergeIntoBranchAsyncStatus(Async)");
         }
 
         // verify the required parameter 'sourceRef' is set
         if (sourceRef == null) {
-            throw new ApiException("Missing the required parameter 'sourceRef' when calling mergeIntoBranchStatus(Async)");
+            throw new ApiException("Missing the required parameter 'sourceRef' when calling mergeIntoBranchAsyncStatus(Async)");
         }
 
         // verify the required parameter 'destinationBranch' is set
         if (destinationBranch == null) {
-            throw new ApiException("Missing the required parameter 'destinationBranch' when calling mergeIntoBranchStatus(Async)");
+            throw new ApiException("Missing the required parameter 'destinationBranch' when calling mergeIntoBranchAsyncStatus(Async)");
         }
 
         // verify the required parameter 'id' is set
         if (id == null) {
-            throw new ApiException("Missing the required parameter 'id' when calling mergeIntoBranchStatus(Async)");
+            throw new ApiException("Missing the required parameter 'id' when calling mergeIntoBranchAsyncStatus(Async)");
         }
 
-        return mergeIntoBranchStatusCall(repository, sourceRef, destinationBranch, id, _callback);
+        return mergeIntoBranchAsyncStatusCall(repository, sourceRef, destinationBranch, id, _callback);
 
     }
 
 
-    private ApiResponse<MergeStatus> mergeIntoBranchStatusWithHttpInfo(String repository, String sourceRef, String destinationBranch, String id) throws ApiException {
-        okhttp3.Call localVarCall = mergeIntoBranchStatusValidateBeforeCall(repository, sourceRef, destinationBranch, id, null);
-        Type localVarReturnType = new TypeToken<MergeStatus>(){}.getType();
+    private ApiResponse<MergeAsyncStatus> mergeIntoBranchAsyncStatusWithHttpInfo(String repository, String sourceRef, String destinationBranch, String id) throws ApiException {
+        okhttp3.Call localVarCall = mergeIntoBranchAsyncStatusValidateBeforeCall(repository, sourceRef, destinationBranch, id, null);
+        Type localVarReturnType = new TypeToken<MergeAsyncStatus>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call mergeIntoBranchStatusAsync(String repository, String sourceRef, String destinationBranch, String id, final ApiCallback<MergeStatus> _callback) throws ApiException {
+    private okhttp3.Call mergeIntoBranchAsyncStatusAsync(String repository, String sourceRef, String destinationBranch, String id, final ApiCallback<MergeAsyncStatus> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = mergeIntoBranchStatusValidateBeforeCall(repository, sourceRef, destinationBranch, id, _callback);
-        Type localVarReturnType = new TypeToken<MergeStatus>(){}.getType();
+        okhttp3.Call localVarCall = mergeIntoBranchAsyncStatusValidateBeforeCall(repository, sourceRef, destinationBranch, id, _callback);
+        Type localVarReturnType = new TypeToken<MergeAsyncStatus>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
 
-    public class APImergeIntoBranchStatusRequest {
+    public class APImergeIntoBranchAsyncStatusRequest {
         private final String repository;
         private final String sourceRef;
         private final String destinationBranch;
         private final String id;
 
-        private APImergeIntoBranchStatusRequest(String repository, String sourceRef, String destinationBranch, String id) {
+        private APImergeIntoBranchAsyncStatusRequest(String repository, String sourceRef, String destinationBranch, String id) {
             this.repository = repository;
             this.sourceRef = sourceRef;
             this.destinationBranch = destinationBranch;
@@ -1411,7 +1408,7 @@ public class RefsApi {
         }
 
         /**
-         * Build call for mergeIntoBranchStatus
+         * Build call for mergeIntoBranchAsyncStatus
          * @param _callback ApiCallback API callback
          * @return Call to execute
          * @throws ApiException If fail to serialize the request body object
@@ -1422,22 +1419,21 @@ public class RefsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
-            <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return mergeIntoBranchStatusCall(repository, sourceRef, destinationBranch, id, _callback);
+            return mergeIntoBranchAsyncStatusCall(repository, sourceRef, destinationBranch, id, _callback);
         }
 
         /**
-         * Execute mergeIntoBranchStatus request
-         * @return MergeStatus
+         * Execute mergeIntoBranchAsyncStatus request
+         * @return MergeAsyncStatus
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
@@ -1446,23 +1442,22 @@ public class RefsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
-            <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public MergeStatus execute() throws ApiException {
-            ApiResponse<MergeStatus> localVarResp = mergeIntoBranchStatusWithHttpInfo(repository, sourceRef, destinationBranch, id);
+        public MergeAsyncStatus execute() throws ApiException {
+            ApiResponse<MergeAsyncStatus> localVarResp = mergeIntoBranchAsyncStatusWithHttpInfo(repository, sourceRef, destinationBranch, id);
             return localVarResp.getData();
         }
 
         /**
-         * Execute mergeIntoBranchStatus request with HTTP info returned
-         * @return ApiResponse&lt;MergeStatus&gt;
+         * Execute mergeIntoBranchAsyncStatus request with HTTP info returned
+         * @return ApiResponse&lt;MergeAsyncStatus&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
@@ -1471,21 +1466,20 @@ public class RefsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
-            <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public ApiResponse<MergeStatus> executeWithHttpInfo() throws ApiException {
-            return mergeIntoBranchStatusWithHttpInfo(repository, sourceRef, destinationBranch, id);
+        public ApiResponse<MergeAsyncStatus> executeWithHttpInfo() throws ApiException {
+            return mergeIntoBranchAsyncStatusWithHttpInfo(repository, sourceRef, destinationBranch, id);
         }
 
         /**
-         * Execute mergeIntoBranchStatus request (asynchronously)
+         * Execute mergeIntoBranchAsyncStatus request (asynchronously)
          * @param _callback The callback to be executed when the API call finishes
          * @return The request call
          * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -1496,17 +1490,16 @@ public class RefsApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
-            <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-            <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
-            <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public okhttp3.Call executeAsync(final ApiCallback<MergeStatus> _callback) throws ApiException {
-            return mergeIntoBranchStatusAsync(repository, sourceRef, destinationBranch, id, _callback);
+        public okhttp3.Call executeAsync(final ApiCallback<MergeAsyncStatus> _callback) throws ApiException {
+            return mergeIntoBranchAsyncStatusAsync(repository, sourceRef, destinationBranch, id, _callback);
         }
     }
 
@@ -1516,8 +1509,8 @@ public class RefsApi {
      * @param repository  (required)
      * @param sourceRef source ref (required)
      * @param destinationBranch destination branch name (required)
-     * @param id Unique identifier of the merge task (required)
-     * @return APImergeIntoBranchStatusRequest
+     * @param id Unique identifier of the merge async task (required)
+     * @return APImergeIntoBranchAsyncStatusRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
@@ -1525,16 +1518,15 @@ public class RefsApi {
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Not Found </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> Conflict </td><td>  -  </td></tr>
-        <tr><td> 410 </td><td> Operation Expired </td><td>  -  </td></tr>
-        <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
         <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 501 </td><td> Not Implemented </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APImergeIntoBranchStatusRequest mergeIntoBranchStatus(String repository, String sourceRef, String destinationBranch, String id) {
-        return new APImergeIntoBranchStatusRequest(repository, sourceRef, destinationBranch, id);
+    public APImergeIntoBranchAsyncStatusRequest mergeIntoBranchAsyncStatus(String repository, String sourceRef, String destinationBranch, String id) {
+        return new APImergeIntoBranchAsyncStatusRequest(repository, sourceRef, destinationBranch, id);
     }
 }

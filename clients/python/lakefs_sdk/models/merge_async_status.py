@@ -21,22 +21,23 @@ import json
 from datetime import datetime
 from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
+    from pydantic.v1 import BaseModel, Field, StrictBool, StrictInt, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictStr
+    from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 from lakefs_sdk.models.error import Error
 from lakefs_sdk.models.merge_result import MergeResult
 
-class MergeStatus(BaseModel):
+class MergeAsyncStatus(BaseModel):
     """
-    MergeStatus
+    MergeAsyncStatus
     """
     task_id: StrictStr = Field(..., description="the id of the async merge task")
     completed: StrictBool = Field(..., description="true if the task has completed (either successfully or with an error)")
     update_time: datetime = Field(..., description="last time the task status was updated")
     result: Optional[MergeResult] = None
     error: Optional[Error] = None
-    __properties = ["task_id", "completed", "update_time", "result", "error"]
+    status_code: Optional[StrictInt] = Field(None, description="the status code of the error if it exists")
+    __properties = ["task_id", "completed", "update_time", "result", "error", "status_code"]
 
     class Config:
         """Pydantic configuration"""
@@ -52,8 +53,8 @@ class MergeStatus(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> MergeStatus:
-        """Create an instance of MergeStatus from a JSON string"""
+    def from_json(cls, json_str: str) -> MergeAsyncStatus:
+        """Create an instance of MergeAsyncStatus from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -71,20 +72,21 @@ class MergeStatus(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> MergeStatus:
-        """Create an instance of MergeStatus from a dict"""
+    def from_dict(cls, obj: dict) -> MergeAsyncStatus:
+        """Create an instance of MergeAsyncStatus from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return MergeStatus.parse_obj(obj)
+            return MergeAsyncStatus.parse_obj(obj)
 
-        _obj = MergeStatus.parse_obj({
+        _obj = MergeAsyncStatus.parse_obj({
             "task_id": obj.get("task_id"),
             "completed": obj.get("completed"),
             "update_time": obj.get("update_time"),
             "result": MergeResult.from_dict(obj.get("result")) if obj.get("result") is not None else None,
-            "error": Error.from_dict(obj.get("error")) if obj.get("error") is not None else None
+            "error": Error.from_dict(obj.get("error")) if obj.get("error") is not None else None,
+            "status_code": obj.get("status_code")
         })
         return _obj
 

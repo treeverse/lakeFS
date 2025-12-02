@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-type AsyncOperationsHandler interface {
+type ExtendedOperations interface {
 	SubmitCommit(
 		ctx context.Context,
 		repositoryID string,
@@ -45,13 +45,13 @@ type AsyncOperationsHandler interface {
 	) (*MergeAsyncStatus, error)
 }
 
-type NoopAsyncOperationsHandler struct{}
+type NoopExtendedOperations struct{}
 
-func NewNoopAsyncOperationsHandler() *NoopAsyncOperationsHandler {
-	return &NoopAsyncOperationsHandler{}
+func NewNoopExtendedOperations() *NoopExtendedOperations {
+	return &NoopExtendedOperations{}
 }
 
-func (h *NoopAsyncOperationsHandler) SubmitCommit(
+func (h *NoopExtendedOperations) SubmitCommit(
 	ctx context.Context,
 	repositoryID string,
 	branch string,
@@ -66,7 +66,7 @@ func (h *NoopAsyncOperationsHandler) SubmitCommit(
 	return "", ErrNotImplemented
 }
 
-func (h *NoopAsyncOperationsHandler) GetCommitStatus(
+func (h *NoopExtendedOperations) GetCommitStatus(
 	ctx context.Context,
 	repositoryID string,
 	taskID string,
@@ -74,7 +74,7 @@ func (h *NoopAsyncOperationsHandler) GetCommitStatus(
 	return nil, ErrNotImplemented
 }
 
-func (h *NoopAsyncOperationsHandler) SubmitMergeIntoBranch(
+func (h *NoopExtendedOperations) SubmitMergeIntoBranch(
 	ctx context.Context,
 	repositoryID string,
 	destinationBranch string,
@@ -88,7 +88,7 @@ func (h *NoopAsyncOperationsHandler) SubmitMergeIntoBranch(
 	return "", ErrNotImplemented
 }
 
-func (h *NoopAsyncOperationsHandler) GetMergeIntoBranchStatus(
+func (h *NoopExtendedOperations) GetMergeIntoBranchStatus(
 	ctx context.Context,
 	repositoryID string,
 	taskID string,

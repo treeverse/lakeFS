@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**commit**](CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 [**commit_async**](CommitsApi.md#commit_async) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
-[**commit_status**](CommitsApi.md#commit_status) | **GET** /repositories/{repository}/branches/{branch}/commits/status | get status of async commit operation
+[**commit_async_status**](CommitsApi.md#commit_async_status) | **GET** /repositories/{repository}/branches/{branch}/commits/async/{id}/status | get status of async commit operation
 [**get_commit**](CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 
 
@@ -251,8 +251,8 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **commit_status**
-> CommitStatus commit_status(repository, branch, id)
+# **commit_async_status**
+> CommitAsyncStatus commit_async_status(repository, branch, id)
 
 get status of async commit operation
 
@@ -268,7 +268,7 @@ get status of async commit operation
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.commit_status import CommitStatus
+from lakefs_sdk.models.commit_async_status import CommitAsyncStatus
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -318,15 +318,15 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = lakefs_sdk.CommitsApi(api_client)
     repository = 'repository_example' # str | 
     branch = 'branch_example' # str | 
-    id = 'id_example' # str | Unique identifier of the commit task
+    id = 'id_example' # str | Unique identifier of the commit async task
 
     try:
         # get status of async commit operation
-        api_response = api_instance.commit_status(repository, branch, id)
-        print("The response of CommitsApi->commit_status:\n")
+        api_response = api_instance.commit_async_status(repository, branch, id)
+        print("The response of CommitsApi->commit_async_status:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling CommitsApi->commit_status: %s\n" % e)
+        print("Exception when calling CommitsApi->commit_async_status: %s\n" % e)
 ```
 
 
@@ -338,11 +338,11 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
  **branch** | **str**|  | 
- **id** | **str**| Unique identifier of the commit task | 
+ **id** | **str**| Unique identifier of the commit async task | 
 
 ### Return type
 
-[**CommitStatus**](CommitStatus.md)
+[**CommitAsyncStatus**](CommitAsyncStatus.md)
 
 ### Authorization
 
@@ -361,9 +361,8 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
-**404** | Not Found |  -  |
-**409** | Conflict |  -  |
-**410** | Operation Expired |  -  |
+**404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |

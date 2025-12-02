@@ -16,10 +16,10 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.merge_status import MergeStatus  # noqa: E501
+from lakefs_sdk.models.merge_async_status import MergeAsyncStatus  # noqa: E501
 
-class TestMergeStatus(unittest.TestCase):
-    """MergeStatus unit test stubs"""
+class TestMergeAsyncStatus(unittest.TestCase):
+    """MergeAsyncStatus unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,34 +27,35 @@ class TestMergeStatus(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> MergeStatus:
-        """Test MergeStatus
+    def make_instance(self, include_optional) -> MergeAsyncStatus:
+        """Test MergeAsyncStatus
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `MergeStatus`
+        # uncomment below to create an instance of `MergeAsyncStatus`
         """
-        model = MergeStatus()  # noqa: E501
+        model = MergeAsyncStatus()  # noqa: E501
         if include_optional:
-            return MergeStatus(
+            return MergeAsyncStatus(
                 task_id = '',
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 result = lakefs_sdk.models.merge_result.MergeResult(
                     reference = '', ),
                 error = lakefs_sdk.models.error.Error(
-                    message = '', )
+                    message = '', ),
+                status_code = 56
             )
         else:
-            return MergeStatus(
+            return MergeAsyncStatus(
                 task_id = '',
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """
 
-    def testMergeStatus(self):
-        """Test MergeStatus"""
+    def testMergeAsyncStatus(self):
+        """Test MergeAsyncStatus"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

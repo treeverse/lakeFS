@@ -3,8 +3,6 @@ package catalog
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net/http"
 	"strings"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
@@ -52,15 +50,4 @@ func GetTaskStatus(ctx context.Context, kvStore kv.Store, repository *graveler.R
 		return err
 	}
 	return nil
-}
-
-func SetTaskStatusCodeAndError(task *Task) func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-	return func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-		task.StatusCode = int64(code)
-		if v == nil {
-			task.ErrorMsg = ""
-		} else {
-			task.ErrorMsg = fmt.Sprintf("%v", v)
-		}
-	}
 }

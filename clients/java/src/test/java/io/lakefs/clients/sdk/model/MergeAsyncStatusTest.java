@@ -18,8 +18,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.Commit;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.MergeResult;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -27,17 +27,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for CommitStatus
+ * Model tests for MergeAsyncStatus
  */
-public class CommitStatusTest {
-    private final CommitStatus model = new CommitStatus();
+public class MergeAsyncStatusTest {
+    private final MergeAsyncStatus model = new MergeAsyncStatus();
 
     /**
-     * Model tests for CommitStatus
+     * Model tests for MergeAsyncStatus
      */
     @Test
-    public void testCommitStatus() {
-        // TODO: test CommitStatus
+    public void testMergeAsyncStatus() {
+        // TODO: test MergeAsyncStatus
     }
 
     /**
@@ -78,6 +78,14 @@ public class CommitStatusTest {
     @Test
     public void errorTest() {
         // TODO: test error
+    }
+
+    /**
+     * Test the property 'statusCode'
+     */
+    @Test
+    public void statusCodeTest() {
+        // TODO: test statusCode
     }
 
 }

@@ -6,7 +6,7 @@ All URIs are relative to */api/v1*
 |------------- | ------------- | -------------|
 | [**commit**](CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit |
 | [**commitAsync**](CommitsApi.md#commitAsync) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously |
-| [**commitStatus**](CommitsApi.md#commitStatus) | **GET** /repositories/{repository}/branches/{branch}/commits/status | get status of async commit operation |
+| [**commitAsyncStatus**](CommitsApi.md#commitAsyncStatus) | **GET** /repositories/{repository}/branches/{branch}/commits/async/{id}/status | get status of async commit operation |
 | [**getCommit**](CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit |
 
 
@@ -217,9 +217,9 @@ public class Example {
 | **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a id="commitStatus"></a>
-# **commitStatus**
-> CommitStatus commitStatus(repository, branch, id).execute();
+<a id="commitAsyncStatus"></a>
+# **commitAsyncStatus**
+> CommitAsyncStatus commitAsyncStatus(repository, branch, id).execute();
 
 get status of async commit operation
 
@@ -268,13 +268,13 @@ public class Example {
     CommitsApi apiInstance = new CommitsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    String id = "id_example"; // String | Unique identifier of the commit task
+    String id = "id_example"; // String | Unique identifier of the commit async task
     try {
-      CommitStatus result = apiInstance.commitStatus(repository, branch, id)
+      CommitAsyncStatus result = apiInstance.commitAsyncStatus(repository, branch, id)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling CommitsApi#commitStatus");
+      System.err.println("Exception when calling CommitsApi#commitAsyncStatus");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -290,11 +290,11 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
 | **branch** | **String**|  | |
-| **id** | **String**| Unique identifier of the commit task | |
+| **id** | **String**| Unique identifier of the commit async task | |
 
 ### Return type
 
-[**CommitStatus**](CommitStatus.md)
+[**CommitAsyncStatus**](CommitAsyncStatus.md)
 
 ### Authorization
 
@@ -312,9 +312,8 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
-| **404** | Not Found |  -  |
-| **409** | Conflict |  -  |
-| **410** | Operation Expired |  -  |
+| **404** | Resource Not Found |  -  |
+| **409** | Resource Conflicts With Target |  -  |
 | **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 | **429** | too many requests |  -  |
 | **501** | Not Implemented |  -  |

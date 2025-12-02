@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**log_commits**](RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 [**merge_into_branch**](RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 [**merge_into_branch_async**](RefsApi.md#merge_into_branch_async) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
-[**merge_into_branch_status**](RefsApi.md#merge_into_branch_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status | get status of async merge operation
+[**merge_into_branch_async_status**](RefsApi.md#merge_into_branch_async_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 
 
 
@@ -178,9 +178,9 @@ Name | Type | Description  | Required | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## merge_into_branch_status
+## merge_into_branch_async_status
 
-> models::MergeStatus merge_into_branch_status(repository, source_ref, destination_branch, id)
+> models::MergeAsyncStatus merge_into_branch_async_status(repository, source_ref, destination_branch, id)
 get status of async merge operation
 
 ### Parameters
@@ -191,11 +191,11 @@ Name | Type | Description  | Required | Notes
 **repository** | **String** |  | [required] |
 **source_ref** | **String** | source ref | [required] |
 **destination_branch** | **String** | destination branch name | [required] |
-**id** | **String** | Unique identifier of the merge task | [required] |
+**id** | **String** | Unique identifier of the merge async task | [required] |
 
 ### Return type
 
-[**models::MergeStatus**](MergeStatus.md)
+[**models::MergeAsyncStatus**](MergeAsyncStatus.md)
 
 ### Authorization
 

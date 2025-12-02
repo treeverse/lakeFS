@@ -16,10 +16,10 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit_status import CommitStatus  # noqa: E501
+from lakefs_sdk.models.commit_async_status import CommitAsyncStatus  # noqa: E501
 
-class TestCommitStatus(unittest.TestCase):
-    """CommitStatus unit test stubs"""
+class TestCommitAsyncStatus(unittest.TestCase):
+    """CommitAsyncStatus unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,16 +27,16 @@ class TestCommitStatus(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> CommitStatus:
-        """Test CommitStatus
+    def make_instance(self, include_optional) -> CommitAsyncStatus:
+        """Test CommitAsyncStatus
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `CommitStatus`
+        # uncomment below to create an instance of `CommitAsyncStatus`
         """
-        model = CommitStatus()  # noqa: E501
+        model = CommitAsyncStatus()  # noqa: E501
         if include_optional:
-            return CommitStatus(
+            return CommitAsyncStatus(
                 task_id = '',
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
@@ -55,18 +55,19 @@ class TestCommitStatus(unittest.TestCase):
                     generation = 56, 
                     version = 0, ),
                 error = lakefs_sdk.models.error.Error(
-                    message = '', )
+                    message = '', ),
+                status_code = 56
             )
         else:
-            return CommitStatus(
+            return CommitAsyncStatus(
                 task_id = '',
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """
 
-    def testCommitStatus(self):
-        """Test CommitStatus"""
+    def testCommitAsyncStatus(self):
+        """Test CommitAsyncStatus"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

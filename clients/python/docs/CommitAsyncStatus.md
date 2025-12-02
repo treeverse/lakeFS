@@ -1,4 +1,4 @@
-# CommitStatus
+# CommitAsyncStatus
 
 
 ## Properties
@@ -10,23 +10,24 @@ Name | Type | Description | Notes
 **update_time** | **datetime** | last time the task status was updated | 
 **result** | [**Commit**](Commit.md) |  | [optional] 
 **error** | [**Error**](Error.md) |  | [optional] 
+**status_code** | **int** | the status code of the error if it exists | [optional] 
 
 ## Example
 
 ```python
-from lakefs_sdk.models.commit_status import CommitStatus
+from lakefs_sdk.models.commit_async_status import CommitAsyncStatus
 
 # TODO update the JSON string below
 json = "{}"
-# create an instance of CommitStatus from a JSON string
-commit_status_instance = CommitStatus.from_json(json)
+# create an instance of CommitAsyncStatus from a JSON string
+commit_async_status_instance = CommitAsyncStatus.from_json(json)
 # print the JSON string representation of the object
-print CommitStatus.to_json()
+print CommitAsyncStatus.to_json()
 
 # convert the object into a dict
-commit_status_dict = commit_status_instance.to_dict()
-# create an instance of CommitStatus from a dict
-commit_status_form_dict = commit_status.from_dict(commit_status_dict)
+commit_async_status_dict = commit_async_status_instance.to_dict()
+# create an instance of CommitAsyncStatus from a dict
+commit_async_status_form_dict = commit_async_status.from_dict(commit_async_status_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

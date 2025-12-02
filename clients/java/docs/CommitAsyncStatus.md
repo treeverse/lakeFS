@@ -1,17 +1,18 @@
 
 
-# MergeStatus
+# CommitAsyncStatus
 
 
 ## Properties
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**taskId** | **String** | the id of the async merge task |  |
+|**taskId** | **String** | the id of the async commit task |  |
 |**completed** | **Boolean** | true if the task has completed (either successfully or with an error) |  |
 |**updateTime** | **OffsetDateTime** | last time the task status was updated |  |
-|**result** | [**MergeResult**](MergeResult.md) |  |  [optional] |
+|**result** | [**Commit**](Commit.md) |  |  [optional] |
 |**error** | [**Error**](Error.md) |  |  [optional] |
+|**statusCode** | **Integer** | the status code of the error if it exists |  [optional] |
 
 
 

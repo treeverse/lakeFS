@@ -15,8 +15,8 @@ package io.lakefs.clients.sdk;
 
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.Commit;
+import io.lakefs.clients.sdk.model.CommitAsyncStatus;
 import io.lakefs.clients.sdk.model.CommitCreation;
-import io.lakefs.clients.sdk.model.CommitStatus;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.TaskCreation;
 import org.junit.jupiter.api.Disabled;
@@ -75,11 +75,11 @@ public class CommitsApiTest {
      * @throws ApiException if the Api call fails
      */
     @Test
-    public void commitStatusTest() throws ApiException {
+    public void commitAsyncStatusTest() throws ApiException {
         String repository = null;
         String branch = null;
         String id = null;
-        CommitStatus response = api.commitStatus(repository, branch, id)
+        CommitAsyncStatus response = api.commitAsyncStatus(repository, branch, id)
                 .execute();
         // TODO: test validations
     }

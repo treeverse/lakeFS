@@ -19,8 +19,8 @@ import io.lakefs.clients.sdk.model.DiffList;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.FindMergeBaseResult;
 import io.lakefs.clients.sdk.model.Merge;
+import io.lakefs.clients.sdk.model.MergeAsyncStatus;
 import io.lakefs.clients.sdk.model.MergeResult;
-import io.lakefs.clients.sdk.model.MergeStatus;
 import java.time.OffsetDateTime;
 import io.lakefs.clients.sdk.model.TaskCreation;
 import org.junit.jupiter.api.Disabled;
@@ -151,12 +151,12 @@ public class RefsApiTest {
      * @throws ApiException if the Api call fails
      */
     @Test
-    public void mergeIntoBranchStatusTest() throws ApiException {
+    public void mergeIntoBranchAsyncStatusTest() throws ApiException {
         String repository = null;
         String sourceRef = null;
         String destinationBranch = null;
         String id = null;
-        MergeStatus response = api.mergeIntoBranchStatus(repository, sourceRef, destinationBranch, id)
+        MergeAsyncStatus response = api.mergeIntoBranchAsyncStatus(repository, sourceRef, destinationBranch, id)
                 .execute();
         // TODO: test validations
     }
