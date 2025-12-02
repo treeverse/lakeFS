@@ -17,7 +17,7 @@ run_cmd_and_validate() {
 
 # Run Export without previous commit
 echo "Current working directory: ${WORKING_DIRECTORY}"
-run_cmd_and_validate "upload file_one" "docker compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_one.txt --source /local/file_one.txt"
+run_cmd_and_validate "upload file_one" "docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_one.txt --source /local/file_one.txt"
 
 run_cmd_and_validate "export no previous commit" "docker compose --project-directory ${WORKING_DIRECTORY} run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --branch=main"
 
@@ -26,7 +26,7 @@ lakectl_out=$(mktemp)
 s3_out=$(mktemp)
 trap 'rm -f -- $s3_out $lakectl_out' INT TERM EXIT
 
-docker compose exec -T lakefs lakectl fs ls --recursive --no-color lakefs://${REPOSITORY}/main/ | awk '{print $8}' | sort > ${lakectl_out}
+docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl fs ls --recursive --no-color lakefs://${REPOSITORY}/main/ | awk '{print $8}' | sort > ${lakectl_out}
 
 n=$(grep -o "/" <<< ${EXPORT_LOCATION} | wc -l)
 
@@ -48,9 +48,9 @@ if ! diff ${lakectl_out} ${s3_out}; then
 fi
 
 # Run Export with previous commit - add file and also delete an existing file
-run_cmd_and_validate "upload file_two" "docker compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_two.txt --source /local/file_two.txt"
-run_cmd_and_validate "delete file_one" "docker compose exec -T lakefs lakectl fs rm lakefs://${REPOSITORY}/main/a/file_one.txt"
-run_cmd_and_validate "commit changes" "docker compose exec -T lakefs lakectl commit lakefs://${REPOSITORY}/main --message='removed file_one and added file_two'"
+run_cmd_and_validate "upload file_two" "docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_two.txt --source /local/file_two.txt"
+run_cmd_and_validate "delete file_one" "docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl fs rm lakefs://${REPOSITORY}/main/a/file_one.txt"
+run_cmd_and_validate "commit changes" "docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl commit lakefs://${REPOSITORY}/main --message='removed file_one and added file_two'"
 run_cmd_and_validate "export previous commit" "docker compose --project-directory ${WORKING_DIRECTORY} run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --branch=main --prev_commit_id='some_commit'"
 
 # Validate sync
@@ -58,7 +58,7 @@ lakectl_out=$(mktemp)
 s3_out=$(mktemp)
 trap 'rm -f -- $s3_out $lakectl_out' INT TERM EXIT
 
-docker compose exec -T lakefs lakectl fs ls --recursive --no-color lakefs://${REPOSITORY}/main/ | awk '{print $8}' | sort > ${lakectl_out}
+docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl fs ls --recursive --no-color lakefs://${REPOSITORY}/main/ | awk '{print $8}' | sort > ${lakectl_out}
 aws s3 ls --recursive ${EXPORT_LOCATION} | awk '{print $4}'| cut -d/ -f ${n}-  | grep -v EXPORT_ | sort > ${s3_out}
 
 if ! diff ${lakectl_out} ${s3_out}; then
@@ -67,11 +67,11 @@ if ! diff ${lakectl_out} ${s3_out}; then
 fi
 
 # Run Export with commit_id reference
-run_cmd_and_validate "upload file_three" "docker compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_three.txt --source /local/file_three.txt"
+run_cmd_and_validate "upload file_three" "docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_three.txt --source /local/file_three.txt"
 
-commit_id=$(docker compose exec -T lakefs lakectl commit lakefs://${REPOSITORY}/main --message="added file_three" | sed -n 4p | awk '{print $2}')
+commit_id=$(docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl commit lakefs://${REPOSITORY}/main --message="added file_three" | sed -n 4p | awk '{print $2}')
 
-# We should not validate the exit code - since it is erroneous 
+# We should not validate the exit code - since it is erroneous
 echo "run export"
 docker compose --project-directory ${WORKING_DIRECTORY} run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --commit_id=$commit_id
 
@@ -83,7 +83,7 @@ s3_out=$(mktemp)
 trap 'rm -f -- $s3_out $lakectl_out' INT TERM EXIT
 
 echo "ls"
-docker compose exec -T lakefs lakectl fs ls --recursive --no-color lakefs://${REPOSITORY}/main/ | awk '{print $8}' | sort > ${lakectl_out}
+docker compose exec --env LAKECTL_SERVER_ENDPOINT_URL -T lakefs lakectl fs ls --recursive --no-color lakefs://${REPOSITORY}/main/ | awk '{print $8}' | sort > ${lakectl_out}
 echo "res $?"
 
 echo "aws ls"

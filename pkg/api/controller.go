@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/elnormous/contenttype"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
@@ -39,6 +41,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/icebergsync"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -70,11 +73,6 @@ const (
 
 	DefaultMaxDeleteObjects = 1000
 
-	// httpStatusClientClosedRequest used as internal status code when request context is cancelled
-	httpStatusClientClosedRequest = 499
-	// httpStatusClientClosedRequestText text used for client closed request status code
-	httpStatusClientClosedRequestText = "Client closed request"
-
 	pullRequestClosed = "CLOSED"
 	pullRequestOpen   = "OPEN"
 
@@ -94,44 +92,67 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config          config.Config
-	Catalog         *catalog.Catalog
-	Authenticator   auth.Authenticator
-	Auth            auth.Service
-	Authentication  authentication.Service
-	BlockAdapter    block.Adapter
-	MetadataManager auth.MetadataManager
-	Migrator        Migrator
-	Collector       stats.Collector
-	Actions         actionsHandler
-	AuditChecker    AuditChecker
-	Logger          logging.Logger
-	sessionStore    sessions.Store
-	PathProvider    upload.PathProvider
-	usageReporter   stats.UsageReporterOperations
-	licenseManager  license.Manager
+	Config             config.Config
+	Catalog            *catalog.Catalog
+	Authenticator      auth.Authenticator
+	Auth               auth.Service
+	Authentication     authentication.Service
+	BlockAdapter       block.Adapter
+	MetadataManager    auth.MetadataManager
+	Migrator           Migrator
+	Collector          stats.Collector
+	Actions            actionsHandler
+	AuditChecker       AuditChecker
+	Logger             logging.Logger
+	sessionStore       sessions.Store
+	PathProvider       upload.PathProvider
+	usageReporter      stats.UsageReporterOperations
+	licenseManager     license.Manager
+	icebergSyncer      icebergsync.Controller
+	loginTokenProvider authentication.LoginTokenProvider
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
+func NewController(
+	cfg config.Config,
+	catalog *catalog.Catalog,
+	authenticator auth.Authenticator,
+	authService auth.Service,
+	authenticationService authentication.Service,
+	blockAdapter block.Adapter,
+	metadataManager auth.MetadataManager,
+	migrator Migrator,
+	collector stats.Collector,
+	actions actionsHandler,
+	auditChecker AuditChecker,
+	logger logging.Logger,
+	sessionStore sessions.Store,
+	pathProvider upload.PathProvider,
+	usageReporter stats.UsageReporterOperations,
+	licenseManager license.Manager,
+	icebergSyncer icebergsync.Controller,
+	loginTokenProvider authentication.LoginTokenProvider,
+) *Controller {
 	return &Controller{
-		Config:          cfg,
-		Catalog:         catalog,
-		Authenticator:   authenticator,
-		Auth:            authService,
-		Authentication:  authenticationService,
-		BlockAdapter:    blockAdapter,
-		MetadataManager: metadataManager,
-		Migrator:        migrator,
-		Collector:       collector,
-		Actions:         actions,
-		AuditChecker:    auditChecker,
-		Logger:          logger,
-		sessionStore:    sessionStore,
-		PathProvider:    pathProvider,
-		usageReporter:   usageReporter,
-		licenseManager:  licenseManager,
+		Config:             cfg,
+		Catalog:            catalog,
+		Authenticator:      authenticator,
+		Auth:               authService,
+		Authentication:     authenticationService,
+		BlockAdapter:       blockAdapter,
+		MetadataManager:    metadataManager,
+		Migrator:           migrator,
+		Collector:          collector,
+		Actions:            actions,
+		AuditChecker:       auditChecker,
+		Logger:             logger,
+		sessionStore:       sessionStore,
+		PathProvider:       pathProvider,
+		usageReporter:      usageReporter,
+		licenseManager:     licenseManager,
+		icebergSyncer:      icebergSyncer,
+		loginTokenProvider: loginTokenProvider,
 	}
 }
 
@@ -852,6 +873,130 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 		TokenExpiration: swag.Int64(expiresAt.Unix()),
 	}
 	writeResponse(w, r, http.StatusOK, responseToken)
+}
+
+func (c *Controller) GetTokenRedirect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	// Login method needs no auth!
+	redirect, err := c.loginTokenProvider.GetRedirect(ctx)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	w.Header().Set("Location", redirect.RedirectURL)
+	w.Header().Set(httputil.LoginMailboxHeaderName, redirect.Mailbox)
+
+	writeResponse(w, r, http.StatusOK, nil)
+}
+
+func (c *Controller) GetTokenFromMailbox(w http.ResponseWriter, r *http.Request, mailbox string) {
+	ctx := r.Context()
+	// Login method needs no auth!
+	token, expiresAt, err := c.loginTokenProvider.GetToken(ctx, mailbox)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// This call is repeated, so only log after we've found the token is valid.
+	c.LogAction(ctx, "get_token_from_mailbox", r, "", "", "")
+
+	c.Logger.
+		WithContext(r.Context()).
+		WithFields(logging.Fields{
+			"mailbox":          mailbox,
+			"token_expiration": expiresAt,
+		}).
+		Debug("Got login token")
+
+	response := apigen.AuthenticationToken{
+		Token:           token,
+		TokenExpiration: swag.Int64(expiresAt.Unix()),
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+var releasedTokenTemplate = template.Must(
+	template.New("released-token").
+		Parse(`{{define "releasedToken" -}}
+<!doctype html>
+<html>
+  <title>Logged in</title>
+  <body>
+  <div>You are logged in as <code>{{.Username}}</code>.  It is safe to close this window.</div>
+  </body>
+</html>
+{{- end}}`))
+
+type UserData struct {
+	Username string
+}
+
+var (
+	textHTML                         = contenttype.MediaType{Type: "text", Subtype: "html"}
+	releaseTokenAcceptableMediaTypes = []contenttype.MediaType{
+		textHTML,
+		{Type: "*", Subtype: "*"},
+	}
+)
+
+func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Request, loginRequestToken string) {
+	ctx := r.Context()
+
+	c.LogAction(ctx, "release_token_to_mailbox", r, "", "", "")
+
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		// This is typically called from a browser - send it to login, return here
+		// after.
+		c.Logger.
+			WithContext(ctx).
+			WithError(err).
+			WithField("accept", r.Header.Get("Accept")).
+			Debug("Failed to get user - redirect to login")
+
+		q := make(url.Values)
+		q.Set("next", r.URL.String())
+		q.Set("redirected", "true")
+		redirectURL := url.URL{
+			Path:     "/auth/login",
+			RawQuery: q.Encode(),
+		}
+		w.Header().Set("Location", redirectURL.String())
+		w.WriteHeader(http.StatusTemporaryRedirect)
+		return
+	}
+
+	// Release will release a token for the authenticated user.
+	err = c.loginTokenProvider.Release(ctx, loginRequestToken)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	mediaType, _, err := contenttype.GetAcceptableMediaType(r, releaseTokenAcceptableMediaTypes)
+	if err != nil {
+		c.Logger.
+			WithContext(r.Context()).
+			WithError(err).
+			WithField("accept", r.Header.Get("Accept")).
+			Warn("Failed to parse Content-Type - no user-friendly page")
+		// Keep going - errors are safe here, at worst the user will not get a pretty page.
+	}
+
+	switch {
+	case mediaType.EqualsMIME(textHTML):
+		username := user.Username
+		// This endpoint is _usually_ visited by a browser.  Report to the user that
+		// they logged in, telling them the name they used to log in.
+		httputil.KeepPrivate(w)
+		w.WriteHeader(http.StatusOK)
+
+		err = releasedTokenTemplate.ExecuteTemplate(w, "releasedToken", &UserData{Username: username})
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+	default:
+		writeResponse(w, r, http.StatusNoContent, nil)
+	}
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
@@ -2959,7 +3104,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
 	if httputil.IsRequestCanceled(r) {
-		cb(w, r, httpStatusClientClosedRequest, httpStatusClientClosedRequestText)
+		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
 		return true
 	}
 	if err == nil {
@@ -4911,11 +5056,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("Last-Modified", lastModified)
 	w.Header().Set("Content-Type", entry.ContentType)
 	// for security, make sure the browser and any proxies en route don't cache the response
-	w.Header().Set("Cache-Control", "no-store, must-revalidate")
-	w.Header().Set("Expires", "0")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
-	w.Header().Set("Content-Security-Policy", "default-src 'none'")
+	httputil.KeepPrivate(w)
 	w.Header().Set("Content-Disposition", "attachment")
 
 	// handle partial response if byte range supplied
@@ -4923,6 +5064,9 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
+			if errors.Is(err, httputil.ErrUnsatisfiableRange) {
+				w.Header().Set("Content-Range", fmt.Sprintf("bytes */%d", entry.Size))
+			}
 			writeError(w, r, http.StatusRequestedRangeNotSatisfiable, "Requested Range Not Satisfiable")
 			return
 		}
@@ -5910,31 +6054,11 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-	apiErr := apigen.Error{
-		Message: fmt.Sprint(v),
-	}
-	writeResponse(w, r, code, apiErr)
+	httputil.WriteAPIError(w, r, code, v)
 }
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
-	// check first if the client canceled the request
-	if httputil.IsRequestCanceled(r) {
-		w.WriteHeader(httpStatusClientClosedRequest) // Client closed request
-		return
-	}
-	// nobody - just status code
-	if response == nil {
-		w.WriteHeader(code)
-		return
-	}
-	// encode response body as json
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(code)
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		logging.FromContext(r.Context()).WithError(err).WithField("code", code).Info("Failed to write encoded json response")
-	}
+	httputil.WriteAPIResponse(w, r, code, response)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {
@@ -6179,7 +6303,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 
 	installationID := c.usageReporter.InstallationID()
 	if installationID == "" {
-		writeError(w, r, http.StatusNotFound, "usage report is not enabled")
+		writeError(w, r, http.StatusNotFound, "installation not found")
 		return
 	}
 
@@ -6195,8 +6319,8 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 
 	// base on content-type return plain text or json (default)
 	if r.Header.Get("Accept") == "text/plain" {
+		httputil.KeepPrivate(w)
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
 		_, _ = fmt.Fprintf(w, "Usage for installation ID: %s\n", installationID)
 		for _, rec := range records {
 			_, _ = fmt.Fprintf(w, "%d-%02d: %12d\n", rec.Year, rec.Month, rec.Count)
@@ -6362,10 +6486,28 @@ func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }
 
-func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalog string) {
-	writeError(w, r, http.StatusNotImplemented, "Not implemented")
+func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
+
+	c.icebergSyncer.Pull(w, r, body, catalogID)
 }
 
-func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalog string) {
-	writeError(w, r, http.StatusNotImplemented, "Not implemented")
+func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string) {
+	ctx := r.Context()
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
+
+	c.icebergSyncer.Push(w, r, body, catalogID)
 }

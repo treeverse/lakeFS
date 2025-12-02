@@ -104,7 +104,7 @@ func (e *HookAbortError) Unwrap() error {
 	return e.Err
 }
 
-// DeleteError single delete error used by DeleteBatch's multierror.Error to report each key that failed
+// DeleteError single delete error used to report individual key deletion failures
 type DeleteError struct {
 	Key Key
 	Err error

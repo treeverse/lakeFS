@@ -2,8 +2,7 @@ package local
 
 import (
 	"context"
-	// MD5 required for ETag computation.
-	"crypto/md5" //nolint:gosec
+	"crypto/md5" // nolint:gosec
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -330,10 +329,32 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 		}
 		return block.Properties{}, err
 	}
-	// No properties, just return that it exists
+
+	etag, err := calcFileETag(p)
+	if err != nil {
+		return block.Properties{}, err
+	}
+
 	return block.Properties{
 		LastModified: stat.ModTime(),
+		ETag:         etag,
 	}, nil
+}
+
+func calcFileETag(fileKey string) (string, error) {
+	f, err := os.Open(fileKey)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = f.Close() }()
+	// MD5 required for ETag computation.
+	hash := md5.New() // nolint:gosec
+	_, err = io.Copy(hash, f)
+	if err != nil {
+		return "", err
+	}
+	etag := hex.EncodeToString(hash.Sum(nil))
+	return etag, nil
 }
 
 // isDirectoryWritable tests that pth, which must not be controllable by user input, is a

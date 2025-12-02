@@ -113,7 +113,7 @@ class PermissionException(NotAuthorizedException, PermissionError):
 
 class InvalidRangeException(ServerException, OSError):
     """
-    Raised when the reference could not be found in the lakeFS server
+    Raised when an object's read request start position exceeds file size 
     """
 
 
@@ -143,7 +143,7 @@ _STATUS_CODE_TO_EXCEPTION = {
 @contextmanager
 def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], LakeFSException]] = None):
     """
-    Contexts which converts lakefs_sdk API exceptions to LakeFS exceptions and handles them.
+    Context that converts lakefs_sdk API exceptions to LakeFS exceptions and handles them.
 
     :param custom_handler: Optional handler which can be used to provide custom behavior for specific exceptions.
         If custom_handler returns an exception, this function will raise the exception at the end of the

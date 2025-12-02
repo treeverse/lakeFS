@@ -19,6 +19,7 @@ use super::{Error, configuration};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PullIcebergTableError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     DefaultResponse(models::Error),
@@ -29,6 +30,7 @@ pub enum PullIcebergTableError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PushIcebergTableError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     DefaultResponse(models::Error),

@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -423,10 +425,24 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return block.Properties{}, err
 	}
+	etag := calcETag(props.ContentMD5, props.ETag)
 	return block.Properties{
 		StorageClass: props.AccessTier,
 		LastModified: apiutil.Value(props.LastModified),
+		ETag:         etag,
 	}, nil
+}
+
+// calcETag etag set by content md5 with fallback to use etag value
+func calcETag(contentMD5 []byte, etag *azcore.ETag) string {
+	if contentMD5 != nil {
+		return hex.EncodeToString(contentMD5)
+	}
+	if etag != nil {
+		etag := string(*etag)
+		return strings.TrimFunc(etag, func(r rune) bool { return r == '"' || r == ' ' })
+	}
+	return ""
 }
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {

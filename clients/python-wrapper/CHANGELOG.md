@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.14.1
+
+:bug: Bugs fixed:
+
+- Fix: Read range behavior (#9735)
+- Fix: Repository create with storage_id (#9704)
+
 ## v0.14.0
 
 :new: What's new:

@@ -167,15 +167,6 @@ func Register(name string, driver Driver) {
 	drivers[name] = driver
 }
 
-// UnregisterAllDrivers remove all loaded drivers, used for test code.
-func UnregisterAllDrivers() {
-	driversMu.Lock()
-	defer driversMu.Unlock()
-	for k := range drivers {
-		delete(drivers, k)
-	}
-}
-
 // Open lookup driver by 'type' and return store based on the configuration.
 // Failed with ErrUnknownDriver in case 'name' is not registered
 func Open(ctx context.Context, params kvparams.Config) (Store, error) {

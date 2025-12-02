@@ -258,6 +258,23 @@ def test_read_all(setup_repo, datafiles):
         read_data = obj.reader("r").read()
         assert read_data == data
 
+@TEST_DATA
+def test_read_buffer(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "small.file"
+    obj = _upload_file(repo, test_file)
+
+    with obj.reader(mode='r', pre_sign=False) as fd:
+        data = fd.read(100)
+        while True:
+            res = fd.read(100)
+            if res == '':
+                break
+            assert False, "should not reach"
+
+        read_data = obj.reader("r").read()
+        assert read_data == data
+
 
 @TEST_DATA
 def test_read_csv(setup_repo, datafiles):

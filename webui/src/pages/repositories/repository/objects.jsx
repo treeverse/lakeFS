@@ -44,7 +44,9 @@ import { getRepoStorageConfig } from "./utils";
 import {useDropzone} from "react-dropzone";
 import pMap from "p-map";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
+import {MetadataFields} from "../../../lib/components/repository/metadata";
+import {getMetadataIfValid, touchInvalidFields} from "../../../lib/components/repository/metadataHelpers";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import { Link } from "../../../lib/components/nav";
 import Card from "react-bootstrap/Card";
@@ -84,16 +86,20 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
     const [committing, setCommitting] = useState(false)
     const [show, setShow] = useState(false)
     const [metadataFields, setMetadataFields] = useState([])
-    
+
     const hide = () => {
         if (committing) return;
         setShow(false)
     }
 
     const onSubmit = () => {
+        const metadata = getMetadataIfValid(metadataFields);
+        if (!metadata) {
+            setMetadataFields(touchInvalidFields(metadataFields));
+            return;
+        }
+
         const message = textRef.current.value;
-        const metadata = {};
-        metadataFields.forEach(pair => metadata[pair.key] = pair.value)
         setCommitting(true)
         onCommit({message, metadata}, () => {
             setCommitting(false)
@@ -216,10 +222,14 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   };
 
     const doImport = async () => {
+        const metadata = getMetadataIfValid(metadataFields);
+        if (!metadata) {
+            setMetadataFields(touchInvalidFields(metadataFields));
+            return;
+        }
+
         setImportPhase(ImportPhase.InProgress);
         try {
-            const metadata = {};
-            metadataFields.forEach(pair => metadata[pair.key] = pair.value)
             setImportPhase(ImportPhase.InProgress)
             await startImport(
                 setImportID,

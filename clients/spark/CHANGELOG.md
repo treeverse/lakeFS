@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.18.0
+
+* Parallelize scanning for very large GC runs (#9657)
+
+  Use Hadoop configuration "lakefs.job.range_read_parallelism" to increase parallelism (defaults
+  to default parallelism; seriously consider increasing this).
+
+## v0.17.0
+* Support using lakeFS async API for prepare commits - better handling large number of commits
+
+## v0.16.0
+* Improved credentials handling for compatibility with Hadoop 3.2.x/3.3.x
+
 ## v0.15.0 - 2025-07-21
 * GC: Add support for GCP (#9305)
 

@@ -112,6 +112,8 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("License validation failed")
 		}
 
+		icebergSyncer := apifactory.NewIcebergSyncController(cfg)
+
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
@@ -130,6 +132,11 @@ var runCmd = &cobra.Command{
 		authenticationService, err := authenticationfactory.NewAuthenticationService(ctx, cfg, logger)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create authentication service")
+		}
+
+		loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create login token provider")
 		}
 
 		blockstoreType := baseCfg.Blockstore.Type
@@ -165,12 +172,11 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// usage report setup - default usage reporter ids a no-op
-		usageReporter := stats.DefaultUsageReporter
-		if baseCfg.UsageReport.Enabled {
-			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)
-			ur.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
-			usageReporter = ur
+		// Setup usage reporter - it is no longer possible to disable it
+		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)
+		usageReporter.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
+		if viper.IsSet("usage_report.enabled") {
+			logger.Warn("usage_report.enabled is deprecated. Value is ignored.")
 		}
 
 		deleteScheduler := gocron.NewScheduler(time.UTC)
@@ -250,6 +256,8 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			usageReporter,
 			licenseManager,
+			icebergSyncer,
+			loginTokenProvider,
 		)
 
 		// init gateway server

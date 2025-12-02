@@ -13,7 +13,7 @@ search:
     Available in **lakeFS Cloud** and **lakeFS Enterprise**
 
 
-<iframe width="420" height="315" src="https://www.youtube.com/embed/Ekjv9FumIPg"></iframe>
+<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/Ekjv9FumIPg"></iframe>
 
 ## RBAC Model
 
@@ -77,9 +77,9 @@ Conditions are added to policy statements using the optional `condition` field:
 
 ### Supported Condition Operators
 
-#### IpAddress
+#### IpAddress / NotIpAddress
 
-The `IpAddress` condition operator matches the client's source IP address against one or more IP addresses or CIDR blocks.
+The `IpAddress` condition operator matches the client's source IP address against one or more IP addresses or CIDR blocks. The `NotIpAddress` condition operator matches when the client's source IP address does NOT match any of the specified IP addresses or CIDR blocks (negation of `IpAddress`).
 
 **Supported Fields:**
 - `SourceIp` - The IP address of the client making the request
@@ -120,6 +120,25 @@ The `IpAddress` condition operator matches the client's source IP address agains
       "condition": {
         "IpAddress": {
           "SourceIp": ["192.0.2.0/24"]
+        }
+      }
+    }
+  ]
+}
+```
+
+**Example - Deny access from IPs NOT in allowed ranges:**
+
+```json
+{
+  "statement": [
+    {
+      "action": ["fs:*"],
+      "effect": "deny",
+      "resource": "*",
+      "condition": {
+        "NotIpAddress": {
+          "SourceIp": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
         }
       }
     }

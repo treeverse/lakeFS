@@ -18,6 +18,33 @@ This guide walks you through the options available and how to configure them, fi
 
 !!! info "⏰ Expected deployment time: 25 min"
 
+## Prerequisite skills and access
+
+To successfully deploy and operate lakeFS on AWS, you should be comfortable with the following topics and have the corresponding level of access.
+
+### AWS account administration
+
+- Ability to create and modify IAM roles and policies.
+- Ability to create and configure S3 buckets and prefixes.
+- Permissions to provision networking and compute resources in your AWS account (for example, VPC, subnets, security groups, load balancers, EC2, ECS, or EKS).
+
+
+### Core AWS services used by lakeFS
+
+- **Amazon S3** – bucket layout, prefixes, encryption options, and lifecycle rules.
+- **Metadata backend**, either:
+  - **Amazon DynamoDB**
+  - **PostgreSQL / Amazon RDS for PostgreSQL**
+  - **Amazon MemoryDB**
+
+  For any metadata backend you choose, you should be able to perform configuration, connectivity, storage and persistence configuration, backups, and monitoring.
+
+### Optional: Container and orchestration skills
+
+Depending on the chosen deployment model:
+- **Kubernetes / Amazon EKS** – understanding of Deployments, Services, Ingress, kubectl, and optionally Helm.
+- **Amazon ECS or EC2 with containers** – understanding task definitions, services, container logs, and IAM roles for tasks.
+
 ## Grant lakeFS permissions to DynamoDB
 
 By default, lakeFS will create the required DynamoDB table if it does not already exist. You'll have to give the IAM role used by lakeFS the following permissions:

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
+	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
@@ -54,7 +56,8 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	kvStore := kvtest.GetStore(ctx, t)
-	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.FromContext(ctx))
+	logger := logging.FromContext(ctx)
+	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logger)
 	meta := auth.NewKVMetadataManager("local_load_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
@@ -91,7 +94,30 @@ func TestLocalLoad(t *testing.T) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, blockAdapter, meta, migrator, &stats.NullCollector{}, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
+	loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
+	testutil.Must(t, err)
+	icebergSyncer := apifactory.NewIcebergSyncController(cfg)
+	handler := api.Serve(
+		cfg,
+		c,
+		authenticator,
+		authService,
+		authenticationService,
+		blockAdapter,
+		meta,
+		migrator,
+		&stats.NullCollector{},
+		actionsService,
+		auditChecker,
+		logging.ContextUnavailable(),
+		nil,
+		nil,
+		upload.DefaultPathProvider,
+		&stats.NopUsageReporter{},
+		licenseManager,
+		icebergSyncer,
+		loginTokenProvider,
+	)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

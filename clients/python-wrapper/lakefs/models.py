@@ -116,3 +116,4 @@ class RepositoryProperties(LenientNamedTuple):
     creation_date: int
     default_branch: str
     storage_namespace: str
+    storage_id: str

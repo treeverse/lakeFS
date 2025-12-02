@@ -7,7 +7,7 @@ import React, {useState} from "react";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import Form from "react-bootstrap/Form";
-import {MetadataFields} from "../../../lib/components/repository/changes";
+import {MetadataFields} from "../../../lib/components/repository/metadata";
 
 const ImportPhase = {
     NotStarted: 0,

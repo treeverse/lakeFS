@@ -131,9 +131,11 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 		a.properties[storageID] = make(map[string]block.Properties)
 	}
 	a.data[storageID][key] = data
+	etag := calcETag(data)
 	a.properties[storageID][key] = block.Properties{
 		StorageClass: opts.StorageClass,
 		LastModified: time.Now(),
+		ETag:         etag,
 	}
 	return &block.PutResponse{}, nil
 }
@@ -411,9 +413,16 @@ func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 	if a.data[storageID] == nil {
 		a.data[storageID] = make(map[string][]byte)
 	}
+	if a.properties[storageID] == nil {
+		a.properties[storageID] = make(map[string]block.Properties)
+	}
 	a.data[storageID][key] = data
 	delete(a.mpu[storageID], uploadID) // delete the mpu after completion
 	etag := calcETag(data)
+	a.properties[storageID][key] = block.Properties{
+		LastModified: time.Now(),
+		ETag:         etag,
+	}
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:          etag,
 		ContentLength: int64(len(data)),

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"net/url"
 	"regexp"
 	"testing"
 
-	"encoding/hex"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
@@ -83,6 +83,7 @@ func TestAdapterNamespace(t *testing.T) {
 		})
 	}
 }
+
 func TestMultipartUploadWithMD5(t *testing.T) {
 	ctx := context.Background()
 	adapter := newAdapter()

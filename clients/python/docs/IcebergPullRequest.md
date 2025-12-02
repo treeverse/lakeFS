@@ -7,6 +7,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **source** | [**IcebergRemoteTable**](IcebergRemoteTable.md) |  | 
 **destination** | [**IcebergLocalTable**](IcebergLocalTable.md) |  | 
+**force_update** | **bool** | Override exiting local table if exists | [optional] [default to False]
+**create_namespace** | **bool** | Creates namespace in local catalog if not exist | [optional] [default to False]
 
 ## Example
 

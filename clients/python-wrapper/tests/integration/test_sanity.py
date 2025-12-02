@@ -14,7 +14,8 @@ def test_repository_sanity(storage_namespace, setup_repo):
     expected_properties = lakefs.RepositoryProperties(id=repo.properties.id,
                                                       default_branch=default_branch,
                                                       storage_namespace=storage_namespace,
-                                                      creation_date=repo.properties.creation_date)
+                                                      creation_date=repo.properties.creation_date,
+                                                      storage_id="")
     assert repo.properties == expected_properties
 
     # Create with allow exists

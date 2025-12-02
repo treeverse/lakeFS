@@ -44,7 +44,9 @@ class TestIcebergPullRequest(unittest.TestCase):
                     namespace = ["accounting","tax"], 
                     table = '', 
                     repository_id = '', 
-                    reference_id = '', )
+                    reference_id = '', ),
+                force_update = True,
+                create_namespace = True
             )
         else:
             return IcebergPullRequest(

@@ -69,7 +69,7 @@ This use case shows how to create dev/test data environments for ETL testing usi
 
 Follow the tutorial video below to get started with the playground and Jupyter notebook, or follow the instructions on this page.
 
-<iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
+<iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
 
 #### Prerequisites
 

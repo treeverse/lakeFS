@@ -2,7 +2,8 @@ import React, {useCallback, useRef, useState} from "react";
 import {refs as refsAPI} from "../../../lib/api";
 import {RefTypeBranch} from "../../../constants";
 import {ActionGroup, ActionsBar, AlertError, RefreshButton} from "../controls";
-import {MetadataFields} from "./changes";
+import {MetadataFields} from "./metadata";
+import {getMetadataIfValid, touchInvalidFields} from "./metadataHelpers";
 import {GitMergeIcon} from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
@@ -72,9 +73,13 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
     }
 
     const onSubmit = async () => {
+        const metadata = getMetadataIfValid(metadataFields);
+        if (!metadata) {
+            setMetadataFields(touchInvalidFields(metadataFields));
+            return;
+        }
+
         const message = textRef.current.value;
-        const metadata = {};
-        metadataFields.forEach(pair => metadata[pair.key] = pair.value)
 
         let strategy = mergeState.strategy;
         if (strategy === "none") {

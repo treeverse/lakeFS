@@ -588,6 +588,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	return block.Properties{
 		StorageClass: aws.String(string(s3Props.StorageClass)),
 		LastModified: apiutil.Value(s3Props.LastModified),
+		ETag:         strings.Trim(aws.ToString(s3Props.ETag), "\""),
 	}, nil
 }
 
