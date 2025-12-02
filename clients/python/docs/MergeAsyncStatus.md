@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **update_time** | **datetime** | last time the task status was updated | 
 **result** | [**MergeResult**](MergeResult.md) |  | [optional] 
 **error** | [**Error**](Error.md) |  | [optional] 
-**status_code** | **int** | the status code of the error if it exists | [optional] 
+**status_code** | **int** | an http status code that correlates with the underlying error if exists | [optional] 
 
 ## Example
 

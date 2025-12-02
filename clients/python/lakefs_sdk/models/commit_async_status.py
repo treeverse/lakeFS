@@ -36,7 +36,7 @@ class CommitAsyncStatus(BaseModel):
     update_time: datetime = Field(..., description="last time the task status was updated")
     result: Optional[Commit] = None
     error: Optional[Error] = None
-    status_code: Optional[StrictInt] = Field(None, description="the status code of the error if it exists")
+    status_code: Optional[StrictInt] = Field(None, description="an http status code that correlates with the underlying error if exists")
     __properties = ["task_id", "completed", "update_time", "result", "error", "status_code"]
 
     class Config:

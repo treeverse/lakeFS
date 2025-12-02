@@ -1600,6 +1600,7 @@ components:
           $ref: "#/components/schemas/Error"
         status_code:
           type: integer
+          format: int64
           description: an http status code that correlates with the underlying error if exists
       required:
         - task_id
@@ -1625,6 +1626,7 @@ components:
           $ref: "#/components/schemas/Error"
         status_code:
           type: integer
+          format: int64
           description: an http status code that correlates with the underlying error if exists
       required:
         - task_id

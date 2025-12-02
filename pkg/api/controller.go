@@ -5570,7 +5570,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 	}
 
 	if status.Task.StatusCode != 0 {
-		statusCode := int(status.Task.StatusCode)
+		statusCode := status.Task.StatusCode
 		resp.StatusCode = &statusCode
 	}
 

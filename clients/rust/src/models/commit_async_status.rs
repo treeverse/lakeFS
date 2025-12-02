@@ -25,9 +25,9 @@ pub struct CommitAsyncStatus {
     pub result: Option<Box<models::Commit>>,
     #[serde(rename = "error", skip_serializing_if = "Option::is_none")]
     pub error: Option<Box<models::Error>>,
-    /// the status code of the error if it exists
+    /// an http status code that correlates with the underlying error if exists
     #[serde(rename = "status_code", skip_serializing_if = "Option::is_none")]
-    pub status_code: Option<i32>,
+    pub status_code: Option<i64>,
 }
 
 impl CommitAsyncStatus {

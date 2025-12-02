@@ -11147,7 +11147,9 @@ components:
         error:
           $ref: '#/components/schemas/Error'
         status_code:
-          description: the status code of the error if it exists
+          description: an http status code that correlates with the underlying error
+            if exists
+          format: int64
           type: integer
       required:
       - completed
@@ -11192,7 +11194,9 @@ components:
         error:
           $ref: '#/components/schemas/Error'
         status_code:
-          description: the status code of the error if it exists
+          description: an http status code that correlates with the underlying error
+            if exists
+          format: int64
           type: integer
       required:
       - completed
