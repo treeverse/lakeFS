@@ -1363,6 +1363,7 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	}); err != nil {
 		return nil, err
 	}
+	time.Sleep(5 * time.Minute)
 
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -2778,8 +2779,12 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 }
 
 func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) {
+	if expiryDuration == 0 {
+		return
+	}
+
 	taskField := reflect.ValueOf(statusMsg).Elem().FieldByName("Task")
-	if expiryDuration == 0 || !taskField.IsValid() || taskField.IsNil() {
+	if !taskField.IsValid() || taskField.IsNil() {
 		return
 	}
 
@@ -2791,9 +2796,8 @@ func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration
 	updatedAt := task.UpdatedAt.AsTime()
 	if time.Since(updatedAt) > expiryDuration {
 		task.Done = true
-		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %v. Please retry the operation.", expiryDuration)
+		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %s. Please retry the operation.", expiryDuration)
 		task.StatusCode = http.StatusRequestTimeout
-		taskField.Set(reflect.ValueOf(task))
 	}
 }
 
