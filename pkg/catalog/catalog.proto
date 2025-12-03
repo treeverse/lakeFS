@@ -3,6 +3,7 @@ syntax = "proto3";
 package catalog;
 
 import "google/protobuf/timestamp.proto";
+import "graveler/graveler.proto";
 
 option go_package = "github.com/treevese/lakefs/catalog";
 
@@ -30,7 +31,8 @@ message Task {
   bool done = 2;
   google.protobuf.Timestamp updated_at = 3;
   int64 progress = 4;
-  string error = 5;
+  string error_msg = 5;
+  int32 status_code = 6;
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
@@ -63,6 +65,20 @@ message GarbageCollectionPrepareCommitsInfo {
 message GarbageCollectionPrepareStatus {
   Task task = 1;
   GarbageCollectionPrepareCommitsInfo info = 2;
+}
+
+message CommitAsyncStatusData {
+  Task task = 1;
+  io.treeverse.lakefs.graveler.CommitData info = 2;
+}
+
+message MergeData {
+  string reference = 1;
+}
+
+message MergeAsyncStatusData {
+  Task task = 1;
+  MergeData info = 2;
 }
 
 // TaskMsg described generic message with Task field

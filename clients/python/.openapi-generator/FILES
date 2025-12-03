@@ -10,6 +10,7 @@ docs/AccessKeyCredentials.md
 docs/ActionRun.md
 docs/ActionRunList.md
 docs/ActionsApi.md
+docs/AsyncTaskStatus.md
 docs/AuthApi.md
 docs/AuthCapabilities.md
 docs/AuthenticationToken.md
@@ -19,6 +20,7 @@ docs/BranchesApi.md
 docs/CherryPickCreation.md
 docs/CommPrefsInput.md
 docs/Commit.md
+docs/CommitAsyncStatus.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitOverrides.md
@@ -72,6 +74,7 @@ docs/LicenseApi.md
 docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
+docs/MergeAsyncStatus.md
 docs/MergeResult.md
 docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
@@ -174,6 +177,7 @@ lakefs_sdk/models/access_key_credentials.py
 lakefs_sdk/models/acl.py
 lakefs_sdk/models/action_run.py
 lakefs_sdk/models/action_run_list.py
+lakefs_sdk/models/async_task_status.py
 lakefs_sdk/models/auth_capabilities.py
 lakefs_sdk/models/authentication_token.py
 lakefs_sdk/models/branch_creation.py
@@ -181,6 +185,7 @@ lakefs_sdk/models/branch_protection_rule.py
 lakefs_sdk/models/cherry_pick_creation.py
 lakefs_sdk/models/comm_prefs_input.py
 lakefs_sdk/models/commit.py
+lakefs_sdk/models/commit_async_status.py
 lakefs_sdk/models/commit_creation.py
 lakefs_sdk/models/commit_list.py
 lakefs_sdk/models/commit_overrides.py
@@ -226,6 +231,7 @@ lakefs_sdk/models/license.py
 lakefs_sdk/models/login_config.py
 lakefs_sdk/models/login_information.py
 lakefs_sdk/models/merge.py
+lakefs_sdk/models/merge_async_status.py
 lakefs_sdk/models/merge_result.py
 lakefs_sdk/models/meta_range_creation.py
 lakefs_sdk/models/meta_range_creation_response.py
@@ -302,6 +308,7 @@ test/test_acl.py
 test/test_action_run.py
 test/test_action_run_list.py
 test/test_actions_api.py
+test/test_async_task_status.py
 test/test_auth_api.py
 test/test_auth_capabilities.py
 test/test_authentication_token.py
@@ -311,6 +318,7 @@ test/test_branches_api.py
 test/test_cherry_pick_creation.py
 test/test_comm_prefs_input.py
 test/test_commit.py
+test/test_commit_async_status.py
 test/test_commit_creation.py
 test/test_commit_list.py
 test/test_commit_overrides.py
@@ -364,6 +372,7 @@ test/test_license_api.py
 test/test_login_config.py
 test/test_login_information.py
 test/test_merge.py
+test/test_merge_async_status.py
 test/test_merge_result.py
 test/test_meta_range_creation.py
 test/test_meta_range_creation_response.py

@@ -16,7 +16,7 @@ const (
 	tasksPrefix      = "tasks"
 )
 
-type taskStep struct {
+type TaskStep struct {
 	Name string
 	Func func(ctx context.Context) error
 }

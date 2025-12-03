@@ -82,6 +82,8 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *ConfigApi* | [**get_config**](docs/ConfigApi.md#get_config) | **GET** /config | 
 *ExperimentalApi* | [**abort_presign_multipart_upload**](docs/ExperimentalApi.md#abort_presign_multipart_upload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
+*ExperimentalApi* | [**commit_async**](docs/ExperimentalApi.md#commit_async) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
+*ExperimentalApi* | [**commit_async_status**](docs/ExperimentalApi.md#commit_async_status) | **GET** /repositories/{repository}/branches/{branch}/commits/async/{id}/status | get status of async commit operation
 *ExperimentalApi* | [**complete_presign_multipart_upload**](docs/ExperimentalApi.md#complete_presign_multipart_upload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
 *ExperimentalApi* | [**create_presign_multipart_upload**](docs/ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 *ExperimentalApi* | [**create_pull_request**](docs/ExperimentalApi.md#create_pull_request) | **POST** /repositories/{repository}/pulls | create pull request
@@ -96,6 +98,8 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**hard_reset_branch**](docs/ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**list_pull_requests**](docs/ExperimentalApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 *ExperimentalApi* | [**list_user_external_principals**](docs/ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+*ExperimentalApi* | [**merge_into_branch_async**](docs/ExperimentalApi.md#merge_into_branch_async) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
+*ExperimentalApi* | [**merge_into_branch_async_status**](docs/ExperimentalApi.md#merge_into_branch_async_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 *ExperimentalApi* | [**merge_pull_request**](docs/ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 *ExperimentalApi* | [**release_token_to_mailbox**](docs/ExperimentalApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *ExperimentalApi* | [**sts_login**](docs/ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
@@ -195,6 +199,7 @@ Class | Method | HTTP request | Description
  - [Acl](docs/Acl.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
+ - [AsyncTaskStatus](docs/AsyncTaskStatus.md)
  - [AuthCapabilities](docs/AuthCapabilities.md)
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
@@ -202,6 +207,7 @@ Class | Method | HTTP request | Description
  - [CherryPickCreation](docs/CherryPickCreation.md)
  - [CommPrefsInput](docs/CommPrefsInput.md)
  - [Commit](docs/Commit.md)
+ - [CommitAsyncStatus](docs/CommitAsyncStatus.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
  - [CommitOverrides](docs/CommitOverrides.md)
@@ -247,6 +253,7 @@ Class | Method | HTTP request | Description
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
+ - [MergeAsyncStatus](docs/MergeAsyncStatus.md)
  - [MergeResult](docs/MergeResult.md)
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
