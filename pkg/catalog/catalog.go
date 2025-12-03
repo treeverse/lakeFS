@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -2172,7 +2173,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 
 func (c *Catalog) DumpRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryDumpStatus, error) {
 	var taskStatus RepositoryDumpStatus
-	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, DumpRefsTaskIDPrefix, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, DumpRefsTaskIDPrefix, &taskStatus, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -2224,12 +2225,12 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 }
 
 func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryRestoreStatus, error) {
-	var status RepositoryRestoreStatus
-	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, RestoreRefsTaskIDPrefix, &status)
+	var taskStatus RepositoryRestoreStatus
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, RestoreRefsTaskIDPrefix, &taskStatus, 0)
 	if err != nil {
 		return nil, err
 	}
-	return &status, nil
+	return &taskStatus, nil
 }
 
 // RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
@@ -2760,7 +2761,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	return taskID, nil
 }
 
-func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage) error {
+func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -2768,12 +2769,39 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if !IsTaskID(prefix, taskID) {
 		return graveler.ErrNotFound
 	}
-	return GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg)
+	if err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
+		return err
+	}
+	checkAndMarkTaskExpired(statusMsg, expiryDuration)
+	return nil
+}
+
+func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) {
+	if expiryDuration == 0 {
+		return
+	}
+
+	taskField := reflect.ValueOf(statusMsg).Elem().FieldByName("Task")
+	if !taskField.IsValid() || taskField.IsNil() {
+		return
+	}
+
+	task := taskField.Interface().(*Task)
+	if task.UpdatedAt == nil {
+		return
+	}
+
+	updatedAt := task.UpdatedAt.AsTime()
+	if time.Since(updatedAt) > expiryDuration {
+		task.Done = true
+		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %s. Please retry the operation.", expiryDuration)
+		task.StatusCode = http.StatusRequestTimeout
+	}
 }
 
 func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
 	var taskStatus GarbageCollectionPrepareStatus
-	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus, 0)
 	if err != nil {
 		return nil, err
 	}
