@@ -3544,6 +3544,7 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 		resp.Error = &apigen.Error{
 			Message: status.Task.ErrorMsg,
 		}
+		resp.StatusCode = apiutil.Ptr(status.Task.StatusCode)
 	}
 
 	if status.Info != nil {
@@ -5573,9 +5574,7 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 		resp.Error = &apigen.Error{
 			Message: status.Task.ErrorMsg,
 		}
-
-		statusCode := status.Task.StatusCode
-		resp.StatusCode = &statusCode
+		resp.StatusCode = apiutil.Ptr(status.Task.StatusCode)
 	}
 
 	if status.Info != nil {

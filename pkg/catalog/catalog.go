@@ -425,12 +425,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	errToStatusFunc := cfg.ErrorToStatusCodeAndMsg
 	if errToStatusFunc == nil {
 		// Default implementation (needed in case a service that is not the controller initializes it)
-		errToStatusFunc = func(logger logging.Logger, err error) (status int, msg string, ok bool) {
-			if err == nil {
-				return 0, "", false
-			}
-			return 0, err.Error(), true
-		}
+		errToStatusFunc = defaultErrorToStatusCodeAndMsg
 	}
 
 	return &Catalog{
@@ -514,6 +509,13 @@ func newLimiter(rateLimit int) ratelimit.Limiter {
 		limiter = ratelimit.New(rateLimit)
 	}
 	return limiter
+}
+
+func defaultErrorToStatusCodeAndMsg(logger logging.Logger, err error) (status int, msg string, ok bool) {
+	if err == nil {
+		return 0, "", false
+	}
+	return 0, err.Error(), true
 }
 
 func (c *Catalog) SetHooksHandler(hooks graveler.HooksHandler) {
