@@ -7,8 +7,6 @@ import com.amazonaws.retry.RetryUtils
 import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
-import org.apache.hadoop.conf.Configuration
-import org.apache.spark.{SparkConf, SparkContext}
 import org.slf4j.{Logger, LoggerFactory}
 import org.apache.commons.lang3.StringUtils
 
