@@ -11149,7 +11149,7 @@ components:
         status_code:
           description: an http status code that correlates with the underlying error
             if exists
-          format: int64
+          format: int32
           type: integer
       required:
       - completed

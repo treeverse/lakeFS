@@ -12,7 +12,7 @@
 |**updateTime** | **OffsetDateTime** | last time the task status was updated |  |
 |**result** | [**MergeResult**](MergeResult.md) |  |  [optional] |
 |**error** | [**Error**](Error.md) |  |  [optional] |
-|**statusCode** | **Long** | an http status code that correlates with the underlying error if exists |  [optional] |
+|**statusCode** | **Integer** | an http status code that correlates with the underlying error if exists |  [optional] |
 
 
 

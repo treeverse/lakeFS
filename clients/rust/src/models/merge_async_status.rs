@@ -27,7 +27,7 @@ pub struct MergeAsyncStatus {
     pub error: Option<Box<models::Error>>,
     /// an http status code that correlates with the underlying error if exists
     #[serde(rename = "status_code", skip_serializing_if = "Option::is_none")]
-    pub status_code: Option<i64>,
+    pub status_code: Option<i32>,
 }
 
 impl MergeAsyncStatus {

@@ -76,7 +76,7 @@ public class MergeAsyncStatus {
 
   public static final String SERIALIZED_NAME_STATUS_CODE = "status_code";
   @SerializedName(SERIALIZED_NAME_STATUS_CODE)
-  private Long statusCode;
+  private Integer statusCode;
 
   public MergeAsyncStatus() {
   }
@@ -186,7 +186,7 @@ public class MergeAsyncStatus {
   }
 
 
-  public MergeAsyncStatus statusCode(Long statusCode) {
+  public MergeAsyncStatus statusCode(Integer statusCode) {
     
     this.statusCode = statusCode;
     return this;
@@ -197,12 +197,12 @@ public class MergeAsyncStatus {
    * @return statusCode
   **/
   @javax.annotation.Nullable
-  public Long getStatusCode() {
+  public Integer getStatusCode() {
     return statusCode;
   }
 
 
-  public void setStatusCode(Long statusCode) {
+  public void setStatusCode(Integer statusCode) {
     this.statusCode = statusCode;
   }
 
