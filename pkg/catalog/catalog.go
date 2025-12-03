@@ -234,23 +234,27 @@ type Config struct {
 	SettingsManagerOption settings.ManagerOption
 	PathProvider          *upload.PathPartitionProvider
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
-	ConflictResolvers []graveler.ConflictResolver
+	ConflictResolvers       []graveler.ConflictResolver
+	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 }
 
+type ErrorToStatusCodeAndMsg func(logger logging.Logger, err error) (status int, msg string, ok bool)
+
 type Catalog struct {
-	BlockAdapter          block.Adapter
-	Store                 Store
-	managers              []io.Closer
-	workPool              pond.Pool
-	PathProvider          *upload.PathPartitionProvider
-	BackgroundLimiter     ratelimit.Limiter
-	KVStore               kv.Store
-	KVStoreLimited        kv.Store
-	addressProvider       *ident.HexAddressProvider
-	deleteSensor          *graveler.DeleteSensor
-	UGCPrepareMaxFileSize int64
-	UGCPrepareInterval    time.Duration
-	signingKey            config.SecureString
+	BlockAdapter            block.Adapter
+	Store                   Store
+	managers                []io.Closer
+	workPool                pond.Pool
+	PathProvider            *upload.PathPartitionProvider
+	BackgroundLimiter       ratelimit.Limiter
+	KVStore                 kv.Store
+	KVStoreLimited          kv.Store
+	addressProvider         *ident.HexAddressProvider
+	deleteSensor            *graveler.DeleteSensor
+	UGCPrepareMaxFileSize   int64
+	UGCPrepareInterval      time.Duration
+	signingKey              config.SecureString
+	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 }
 
 const (
@@ -417,20 +421,28 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		WorkPool:                 workPool,
 	})
 	closers = append(closers, &ctxCloser{cancelFn})
+
+	errToStatusFunc := cfg.ErrorToStatusCodeAndMsg
+	if errToStatusFunc == nil {
+		// Default implementation (needed in case a service that is not the controller initializes it)
+		errToStatusFunc = defaultErrorToStatusCodeAndMsg
+	}
+
 	return &Catalog{
-		BlockAdapter:          tierFSParams.Adapter,
-		Store:                 gStore,
-		UGCPrepareMaxFileSize: baseCfg.UGC.PrepareMaxFileSize,
-		UGCPrepareInterval:    baseCfg.UGC.PrepareInterval,
-		PathProvider:          cfg.PathProvider,
-		BackgroundLimiter:     limiter,
-		workPool:              workPool,
-		KVStore:               cfg.KVStore,
-		managers:              closers,
-		KVStoreLimited:        storeLimiter,
-		addressProvider:       addressProvider,
-		deleteSensor:          deleteSensor,
-		signingKey:            cfg.Config.StorageConfig().SigningKey(),
+		BlockAdapter:            tierFSParams.Adapter,
+		Store:                   gStore,
+		UGCPrepareMaxFileSize:   baseCfg.UGC.PrepareMaxFileSize,
+		UGCPrepareInterval:      baseCfg.UGC.PrepareInterval,
+		PathProvider:            cfg.PathProvider,
+		BackgroundLimiter:       limiter,
+		workPool:                workPool,
+		KVStore:                 cfg.KVStore,
+		managers:                closers,
+		KVStoreLimited:          storeLimiter,
+		addressProvider:         addressProvider,
+		deleteSensor:            deleteSensor,
+		signingKey:              cfg.Config.StorageConfig().SigningKey(),
+		errorToStatusCodeAndMsg: errToStatusFunc,
 	}, nil
 }
 
@@ -497,6 +509,13 @@ func newLimiter(rateLimit int) ratelimit.Limiter {
 		limiter = ratelimit.New(rateLimit)
 	}
 	return limiter
+}
+
+func defaultErrorToStatusCodeAndMsg(logger logging.Logger, err error) (status int, msg string, ok bool) {
+	if err == nil {
+		return 0, "", false
+	}
+	return 0, err.Error(), true
 }
 
 func (c *Catalog) SetHooksHandler(hooks graveler.HooksHandler) {
@@ -2104,7 +2123,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 	}
 
 	taskStatus := &RepositoryDumpStatus{}
-	taskSteps := []taskStep{
+	taskSteps := []TaskStep{
 		{
 			Name: "dump commits",
 			Func: func(ctx context.Context) error {
@@ -2144,7 +2163,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 
 	// create refs dump task and update initial status.
 	taskID := NewTaskID(DumpRefsTaskIDPrefix)
-	err = c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
@@ -2152,16 +2171,8 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 }
 
 func (c *Catalog) DumpRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryDumpStatus, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	if !IsTaskID(DumpRefsTaskIDPrefix, id) {
-		return nil, graveler.ErrNotFound
-	}
-
 	var taskStatus RepositoryDumpStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, DumpRefsTaskIDPrefix, &taskStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -2185,7 +2196,7 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 
 	// create refs restore task and update initial status
 	taskStatus := &RepositoryRestoreStatus{}
-	taskSteps := []taskStep{
+	taskSteps := []TaskStep{
 		{
 			Name: "load commits",
 			Func: func(ctx context.Context) error {
@@ -2206,33 +2217,25 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 		},
 	}
 	taskID := NewTaskID(RestoreRefsTaskIDPrefix)
-	if err := c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus); err != nil {
+	if err := c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus); err != nil {
 		return "", err
 	}
 	return taskID, nil
 }
 
 func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryRestoreStatus, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	if !IsTaskID(RestoreRefsTaskIDPrefix, id) {
-		return nil, graveler.ErrNotFound
-	}
-
 	var status RepositoryRestoreStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &status)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, RestoreRefsTaskIDPrefix, &status)
 	if err != nil {
 		return nil, err
 	}
 	return &status, nil
 }
 
-// runBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
+// RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
 // the task status is updated after each step, and the task is marked as completed if the step is the last one.
 // initial update if the task is done before running the steps.
-func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []taskStep, taskStatus protoreflect.ProtoMessage) error {
+func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
 	// Allocate Task and set if on the taskStatus's 'Task' field.
 	// We continue to update this field while running each step.
 	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
@@ -2260,7 +2263,13 @@ func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			if err != nil {
 				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
 				task.Done = true
-				task.Error = err.Error()
+				// Convert the error to status code and error message before the original error is lost when stored in
+				// protobuf, and populate the task's error details.
+				statusCode, errorMsg, ok := c.errorToStatusCodeAndMsg(log, err)
+				if ok {
+					task.StatusCode = int32(statusCode) //nolint:gosec
+					task.ErrorMsg = errorMsg
+				}
 			} else if stepIdx == len(steps)-1 {
 				task.Done = true
 			}
@@ -2725,7 +2734,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	}
 
 	taskStatus := &GarbageCollectionPrepareStatus{}
-	taskSteps := []taskStep{
+	taskSteps := []TaskStep{
 		{
 			Name: "prepare expired commits on " + repository.RepositoryID.String(),
 			Func: func(ctx context.Context) error {
@@ -2744,24 +2753,27 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	}
 
 	taskID := NewTaskID(GarbageCollectionPrepareCommitsPrefix)
-	err = c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
 	return taskID, nil
 }
 
-func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
+func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if !IsTaskID(GarbageCollectionPrepareCommitsPrefix, id) {
-		return nil, graveler.ErrNotFound
+	if !IsTaskID(prefix, taskID) {
+		return graveler.ErrNotFound
 	}
+	return GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg)
+}
 
+func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
 	var taskStatus GarbageCollectionPrepareStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus)
 	if err != nil {
 		return nil, err
 	}

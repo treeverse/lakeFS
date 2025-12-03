@@ -1581,6 +1581,46 @@ components:
         - completed
         - update_time
 
+    AsyncTaskStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+          description: the id of the async task
+        completed:
+          type: boolean
+          description: true if the task has completed (either successfully or with an error)
+        update_time:
+          type: string
+          format: date-time
+          description: last time the task status was updated
+        error:
+          $ref: "#/components/schemas/Error"
+        status_code:
+          type: integer
+          format: int32
+          description: an http status code that correlates with the underlying error if exists
+      required:
+        - task_id
+        - completed
+        - update_time
+
+    MergeAsyncStatus:
+      allOf:
+        - $ref: "#/components/schemas/AsyncTaskStatus"
+        - type: object
+          properties:
+            result:
+              $ref: "#/components/schemas/MergeResult"
+
+    CommitAsyncStatus:
+      allOf:
+        - $ref: "#/components/schemas/AsyncTaskStatus"
+        - type: object
+          properties:
+            result:
+              $ref: "#/components/schemas/Commit"
+
     PrepareGCUncommittedRequest:
       type: object
       properties:
@@ -4237,13 +4277,110 @@ paths:
         409:
           $ref: "#/components/responses/Conflict"
         412:
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          $ref: "#/components/responses/PreconditionFailed"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/commits/async:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    post:
+      parameters:
+        - in: query
+          name: source_metarange
+          required: false
+          description: The source metarange to commit. Branch must not have uncommitted changes.
+          schema:
+            type: string
+      tags:
+        - experimental
+      operationId: commitAsync
+      summary: create commit asynchronously
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitCreation"
+      responses:
+        202:
+          description: commit task started
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/TaskCreation"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/commits/async/{id}/status:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        description: Unique identifier of the commit async task
+        schema:
+          type: string
+    get:
+      tags:
+        - experimental
+      operationId: commitAsyncStatus
+      summary: get status of async commit operation
+      responses:
+        200:
+          description: commit task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitAsyncStatus"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
+        429:
+          description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4593,6 +4730,113 @@ paths:
           $ref: "#/components/responses/NotFound"
         429:
           description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: sourceRef
+        required: true
+        schema:
+          type: string
+        description: source ref
+      - in: path
+        name: destinationBranch
+        required: true
+        schema:
+          type: string
+        description: destination branch name
+    post:
+      tags:
+        - experimental
+      operationId: mergeIntoBranchAsync
+      summary: merge references asynchronously
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Merge"
+      responses:
+        202:
+          description: merge task started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCreation"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: sourceRef
+        required: true
+        schema:
+          type: string
+        description: source ref
+      - in: path
+        name: destinationBranch
+        required: true
+        schema:
+          type: string
+        description: destination branch name
+      - in: path
+        name: id
+        required: true
+        description: Unique identifier of the merge async task
+        schema:
+          type: string
+    get:
+      tags:
+        - experimental
+      operationId: mergeIntoBranchAsyncStatus
+      summary: get status of async merge operation
+      responses:
+        200:
+          description: merge task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeAsyncStatus"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
+        429:
+          description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -6701,7 +6945,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MergeResult"
         412:
-          description: precondition failed (e.g. a pre-merge hook returned a failure)
+          description: precondition failed
           content:
             application/json:
               schema:
