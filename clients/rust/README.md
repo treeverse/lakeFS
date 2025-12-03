@@ -199,6 +199,7 @@ Class | Method | HTTP request | Description
  - [Acl](docs/Acl.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
+ - [AsyncTaskStatus](docs/AsyncTaskStatus.md)
  - [AuthCapabilities](docs/AuthCapabilities.md)
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)

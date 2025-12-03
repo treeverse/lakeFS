@@ -1,4 +1,4 @@
-# MergeAsyncStatus
+# AsyncTaskStatus
 
 
 ## Properties
@@ -10,24 +10,23 @@ Name | Type | Description | Notes
 **update_time** | **datetime** | last time the task status was updated | 
 **error** | [**Error**](Error.md) |  | [optional] 
 **status_code** | **int** | an http status code that correlates with the underlying error if exists | [optional] 
-**result** | [**MergeResult**](MergeResult.md) |  | [optional] 
 
 ## Example
 
 ```python
-from lakefs_sdk.models.merge_async_status import MergeAsyncStatus
+from lakefs_sdk.models.async_task_status import AsyncTaskStatus
 
 # TODO update the JSON string below
 json = "{}"
-# create an instance of MergeAsyncStatus from a JSON string
-merge_async_status_instance = MergeAsyncStatus.from_json(json)
+# create an instance of AsyncTaskStatus from a JSON string
+async_task_status_instance = AsyncTaskStatus.from_json(json)
 # print the JSON string representation of the object
-print MergeAsyncStatus.to_json()
+print AsyncTaskStatus.to_json()
 
 # convert the object into a dict
-merge_async_status_dict = merge_async_status_instance.to_dict()
-# create an instance of MergeAsyncStatus from a dict
-merge_async_status_form_dict = merge_async_status.from_dict(merge_async_status_dict)
+async_task_status_dict = async_task_status_instance.to_dict()
+# create an instance of AsyncTaskStatus from a dict
+async_task_status_form_dict = async_task_status.from_dict(async_task_status_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

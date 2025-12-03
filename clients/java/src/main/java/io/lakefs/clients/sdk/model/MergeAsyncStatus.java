@@ -66,10 +66,6 @@ public class MergeAsyncStatus {
   @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
   private OffsetDateTime updateTime;
 
-  public static final String SERIALIZED_NAME_RESULT = "result";
-  @SerializedName(SERIALIZED_NAME_RESULT)
-  private MergeResult result;
-
   public static final String SERIALIZED_NAME_ERROR = "error";
   @SerializedName(SERIALIZED_NAME_ERROR)
   private Error error;
@@ -77,6 +73,10 @@ public class MergeAsyncStatus {
   public static final String SERIALIZED_NAME_STATUS_CODE = "status_code";
   @SerializedName(SERIALIZED_NAME_STATUS_CODE)
   private Integer statusCode;
+
+  public static final String SERIALIZED_NAME_RESULT = "result";
+  @SerializedName(SERIALIZED_NAME_RESULT)
+  private MergeResult result;
 
   public MergeAsyncStatus() {
   }
@@ -88,7 +88,7 @@ public class MergeAsyncStatus {
   }
 
    /**
-   * the id of the async merge task
+   * the id of the async task
    * @return taskId
   **/
   @javax.annotation.Nonnull
@@ -144,27 +144,6 @@ public class MergeAsyncStatus {
   }
 
 
-  public MergeAsyncStatus result(MergeResult result) {
-    
-    this.result = result;
-    return this;
-  }
-
-   /**
-   * Get result
-   * @return result
-  **/
-  @javax.annotation.Nullable
-  public MergeResult getResult() {
-    return result;
-  }
-
-
-  public void setResult(MergeResult result) {
-    this.result = result;
-  }
-
-
   public MergeAsyncStatus error(Error error) {
     
     this.error = error;
@@ -204,6 +183,27 @@ public class MergeAsyncStatus {
 
   public void setStatusCode(Integer statusCode) {
     this.statusCode = statusCode;
+  }
+
+
+  public MergeAsyncStatus result(MergeResult result) {
+    
+    this.result = result;
+    return this;
+  }
+
+   /**
+   * Get result
+   * @return result
+  **/
+  @javax.annotation.Nullable
+  public MergeResult getResult() {
+    return result;
+  }
+
+
+  public void setResult(MergeResult result) {
+    this.result = result;
   }
 
   /**
@@ -264,15 +264,15 @@ public class MergeAsyncStatus {
     return Objects.equals(this.taskId, mergeAsyncStatus.taskId) &&
         Objects.equals(this.completed, mergeAsyncStatus.completed) &&
         Objects.equals(this.updateTime, mergeAsyncStatus.updateTime) &&
-        Objects.equals(this.result, mergeAsyncStatus.result) &&
         Objects.equals(this.error, mergeAsyncStatus.error) &&
-        Objects.equals(this.statusCode, mergeAsyncStatus.statusCode)&&
+        Objects.equals(this.statusCode, mergeAsyncStatus.statusCode) &&
+        Objects.equals(this.result, mergeAsyncStatus.result)&&
         Objects.equals(this.additionalProperties, mergeAsyncStatus.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, completed, updateTime, result, error, statusCode, additionalProperties);
+    return Objects.hash(taskId, completed, updateTime, error, statusCode, result, additionalProperties);
   }
 
   @Override
@@ -282,9 +282,9 @@ public class MergeAsyncStatus {
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
-    sb.append("    result: ").append(toIndentedString(result)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    statusCode: ").append(toIndentedString(statusCode)).append("\n");
+    sb.append("    result: ").append(toIndentedString(result)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -311,9 +311,9 @@ public class MergeAsyncStatus {
     openapiFields.add("task_id");
     openapiFields.add("completed");
     openapiFields.add("update_time");
-    openapiFields.add("result");
     openapiFields.add("error");
     openapiFields.add("status_code");
+    openapiFields.add("result");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -345,13 +345,13 @@ public class MergeAsyncStatus {
       if (!jsonObj.get("task_id").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `task_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("task_id").toString()));
       }
-      // validate the optional field `result`
-      if (jsonObj.get("result") != null && !jsonObj.get("result").isJsonNull()) {
-        MergeResult.validateJsonElement(jsonObj.get("result"));
-      }
       // validate the optional field `error`
       if (jsonObj.get("error") != null && !jsonObj.get("error").isJsonNull()) {
         Error.validateJsonElement(jsonObj.get("error"));
+      }
+      // validate the optional field `result`
+      if (jsonObj.get("result") != null && !jsonObj.get("result").isJsonNull()) {
+        MergeResult.validateJsonElement(jsonObj.get("result"));
       }
   }
 

@@ -55,6 +55,7 @@ from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipa
 from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials
 from lakefs_sdk.models.action_run import ActionRun
 from lakefs_sdk.models.action_run_list import ActionRunList
+from lakefs_sdk.models.async_task_status import AsyncTaskStatus
 from lakefs_sdk.models.auth_capabilities import AuthCapabilities
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.branch_creation import BranchCreation

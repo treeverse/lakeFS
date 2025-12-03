@@ -65,14 +65,6 @@ public class MergeAsyncStatusTest {
     }
 
     /**
-     * Test the property 'result'
-     */
-    @Test
-    public void resultTest() {
-        // TODO: test result
-    }
-
-    /**
      * Test the property 'error'
      */
     @Test
@@ -86,6 +78,14 @@ public class MergeAsyncStatusTest {
     @Test
     public void statusCodeTest() {
         // TODO: test statusCode
+    }
+
+    /**
+     * Test the property 'result'
+     */
+    @Test
+    public void resultTest() {
+        // TODO: test result
     }
 
 }

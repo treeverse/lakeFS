@@ -2937,7 +2937,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          description: Precondition Failed
         "429":
           description: too many requests
         default:
@@ -3891,7 +3891,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          description: Precondition Failed
         "429":
           description: too many requests
         default:
@@ -4056,7 +4056,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          description: Precondition Failed
         "429":
           description: too many requests
         "501":
@@ -4845,7 +4845,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          description: Precondition Failed
         "429":
           description: too many requests
         "501":
@@ -5966,7 +5966,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          description: Precondition Failed
         "429":
           description: too many requests
         "501":
@@ -6442,7 +6442,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          description: Precondition Failed
         "429":
           description: too many requests
         "501":
@@ -8987,7 +8987,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-      description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+      description: Precondition Failed
     BadRequest:
       content:
         application/json:
@@ -11120,19 +11120,10 @@ components:
       - task_id
       - update_time
       type: object
-    MergeAsyncStatus:
-      example:
-        result:
-          reference: reference
-        update_time: 2000-01-23T04:56:07.000+00:00
-        status_code: 0
-        task_id: task_id
-        completed: true
-        error:
-          message: message
+    AsyncTaskStatus:
       properties:
         task_id:
-          description: the id of the async merge task
+          description: the id of the async task
           type: string
         completed:
           description: true if the task has completed (either successfully or with
@@ -11142,8 +11133,6 @@ components:
           description: last time the task status was updated
           format: date-time
           type: string
-        result:
-          $ref: '#/components/schemas/MergeResult'
         error:
           $ref: '#/components/schemas/Error'
         status_code:
@@ -11156,53 +11145,20 @@ components:
       - task_id
       - update_time
       type: object
+    MergeAsyncStatus:
+      allOf:
+      - $ref: '#/components/schemas/AsyncTaskStatus'
+      - properties:
+          result:
+            $ref: '#/components/schemas/MergeResult'
+        type: object
     CommitAsyncStatus:
-      example:
-        result:
-          generation: 6
-          metadata:
-            key: metadata
-          committer: committer
-          id: id
-          creation_date: 0
-          meta_range_id: meta_range_id
-          message: message
-          version: 0
-          parents:
-          - parents
-          - parents
-        update_time: 2000-01-23T04:56:07.000+00:00
-        status_code: 0
-        task_id: task_id
-        completed: true
-        error:
-          message: message
-      properties:
-        task_id:
-          description: the id of the async commit task
-          type: string
-        completed:
-          description: true if the task has completed (either successfully or with
-            an error)
-          type: boolean
-        update_time:
-          description: last time the task status was updated
-          format: date-time
-          type: string
-        result:
-          $ref: '#/components/schemas/Commit'
-        error:
-          $ref: '#/components/schemas/Error'
-        status_code:
-          description: an http status code that correlates with the underlying error
-            if exists
-          format: int64
-          type: integer
-      required:
-      - completed
-      - task_id
-      - update_time
-      type: object
+      allOf:
+      - $ref: '#/components/schemas/AsyncTaskStatus'
+      - properties:
+          result:
+            $ref: '#/components/schemas/Commit'
+        type: object
     PrepareGCUncommittedRequest:
       example:
         continuation_token: continuation_token

@@ -3104,22 +3104,18 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func ConvertApiErrorToStatusCodeAndErrorMsg(logger logging.Logger, err error) (int, string, bool) {
-	var (
-		statusCode int
-		errorMsg   string
-	)
-	if handleApiErrorCallback(logger, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-		statusCode = code
-		if v == nil {
-			errorMsg = ""
-		} else {
-			errorMsg = fmt.Sprintf("%v", v)
+// ErrorToStatusAndMsg converts errors to HTTP status codes and messages for non-HTTP contexts.
+// This function is used as a callback by the catalog layer to classify errors in background tasks
+// (such as async commits and merges) before storing them in task status records. It maps domain-specific
+// errors to appropriate HTTP status codes following the same classification rules as HTTP API handlers.
+func ErrorToStatusAndMsg(logger logging.Logger, err error) (status int, msg string, ok bool) {
+	ok = handleApiErrorCallback(logger, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		status = code
+		if v != nil {
+			msg = fmt.Sprintf("%v", v)
 		}
-	}) {
-		return statusCode, errorMsg, true
-	}
-	return 0, "", false
+	})
+	return status, msg, ok
 }
 
 // handleApiErrorCallback is a standalone function that handles API errors and maps them to appropriate HTTP status codes.
@@ -3535,8 +3531,10 @@ func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, r
 	}
 
 	resp := apigen.CommitAsyncStatus{
-		TaskId:    status.Task.Id,
-		Completed: status.Task.Done,
+		AsyncTaskStatus: apigen.AsyncTaskStatus{
+			TaskId:    status.Task.Id,
+			Completed: status.Task.Done,
+		},
 	}
 	if status.Task.UpdatedAt != nil {
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
@@ -5562,22 +5560,22 @@ func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.R
 	}
 
 	resp := apigen.MergeAsyncStatus{
-		TaskId:    status.Task.Id,
-		Completed: status.Task.Done,
+		AsyncTaskStatus: apigen.AsyncTaskStatus{
+			TaskId:    status.Task.Id,
+			Completed: status.Task.Done,
+		},
 	}
 	if status.Task.UpdatedAt != nil {
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
-	}
-
-	if status.Task.StatusCode != 0 {
-		statusCode := status.Task.StatusCode
-		resp.StatusCode = &statusCode
 	}
 
 	if status.Task.ErrorMsg != "" {
 		resp.Error = &apigen.Error{
 			Message: status.Task.ErrorMsg,
 		}
+
+		statusCode := status.Task.StatusCode
+		resp.StatusCode = &statusCode
 	}
 
 	if status.Info != nil {

@@ -160,11 +160,11 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		catalogConfig := catalog.Config{
-			Config:            cfg,
-			KVStore:           kvStore,
-			PathProvider:      upload.DefaultPathProvider,
-			ConflictResolvers: catalogfactory.BuildConflictResolvers(cfg, blockStore),
-			ApiErrorCallback:  api.ConvertApiErrorToStatusCodeAndErrorMsg,
+			Config:                  cfg,
+			KVStore:                 kvStore,
+			PathProvider:            upload.DefaultPathProvider,
+			ConflictResolvers:       catalogfactory.BuildConflictResolvers(cfg, blockStore),
+			ErrorToStatusCodeAndMsg: api.ErrorToStatusAndMsg,
 		}
 
 		c, err := catalog.New(ctx, catalogConfig)
@@ -173,7 +173,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		asyncOperationsHandler := catalogfactory.BuildExtendedOperations(c)
+		catalogExtendedOps := catalogfactory.BuildExtendedOperations(c)
 
 		// Setup usage reporter - it is no longer possible to disable it
 		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)
@@ -252,7 +252,7 @@ var runCmd = &cobra.Command{
 			migrator,
 			bufferedCollector,
 			actionsService,
-			asyncOperationsHandler,
+			catalogExtendedOps,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
 			baseCfg.Gateways.S3.DomainNames,

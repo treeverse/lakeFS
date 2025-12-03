@@ -5,12 +5,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**task_id** | **str** | the id of the async commit task | 
+**task_id** | **str** | the id of the async task | 
 **completed** | **bool** | true if the task has completed (either successfully or with an error) | 
 **update_time** | **datetime** | last time the task status was updated | 
-**result** | [**Commit**](Commit.md) |  | [optional] 
 **error** | [**Error**](Error.md) |  | [optional] 
 **status_code** | **int** | an http status code that correlates with the underlying error if exists | [optional] 
+**result** | [**Commit**](Commit.md) |  | [optional] 
 
 ## Example
 

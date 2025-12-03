@@ -1469,7 +1469,7 @@ void (empty response body)
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
-**412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+**412** | Precondition Failed |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

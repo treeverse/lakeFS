@@ -383,7 +383,7 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
-**412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+**412** | Precondition Failed |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |
@@ -2106,7 +2106,7 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
-**412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+**412** | Precondition Failed |  -  |
 **429** | too many requests |  -  |
 **501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |

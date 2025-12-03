@@ -8,6 +8,8 @@ pub mod action_run;
 pub use self::action_run::ActionRun;
 pub mod action_run_list;
 pub use self::action_run_list::ActionRunList;
+pub mod async_task_status;
+pub use self::async_task_status::AsyncTaskStatus;
 pub mod auth_capabilities;
 pub use self::auth_capabilities::AuthCapabilities;
 pub mod authentication_token;

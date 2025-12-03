@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -235,28 +234,27 @@ type Config struct {
 	SettingsManagerOption settings.ManagerOption
 	PathProvider          *upload.PathPartitionProvider
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
-	ConflictResolvers []graveler.ConflictResolver
-	ApiErrorCallback  ApiErrorCallback
+	ConflictResolvers       []graveler.ConflictResolver
+	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 }
 
-// ApiErrorCallback is a callback function used to classify errors and convert them to status codes and error messages.
-type ApiErrorCallback func(logger logging.Logger, err error) (int, string, bool)
+type ErrorToStatusCodeAndMsg func(logger logging.Logger, err error) (status int, msg string, ok bool)
 
 type Catalog struct {
-	BlockAdapter          block.Adapter
-	Store                 Store
-	managers              []io.Closer
-	workPool              pond.Pool
-	PathProvider          *upload.PathPartitionProvider
-	BackgroundLimiter     ratelimit.Limiter
-	KVStore               kv.Store
-	KVStoreLimited        kv.Store
-	addressProvider       *ident.HexAddressProvider
-	deleteSensor          *graveler.DeleteSensor
-	UGCPrepareMaxFileSize int64
-	UGCPrepareInterval    time.Duration
-	signingKey            config.SecureString
-	apiErrorCallback      ApiErrorCallback
+	BlockAdapter            block.Adapter
+	Store                   Store
+	managers                []io.Closer
+	workPool                pond.Pool
+	PathProvider            *upload.PathPartitionProvider
+	BackgroundLimiter       ratelimit.Limiter
+	KVStore                 kv.Store
+	KVStoreLimited          kv.Store
+	addressProvider         *ident.HexAddressProvider
+	deleteSensor            *graveler.DeleteSensor
+	UGCPrepareMaxFileSize   int64
+	UGCPrepareInterval      time.Duration
+	signingKey              config.SecureString
+	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 }
 
 const (
@@ -321,19 +319,6 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 	return ref.BranchApproximateOwnershipParams{
 		AcquireInterval: cfg.Acquire,
 		RefreshInterval: cfg.Refresh,
-	}
-}
-
-func getApiErrorCallback(cfg Config) ApiErrorCallback {
-	if cfg.ApiErrorCallback != nil {
-		return cfg.ApiErrorCallback
-	}
-	// Default implementation
-	return func(logger logging.Logger, err error) (int, string, bool) {
-		if err == nil {
-			return 0, "", false
-		}
-		return http.StatusInternalServerError, err.Error(), true
 	}
 }
 
@@ -436,22 +421,33 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		WorkPool:                 workPool,
 	})
 	closers = append(closers, &ctxCloser{cancelFn})
+
+	errToStatusFunc := cfg.ErrorToStatusCodeAndMsg
+	if errToStatusFunc == nil {
+		// Default implementation (needed in case a service that is not the controller initializes it)
+		errToStatusFunc = func(logger logging.Logger, err error) (status int, msg string, ok bool) {
+			if err == nil {
+				return 0, "", false
+			}
+			return 0, err.Error(), true
+		}
+	}
+
 	return &Catalog{
-		BlockAdapter:          tierFSParams.Adapter,
-		Store:                 gStore,
-		UGCPrepareMaxFileSize: baseCfg.UGC.PrepareMaxFileSize,
-		UGCPrepareInterval:    baseCfg.UGC.PrepareInterval,
-		PathProvider:          cfg.PathProvider,
-		BackgroundLimiter:     limiter,
-		workPool:              workPool,
-		KVStore:               cfg.KVStore,
-		managers:              closers,
-		KVStoreLimited:        storeLimiter,
-		addressProvider:       addressProvider,
-		deleteSensor:          deleteSensor,
-		signingKey:            cfg.Config.StorageConfig().SigningKey(),
-		// Initiate the API callback function
-		apiErrorCallback: getApiErrorCallback(cfg),
+		BlockAdapter:            tierFSParams.Adapter,
+		Store:                   gStore,
+		UGCPrepareMaxFileSize:   baseCfg.UGC.PrepareMaxFileSize,
+		UGCPrepareInterval:      baseCfg.UGC.PrepareInterval,
+		PathProvider:            cfg.PathProvider,
+		BackgroundLimiter:       limiter,
+		workPool:                workPool,
+		KVStore:                 cfg.KVStore,
+		managers:                closers,
+		KVStoreLimited:          storeLimiter,
+		addressProvider:         addressProvider,
+		deleteSensor:            deleteSensor,
+		signingKey:              cfg.Config.StorageConfig().SigningKey(),
+		errorToStatusCodeAndMsg: errToStatusFunc,
 	}, nil
 }
 
@@ -2265,11 +2261,13 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			if err != nil {
 				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
 				task.Done = true
-				// Classify the error using the API callback (ConvertApiErrorToStatusCodeAndErrorMsg from the controller)
-				// before the original error is lost when stored in protobuf, and populate the task's error details.
-				statusCode, errorMsg, _ := c.apiErrorCallback(log, err)
-				task.StatusCode = int32(statusCode) //nolint:gosec
-				task.ErrorMsg = errorMsg
+				// Convert the error to status code and error message before the original error is lost when stored in
+				// protobuf, and populate the task's error details.
+				statusCode, errorMsg, ok := c.errorToStatusCodeAndMsg(log, err)
+				if ok {
+					task.StatusCode = int32(statusCode) //nolint:gosec
+					task.ErrorMsg = errorMsg
+				}
 			} else if stepIdx == len(steps)-1 {
 				task.Done = true
 			}

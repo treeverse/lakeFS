@@ -19,7 +19,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.Commit;
 import io.lakefs.clients.sdk.model.Error;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -50,10 +49,10 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * CommitAsyncStatus
+ * AsyncTaskStatus
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class CommitAsyncStatus {
+public class AsyncTaskStatus {
   public static final String SERIALIZED_NAME_TASK_ID = "task_id";
   @SerializedName(SERIALIZED_NAME_TASK_ID)
   private String taskId;
@@ -74,14 +73,10 @@ public class CommitAsyncStatus {
   @SerializedName(SERIALIZED_NAME_STATUS_CODE)
   private Integer statusCode;
 
-  public static final String SERIALIZED_NAME_RESULT = "result";
-  @SerializedName(SERIALIZED_NAME_RESULT)
-  private Commit result;
-
-  public CommitAsyncStatus() {
+  public AsyncTaskStatus() {
   }
 
-  public CommitAsyncStatus taskId(String taskId) {
+  public AsyncTaskStatus taskId(String taskId) {
     
     this.taskId = taskId;
     return this;
@@ -102,7 +97,7 @@ public class CommitAsyncStatus {
   }
 
 
-  public CommitAsyncStatus completed(Boolean completed) {
+  public AsyncTaskStatus completed(Boolean completed) {
     
     this.completed = completed;
     return this;
@@ -123,7 +118,7 @@ public class CommitAsyncStatus {
   }
 
 
-  public CommitAsyncStatus updateTime(OffsetDateTime updateTime) {
+  public AsyncTaskStatus updateTime(OffsetDateTime updateTime) {
     
     this.updateTime = updateTime;
     return this;
@@ -144,7 +139,7 @@ public class CommitAsyncStatus {
   }
 
 
-  public CommitAsyncStatus error(Error error) {
+  public AsyncTaskStatus error(Error error) {
     
     this.error = error;
     return this;
@@ -165,7 +160,7 @@ public class CommitAsyncStatus {
   }
 
 
-  public CommitAsyncStatus statusCode(Integer statusCode) {
+  public AsyncTaskStatus statusCode(Integer statusCode) {
     
     this.statusCode = statusCode;
     return this;
@@ -185,27 +180,6 @@ public class CommitAsyncStatus {
     this.statusCode = statusCode;
   }
 
-
-  public CommitAsyncStatus result(Commit result) {
-    
-    this.result = result;
-    return this;
-  }
-
-   /**
-   * Get result
-   * @return result
-  **/
-  @javax.annotation.Nullable
-  public Commit getResult() {
-    return result;
-  }
-
-
-  public void setResult(Commit result) {
-    this.result = result;
-  }
-
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -219,9 +193,9 @@ public class CommitAsyncStatus {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the CommitAsyncStatus instance itself
+   * @return the AsyncTaskStatus instance itself
    */
-  public CommitAsyncStatus putAdditionalProperty(String key, Object value) {
+  public AsyncTaskStatus putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -260,31 +234,29 @@ public class CommitAsyncStatus {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CommitAsyncStatus commitAsyncStatus = (CommitAsyncStatus) o;
-    return Objects.equals(this.taskId, commitAsyncStatus.taskId) &&
-        Objects.equals(this.completed, commitAsyncStatus.completed) &&
-        Objects.equals(this.updateTime, commitAsyncStatus.updateTime) &&
-        Objects.equals(this.error, commitAsyncStatus.error) &&
-        Objects.equals(this.statusCode, commitAsyncStatus.statusCode) &&
-        Objects.equals(this.result, commitAsyncStatus.result)&&
-        Objects.equals(this.additionalProperties, commitAsyncStatus.additionalProperties);
+    AsyncTaskStatus asyncTaskStatus = (AsyncTaskStatus) o;
+    return Objects.equals(this.taskId, asyncTaskStatus.taskId) &&
+        Objects.equals(this.completed, asyncTaskStatus.completed) &&
+        Objects.equals(this.updateTime, asyncTaskStatus.updateTime) &&
+        Objects.equals(this.error, asyncTaskStatus.error) &&
+        Objects.equals(this.statusCode, asyncTaskStatus.statusCode)&&
+        Objects.equals(this.additionalProperties, asyncTaskStatus.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(taskId, completed, updateTime, error, statusCode, result, additionalProperties);
+    return Objects.hash(taskId, completed, updateTime, error, statusCode, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CommitAsyncStatus {\n");
+    sb.append("class AsyncTaskStatus {\n");
     sb.append("    taskId: ").append(toIndentedString(taskId)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    statusCode: ").append(toIndentedString(statusCode)).append("\n");
-    sb.append("    result: ").append(toIndentedString(result)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -313,7 +285,6 @@ public class CommitAsyncStatus {
     openapiFields.add("update_time");
     openapiFields.add("error");
     openapiFields.add("status_code");
-    openapiFields.add("result");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -326,17 +297,17 @@ public class CommitAsyncStatus {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to CommitAsyncStatus
+  * @throws IOException if the JSON Element is invalid with respect to AsyncTaskStatus
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!CommitAsyncStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in CommitAsyncStatus is not found in the empty JSON string", CommitAsyncStatus.openapiRequiredFields.toString()));
+        if (!AsyncTaskStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in AsyncTaskStatus is not found in the empty JSON string", AsyncTaskStatus.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : CommitAsyncStatus.openapiRequiredFields) {
+      for (String requiredField : AsyncTaskStatus.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -349,26 +320,22 @@ public class CommitAsyncStatus {
       if (jsonObj.get("error") != null && !jsonObj.get("error").isJsonNull()) {
         Error.validateJsonElement(jsonObj.get("error"));
       }
-      // validate the optional field `result`
-      if (jsonObj.get("result") != null && !jsonObj.get("result").isJsonNull()) {
-        Commit.validateJsonElement(jsonObj.get("result"));
-      }
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!CommitAsyncStatus.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'CommitAsyncStatus' and its subtypes
+       if (!AsyncTaskStatus.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'AsyncTaskStatus' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<CommitAsyncStatus> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(CommitAsyncStatus.class));
+       final TypeAdapter<AsyncTaskStatus> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(AsyncTaskStatus.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<CommitAsyncStatus>() {
+       return (TypeAdapter<T>) new TypeAdapter<AsyncTaskStatus>() {
            @Override
-           public void write(JsonWriter out, CommitAsyncStatus value) throws IOException {
+           public void write(JsonWriter out, AsyncTaskStatus value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -391,12 +358,12 @@ public class CommitAsyncStatus {
            }
 
            @Override
-           public CommitAsyncStatus read(JsonReader in) throws IOException {
+           public AsyncTaskStatus read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             CommitAsyncStatus instance = thisAdapter.fromJsonTree(jsonObj);
+             AsyncTaskStatus instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -423,18 +390,18 @@ public class CommitAsyncStatus {
   }
 
  /**
-  * Create an instance of CommitAsyncStatus given an JSON string
+  * Create an instance of AsyncTaskStatus given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of CommitAsyncStatus
-  * @throws IOException if the JSON string is invalid with respect to CommitAsyncStatus
+  * @return An instance of AsyncTaskStatus
+  * @throws IOException if the JSON string is invalid with respect to AsyncTaskStatus
   */
-  public static CommitAsyncStatus fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, CommitAsyncStatus.class);
+  public static AsyncTaskStatus fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, AsyncTaskStatus.class);
   }
 
  /**
-  * Convert an instance of CommitAsyncStatus to an JSON string
+  * Convert an instance of AsyncTaskStatus to an JSON string
   *
   * @return JSON string
   */

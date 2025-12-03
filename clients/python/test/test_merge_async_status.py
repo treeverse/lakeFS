@@ -40,11 +40,11 @@ class TestMergeAsyncStatus(unittest.TestCase):
                 task_id = '',
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
-                result = lakefs_sdk.models.merge_result.MergeResult(
-                    reference = '', ),
                 error = lakefs_sdk.models.error.Error(
                     message = '', ),
-                status_code = 56
+                status_code = 56,
+                result = lakefs_sdk.models.merge_result.MergeResult(
+                    reference = '', )
             )
         else:
             return MergeAsyncStatus(

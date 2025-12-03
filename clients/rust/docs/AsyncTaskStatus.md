@@ -1,4 +1,4 @@
-# CommitAsyncStatus
+# AsyncTaskStatus
 
 ## Properties
 
@@ -9,7 +9,6 @@ Name | Type | Description | Notes
 **update_time** | **String** | last time the task status was updated | 
 **error** | Option<[**models::Error**](Error.md)> |  | [optional]
 **status_code** | Option<**i32**> | an http status code that correlates with the underlying error if exists | [optional]
-**result** | Option<[**models::Commit**](Commit.md)> |  | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

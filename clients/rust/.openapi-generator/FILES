@@ -9,6 +9,7 @@ docs/Acl.md
 docs/ActionRun.md
 docs/ActionRunList.md
 docs/ActionsApi.md
+docs/AsyncTaskStatus.md
 docs/AuthApi.md
 docs/AuthCapabilities.md
 docs/AuthenticationToken.md
@@ -171,6 +172,7 @@ src/models/access_key_credentials.rs
 src/models/acl.rs
 src/models/action_run.rs
 src/models/action_run_list.rs
+src/models/async_task_status.rs
 src/models/auth_capabilities.rs
 src/models/authentication_token.rs
 src/models/branch_creation.rs

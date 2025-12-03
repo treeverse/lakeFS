@@ -1,6 +1,6 @@
 
 
-# MergeAsyncStatus
+# AsyncTaskStatus
 
 
 ## Properties
@@ -12,7 +12,6 @@
 |**updateTime** | **OffsetDateTime** | last time the task status was updated |  |
 |**error** | [**Error**](Error.md) |  |  [optional] |
 |**statusCode** | **Integer** | an http status code that correlates with the underlying error if exists |  [optional] |
-|**result** | [**MergeResult**](MergeResult.md) |  |  [optional] |
 
 
 

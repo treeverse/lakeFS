@@ -216,7 +216,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Internal Server Error |  -  |
 | **409** | conflict with a commit, try here |  -  |
-| **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+| **412** | Precondition Failed |  -  |
 | **429** | too many requests |  -  |
 | **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
