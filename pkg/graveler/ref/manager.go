@@ -666,7 +666,7 @@ func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord
 		Start:       from,
 		FirstParent: firstParent,
 		Since:       since,
-		Manager:     m,
+		Getter:      m,
 	}), nil
 }
 

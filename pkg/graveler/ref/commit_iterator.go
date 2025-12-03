@@ -66,7 +66,7 @@ type CommitIteratorConfig struct {
 	Repository  *graveler.RepositoryRecord
 	Start       graveler.CommitID
 	FirstParent bool
-	Manager     CommitGetter
+	Getter      CommitGetter
 	Since       *time.Time
 }
 
@@ -79,7 +79,7 @@ func NewCommitIterator(ctx context.Context, config *CommitIteratorConfig) *Commi
 		start:       config.Start,
 		queue:       make(commitsPriorityQueue, 0),
 		visit:       make(map[graveler.CommitID]struct{}),
-		manager:     config.Manager,
+		manager:     config.Getter,
 		firstParent: config.FirstParent,
 		since:       config.Since,
 	}

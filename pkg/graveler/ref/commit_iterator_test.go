@@ -73,7 +73,7 @@ func TestCommitIterator(t *testing.T) {
 				Repository:  &graveler.RepositoryRecord{RepositoryID: "abc"},
 				Start:       tc.Start,
 				FirstParent: tc.FirstParent,
-				Manager:     commitGetter,
+				Getter:      commitGetter,
 				Since:       nil,
 			}
 			it := ref.NewCommitIterator(ctx, iteratorConfig)
