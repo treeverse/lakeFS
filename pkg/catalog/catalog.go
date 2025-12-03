@@ -1363,7 +1363,6 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	}); err != nil {
 		return nil, err
 	}
-	time.Sleep(5 * time.Minute)
 
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -2773,7 +2772,6 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
-
 	checkAndMarkTaskExpired(statusMsg, expiryDuration)
 	return nil
 }
