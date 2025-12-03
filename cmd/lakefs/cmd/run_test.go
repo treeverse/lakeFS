@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	authfactory "github.com/treeverse/lakefs/pkg/hooks/auth"
+	configfactory "github.com/treeverse/lakefs/pkg/hooks/config"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"

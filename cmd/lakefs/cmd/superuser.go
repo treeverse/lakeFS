@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
+	authfactory "github.com/treeverse/lakefs/pkg/hooks/auth"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	blockfactory "github.com/treeverse/lakefs/pkg/hooks/block"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"

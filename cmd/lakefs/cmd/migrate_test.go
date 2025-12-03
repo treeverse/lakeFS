@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/cmd/lakefs/cmd"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	configfactory "github.com/treeverse/lakefs/pkg/hooks/config"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"

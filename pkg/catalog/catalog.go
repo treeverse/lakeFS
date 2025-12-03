@@ -23,7 +23,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
-	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	blockfactory "github.com/treeverse/lakefs/pkg/hooks/block"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"

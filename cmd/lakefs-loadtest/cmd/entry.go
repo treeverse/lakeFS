@@ -13,7 +13,7 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	configfactory "github.com/treeverse/lakefs/pkg/hooks/config"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"

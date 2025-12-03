@@ -27,7 +27,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
+	apifactory "github.com/treeverse/lakefs/pkg/hooks/api"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"

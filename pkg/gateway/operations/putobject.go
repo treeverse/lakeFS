@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
+	apifactory "github.com/treeverse/lakefs/pkg/hooks/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"

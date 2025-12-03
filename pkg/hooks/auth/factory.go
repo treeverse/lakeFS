@@ -11,6 +11,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+// NewAuthService returns the OSS auth service or an enterprise override.
 func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) (auth.Service, error) {
 	if hook := entensionhooks.Get().AuthService; hook != nil {
 		return hook.New(ctx, cfg, logger, kvStore, metadataManager)

@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
+// ServiceDependencies contains all the dependencies required for service initialization.
 type ServiceDependencies struct {
 	Config                config.Config
 	AuthService           auth.Service

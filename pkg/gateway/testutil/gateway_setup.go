@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
+	configfactory "github.com/treeverse/lakefs/pkg/hooks/config"
+	gatewayfactory "github.com/treeverse/lakefs/pkg/hooks/gateway"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
