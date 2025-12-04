@@ -57,10 +57,10 @@ const PullWidget = ({repo, pull}) => {
                 </h6>
                 <small className="pull-description">{getDescription()}</small>
             </div>
-            <div className="float-end mt-2">
-                <div className="btn btn-light btn-sm">{pull.destination_branch}</div>
-                <ArrowLeftIcon className="m-1" size="small" verticalAlign="middle"/>
-                <div className="btn btn-light btn-sm">{pull.source_branch}</div>
+            <div className="float-end mt-2" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', maxWidth: '50%' }}>
+                <div className="btn btn-light btn-sm" style={{ maxWidth: '45%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pull.destination_branch}>{pull.destination_branch}</div>
+                <ArrowLeftIcon className="m-1" size="small" verticalAlign="middle" style={{ flexShrink: 0 }}/>
+                <div className="btn btn-light btn-sm" style={{ maxWidth: '45%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pull.source_branch}>{pull.source_branch}</div>
             </div>
         </ListGroup.Item>
     );

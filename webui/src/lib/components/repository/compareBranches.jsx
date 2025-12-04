@@ -87,9 +87,25 @@ const BranchChangesList = (
     if (error) return <AlertError error={error}/>;
 
     const changesTreeMessage =
-        <p>
-            Showing changes between <strong>{reference.id}</strong> {""}
-            and <strong>{compareReference.id}</strong>
+        <p style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', margin: 0, minWidth: 0, maxWidth: '100%' }}>
+            <span style={{ flexShrink: 0 }}>Showing changes between</span>
+            <strong style={{
+                maxWidth: '200px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                flexShrink: 1
+            }} title={reference.id}>{reference.id}</strong>
+            <span style={{ flexShrink: 0 }}>and</span>
+            <strong style={{
+                maxWidth: '200px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                flexShrink: 1
+            }} title={compareReference.id}>{compareReference.id}</strong>
         </p>
 
     if (compareReference.id === reference.id) {
