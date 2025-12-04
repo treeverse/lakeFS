@@ -75,7 +75,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(ctx, statsCollector, p, options.S3...)
+		return BuildS3Adapter(ctx, statsCollector, p, options.S3...)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(ctx), nil
 	case block.BlockstoreTypeTransient:
@@ -126,7 +126,7 @@ func BuildS3Client(ctx context.Context, params params.S3) (*s3.Client, error) {
 	return client, nil
 }
 
-func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3, adapterOpts ...s3a.AdapterOption) (*s3a.Adapter, error) {
+func BuildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3, adapterOpts ...s3a.AdapterOption) (*s3a.Adapter, error) {
 	opts := []s3a.AdapterOption{
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),

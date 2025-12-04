@@ -163,6 +163,7 @@ type Properties struct {
 	StorageClass *string
 	LastModified time.Time
 	ETag         string
+	Size         int64
 }
 
 type BlockstoreMetadata struct {
