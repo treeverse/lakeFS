@@ -793,6 +793,8 @@ type VersionController interface {
 
 	// DeleteExpiredImports deletes expired imports on a given repository
 	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
+
+	GetAllCommits(ctx context.Context, repository *RepositoryRecord) (map[CommitID]*Commit, error)
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -1205,6 +1207,20 @@ type Graveler struct {
 	logger              logging.Logger
 	BranchUpdateBackOff backoff.BackOff
 	deleteSensor        *DeleteSensor
+}
+
+func (g *Graveler) GetAllCommits(ctx context.Context, repository *RepositoryRecord) (map[CommitID]*Commit, error) {
+	it, err := g.RefManager.ListCommits(ctx, repository)
+	if err != nil {
+		return nil, err
+	}
+	defer it.Close()
+	commits := map[CommitID]*Commit{}
+	for it.Next() {
+		commit := it.Value()
+		commits[commit.CommitID] = commit.Commit
+	}
+	return commits, nil
 }
 
 func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager, deleteSensor *DeleteSensor) *Graveler {
