@@ -30,6 +30,7 @@ Class | Method | HTTP request | Description
 *ActionsApi* | [**get_run_hook_output**](docs/ActionsApi.md#get_run_hook_output) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output | get run hook output
 *ActionsApi* | [**list_repository_runs**](docs/ActionsApi.md#list_repository_runs) | **GET** /repositories/{repository}/actions/runs | list runs
 *ActionsApi* | [**list_run_hooks**](docs/ActionsApi.md#list_run_hooks) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks | list run hooks
+*ActionsApi* | [**trigger_action**](docs/ActionsApi.md#trigger_action) | **POST** /repositories/{repository}/refs/{ref}/actions/{action}/triggers | manually trigger an action
 *AuthApi* | [**add_group_membership**](docs/AuthApi.md#add_group_membership) | **PUT** /auth/groups/{groupId}/members/{userId} | add group membership
 *AuthApi* | [**attach_policy_to_group**](docs/AuthApi.md#attach_policy_to_group) | **PUT** /auth/groups/{groupId}/policies/{policyId} | attach policy to group
 *AuthApi* | [**attach_policy_to_user**](docs/AuthApi.md#attach_policy_to_user) | **PUT** /auth/users/{userId}/policies/{policyId} | attach policy to user
