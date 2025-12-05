@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 )
@@ -15,7 +14,6 @@ import (
 func AdapterBasicObjectTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })
-	t.Run("Adapter_Remove", func(t *testing.T) { testAdapterRemove(t, adapter, storageNamespace) })
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
 }
 
@@ -87,83 +85,6 @@ func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace strin
 	got, err := io.ReadAll(reader)
 	require.NoError(t, err)
 	require.Equal(t, contents, string(got))
-}
-
-// Parameterized test to test valid and invalid cases for Removing an object via the adaptor
-func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace string) {
-	ctx := context.Background()
-	const content = "Content used for testing"
-	tests := []struct {
-		name              string
-		additionalObjects []string
-		path              string
-		wantErr           bool
-		wantTree          []string
-	}{
-		{
-			name:     "test_single",
-			path:     "README",
-			wantErr:  false,
-			wantTree: []string{},
-		},
-
-		{
-			name:     "test_under_folder",
-			path:     "src/tools.go",
-			wantErr:  false,
-			wantTree: []string{},
-		},
-		{
-			name:     "test_under_multiple_folders",
-			path:     "a/b/c/d.txt",
-			wantErr:  false,
-			wantTree: []string{},
-		},
-		{
-			name:              "file_in_the_way",
-			path:              "a/b/c/d.txt",
-			additionalObjects: []string{"a/b/blocker.txt"},
-			wantErr:           false,
-			wantTree:          []string{"/a/b/blocker.txt"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// setup env
-			envObjects := tt.additionalObjects
-			envObjects = append(envObjects, tt.path)
-			for _, p := range envObjects {
-				obj := block.ObjectPointer{
-					StorageID:        "",
-					StorageNamespace: storageNamespace,
-					Identifier:       tt.name + "/" + p,
-					IdentifierType:   block.IdentifierTypeRelative,
-				}
-				_, err := adapter.Put(ctx, obj, int64(len(content)), strings.NewReader(content), block.PutOpts{})
-				require.NoError(t, err)
-			}
-
-			// test Remove
-			obj := block.ObjectPointer{
-				StorageID:        "",
-				StorageNamespace: storageNamespace,
-				Identifier:       tt.name + "/" + tt.path,
-				IdentifierType:   block.IdentifierTypeRelative,
-			}
-			if err := adapter.Remove(ctx, obj); (err != nil) != tt.wantErr {
-				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			qk, err := adapter.ResolveNamespace("", storageNamespace, tt.name, block.IdentifierTypeRelative)
-			require.NoError(t, err)
-
-			tree := dumpPathTree(t, ctx, adapter, qk)
-			if diff := deep.Equal(tt.wantTree, tree); diff != nil {
-				t.Errorf("Remove() tree diff = %s", diff)
-			}
-		})
-	}
 }
 
 // Parameterized test of the object Exists method of the Storage adapter

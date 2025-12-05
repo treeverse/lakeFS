@@ -170,43 +170,6 @@ func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	return &block.PutResponse{}, nil
 }
 
-func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
-	p, err := l.extractParamsFromObj(obj)
-	if err != nil {
-		return err
-	}
-	p = filepath.Clean(p)
-	err = os.Remove(p)
-	if err != nil {
-		return err
-	}
-	if l.removeEmptyDir {
-		dir := filepath.Dir(p)
-		repoRoot := obj.StorageNamespace[len(DefaultNamespacePrefix):]
-		removeEmptyDirUntil(dir, path.Join(l.path, repoRoot))
-	}
-	return nil
-}
-
-func removeEmptyDirUntil(dir string, stopAt string) {
-	if stopAt == "" {
-		return
-	}
-	if !strings.HasSuffix(stopAt, "/") {
-		stopAt += "/"
-	}
-	for strings.HasPrefix(dir, stopAt) && dir != stopAt {
-		err := os.Remove(dir)
-		if err != nil {
-			break
-		}
-		dir = filepath.Dir(dir)
-		if dir == "/" {
-			break
-		}
-	}
-}
-
 func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	source, err := l.extractParamsFromObj(sourceObj)
 	if err != nil {

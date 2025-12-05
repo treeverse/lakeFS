@@ -63,10 +63,6 @@ func (a *Adapter) GetProperties(_ context.Context, _ block.ObjectPointer) (block
 	return block.Properties{}, nil
 }
 
-func (a *Adapter) Remove(_ context.Context, _ block.ObjectPointer) error {
-	return nil
-}
-
 func (a *Adapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return nil
 }
