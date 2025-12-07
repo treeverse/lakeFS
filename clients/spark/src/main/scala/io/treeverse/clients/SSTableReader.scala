@@ -89,7 +89,7 @@ object SSTableReader {
   }
 }
 
-class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] (
+class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val reader: BlockReadable,
     val companion: GeneratedMessageCompanion[Proto],
     val closeAction: () => Unit = () => ()
@@ -97,16 +97,21 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] (
   private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   def this(file: java.io.File, companion: GeneratedMessageCompanion[Proto], own: Boolean) = {
-    this(new BlockReadableFile(new java.io.RandomAccessFile(file, "r")), companion, () => {
-      if (own) {
-        try {
-          file.delete()
-        } catch {
-          case e: Exception =>
-            LoggerFactory.getLogger(classOf[SSTableReader[Proto]].toString).warn(s"delete owned file ${file.getName} (keep going): $e")
-        }
-      }
-    })
+    this(new BlockReadableFile(new java.io.RandomAccessFile(file, "r")),
+         companion,
+         () => {
+           if (own) {
+             try {
+               file.delete()
+             } catch {
+               case e: Exception =>
+                 LoggerFactory
+                   .getLogger(classOf[SSTableReader[Proto]].toString)
+                   .warn(s"delete owned file ${file.getName} (keep going): $e")
+             }
+           }
+         }
+        )
   }
 
   def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto], own: Boolean) =

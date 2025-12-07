@@ -9,7 +9,6 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapred.SplitLocationInfo
 import org.apache.hadoop.mapreduce._
-import org.apache.spark.TaskContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import scalapb.GeneratedMessage

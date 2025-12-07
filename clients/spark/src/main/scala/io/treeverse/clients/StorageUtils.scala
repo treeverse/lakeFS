@@ -9,10 +9,6 @@ import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
 import org.slf4j.{Logger, LoggerFactory}
 
-
-
-
-
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -20,8 +16,6 @@ object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
   val StorageTypeGCS = "gs"
-
-  val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   /** Constructs object paths in a storage namespace.
    *
@@ -167,7 +161,6 @@ object StorageUtils {
     val GCSMaxBulkSize =
       500 // 1000 is the max size, 500 is the recommended size to avoid timeouts or hitting HTTP size limits
   }
-
 
 }
 
