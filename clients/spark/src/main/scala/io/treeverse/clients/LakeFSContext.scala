@@ -2,7 +2,6 @@ package io.treeverse.clients
 
 import io.treeverse.lakefs.catalog.Entry
 import org.apache.commons.lang3.StringUtils
-import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapred.InvalidJobConfException
 import org.apache.spark.{SparkContext, TaskContext}
 import org.apache.spark.rdd.RDD
@@ -188,20 +187,15 @@ object LakeFSContext {
       val apiClient = ApiClient.get(apiConf)
       val conf = serializedConf.value
       ranges.flatMap((range: Range) => {
-        val path = new Path(apiClient.getRangeURL(repoName, range.id))
-        val fs = path.getFileSystem(conf)
-        val localFile = StorageUtils.createTempFile(tmpDir, "lakefs.", ".range")
-
-        fs.copyToLocalFile(false, path, new Path(localFile.getAbsolutePath), true)
+        val rangeURL = apiClient.getRangeURL(repoName, range.id)
+        val sstableReader = SSTableReader.forRange(conf, rangeURL)
         val companion = Entry.messageCompanion
-        // localFile owned by sstableReader which will delete it when closed.
-        val sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
         Option(TaskContext.get()).foreach(_.addTaskCompletionListener((tc: TaskContext) => {
           try {
             sstableReader.close()
           } catch {
             case e: Exception => {
-              logger.warn(s"close SSTable reader for $localFile (keep going): $e")
+              logger.warn(s"close SSTable reader for rangeID ${range.id} (keep going): $e")
             }
           }
           tc

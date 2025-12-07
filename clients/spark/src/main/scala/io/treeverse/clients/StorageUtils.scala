@@ -8,9 +8,11 @@ import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.commons.lang3.StringUtils
 
-import java.io.File
+
+
+
+
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -18,6 +20,8 @@ object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
   val StorageTypeGCS = "gs"
+
+  val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   /** Constructs object paths in a storage namespace.
    *
@@ -164,19 +168,7 @@ object StorageUtils {
       500 // 1000 is the max size, 500 is the recommended size to avoid timeouts or hitting HTTP size limits
   }
 
-  /** Create a temporary file in the Spark local directory if configured.
-   *  This ensures temporary files are stored in executor storage rather than system temp.
-   */
-  def createTempFile(sparkLocalDir: String, prefix: String, suffix: String): File = {
-    if (StringUtils.isNotBlank(sparkLocalDir)) {
-      val dir = new File(sparkLocalDir)
-      if (dir.exists() || dir.mkdirs()) {
-        return File.createTempFile(prefix, suffix, dir)
-      }
-    }
-    // Fallback to system temp directory
-    File.createTempFile(prefix, suffix)
-  }
+
 }
 
 class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {

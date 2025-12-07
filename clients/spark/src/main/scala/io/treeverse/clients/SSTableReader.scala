@@ -1,6 +1,6 @@
 package io.treeverse.clients
 
-import io.treeverse.jpebble.{BlockParser, BlockReadableFile, Entry => PebbleEntry}
+import io.treeverse.jpebble.{BlockParser, BlockReadable, BlockReadableFile, Entry => PebbleEntry}
 import com.google.protobuf.CodedInputStream
 import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
@@ -10,7 +10,7 @@ import org.apache.spark.TaskContext
 import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 
 import org.slf4j.{Logger, LoggerFactory}
-import java.io.{ByteArrayInputStream, Closeable, DataInputStream, File}
+import java.io.{ByteArrayInputStream, Closeable, DataInputStream}
 
 class Item[T](val key: Array[Byte], val id: Array[Byte], val message: T)
 
@@ -60,28 +60,16 @@ class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 }
 
 object SSTableReader {
-  private def copyToLocal(configuration: Configuration, url: String) = {
-    val p = new Path(url)
-    val fs = p.getFileSystem(configuration)
-    val tmpDir = configuration.get("spark.local.dir")
-    val localFile = StorageUtils.createTempFile(tmpDir, "lakefs.", ".sstable")
-    // Cleanup the local file - using the same technic as other data sources:
-    // https://github.com/apache/spark/blob/c0b1735c0bfeb1ff645d146e262d7ccd036a590e/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/text/TextFileFormat.scala#L123
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => localFile.delete()))
-
-    // TODO(#2403): Implement a BlockReadable on top of AWS
-    //     FSDataInputStream, use that.
-    fs.copyToLocalFile(false, p, new Path(localFile.getAbsolutePath), true)
-    localFile
-  }
-
   def forMetaRange(
       configuration: Configuration,
       metaRangeURL: String,
       own: Boolean = true
   ): SSTableReader[RangeData] = {
-    val localFile: File = copyToLocal(configuration, metaRangeURL)
-    val ret = new SSTableReader(localFile, RangeData.messageCompanion, own)
+    val p = new Path(metaRangeURL)
+    val fs = p.getFileSystem(configuration)
+    val fileLength = fs.getFileStatus(p).getLen
+    val reader = new HadoopBlockReadable(fs, p, fileLength)
+    val ret = new SSTableReader(reader, RangeData.messageCompanion)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
   }
@@ -91,37 +79,49 @@ object SSTableReader {
       rangeURL: String,
       own: Boolean = true
   ): SSTableReader[Entry] = {
-    val localFile: File = copyToLocal(configuration, rangeURL)
-    val ret = new SSTableReader(localFile, Entry.messageCompanion, own)
+    val p = new Path(rangeURL)
+    val fs = p.getFileSystem(configuration)
+    val fileLength = fs.getFileStatus(p).getLen
+    val reader = new HadoopBlockReadable(fs, p, fileLength)
+    val ret = new SSTableReader(reader, Entry.messageCompanion)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
   }
 }
 
-class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] private (
-    val file: java.io.File,
+class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] (
+    val reader: BlockReadable,
     val companion: GeneratedMessageCompanion[Proto],
-    val own: Boolean = true
+    val closeAction: () => Unit = () => ()
 ) extends Closeable {
   private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
-  private val fp = new java.io.RandomAccessFile(file, "r")
-  private val reader = new BlockReadableFile(fp)
+  def this(file: java.io.File, companion: GeneratedMessageCompanion[Proto], own: Boolean) = {
+    this(new BlockReadableFile(new java.io.RandomAccessFile(file, "r")), companion, () => {
+      if (own) {
+        try {
+          file.delete()
+        } catch {
+          case e: Exception =>
+            LoggerFactory.getLogger(classOf[SSTableReader[Proto]].toString).warn(s"delete owned file ${file.getName} (keep going): $e")
+        }
+      }
+    })
+  }
 
   def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto], own: Boolean) =
     this(new java.io.File(sstableFilename), companion, own)
 
   def close(): Unit = {
-    fp.close()
-    if (own) {
+    if (reader.isInstanceOf[Closeable]) {
       try {
-        file.delete()
+        reader.asInstanceOf[Closeable].close()
       } catch {
-        case e: Exception => {
-          logger.warn(s"delete owned file ${file.getName()} (keep going): $e")
-        }
+        case e: Exception =>
+          logger.warn(s"close reader (keep going): $e")
       }
     }
+    closeAction()
   }
 
   def getProperties: Map[String, Array[Byte]] = {
