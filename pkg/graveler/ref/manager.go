@@ -44,7 +44,7 @@ type Manager struct {
 	storageConfig   config.StorageConfig
 }
 
-func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
+func BranchFromProto(pb *graveler.BranchData) *graveler.Branch {
 	var sealedTokens []graveler.StagingToken
 	for _, st := range pb.SealedTokens {
 		sealedTokens = append(sealedTokens, graveler.StagingToken(st))
@@ -412,7 +412,7 @@ func (m *Manager) getBranchWithPredicate(ctx context.Context, repository *gravel
 		if err != nil {
 			return nil, err
 		}
-		return &branchPred{Branch: branchFromProto(&data), Predicate: pred}, nil
+		return &branchPred{Branch: BranchFromProto(&data), Predicate: pred}, nil
 	}))
 	if errors.Is(err, kv.ErrNotFound) {
 		err = graveler.ErrBranchNotFound
