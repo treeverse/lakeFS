@@ -44,8 +44,7 @@ func parseFuncType(t reflect.Type) (reflect.Type, error) {
 // of the form `func(*Struct) error` for some Struct; ReadJSON tries to convert each line to the
 // parameter type of the each callback, calls the first callback whose argument matches, and
 // returns its error.
-func ReadJSON(r io.Reader, funcs ...any) error {
-	reader := bufio.NewReader(r)
+func ReadJSON(reader *bufio.Reader, funcs ...any) error {
 	line, err := reader.ReadString('\n')
 	if err != nil && !(errors.Is(err, io.EOF) && line != "") {
 		return err
@@ -73,5 +72,5 @@ func ReadJSON(r io.Reader, funcs ...any) error {
 		}
 		return results[0].Interface().(error)
 	}
-	return fmt.Errorf("%w (failed conversions: %w)", ErrNoMatch, decodeErrs)
+	return fmt.Errorf("%s: %w (failed conversions: %w)", line, ErrNoMatch, decodeErrs)
 }
