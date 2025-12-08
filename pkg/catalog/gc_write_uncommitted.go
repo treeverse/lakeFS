@@ -56,7 +56,6 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 			}
 			break
 		}
-
 	}
 	if branchIterator.Err() != nil {
 		return nil, false, branchIterator.Err()
