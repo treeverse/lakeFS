@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/local"
+	"github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -192,7 +193,8 @@ func testGetMsgs(t testing.TB, ctx context.Context, store kv.Store, n int, size 
 		key := makeKey(index)
 		_, err := kv.GetMsg(ctx, store, modelGetPartitionKey, key, &model)
 		if err != nil {
-			t.Fatalf("Get %s: %s\n", key, err)
+			t.Errorf("Get %s (of %d): %s\n", key, size, err)
+			continue
 		}
 		expected := makeGetModel(index)
 		if !proto.Equal(&model, expected) {
@@ -203,6 +205,14 @@ func testGetMsgs(t testing.TB, ctx context.Context, store kv.Store, n int, size 
 
 func BenchmarkDrivers(b *testing.B) {
 	ctx := context.Background()
+
+	makeMemStore := func(ctx context.Context, t testing.TB) kv.Store {
+		store, err := kv.Open(ctx, kvparams.Config{Type: mem.DriverName})
+		if err != nil {
+			t.Fatal("failed to open mem store", err)
+		}
+		return store
+	}
 
 	pool, err := dockertest.NewPool("")
 	if err != nil {
@@ -251,6 +261,12 @@ func BenchmarkDrivers(b *testing.B) {
 		setupParallelism int
 	}{
 		{
+			name:             "mem",
+			makeStore:        makeMemStore,
+			messagesDBSize:   500_000,
+			setupParallelism: 2,
+		},
+		{
 			name:             "local",
 			makeStore:        makeLocalStore,
 			messagesDBSize:   500_000,
@@ -281,21 +297,19 @@ func BenchmarkDrivers(b *testing.B) {
 				}
 			})
 
-			setupStore := tt.makeStore(ctx, b)
+			store := tt.makeStore(ctx, b)
 			defer func() {
-				if setupStore != nil {
-					setupStore.Close()
+				if store != nil {
+					store.Close()
 				}
 			}()
-			setupMsgs(b, ctx, setupStore, tt.messagesDBSize, tt.setupParallelism)
-			// Measure on a different store in case setupStore caches (looking at
-			// you, local!)
-			setupStore.Close()
-			setupStore = nil
+			setupMsgs(b, ctx, store, tt.messagesDBSize, tt.setupParallelism)
+
+			// If store caches locally, this benchmarks cached data.  kv.Store has
+			// not current facility for flushing caches; indeed it is unclear how to
+			// do this for the various drivers.
 
 			b.Run("get", func(b *testing.B) {
-				store := tt.makeStore(ctx, b)
-				defer store.Close()
 				source := rand.NewSource(randomGetSeed)
 				b.ResetTimer()
 				testGetMsgs(b, ctx, store, b.N, tt.messagesDBSize, source)

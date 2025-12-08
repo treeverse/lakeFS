@@ -83,6 +83,9 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 	testKey := uniqueKey("key")
 	testValue1 := []byte("value")
 	testValue2 := []byte("a different kind of value")
+	// Copy of testKey, ensure KV uses contents of slice.  This can be important for mem,
+	// which could just store and compare slices by ref.
+	testKeyCopy := testKey[:]
 
 	t.Run("set_missing_partition_key", func(t *testing.T) {
 		// partition key - nil (disallow)
@@ -138,7 +141,7 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 
 	t.Run("get_value", func(t *testing.T) {
 		// get test key with value1
-		res, err := store.Get(ctx, []byte(testPartitionKey), testKey)
+		res, err := store.Get(ctx, []byte(testPartitionKey), testKeyCopy)
 		switch {
 		case err != nil:
 			t.Fatalf("failed to get key '%s': %s", testKey, err)
