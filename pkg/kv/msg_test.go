@@ -306,7 +306,7 @@ func BenchmarkDrivers(b *testing.B) {
 			setupMsgs(b, ctx, store, tt.messagesDBSize, tt.setupParallelism)
 
 			// If store caches locally, this benchmarks cached data.  kv.Store has
-			// not current facility for flushing caches; indeed it is unclear how to
+			// no current facility for flushing caches; indeed it is unclear how to
 			// do this for the various drivers.
 
 			b.Run("get", func(b *testing.B) {

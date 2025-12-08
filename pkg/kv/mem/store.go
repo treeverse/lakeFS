@@ -111,7 +111,13 @@ func (s *Store) internalSet(partitionKey, key, value []byte) error {
 		m = NewPartitionMap()
 		s.maps[string(partitionKey)] = m
 	}
-	ok, err := m.Put(key, value)
+	// Caller could modify key, value - copy them out.  (Don't use bytes.Clone, which can
+	// waste capacity!)
+	keyCopy := make([]byte, len(key))
+	copy(keyCopy, key)
+	valueCopy := make([]byte, len(value))
+	copy(valueCopy, value)
+	ok, err := m.Put(keyCopy, valueCopy)
 	if err != nil {
 		return err
 	}
@@ -120,7 +126,7 @@ func (s *Store) internalSet(partitionKey, key, value []byte) error {
 		return nil
 	}
 	// Existing key: modify it.
-	_, err = m.PatchByKey(key, value)
+	_, err = m.PatchByKey(keyCopy, valueCopy)
 	return err
 }
 
