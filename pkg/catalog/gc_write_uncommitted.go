@@ -41,6 +41,21 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 		if nextMark != nil {
 			break
 		}
+
+		// check if we need to stop - based on prepare duration only.
+		if prepareDuration > 0 && time.Since(startTime) > prepareDuration {
+			if !branchIterator.Next() {
+				// last branch processed, no next mark
+				break
+			}
+			// set next mark to the next branch
+			nextBranchID := branchIterator.Value().BranchID
+			nextMark = &GCUncommittedMark{
+				RunID:    runID,
+				BranchID: nextBranchID,
+			}
+			break
+		}
 	}
 	if branchIterator.Err() != nil {
 		return nil, false, branchIterator.Err()
