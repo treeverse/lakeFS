@@ -159,8 +159,7 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 		}
 	}
 
-	s.internalSet(partitionKey, key, value)
-	return nil
+	return s.internalSet(partitionKey, key, value)
 }
 
 func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
@@ -222,12 +221,20 @@ func (e *EntriesIterator) Next() bool {
 	}
 
 	key, value, ok, err := m.GetByIndex(index)
+	if err != nil {
+		// This is a very strange error: we just got index from BisectRight.  So use a
+		// verbose error message.
+		e.err = fmt.Errorf("%w for index %d returned by BisectRight", err, index)
+		return false
+	}
 	if !ok {
 		// end of iteration
 		e.start = nil
 		return false
 	}
-	e.start = append(key.([]byte)[:], 0)
+	start := bytes.Clone(key.([]byte))
+	start = append(start, 0) // first key after start.
+	e.start = start
 	e.entry = &kv.Entry{
 		PartitionKey: []byte(e.partition),
 		Key:          key.([]byte),
