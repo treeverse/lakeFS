@@ -12,9 +12,9 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: 'go.mod'
       - uses: actions/setup-node@v4
         with:
           node-version: "22.17.x"
@@ -47,9 +47,9 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: 'go.mod'
       - name: Install Bencher
         uses: bencherdev/bencher@61e6a2c2e0b4c8f61c87bef598ba9dbafa51c689 # Stable digest for v0.5.8
         continue-on-error: true
