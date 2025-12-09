@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -31,6 +32,8 @@ const (
 	MinBranchesCapacity               = 100
 	MinCommitsCapacity                = 10000
 	MinGarbageCollectionRulesCapacity = 10
+
+	pprofReadHeaderTimeout = 120 * time.Second
 )
 
 // DumpHeader[T] is the JSON structure to expect for an object holding a T.
@@ -84,8 +87,7 @@ func (k *kvFromJSON) parseBranch(data *DumpHeader[graveler.BranchData]) error {
 
 // "lakefs kv" incorrectly codes some fields (#9761) as StagedEntryData.  Just skip those.
 func (k *kvFromJSON) ignoreOthers(data *DumpHeader[graveler.StagedEntryData]) error {
-	k.partition(data.Partition)
-	return nil
+	return k.partition(data.Partition)
 }
 
 // ReadBranchesAndCommits reads branches and commits from r into store.  It returns the
@@ -157,6 +159,7 @@ First arg "rules.json" is a file containing the JSON retention rules.  Second ar
 Create it with "lakefs kv scan <reponame>-ID".  To discover the ID try "lakefs kv scan graveler"
 and look for the instance_uid field.
 `,
+	//nolint:mnd
 	Args: cobra.ExactArgs(2), Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
@@ -178,10 +181,13 @@ and look for the instance_uid field.
 		baseCfg := cfg.GetBaseConfig()
 		pprof := httputil.ServePPROF("/_pprof/")
 		server := http.Server{
-			Addr:    baseCfg.ListenAddress,
-			Handler: pprof,
+			Addr:              baseCfg.ListenAddress,
+			Handler:           pprof,
+			ReadHeaderTimeout: pprofReadHeaderTimeout,
 		}
-		go server.ListenAndServe()
+		go func() {
+			_ = server.ListenAndServe() // this server never exits.
+		}()
 
 		rulesFile, err := os.Open(args[0])
 		if err != nil {
