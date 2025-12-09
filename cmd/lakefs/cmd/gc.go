@@ -7,10 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/graveler/retention"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
@@ -37,6 +42,7 @@ type DumpHeader[T any] struct {
 
 var (
 	ErrMultiplePartitions = errors.New("multiple partitions in input")
+	ErrBadPartitionFormat = errors.New("bad partition format")
 )
 
 // kvFromJSON fills a KV from JSON records
@@ -61,12 +67,18 @@ func (k *kvFromJSON) partition(p string) error {
 }
 
 func (k *kvFromJSON) parseCommit(data *DumpHeader[graveler.CommitData]) error {
-	k.partition(data.Partition)
+	err := k.partition(data.Partition)
+	if err != nil {
+		return err
+	}
 	return kv.SetMsg(k.ctx, k.Store, data.Partition, []byte(data.Key), &data.Value)
 }
 
 func (k *kvFromJSON) parseBranch(data *DumpHeader[graveler.BranchData]) error {
-	k.partition(data.Partition)
+	err := k.partition(data.Partition)
+	if err != nil {
+		return err
+	}
 	return kv.SetMsg(k.ctx, k.Store, data.Partition, []byte(data.Key), &data.Value)
 }
 
@@ -76,8 +88,9 @@ func (k *kvFromJSON) ignoreOthers(data *DumpHeader[graveler.StagedEntryData]) er
 	return nil
 }
 
-// ReadBranchesAndCommits reads branches and commits from r into store.
-func ReadBranchesAndCommits(ctx context.Context, r io.Reader, store kv.Store) (string, error) {
+// ReadBranchesAndCommits reads branches and commits from r into store.  It returns the
+// repository ID and its UID.
+func ReadBranchesAndCommits(ctx context.Context, r io.Reader, store kv.Store) (string, string, error) {
 	convertor := kvFromJSON{
 		ctx:   ctx,
 		Store: store,
@@ -90,12 +103,48 @@ func ReadBranchesAndCommits(ctx context.Context, r io.Reader, store kv.Store) (s
 	)
 	for {
 		err = ReadJSON(reader, convertor.parseCommit, convertor.parseBranch, convertor.ignoreOthers)
+		if errors.Is(err, io.EOF) {
+			break
+		}
 		if err != nil {
-			return "", fmt.Errorf("%d: %w", lineNum, err)
+			return "", "", fmt.Errorf("%d: %w", lineNum, err)
 		}
 		lineNum++
 	}
-	return convertor.Partition, nil
+
+	partition := convertor.Partition
+	index := strings.LastIndex(partition, "-")
+	if index < 0 {
+		return "", "", fmt.Errorf("%w %s", ErrBadPartitionFormat, partition)
+	}
+	return partition[0:index], partition[index+1:], nil
+}
+
+type RefManager struct {
+	store        kv.Store
+	repositoryID string
+}
+
+func (r *RefManager) GCBranchIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
+	return ref.NewBranchByCommitIterator(ctx, r.store, repository, graveler.ListOptions{ShowHidden: true})
+}
+
+func (r *RefManager) GCCommitIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
+	return ref.NewOrderedCommitIterator(ctx, r.store, repository, true)
+}
+
+func (r *RefManager) ListCommits(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
+	return ref.NewOrderedCommitIterator(ctx, r.store, repository, false)
+}
+
+func (r *RefManager) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
+	var data graveler.CommitData
+
+	if _, err := kv.GetMsg(ctx, r.store, r.repositoryID, []byte(graveler.CommitPath(commitID)), &data); err != nil {
+		return nil, fmt.Errorf("%s: %w", commitID, err)
+	}
+	commit := graveler.CommitFromProto(&data)
+	return commit, nil
 }
 
 var simulateCmd = &cobra.Command{
@@ -110,6 +159,30 @@ and look for the instance_uid field.
 `,
 	Args: cobra.ExactArgs(2), Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
+
+		output := os.Stdout
+		outputFilename, err := cmd.Flags().GetString("output")
+		if err != nil {
+			printMsgAndExit(fmt.Errorf("output: %w", err))
+		}
+		if outputFilename != "" {
+			output, err = os.Create(outputFilename)
+			if err != nil {
+				printMsgAndExit(fmt.Errorf("open %s: %w", outputFilename, err))
+			}
+			defer output.Close()
+		}
+
+		// Allow profiling.
+		cfg := LoadConfig()
+		baseCfg := cfg.GetBaseConfig()
+		pprof := httputil.ServePPROF("/_pprof/")
+		server := http.Server{
+			Addr:    baseCfg.ListenAddress,
+			Handler: pprof,
+		}
+		go server.ListenAndServe()
+
 		rulesFile, err := os.Open(args[0])
 		if err != nil {
 			printMsgAndExit(fmt.Errorf("open rules %s: %w", args[0], err))
@@ -133,19 +206,52 @@ and look for the instance_uid field.
 		if err != nil {
 			printMsgAndExit(fmt.Errorf("open partition dump %s: %w", args[1], err))
 		}
-		repoID, err := ReadBranchesAndCommits(ctx, partitionDumpFile, store)
+		repositoryID, uid, err := ReadBranchesAndCommits(ctx, partitionDumpFile, store)
 		if err != nil && !errors.Is(err, io.EOF) {
 			printMsgAndExit(fmt.Errorf("read partition dump %s: %w", args[1], err))
 		}
 
-		repo := &graveler.RepositoryRecord{RepositoryID: graveler.RepositoryID(repoID)}
+		fmt.Fprintf(os.Stderr, "repositoryID: %s\tUID: %s\n", repositoryID, uid)
 
-		commitIterator, err := refManager.GCCommi
+		repository := &graveler.RepositoryRecord{
+			RepositoryID: graveler.RepositoryID(repositoryID),
+			Repository:   &graveler.Repository{InstanceUID: uid},
+		}
+
+		refManager := &RefManager{store, repositoryID}
+
+		commitGetter := &retention.RepositoryCommitGetterAdapter{
+			RefManager: refManager,
+			Repository: repository,
+		}
+		branchIterator, err := refManager.GCBranchIterator(ctx, repository)
+		if err != nil {
+			printMsgAndExit(err)
+		}
+		defer branchIterator.Close()
+		// get all commits that are not the first parent of any commit:
+		commitIterator, err := refManager.GCCommitIterator(ctx, repository)
+		if err != nil {
+			printMsgAndExit(fmt.Errorf("create kv ordered commit iterator commits: %w", err))
+		}
+		defer commitIterator.Close()
+		startingPointIterator := retention.NewGCStartingPointIterator(commitIterator, branchIterator)
+		defer startingPointIterator.Close()
+		gcCommits, err := retention.GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, &rules)
+		if err != nil {
+			printMsgAndExit(fmt.Errorf("find expired commits: %w", err))
+		}
+
+		for commitID, metaRangeID := range gcCommits {
+			fmt.Fprintf(output, "%s [%s]\n", commitID, metaRangeID)
+		}
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(gcCmd)
+	f := simulateCmd.Flags()
+	f.StringP("output", "o", "", "Write output to this file")
 	gcCmd.AddCommand(simulateCmd)
 }
