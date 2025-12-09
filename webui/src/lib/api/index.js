@@ -925,9 +925,8 @@ class Commits {
     }
 
     async commitStatus(repoId, branchId, taskId) {
-        const query = qs({id: taskId});
         const response = await apiRequest(
-            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/status?${query}`
+            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async/${taskId}/status`
         );
 
         if (response.status !== 200) {
@@ -1001,9 +1000,8 @@ class Refs {
     }
 
     async mergeStatus(repoId, sourceRef, destinationBranch, taskId) {
-        const query = qs({id: taskId});
         const response = await apiRequest(
-            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/status?${query}`
+            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/async/${taskId}/status`
         );
 
         if (response.status !== 200) {

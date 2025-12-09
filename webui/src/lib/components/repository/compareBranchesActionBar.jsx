@@ -1,5 +1,4 @@
 import React, {useCallback, useRef, useState} from "react";
-import {refs as refsAPI} from "../../../lib/api";
 import {RefTypeBranch} from "../../../constants";
 import {ActionGroup, ActionsBar, AlertError, RefreshButton} from "../controls";
 import {MetadataFields} from "./metadata";
@@ -10,7 +9,7 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import CompareBranchesSelection from "./compareBranchesSelection";
-import {usePluginManager} from "../../../extendable/plugins/pluginManager";
+import {usePluginManager} from "../../../extendable/plugins/pluginsContext";
 
 const CompareBranchesActionsBar = (
     {repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff}

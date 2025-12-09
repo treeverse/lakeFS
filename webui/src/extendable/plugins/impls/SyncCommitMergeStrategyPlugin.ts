@@ -17,7 +17,7 @@ class SyncCommitMergeStrategyPlugin implements PluginCommitMergeStrategy {
             repoId,
             branchId,
             params.message,
-            params.metadata || {}
+            params.metadata
         );
     }
 
@@ -31,9 +31,9 @@ class SyncCommitMergeStrategyPlugin implements PluginCommitMergeStrategy {
             repoId,
             sourceRef,
             destinationBranch,
-            params.strategy || "",
-            params.message || "",
-            params.metadata || {}
+            params.strategy,
+            params.message,
+            params.metadata
         );
     }
 }

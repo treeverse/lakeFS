@@ -79,8 +79,6 @@ Class | Method | HTTP request | Description
 *BranchesApi* | [**reset_branch**](docs/BranchesApi.md#reset_branch) | **PUT** /repositories/{repository}/branches/{branch} | reset branch
 *BranchesApi* | [**revert_branch**](docs/BranchesApi.md#revert_branch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
-*CommitsApi* | [**commit_async**](docs/CommitsApi.md#commit_async) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
-*CommitsApi* | [**commit_status**](docs/CommitsApi.md#commit_status) | **GET** /repositories/{repository}/branches/{branch}/commits/status | get status of async commit operation
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *ConfigApi* | [**get_config**](docs/ConfigApi.md#get_config) | **GET** /config | 
 *ExperimentalApi* | [**abort_presign_multipart_upload**](docs/ExperimentalApi.md#abort_presign_multipart_upload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
@@ -170,8 +168,6 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**find_merge_base**](docs/RefsApi.md#find_merge_base) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 *RefsApi* | [**log_commits**](docs/RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**merge_into_branch**](docs/RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
-*RefsApi* | [**merge_into_branch_async**](docs/RefsApi.md#merge_into_branch_async) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
-*RefsApi* | [**merge_into_branch_status**](docs/RefsApi.md#merge_into_branch_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status | get status of async merge operation
 *RemotesApi* | [**pull_iceberg_table**](docs/RemotesApi.md#pull_iceberg_table) | **POST** /iceberg/remotes/{catalog}/pull | take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
 *RemotesApi* | [**push_iceberg_table**](docs/RemotesApi.md#push_iceberg_table) | **POST** /iceberg/remotes/{catalog}/push | register existing lakeFS table in remote catalog
 *RepositoriesApi* | [**create_repository**](docs/RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
@@ -216,7 +212,6 @@ Class | Method | HTTP request | Description
  - [CommitList](docs/CommitList.md)
  - [CommitOverrides](docs/CommitOverrides.md)
  - [CommitRecordCreation](docs/CommitRecordCreation.md)
- - [CommitStatus](docs/CommitStatus.md)
  - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
  - [Config](docs/Config.md)
  - [CopyPartSource](docs/CopyPartSource.md)
@@ -260,7 +255,6 @@ Class | Method | HTTP request | Description
  - [Merge](docs/Merge.md)
  - [MergeAsyncStatus](docs/MergeAsyncStatus.md)
  - [MergeResult](docs/MergeResult.md)
- - [MergeStatus](docs/MergeStatus.md)
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
  - [ObjectCopyCreation](docs/ObjectCopyCreation.md)

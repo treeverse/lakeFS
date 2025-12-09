@@ -68,7 +68,6 @@ from lakefs_sdk.models.commit_creation import CommitCreation
 from lakefs_sdk.models.commit_list import CommitList
 from lakefs_sdk.models.commit_overrides import CommitOverrides
 from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
-from lakefs_sdk.models.commit_status import CommitStatus
 from lakefs_sdk.models.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_sdk.models.config import Config
 from lakefs_sdk.models.copy_part_source import CopyPartSource
@@ -112,7 +111,6 @@ from lakefs_sdk.models.login_information import LoginInformation
 from lakefs_sdk.models.merge import Merge
 from lakefs_sdk.models.merge_async_status import MergeAsyncStatus
 from lakefs_sdk.models.merge_result import MergeResult
-from lakefs_sdk.models.merge_status import MergeStatus
 from lakefs_sdk.models.meta_range_creation import MetaRangeCreation
 from lakefs_sdk.models.meta_range_creation_response import MetaRangeCreationResponse
 from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation

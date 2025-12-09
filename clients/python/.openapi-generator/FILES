@@ -25,7 +25,6 @@ docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitOverrides.md
 docs/CommitRecordCreation.md
-docs/CommitStatus.md
 docs/CommitsApi.md
 docs/CompletePresignMultipartUpload.md
 docs/Config.md
@@ -77,7 +76,6 @@ docs/LoginInformation.md
 docs/Merge.md
 docs/MergeAsyncStatus.md
 docs/MergeResult.md
-docs/MergeStatus.md
 docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
@@ -192,7 +190,6 @@ lakefs_sdk/models/commit_creation.py
 lakefs_sdk/models/commit_list.py
 lakefs_sdk/models/commit_overrides.py
 lakefs_sdk/models/commit_record_creation.py
-lakefs_sdk/models/commit_status.py
 lakefs_sdk/models/complete_presign_multipart_upload.py
 lakefs_sdk/models/config.py
 lakefs_sdk/models/copy_part_source.py
@@ -236,7 +233,6 @@ lakefs_sdk/models/login_information.py
 lakefs_sdk/models/merge.py
 lakefs_sdk/models/merge_async_status.py
 lakefs_sdk/models/merge_result.py
-lakefs_sdk/models/merge_status.py
 lakefs_sdk/models/meta_range_creation.py
 lakefs_sdk/models/meta_range_creation_response.py
 lakefs_sdk/models/object_copy_creation.py
@@ -327,7 +323,6 @@ test/test_commit_creation.py
 test/test_commit_list.py
 test/test_commit_overrides.py
 test/test_commit_record_creation.py
-test/test_commit_status.py
 test/test_commits_api.py
 test/test_complete_presign_multipart_upload.py
 test/test_config.py
@@ -379,7 +374,6 @@ test/test_login_information.py
 test/test_merge.py
 test/test_merge_async_status.py
 test/test_merge_result.py
-test/test_merge_status.py
 test/test_meta_range_creation.py
 test/test_meta_range_creation_response.py
 test/test_metadata_api.py

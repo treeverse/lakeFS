@@ -34,20 +34,6 @@ class TestCommitsApi(unittest.TestCase):
         """
         pass
 
-    def test_commit_async(self) -> None:
-        """Test case for commit_async
-
-        create commit asynchronously  # noqa: E501
-        """
-        pass
-
-    def test_commit_status(self) -> None:
-        """Test case for commit_status
-
-        get status of async commit operation  # noqa: E501
-        """
-        pass
-
     def test_get_commit(self) -> None:
         """Test case for get_commit
 

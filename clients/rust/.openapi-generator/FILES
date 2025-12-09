@@ -24,7 +24,6 @@ docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitOverrides.md
 docs/CommitRecordCreation.md
-docs/CommitStatus.md
 docs/CommitsApi.md
 docs/CompletePresignMultipartUpload.md
 docs/Config.md
@@ -76,7 +75,6 @@ docs/LoginInformation.md
 docs/Merge.md
 docs/MergeAsyncStatus.md
 docs/MergeResult.md
-docs/MergeStatus.md
 docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
@@ -187,7 +185,6 @@ src/models/commit_creation.rs
 src/models/commit_list.rs
 src/models/commit_overrides.rs
 src/models/commit_record_creation.rs
-src/models/commit_status.rs
 src/models/complete_presign_multipart_upload.rs
 src/models/config.rs
 src/models/copy_part_source.rs
@@ -231,7 +228,6 @@ src/models/login_information.rs
 src/models/merge.rs
 src/models/merge_async_status.rs
 src/models/merge_result.rs
-src/models/merge_status.rs
 src/models/meta_range_creation.rs
 src/models/meta_range_creation_response.rs
 src/models/mod.rs

@@ -1,10 +1,10 @@
 export interface CommitParams {
     message: string;
     metadata?: { [key: string]: string };
-    date?: number | null;
+    date?: number;
     allow_empty?: boolean;
     force?: boolean;
-    source_metarange?: string | null;
+    source_metarange?: string;
 }
 
 export interface MergeParams {
