@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"bufio"
 	"errors"
 	"io"
 	"strings"
@@ -45,7 +46,7 @@ func TestReadJSONOneType(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			r := strings.NewReader(tc.JSON)
+			r := bufio.NewReader(strings.NewReader(tc.JSON))
 			var got element
 			err := cmd.ReadJSON(r, func(obj element) error {
 				got = obj
@@ -91,7 +92,7 @@ func TestReadJSONTwoTypes(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			r := strings.NewReader(tc.JSON)
+			r := bufio.NewReader(strings.NewReader(tc.JSON))
 			var (
 				got  element
 				got2 element2
@@ -118,7 +119,7 @@ func TestReadJSONTwoTypes(t *testing.T) {
 }
 
 func TestReadJSONCallbackError(t *testing.T) {
-	r := strings.NewReader(`{"a": 1, "b": "one"}`)
+	r := bufio.NewReader(strings.NewReader(`{"a": 1, "b": "one"}`))
 	cbErr := errors.New("callback fail")
 	err := cmd.ReadJSON(r, func(obj element) error {
 		return cbErr
