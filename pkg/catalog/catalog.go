@@ -72,8 +72,6 @@ const (
 	DumpRefsTaskIDPrefix                  = "DR"
 	RestoreRefsTaskIDPrefix               = "RR"
 	GarbageCollectionPrepareCommitsPrefix = "GCPC"
-	CommitAsyncPrefix                     = "CA"
-	MergeAsyncPrefix                      = "MA"
 
 	TaskExpiryTime = 24 * time.Hour
 
@@ -237,28 +235,27 @@ type Config struct {
 	SettingsManagerOption settings.ManagerOption
 	PathProvider          *upload.PathPartitionProvider
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
-	ConflictResolvers []graveler.ConflictResolver
+	ConflictResolvers       []graveler.ConflictResolver
+	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 }
 
-// APIErrorHandler is a callback function used to classify and handle errors in background tasks.
-// It returns true if the error was handled.
-type APIErrorHandler func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool
+type ErrorToStatusCodeAndMsg func(logger logging.Logger, err error) (status int, msg string, ok bool)
 
 type Catalog struct {
-	BlockAdapter          block.Adapter
-	Store                 Store
-	managers              []io.Closer
-	workPool              pond.Pool
-	PathProvider          *upload.PathPartitionProvider
-	BackgroundLimiter     ratelimit.Limiter
-	KVStore               kv.Store
-	KVStoreLimited        kv.Store
-	addressProvider       *ident.HexAddressProvider
-	deleteSensor          *graveler.DeleteSensor
-	UGCPrepareMaxFileSize int64
-	UGCPrepareInterval    time.Duration
-	signingKey            config.SecureString
-	APIErrorCB            APIErrorHandler
+	BlockAdapter            block.Adapter
+	Store                   Store
+	managers                []io.Closer
+	workPool                pond.Pool
+	PathProvider            *upload.PathPartitionProvider
+	BackgroundLimiter       ratelimit.Limiter
+	KVStore                 kv.Store
+	KVStoreLimited          kv.Store
+	addressProvider         *ident.HexAddressProvider
+	deleteSensor            *graveler.DeleteSensor
+	UGCPrepareMaxFileSize   int64
+	UGCPrepareInterval      time.Duration
+	signingKey              config.SecureString
+	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 }
 
 const (
@@ -425,28 +422,28 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		WorkPool:                 workPool,
 	})
 	closers = append(closers, &ctxCloser{cancelFn})
+
+	errToStatusFunc := cfg.ErrorToStatusCodeAndMsg
+	if errToStatusFunc == nil {
+		// Default implementation (needed in case a service that is not the controller initializes it)
+		errToStatusFunc = defaultErrorToStatusCodeAndMsg
+	}
+
 	return &Catalog{
-		BlockAdapter:          tierFSParams.Adapter,
-		Store:                 gStore,
-		UGCPrepareMaxFileSize: baseCfg.UGC.PrepareMaxFileSize,
-		UGCPrepareInterval:    baseCfg.UGC.PrepareInterval,
-		PathProvider:          cfg.PathProvider,
-		BackgroundLimiter:     limiter,
-		workPool:              workPool,
-		KVStore:               cfg.KVStore,
-		managers:              closers,
-		KVStoreLimited:        storeLimiter,
-		addressProvider:       addressProvider,
-		deleteSensor:          deleteSensor,
-		signingKey:            cfg.Config.StorageConfig().SigningKey(),
-		// Initiate the API callback function
-		APIErrorCB: func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
-			if err == nil {
-				return false
-			}
-			cb(w, r, http.StatusInternalServerError, err)
-			return true
-		},
+		BlockAdapter:            tierFSParams.Adapter,
+		Store:                   gStore,
+		UGCPrepareMaxFileSize:   baseCfg.UGC.PrepareMaxFileSize,
+		UGCPrepareInterval:      baseCfg.UGC.PrepareInterval,
+		PathProvider:            cfg.PathProvider,
+		BackgroundLimiter:       limiter,
+		workPool:                workPool,
+		KVStore:                 cfg.KVStore,
+		managers:                closers,
+		KVStoreLimited:          storeLimiter,
+		addressProvider:         addressProvider,
+		deleteSensor:            deleteSensor,
+		signingKey:              cfg.Config.StorageConfig().SigningKey(),
+		errorToStatusCodeAndMsg: errToStatusFunc,
 	}, nil
 }
 
@@ -513,6 +510,13 @@ func newLimiter(rateLimit int) ratelimit.Limiter {
 		limiter = ratelimit.New(rateLimit)
 	}
 	return limiter
+}
+
+func defaultErrorToStatusCodeAndMsg(logger logging.Logger, err error) (status int, msg string, ok bool) {
+	if err == nil {
+		return 0, "", false
+	}
+	return 0, err.Error(), true
 }
 
 func (c *Catalog) SetHooksHandler(hooks graveler.HooksHandler) {
@@ -2168,16 +2172,8 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 }
 
 func (c *Catalog) DumpRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryDumpStatus, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return nil, err
-	}
-	if !IsTaskID(DumpRefsTaskIDPrefix, id) {
-		return nil, graveler.ErrNotFound
-	}
-
 	var taskStatus RepositoryDumpStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, DumpRefsTaskIDPrefix, &taskStatus, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -2229,20 +2225,12 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 }
 
 func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID string, id string) (*RepositoryRestoreStatus, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
+	var taskStatus RepositoryRestoreStatus
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, RestoreRefsTaskIDPrefix, &taskStatus, 0)
 	if err != nil {
 		return nil, err
 	}
-	if !IsTaskID(RestoreRefsTaskIDPrefix, id) {
-		return nil, graveler.ErrNotFound
-	}
-
-	var status RepositoryRestoreStatus
-	err = GetTaskStatus(ctx, c.KVStore, repository, id, &status)
-	if err != nil {
-		return nil, err
-	}
-	return &status, nil
+	return &taskStatus, nil
 }
 
 // RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
@@ -2276,9 +2264,13 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			if err != nil {
 				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
 				task.Done = true
-				// Classify the error using the API callback (handleAPIErrorCallback from the controller)
-				// before the original error is lost when stored in protobuf, and populate the task's error details.
-				c.APIErrorCB(ctx, nil, nil, err, SetTaskStatusCodeAndError(task))
+				// Convert the error to status code and error message before the original error is lost when stored in
+				// protobuf, and populate the task's error details.
+				statusCode, errorMsg, ok := c.errorToStatusCodeAndMsg(log, err)
+				if ok {
+					task.StatusCode = int32(statusCode) //nolint:gosec
+					task.ErrorMsg = errorMsg
+				}
 			} else if stepIdx == len(steps)-1 {
 				task.Done = true
 			}
@@ -2769,7 +2761,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	return taskID, nil
 }
 
-func (c *Catalog) GetTaskStatus(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage) error {
+func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID string, taskID string, prefix string, statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -2777,17 +2769,39 @@ func (c *Catalog) GetTaskStatus(ctx context.Context, repositoryID string, taskID
 	if !IsTaskID(prefix, taskID) {
 		return graveler.ErrNotFound
 	}
-
-	err = GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg)
-	if err != nil {
+	if err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
+	checkAndMarkTaskExpired(statusMsg, expiryDuration)
 	return nil
+}
+
+func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) {
+	if expiryDuration == 0 {
+		return
+	}
+
+	taskField := reflect.ValueOf(statusMsg).Elem().FieldByName("Task")
+	if !taskField.IsValid() || taskField.IsNil() {
+		return
+	}
+
+	task := taskField.Interface().(*Task)
+	if task.UpdatedAt == nil {
+		return
+	}
+
+	updatedAt := task.UpdatedAt.AsTime()
+	if time.Since(updatedAt) > expiryDuration {
+		task.Done = true
+		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %s. Please retry the operation.", expiryDuration)
+		task.StatusCode = http.StatusRequestTimeout
+	}
 }
 
 func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
 	var taskStatus GarbageCollectionPrepareStatus
-	err := c.GetTaskStatus(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus)
+	err := c.GetValidatedTaskStatus(ctx, repositoryID, id, GarbageCollectionPrepareCommitsPrefix, &taskStatus, 0)
 	if err != nil {
 		return nil, err
 	}

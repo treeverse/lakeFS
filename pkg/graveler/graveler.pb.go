@@ -1103,7 +1103,7 @@ const file_graveler_graveler_proto_rawDesc = "" +
 	"\n" +
 	"\x06CLOSED\x10\x01\x12\n" +
 	"\n" +
-	"\x06MERGED\x10\x02B&Z$github.com/treeverse/lakefs/gravelerb\x06proto3"
+	"\x06MERGED\x10\x02B*Z(github.com/treeverse/lakefs/pkg/gravelerb\x06proto3"
 
 var (
 	file_graveler_graveler_proto_rawDescOnce sync.Once

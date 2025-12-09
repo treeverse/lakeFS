@@ -460,7 +460,7 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
     spec:
       containers:
         - name: app
-          image: centos
+          image: rockylinux/rockylinux
           command: ["/bin/sh", "-c", "ls /data/; tail -f /dev/null"]
           volumeMounts:
             - name: my-lakefs-data
@@ -519,7 +519,7 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
         spec:
           containers:
           - name: app
-            image: centos
+            image: rockylinux/rockylinux
             command: ["/bin/sh", "-c", "ls /data/; tail -f /dev/null"]
             volumeMounts:
             - name: lakefs-storage
@@ -593,7 +593,7 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
     spec:
       containers:
         - name: app
-          image: centos
+          image: rockylinux/rockylinux
           command: ["/bin/sh", "-c", "echo 'Path 1:'; ls /data1; echo 'Path 2:'; ls /data2; tail -f /dev/null"]
           volumeMounts:
             - name: lakefs-data-1
@@ -650,7 +650,7 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
         spec:
           containers:
             - name: app
-              image: centos
+              image: rockylinux/rockylinux
               command: ["/bin/sh", "-c", "ls /data/; tail -f /dev/null"]
               volumeMounts:
                 - name: sts-simple-mount

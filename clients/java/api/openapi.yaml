@@ -3891,7 +3891,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+          description: Precondition Failed
         "429":
           description: too many requests
         default:
@@ -3985,12 +3985,12 @@ paths:
           description: Internal Server Error
       summary: create commit asynchronously
       tags:
-      - commits
+      - experimental
       x-content-type: application/json
       x-accepts: application/json
-  /repositories/{repository}/branches/{branch}/commits/status:
+  /repositories/{repository}/branches/{branch}/commits/async/{id}/status:
     get:
-      operationId: commitStatus
+      operationId: commitAsyncStatus
       parameters:
       - explode: false
         in: path
@@ -4006,84 +4006,74 @@ paths:
         schema:
           type: string
         style: simple
-      - description: Unique identifier of the commit task
-        explode: true
-        in: query
+      - description: Unique identifier of the commit async task
+        explode: false
+        in: path
         name: id
         required: true
         schema:
           type: string
-        style: form
+        style: simple
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
+                $ref: '#/components/schemas/CommitAsyncStatus'
           description: commit task status
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
+                $ref: '#/components/schemas/Error'
           description: Validation Error
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
+                $ref: '#/components/schemas/Error'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
+                $ref: '#/components/schemas/Error'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
-          description: Not Found
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
         "409":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
-          description: Conflict
-        "410":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommitStatus'
-          description: Operation Expired
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         "412":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
-          description: Precondition Failed (e.g. a pre-commit hook returned a failure)
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
         "429":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommitStatus'
           description: too many requests
         "501":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
+                $ref: '#/components/schemas/Error'
           description: Not Implemented
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitStatus'
+                $ref: '#/components/schemas/Error'
           description: Internal Server Error
       summary: get status of async commit operation
       tags:
-      - commits
+      - experimental
       x-accepts: application/json
   /repositories/{repository}/commits:
     post:
@@ -4775,12 +4765,12 @@ paths:
           description: Internal Server Error
       summary: merge references asynchronously
       tags:
-      - refs
+      - experimental
       x-content-type: application/json
       x-accepts: application/json
-  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/status:
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status:
     get:
-      operationId: mergeIntoBranchStatus
+      operationId: mergeIntoBranchAsyncStatus
       parameters:
       - explode: false
         in: path
@@ -4805,84 +4795,74 @@ paths:
         schema:
           type: string
         style: simple
-      - description: Unique identifier of the merge task
-        explode: true
-        in: query
+      - description: Unique identifier of the merge async task
+        explode: false
+        in: path
         name: id
         required: true
         schema:
           type: string
-        style: form
+        style: simple
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
+                $ref: '#/components/schemas/MergeAsyncStatus'
           description: merge task status
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
+                $ref: '#/components/schemas/Error'
           description: Validation Error
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
+                $ref: '#/components/schemas/Error'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
+                $ref: '#/components/schemas/Error'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
-          description: Not Found
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
         "409":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
-          description: Conflict
-        "410":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MergeStatus'
-          description: Operation Expired
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         "412":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
-          description: precondition failed (e.g. a pre-merge hook returned a failure)
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
         "429":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MergeStatus'
           description: too many requests
         "501":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
+                $ref: '#/components/schemas/Error'
           description: Not Implemented
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeStatus'
+                $ref: '#/components/schemas/Error'
           description: Internal Server Error
       summary: get status of async merge operation
       tags:
-      - refs
+      - experimental
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/diff:
     get:
@@ -8556,7 +8536,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: precondition failed (e.g. a pre-merge hook returned a failure)
+          description: precondition failed
         "429":
           description: too many requests
         default:
@@ -11140,18 +11120,10 @@ components:
       - task_id
       - update_time
       type: object
-    MergeStatus:
-      example:
-        result:
-          reference: reference
-        update_time: 2000-01-23T04:56:07.000+00:00
-        task_id: task_id
-        completed: true
-        error:
-          message: message
+    AsyncTaskStatus:
       properties:
         task_id:
-          description: the id of the async merge task
+          description: the id of the async task
           type: string
         completed:
           description: true if the task has completed (either successfully or with
@@ -11161,56 +11133,32 @@ components:
           description: last time the task status was updated
           format: date-time
           type: string
-        result:
-          $ref: '#/components/schemas/MergeResult'
         error:
           $ref: '#/components/schemas/Error'
+        status_code:
+          description: an http status code that correlates with the underlying error
+            if exists
+          format: int32
+          type: integer
       required:
       - completed
       - task_id
       - update_time
       type: object
-    CommitStatus:
-      example:
-        result:
-          generation: 6
-          metadata:
-            key: metadata
-          committer: committer
-          id: id
-          creation_date: 0
-          meta_range_id: meta_range_id
-          message: message
-          version: 0
-          parents:
-          - parents
-          - parents
-        update_time: 2000-01-23T04:56:07.000+00:00
-        task_id: task_id
-        completed: true
-        error:
-          message: message
-      properties:
-        task_id:
-          description: the id of the async commit task
-          type: string
-        completed:
-          description: true if the task has completed (either successfully or with
-            an error)
-          type: boolean
-        update_time:
-          description: last time the task status was updated
-          format: date-time
-          type: string
-        result:
-          $ref: '#/components/schemas/Commit'
-        error:
-          $ref: '#/components/schemas/Error'
-      required:
-      - completed
-      - task_id
-      - update_time
-      type: object
+    MergeAsyncStatus:
+      allOf:
+      - $ref: '#/components/schemas/AsyncTaskStatus'
+      - properties:
+          result:
+            $ref: '#/components/schemas/MergeResult'
+        type: object
+    CommitAsyncStatus:
+      allOf:
+      - $ref: '#/components/schemas/AsyncTaskStatus'
+      - properties:
+          result:
+            $ref: '#/components/schemas/Commit'
+        type: object
     PrepareGCUncommittedRequest:
       example:
         continuation_token: continuation_token

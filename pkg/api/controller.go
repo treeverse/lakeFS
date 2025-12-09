@@ -62,8 +62,6 @@ const (
 	defaultSTSTTLSeconds = 3600
 	maxSTSTTLSeconds     = 3600 * 12
 
-	asyncTaskStatusExpiryDuration = 20 * time.Minute
-
 	lakeFSPrefix = "symlinks"
 
 	actionStatusCompleted = "completed"
@@ -104,7 +102,7 @@ type Controller struct {
 	Migrator           Migrator
 	Collector          stats.Collector
 	Actions            actionsHandler
-	asyncOpsHandler    catalog.AsyncOperationsHandler
+	catalogExtendedOps catalog.ExtendedOperations
 	AuditChecker       AuditChecker
 	Logger             logging.Logger
 	sessionStore       sessions.Store
@@ -128,7 +126,7 @@ func NewController(
 	migrator Migrator,
 	collector stats.Collector,
 	actions actionsHandler,
-	asyncOpsHandler catalog.AsyncOperationsHandler,
+	catalogExtendedOps catalog.ExtendedOperations,
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	sessionStore sessions.Store,
@@ -138,7 +136,7 @@ func NewController(
 	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
 ) *Controller {
-	controller := &Controller{
+	return &Controller{
 		Config:             cfg,
 		Catalog:            catalog,
 		Authenticator:      authenticator,
@@ -149,7 +147,7 @@ func NewController(
 		Migrator:           migrator,
 		Collector:          collector,
 		Actions:            actions,
-		asyncOpsHandler:    asyncOpsHandler,
+		catalogExtendedOps: catalogExtendedOps,
 		AuditChecker:       auditChecker,
 		Logger:             logger,
 		sessionStore:       sessionStore,
@@ -159,8 +157,6 @@ func NewController(
 		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
 	}
-	catalog.APIErrorCB = controller.HandleAPIErrorCallback
-	return controller
 }
 
 func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
@@ -3108,7 +3104,22 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) HandleAPIErrorCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+// ErrorToStatusAndMsg converts errors to HTTP status codes and messages for non-HTTP contexts.
+// This function is used as a callback by the catalog layer to classify errors in background tasks
+// (such as async commits and merges) before storing them in task status records. It maps domain-specific
+// errors to appropriate HTTP status codes following the same classification rules as HTTP API handlers.
+func ErrorToStatusAndMsg(logger logging.Logger, err error) (status int, msg string, ok bool) {
+	ok = handleApiErrorCallback(logger, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		status = code
+		if v != nil {
+			msg = fmt.Sprintf("%v", v)
+		}
+	})
+	return status, msg, ok
+}
+
+// handleApiErrorCallback is a standalone function that handles API errors and maps them to appropriate HTTP status codes.
+func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
 	// verify if request canceled even if there is no error, early exit point
 	if httputil.IsRequestCanceled(r) {
 		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
@@ -3117,8 +3128,6 @@ func (c *Controller) HandleAPIErrorCallback(ctx context.Context, w http.Response
 	if err == nil {
 		return false
 	}
-
-	log := c.Logger.WithContext(ctx).WithError(err)
 
 	// order of case is important, more specific errors should be first
 	switch {
@@ -3212,7 +3221,7 @@ func (c *Controller) HandleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
-		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
+		log.Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 
 	case errors.Is(err, actions.ErrActionFailed):
@@ -3220,7 +3229,7 @@ func (c *Controller) HandleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, err)
 
 	default:
-		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
+		log.Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
 	}
 
@@ -3228,7 +3237,8 @@ func (c *Controller) HandleAPIErrorCallback(ctx context.Context, w http.Response
 }
 
 func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) bool {
-	return c.HandleAPIErrorCallback(ctx, w, r, err, writeError)
+	log := c.Logger.WithContext(ctx).WithError(err)
+	return handleApiErrorCallback(log, w, r, err, writeError)
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body apigen.ResetBranchJSONRequestBody, repository, branch string) {
@@ -3494,7 +3504,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	taskID, err := c.asyncOpsHandler.SubmitCommit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
+	taskID, err := c.catalogExtendedOps.SubmitCommit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3503,7 +3513,7 @@ func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body ap
 	})
 }
 
-func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CommitStatusParams) {
+func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, repository, branch, id string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -3514,28 +3524,17 @@ func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
-	taskID := params.Id
-	status, err := c.asyncOpsHandler.GetCommitStatus(ctx, repository, taskID)
-	if status == nil {
-		writeResponse(w, r, http.StatusInternalServerError, apigen.CommitStatus{
-			TaskId:     taskID,
-			Completed:  true,
-			UpdateTime: time.Now(),
-			Error: &apigen.Error{
-				Message: "failed to get commit status",
-			},
-		})
+	taskID := id
+	status, err := c.catalogExtendedOps.GetCommitStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	if c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task)) {
-		status.Task.Done = true
-	}
-	checkAndMarkTaskExpired(status.Task)
-
-	resp := apigen.CommitStatus{
-		TaskId:    status.Task.Id,
-		Completed: status.Task.Done,
+	resp := apigen.CommitAsyncStatus{
+		AsyncTaskStatus: apigen.AsyncTaskStatus{
+			TaskId:    status.Task.Id,
+			Completed: status.Task.Done,
+		},
 	}
 	if status.Task.UpdatedAt != nil {
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
@@ -3545,6 +3544,7 @@ func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, reposi
 		resp.Error = &apigen.Error{
 			Message: status.Task.ErrorMsg,
 		}
+		resp.StatusCode = apiutil.Ptr(status.Task.StatusCode)
 	}
 
 	if status.Info != nil {
@@ -3558,13 +3558,12 @@ func (c *Controller) CommitStatus(w http.ResponseWriter, r *http.Request, reposi
 			Metadata: &apigen.Commit_Metadata{
 				AdditionalProperties: status.Info.Metadata,
 			},
-			Generation: apiutil.Ptr(status.Info.Generation),
+			Generation: apiutil.Ptr(int64(status.Info.Generation)),
 			Version:    apiutil.Ptr(int(status.Info.Version)),
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskStatusCode(status.Task.StatusCode)
-	writeResponse(w, r, statusCode, resp)
+	writeResponse(w, r, http.StatusOK, resp)
 }
 
 func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
@@ -4977,7 +4976,8 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
-		c.HandleAPIErrorCallback(ctx, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		log := c.Logger.WithContext(ctx).WithError(err)
+		handleApiErrorCallback(log, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 			writeResponse(w, r, code, nil)
 		})
 		return
@@ -5171,6 +5171,9 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
+			if errors.Is(err, httputil.ErrUnsatisfiableRange) {
+				w.Header().Set("Content-Range", fmt.Sprintf("bytes */%d", entry.Size))
+			}
 			writeError(w, r, http.StatusRequestedRangeNotSatisfiable, "Requested Range Not Satisfiable")
 			return
 		}
@@ -5524,7 +5527,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	taskID, err := c.asyncOpsHandler.SubmitMergeIntoBranch(ctx,
+	taskID, err := c.catalogExtendedOps.SubmitMergeIntoBranch(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Committer(),
 		swag.StringValue(body.Message),
@@ -5543,7 +5546,7 @@ func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch string, params apigen.MergeIntoBranchStatusParams) {
+func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch, id string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateCommitAction,
@@ -5554,28 +5557,17 @@ func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Reques
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
-	taskID := params.Id
-	status, err := c.asyncOpsHandler.GetMergeIntoBranchStatus(ctx, repository, taskID)
-	if status == nil {
-		writeResponse(w, r, http.StatusInternalServerError, apigen.MergeStatus{
-			TaskId:     taskID,
-			Completed:  true,
-			UpdateTime: time.Now(),
-			Error: &apigen.Error{
-				Message: "failed to get merge status",
-			},
-		})
+	taskID := id
+	status, err := c.catalogExtendedOps.GetMergeIntoBranchStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	if c.HandleAPIErrorCallback(ctx, nil, nil, err, catalog.SetTaskStatusCodeAndError(status.Task)) {
-		status.Task.Done = true
-	}
-	checkAndMarkTaskExpired(status.Task)
-
-	resp := apigen.MergeStatus{
-		TaskId:    status.Task.Id,
-		Completed: status.Task.Done,
+	resp := apigen.MergeAsyncStatus{
+		AsyncTaskStatus: apigen.AsyncTaskStatus{
+			TaskId:    status.Task.Id,
+			Completed: status.Task.Done,
+		},
 	}
 	if status.Task.UpdatedAt != nil {
 		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
@@ -5585,6 +5577,7 @@ func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Reques
 		resp.Error = &apigen.Error{
 			Message: status.Task.ErrorMsg,
 		}
+		resp.StatusCode = apiutil.Ptr(status.Task.StatusCode)
 	}
 
 	if status.Info != nil {
@@ -5593,8 +5586,7 @@ func (c *Controller) MergeIntoBranchStatus(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	statusCode := getStatusCodeFromTaskStatusCode(status.Task.StatusCode)
-	writeResponse(w, r, statusCode, resp)
+	writeResponse(w, r, http.StatusOK, resp)
 }
 
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
@@ -6257,26 +6249,6 @@ func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{})
 
 func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
 	httputil.WriteAPIResponse(w, r, code, response)
-}
-
-func checkAndMarkTaskExpired(task *catalog.Task) {
-	if task == nil || task.UpdatedAt == nil {
-		return
-	}
-
-	updatedAt := task.UpdatedAt.AsTime()
-	if time.Since(updatedAt) > asyncTaskStatusExpiryDuration {
-		task.Done = true
-		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %v. Please retry the operation.", asyncTaskStatusExpiryDuration)
-		task.StatusCode = http.StatusGone
-	}
-}
-
-func getStatusCodeFromTaskStatusCode(statusCode int64) int {
-	if statusCode == 0 {
-		return http.StatusOK
-	}
-	return int(statusCode)
 }
 
 func paginationAfter(v *apigen.PaginationAfter) string {
