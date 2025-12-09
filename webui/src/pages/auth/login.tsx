@@ -92,9 +92,16 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             await refreshUser({ useCache: false });
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {
-                                const contents = {__html: `${loginConfig.login_failed_message}` ||
-                                        "Credentials don't match."};
-                                setLoginError(<span dangerouslySetInnerHTML={contents}/>);
+                                // Invalid credentials - show custom message from config
+                                const message = loginConfig.login_failed_message || "The credentials don't match.";
+                                setLoginError(message);
+                            } else if (err instanceof AuthenticationError) {
+                                // Other auth errors (500 server errors during authentication)
+                                setLoginError("Unable to connect to the authentication service. Please try again in a few moments.");
+                            } else {
+                                // Network errors, refreshUser errors, or other unexpected errors
+                                const message = err instanceof Error ? err.message : "Unable to complete login. Please try again.";
+                                setLoginError(message);
                             }
                         }
                     }}>

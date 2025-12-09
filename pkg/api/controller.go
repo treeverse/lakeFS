@@ -772,8 +772,12 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if err != nil {
-		if errors.Is(err, ErrAuthenticatingRequest) {
-			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		// Check for authentication-related errors that should return 401
+		// These errors may be wrapped in a multierror by ChainAuthenticator
+		if errors.Is(err, ErrAuthenticatingRequest) ||
+			errors.Is(err, auth.ErrNotFound) ||
+			errors.Is(err, auth.ErrInvalidSecretAccessKey) {
+			writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 			return
 		}
 		c.Logger.WithError(err).Error("Unexpected error during user authentication")
