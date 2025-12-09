@@ -1,0 +1,129 @@
+# Configuration for actions/labeler
+# https://github.com/actions/labeler
+
+# API
+area/API:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'api/**'
+
+# UI
+area/UI:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'webui/**'
+
+# lakectl CLI
+area/lakectl:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'cmd/lakectl/**'
+          - 'pkg/local/**'
+
+# Authentication & Authorization
+area/auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pkg/auth/**'
+          - 'pkg/authentication/**'
+
+# Hooks subsystem
+area/hooks:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pkg/actions/**'
+
+# Key-Value store
+area/KV:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pkg/kv/**'
+
+# Block storage adapters
+area/block-adapter:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pkg/block/**'
+
+# S3 Gateway
+area/gateway:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pkg/gateway/**'
+
+# Cataloger / Versioning engine
+area/cataloger:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pkg/catalog/**'
+          - 'pkg/graveler/**'
+
+# Python SDK
+area/sdk/python:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'clients/python-wrapper/**'
+          - 'clients/python/**'
+
+# Spark connector
+area/client/spark:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'clients/spark/**'
+
+# Hadoop filesystem
+area/client/hadoopfs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'clients/hadoopfs/**'
+
+# Java client
+area/integrations:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'clients/java/**'
+
+# CI/CD
+area/ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+# Documentation
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+
+# Testing
+area/testing:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*_test.go'
+          - '**/test/**'
+          - '**/tests/**'
+          - '**/*_test.py'
+          - '**/*.test.ts'
+          - '**/*.test.tsx'
+          - '**/*.spec.ts'
+          - 'esti/**'
+
+# Infrastructure / Build
+infrastructure:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'Dockerfile*'
+          - 'docker-compose*'
+          - 'Makefile'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'go.mod'
+          - 'go.sum'
+          - 'package.json'
+          - 'package-lock.json'
+          - '**/pom.xml'
+          - '**/requirements*.txt'
+          - '**/pyproject.toml'
