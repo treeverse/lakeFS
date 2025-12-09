@@ -247,28 +247,115 @@ func expectedURLExp(adapter block.Adapter) time.Time {
 	}
 }
 
-func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QualifiedKey) []string {
-	t.Helper()
-	tree := make([]string, 0)
+// tests the GetProperties method of the adapter, verifying ETag population and consistency with Walker
+func testGetProperties(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
 
-	p := qk.Format()
-	uri, err := url.Parse(p)
-	require.NoError(t, err, "URL Parse Error")
+	t.Run("properties_with_etag", func(t *testing.T) {
+		const contents = "test content for etag"
+		obj := block.ObjectPointer{
+			StorageID:        "",
+			StorageNamespace: storageNamespace,
+			Identifier:       "test_file_with_etag",
+			IdentifierType:   block.IdentifierTypeRelative,
+		}
 
-	walker, err := adapter.GetWalker("", block.WalkerOptions{StorageURI: uri})
-	require.NoError(t, err, "GetWalker failed")
+		// Put the object
+		_, err := adapter.Put(ctx, obj, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
+		require.NoError(t, err)
 
-	wwalker := block.NewWalkerWrapper(walker, uri)
-	err = wwalker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
-		_, p, _ := strings.Cut(e.Address, uri.String())
-		tree = append(tree, p)
-		return nil
+		// Get properties
+		props, err := adapter.GetProperties(ctx, obj)
+		require.NoError(t, err)
+
+		// Verify ETag is populated
+		require.NotEmpty(t, props.ETag, "ETag should be populated")
+
+		// Verify ETag format - should not contain quotes (for most adapters)
+		// Note: Some adapters may have different formats, but none should have quotes
+		require.NotContains(t, props.ETag, "\"", "ETag should not contain quotes")
+
+		// Verify other properties
+		require.False(t, props.LastModified.IsZero(), "LastModified should be set")
 	})
-	if err != nil {
-		t.Fatalf("walking on '%s': %s", uri.String(), err)
-	}
-	sort.Strings(tree)
-	return tree
+
+	t.Run("etag_consistency_with_walker", func(t *testing.T) {
+		const contents = "test content for walker consistency"
+		obj := block.ObjectPointer{
+			StorageID:        "",
+			StorageNamespace: storageNamespace,
+			Identifier:       "test_file_walker_consistency",
+			IdentifierType:   block.IdentifierTypeRelative,
+		}
+
+		// Put the object
+		_, err := adapter.Put(ctx, obj, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
+		require.NoError(t, err)
+
+		// Get properties
+		props, err := adapter.GetProperties(ctx, obj)
+		require.NoError(t, err)
+
+		// Get walker and compare ETag
+		qk, err := adapter.ResolveNamespace(obj.StorageID, obj.StorageNamespace, "", block.IdentifierTypeRelative)
+		require.NoError(t, err)
+		uri, err := url.Parse(qk.Format())
+		require.NoError(t, err)
+
+		walker, err := adapter.GetWalker(obj.StorageID, block.WalkerOptions{StorageURI: uri})
+		require.NoError(t, err)
+
+		var walkerETag string
+		err = walker.Walk(ctx, uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+			if strings.HasSuffix(e.FullKey, "test_file_walker_consistency") {
+				walkerETag = e.ETag
+			}
+			return nil
+		})
+		require.NoError(t, err)
+
+		// Verify that GetProperties ETag matches Walker ETag
+		require.Equal(t, walkerETag, props.ETag, "GetProperties ETag should match Walker ETag")
+	})
+
+	t.Run("not_found", func(t *testing.T) {
+		obj := block.ObjectPointer{
+			StorageID:        "",
+			StorageNamespace: storageNamespace,
+			Identifier:       "non_existent_file",
+			IdentifierType:   block.IdentifierTypeRelative,
+		}
+
+		// Get properties for non-existent object
+		_, err := adapter.GetProperties(ctx, obj)
+		require.Error(t, err)
+		require.ErrorIs(t, err, block.ErrDataNotFound)
+	})
+
+	t.Run("properties_stability", func(t *testing.T) {
+		const contents = "test content for stability"
+		obj := block.ObjectPointer{
+			StorageID:        "",
+			StorageNamespace: storageNamespace,
+			Identifier:       "test_file_stability",
+			IdentifierType:   block.IdentifierTypeRelative,
+		}
+
+		// Put the object
+		_, err := adapter.Put(ctx, obj, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
+		require.NoError(t, err)
+
+		// Get properties multiple times
+		props1, err := adapter.GetProperties(ctx, obj)
+		require.NoError(t, err)
+
+		props2, err := adapter.GetProperties(ctx, obj)
+		require.NoError(t, err)
+
+		// Verify properties are consistent across calls
+		require.Equal(t, props1.ETag, props2.ETag, "ETag should be consistent across calls")
+		require.Equal(t, props1.LastModified, props2.LastModified, "LastModified should be consistent")
+	})
 }
 
 func NowMockDefault() time.Time {
