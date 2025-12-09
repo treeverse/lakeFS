@@ -9,6 +9,7 @@ docs/Acl.md
 docs/ActionRun.md
 docs/ActionRunList.md
 docs/ActionsApi.md
+docs/AsyncTaskStatus.md
 docs/AuthApi.md
 docs/AuthCapabilities.md
 docs/AuthenticationToken.md
@@ -18,6 +19,7 @@ docs/BranchesApi.md
 docs/CherryPickCreation.md
 docs/CommPrefsInput.md
 docs/Commit.md
+docs/CommitAsyncStatus.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitOverrides.md
@@ -71,6 +73,7 @@ docs/LicenseApi.md
 docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
+docs/MergeAsyncStatus.md
 docs/MergeResult.md
 docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
@@ -169,6 +172,7 @@ src/models/access_key_credentials.rs
 src/models/acl.rs
 src/models/action_run.rs
 src/models/action_run_list.rs
+src/models/async_task_status.rs
 src/models/auth_capabilities.rs
 src/models/authentication_token.rs
 src/models/branch_creation.rs
@@ -176,6 +180,7 @@ src/models/branch_protection_rule.rs
 src/models/cherry_pick_creation.rs
 src/models/comm_prefs_input.rs
 src/models/commit.rs
+src/models/commit_async_status.rs
 src/models/commit_creation.rs
 src/models/commit_list.rs
 src/models/commit_overrides.rs
@@ -221,6 +226,7 @@ src/models/license.rs
 src/models/login_config.rs
 src/models/login_information.rs
 src/models/merge.rs
+src/models/merge_async_status.rs
 src/models/merge_result.rs
 src/models/meta_range_creation.rs
 src/models/meta_range_creation_response.rs

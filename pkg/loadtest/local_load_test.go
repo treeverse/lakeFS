@@ -108,6 +108,7 @@ func TestLocalLoad(t *testing.T) {
 		migrator,
 		&stats.NullCollector{},
 		actionsService,
+		catalog.NewNoopExtendedOperations(),
 		auditChecker,
 		logging.ContextUnavailable(),
 		nil,
