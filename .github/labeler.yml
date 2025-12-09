@@ -77,12 +77,6 @@ area/client/hadoopfs:
       - any-glob-to-any-file:
           - 'clients/hadoopfs/**'
 
-# Java client
-area/integrations:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'clients/java/**'
-
 # CI/CD
 area/ci:
   - changed-files:
