@@ -96,11 +96,14 @@ area/testing:
           - '**/*_test.go'
           - '**/test/**'
           - '**/tests/**'
+          - '**/testdata/**'
           - '**/*_test.py'
           - '**/*.test.ts'
           - '**/*.test.tsx'
           - '**/*.spec.ts'
           - 'esti/**'
+          - 'pkg/testutil/**'
+          - 'pkg/loadtest/**'
 
 # Infrastructure / Build
 infrastructure:
