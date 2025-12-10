@@ -42,23 +42,51 @@ var commitCmd = &cobra.Command{
 		branchURI := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", branchURI)
 
-		// do commit
-		metadata := apigen.CommitCreation_Metadata{
-			AdditionalProperties: kvPairs,
-		}
+		ctx := cmd.Context()
 		client := getClient()
-		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
-			Message:    message,
-			Metadata:   &metadata,
+		body := apigen.CommitJSONRequestBody{
+			Message: message,
+			Metadata: &apigen.CommitCreation_Metadata{
+				AdditionalProperties: kvPairs,
+			},
 			Date:       datePtr,
 			AllowEmpty: &emptyCommitBool,
-		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+		}
+		var commit *apigen.Commit
+
+		// try asynchronous commit first
+		startResp, err := client.CommitAsyncWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
+		if startResp.JSON501 == nil { // Async supported or error
+			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
+			if startResp.JSON202 == nil {
+				Die("Bad response from server", 1)
+			}
+
+			taskID := startResp.JSON202.Id
+			err := pollAsyncOperationStatus(ctx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
+				resp, err := client.CommitAsyncStatusWithResponse(ctx, branchURI.Repository, branchURI.Ref, taskID)
+				if err != nil {
+					return nil, err
+				}
+				if resp.JSON200 == nil {
+					Die("Bad response from server", 1)
+				}
+				commit = resp.JSON200.Result
+				return &resp.JSON200.AsyncTaskStatus, nil
+			})
+			if err != nil {
+				DieErr(err)
+			}
+		} else { // Regular commit
+			resp, err := client.CommitWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitParams{}, body)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+			if resp.JSON201 == nil {
+				Die("Bad response from server", 1)
+			}
+
+			commit = resp.JSON201
 		}
 
-		commit := resp.JSON201
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *apigen.Commit
