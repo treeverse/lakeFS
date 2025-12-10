@@ -100,7 +100,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                                 setLoginError("A server error occurred. Please try again in a few moments.");
                             } else if (err instanceof ClientError) {
                                 // Other client errors (4xx) - bad request, rate limiting, etc.
-                                setLoginError("Unable to process your login request. Please try again.");
+                                setLoginError("Unable to process login request. Please try again.");
                             } else {
                                 // Network errors, refreshUser errors, or other unexpected errors
                                 const message = err instanceof Error ? err.message : "Unable to complete login. Please try again.";
