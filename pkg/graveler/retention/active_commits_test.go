@@ -371,9 +371,9 @@ func TestActiveCommits(t *testing.T) {
 
 			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
 				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
-				testutil.NewFakeBranchIterator(branches)), &repositoryCommitGetter{
-				refManager: refManagerMock,
-				repository: repositoryRecord,
+				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetterAdapter{
+				RefManager: refManagerMock,
+				Repository: repositoryRecord,
 			}, garbageCollectionRules)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)

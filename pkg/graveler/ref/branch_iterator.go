@@ -69,7 +69,7 @@ func (bi *BranchSimpleIterator) Next() bool {
 		}
 		bi.value = &graveler.BranchRecord{
 			BranchID: graveler.BranchID(value.Id),
-			Branch:   branchFromProto(value),
+			Branch:   BranchFromProto(value),
 		}
 		return true
 	}
