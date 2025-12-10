@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -176,13 +177,39 @@ and look for the instance_uid field.
 			defer output.Close()
 		}
 
-		// Allow profiling.
+		cpuProfileFilename, err := cmd.Flags().GetString("cpuprofile")
+		if err != nil {
+			printMsgAndExit(fmt.Errorf("cpuprofile: %w", err))
+		}
+		var cpuProfileFile *os.File
+		if cpuProfileFilename != "" {
+			cpuProfileFile, err = os.Create(cpuProfileFilename)
+			if err != nil {
+				printMsgAndExit(fmt.Errorf("open %s: %w", cpuProfileFilename, err))
+			}
+			defer cpuProfileFile.Close()
+			// Will start profiling later.
+		}
+		memProfileFilename, err := cmd.Flags().GetString("memprofile")
+		if err != nil {
+			printMsgAndExit(fmt.Errorf("memprofile: %w", err))
+		}
+		var memProfileFile *os.File
+		if memProfileFilename != "" {
+			memProfileFile, err = os.Create(memProfileFilename)
+			if err != nil {
+				printMsgAndExit(fmt.Errorf("open %s: %w", memProfileFilename, err))
+			}
+			defer memProfileFile.Close()
+		}
+
+		// Allow profiling over a web-server, too.
 		cfg := LoadConfig()
 		baseCfg := cfg.GetBaseConfig()
-		pprof := httputil.ServePPROF("/_pprof/")
+		pprofHandler := httputil.ServePPROF("/_pprof/")
 		server := http.Server{
 			Addr:              baseCfg.ListenAddress,
-			Handler:           pprof,
+			Handler:           pprofHandler,
 			ReadHeaderTimeout: pprofReadHeaderTimeout,
 		}
 		go func() {
@@ -219,6 +246,16 @@ and look for the instance_uid field.
 
 		fmt.Fprintf(os.Stderr, "repositoryID: %s\tUID: %s\n", repositoryID, uid)
 
+		if cpuProfileFile != nil {
+			if err = pprof.StartCPUProfile(cpuProfileFile); err != nil {
+				printMsgAndExit(fmt.Errorf("start CPU profile: %w", err))
+			}
+			defer func() {
+				pprof.StopCPUProfile()
+				fmt.Fprintln(os.Stderr, "wrote cpuprofile")
+			}()
+		}
+
 		repository := &graveler.RepositoryRecord{
 			RepositoryID: graveler.RepositoryID(repositoryID),
 			Repository:   &graveler.Repository{InstanceUID: uid},
@@ -251,6 +288,14 @@ and look for the instance_uid field.
 		for commitID, metaRangeID := range gcCommits {
 			fmt.Fprintf(output, "%s [%s]\n", commitID, metaRangeID)
 		}
+
+		if memProfileFile != nil {
+			// Alternative: "allocs".
+			if err = pprof.Lookup("heap").WriteTo(memProfileFile, 0); err != nil {
+				printMsgAndExit(fmt.Errorf("write mem profile: %w", err))
+			}
+			fmt.Fprintln(os.Stderr, "wrote memprofile")
+		}
 	},
 }
 
@@ -259,5 +304,7 @@ func init() {
 	rootCmd.AddCommand(gcCmd)
 	f := simulateCmd.Flags()
 	f.StringP("output", "o", "", "Write output to this file")
+	f.String("cpuprofile", "", "If set, write CPU profile of GC (without time to read inputs) to this file.")
+	f.String("memprofile", "", "If set, write memory profile of GC (without time to read inputs) to this file.")
 	gcCmd.AddCommand(simulateCmd)
 }
