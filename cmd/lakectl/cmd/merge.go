@@ -64,7 +64,7 @@ var mergeCmd = &cobra.Command{
 			SquashMerge: &squash,
 		}
 		ctx := cmd.Context()
-		var ref string
+		var mergeResult *apigen.MergeResult
 
 		// try asynchronous merge first
 		startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
@@ -73,7 +73,6 @@ var mergeCmd = &cobra.Command{
 			if startResp.JSON202 == nil {
 				Die("Bad response from server", 1)
 			}
-			var result *apigen.MergeResult
 			taskID := startResp.JSON202.Id
 			err := pollAsyncOperationStatus(ctx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
 				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
@@ -86,16 +85,15 @@ var mergeCmd = &cobra.Command{
 				if apiutil.Value(resp.JSON200.StatusCode) == http.StatusConflict { // Align die msg with sync response of conflict
 					Die("Conflict found.", 1)
 				}
-				result = resp.JSON200.Result
+				mergeResult = resp.JSON200.Result
 				return &resp.JSON200.AsyncTaskStatus, nil
 			})
 			if err != nil {
 				DieErr(err)
 			}
-			if result == nil {
+			if mergeResult == nil {
 				Die("Bad response from server", 1)
 			}
-			ref = result.Reference
 		} else {
 			resp, err := client.MergeIntoBranchWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
 			if resp != nil && resp.JSON409 != nil {
@@ -105,7 +103,7 @@ var mergeCmd = &cobra.Command{
 			if resp.JSON200 == nil {
 				Die("Bad response from server", 1)
 			}
-			ref = resp.JSON200.Reference
+			mergeResult = resp.JSON200
 		}
 
 		Write(mergeCreateTemplate, struct {
@@ -116,9 +114,7 @@ var mergeCmd = &cobra.Command{
 				FromRef: sourceRef.Ref,
 				ToRef:   destinationRef.Ref,
 			},
-			Result: &apigen.MergeResult{
-				Reference: ref,
-			},
+			Result: mergeResult,
 		})
 	},
 }
