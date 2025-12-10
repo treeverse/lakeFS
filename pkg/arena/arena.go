@@ -47,7 +47,7 @@ func (a *arena[T]) Get(index Index) *T {
 // Map holds it values in an Arena.  If V is a pointer (or smaller), this does not save
 // anything.
 type Map[K comparable, V any] interface {
-	Put(k K, v V)
+	Put(k K, v V) *V
 	Get(k K) *V
 }
 

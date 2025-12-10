@@ -58,7 +58,13 @@ func TestArenaMap(t *testing.T) {
 	m := arena.NewMap[string, string]()
 
 	// Test basic Put and Get
-	m.Put("foo", "value1")
+	putPtr1 := m.Put("foo", "value1")
+	if putPtr1 == nil {
+		t.Errorf("Put returned nil pointer for foo")
+	} else if *putPtr1 != "value1" {
+		t.Errorf("Put returned pointer to %s != value1 for foo", *putPtr1)
+	}
+
 	m.Put("bar", "value2")
 
 	gotValue1 := m.Get("foo")
