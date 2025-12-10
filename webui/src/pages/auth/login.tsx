@@ -3,7 +3,7 @@ import {Navigate, useLocation} from "react-router-dom";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
+import {auth, AuthenticationError, ClientError, ServerError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
@@ -91,13 +91,16 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
                             await refreshUser({ useCache: false });
                         } catch(err) {
-                            if (err instanceof AuthenticationError && err.status === 401) {
-                                // Invalid credentials - show custom message from config
+                            if (err instanceof AuthenticationError) {
+                                // Invalid credentials (401)
                                 const message = loginConfig.login_failed_message || "The credentials don't match.";
                                 setLoginError(message);
-                            } else if (err instanceof AuthenticationError) {
-                                // Other auth errors (500 server errors during authentication)
-                                setLoginError("Unable to connect to the authentication service. Please try again in a few moments.");
+                            } else if (err instanceof ServerError) {
+                                // Server errors (5xx)
+                                setLoginError("A server error occurred. Please try again in a few moments.");
+                            } else if (err instanceof ClientError) {
+                                // Other client errors (4xx) - bad request, rate limiting, etc.
+                                setLoginError("Unable to process your login request. Please try again.");
                             } else {
                                 // Network errors, refreshUser errors, or other unexpected errors
                                 const message = err instanceof Error ? err.message : "Unable to complete login. Please try again.";

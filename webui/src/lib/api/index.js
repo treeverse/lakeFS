@@ -123,6 +123,22 @@ export class AuthenticationError extends Error {
     }
 }
 
+export class ClientError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.status = status;
+        this.name = this.constructor.name;
+    }
+}
+
+export class ServerError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.status = status;
+        this.name = this.constructor.name;
+    }
+}
+
 export class MergeError extends Error {
     constructor(message, payload) {
         super(message);
@@ -163,8 +179,14 @@ class Auth {
         if (response.status === 401) {
             throw new AuthenticationError('invalid credentials', response.status);
         }
+        if (response.status >= 500) {
+            throw new ServerError('server error during authentication', response.status);
+        }
+        if (response.status >= 400) {
+            throw new ClientError('client error during authentication', response.status);
+        }
         if (response.status !== 200) {
-            throw new AuthenticationError('Unknown authentication error', response.status);
+            throw new Error('Unknown error during authentication');
         }
 
         this.clearCurrentUser();
