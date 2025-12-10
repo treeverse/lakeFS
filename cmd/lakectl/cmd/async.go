@@ -25,10 +25,6 @@ const (
 
 var ErrTaskNotCompleted = errors.New("task not completed")
 
-type StatusResponse struct {
-	Completed bool
-}
-
 type asyncStatusCallback func() (*apigen.AsyncTaskStatus, error)
 
 // getErrFromStatus returns a UserVisibleAPIError from AsyncTaskStatus that simulates synchronous operation error response
