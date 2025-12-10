@@ -323,12 +323,13 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
     ```
 
     We can use [presigned URLs mode][presigned-url] without allowing access to the data from the lakeFS server directly.
-    We can achieve this by using [condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html) such as [aws:referer](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-referer), [aws:SourceVpc](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourcevpc) and [aws:SourceIp](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourceip).
+    We can achieve this by using [condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html) such as [aws:referer](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-referer), [aws:SourceVpc](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourcevpc), [aws:SourceVpcArn](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourcevpcarn) and [aws:SourceIp](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourceip).
 
     !!! example "For example, assume the following scenario"
         - lakeFS is deployed outside the company (i.e lakeFS cloud or other VPC **not** `vpc-123`)
         - We don't want lakeFS to be able to access the data, so we use presign URL, we still need lakeFS role to be able to sign the URL.
         - We want to allow access from the internal company VPC: `vpc-123`.
+        - Both lakeFS and company bucket are deployed in the same region, in that case `us-east-1`.
 
         ```json
         {
@@ -346,7 +347,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
             ],
             "Condition": {
                 "StringEquals": {
-                    "aws:SourceVpc": "vpc-123"
+                    "aws:SourceVpcArn": "arn:aws:ec2:us-east-1:*:vpc/vpc-123"
                 }
             }
         }
