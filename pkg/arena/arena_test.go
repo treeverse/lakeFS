@@ -2,6 +2,7 @@ package arena_test
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/arena"
@@ -133,4 +134,122 @@ func TestArenaMap(t *testing.T) {
 func TestBoundedArenaMap(t *testing.T) {
 	m := arena.NewBoundedKeyMap[string, string]()
 	testArenaMap(t, m)
+}
+
+func TestBoundedArenaMapOptimize(t *testing.T) {
+	m := arena.NewBoundedKeyMap[string, string]()
+
+	// Create a slice with keys 0-99 and shuffle it
+	keys := make([]int, 100)
+	for i := range 100 {
+		keys[i] = i
+	}
+	rand.Shuffle(len(keys), func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	// Put 100 elements in shuffled order
+	for _, i := range keys {
+		key := fmt.Sprintf("key%d", i)
+		value := fmt.Sprintf("value%d", i)
+		m.Put(key, value)
+	}
+
+	// Verify they work
+	for i := range 100 {
+		key := fmt.Sprintf("key%d", i)
+		expectedValue := fmt.Sprintf("value%d", i)
+		got := m.Get(key)
+		if got == nil {
+			t.Errorf("Could not retrieve %s before Optimize", key)
+		} else if *got != expectedValue {
+			t.Errorf("Got %s != %s for %s before Optimize", *got, expectedValue, key)
+		}
+	}
+
+	// Optimize
+	m.Optimize()
+
+	// Verify we can still get them
+	for i := range 100 {
+		key := fmt.Sprintf("key%d", i)
+		expectedValue := fmt.Sprintf("value%d", i)
+		got := m.Get(key)
+		if got == nil {
+			t.Errorf("Could not retrieve %s after first Optimize", key)
+		} else if *got != expectedValue {
+			t.Errorf("Got %s != %s for %s after first Optimize", *got, expectedValue, key)
+		}
+	}
+
+	// Create another shuffled slice with keys 100-199 and 0-49 (for updates)
+	moreKeys := make([]int, 150)
+	for i := range 100 {
+		moreKeys[i] = 100 + i // keys 100-199
+	}
+	for i := range 50 {
+		moreKeys[100+i] = i // keys 0-49 for updates
+	}
+	rand.Shuffle(len(moreKeys), func(i, j int) {
+		moreKeys[i], moreKeys[j] = moreKeys[j], moreKeys[i]
+	})
+
+	// Put 100 more new elements and overwrite 50 old elements in shuffled order
+	for _, i := range moreKeys {
+		key := fmt.Sprintf("key%d", i)
+		if i < 50 {
+			value := fmt.Sprintf("updated%d", i)
+			m.Put(key, value)
+		} else {
+			value := fmt.Sprintf("value%d", i)
+			m.Put(key, value)
+		}
+	}
+
+	// Verify they still work
+	for i := range 50 {
+		key := fmt.Sprintf("key%d", i)
+		expectedValue := fmt.Sprintf("updated%d", i)
+		got := m.Get(key)
+		if got == nil {
+			t.Errorf("Could not retrieve updated %s", key)
+		} else if *got != expectedValue {
+			t.Errorf("Got %s != %s for updated %s", *got, expectedValue, key)
+		}
+	}
+	for i := 50; i < 200; i++ {
+		key := fmt.Sprintf("key%d", i)
+		expectedValue := fmt.Sprintf("value%d", i)
+		got := m.Get(key)
+		if got == nil {
+			t.Errorf("Could not retrieve %s", key)
+		} else if *got != expectedValue {
+			t.Errorf("Got %s != %s for %s", *got, expectedValue, key)
+		}
+	}
+
+	// Optimize again
+	m.Optimize()
+
+	// Verify we can still Get all 200 elements
+	for i := range 50 {
+		key := fmt.Sprintf("key%d", i)
+		expectedValue := fmt.Sprintf("updated%d", i)
+		got := m.Get(key)
+		if got == nil {
+			t.Errorf("Could not retrieve updated %s after second Optimize", key)
+		} else if *got != expectedValue {
+			t.Errorf("Got %s != %s for updated %s after second Optimize", *got, expectedValue, key)
+		}
+	}
+	for i := 50; i < 200; i++ {
+		key := fmt.Sprintf("key%d", i)
+		expectedValue := fmt.Sprintf("value%d", i)
+		got := m.Get(key)
+		if got == nil {
+			t.Errorf("Could not retrieve %s after second Optimize", key)
+		} else if *got != expectedValue {
+			t.Errorf("Got %s != %s for %s after second Optimize", *got, expectedValue, key)
+		}
+	}
 }

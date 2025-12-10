@@ -8,7 +8,6 @@ package arena
 
 import (
 	"bytes"
-	"cmp"
 	"fmt"
 	"iter"
 	"slices"
@@ -167,7 +166,8 @@ type boundedArenaMap[K ~string, V any] struct {
 }
 
 func (m *boundedArenaMap[K, V]) compareKey(p entry[V], k K) int {
-	return cmp.Compare(K(p.k[:]), k)
+	trimmedKey := trimKey(k)
+	return bytes.Compare(p.k[:], trimmedKey[:])
 }
 
 func (m *boundedArenaMap[K, V]) compareEntries(a, b entry[V]) int {
@@ -203,6 +203,22 @@ func (m *boundedArenaMap[K, V]) Optimize() {
 	for k, v := range m.smallMap.Entries() {
 		m.bigMap = append(m.bigMap, entry[V]{trimKey(k), *v})
 	}
-	slices.SortFunc(m.bigMap, m.compareEntries)
+	slices.SortStableFunc(m.bigMap, m.compareEntries)
+
+	// Deduplicate entries with the same key, keeping the last occurrence
+	if len(m.bigMap) > 0 {
+		writeIdx := 0
+		for readIdx := 1; readIdx < len(m.bigMap); readIdx++ {
+			if m.compareEntries(m.bigMap[writeIdx], m.bigMap[readIdx]) != 0 {
+				writeIdx++
+				m.bigMap[writeIdx] = m.bigMap[readIdx]
+			} else {
+				// Same key - keep the later one (at readIdx)
+				m.bigMap[writeIdx] = m.bigMap[readIdx]
+			}
+		}
+		m.bigMap = m.bigMap[:writeIdx+1]
+	}
+
 	m.smallMap = newArenaMap[K, V]()
 }
