@@ -64,10 +64,7 @@ var mergeCmd = &cobra.Command{
 			SquashMerge: &squash,
 		}
 		ctx := cmd.Context()
-		var (
-			ref string
-			err error
-		)
+		var ref string
 
 		// try asynchronous merge first
 		startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
@@ -78,7 +75,7 @@ var mergeCmd = &cobra.Command{
 			}
 			var result *apigen.MergeResult
 			taskID := startResp.JSON202.Id
-			err := pollAsyncOperationStatus(ctx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
+			err := pollAsyncOperationStatus(ctx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
 				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
 				if err != nil {
 					return nil, err

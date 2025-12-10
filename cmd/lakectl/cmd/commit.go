@@ -52,10 +52,7 @@ var commitCmd = &cobra.Command{
 			Date:       datePtr,
 			AllowEmpty: &emptyCommitBool,
 		}
-		var (
-			commit *apigen.Commit
-			err    error
-		)
+		var commit *apigen.Commit
 
 		// try asynchronous commit first
 		startResp, err := client.CommitAsyncWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
