@@ -6,7 +6,13 @@
 // There only way to release the objects is to drop the entire arena.
 package arena
 
-import "slices"
+import (
+	"bytes"
+	"cmp"
+	"fmt"
+	"iter"
+	"slices"
+)
 
 type Index struct {
 	o int
@@ -24,7 +30,7 @@ type Arena[T any] interface {
 }
 
 const (
-	defaultGrowthFactor = 1.15
+	defaultGrowthFactor = 0.15
 	extraGrowth         = 2
 )
 
@@ -60,10 +66,26 @@ func (a *arena[T]) Get(index Index) *T {
 type Map[K comparable, V any] interface {
 	Put(k K, v V) *V
 	Get(k K) *V
+	Len() int
+}
+
+// Optimizer can be "optimized" after many writes and before many reads, to make them more
+// efficient.  Implementing this allows map keys to be compressed into an Arena.
+type Optimizer interface {
+	Optimize()
+}
+
+type OptimizerMap[K comparable, V any] interface {
+	Map[K, V]
+	Optimizer
 }
 
 // NewMap returns a Map.  This Map is not thread-safe.
 func NewMap[K comparable, V any]() Map[K, V] {
+	return newArenaMap[K, V]()
+}
+
+func newArenaMap[K comparable, V any]() *arenaMap[K, V] {
 	return &arenaMap[K, V]{
 		indices: make(map[K]Index, 0),
 		arena:   New[V](),
@@ -95,7 +117,92 @@ func (m *arenaMap[K, V]) Get(k K) *V {
 	}
 }
 
-// NewBoundedKeyMap returns a Map that uses string-like keys of bounded length.  This allows it
-// to keep keys in an Arena.  The map *panics* if it encounters a longer key.
-type boundedArenaMap[K ~string, V any, SIZE int] struct {
+func (m *arenaMap[K, V]) Len() int {
+	return len(m.indices)
+}
+
+func (m *arenaMap[K, V]) Entries() iter.Seq2[K, *V] {
+	return func(yield func(K, *V) bool) {
+		for k, i := range m.indices {
+			if !yield(k, m.arena.Get(i)) {
+				return
+			}
+		}
+	}
+}
+
+const KEY_SIZE_BOUND = 16
+
+func trimKey[K ~string](key K) [KEY_SIZE_BOUND]byte {
+	if len(key) > KEY_SIZE_BOUND {
+		// Keys have a fixed size, and this is really a compile-time error,
+		panic(fmt.Sprintf("long key %s > %d", key, KEY_SIZE_BOUND))
+	}
+	var ret [KEY_SIZE_BOUND]byte
+	copy(ret[:], []byte(key))
+	return ret
+}
+
+type entry[V any] struct {
+	k [KEY_SIZE_BOUND]byte
+	v V
+}
+
+// NewBoundedKeyMap returns a Map that uses string-like keys of bounded length.  Keys are
+// zero-padded, so must not end in zero bytes.  This Map is not thread-safe.
+//
+// It to keep keys in an Arena.  The map *panics* if it encounters a longer key.
+func NewBoundedKeyMap[K ~string, V any]() OptimizerMap[K, V] {
+	return &boundedArenaMap[K, V]{
+		bigMap:   nil,
+		smallMap: newArenaMap[K, V](),
+	}
+}
+
+type boundedArenaMap[K ~string, V any] struct {
+	// bigMap is sorted slice of pairs.  Apart from calls to Optimize it is immutable,
+	bigMap []entry[V]
+	// smallMap holds values before Optimize.
+	smallMap *arenaMap[K, V]
+}
+
+func (m *boundedArenaMap[K, V]) compareKey(p entry[V], k K) int {
+	return cmp.Compare(K(p.k[:]), k)
+}
+
+func (m *boundedArenaMap[K, V]) compareEntries(a, b entry[V]) int {
+	return bytes.Compare(a.k[:], b.k[:])
+}
+
+func (m *boundedArenaMap[K, V]) Put(k K, v V) *V {
+	return m.smallMap.Put(k, v)
+}
+
+func (m *boundedArenaMap[K, V]) Get(k K) *V {
+	if v := m.smallMap.Get(k); v != nil {
+		return v
+	}
+	if m.bigMap == nil {
+		return nil
+	}
+
+	pos, ok := slices.BinarySearchFunc(m.bigMap, k, m.compareKey)
+	if !ok {
+		return nil
+	}
+	return &m.bigMap[pos].v
+}
+
+func (m *boundedArenaMap[K, V]) Len() int {
+	return len(m.bigMap) + m.smallMap.Len()
+}
+
+func (m *boundedArenaMap[K, V]) Optimize() {
+	// Resize m.bigMap once in advance.
+	m.bigMap = slices.Grow(m.bigMap, m.smallMap.Len())
+	for k, v := range m.smallMap.Entries() {
+		m.bigMap = append(m.bigMap, entry[V]{trimKey(k), *v})
+	}
+	slices.SortFunc(m.bigMap, m.compareEntries)
+	m.smallMap = newArenaMap[K, V]()
 }
