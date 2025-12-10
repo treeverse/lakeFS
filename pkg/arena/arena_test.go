@@ -54,9 +54,7 @@ func TestArena(t *testing.T) {
 	}
 }
 
-func TestArenaMap(t *testing.T) {
-	m := arena.NewMap[string, string]()
-
+func testArenaMap(t *testing.T, m arena.Map[string, string]) {
 	// Test basic Put and Get
 	putPtr1 := m.Put("foo", "value1")
 	if putPtr1 == nil {
@@ -125,4 +123,14 @@ func TestArenaMap(t *testing.T) {
 			t.Errorf("Got %s != value2 for bar after many additions", *gotValue2Again)
 		}
 	}
+}
+
+func TestArenaMap(t *testing.T) {
+	m := arena.NewMap[string, string]()
+	testArenaMap(t, m)
+}
+
+func TestBoundedArenaMap(t *testing.T) {
+	m := arena.NewBoundedKeyMap[string, string]()
+	testArenaMap(t, m)
 }
