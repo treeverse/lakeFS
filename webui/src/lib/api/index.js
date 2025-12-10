@@ -899,6 +899,41 @@ class Commits {
         }
         return response.json();
     }
+
+    async commitAsync(repoId, branchId, message, metadata = {}, date = null, allowEmpty = false, force = false, sourceMetarange = null) {
+        const query = sourceMetarange ? qs({source_metarange: sourceMetarange}) : '';
+        const body = {
+            message,
+            metadata,
+            allow_empty: allowEmpty,
+            force,
+            ...(date !== null && { date })
+        };
+
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async${query ? '?' + query : ''}`,
+            {
+                method: 'POST',
+                body: JSON.stringify(body),
+            }
+        );
+
+        if (response.status !== 202) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async commitStatus(repoId, branchId, taskId) {
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async/${taskId}/status`
+        );
+
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
 }
 
 class Refs {
@@ -926,6 +961,48 @@ class Refs {
             method: 'POST',
             body: JSON.stringify({strategy, message, metadata})
         });
+
+        let resp;
+        switch (response.status) {
+            case 200:
+                return response.json();
+            case 409:
+                resp = await response.json();
+                throw new MergeError('Conflict', resp);
+            case 412:
+            default:
+                throw new Error(await extractError(response));
+        }
+    }
+
+    async mergeAsync(repoId, sourceRef, destinationBranch, strategy = "", message = "", metadata = {}, force = false, allowEmpty = false, squashMerge = false) {
+        const body = {
+            strategy,
+            message,
+            metadata,
+            force,
+            allow_empty: allowEmpty,
+            squash_merge: squashMerge
+        };
+
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/async`,
+            {
+                method: 'POST',
+                body: JSON.stringify(body)
+            }
+        );
+
+        if (response.status !== 202) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async mergeStatus(repoId, sourceRef, destinationBranch, taskId) {
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/async/${taskId}/status`
+        );
 
         let resp;
         switch (response.status) {
