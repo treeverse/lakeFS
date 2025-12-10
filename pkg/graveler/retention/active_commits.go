@@ -5,28 +5,30 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/arena"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type CommitNode struct {
-	CreationDate time.Time
-	MainParent   graveler.CommitID
-	MetaRangeID  graveler.MetaRangeID
+	// CreationSecs is in microseconds-since-epoch.  It takes 3x less space than time.Time.
+	CreationUsecs int64
+	MainParent    graveler.CommitID
+	MetaRangeID   graveler.MetaRangeID
 }
 
-// CommitsMap is an immutable cache of commits.  Each commit can be set
-// once, and will be read if needed.  It is *not* thread-safe.
+// CommitsMap is an immutable cache of commits.  Each commit can be set once, and will be read
+// if needed.  It is *not* thread-safe.
 type CommitsMap struct {
 	ctx          context.Context
 	Log          logging.Logger
 	NumMisses    int64
 	CommitGetter RepositoryCommitGetter
-	Map          map[graveler.CommitID]CommitNode
+	Map          arena.Map[graveler.CommitID, CommitNode]
 }
 
 func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (CommitsMap, error) {
-	initialMap := make(map[graveler.CommitID]CommitNode)
+	initialMap := arena.NewMap[graveler.CommitID, CommitNode]()
 	it, err := commitGetter.List(ctx)
 	if err != nil {
 		return CommitsMap{}, fmt.Errorf("list existing commits into map: %w", err)
@@ -34,7 +36,7 @@ func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (Co
 	defer it.Close()
 	for it.Next() {
 		commit := it.Value()
-		initialMap[commit.CommitID] = nodeFromCommit(commit.Commit)
+		initialMap.Put(commit.CommitID, nodeFromCommit(commit.Commit))
 	}
 	return CommitsMap{
 		ctx:          ctx,
@@ -47,35 +49,35 @@ func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (Co
 
 // Set sets a commit.  It will not be looked up again in CommitGetter.
 func (c *CommitsMap) Set(id graveler.CommitID, node CommitNode) {
-	c.Map[id] = node
+	c.Map.Put(id, node)
 }
 
 // Get gets a commit.  If the commit has not been Set it uses CommitGetter
 // to read it.
-func (c *CommitsMap) Get(id graveler.CommitID) (CommitNode, error) {
-	ret, ok := c.Map[id]
-	if ok {
+func (c *CommitsMap) Get(id graveler.CommitID) (*CommitNode, error) {
+	ret := c.Map.Get(id)
+	if ret != nil {
 		return ret, nil
 	}
 	// Unlikely: id raced with initial bunch of Sets.
 	commit, err := c.CommitGetter.Get(c.ctx, id)
 	if err != nil {
-		return CommitNode{}, fmt.Errorf("get missing commit ID %s: %w", id, err)
+		return nil, fmt.Errorf("get missing commit ID %s: %w", id, err)
 	}
-	ret = nodeFromCommit(commit)
-	c.Map[id] = ret
+	ret = c.Map.Put(id, nodeFromCommit(commit))
 	c.NumMisses++
+	createdAt := time.UnixMicro(ret.CreationUsecs)
 	c.Log.WithFields(logging.Fields{
 		"commit_id": id,
-		"created":   ret.CreationDate,
-		"age":       time.Since(ret.CreationDate),
+		"created":   createdAt,
+		"age":       time.Since(createdAt),
 	}).Warn("Loaded single commit, probably new")
 	return ret, nil
 }
 
 // GetMap returns the entire map of commits.  It is probably incorrect to
 // modify it.
-func (c *CommitsMap) GetMap() map[graveler.CommitID]CommitNode {
+func (c *CommitsMap) GetMap() arena.Map[graveler.CommitID, CommitNode] {
 	return c.Map
 }
 
@@ -90,9 +92,9 @@ func nodeFromCommit(commit *graveler.Commit) CommitNode {
 		}
 	}
 	return CommitNode{
-		CreationDate: commit.CreationDate,
-		MainParent:   mainParent,
-		MetaRangeID:  commit.MetaRangeID,
+		CreationUsecs: commit.CreationDate.UnixMicro(),
+		MainParent:    mainParent,
+		MetaRangeID:   commit.MetaRangeID,
 	}
 }
 
@@ -127,9 +129,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		}
 		if startingPoint.BranchID == "" {
 			// If the current commit is NOT a branch HEAD (a dangling commit) - add a hypothetical HEAD as its child
-			commitNode = CommitNode{
-				CreationDate: commitNode.CreationDate,
-				MainParent:   startingPoint.CommitID,
+			commitNode = &CommitNode{
+				CreationUsecs: commitNode.CreationUsecs,
+				MainParent:    startingPoint.CommitID,
 			}
 		} else {
 			// If the current commit IS a branch HEAD - fetch and retention rules for this branch and...
@@ -154,7 +156,8 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// wins
 				break
 			}
-			if commitNode.CreationDate.After(branchExpirationThreshold) {
+			createdAt := time.UnixMicro(commitNode.CreationUsecs)
+			if createdAt.After(branchExpirationThreshold) {
 				// If the current commit creation time is after the threshold, then its parent is active because the
 				// definition for 'active' is either creation time is after the threshold, or the first beyond
 				// the threshold. In either way, the PARENT is active.
@@ -176,10 +179,10 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	return makeCommitMap(commitsMap.GetMap(), activeMap), nil
 }
 
-func makeCommitMap(commitNodes map[graveler.CommitID]CommitNode, commitSet map[graveler.CommitID]struct{}) map[graveler.CommitID]graveler.MetaRangeID {
+func makeCommitMap(commitNodes arena.Map[graveler.CommitID, CommitNode], commitSet map[graveler.CommitID]struct{}) map[graveler.CommitID]graveler.MetaRangeID {
 	res := make(map[graveler.CommitID]graveler.MetaRangeID)
 	for commitID := range commitSet {
-		res[commitID] = commitNodes[commitID].MetaRangeID
+		res[commitID] = commitNodes.Get(commitID).MetaRangeID
 	}
 	return res
 }
