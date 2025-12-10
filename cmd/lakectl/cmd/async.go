@@ -16,7 +16,7 @@ import (
 
 const (
 	initialInterval = 1 * time.Second  // initial interval for exponential backoff
-	MaxInterval     = 10 * time.Second // max interval for exponential backoff
+	maxInterval     = 10 * time.Second // max interval for exponential backoff
 
 	defaultPollInterval = 3 * time.Second // default interval while pulling tasks status
 	minimumPollInterval = time.Second     // minimum interval while pulling tasks status
@@ -47,7 +47,7 @@ func getErrFromStatus(resp apigen.AsyncTaskStatus) helpers.UserVisibleAPIError {
 // TODO (niro): We will need to implement timeout and cancel logic here
 func pollAsyncOperationStatus(ctx context.Context, taskID string, operation string, cb asyncStatusCallback) error {
 	var bo backoff.BackOff = backoff.NewExponentialBackOff(
-		backoff.WithInitialInterval(initialInterval), backoff.WithMaxInterval(MaxInterval)) // No timeout
+		backoff.WithInitialInterval(initialInterval), backoff.WithMaxInterval(maxInterval)) // No timeout
 	bo = backoff.WithContext(bo, ctx)
 	logging.FromContext(ctx).WithFields(logging.Fields{"task_id": taskID}).Debug(fmt.Sprintf("Checking status of %s", operation))
 	return backoff.Retry(func() error {

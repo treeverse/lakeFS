@@ -69,9 +69,8 @@ var mergeCmd = &cobra.Command{
 			err error
 		)
 
-		// # try asynchronous merge first
+		// try asynchronous merge first
 		startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
-		// TODO (niro): We will need to implement timeout and cancel logic here
 		if startResp.JSON501 == nil { // Async supported or error
 			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
 			if startResp.JSON202 == nil {
