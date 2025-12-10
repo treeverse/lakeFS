@@ -103,7 +103,7 @@ export class RepositoryPage {
   // navigation
 
   async gotoObjectsTab(): Promise<void> {
-    await this.page.getByRole("link", { name: "Objects" }).click();
+    await this.page.getByRole("link", { name: "Objects", exact: true }).click();
   }
 
 

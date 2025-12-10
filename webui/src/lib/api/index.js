@@ -1004,17 +1004,10 @@ class Refs {
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/async/${taskId}/status`
         );
 
-        let resp;
-        switch (response.status) {
-            case 200:
-                return response.json();
-            case 409:
-                resp = await response.json();
-                throw new MergeError('Conflict', resp);
-            case 412:
-            default:
-                throw new Error(await extractError(response));
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
         }
+        return response.json();
     }
 }
 
