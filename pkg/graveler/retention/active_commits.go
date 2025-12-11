@@ -12,7 +12,7 @@ import (
 )
 
 type CommitNode struct {
-	// CreationSecs is in microseconds-since-epoch.  It takes 3x less space than time.Time.
+	// CreationUsecs is in microseconds-since-epoch.  It takes 3x less space than time.Time.
 	CreationUsecs int64
 	MainParent    graveler.CommitID
 	MetaRangeID   graveler.MetaRangeID
@@ -35,8 +35,11 @@ type BinaryCommitID string
 func ToBinaryCommitID(hexID graveler.CommitID) BinaryCommitID {
 	b, err := hex.DecodeString(string(hexID))
 	if err != nil {
-		// This check should happen at compile time but cannot happen at
-		panic(fmt.Sprintf("decode hex %s: %w", hexID, err))
+		// This check should happen at compile time but the Go type system is far too
+		// weak for that.  It is safe here because **all commit IDs are the same size**
+		// - if the size is wrong, the code will always fail integration testing.  So
+		// "it cannot happen".
+		panic(fmt.Sprintf("decode hex %s: %s", hexID, err))
 	}
 	return BinaryCommitID(b[:arena.KEY_SIZE_BOUND])
 }
