@@ -5,6 +5,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
+	"github.com/DmitriyVTitov/size"
 	"github.com/treeverse/lakefs/pkg/arena"
 )
 
@@ -252,4 +253,45 @@ func TestBoundedArenaMapOptimize(t *testing.T) {
 			t.Errorf("Got %s != %s for %s after second Optimize", *got, expectedValue, key)
 		}
 	}
+}
+
+func TestMapSizes(t *testing.T) {
+	const numEntries = 1000
+
+	// Regular Go map
+	regularMap := make(map[string]string)
+	for i := range numEntries {
+		key := fmt.Sprintf("key%d", i)
+		value := fmt.Sprintf("value%d", i)
+		regularMap[key] = value
+	}
+
+	// arena.Map (arenaMap)
+	arenaMap := arena.NewMap[string, string]()
+	for i := range numEntries {
+		key := fmt.Sprintf("key%d", i)
+		value := fmt.Sprintf("value%d", i)
+		arenaMap.Put(key, value)
+	}
+
+	// arena.BoundedKeyMap (boundedArenaMap)
+	boundedMap := arena.NewBoundedKeyMap[string, string]()
+	for i := range numEntries {
+		key := fmt.Sprintf("key%d", i)
+		value := fmt.Sprintf("value%d", i)
+		boundedMap.Put(key, value)
+	}
+
+	// Compute sizes using DmitriyVTitov/size
+	regularMapSize := size.Of(regularMap)
+	arenaMapSize := size.Of(arenaMap)
+	boundedMapSize := size.Of(boundedMap)
+
+	boundedMap.Optimize()
+	optimizedBoundedMapSize := size.Of(boundedMap)
+
+	t.Logf("Regular map[string]string:        %d bytes", regularMapSize)
+	t.Logf("arena.Map:                        %d bytes", arenaMapSize)
+	t.Logf("arena.BoundedKeyMap:              %d bytes", boundedMapSize)
+	t.Logf("arena.BoundedKeyMap (optimized):  %d bytes", optimizedBoundedMapSize)
 }
