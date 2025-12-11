@@ -6,6 +6,8 @@
 // There only way to release the objects is to drop the entire arena.
 package arena
 
+import "slices"
+
 type Index struct {
 	o int
 }
@@ -21,17 +23,26 @@ type Arena[T any] interface {
 	Get(index Index) *T
 }
 
+const (
+	defaultGrowthFactor = 1.15
+	extraGrowth         = 2
+)
+
 // New returns an Arena.  This Arena is not thread-safe.
 func New[T any]() Arena[T] {
-	return &arena[T]{}
+	return &arena[T]{growthFactor: defaultGrowthFactor}
 }
 
 type arena[T any] struct {
-	objects []T
+	growthFactor float64
+	objects      []T
 }
 
 func (a *arena[T]) Add(t T) Index {
 	offset := len(a.objects)
+	if len(a.objects) == cap(a.objects) {
+		a.objects = slices.Grow(a.objects, int(float64(cap(a.objects))*a.growthFactor)+extraGrowth)
+	}
 	a.objects = append(a.objects, t)
 	return Index{offset}
 }
@@ -64,12 +75,15 @@ type arenaMap[K comparable, V any] struct {
 	arena   Arena[V]
 }
 
-func (m *arenaMap[K, V]) Put(k K, v V) {
+func (m *arenaMap[K, V]) Put(k K, v V) *V {
 	if index, ok := m.indices[k]; ok {
-		*m.arena.Get(index) = v
+		ptr := m.arena.Get(index)
+		*ptr = v
+		return ptr
 	} else {
 		index = m.arena.Add(v)
 		m.indices[k] = index
+		return m.arena.Get(index)
 	}
 }
 
@@ -79,4 +93,9 @@ func (m *arenaMap[K, V]) Get(k K) *V {
 	} else {
 		return nil
 	}
+}
+
+// NewBoundedKeyMap returns a Map that uses string-like keys of bounded length.  This allows it
+// to keep keys in an Arena.  The map *panics* if it encounters a longer key.
+type boundedArenaMap[K ~string, V any, SIZE int] struct {
 }
