@@ -117,9 +117,8 @@ func (m *arenaMap[K, V]) Put(k K, v V) *V {
 func (m *arenaMap[K, V]) Get(k K) *V {
 	if index, ok := m.indices[k]; ok {
 		return m.arena.Get(index)
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func (m *arenaMap[K, V]) Len() int {
@@ -136,27 +135,27 @@ func (m *arenaMap[K, V]) Entries() iter.Seq2[K, *V] {
 	}
 }
 
-const KEY_SIZE_BOUND = 16
+const KeySizeBound = 16
 
-func trimKey[K ~string](key K) [KEY_SIZE_BOUND]byte {
-	if len(key) > KEY_SIZE_BOUND {
+func trimKey[K ~string](key K) [KeySizeBound]byte {
+	if len(key) > KeySizeBound {
 		// Keys have a fixed size, and this is really a compile-time error,
-		panic(fmt.Sprintf("long key %s > %d", key, KEY_SIZE_BOUND))
+		panic(fmt.Sprintf("long key %s > %d", key, KeySizeBound))
 	}
-	var ret [KEY_SIZE_BOUND]byte
+	var ret [KeySizeBound]byte
 	copy(ret[:], []byte(key))
 	return ret
 }
 
 type entry[V any] struct {
-	k [KEY_SIZE_BOUND]byte
+	k [KeySizeBound]byte
 	v V
 }
 
 // NewBoundedKeyMap returns a Map that uses string-like keys of bounded length.  Keys are
 // zero-padded, so must not end in zero bytes.  This Map is not thread-safe.
 //
-// It to keep keys in an Arena.  The map *panics* if it encounters a longer key.
+// It keep keys in an Arena.  The map *panics* if it encounters a longer key.
 func NewBoundedKeyMap[K ~string, V any]() OptimizerMap[K, V] {
 	return &boundedArenaMap[K, V]{
 		bigMap:   nil,
