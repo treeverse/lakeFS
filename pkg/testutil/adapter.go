@@ -22,7 +22,6 @@ type MockAdapter struct {
 
 var (
 	errorGetPropertiesNotImplemented = errors.New("getProperties method not implemented in mock adapter")
-	errorRemoveNotImplemented        = errors.New("remove method not implemented in mock adapter")
 	errorCopyNotImplemented          = errors.New("copy method not implemented in mock adapter")
 )
 
@@ -90,10 +89,6 @@ func (a *MockAdapter) GetRange(_ context.Context, _ block.ObjectPointer, _ int64
 
 func (a *MockAdapter) GetProperties(_ context.Context, _ block.ObjectPointer) (block.Properties, error) {
 	return block.Properties{}, errorGetPropertiesNotImplemented
-}
-
-func (a *MockAdapter) Remove(_ context.Context, _ block.ObjectPointer) error {
-	return errorRemoveNotImplemented
 }
 
 func (a *MockAdapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
