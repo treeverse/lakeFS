@@ -15,7 +15,26 @@ type OrderedCommitIterator struct {
 	value              *graveler.CommitRecord
 	repositoryPath     string
 	onlyAncestryLeaves bool
-	firstParents       map[string]bool
+	firstParents       *StringSet
+}
+
+type nothing struct{}
+
+type StringSet struct {
+	set map[string]nothing
+}
+
+func NewStringSet() *StringSet {
+	return &StringSet{set: make(map[string]nothing)}
+}
+
+func (s *StringSet) Set(str string) {
+	s.set[str] = nothing{}
+}
+
+func (s *StringSet) Get(str string) bool {
+	_, ok := s.set[str]
+	return ok
 }
 
 // NewOrderedCommitIterator returns an iterator over all commits in the given repository.
@@ -29,7 +48,7 @@ func NewOrderedCommitIterator(ctx context.Context, store kv.Store, repo *gravele
 	if err != nil {
 		return nil, err
 	}
-	var parents map[string]bool
+	var parents *StringSet
 	if onlyAncestryLeaves {
 		parents, err = getAllFirstParents(ctx, store, repo)
 		if err != nil {
@@ -62,7 +81,7 @@ func (i *OrderedCommitIterator) Next() bool {
 			i.err = graveler.ErrReadingFromStore
 			return false
 		}
-		if !i.onlyAncestryLeaves || !i.firstParents[commit.Id] {
+		if !i.onlyAncestryLeaves || !i.firstParents.Get(commit.Id) {
 			i.value = CommitDataToCommitRecord(commit)
 			return true
 		}
@@ -106,7 +125,7 @@ func (i *OrderedCommitIterator) Close() {
 }
 
 // getAllFirstParents returns a set of all commits that are the first parent of some other commit for a given repository.
-func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (map[string]bool, error) {
+func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (*StringSet, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.CommitData{}).ProtoReflect().Type(),
 		graveler.RepoPartition(repo),
 		[]byte(graveler.CommitPath("")), kv.IteratorOptionsFrom([]byte("")))
@@ -114,7 +133,7 @@ func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.Repo
 		return nil, err
 	}
 	defer it.Close()
-	firstParents := make(map[string]bool)
+	firstParents := NewStringSet()
 	for it.Next() {
 		entry := it.Entry()
 		commit := entry.Value.(*graveler.CommitData)
@@ -124,7 +143,7 @@ func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.Repo
 				parentNo = 1
 			}
 			parent := commit.Parents[parentNo]
-			firstParents[parent] = true
+			firstParents.Set(parent)
 		}
 	}
 	return firstParents, nil

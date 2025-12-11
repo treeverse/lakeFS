@@ -130,7 +130,7 @@ func (m *arenaMap[K, V]) Entries() iter.Seq2[K, *V] {
 	}
 }
 
-const KEY_SIZE_BOUND = 16
+const KEY_SIZE_BOUND = 32
 
 func trimKey[K ~string](key K) [KEY_SIZE_BOUND]byte {
 	if len(key) > KEY_SIZE_BOUND {
