@@ -15,7 +15,7 @@ jobs:
     if: github.event.pull_request.head.repo.fork == false
     steps:
       - name: Check-out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -26,7 +26,7 @@ jobs:
         run: pip install -r requirements-docs.txt
 
       - name: Checkout the documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: treeverse/docs-lakeFS
           fetch-depth: 1
