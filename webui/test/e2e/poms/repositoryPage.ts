@@ -37,8 +37,13 @@ export class RepositoryPage {
   }
 
   async switchBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Compared to branch: " }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
+  }
+
+  async selectBranch(name: string): Promise<void> {
     await this.page.getByRole("button", { name: "branch: " }).click();
-    await this.page.getByRole("button", { name }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
   }
 
   // file manipulation operations
@@ -97,7 +102,7 @@ export class RepositoryPage {
 
   async switchBaseBranch(name: string): Promise<void> {
     await this.page.getByRole("button", { name: "Base branch: " }).click();
-    await this.page.getByRole("button", { name }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
   }
 
   // navigation
