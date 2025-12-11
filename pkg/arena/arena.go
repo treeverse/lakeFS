@@ -20,12 +20,14 @@ type Index struct {
 // Arena holds Ts packed together for fast random access.  It is an efficient way to store many
 // Ts.  If T is a pointer (or smaller), this does not save anything.
 type Arena[T any] interface {
-	// Add copies t into the arena and returns its index.  It invalidates results from all
+	// Append copies t into the arena and returns its index.  It invalidates results from all
 	// previous Gets.  The returned Index is valid for the lifetime of the arena.
-	Add(t T) Index
+	Append(t T) Index
 	// Get returns the T at index or nil.  The returned pointer is valid until the next time
-	// the Arena is mutated (New or Add).
+	// the Arena is mutated (New or Append).
 	Get(index Index) *T
+	// Len returns the number of elements.
+	Len() int
 }
 
 const (
@@ -35,15 +37,16 @@ const (
 
 // New returns an Arena.  This Arena is not thread-safe.
 func New[T any]() Arena[T] {
-	return &arena[T]{growthFactor: defaultGrowthFactor}
+	return &SliceArena[T]{growthFactor: defaultGrowthFactor}
 }
 
-type arena[T any] struct {
+// SliceArena is an Arena backed by a slice.
+type SliceArena[T any] struct {
 	growthFactor float64
 	objects      []T
 }
 
-func (a *arena[T]) Add(t T) Index {
+func (a *SliceArena[T]) Append(t T) Index {
 	offset := len(a.objects)
 	if len(a.objects) == cap(a.objects) {
 		a.objects = slices.Grow(a.objects, int(float64(cap(a.objects))*a.growthFactor)+extraGrowth)
@@ -52,12 +55,16 @@ func (a *arena[T]) Add(t T) Index {
 	return Index{offset}
 }
 
-func (a *arena[T]) Get(index Index) *T {
+func (a *SliceArena[T]) Get(index Index) *T {
 	offset := index.o
 	if offset < 0 || offset >= len(a.objects) {
 		return nil
 	}
 	return &a.objects[offset]
+}
+
+func (a *SliceArena[T]) Len() int {
+	return len(a.objects)
 }
 
 // Map holds it values in an Arena.  If V is a pointer (or smaller), this does not save
@@ -86,7 +93,7 @@ func NewMap[K comparable, V any]() Map[K, V] {
 
 func newArenaMap[K comparable, V any]() *arenaMap[K, V] {
 	return &arenaMap[K, V]{
-		indices: make(map[K]Index, 0),
+		indices: make(map[K]Index),
 		arena:   New[V](),
 	}
 }
@@ -101,11 +108,10 @@ func (m *arenaMap[K, V]) Put(k K, v V) *V {
 		ptr := m.arena.Get(index)
 		*ptr = v
 		return ptr
-	} else {
-		index = m.arena.Add(v)
-		m.indices[k] = index
-		return m.arena.Get(index)
 	}
+	index := m.arena.Append(v)
+	m.indices[k] = index
+	return m.arena.Get(index)
 }
 
 func (m *arenaMap[K, V]) Get(k K) *V {

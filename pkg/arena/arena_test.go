@@ -12,8 +12,8 @@ import (
 func TestArena(t *testing.T) {
 	a := arena.New[string]()
 
-	hello := a.Add("hello")
-	goodbye := a.Add("goodbye")
+	hello := a.Append("hello")
+	goodbye := a.Append("goodbye")
 
 	gotHello := a.Get(hello)
 	if gotHello == nil {
@@ -26,7 +26,7 @@ func TestArena(t *testing.T) {
 
 	// Add enough objects to realloc a few times.
 	for i := range 1000 {
-		_ = a.Add(fmt.Sprintf("%06d", i))
+		_ = a.Append(fmt.Sprintf("%06d", i))
 	}
 
 	gotGoodbye := a.Get(goodbye)
