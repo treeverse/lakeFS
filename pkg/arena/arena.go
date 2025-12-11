@@ -210,18 +210,16 @@ func (m *boundedArenaMap[K, V]) Optimize() {
 	}
 	slices.SortStableFunc(m.bigMap, m.compareEntries)
 
-	// Deduplicate entries with the same key, keeping the last occurrence
-	if len(m.bigMap) > 0 {
+	// Deduplicate entries with the same key, keeping the last occurrence.
+	if len(m.bigMap) > 1 {
 		writeIdx := 0
 		for readIdx := 1; readIdx < len(m.bigMap); readIdx++ {
 			if m.compareEntries(m.bigMap[writeIdx], m.bigMap[readIdx]) != 0 {
 				writeIdx++
-				m.bigMap[writeIdx] = m.bigMap[readIdx]
-			} else {
-				// Same key - keep the later one (at readIdx)
-				m.bigMap[writeIdx] = m.bigMap[readIdx]
 			}
+			m.bigMap[writeIdx] = m.bigMap[readIdx]
 		}
+		clear(m.bigMap[writeIdx+1:]) // Clear elements - e.g. let GC collect pointers.
 		m.bigMap = m.bigMap[:writeIdx+1]
 	}
 

@@ -137,6 +137,27 @@ func TestBoundedArenaMap(t *testing.T) {
 	testArenaMap(t, m)
 }
 
+func TestBoundedArenaMapOptimize_Small(t *testing.T) {
+	m := arena.NewBoundedKeyMap[string, string]()
+
+	m.Put("key", "value")
+	m.Optimize()
+	v := m.Put("key", "other")
+	if v == nil {
+		t.Error("Lost value after Optimize + Put")
+	} else if *v != "other" {
+		t.Errorf("Got value %s != \"other\" after Optimize + Put", *v)
+	}
+
+	m.Optimize()
+	v = m.Get("key")
+	if v == nil {
+		t.Error("Lost value after Optimize + Put + Optimize")
+	} else if *v != "other" {
+		t.Errorf("Got value %s != \"other\" after Optimize + Put + Optimize", *v)
+	}
+}
+
 func TestBoundedArenaMapOptimize(t *testing.T) {
 	m := arena.NewBoundedKeyMap[string, string]()
 
