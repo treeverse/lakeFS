@@ -592,34 +592,6 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	}, nil
 }
 
-func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
-	var err error
-	defer reportMetrics("Remove", obj.StorageID, time.Now(), nil, &err)
-	bucket, key, _, err := a.extractParamsFromObj(obj)
-	if err != nil {
-		return err
-	}
-
-	deleteInput := &s3.DeleteObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	}
-	client := a.clients.Get(ctx, bucket)
-	_, err = client.DeleteObject(ctx, deleteInput)
-	if err != nil {
-		a.log(ctx).WithError(err).Error("failed to delete S3 object")
-		return err
-	}
-
-	headInput := &s3.HeadObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	}
-	const maxWaitDur = 100 * time.Second
-	waiter := s3.NewObjectNotExistsWaiter(client)
-	return waiter.Wait(ctx, headInput, maxWaitDur)
-}
-
 func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, byteRange *string) (*block.UploadPartResponse, error) {
 	srcKey, err := resolveNamespace(sourceObj)
 	if err != nil {

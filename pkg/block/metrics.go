@@ -98,15 +98,6 @@ func (m *MetricsAdapter) GetProperties(ctx context.Context, obj ObjectPointer) (
 	return m.adapter.GetProperties(ctx, obj)
 }
 
-func (m *MetricsAdapter) Remove(ctx context.Context, obj ObjectPointer) error {
-	blockstoreType := m.adapter.BlockstoreType()
-	const operation = "remove"
-	concurrentOperations.WithLabelValues(operation, blockstoreType).Inc()
-	defer concurrentOperations.WithLabelValues(operation, blockstoreType).Dec()
-	ctx = httputil.SetClientTrace(ctx, blockstoreType)
-	return m.adapter.Remove(ctx, obj)
-}
-
 func (m *MetricsAdapter) Copy(ctx context.Context, sourceObj, destinationObj ObjectPointer) error {
 	blockstoreType := m.adapter.BlockstoreType()
 	const operation = "copy"
