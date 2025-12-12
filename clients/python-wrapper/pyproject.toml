@@ -44,7 +44,7 @@ test = [
 Homepage = "https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper"
 
 [tool.setuptools.packages.find]
-include = ["lakectl", "lakefs"]
+include = ["lakectl*", "lakefs*"]
 
 [tool.setuptools.package-data]
 lakefs = ["py.typed"]
