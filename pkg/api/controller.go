@@ -771,13 +771,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.LoginJSONRequestBody) {
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
-	if err != nil {
-		if errors.Is(err, ErrAuthenticatingRequest) {
-			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-			return
-		}
-		c.Logger.WithError(err).Error("Unexpected error during user authentication")
-		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -3135,6 +3129,10 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, graveler.ErrLinkAddressExpired):
 		log.Debug("Expired or invalid address token")
 		cb(w, r, http.StatusBadRequest, err)
+
+	case errors.Is(err, ErrAuthenticatingRequest):
+		log.Debug("Authentication failed")
+		cb(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),

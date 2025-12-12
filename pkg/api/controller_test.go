@@ -3872,6 +3872,46 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+func TestController_LoginAuthenticationErrors(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+
+	// Create a valid user for testing wrong password scenario
+	validCred := createDefaultAdminUser(t, clt)
+
+	tests := []struct {
+		name           string
+		accessKey      string
+		secretKey      string
+		expectedStatus int
+	}{
+		{
+			name:           "non-existent access key triggers ErrNotFound",
+			accessKey:      "INVALID_ACCESS_KEY",
+			secretKey:      "anything",
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "wrong secret key triggers ErrInvalidSecretAccessKey",
+			accessKey:      validCred.AccessKeyID,
+			secretKey:      "wrong-secret",
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := clt.LoginWithResponse(context.Background(), apigen.LoginJSONRequestBody{
+				AccessKeyId:     tt.accessKey,
+				SecretAccessKey: tt.secretKey,
+			})
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode())
+		})
+	}
+}
+
 func TestController_STSLogin(t *testing.T) {
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
