@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     AlertError, LinkButton,
-    Loading, PrefixSearchWidget, RefreshButton
+    Loading, PrefixSearchWidget, RefreshButton, TruncatedText
 } from "../../../lib/components/controls";
 import { useRefs } from "../../../lib/hooks/repo";
 import { useAPIWithPagination } from "../../../lib/hooks/api";
@@ -39,14 +39,14 @@ const TagWidget = ({ repo, tag, onDelete }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-start">
-                    <h6 className="mb-0">
+                <div className="float-start" style={{ maxWidth: '50%', minWidth: 0 }}>
+                    <h6 className="mb-0" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
                             params: { repoId: repo.id },
                             query: { ref: tag.id }
                         }}>
-                            {tag.id}
+                            <TruncatedText text={tag.id} maxLength={60} />
                         </Link>
                     </h6>
                 </div>
