@@ -161,6 +161,7 @@ object StorageUtils {
     val GCSMaxBulkSize =
       500 // 1000 is the max size, 500 is the recommended size to avoid timeouts or hitting HTTP size limits
   }
+
 }
 
 class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {

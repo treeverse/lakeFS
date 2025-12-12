@@ -9,7 +9,6 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapred.SplitLocationInfo
 import org.apache.hadoop.mapreduce._
-import org.apache.spark.TaskContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import scalapb.GeneratedMessage
@@ -17,7 +16,6 @@ import scalapb.GeneratedMessageCompanion
 
 import java.io.DataInput
 import java.io.DataOutput
-import java.io.File
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
@@ -87,22 +85,16 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   private var sstableReader: SSTableReader[Proto] = _
-  var localFile: java.io.File = _
   var it: Iterator[Item[Proto]] = _
   var item: Item[Proto] = _
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
-    localFile = File.createTempFile("lakefs.", ".range")
-    // Cleanup the local file - using the same technic as other data sources:
-    // https://github.com/apache/spark/blob/c0b1735c0bfeb1ff645d146e262d7ccd036a590e/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/text/TextFileFormat.scala#L123
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => localFile.delete()))
-
     val gravelerSplit = split.asInstanceOf[GravelerSplit]
+    val conf = context.getConfiguration
+    val fs = gravelerSplit.path.getFileSystem(conf)
+    val reader = new HadoopBlockReadable(fs, gravelerSplit.path, gravelerSplit.getLength)
+    sstableReader = new SSTableReader(reader, companion)
 
-    val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
-    fs.copyToLocalFile(false, gravelerSplit.path, new Path(localFile.getAbsolutePath), true)
-    // TODO(johnnyaug) should we cache this?
-    sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
       try {
@@ -141,8 +133,9 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   override def getCurrentValue = new WithIdentifier(item.id, item.message, rangeID)
 
   override def close(): Unit = {
-    localFile.delete()
-    sstableReader.close()
+    if (sstableReader != null) {
+      sstableReader.close()
+    }
   }
 
   override def getProgress: Float = {
@@ -153,6 +146,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 object LakeFSInputFormat {
   val DummyFileName = "dummy"
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
   def read[Proto <: GeneratedMessage with scalapb.Message[Proto]](
       reader: SSTableReader[Proto]
   ): Seq[Item[Proto]] = reader.newIterator().toSeq
