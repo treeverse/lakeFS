@@ -12,6 +12,8 @@ import (
 // Files on the local disk are transient and might be cleaned up by the eviction policy.
 // File structure under a namespace and namespace itself are flat (no directories).
 type FS interface {
+	io.Closer
+
 	// Create creates a new file in the FS.
 	// It will only be persistent after the returned file is stored.
 	Create(ctx context.Context, storageID, namespace string) (StoredFile, error)

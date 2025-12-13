@@ -342,6 +342,10 @@ func (*mockEv) Store(params.RelativePath, int64) bool {
 	return true
 }
 
+func (*mockEv) Close() error {
+	return nil
+}
+
 // mockFailingAdapter is a mock adapter that fails on Put operations
 type mockFailingAdapter struct {
 	*mem.Adapter
