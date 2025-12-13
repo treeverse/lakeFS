@@ -384,7 +384,9 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 				"fullpath":  fileRef.fullPath,
 			}).Trace("get file from block storage")
 		}
-		reader, err := tfs.adapter.Get(ctx, tfs.objPointer(fileRef.storageID, fileRef.namespace, fileRef.filename))
+		// Use background context because Compute shares the result with multiple callers.
+		// Using a caller's context could cause one caller's cancellation to fail the fetch for all waiting callers.
+		reader, err := tfs.adapter.Get(context.Background(), tfs.objPointer(fileRef.storageID, fileRef.namespace, fileRef.filename))
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
