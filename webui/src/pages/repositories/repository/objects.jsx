@@ -21,10 +21,11 @@ import Dropdown from "react-bootstrap/Dropdown";
 import { BsCloudArrowUp } from "react-icons/bs";
 
 import {humanSize, Tree, URINavigator} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders, branches, commits, refs} from "../../../lib/api";
+import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders, branches, refs} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
+import {usePluginManager} from "../../../extendable/plugins/pluginsContext";
 import {RefTypeBranch} from "../../../constants";
 import {
     ExecuteImportButton,
@@ -1188,6 +1189,7 @@ const ObjectsBrowser = ({ config }) => {
   const { path, after, importDialog, upload, showChanges } = router.query;
   const [searchParams, setSearchParams] = useSearchParams();
   const { repo, reference, loading, error } = useRefs();
+  const pluginManager = usePluginManager();
   const [showUpload, setShowUpload] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [refreshToken, setRefreshToken] = useState(false);
@@ -1391,7 +1393,10 @@ const ObjectsBrowser = ({ config }) => {
                 enabled={hasChanges && !repo?.read_only} 
                 onCommit={async (commitDetails, done) => {
                   try {
-                    await commits.commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata);
+                    await pluginManager.commitMergeStrategy.commit(repo.id, reference.id, {
+                      message: commitDetails.message,
+                      metadata: commitDetails.metadata
+                    });
                     setActionError(null);
                     
                     // Reset to normal view after commit
