@@ -164,7 +164,7 @@ func NewBoundedKeyMap[K ~string, V any]() OptimizerMap[K, V] {
 }
 
 type boundedArenaMap[K ~string, V any] struct {
-	// bigMap is sorted slice of pairs.  Apart from calls to Optimize it is immutable,
+	// bigMap is sorted slice of pairs.  Apart from calls to Optimize it is immutable.
 	bigMap []entry[V]
 	// smallMap holds values before Optimize.
 	smallMap *arenaMap[K, V]
