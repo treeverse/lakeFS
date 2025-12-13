@@ -165,6 +165,7 @@ func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
 	default:
 		// Channel full, log and skip - directory will remain until next cleanup
 		tfs.logger.WithField("path", dirPath).Warn("directory deletion queue full, skipping cleanup")
+		errorsTotal.WithLabelValues(tfs.fsName, "DirDeleteQueueFull").Inc()
 	}
 }
 
