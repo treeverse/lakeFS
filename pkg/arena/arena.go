@@ -88,14 +88,9 @@ type OptimizerMap[K comparable, V any] interface {
 
 // NewMap returns a Map.  This Map is not thread-safe.
 func NewMap[K comparable, V any]() Map[K, V] {
-	return newArenaMap[K, V]()
-}
-
-func newArenaMap[K comparable, V any]() *arenaMap[K, V] {
-	return &arenaMap[K, V]{
-		indices: make(map[K]Index),
-		arena:   New[V](),
-	}
+	var ret arenaMap[K, V]
+	ret.Clear()
+	return &ret
 }
 
 type arenaMap[K comparable, V any] struct {
@@ -135,6 +130,12 @@ func (m *arenaMap[K, V]) Entries() iter.Seq2[K, *V] {
 	}
 }
 
+// Clear empties arenaMap, releasing everything.
+func (m *arenaMap[K, V]) Clear() {
+	m.indices = make(map[K]Index)
+	m.arena = New[V]()
+}
+
 const KeySizeBound = 16
 
 func trimKey[K ~string](key K) [KeySizeBound]byte {
@@ -157,17 +158,16 @@ type entry[V any] struct {
 //
 // It keep keys in an Arena.  The map *panics* if it encounters a longer key.
 func NewBoundedKeyMap[K ~string, V any]() OptimizerMap[K, V] {
-	return &boundedArenaMap[K, V]{
-		bigMap:   nil,
-		smallMap: newArenaMap[K, V](),
-	}
+	ret := &boundedArenaMap[K, V]{}
+	ret.smallMap.Clear()
+	return ret
 }
 
 type boundedArenaMap[K ~string, V any] struct {
 	// bigMap is sorted slice of pairs.  Apart from calls to Optimize it is immutable.
 	bigMap []entry[V]
 	// smallMap holds values before Optimize.
-	smallMap *arenaMap[K, V]
+	smallMap arenaMap[K, V]
 }
 
 func (m *boundedArenaMap[K, V]) compareKey(p entry[V], k K) int {
@@ -223,5 +223,5 @@ func (m *boundedArenaMap[K, V]) Optimize() {
 		m.bigMap = m.bigMap[:writeIdx+1]
 	}
 
-	m.smallMap = newArenaMap[K, V]()
+	m.smallMap.Clear()
 }
