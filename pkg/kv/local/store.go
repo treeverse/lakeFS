@@ -224,8 +224,8 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 }
 
 func (s *Store) Close() {
-	driverLock.Lock()
-	defer driverLock.Unlock()
+	localDriverLock.Lock()
+	defer localDriverLock.Unlock()
 	s.refCount--
 	if s.refCount <= 0 {
 		_ = s.db.Close()

@@ -16,8 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/local"
-	"github.com/treeverse/lakefs/pkg/kv/mem"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/sync/errgroup"
@@ -207,7 +205,7 @@ func BenchmarkDrivers(b *testing.B) {
 	ctx := context.Background()
 
 	makeMemStore := func(ctx context.Context, t testing.TB) kv.Store {
-		store, err := kv.Open(ctx, kvparams.Config{Type: mem.DriverName})
+		store, err := kv.Open(ctx, kvparams.Config{Type: local.MemDriverName})
 		if err != nil {
 			t.Fatal("failed to open mem store", err)
 		}
@@ -242,7 +240,7 @@ func BenchmarkDrivers(b *testing.B) {
 	localKVPath := path.Join(b.TempDir(), "local-kv")
 	makeLocalStore := func(ctx context.Context, t testing.TB) kv.Store {
 		store, err := kv.Open(ctx, kvparams.Config{
-			Type:  local.DriverName,
+			Type:  local.LocalDriverName,
 			Local: &kvparams.Local{Path: localKVPath, PrefetchSize: 256},
 		})
 		if err != nil {
@@ -314,6 +312,13 @@ func BenchmarkDrivers(b *testing.B) {
 				b.ResetTimer()
 				testGetMsgs(b, ctx, store, b.N, tt.messagesDBSize, source)
 			})
+
+			b.Run("mem (run with --benchmem)", func(b *testing.B) {
+				source := rand.NewSource(randomGetSeed)
+				b.ResetTimer()
+				testGetMsgs(b, ctx, store, b.N, int32(b.N), source)
+			})
+
 		})
 	}
 }

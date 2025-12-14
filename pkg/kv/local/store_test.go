@@ -14,14 +14,14 @@ func TestLocalKV(t *testing.T) {
 	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 		store, err := kv.Open(ctx, kvparams.Config{
-			Type: local.DriverName,
+			Type: local.LocalDriverName,
 			Local: &kvparams.Local{
 				Path:          t.TempDir(),
 				EnableLogging: true,
 			},
 		})
 		if err != nil {
-			t.Fatalf("failed to open kv '%s' store: %s", local.DriverName, err)
+			t.Fatalf("failed to open kv '%s' store: %s", local.LocalDriverName, err)
 		}
 		t.Cleanup(store.Close)
 		return store

@@ -20,7 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	_ "github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
