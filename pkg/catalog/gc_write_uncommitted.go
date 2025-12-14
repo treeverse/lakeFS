@@ -37,7 +37,8 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	for branchIterator.Next() {
 		nextMark, count, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, pw, normalizedStorageNamespace, maxFileSize, prepareDuration, w, count, mark, startTime)
 		if err != nil && !errors.Is(err, graveler.ErrBranchNotFound) {
-			// return on error, unless its a branch not found error, in which case we skip the branch
+			// return on error, unless its a branch not found error.
+			// on branch not found, fall through to the next branch (next mark nil on error) to keep duration check.
 			return nil, false, err
 		}
 		if nextMark != nil {
