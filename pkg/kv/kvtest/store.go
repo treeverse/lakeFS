@@ -84,6 +84,8 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 	testValue1 := []byte("value")
 	testValue2 := []byte("a different kind of value")
 
+	testKeyCopy := bytes.Clone(testKey)
+
 	t.Run("set_missing_partition_key", func(t *testing.T) {
 		// partition key - nil (disallow)
 		err := store.Set(ctx, nil, testKey, testValue1)
@@ -138,7 +140,7 @@ func testStoreSetGet(t *testing.T, ms MakeStore) {
 
 	t.Run("get_value", func(t *testing.T) {
 		// get test key with value1
-		res, err := store.Get(ctx, []byte(testPartitionKey), testKey)
+		res, err := store.Get(ctx, []byte(testPartitionKey), testKeyCopy)
 		switch {
 		case err != nil:
 			t.Fatalf("failed to get key '%s': %s", testKey, err)

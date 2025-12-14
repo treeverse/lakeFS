@@ -3,11 +3,10 @@ package mem
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"sort"
 	"sync"
 
+	"github.com/NVIDIA/sortedmap"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
@@ -15,10 +14,10 @@ import (
 type Driver struct{}
 
 // PartitionMap holds key-value pairs of a given partition
-type PartitionMap map[string]kv.Entry
+type PartitionMap sortedmap.LLRBTree
 
 type Store struct {
-	m map[string]PartitionMap
+	maps map[string]PartitionMap
 
 	mu sync.RWMutex
 }
@@ -44,12 +43,8 @@ func init() {
 
 func (d *Driver) Open(_ context.Context, _ kvparams.Config) (kv.Store, error) {
 	return &Store{
-		m: make(map[string]PartitionMap),
+		maps: make(map[string]PartitionMap),
 	}, nil
-}
-
-func encodeKey(key []byte) string {
-	return base64.StdEncoding.EncodeToString(key)
 }
 
 func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
@@ -62,15 +57,35 @@ func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithP
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	sKey := encodeKey(key)
-	value, ok := s.m[string(partitionKey)][sKey]
-	if !ok {
-		return nil, fmt.Errorf("partition=%s, key=%s, encoding=%s: %w", partitionKey, key, sKey, kv.ErrNotFound)
+	entry, ok, err := s.internalGet(partitionKey, key)
+	if err != nil {
+		return nil, fmt.Errorf("get partition=%s, key=%s: %w", partitionKey, key, err)
 	}
+	if !ok {
+		return nil, fmt.Errorf("partition=%s, key=%s: %w", partitionKey, key, kv.ErrNotFound)
+	}
+
 	return &kv.ValueWithPredicate{
-		Value:     value.Value,
-		Predicate: kv.Predicate(value.Value),
+		Value:     entry.Value,
+		Predicate: kv.Predicate(entry.Value),
 	}, nil
+}
+
+func (s *Store) internalGet(partitionKey, key []byte) (*kv.Entry, bool, error) {
+	m, ok := s.maps[string(partitionKey)]
+	if !ok {
+		return nil, ok, nil
+	}
+	value, ok, err := m.GetByKey(key)
+	if !ok || err != nil {
+		return nil, false, err
+	}
+	entry := &kv.Entry{
+		PartitionKey: partitionKey,
+		Key:          key,
+		Value:        value.([]byte),
+	}
+	return entry, true, nil
 }
 
 func (s *Store) Set(_ context.Context, partitionKey, key, value []byte) error {
@@ -86,21 +101,32 @@ func (s *Store) Set(_ context.Context, partitionKey, key, value []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.internalSet(partitionKey, key, value)
-
-	return nil
+	return s.internalSet(partitionKey, key, value)
 }
 
-func (s *Store) internalSet(partitionKey, key, value []byte) {
-	sKey := encodeKey(key)
-	if _, ok := s.m[string(partitionKey)]; !ok {
-		s.m[string(partitionKey)] = make(map[string]kv.Entry)
+func (s *Store) internalSet(partitionKey, key, value []byte) error {
+	m, ok := s.maps[string(partitionKey)]
+	if !ok {
+		m = NewPartitionMap()
+		s.maps[string(partitionKey)] = m
 	}
-	s.m[string(partitionKey)][sKey] = kv.Entry{
-		PartitionKey: partitionKey,
-		Key:          key,
-		Value:        value,
+	// Caller could modify key, value - copy them out.  (Don't use bytes.Clone, which can
+	// waste capacity!)
+	keyCopy := make([]byte, len(key))
+	copy(keyCopy, key)
+	valueCopy := make([]byte, len(value))
+	copy(valueCopy, value)
+	ok, err := m.Put(keyCopy, valueCopy)
+	if err != nil {
+		return err
 	}
+	if ok {
+		// New key.
+		return nil
+	}
+	// Existing key: modify it.
+	_, err = m.PatchByKey(keyCopy, valueCopy)
+	return err
 }
 
 func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
@@ -116,8 +142,10 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	sKey := encodeKey(key)
-	curr, currOK := s.m[string(partitionKey)][sKey]
+	curr, currOK, err := s.internalGet(partitionKey, key)
+	if err != nil {
+		return err
+	}
 
 	switch valuePredicate {
 	case nil:
@@ -132,12 +160,11 @@ func (s *Store) SetIf(_ context.Context, partitionKey, key, value []byte, valueP
 
 	default: // check for predicate
 		if !bytes.Equal(valuePredicate.([]byte), curr.Value) {
-			return fmt.Errorf("%w: partition=%s, key=%s, encoding=%s", kv.ErrPredicateFailed, partitionKey, key, sKey)
+			return fmt.Errorf("%w: partition=%s, key=%s", kv.ErrPredicateFailed, partitionKey, key)
 		}
 	}
 
-	s.internalSet(partitionKey, key, value)
-	return nil
+	return s.internalSet(partitionKey, key, value)
 }
 
 func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
@@ -150,12 +177,12 @@ func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	sKey := encodeKey(key)
-	if _, ok := s.m[string(partitionKey)][sKey]; !ok {
+	m, ok := s.maps[string(partitionKey)]
+	if !ok {
 		return nil
 	}
-	delete(s.m[string(partitionKey)], sKey)
-	return nil
+	_, err := m.DeleteByKey(key)
+	return err
 }
 
 func (s *Store) Scan(_ context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
@@ -184,27 +211,40 @@ func (e *EntriesIterator) Next() bool {
 	e.store.mu.RLock()
 	defer e.store.mu.RUnlock()
 
-	var l []*kv.Entry
-	if _, ok := e.store.m[e.partition]; ok {
-		for _, entry := range e.store.m[e.partition] {
-			if bytes.Compare(entry.Key, e.start) >= 0 {
-				entry := entry
-				l = append(l, &entry)
-			}
-		}
-	}
-	if len(l) == 0 { // No results
+	m, ok := e.store.maps[e.partition]
+	if !ok {
 		e.start = nil
 		return false
 	}
-	if len(l) == 1 { // only one key >= start, set start to nil, so to indicate the next call to return false immediately.
-		e.start = nil
-		e.entry = l[0]
-		return true
+
+	// Missing godoc in sortedmap: "Returns index of matching key:value pair or, if no
+	// match, index is to key:value just after where this key would go"
+	index, _, err := m.BisectRight(e.start)
+	if err != nil {
+		e.err = err
+		return false
 	}
-	sort.Slice(l, func(i, j int) bool { return bytes.Compare(l[i].Key, l[j].Key) < 0 })
-	e.start = l[1].Key
-	e.entry = l[0]
+
+	key, value, ok, err := m.GetByIndex(index)
+	if err != nil {
+		// This is a very strange error: we just got index from BisectRight.  So use a
+		// verbose error message.
+		e.err = fmt.Errorf("%w for index %d returned by BisectRight", err, index)
+		return false
+	}
+	if !ok {
+		// end of iteration
+		e.start = nil
+		return false
+	}
+	start := bytes.Clone(key.([]byte))
+	start = append(start, 0) // first key after start.
+	e.start = start
+	e.entry = &kv.Entry{
+		PartitionKey: []byte(e.partition),
+		Key:          key.([]byte),
+		Value:        value.([]byte),
+	}
 	return true
 }
 
@@ -218,4 +258,27 @@ func (e *EntriesIterator) Err() error {
 
 func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
+}
+
+// partitionMapCompare compares keys by lexicographical byte ordering.
+func partitionMapCompare(a, b sortedmap.Key) (int, error) {
+	return bytes.Compare(a.([]byte), b.([]byte)), nil
+}
+
+// partitionMapDump prints printable versions of keys and values.
+type partitionMapDump struct{}
+
+func (d partitionMapDump) DumpKey(k sortedmap.Key) (string, error) {
+	return string(k.([]byte)), nil
+}
+
+// TODO(ariels): Decode values?  Unfortunately DumpValue does not know the key, which is needed
+//
+//	to know the type to call kv.NewRecord.
+func (d partitionMapDump) DumpValue(v sortedmap.Value) (string, error) {
+	return fmt.Sprintf("%q", v.([]byte)), nil
+}
+
+func NewPartitionMap() PartitionMap {
+	return PartitionMap(sortedmap.NewLLRBTree(partitionMapCompare, partitionMapDump{}))
 }
