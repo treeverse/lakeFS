@@ -36,9 +36,11 @@ const (
 )
 
 // New returns an Arena.  This Arena is not thread-safe.
-func New[T any]() Arena[T] {
+func New[T any]() *SliceArena[T] {
 	return &SliceArena[T]{growthFactor: defaultGrowthFactor}
 }
+
+var _ Arena[int] = (*SliceArena[int])(nil)
 
 // SliceArena is an Arena backed by a slice.
 type SliceArena[T any] struct {
@@ -86,8 +88,8 @@ type OptimizerMap[K comparable, V any] interface {
 	Optimizer
 }
 
-// NewMap returns a Map.  This Map is not thread-safe.
-func NewMap[K comparable, V any]() Map[K, V] {
+// NewMap returns a Map backed by an arena.  This Map is not thread-safe.
+func NewMap[K comparable, V any]() *arenaMap[K, V] {
 	var ret arenaMap[K, V]
 	ret.Clear()
 	return &ret
@@ -97,6 +99,8 @@ type arenaMap[K comparable, V any] struct {
 	indices map[K]Index
 	arena   Arena[V]
 }
+
+var _ Map[int, string] = (*arenaMap[int, string])(nil)
 
 func (m *arenaMap[K, V]) Put(k K, v V) *V {
 	if index, ok := m.indices[k]; ok {
@@ -157,7 +161,7 @@ type entry[V any] struct {
 // zero-padded, so must not end in zero bytes.  This Map is not thread-safe.
 //
 // It keep keys in an Arena.  The map *panics* if it encounters a longer key.
-func NewBoundedKeyMap[K ~string, V any]() OptimizerMap[K, V] {
+func NewBoundedKeyMap[K ~string, V any]() *boundedArenaMap[K, V] {
 	ret := &boundedArenaMap[K, V]{}
 	ret.smallMap.Clear()
 	return ret
@@ -169,6 +173,8 @@ type boundedArenaMap[K ~string, V any] struct {
 	// smallMap holds values before Optimize.
 	smallMap arenaMap[K, V]
 }
+
+var _ OptimizerMap[string, int] = (*boundedArenaMap[string, int])(nil)
 
 func (m *boundedArenaMap[K, V]) compareKey(p entry[V], k K) int {
 	trimmedKey := trimKey(k)
