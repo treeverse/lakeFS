@@ -26,7 +26,7 @@ import (
 var gcCmd = &cobra.Command{
 	Use:    "gc",
 	Hidden: true,
-	Short:  "Manually run garbage collection",
+	Short:  "Manually run prepare GC commits",
 }
 
 const (
@@ -152,7 +152,7 @@ func (r *RefManager) GetCommit(ctx context.Context, repository *graveler.Reposit
 
 var simulateCmd = &cobra.Command{
 	Use:   "simulate rules.json partition-dump.json",
-	Short: "Simulate a GC run on locally-available files",
+	Short: "Simulate prepare GC commits on locally-available files",
 	Long: `Run garbage collection on locally-available files.
 
 First arg "rules.json" is a file containing the JSON retention rules.  Second arg
