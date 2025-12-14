@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/NVIDIA/sortedmap"
-
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
@@ -63,7 +62,7 @@ func (s *Store) Get(_ context.Context, partitionKey, key []byte) (*kv.ValueWithP
 		return nil, fmt.Errorf("get partition=%s, key=%s: %w", partitionKey, key, err)
 	}
 	if !ok {
-		return nil, fmt.Errorf("partition=%s, key=%s (entry=%+v): %w", partitionKey, key, entry, kv.ErrNotFound)
+		return nil, fmt.Errorf("partition=%s, key=%s: %w", partitionKey, key, kv.ErrNotFound)
 	}
 
 	return &kv.ValueWithPredicate{
@@ -78,15 +77,15 @@ func (s *Store) internalGet(partitionKey, key []byte) (*kv.Entry, bool, error) {
 		return nil, ok, nil
 	}
 	value, ok, err := m.GetByKey(key)
-	if value == nil {
-		return nil, ok, err
+	if !ok || err != nil {
+		return nil, false, err
 	}
 	entry := &kv.Entry{
 		PartitionKey: partitionKey,
 		Key:          key,
 		Value:        value.([]byte),
 	}
-	return entry, ok, err
+	return entry, true, nil
 }
 
 func (s *Store) Set(_ context.Context, partitionKey, key, value []byte) error {
