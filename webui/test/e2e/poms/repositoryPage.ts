@@ -47,8 +47,16 @@ export class RepositoryPage {
 
   async deleteFirstObjectInDirectory(dirName: string): Promise<void> {
     await this.page.getByRole("link", { name: dirName }).click();
+
+    // Wait for the table to be visible and stable after navigation
+    await this.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 10000 });
+
     const firstRow = this.page.locator('table tbody tr').first();
     await firstRow.hover();
+
+    // Wait a bit for the button to be stable after hover
+    await this.page.waitForTimeout(500);
+
     await firstRow.locator('button').last().click();
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
