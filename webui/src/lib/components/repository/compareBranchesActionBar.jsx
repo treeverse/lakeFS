@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
-import { refs as refsAPI, pulls as pullsAPI } from "../../../lib/api";
+import { refs as refsAPI } from "../../../lib/api";
 import { RefTypeBranch } from "../../../constants";
 import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../controls";
 import { MetadataFields } from "./metadata";
@@ -175,106 +175,19 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
 
 const CreatePullRequestButton = ({ repo, source, dest, disabled = false }) => {
     const router = useRouter();
-    const descriptionRef = useRef(null);
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const initialPRState = {
-        creating: false,
-        show: false,
-        err: null,
-    }
-    const [prState, setPRState] = useState(initialPRState);
 
-    const onClickCreatePR = useCallback(() => {
-        setPRState(prev => ({ ...prev, show: true }))
-    }, []);
-
-    const hide = () => {
-        if (prState.creating) return;
-        setPRState(initialPRState);
-        setTitle("");
-        setDescription("");
-    }
-
-    const onSubmit = async () => {
-        const trimmedTitle = title.trim();
-        const trimmedDescription = description.trim();
-
-        if (!trimmedTitle) {
-            return;
-        }
-
-        setPRState({ creating: true, show: prState.show, err: prState.err })
-        try {
-            const { id: createdPullId } = await pullsAPI.create(repo.id, {
-                title: trimmedTitle,
-                description: trimmedDescription,
-                source_branch: source,
-                destination_branch: dest
-            });
-
-            router.push({
-                pathname: `/repositories/:repoId/pulls/:pullId`,
-                params: { repoId: repo.id, pullId: createdPullId },
-            });
-        } catch (err) {
-            setPRState({ creating: false, show: prState.show, err: err })
-        }
+    const onClickCreatePR = () => {
+        router.push({
+            pathname: '/repositories/:repoId/pulls/create',
+            params: { repoId: repo.id },
+            query: { ref: dest, compare: source }
+        });
     }
 
     return (
-        <>
-            <Modal show={prState.show} onHide={hide} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>Create Pull Request</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form className="mb-2">
-                        <Form.Group controlId="title" className="mb-3">
-                            <Form.Label>Title</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Add a title..."
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                                disabled={prState.creating}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        descriptionRef.current?.focus();
-                                    }
-                                }}
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="description" className="mb-3">
-                            <Form.Label>Description</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                rows={6}
-                                placeholder="Describe your changes..."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                ref={descriptionRef}
-                                disabled={prState.creating}
-                            />
-                        </Form.Group>
-                    </Form>
-                    {(prState.err) ? (<AlertError error={prState.err} />) : (<></>)}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" disabled={prState.creating} onClick={hide}>
-                        Cancel
-                    </Button>
-                    <Button variant="success" disabled={prState.creating || !title.trim()} onClick={onSubmit}>
-                        {(prState.creating) ? 'Creating...' : 'Create Pull Request'}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-            <Button variant="primary" disabled={disabled} onClick={() => onClickCreatePR()}>
-                <GitPullRequestIcon /> {"Create Pull Request"}
-            </Button>
-        </>
+        <Button variant="primary" disabled={disabled} onClick={onClickCreatePR}>
+            <GitPullRequestIcon /> {"Create Pull Request"}
+        </Button>
     );
 }
 
