@@ -2397,11 +2397,11 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) importAsync(ctx context.Context, repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
+func (c *Catalog) importAsync(ctx context.Context, repository *graveler.RepositoryRecord, branchID string, status graveler.ImportStatus, params ImportRequest, logger logging.Logger) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID)
+	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, status)
 	if err != nil {
 		return fmt.Errorf("creating import manager: %w", err)
 	}
@@ -2498,7 +2498,7 @@ func (c *Catalog) importAsync(ctx context.Context, repository *graveler.Reposito
 	}
 
 	// Update import status
-	status := importManager.Status()
+	status = importManager.Status()
 	status.MetaRangeID = commit.MetaRangeID
 	status.Commit = &graveler.CommitRecord{
 		CommitID: commitID,
@@ -2539,12 +2539,22 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 	}
 
 	id := xid.New().String()
+	status := graveler.ImportStatus{
+		ID:        graveler.ImportID(id),
+		UpdatedAt: time.Now(),
+	}
+	repoPartition := graveler.RepoPartition(repository)
+	// Must be set first before returning response to avoid race condition (#9640)
+	err = kv.SetMsg(ctx, c.KVStore, repoPartition, []byte(graveler.ImportsPath(id)), graveler.ProtoFromImportStatus(&status))
+	if err != nil {
+		return "", err
+	}
 	// Run import
 	go func() {
 		logger := c.log(ctx).WithField("import_id", id)
 		// Passing context.WithoutCancel to avoid canceling the import operation when the wrapping Import function returns,
 		// and keep the context's fields intact for next operations (for example, PreCommitHook runs).
-		err = c.importAsync(context.WithoutCancel(ctx), repository, branchID, id, params, logger)
+		err = c.importAsync(context.WithoutCancel(ctx), repository, branchID, status, params, logger)
 		if err != nil {
 			logger.WithError(err).Error("import failure")
 		}
