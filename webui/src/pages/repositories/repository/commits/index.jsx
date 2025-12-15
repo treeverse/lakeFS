@@ -4,8 +4,10 @@ import dayjs from "dayjs";
 import {BrowserIcon, LinkIcon, PlayIcon} from "@primer/octicons-react";
 
 import {commits} from "../../../../lib/api";
+import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Card from "react-bootstrap/Card";
+import Form from "react-bootstrap/Form";
 import ListGroup from "react-bootstrap/ListGroup";
 
 import {
@@ -24,28 +26,40 @@ import RefDropdown from "../../../../lib/components/repository/refDropdown";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
+import {RefTypeBranch} from "../../../../constants";
 
 
-const CommitWidget = ({ repo, commit }) => {
+const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, onToggleSelect = null }) => {
     const buttonVariant = "light";
 
     return (
         <ListGroup.Item>
             <div className="clearfix">
                 <div className="float-start">
-                    <h6>
-                        <Link href={{
-                            pathname: '/repositories/:repoId/commits/:commitId',
-                            params: {repoId: repo.id, commitId: commit.id}
-                        }}>
-                            <CommitMessage commit={commit}/>
-                        </Link>
-                    </h6>
-                    <p>
-                        <small>
-                            <strong>{commit.committer}</strong> committed at <strong>{dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> ({dayjs.unix(commit.creation_date).fromNow()})
-                        </small>
-                    </p>
+                    {revertMode && (
+                        <Form.Check
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => onToggleSelect && onToggleSelect(commit.id)}
+                            className="float-start me-2 mt-1"
+                            inline
+                        />
+                    )}
+                    <div className={revertMode ? "d-inline-block" : ""}>
+                        <h6>
+                            <Link href={{
+                                pathname: '/repositories/:repoId/commits/:commitId',
+                                params: {repoId: repo.id, commitId: commit.id}
+                            }}>
+                                <CommitMessage commit={commit}/>
+                            </Link>
+                        </h6>
+                        <p>
+                            <small>
+                                <strong>{commit.committer}</strong> committed at <strong>{dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> ({dayjs.unix(commit.creation_date).fromNow()})
+                            </small>
+                        </p>
+                    </div>
                 </div>
                 <div className="float-end">
                     <ButtonGroup className="commit-actions mt-1">
@@ -80,14 +94,43 @@ const CommitWidget = ({ repo, commit }) => {
 
 
 const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => {
+    const router = useRouter();
+    const [refresh, setRefresh] = useState(true);
+    const [revertMode, setRevertMode] = useState(false);
+    const [selectedCommits, setSelectedCommits] = useState(new Set());
 
-    const [refresh, setRefresh] = useState(true)
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return commits.log(repo.id, reference.id, after)
     }, [repo.id, reference.id, refresh, after])
 
+    const toggleCommitSelection = (commitId) => {
+        const newSelected = new Set(selectedCommits);
+        if (newSelected.has(commitId)) {
+            newSelected.delete(commitId);
+        } else {
+            newSelected.add(commitId);
+        }
+        setSelectedCommits(newSelected);
+    };
+
+    const handleRevertClick = () => {
+        setRevertMode(!revertMode);
+        setSelectedCommits(new Set()); // Clear selection when toggling mode
+    };
+
+    const handleContinue = () => {
+        const commitIds = Array.from(selectedCommits).join(',');
+        router.push({
+            pathname: '/repositories/:repoId/branches/:branchId/revert',
+            params: { repoId: repo.id, branchId: reference.id },
+            query: { commits: commitIds }
+        });
+    };
+
     if (loading) return <Loading/>
     if (error) return <AlertError error={error}/>
+
+    const isBranch = reference && reference.type === RefTypeBranch;
 
     return (
         <div className="mb-5">
@@ -104,6 +147,18 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
+                    {isBranch && revertMode && selectedCommits.size > 0 && (
+                        <Button variant="success" onClick={handleContinue}>
+                            Continue ({selectedCommits.size})
+                        </Button>
+                    )}
+                    {isBranch && (
+                        <Button
+                            variant={revertMode ? "secondary" : "light"}
+                            onClick={handleRevertClick}>
+                            {revertMode ? "Cancel" : "Revert"}
+                        </Button>
+                    )}
                     <RefreshButton onClick={() => { setRefresh(!refresh); }}/>
                 </ActionGroup>
             </ActionsBar>
@@ -111,7 +166,14 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
             <Card>
                 <ListGroup variant="flush">
                 {results.map(commit => (
-                    <CommitWidget key={commit.id} repo={repo} commit={commit}/>
+                    <CommitWidget
+                        key={commit.id}
+                        repo={repo}
+                        commit={commit}
+                        revertMode={revertMode}
+                        isSelected={selectedCommits.has(commit.id)}
+                        onToggleSelect={toggleCommitSelection}
+                    />
                 ))}
                 </ListGroup>
             </Card>

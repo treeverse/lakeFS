@@ -119,10 +119,70 @@ export class RepositoryPage {
     await this.page.getByRole("link", { name: "Settings" }).click();
   }
 
+  async gotoCommitsTab(): Promise<void> {
+    await this.page.getByRole("link", { name: "Commits" }).click();
+  }
+
   async uploadObject(filePath: string): Promise<void> {
     await this.page.getByRole("button", { name: "Upload" }).click();
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
     await fileInput.setInputFiles(filePath);
+  }
+
+  // revert operations
+
+  async clickRevertButton(): Promise<void> {
+    await this.page.getByRole("button", { name: "Revert" }).click();
+  }
+
+  async selectCommitsForRevert(commitCount: number): Promise<void> {
+    // Select the first N commits using checkboxes
+    const checkboxes = this.page.locator('input[type="checkbox"]').filter({ hasNot: this.page.locator('input[type="checkbox"][disabled]') });
+    for (let i = 0; i < commitCount; i++) {
+      await checkboxes.nth(i).check();
+    }
+  }
+
+  async clickContinueRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: /Continue/ }).click();
+  }
+
+  async fillRevertMessage(message: string): Promise<void> {
+    const textarea = this.page.getByPlaceholder(/Describe the revert|Revert commit/);
+    await textarea.clear();
+    await textarea.fill(message);
+  }
+
+  async setAllowEmptyCommit(allow: boolean): Promise<void> {
+    const checkbox = this.page.getByLabel(/Allow empty commit/);
+    if (allow) {
+      await checkbox.check();
+    } else {
+      await checkbox.uncheck();
+    }
+  }
+
+  async clickApplyRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: "Apply" }).click();
+  }
+
+  async confirmRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: "Yes" }).click();
+  }
+
+  async cancelRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: "Cancel" }).click();
+  }
+
+  async getCommitsCount(): Promise<number> {
+    await this.page.locator("div.card").isVisible();
+    return this.page.locator("ul.list-group li.list-group-item").count();
+  }
+
+  async getFirstCommitMessage(): Promise<string> {
+    const firstCommit = this.page.locator("ul.list-group li.list-group-item").first();
+    const message = await firstCommit.locator("h6 a").textContent();
+    return message?.trim() || "";
   }
 }

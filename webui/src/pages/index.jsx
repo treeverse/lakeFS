@@ -18,6 +18,7 @@ import RepositoryObjectsViewPage from "./repositories/repository/objectViewer";
 import RepositoryCommitsPage from "./repositories/repository/commits";
 import RepositoryCommitPage from "./repositories/repository/commits/commit";
 import RepositoryBranchesPage from "./repositories/repository/branches";
+import RepositoryRevertPage from "./repositories/repository/branches/revert";
 import RepositoryTagsPage from "./repositories/repository/tags";
 import RepositoryPullsListPage from "./repositories/repository/pulls/pullsList";
 import RepositoryCreatePullPage from "./repositories/repository/pulls/createPull";
@@ -79,7 +80,10 @@ export const IndexPage = () => {
                                             <Route index element={<RepositoryCommitsPage/>}/>
                                             <Route path=":commitId" element={<RepositoryCommitPage/>}/>
                                         </Route>
-                                        <Route path="branches" element={<RepositoryBranchesPage/>}/>
+                                        <Route path="branches">
+                                            <Route index element={<RepositoryBranchesPage/>}/>
+                                            <Route path=":branchId/revert" element={<RepositoryRevertPage/>}/>
+                                        </Route>
                                         <Route path="tags" element={<RepositoryTagsPage/>}/>
                                         <Route path="pulls">
                                             <Route index element={<RepositoryPullsListPage/>}/>

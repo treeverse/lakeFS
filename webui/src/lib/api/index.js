@@ -573,6 +573,33 @@ class Branches {
         }
         return response.json();
     }
+
+    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = "", metadata = {}) {
+        const body = {
+            ref: commitRef,
+            parent_number: parentNumber,
+            allow_empty: allowEmpty
+        };
+
+        // Add commit_overrides if message or metadata provided
+        if (message || Object.keys(metadata).length > 0) {
+            body.commit_overrides = {};
+            if (message) {
+                body.commit_overrides.message = message;
+            }
+            if (Object.keys(metadata).length > 0) {
+                body.commit_overrides.metadata = metadata;
+            }
+        }
+
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/revert`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
 }
 
 
