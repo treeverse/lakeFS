@@ -117,6 +117,18 @@ func CloseWriters() error {
 	return nil
 }
 
+func AddOutputWriter(w *io.Writer) {
+	currentOutput := defaultLogger.Out
+	if closer, ok := (*w).(io.Closer); ok {
+		openLoggers = append(openLoggers, closer)
+	}
+	if currentOutput != nil {
+		defaultLogger.SetOutput(io.MultiWriter(currentOutput, *w))
+	} else {
+		defaultLogger.SetOutput(*w)
+	}
+}
+
 func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) error {
 	var writers []io.Writer
 	if err := CloseWriters(); err != nil {
