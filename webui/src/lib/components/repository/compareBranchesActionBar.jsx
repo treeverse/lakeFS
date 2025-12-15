@@ -31,8 +31,8 @@ const CompareBranchesActionsBar = (
             <RefreshButton onClick={doRefresh} />
 
             {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
-                <>
-                    <CreatePullRequestButton
+                <div>
+                    <PullRequestButton
                         repo={repo}
                         disabled={((compareReference.id === reference.id) || isEmptyDiff || repo?.read_only)}
                         source={compareReference.id}
@@ -45,7 +45,7 @@ const CompareBranchesActionsBar = (
                         dest={reference.id}
                         onDone={doRefresh}
                     />
-                </>
+                </div>
             }
         </ActionGroup>
     </ActionsBar>;
@@ -64,8 +64,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
 
     const onClickMerge = useCallback(() => {
         setMergeState({ merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy })
-    }
-    );
+    });
 
     const onStrategyChange = (event) => {
         setMergeState({
@@ -173,10 +172,10 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     );
 }
 
-const CreatePullRequestButton = ({ repo, source, dest, disabled = false }) => {
+const PullRequestButton = ({ repo, source, dest, disabled = false }) => {
     const router = useRouter();
 
-    const onClickCreatePR = () => {
+    const onClick = () => {
         router.push({
             pathname: '/repositories/:repoId/pulls/create',
             params: { repoId: repo.id },
@@ -185,7 +184,7 @@ const CreatePullRequestButton = ({ repo, source, dest, disabled = false }) => {
     }
 
     return (
-        <Button variant="primary" disabled={disabled} onClick={onClickCreatePR}>
+        <Button variant="primary" disabled={disabled} onClick={onClick}>
             <GitPullRequestIcon /> {"Create Pull Request"}
         </Button>
     );
