@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/dgraph-io/badger/v4"
@@ -38,6 +39,9 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 			logger = logging.FromContext(ctx).WithField("store", "local")
 		}
 		opts := badger.DefaultOptions(params.Path)
+		if params.Path == "" || strings.HasPrefix(params.Path, "memory:") {
+			opts.InMemory = true
+		}
 		opts.Logger = &BadgerLogger{logger}
 		db, err := badger.Open(opts)
 		if err != nil {
