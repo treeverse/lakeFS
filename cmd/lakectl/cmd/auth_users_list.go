@@ -5,6 +5,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
+
 	"net/http"
 	"time"
 )
@@ -36,7 +37,7 @@ var authUsersList = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Id", "User", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []interface{}{"ID", "User", "Creation Date"}, &pagination, amount)
 	},
 }
 

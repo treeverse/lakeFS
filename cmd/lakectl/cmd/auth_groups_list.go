@@ -35,7 +35,7 @@ var authGroupsListCmd = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Group ID", "Group Name", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []interface{}{"ID", "Group Name", "Creation Date"}, &pagination, amount)
 	},
 }
 
