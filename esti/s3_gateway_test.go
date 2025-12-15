@@ -325,6 +325,52 @@ func setIfNonMatchHeader(ifNoneMatch string) func(*middleware.Stack) error {
 	}
 }
 
+func extractBucketNames(list *s3.ListBucketsOutput) []string {
+	names := make([]string, 0, len(list.Buckets))
+	for _, bucket := range list.Buckets {
+		names = append(names, *bucket.Name)
+	}
+	return names
+}
+
+func TestListBuckets(t *testing.T) {
+	t.Parallel()
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+	firstRepo := createRepositoryByName(ctx, t, "list-buckets-repo-first")
+	defer DeleteRepositoryIfAskedTo(ctx, firstRepo)
+	secondRepo := createRepositoryByName(ctx, t, "list-buckets-repo-second")
+	defer DeleteRepositoryIfAskedTo(ctx, secondRepo)
+
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+
+	listBucketsOutput, err := s3Client.ListBuckets(ctx, nil)
+	require.NoError(t, err, "Could not list buckets")
+
+	repos := extractBucketNames(listBucketsOutput)
+	require.Contains(t, repos, repo)
+	require.Contains(t, repos, firstRepo)
+	require.Contains(t, repos, secondRepo)
+
+	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("list-buckets-repo")})
+	require.NoError(t, err, "Could not list buckets")
+
+	reposWithPrefix := extractBucketNames(listBucketsOutput)
+	require.NotContains(t, reposWithPrefix, repo)
+	require.Contains(t, reposWithPrefix, firstRepo)
+	require.Contains(t, reposWithPrefix, secondRepo)
+
+	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("list-buckets-repo-second")})
+	require.NoError(t, err, "Could not list buckets")
+
+	reposWithPrefix = extractBucketNames(listBucketsOutput)
+	require.NotContains(t, reposWithPrefix, repo)
+	require.NotContains(t, reposWithPrefix, firstRepo)
+	require.Contains(t, reposWithPrefix, secondRepo)
+}
+
 func TestListMultipartUploads(t *testing.T) {
 	t.Parallel()
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
