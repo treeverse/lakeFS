@@ -254,7 +254,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
     const [deleteError, setDeleteError] = useState(null);
     const [pendingFailedBranches, setPendingFailedBranches] = useState(null);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        return branches.list(repo.id, prefix, after, showHidden);
+        return branches.list(repo.id, showHidden, prefix, after);
     }, [repo.id, refresh, prefix, after, showHidden]);
 
     const doRefresh = () => setRefresh(!refresh);
