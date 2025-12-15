@@ -574,22 +574,25 @@ class Branches {
         return response.json();
     }
 
-    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = "", metadata = {}) {
+    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = null, metadata = {}) {
         const body = {
             ref: commitRef,
             parent_number: parentNumber,
             allow_empty: allowEmpty
         };
 
-        // Always add commit_overrides with the message, even if it's empty
-        // This ensures user's message (including empty) takes precedence over backend default
-        body.commit_overrides = {
-            message: message
-        };
+        // Add commit_overrides if message is explicitly provided (even if empty string) or metadata exists
+        const hasMetadata = Object.keys(metadata).length > 0;
 
-        // Add metadata if provided
-        if (Object.keys(metadata).length > 0) {
-            body.commit_overrides.metadata = metadata;
+        if (message !== null || hasMetadata) {
+            body.commit_overrides = {};
+            // Include message if it was explicitly provided (null means use backend default)
+            if (message !== null) {
+                body.commit_overrides.message = message;
+            }
+            if (hasMetadata) {
+                body.commit_overrides.metadata = metadata;
+            }
         }
 
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/revert`, {

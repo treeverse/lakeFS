@@ -228,7 +228,7 @@ const RevertPreviewPage = () => {
                 <Button
                     variant="danger"
                     onClick={handleApplyClick}
-                    disabled={reverting || (!commitMessage.trim() && !allowEmpty)}>
+                    disabled={reverting || !commitMessage.trim()}>
                     {reverting ? (
                         <>
                             <Spinner
