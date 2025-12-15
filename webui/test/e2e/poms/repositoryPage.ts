@@ -133,7 +133,18 @@ export class RepositoryPage {
   // revert operations
 
   async clickRevertButton(): Promise<void> {
-    await this.page.getByRole("button", { name: "Revert" }).click();
+    // The button text changes between "Revert" and "Cancel" depending on mode
+    // Try to find either button
+    const revertButton = this.page.getByRole("button", { name: "Revert" });
+    const cancelButton = this.page.getByRole("button", { name: "Cancel" });
+
+    // Click whichever one is visible
+    const isRevertVisible = await revertButton.isVisible().catch(() => false);
+    if (isRevertVisible) {
+      await revertButton.click();
+    } else {
+      await cancelButton.click();
+    }
   }
 
   async selectCommitsForRevert(commitCount: number): Promise<void> {
