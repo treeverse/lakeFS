@@ -32,7 +32,7 @@ import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
+import {ClipboardButton, copyTextToClipboard, AlertError, Loading, Warning} from "../controls";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
 import {CommitInfoCard} from "./commits";
@@ -835,6 +835,13 @@ export const Tree = ({
     // empty state!
     body = (
       <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />
+    );
+  } else if (results.length === 0) {
+    body = (
+      <>
+        <Warning>Nothing on this path.<br/>
+        Switch to another branch or tag to see something.</Warning>
+      </>
     );
   } else {
     body = (
