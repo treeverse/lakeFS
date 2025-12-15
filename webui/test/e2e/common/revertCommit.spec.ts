@@ -51,6 +51,9 @@ test.describe("Revert Commit", () => {
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
         await repositoryPage.gotoCommitsTab();
 
+        // Wait for commits to load
+        await page.waitForSelector(".list-group-item", { timeout: 10000 });
+
         // Get the initial commit count
         const initialCommitCount = await repositoryPage.getCommitsCount();
         expect(initialCommitCount).toBeGreaterThan(0);
@@ -114,6 +117,9 @@ test.describe("Revert Commit", () => {
         // Go to commits tab
         await repositoryPage.gotoCommitsTab();
 
+        // Wait for commits to load
+        await page.waitForSelector(".list-group-item", { timeout: 10000 });
+
         const initialCommitCount = await repositoryPage.getCommitsCount();
 
         // Enter revert mode and select 2 commits
@@ -155,6 +161,9 @@ test.describe("Revert Commit", () => {
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
         await repositoryPage.gotoCommitsTab();
+
+        // Wait for commits to load
+        await page.waitForSelector(".list-group-item", { timeout: 10000 });
 
         const initialCommitCount = await repositoryPage.getCommitsCount();
 
@@ -227,5 +236,80 @@ test.describe("Revert Commit", () => {
         // Verify Revert button is back
         await expect(page.getByRole("button", { name: "Revert" })).toBeVisible();
         await expect(page.getByRole("button", { name: "Cancel" })).not.toBeVisible();
+    });
+
+    test("revert with metadata fields", async ({ page }) => {
+        const repositoriesPage = new RepositoriesPage(page);
+        await repositoriesPage.goto();
+        await repositoriesPage.goToRepository(TEST_REPO_NAME);
+
+        const repositoryPage = new RepositoryPage(page);
+        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
+
+        // Enter revert mode and select a commit
+        await repositoryPage.clickRevertButton();
+        await repositoryPage.selectCommitsForRevert(1);
+        await repositoryPage.clickContinueRevert();
+
+        // Verify we're on the revert preview page
+        await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
+
+        // Fill in commit message
+        await repositoryPage.fillRevertMessage("Revert with metadata");
+
+        // Add metadata fields
+        await repositoryPage.addRevertMetadata("environment", "production");
+        await repositoryPage.addRevertMetadata("ticket", "ISSUE-123");
+
+        // Verify metadata fields are present
+        await expect(page.getByPlaceholder("Key").nth(0)).toHaveValue("environment");
+        await expect(page.getByPlaceholder("Value").nth(0)).toHaveValue("production");
+        await expect(page.getByPlaceholder("Key").nth(1)).toHaveValue("ticket");
+        await expect(page.getByPlaceholder("Value").nth(1)).toHaveValue("ISSUE-123");
+
+        // Apply the revert
+        await repositoryPage.clickApplyRevert();
+        await repositoryPage.confirmRevert();
+
+        // Wait for redirect
+        await page.waitForURL(/.*\/commits.*/);
+
+        // Verify successful completion
+        await expect(page.getByRole("button", { name: "Revert" })).toBeVisible();
+    });
+
+    test("metadata validation - empty key error", async ({ page }) => {
+        const repositoriesPage = new RepositoriesPage(page);
+        await repositoriesPage.goto();
+        await repositoriesPage.goToRepository(TEST_REPO_NAME);
+
+        const repositoryPage = new RepositoryPage(page);
+        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
+
+        // Enter revert mode and select a commit
+        await repositoryPage.clickRevertButton();
+        await repositoryPage.selectCommitsForRevert(1);
+        await repositoryPage.clickContinueRevert();
+
+        // Fill in commit message
+        await repositoryPage.fillRevertMessage("Test validation");
+
+        // Add metadata field with empty key
+        await page.getByRole("button", { name: /Add Metadata field/ }).click();
+        await page.getByPlaceholder("Value").last().fill("some value");
+
+        // Try to apply without filling key
+        await repositoryPage.clickApplyRevert();
+
+        // The modal should not open because validation failed
+        // Verify we're still on the revert page (not showing confirmation modal)
+        await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
+
+        // The error should be shown after blur
+        await page.getByPlaceholder("Key").last().click();
+        await page.getByPlaceholder("Value").last().click(); // Blur the key field
+        await expect(page.getByText("Key is required")).toBeVisible();
     });
 });

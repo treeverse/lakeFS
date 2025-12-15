@@ -9,6 +9,8 @@ import Spinner from "react-bootstrap/Spinner";
 import {commits as commitsAPI, branches as branchesAPI} from "../../../../lib/api";
 import {AlertError, Loading} from "../../../../lib/components/controls";
 import {ConfirmationButton} from "../../../../lib/components/modals";
+import {MetadataFields} from "../../../../lib/components/repository/metadata";
+import {getMetadataIfValid, touchInvalidFields} from "../../../../lib/components/repository/metadataHelpers";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
@@ -25,6 +27,7 @@ const RevertPreviewPage = () => {
     const [commitsError, setCommitsError] = useState(null);
     const [commitMessage, setCommitMessage] = useState('');
     const [allowEmpty, setAllowEmpty] = useState(false);
+    const [metadataFields, setMetadataFields] = useState([]);
     const [reverting, setReverting] = useState(false);
     const [revertError, setRevertError] = useState(null);
 
@@ -60,6 +63,13 @@ const RevertPreviewPage = () => {
     }, [repo, commitsParam]);
 
     const handleRevert = async (hide) => {
+        // Validate metadata first
+        const metadata = getMetadataIfValid(metadataFields);
+        if (!metadata) {
+            setMetadataFields(touchInvalidFields(metadataFields));
+            return;
+        }
+
         setReverting(true);
         setRevertError(null);
 
@@ -75,7 +85,7 @@ const RevertPreviewPage = () => {
                     0,          // parentNumber
                     allowEmpty, // allowEmpty
                     commitMessage,  // message
-                    {}          // metadata
+                    metadata    // metadata
                 );
             }
 
@@ -143,10 +153,11 @@ const RevertPreviewPage = () => {
             {/* Commit Message */}
             <Card className="mb-3">
                 <Card.Header>
-                    <strong>Revert Commit Message</strong>
+                    <strong>Revert Commit Details</strong>
                 </Card.Header>
                 <Card.Body>
                     <Form.Group className="mb-3">
+                        <Form.Label>Commit Message</Form.Label>
                         <Form.Control
                             as="textarea"
                             rows={3}
@@ -158,7 +169,13 @@ const RevertPreviewPage = () => {
                             Each revert will create a new commit with this message.
                         </Form.Text>
                     </Form.Group>
-                    <Form.Group>
+
+                    <MetadataFields
+                        metadataFields={metadataFields}
+                        setMetadataFields={setMetadataFields}
+                    />
+
+                    <Form.Group className="mt-3">
                         <Form.Check
                             type="checkbox"
                             id="allow-empty-commit"

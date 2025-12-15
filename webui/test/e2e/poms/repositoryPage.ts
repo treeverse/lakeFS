@@ -154,6 +154,19 @@ export class RepositoryPage {
     await textarea.fill(message);
   }
 
+  async addRevertMetadata(key: string, value: string): Promise<void> {
+    // Click "Add Metadata field" button
+    await this.page.getByRole("button", { name: /Add Metadata field/ }).click();
+
+    // Fill in the last (most recent) key-value pair
+    const keyInputs = this.page.getByPlaceholder("Key");
+    const valueInputs = this.page.getByPlaceholder("Value");
+    const count = await keyInputs.count();
+
+    await keyInputs.nth(count - 1).fill(key);
+    await valueInputs.nth(count - 1).fill(value);
+  }
+
   async setAllowEmptyCommit(allow: boolean): Promise<void> {
     const checkbox = this.page.getByLabel(/Allow empty commit/);
     if (allow) {
@@ -176,12 +189,18 @@ export class RepositoryPage {
   }
 
   async getCommitsCount(): Promise<number> {
-    await this.page.locator("div.card").isVisible();
-    return this.page.locator("ul.list-group li.list-group-item").count();
+    // Wait for the commits card to be visible
+    await this.page.locator(".card .list-group").waitFor({ state: "visible" });
+
+    // Count commit items
+    return this.page.locator(".list-group-item .clearfix").count();
   }
 
   async getFirstCommitMessage(): Promise<string> {
-    const firstCommit = this.page.locator("ul.list-group li.list-group-item").first();
+    // Wait for commits to load
+    await this.page.locator(".list-group-item").first().waitFor({ state: "visible" });
+
+    const firstCommit = this.page.locator(".list-group-item").first();
     const message = await firstCommit.locator("h6 a").textContent();
     return message?.trim() || "";
   }
