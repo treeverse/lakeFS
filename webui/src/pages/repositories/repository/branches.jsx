@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     AlertError, LinkButton,
-    Loading, PrefixSearchWidget, RefreshButton
+    Loading, PrefixSearchWidget, RefreshButton, TruncatedText
 } from "../../../lib/components/controls";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
@@ -43,7 +43,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
     const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
         <>
-            Are you sure you wish to delete branch <strong>{branch.id}</strong> ?
+            Are you sure you wish to delete branch <strong title={branch.id}><TruncatedText text={branch.id} maxLength={50} /></strong> ?
         </>
     );
     if (branch.id === ImportBranchName) {
@@ -60,16 +60,21 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
             <Row className="d-flex align-items-center justify-content-between">
                 <Col
                     title={branch.id}
-                    className="flex-grow-1 text-nowrap overflow-hidden text-truncate align-middle"
+                    className="flex-grow-1 align-middle"
+                    style={{minWidth: 0}}
                 >
                     <h6 className="mb-0">
-                        <Link href={{
-                            pathname: '/repositories/:repoId/objects',
-                            params: {repoId: repo.id},
-                            query: {ref: branch.id}
-                        }}>
-                            {branch.id}
-                        </Link>
+                        <span className="d-inline-block text-nowrap overflow-hidden text-truncate" style={{maxWidth: '100%', verticalAlign: 'middle'}}>
+                            <Link 
+                                href={{
+                                    pathname: '/repositories/:repoId/objects',
+                                    params: {repoId: repo.id},
+                                    query: {ref: branch.id}
+                                }}
+                            >
+                                {branch.id}
+                            </Link>
+                        </span>
                         
                         {isDefault &&
                             <>

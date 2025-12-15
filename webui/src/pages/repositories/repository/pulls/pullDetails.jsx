@@ -7,7 +7,7 @@ import {GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon} from "@prime
 import dayjs from "dayjs";
 import Markdown from 'react-markdown'
 
-import {AlertError, Loading} from "../../../../lib/components/controls";
+import {AlertError, Loading, TruncatedText} from "../../../../lib/components/controls";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
@@ -110,10 +110,17 @@ const PullDetailsContent = ({repo, pull}) => {
 // message example: "<author> wants to merge <source-branch> into <destination-branch>."
 const PullInfo = ({repo, pull}) => <>
     <StatusBadge status={pull.status}/>
-    <span className="ms-2">
-        <strong>{pull.author}</strong> {`${getActionText(pull.status)} `}
-        <BranchLink repo={repo} branch={pull.source_branch}/> {""}
-        into <BranchLink repo={repo} branch={pull.destination_branch}/>.
+    <span className="ms-2" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', minWidth: 0, maxWidth: '100%' }}>
+        <strong style={{ flexShrink: 0 }}>{pull.author}</strong>
+        <span style={{ flexShrink: 0 }}>{getActionText(pull.status)}</span>
+        <span style={{ flexShrink: 1, minWidth: 0, maxWidth: '200px' }}>
+            <BranchLink repo={repo} branch={pull.source_branch}/>
+        </span>
+        <span style={{ flexShrink: 0 }}>into</span>
+        <span style={{ flexShrink: 1, minWidth: 0, maxWidth: '200px' }}>
+            <BranchLink repo={repo} branch={pull.destination_branch}/>
+        </span>
+        <span style={{ flexShrink: 0 }}>.</span>
     </span>
 </>;
 
@@ -185,7 +192,7 @@ const BranchLink = ({repo, branch}) =>
         params: {repoId: repo.id},
         query: {ref: branch}
     }}>
-        {branch}
+        <TruncatedText text={branch} maxLength={40} />
     </Link>;
 
 // this is pretty hacky, but there seem to be no other way to detect this specific error

@@ -18,6 +18,11 @@
   padding: 0;
 }
 
+.tree-container table {
+  table-layout: fixed;
+  width: 100%;
+}
+
 .tree-entry-row,
 .change-entry-row {
   transition: background-color var(--transition-fast);
@@ -30,6 +35,12 @@
 
 .tree-path {
   font-size: 0.9rem;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0; /* Allow table to constrain width */
+  width: auto;
+  min-width: 0;
 }
 
 .tree-path .octicon {
@@ -63,6 +74,29 @@
 .tree-path-action {
   cursor: pointer;
   color: var(--bs-nav-link-color);
+}
+
+/* Change summary and row actions alignment */
+.change-summary {
+  white-space: nowrap !important;
+  vertical-align: middle;
+  width: auto;
+  min-width: 0;
+}
+
+/* Row actions alignment and spacing */
+.change-entry-row-actions {
+  white-space: nowrap !important;
+  vertical-align: middle;
+  width: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.change-entry-row-actions .btn {
+  margin-left: 0;
 }
 
 /* Gear icon visibility and alignment */
