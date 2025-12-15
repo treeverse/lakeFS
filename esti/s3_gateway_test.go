@@ -338,9 +338,9 @@ func TestListBuckets(t *testing.T) {
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-	firstRepo := createRepositoryByName(ctx, t, "repo-ls-first")
+	firstRepo := createRepositoryByName(ctx, t, "listBuckets-repo-first")
 	defer DeleteRepositoryIfAskedTo(ctx, firstRepo)
-	secondRepo := createRepositoryByName(ctx, t, "repo-ls-second")
+	secondRepo := createRepositoryByName(ctx, t, "listBuckets-repo-second")
 	defer DeleteRepositoryIfAskedTo(ctx, secondRepo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -350,32 +350,25 @@ func TestListBuckets(t *testing.T) {
 	require.NoError(t, err, "Could not list buckets")
 
 	repos := extractBucketNames(listBucketsOutput)
+	require.Contains(t, repos, repo)
 	require.Contains(t, repos, firstRepo)
 	require.Contains(t, repos, secondRepo)
 
-	listBucketsInput = s3.ListBucketsInput{
-		Prefix: aws.String("repo-ls"),
-	}
+	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("listBuckets-repo")})
+	require.NoError(t, err, "Could not list buckets")
 
-	listBucketsOutput, err = s3Client.ListBuckets(ctx, &listBucketsInput)
+	reposWithPrefix := extractBucketNames(listBucketsOutput)
+	require.NotContains(t, reposWithPrefix, repo)
+	require.Contains(t, reposWithPrefix, firstRepo)
+	require.Contains(t, reposWithPrefix, secondRepo)
+
+	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("listBuckets-repo-second")})
 	require.NoError(t, err, "Could not list buckets")
 
 	reposWithPrefix = extractBucketNames(listBucketsOutput)
-	require.NotContains(t, repos, repo)
-	require.Contains(t, repos, firstRepo)
-	require.Contains(t, repos, secondRepo)
-
-	listBucketsInput = s3.ListBucketsInput{
-		Prefix: aws.String("repo-ls-second"),
-	}
-
-	listBucketsOutput, err = s3Client.ListBuckets(ctx, &listBucketsInput)
-	require.NoError(t, err, "Could not list buckets")
-
-	repos = extractBucketNames(listBucketsOutput)
-	require.NotContains(t, repos, repo)
-	require.NotContains(t, repos, firstRepo)
-	require.Contains(t, repos, secondRepo)
+	require.NotContains(t, reposWithPrefix, repo)
+	require.NotContains(t, reposWithPrefix, firstRepo)
+	require.Contains(t, reposWithPrefix, secondRepo)
 }
 
 func TestListMultipartUploads(t *testing.T) {
