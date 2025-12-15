@@ -326,9 +326,8 @@ func setIfNonMatchHeader(ifNoneMatch string) func(*middleware.Stack) error {
 }
 
 func extractBucketNames(list *s3.ListBucketsOutput) []string {
-	buckets := list.Buckets
-	var names []string
-	for _, bucket := range buckets {
+	names := make([]string, 0, len(list.Buckets))
+	for _, bucket := range list.Buckets {
 		names = append(names, *bucket.Name)
 	}
 	return names
