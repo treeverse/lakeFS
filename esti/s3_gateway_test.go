@@ -872,6 +872,10 @@ func TestS3CopyObject(t *testing.T) {
 	srcPath := gatewayTestPrefix + "source-file"
 	destPath := gatewayTestPrefix + "dest-file"
 	userMetadata := map[string]string{"X-Amz-Meta-Key1": "value1", "X-Amz-Meta-Key2": "value2"}
+	userMetadataExpected := make(map[string]string, len(userMetadata))
+	for k, v := range userMetadata {
+		userMetadataExpected[strings.ToLower(k)] = v
+	}
 
 	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
@@ -923,13 +927,17 @@ func TestS3CopyObject(t *testing.T) {
 		sourceObjectStats := resp.JSON200
 		destObjectStats := resp.JSON200
 		require.Equal(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress, "source and dest physical address should match")
-		require.Equal(t, userMetadata, destObjectStats.Metadata.AdditionalProperties, "source and dest metadata should match")
+		require.Equal(t, userMetadataExpected, destObjectStats.Metadata.AdditionalProperties, "source and dest metadata should match")
 	})
 
 	t.Run("different_repo", func(t *testing.T) {
 		t.Parallel()
 		// copy the object to different repository. should create another version of the file
 		userMetadataReplace := map[string]string{"X-Amz-Meta-Key1": "value1Replace", "X-Amz-Meta-Key2": "value2Replace"}
+		userMetadataReplaceExpected := make(map[string]string, len(userMetadataReplace))
+		for k, v := range userMetadataReplace {
+			userMetadataReplaceExpected[strings.ToLower(k)] = v
+		}
 
 		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
@@ -973,7 +981,7 @@ func TestS3CopyObject(t *testing.T) {
 
 		// assert that the physical addresses of the objects are not the same
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
-		require.Equal(t, userMetadataReplace, destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
+		require.Equal(t, userMetadataReplaceExpected, destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
 	})
 }
 
@@ -1050,11 +1058,17 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 			require.NoError(t, err, "Call statObject using lakeFS API")
 			require.NoError(t, VerifyResponse(statsResp.HTTPResponse, statsResp.Body), "statObject using lakeFS API")
 
+			// lower case the input metadata keys to align with the S3 gateway behavior returned by the client.
+			lowerCasedMetadata := make(map[string]string)
+			for k, v := range metadata {
+				lowerCasedMetadata[strings.ToLower(k)] = v
+			}
+
 			// Because of #9089, any user metadata uploaded through the S3 gateway
 			// has a x-aws-meta- prefix.
 			strippedMetadata, err := stripKeyPrefix("X-Amz-Meta-", statsResp.JSON200.Metadata.AdditionalProperties)
 			assert.NoErrorf(t, err, "Failed to strip prefix from metadata keys in %+v", statsResp.JSON200.Metadata.AdditionalProperties)
-			if diffs := deep.Equal(strippedMetadata, metadata); diffs != nil {
+			if diffs := deep.Equal(strippedMetadata, lowerCasedMetadata); diffs != nil {
 				t.Errorf("Different user metadata from API: %s", diffs)
 			}
 		})
