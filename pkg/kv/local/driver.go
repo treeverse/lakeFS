@@ -3,7 +3,6 @@ package local
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/dgraph-io/badger/v4"
