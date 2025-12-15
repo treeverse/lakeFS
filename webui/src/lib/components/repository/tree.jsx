@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 
 import dayjs from "dayjs";
 import {
+  AlertIcon,
   PasteIcon,
   DownloadIcon,
   FileDirectoryIcon,
@@ -32,7 +33,7 @@ import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import {ClipboardButton, copyTextToClipboard, AlertError, Loading, Warning} from "../controls";
+import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
 import {CommitInfoCard} from "./commits";
@@ -839,8 +840,12 @@ export const Tree = ({
   } else if (results.length === 0) {
     body = (
       <>
-        <Warning>Nothing on this path.<br/>
-        Switch to another branch or tag to see something.</Warning>
+        <div className="me-3">
+          <div className="d-flex flex-column align-items-center">
+            <AlertIcon size={36} /><br/>
+            Nothing here.  Switch to another branch or tag to see something.
+          </div>
+        </div>
       </>
     );
   } else {
