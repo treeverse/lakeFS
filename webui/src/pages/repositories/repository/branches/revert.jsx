@@ -8,7 +8,7 @@ import Spinner from "react-bootstrap/Spinner";
 
 import {commits as commitsAPI, branches as branchesAPI} from "../../../../lib/api";
 import {AlertError, Loading} from "../../../../lib/components/controls";
-import {ConfirmationButton} from "../../../../lib/components/modals";
+import {ConfirmationModal} from "../../../../lib/components/modals";
 import {MetadataFields} from "../../../../lib/components/repository/metadata";
 import {getMetadataIfValid, touchInvalidFields} from "../../../../lib/components/repository/metadataHelpers";
 import {useRefs} from "../../../../lib/hooks/repo";
@@ -30,6 +30,7 @@ const RevertPreviewPage = () => {
     const [metadataFields, setMetadataFields] = useState([]);
     const [reverting, setReverting] = useState(false);
     const [revertError, setRevertError] = useState(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     // Fetch commit details
     useEffect(() => {
@@ -62,16 +63,25 @@ const RevertPreviewPage = () => {
         fetchCommits();
     }, [repo, commitsParam]);
 
-    const handleRevert = async (hide) => {
-        // Validate metadata first
+    const handleApplyClick = () => {
+        // Validate metadata before showing confirmation modal
         const metadata = getMetadataIfValid(metadataFields);
         if (!metadata) {
             setMetadataFields(touchInvalidFields(metadataFields));
             return;
         }
 
+        // Validation passed, show confirmation modal
+        setShowConfirmModal(true);
+    };
+
+    const handleRevert = async () => {
+        // Get validated metadata (we already validated before opening modal)
+        const metadata = getMetadataIfValid(metadataFields);
+
         setReverting(true);
         setRevertError(null);
+        setShowConfirmModal(false);
 
         try {
             const commitIds = commitsParam.split(',');
@@ -90,7 +100,6 @@ const RevertPreviewPage = () => {
             }
 
             // Success - redirect to commits page
-            hide();
             router.push({
                 pathname: '/repositories/:repoId/commits',
                 params: { repoId: repo.id },
@@ -216,11 +225,9 @@ const RevertPreviewPage = () => {
                     disabled={reverting}>
                     Cancel
                 </Button>
-                <ConfirmationButton
+                <Button
                     variant="danger"
-                    modalVariant="danger"
-                    msg={confirmationMessage}
-                    onConfirm={handleRevert}
+                    onClick={handleApplyClick}
                     disabled={reverting || (!commitMessage.trim() && !allowEmpty)}>
                     {reverting ? (
                         <>
@@ -237,8 +244,17 @@ const RevertPreviewPage = () => {
                     ) : (
                         'Apply'
                     )}
-                </ConfirmationButton>
+                </Button>
             </div>
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                show={showConfirmModal}
+                variant="danger"
+                onConfirm={handleRevert}
+                onHide={() => setShowConfirmModal(false)}
+                msg={confirmationMessage}
+            />
         </div>
     );
 };
