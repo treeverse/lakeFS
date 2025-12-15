@@ -39,6 +39,8 @@ export class RepositoryPage {
   async switchBranch(name: string): Promise<void> {
     await this.page.getByRole("button", { name: "branch: " }).click();
     await this.page.getByRole("button", { name }).click();
+    // Wait for URL to update after branch switch
+    await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
   }
 
   // file manipulation operations
@@ -103,7 +105,7 @@ export class RepositoryPage {
   // navigation
 
   async gotoObjectsTab(): Promise<void> {
-    await this.page.getByRole("link", { name: "Objects" }).click();
+    await this.page.getByRole("link", { name: "Objects", exact: true }).first().click();
   }
 
 
