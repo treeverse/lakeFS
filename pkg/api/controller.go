@@ -3208,7 +3208,8 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		log.Debug("KV Throttling")
 		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
 
-	case errors.Is(err, graveler.ErrPreconditionFailed):
+	case errors.Is(err, graveler.ErrPreconditionFailed),
+		errors.Is(err, kv.ErrPredicateFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 
