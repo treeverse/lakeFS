@@ -218,7 +218,7 @@ const CreatePullRequestButton = ({ repo, source, dest, disabled = false }) => {
                 params: { repoId: repo.id, pullId: createdPullId },
             });
         } catch (err) {
-            setPRState({ creating: prState.creating, show: prState.show, err: err })
+            setPRState({ creating: false, show: prState.show, err: err })
         }
     }
 
