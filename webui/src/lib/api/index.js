@@ -565,8 +565,8 @@ class Branches {
         }
     }
 
-    async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+    async list(repoId, prefix = "", after = "", showHidden = false, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({prefix, after, amount, show_hidden: showHidden});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list branches: ${await extractError(response)}`);
