@@ -40,7 +40,11 @@ func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logge
 		apiService := auth.NewBasicAuthService(
 			kvStore,
 			secretStore,
-			authparams.ServiceCache(baseAuthCfg.Cache),
+			authparams.ServiceCache{
+				Enabled: baseAuthCfg.Cache.Enabled,
+				Size:    baseAuthCfg.Cache.Size,
+				TTL:     baseAuthCfg.Cache.TTL,
+			},
 			logger.WithField("service", "auth_service"),
 		)
 		// Check if migration needed
@@ -74,7 +78,11 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 		authUICfg.IsAdvancedAuth(),
 		baseAuthCfg.AuthenticationAPI.ExternalPrincipalsEnabled,
 		secretStore,
-		authparams.ServiceCache(baseAuthCfg.Cache),
+		authparams.ServiceCache{
+			Enabled: baseAuthCfg.Cache.Enabled,
+			Size:    baseAuthCfg.Cache.Size,
+			TTL:     baseAuthCfg.Cache.TTL,
+		},
 		logger.WithField("service", "auth_api"),
 	)
 	if err != nil {

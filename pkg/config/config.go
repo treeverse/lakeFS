@@ -674,7 +674,8 @@ type BaseAuth struct {
 		Enabled bool          `mapstructure:"enabled"`
 		Size    int           `mapstructure:"size"`
 		TTL     time.Duration `mapstructure:"ttl"`
-		Jitter  time.Duration `mapstructure:"jitter"`
+		// Deprecated - value will be ignored
+		Jitter time.Duration `mapstructure:"jitter"`
 	} `mapstructure:"cache"`
 	Encrypt struct {
 		SecretKey SecureString `mapstructure:"secret_key" validate:"required"`

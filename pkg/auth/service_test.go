@@ -482,7 +482,6 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 		cacheParams.Enabled = true
 		cacheParams.Size = 100
 		cacheParams.TTL = time.Minute
-		cacheParams.Jitter = time.Minute
 	}
 	s, err := auth.NewAPIAuthServiceWithClient(mockClient, true, true, secretStore, cacheParams, logging.ContextUnavailable())
 	if err != nil {

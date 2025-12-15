@@ -1158,7 +1158,7 @@ func NewAPIAuthService(apiEndpoint, token string, isAdvancedAuth, externalPrinci
 	logger.Info("initialized authorization service")
 	var cache Cache
 	if cacheConf.Enabled {
-		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL)
 	} else {
 		cache = &DummyCache{}
 	}
@@ -1202,7 +1202,7 @@ func groupIDOrDisplayName(group Group) string {
 func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, isAdvancedAuth, externalPrincipalsEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
-		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL)
 	} else {
 		cache = &DummyCache{}
 	}

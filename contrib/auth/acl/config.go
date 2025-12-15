@@ -34,7 +34,6 @@ type Config struct {
 		Enabled bool
 		Size    int
 		TTL     time.Duration
-		Jitter  time.Duration
 	} `mapstructure:"cache"`
 }
 

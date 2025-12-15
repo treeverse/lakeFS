@@ -29,7 +29,7 @@ type AuthService struct {
 func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf params.ServiceCache) *AuthService {
 	var cache auth.Cache
 	if cacheConf.Enabled {
-		cache = auth.NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
+		cache = auth.NewLRUCache(cacheConf.Size, cacheConf.TTL)
 	} else {
 		cache = &auth.DummyCache{}
 	}

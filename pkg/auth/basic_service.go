@@ -33,7 +33,7 @@ func NewBasicAuthService(store kv.Store, secretStore crypt.SecretStore, cacheCon
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
-		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL)
 	} else {
 		cache = &DummyCache{}
 	}

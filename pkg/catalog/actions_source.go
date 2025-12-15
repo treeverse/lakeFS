@@ -15,32 +15,31 @@ const repositoryLocation = "_lakefs_actions/"
 
 type ActionsSource struct {
 	catalog *Catalog
-	cache   cache.Cache
+	cache   cache.Cache[string, any]
 }
 
 const (
 	DefaultActionsCacheSize   = 100
 	DefaultActionsCacheExpiry = 5 * time.Second
-	DefaultActionsCacheJitter = DefaultActionsCacheExpiry / 2
 )
 
 type ActionsCacheConfig struct {
 	Size   int
 	Expiry time.Duration
-	Jitter time.Duration
 }
 
 func NewActionsSource(catalog *Catalog) *ActionsSource {
 	return &ActionsSource{
 		catalog: catalog,
-		cache:   cache.NewCache(DefaultActionsCacheSize, DefaultActionsCacheExpiry, cache.NewJitterFn(DefaultActionsCacheJitter)),
+		cache:   cache.NewCache[string, any](DefaultActionsCacheSize, DefaultActionsCacheExpiry),
 	}
 }
 
 func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([]string, error) {
 	key := fmt.Sprintf("%s:%s", record.Repository.RepositoryID.String(), record.SourceRef.String())
-	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
-		return s.list(ctx, record)
+	names, err := s.cache.GetOrSet(key, func() (any, error) {
+		v, err := s.list(ctx, record)
+		return v, err
 	})
 	if err != nil {
 		return nil, err
@@ -72,7 +71,7 @@ func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([
 
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
 	key := fmt.Sprintf("%s:%s:%s", record.Repository.RepositoryID.String(), record.SourceRef.String(), name)
-	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
+	names, err := s.cache.GetOrSet(key, func() (any, error) {
 		return s.load(ctx, record, name)
 	})
 	if err != nil {

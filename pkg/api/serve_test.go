@@ -42,6 +42,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -136,7 +137,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:                cfg,
 		KVStore:               kvStore,
-		SettingsManagerOption: settings.WithCache(cache.NoCache),
+		SettingsManagerOption: settings.WithCache(&cache.NoCache[settings.CacheKey, proto.Message]{}),
 		PathProvider:          upload.DefaultPathProvider,
 	})
 	testutil.MustDo(t, "build catalog", err)

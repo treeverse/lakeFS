@@ -14,10 +14,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"google.golang.org/protobuf/proto"
 )
 
-type mockCache struct {
-	c map[interface{}]interface{}
+type mockCache[K comparable, V any] struct {
+	c map[K]V
 }
 
 var repository = &graveler.RepositoryRecord{
@@ -28,21 +29,16 @@ var repository = &graveler.RepositoryRecord{
 	},
 }
 
-func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, err error) {
+func (m *mockCache[K, V]) GetOrSet(k K, setFn cache.SetFn[V]) (v V, err error) {
 	if val, ok := m.c[k]; ok {
 		return val, nil
 	}
 	val, err := setFn()
 	if err != nil {
-		return nil, err
+		return val, err
 	}
 	m.c[k] = val
 	return val, nil
-}
-
-func (m *mockCache) GetOrSetWithExpiry(k interface{}, setFn cache.SetFnWithExpiry) (v interface{}, err error) {
-	// Settings does not use expiry.
-	panic("Not implemented.")
 }
 
 func TestNonExistent(t *testing.T) {
@@ -60,8 +56,8 @@ func TestNonExistent(t *testing.T) {
 
 func TestSaveAndGet(t *testing.T) {
 	ctx := context.Background()
-	mc := &mockCache{
-		c: make(map[interface{}]interface{}),
+	mc := &mockCache[settings.CacheKey, proto.Message]{
+		c: make(map[settings.CacheKey]proto.Message),
 	}
 	m := prepareTest(t, ctx, mc, nil)
 	firstSettings := newSetting(5, 6, "hello")
@@ -84,7 +80,7 @@ func TestSaveAndGet(t *testing.T) {
 		t.Fatal("got unexpected settings:", diff)
 	}
 	// after clearing the mc, we should get the new settings:
-	mc.c = make(map[interface{}]interface{})
+	mc.c = make(map[settings.CacheKey]proto.Message)
 	gotSettings = &settings.ExampleSettings{}
 	err = m.Get(ctx, repository, "settingKey", gotSettings)
 	testutil.Must(t, err)
@@ -111,8 +107,8 @@ func TestGetLatest(t *testing.T) {
 
 func TestConditionalUpdate(t *testing.T) {
 	ctx := context.Background()
-	mc := &mockCache{
-		c: make(map[interface{}]interface{}),
+	mc := &mockCache[settings.CacheKey, proto.Message]{
+		c: make(map[settings.CacheKey]proto.Message),
 	}
 	m := prepareTest(t, ctx, mc, nil)
 	firstSettings := newSetting(5, 6, "hello")
@@ -133,7 +129,7 @@ func TestConditionalUpdate(t *testing.T) {
 	require.ErrorIs(t, err, graveler.ErrPreconditionFailed)
 }
 
-func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) *settings.Manager {
+func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache[settings.CacheKey, proto.Message], branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) *settings.Manager {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 
@@ -146,7 +142,7 @@ func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branch
 	}
 	var opts []settings.ManagerOption
 	if refCache == nil {
-		refCache = cache.NoCache
+		refCache = &cache.NoCache[settings.CacheKey, proto.Message]{}
 	}
 	opts = append(opts, settings.WithCache(refCache))
 	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Eq(repository), graveler.BranchID("main"), gomock.Any()).DoAndReturn(cb).AnyTimes()

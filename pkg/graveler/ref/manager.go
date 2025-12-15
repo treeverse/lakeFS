@@ -37,8 +37,8 @@ type Manager struct {
 	kvStoreLimited  kv.Store
 	addressProvider ident.AddressProvider
 	batchExecutor   batch.Batcher
-	repoCache       cache.Cache
-	commitCache     cache.Cache
+	repoCache       cache.Cache[graveler.RepositoryID, *graveler.RepositoryRecord]
+	commitCache     cache.Cache[string, *graveler.Commit]
 	maxBatchDelay   time.Duration
 	branchOwnership *distributed.MostlyCorrectOwner
 	storageConfig   config.StorageConfig
@@ -128,8 +128,8 @@ func NewRefManager(cfg ManagerConfig, storageCfg config.StorageConfig) *Manager 
 		kvStoreLimited:  cfg.KVStoreLimited,
 		addressProvider: cfg.AddressProvider,
 		batchExecutor:   cfg.Executor,
-		repoCache:       newCache(cfg.RepositoryCacheConfig),
-		commitCache:     newCache(cfg.CommitCacheConfig),
+		repoCache:       newCache[graveler.RepositoryID, *graveler.RepositoryRecord](cfg.RepositoryCacheConfig),
+		commitCache:     newCache[string, *graveler.Commit](cfg.CommitCacheConfig),
 		maxBatchDelay:   cfg.MaxBatchDelay,
 		branchOwnership: branchOwnership,
 		storageConfig:   storageCfg,
@@ -163,7 +163,7 @@ func (m *Manager) getRepositoryBatch(ctx context.Context, repositoryID graveler.
 }
 
 func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
-	rec, err := m.repoCache.GetOrSet(repositoryID, func() (interface{}, error) {
+	rec, err := m.repoCache.GetOrSet(repositoryID, func() (*graveler.RepositoryRecord, error) {
 		repo, err := m.getRepositoryBatch(ctx, repositoryID)
 		if err != nil {
 			return nil, err
@@ -181,7 +181,7 @@ func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.Repos
 	if err != nil {
 		return nil, err
 	}
-	return rec.(*graveler.RepositoryRecord), nil
+	return rec, nil
 }
 
 func (m *Manager) createBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
@@ -582,13 +582,13 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repository *graveler.Re
 
 func (m *Manager) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("%s:%s", repository.RepositoryID, commitID)
-	v, err := m.commitCache.GetOrSet(key, func() (v interface{}, err error) {
+	v, err := m.commitCache.GetOrSet(key, func() (v *graveler.Commit, err error) {
 		return m.getCommitBatch(ctx, repository, commitID)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return v.(*graveler.Commit), nil
+	return v, nil
 }
 
 func (m *Manager) getCommitBatch(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
@@ -678,11 +678,11 @@ func (m *Manager) GCCommitIterator(ctx context.Context, repository *graveler.Rep
 	return NewOrderedCommitIterator(ctx, m.kvStore, repository, true)
 }
 
-func newCache(cfg CacheConfig) cache.Cache {
+func newCache[K comparable, V any](cfg CacheConfig) cache.Cache[K, V] {
 	if cfg.Size == 0 {
-		return cache.NoCache
+		return &cache.NoCache[K, V]{}
 	}
-	return cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
+	return cache.NewCache[K, V](cfg.Size, cfg.Expiry)
 }
 
 func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler.RepositoryRecord) error {

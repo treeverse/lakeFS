@@ -1,14 +1,7 @@
 package cache
 
-var NoCache Cache = &noCache{}
+type NoCache[K comparable, V any] struct{}
 
-type noCache struct{}
-
-func (m *noCache) GetOrSet(_ interface{}, setFn SetFn) (v interface{}, err error) {
+func (m *NoCache[K, V]) GetOrSet(_ K, setFn SetFn[V]) (v V, err error) {
 	return setFn()
-}
-
-func (m *noCache) GetOrSetWithExpiry(_ interface{}, setFn SetFnWithExpiry) (v interface{}, err error) {
-	v, _, err = setFn()
-	return v, err
 }

@@ -259,13 +259,11 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 		Enabled: true,
 		Size:    1024,
 		TTL:     20 * time.Second,
-		Jitter:  3 * time.Second,
 	})
 	serviceWithCacheLowTTL := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     1 * time.Millisecond,
-		Jitter:  1 * time.Millisecond,
 	})
 	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
 

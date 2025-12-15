@@ -16,16 +16,15 @@ const ProtectionSettingKey = "protected_branches"
 const (
 	matcherCacheSize   = 100_000
 	matcherCacheExpiry = 1 * time.Hour
-	matcherCacheJitter = 1 * time.Minute
 )
 
 type ProtectionManager struct {
 	settingManager *settings.Manager
-	matchers       cache.Cache
+	matchers       cache.Cache[string, glob.Glob]
 }
 
 func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
-	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
+	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache[string, glob.Glob](matcherCacheSize, matcherCacheExpiry)}
 }
 
 func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
@@ -51,13 +50,13 @@ func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.
 		return false, err
 	}
 	for pattern, blockedActions := range rules.BranchPatternToBlockedActions {
-		matcher, err := m.matchers.GetOrSet(pattern, func() (v interface{}, err error) {
+		matcher, err := m.matchers.GetOrSet(pattern, func() (v glob.Glob, err error) {
 			return glob.Compile(pattern)
 		})
 		if err != nil {
 			return false, err
 		}
-		if !matcher.(glob.Glob).Match(string(branchID)) {
+		if !matcher.Match(string(branchID)) {
 			continue
 		}
 		for _, c := range blockedActions.GetValue() {

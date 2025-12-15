@@ -21,7 +21,7 @@ const (
 	defaultCacheExpiry = 3 * time.Second
 )
 
-type cacheKey struct {
+type CacheKey struct {
 	RepositoryID graveler.RepositoryID
 	Key          string
 }
@@ -32,18 +32,18 @@ type cacheKey struct {
 type Manager struct {
 	store      kv.Store
 	refManager graveler.RefManager
-	cache      cache.Cache
+	cache      cache.Cache[CacheKey, proto.Message]
 }
 
 type ManagerOption func(m *Manager)
 
-func WithCache(cache cache.Cache) ManagerOption {
+func WithCache(cache cache.Cache[CacheKey, proto.Message]) ManagerOption {
 	return func(m *Manager) {
 		m.WithCache(cache)
 	}
 }
 
-func (m *Manager) WithCache(cache cache.Cache) {
+func (m *Manager) WithCache(cache cache.Cache[CacheKey, proto.Message]) {
 	m.cache = cache
 }
 
@@ -51,7 +51,7 @@ func NewManager(refManager graveler.RefManager, store kv.Store, options ...Manag
 	m := &Manager{
 		refManager: refManager,
 		store:      store,
-		cache:      cache.NewCache(cacheSize, defaultCacheExpiry, cache.NewJitterFn(defaultCacheExpiry)),
+		cache:      cache.NewCache[CacheKey, proto.Message](cacheSize, defaultCacheExpiry),
 	}
 	for _, o := range options {
 		o(m)
@@ -139,12 +139,12 @@ func (m *Manager) GetLatest(ctx context.Context, repository *graveler.Repository
 // Get fetches the setting under the given repository and key, and loads it into dst.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, dst proto.Message) error {
-	k := cacheKey{
+	k := CacheKey{
 		RepositoryID: repository.RepositoryID,
 		Key:          key,
 	}
 	tmp := proto.Clone(dst)
-	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
+	setting, err := m.cache.GetOrSet(k, func() (v proto.Message, err error) {
 		_, err = m.GetLatest(ctx, repository, key, tmp)
 		if errors.Is(err, graveler.ErrNotFound) {
 			// do not return this error here, so that empty settings are cached
@@ -158,7 +158,7 @@ func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord
 	if setting == nil {
 		return graveler.ErrNotFound
 	}
-	proto.Merge(dst, setting.(proto.Message))
+	proto.Merge(dst, setting)
 	return nil
 }
 
