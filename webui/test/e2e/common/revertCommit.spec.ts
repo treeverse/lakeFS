@@ -135,8 +135,9 @@ test.describe("Revert Commit", () => {
         // Verify we're reverting 2 commits - check in the commits list header
         await expect(page.getByText("Commits to Revert (in order)")).toBeVisible();
 
-        // Fill in commit message
-        await repositoryPage.fillRevertMessage("Revert: Multiple deletions");
+        // For multiple commits, commit message field is hidden - each commit gets default message
+        // Verify the commit message field is NOT visible
+        await expect(page.getByPlaceholder(/Describe the revert|Revert commit/)).not.toBeVisible();
 
         // Apply the revert
         await repositoryPage.clickApplyRevert();
