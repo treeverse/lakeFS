@@ -117,15 +117,15 @@ func CloseWriters() error {
 	return nil
 }
 
-func AddOutputWriter(w *io.Writer) {
+func AddOutputWriter(w io.Writer) {
 	currentOutput := defaultLogger.Out
-	if closer, ok := (*w).(io.Closer); ok {
+	if closer, ok := (w).(io.Closer); ok {
 		openLoggers = append(openLoggers, closer)
 	}
 	if currentOutput != nil {
-		defaultLogger.SetOutput(io.MultiWriter(currentOutput, *w))
+		defaultLogger.SetOutput(io.MultiWriter(currentOutput, w))
 	} else {
-		defaultLogger.SetOutput(*w)
+		defaultLogger.SetOutput(w)
 	}
 }
 
