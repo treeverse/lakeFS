@@ -581,15 +581,15 @@ class Branches {
             allow_empty: allowEmpty
         };
 
-        // Add commit_overrides if message or metadata provided
-        if (message || Object.keys(metadata).length > 0) {
-            body.commit_overrides = {};
-            if (message) {
-                body.commit_overrides.message = message;
-            }
-            if (Object.keys(metadata).length > 0) {
-                body.commit_overrides.metadata = metadata;
-            }
+        // Always add commit_overrides with the message, even if it's empty
+        // This ensures user's message (including empty) takes precedence over backend default
+        body.commit_overrides = {
+            message: message
+        };
+
+        // Add metadata if provided
+        if (Object.keys(metadata).length > 0) {
+            body.commit_overrides.metadata = metadata;
         }
 
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/revert`, {
