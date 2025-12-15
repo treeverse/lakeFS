@@ -338,9 +338,9 @@ func TestListBuckets(t *testing.T) {
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-	firstRepo := createRepositoryByName(ctx, t, "listBuckets-repo-first")
+	firstRepo := createRepositoryByName(ctx, t, "list-buckets-repo-first")
 	defer DeleteRepositoryIfAskedTo(ctx, firstRepo)
-	secondRepo := createRepositoryByName(ctx, t, "listBuckets-repo-second")
+	secondRepo := createRepositoryByName(ctx, t, "list-buckets-repo-second")
 	defer DeleteRepositoryIfAskedTo(ctx, secondRepo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -354,7 +354,7 @@ func TestListBuckets(t *testing.T) {
 	require.Contains(t, repos, firstRepo)
 	require.Contains(t, repos, secondRepo)
 
-	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("listBuckets-repo")})
+	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("list-buckets-repo")})
 	require.NoError(t, err, "Could not list buckets")
 
 	reposWithPrefix := extractBucketNames(listBucketsOutput)
@@ -362,7 +362,7 @@ func TestListBuckets(t *testing.T) {
 	require.Contains(t, reposWithPrefix, firstRepo)
 	require.Contains(t, reposWithPrefix, secondRepo)
 
-	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("listBuckets-repo-second")})
+	listBucketsOutput, err = s3Client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String("list-buckets-repo-second")})
 	require.NoError(t, err, "Could not list buckets")
 
 	reposWithPrefix = extractBucketNames(listBucketsOutput)
