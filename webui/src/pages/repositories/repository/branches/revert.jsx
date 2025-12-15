@@ -175,7 +175,7 @@ const RevertPreviewPage = () => {
                             placeholder="Describe the revert"
                         />
                         <Form.Text className="text-muted">
-                            Each revert will create a new commit with this message.
+                            Each revert will create a new commit with this message. Leave empty to use default: &quot;Revert &lt;commit-id&gt;&quot;.
                         </Form.Text>
                     </Form.Group>
 
@@ -228,7 +228,7 @@ const RevertPreviewPage = () => {
                 <Button
                     variant="danger"
                     onClick={handleApplyClick}
-                    disabled={reverting || !commitMessage.trim()}>
+                    disabled={reverting}>
                     {reverting ? (
                         <>
                             <Spinner

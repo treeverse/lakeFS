@@ -574,20 +574,20 @@ class Branches {
         return response.json();
     }
 
-    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = null, metadata = {}) {
+    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = "", metadata = {}) {
         const body = {
             ref: commitRef,
             parent_number: parentNumber,
             allow_empty: allowEmpty
         };
 
-        // Add commit_overrides if message is explicitly provided (even if empty string) or metadata exists
+        // Add commit_overrides only if we have a non-empty message or metadata
+        const hasMessage = message && message.trim() !== "";
         const hasMetadata = Object.keys(metadata).length > 0;
 
-        if (message !== null || hasMetadata) {
+        if (hasMessage || hasMetadata) {
             body.commit_overrides = {};
-            // Include message if it was explicitly provided (null means use backend default)
-            if (message !== null) {
+            if (hasMessage) {
                 body.commit_overrides.message = message;
             }
             if (hasMetadata) {
