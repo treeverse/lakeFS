@@ -360,7 +360,7 @@ func TestListBuckets(t *testing.T) {
 	listBucketsOutput, err = s3Client.ListBuckets(ctx, &listBucketsInput)
 	require.NoError(t, err, "Could not list buckets")
 
-	repos = extractBucketNames(listBucketsOutput)
+	reposWithPrefix = extractBucketNames(listBucketsOutput)
 	require.NotContains(t, repos, repo)
 	require.Contains(t, repos, firstRepo)
 	require.Contains(t, repos, secondRepo)
