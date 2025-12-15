@@ -89,11 +89,11 @@ const RevertPreviewPage = () => {
             const commitIds = commitsParam.split(',');
             const isSingleCommit = commitIds.length === 1;
 
-            // For single commit, use custom message/metadata/allowEmpty
-            // For multiple commits, use backend defaults (empty message, no metadata, allowEmpty=false)
+            // For single commit, use custom message/metadata
+            // For multiple commits, use backend defaults (empty message, no metadata)
+            // allowEmpty is always used from the checkbox regardless of single or multiple commits
             const message = isSingleCommit ? commitMessage : "";
             const metadata = isSingleCommit ? getMetadataIfValid(metadataFields) : {};
-            const allowEmptyFlag = isSingleCommit ? allowEmpty : false;
 
             // Sequential revert calls - same as lakectl branch_revert.go
             for (const commitId of commitIds) {
@@ -101,10 +101,10 @@ const RevertPreviewPage = () => {
                     repo.id,
                     branchId,
                     commitId,
-                    0,              // parentNumber
-                    allowEmptyFlag, // allowEmpty
-                    message,        // message
-                    metadata        // metadata
+                    0,          // parentNumber
+                    allowEmpty, // allowEmpty - use checkbox value for both single and multiple commits
+                    message,    // message
+                    metadata    // metadata
                 );
             }
 
@@ -173,7 +173,7 @@ const RevertPreviewPage = () => {
                 </ListGroup>
             </Card>
 
-            {/* Commit Message - only show for single commit revert */}
+            {/* Commit Message and Metadata - only show for single commit revert */}
             {commitIds.length === 1 && (
                 <Card className="mb-3">
                     <Card.Header>
@@ -198,22 +198,30 @@ const RevertPreviewPage = () => {
                             metadataFields={metadataFields}
                             setMetadataFields={setMetadataFields}
                         />
-
-                        <Form.Group className="mt-3">
-                            <Form.Check
-                                type="checkbox"
-                                id="allow-empty-commit"
-                                label="Allow empty commit (revert without changes)"
-                                checked={allowEmpty}
-                                onChange={(e) => setAllowEmpty(e.target.checked)}
-                            />
-                            <Form.Text className="text-muted">
-                                Check this if the revert produces no changes (e.g., the commit was already reverted).
-                            </Form.Text>
-                        </Form.Group>
                     </Card.Body>
                 </Card>
             )}
+
+            {/* Options - always visible */}
+            <Card className="mb-3">
+                <Card.Header>
+                    <strong>Options</strong>
+                </Card.Header>
+                <Card.Body>
+                    <Form.Group>
+                        <Form.Check
+                            type="checkbox"
+                            id="allow-empty-commit"
+                            label="Allow empty commit (revert without changes)"
+                            checked={allowEmpty}
+                            onChange={(e) => setAllowEmpty(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                            Check this if the revert produces no changes (e.g., the commit was already reverted).
+                        </Form.Text>
+                    </Form.Group>
+                </Card.Body>
+            </Card>
 
             {/* Error Display */}
             {revertError && (
