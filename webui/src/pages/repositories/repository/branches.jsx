@@ -223,6 +223,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     const [refresh, setRefresh] = useState(true);
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
+    const [pendingFailedBranches, setPendingFailedBranches] = useState(null);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return branches.list(repo.id, prefix, after);
     }, [repo.id, refresh, prefix, after]);
@@ -232,7 +233,18 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     // Clear selection when pagination or filter changes
     useEffect(() => {
         setSelected([]);
+        setPendingFailedBranches(null);
     }, [prefix, after]);
+
+    // Filter selection to only include failed branches that are still visible after refresh
+    useEffect(() => {
+        if (pendingFailedBranches && results.length > 0) {
+            const visibleBranchIds = results.map(branch => branch.id);
+            const visibleFailedBranches = pendingFailedBranches.filter(id => visibleBranchIds.includes(id));
+            setSelected(visibleFailedBranches);
+            setPendingFailedBranches(null);
+        }
+    }, [results, pendingFailedBranches]);
 
     const handleSelect = (branchId) => {
         setSelected(prev => [...prev, branchId]);
@@ -257,8 +269,10 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         const selectableBranches = results
             .filter(branch => branch.id !== repo.default_branch)
             .map(branch => branch.id);
+        const selectableBranchesSet = new Set(selectableBranches);
+        const visibleSelected = selected.filter(id => selectableBranchesSet.has(id));
         const allSelected = selectableBranches.length > 0 &&
-            selectableBranches.every(id => selected.includes(id));
+            selectableBranches.length === visibleSelected.length;
 
         if (allSelected) {
             handleSelectNone();
@@ -267,7 +281,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         }
     };
 
-    const handleBulkDelete = (hideModal) => {
+    const handleBulkDelete = async (hideModal) => {
         // Filter out default branch defensively
         const branchesToDelete = selected.filter(id => id !== repo.default_branch);
 
@@ -280,23 +294,42 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         setDeleteError(null);
 
         // Delete branches sequentially
-        const deletePromises = branchesToDelete.map(branchId =>
-            branches.delete(repo.id, branchId)
-        );
-
-        Promise.allSettled(deletePromises).then(results => {
-            const failed = results.filter(r => r.status === 'rejected');
-            if (failed.length > 0) {
-                const errors = failed.map(r => r.reason?.message || 'Unknown error').join(', ');
-                setDeleteError(new Error(`Failed to delete ${failed.length} branch(es): ${errors}`));
-            } else {
-                // Clear selection and refresh on success
-                setSelected([]);
-                doRefresh();
+        const failedDeletions = [];
+        for (const branchId of branchesToDelete) {
+            try {
+                await branches.delete(repo.id, branchId);
+            } catch (error) {
+                failedDeletions.push({
+                    branchId: branchId,
+                    error: error
+                });
             }
-            // Close the modal
-            if (hideModal) hideModal();
-        });
+        }
+
+        // Always refresh the view to show which branches were successfully deleted
+        doRefresh();
+
+        if (failedDeletions.length > 0) {
+            const errorMessages = failedDeletions.map(f =>
+                `${f.branchId}: ${f.error?.message || 'Unknown error'}`
+            );
+            const errorDetails = {
+                message: `Failed to delete ${failedDeletions.length} branch(es)`,
+                failedBranches: failedDeletions.map(f => f.branchId),
+                errors: errorMessages
+            };
+            setDeleteError(errorDetails);
+
+            // Store failed branch IDs - useEffect will filter them against visible branches after refresh
+            const failedBranchIds = failedDeletions.map(f => f.branchId);
+            setPendingFailedBranches(failedBranchIds);
+        } else {
+            // Clear selection on complete success
+            setSelected([]);
+            setPendingFailedBranches(null);
+        }
+        // Close the modal
+        if (hideModal) hideModal();
     };
 
     let content;
@@ -305,7 +338,20 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     else if (error) content = <AlertError error={error} />;
     else content = (
         <>
-            {deleteError && <AlertError error={deleteError} className="mb-3" />}
+            {deleteError && (
+                <Alert variant="danger" dismissible onClose={() => setDeleteError(null)} className="mb-3">
+                    <Alert.Heading>{deleteError.message || 'Failed to delete branches'}</Alert.Heading>
+                    {deleteError.errors && deleteError.errors.length > 0 && (
+                        <div style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '0.5rem' }}>
+                            <ul className="mb-0">
+                                {deleteError.errors.map((errorMsg, index) => (
+                                    <li key={index}>{errorMsg}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </Alert>
+            )}
             <Card>
                 <ListGroup variant="flush">
                     {results.map(branch => (
@@ -325,15 +371,20 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         </>
     );
 
-    const branchesToDelete = selected.filter(id => id !== repo.default_branch);
-    const deleteCount = branchesToDelete.length;
     const selectableBranches = results
         .filter(branch => branch.id !== repo.default_branch)
         .map(branch => branch.id);
+    const selectableBranchesSet = new Set(selectableBranches);
+
+    // Filter selected to only include visible branches
+    const visibleSelected = selected.filter(id => selectableBranchesSet.has(id));
+    const branchesToDelete = visibleSelected.filter(id => id !== repo.default_branch);
+    const deleteCount = branchesToDelete.length;
+
     const allSelected = selectableBranches.length > 0 &&
-        selectableBranches.every(id => selected.includes(id));
-    const someSelected = selected.length > 0 && !allSelected;
-    const selectedCount = selected.length;
+        selectableBranches.length === visibleSelected.length;
+    const someSelected = visibleSelected.length > 0 && !allSelected;
+    const selectedCount = visibleSelected.length;
 
     // Determine which icon to show based on selection state
     let selectionIcon;
