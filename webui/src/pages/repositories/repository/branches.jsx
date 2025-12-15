@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
     GitBranchIcon,
+    GitCompareIcon,
     LinkIcon,
     PackageIcon,
     TrashIcon,
@@ -21,7 +22,8 @@ import {
     ActionsBar, ClipboardButton,
     AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton,
-    Checkbox
+    Checkbox,
+    TooltipButton
 } from "../../../lib/components/controls";
 import { useRefs } from "../../../lib/hooks/repo";
 import { useAPIWithPagination } from "../../../lib/hooks/api";
@@ -43,6 +45,7 @@ const ImportBranchName = 'import-from-inventory';
 
 const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDeselect }) => {
     const { state } = useContext(AppContext);
+    const router = useRouter();
     const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
     const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
@@ -102,7 +105,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                                 variant="outline-danger"
                                 disabled={isDefault}
                                 msg={deleteMsg}
-                                tooltip="delete branch"
+                                tooltip="Delete branch"
                                 onConfirm={() => {
                                     branches.delete(repo.id, branch.id)
                                         .catch(err => alert(err))
@@ -111,6 +114,19 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                             >
                                 <TrashIcon />
                             </ConfirmationButton>
+                            <TooltipButton
+                                variant={buttonVariant}
+                                size="sm"
+                                onClick={() => {
+                                    router.push({
+                                        pathname: '/repositories/:repoId/compare',
+                                        params: { repoId: repo.id },
+                                        query: { ref: repo.default_branch, compare: branch.id }
+                                    });
+                                }}
+                                tooltip="Compare with default branch">
+                                <GitCompareIcon />
+                            </TooltipButton>
                         </ButtonGroup>
                     }
 
