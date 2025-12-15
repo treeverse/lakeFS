@@ -346,8 +346,7 @@ func TestListBuckets(t *testing.T) {
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
 
-	listBucketsInput := s3.ListBucketsInput{}
-	listBucketsOutput, err := s3Client.ListBuckets(ctx, &listBucketsInput)
+	listBucketsOutput, err := s3Client.ListBuckets(ctx, nil)
 	require.NoError(t, err, "Could not list buckets")
 
 	repos := extractBucketNames(listBucketsOutput)
