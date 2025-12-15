@@ -13,7 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
-	lru "github.com/hnlq715/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/puzpuzpuz/xsync"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
@@ -25,17 +25,12 @@ type ClientCache struct {
 	serviceToClient   *xsync.MapOf[string, *service.Client]
 	containerToClient *xsync.MapOf[string, *container.Client]
 	// udcCache - User Delegation Credential cache used to reduce POST requests while creating pre-signed URLs
-	udcCache *lru.ARCCache
+	udcCache *lru.LRU[string, *service.UserDelegationCredential]
 	params   params.Azure
 }
 
 func NewCache(p params.Azure) (*ClientCache, error) {
-	l, err := lru.NewARCWithExpire(udcCacheSize, UDCCacheExpiry/UDCCacheWorkaroundDivider)
-	// TODO(Guys): dividing the udc cache expiry by 2 is a workaround for the fact that this package does not handle expiry correctly, we can remove this once we use https://github.com/hashicorp/golang-lru expirables
-	if err != nil {
-		return nil, err
-	}
-
+	l := lru.NewLRU[string, *service.UserDelegationCredential](udcCacheSize, nil, UDCCacheExpiry)
 	return &ClientCache{
 		serviceToClient:   xsync.NewMapOf[*service.Client](),
 		containerToClient: xsync.NewMapOf[*container.Client](),
@@ -115,7 +110,7 @@ func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry 
 		// UDC expires after PreSignedExpiry + hour but cache entry expires after an hour
 		c.udcCache.Add(storageAccount, udc)
 	} else {
-		udc = res.(*service.UserDelegationCredential)
+		udc = res
 	}
 	return udc, nil
 }

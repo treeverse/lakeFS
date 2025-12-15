@@ -20,7 +20,6 @@ require (
 	github.com/golang/mock v1.7.0-rc.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/hnlq715/golang-lru v0.3.0
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/manifoldco/promptui v0.9.0
@@ -64,6 +63,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
 	github.com/IBM/pgxpoolprometheus v1.1.1
 	github.com/Masterminds/sprig/v3 v3.2.3
+	github.com/NVIDIA/sortedmap v1.30.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond/v2 v2.5.0
@@ -83,6 +83,7 @@ require (
 	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf
 	github.com/databricks/databricks-sdk-go v0.26.2
 	github.com/dgraph-io/badger/v4 v4.7.0
+	github.com/elnormous/contenttype v1.0.4
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.35.2
 	github.com/go-viper/mapstructure/v2 v2.4.0
@@ -91,10 +92,13 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/go-version v1.6.0
+	github.com/hashicorp/golang-lru v0.5.1
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20251118224848-d2be664caf31
 	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20251118224848-d2be664caf31
 	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20251118224848-d2be664caf31
@@ -128,7 +132,6 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/NVIDIA/cstruct v1.30.0 // indirect
-	github.com/NVIDIA/sortedmap v1.30.0 // indirect
 	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
 	github.com/aws/aws-sdk-go v1.48.11 // indirect
@@ -151,7 +154,6 @@ require (
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
-	github.com/elnormous/contenttype v1.0.4 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -197,7 +199,6 @@ require (
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/samber/mo v1.11.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect

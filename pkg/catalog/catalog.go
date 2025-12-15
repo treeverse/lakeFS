@@ -22,7 +22,7 @@ import (
 	"github.com/alitto/pond/v2"
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
-	lru "github.com/hnlq715/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/batch"

@@ -4,13 +4,12 @@ import (
 	"math/rand"
 	"time"
 
-	lru "github.com/hnlq715/golang-lru"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
 )
 
 type JitterFn func() time.Duration
 type SetFn func() (v interface{}, err error)
-
-type EvictionCallback func(k interface{}, v interface{})
 
 // SetWithExpiry is a function called to set a value in the cache.  It
 // returns the desired value and when to expire it from the cache.  The
@@ -23,7 +22,7 @@ type Cache interface {
 }
 
 type GetSetCache struct {
-	lru          *lru.Cache
+	lru          *lru.LRU[string, string]
 	computations *ChanOnlyOne
 	expiry       time.Duration
 	jitterFn     JitterFn
@@ -33,7 +32,8 @@ func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 	return NewCacheWithEviction(size, expiry, jitterFn, nil)
 }
 
-func NewCacheWithEviction(size int, expiry time.Duration, jitterFn JitterFn, eviction EvictionCallback) *GetSetCache {
+func NewCacheWithEviction(size int, expiry time.Duration, jitterFn JitterFn, eviction lru.EvictCallback[]) *GetSetCache {
+	l := lru.NewLRU[string, *service.UserDelegationCredential](size, eviction, expiry)
 	c, _ := lru.NewWithEvict(size, eviction)
 	return &GetSetCache{
 		lru:          c,
