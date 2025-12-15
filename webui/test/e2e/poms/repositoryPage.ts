@@ -144,15 +144,17 @@ export class RepositoryPage {
 
   async clickRevertButton(): Promise<void> {
     // The button text changes between "Revert" and "Cancel" depending on mode
-    // Try to find either button
+    // Wait for at least one button to be visible, then click it
     const revertButton = this.page.getByRole("button", { name: "Revert" });
     const cancelButton = this.page.getByRole("button", { name: "Cancel" });
 
-    // Click whichever one is visible
-    const isRevertVisible = await revertButton.isVisible().catch(() => false);
-    if (isRevertVisible) {
+    // Wait for either button to exist
+    try {
+      await revertButton.waitFor({ state: 'visible', timeout: 5000 });
       await revertButton.click();
-    } else {
+    } catch {
+      // If Revert button not found, try Cancel button
+      await cancelButton.waitFor({ state: 'visible', timeout: 5000 });
       await cancelButton.click();
     }
   }
