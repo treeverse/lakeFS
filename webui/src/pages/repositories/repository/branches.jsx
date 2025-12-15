@@ -438,16 +438,6 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                     {selectedCount > 0 && (
                         <span className="ms-2 align-self-center">{selectedCount} selected</span>
                     )}
-                    <span className="ms-3">
-                        <ToggleSwitch
-                            label="Show Hidden Branches"
-                            id="show-hidden-branches-toggle"
-                            defaultChecked={showHidden}
-                            onChange={(checked) => {
-                                navigateToBranches(router, repo.id, router.query.prefix, null, checked);
-                            }}
-                        />
-                    </span>
                 </ActionGroup>
                 <ActionGroup orientation="right">
                     <PrefixSearchWidget
@@ -498,6 +488,16 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
 
                 </ActionGroup>
             </ActionsBar>
+            <div className={"ms-2 mb-3"}>
+                <ToggleSwitch
+                    label="Show hidden"
+                    id="show-hidden-branches-toggle"
+                    defaultChecked={showHidden}
+                    onChange={(checked) => {
+                        navigateToBranches(router, repo.id, router.query.prefix, null, checked);
+                    }}
+                />
+            </div>
             {content}
             <div className={"mt-2"}>
                 lakeFS uses a Git-like branching model. <a href="https://docs.lakefs.io/understand/branching-model.html" target="_blank" rel="noopener noreferrer">Learn more.</a>
