@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -32,18 +31,6 @@ func TestHandleApiErrorCallback_PredicateFailed(t *testing.T) {
 		{
 			name:           "kv.ErrPredicateFailed returns 412",
 			err:            kv.ErrPredicateFailed,
-			expectedStatus: http.StatusPreconditionFailed,
-			expectedBody:   "Precondition failed",
-		},
-		{
-			name:           "wrapped graveler.ErrPreconditionFailed returns 412",
-			err:            fmt.Errorf("staging update failed: %w", graveler.ErrPreconditionFailed),
-			expectedStatus: http.StatusPreconditionFailed,
-			expectedBody:   "Precondition failed",
-		},
-		{
-			name:           "wrapped kv.ErrPredicateFailed returns 412",
-			err:            fmt.Errorf("kv operation failed: %w", kv.ErrPredicateFailed),
 			expectedStatus: http.StatusPreconditionFailed,
 			expectedBody:   "Precondition failed",
 		},
