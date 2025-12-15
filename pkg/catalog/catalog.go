@@ -2397,11 +2397,11 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) importAsync(ctx context.Context, repository *graveler.RepositoryRecord, branchID string, status graveler.ImportStatus, params ImportRequest, logger logging.Logger) error {
+func (c *Catalog) importAsync(ctx context.Context, repository *graveler.RepositoryRecord, branchID string, InitialStatus graveler.ImportStatus, params ImportRequest, logger logging.Logger) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, status)
+	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, InitialStatus)
 	if err != nil {
 		return fmt.Errorf("creating import manager: %w", err)
 	}
@@ -2498,7 +2498,7 @@ func (c *Catalog) importAsync(ctx context.Context, repository *graveler.Reposito
 	}
 
 	// Update import status
-	status = importManager.Status()
+	status := importManager.Status()
 	status.MetaRangeID = commit.MetaRangeID
 	status.Commit = &graveler.CommitRecord{
 		CommitID: commitID,
