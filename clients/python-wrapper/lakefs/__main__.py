@@ -155,16 +155,12 @@ def run_binary(binary_path: str, args: list[str]):
     '''
     Run the binary with the provided arguments.
     '''
-    if not binary_path:
-        raise RuntimeError("binary not found")
-    binary_name = os.path.basename(binary_path)
+    print(f'running {binary_path}...')
     try:
-        print(f'running {binary_path}...')
-        proc = subprocess.run(
-            [binary_path] + args, check=False, env=os.environ)
-        return proc.returncode
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Error executing {binary_name}: {e}") from e
+        proc = subprocess.run([binary_path, *args], check=False)
+    except KeyboardInterrupt:
+        return 1
+    return proc.returncode
 
 
 def find_or_download_binary(binary_name: str) -> str:
@@ -177,6 +173,8 @@ def find_or_download_binary(binary_name: str) -> str:
     if not binary_path:
         _download_binaries()
         binary_path = _find_binary(binary_name)
+    if not binary_path:
+        raise RuntimeError("binary not found")
     return binary_path
 
 
@@ -185,7 +183,8 @@ def cli_run() -> int:
     Main entry point for the lakeFS CLI
     '''
     args = sys.argv[1:]
-    return run_binary(find_or_download_binary('lakefs'), args)
+    lakefs_bin = find_or_download_binary('lakefs')
+    return run_binary(lakefs_bin, args)
 
 
 if __name__ == '__main__':
