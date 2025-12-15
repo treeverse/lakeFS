@@ -871,7 +871,10 @@ func TestS3CopyObject(t *testing.T) {
 	objContent := testutil.RandomString(r, randomDataContentLength)
 	srcPath := gatewayTestPrefix + "source-file"
 	destPath := gatewayTestPrefix + "dest-file"
+	// Metadata keys sent by client (mixed case) - will be lowercased by lakeFS per S3 spec
 	userMetadata := map[string]string{"X-Amz-Meta-Key1": "value1", "X-Amz-Meta-Key2": "value2"}
+	// Expected metadata keys after lowercasing
+	userMetadataExpected := map[string]string{"X-Amz-Meta-key1": "value1", "X-Amz-Meta-key2": "value2"}
 
 	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
@@ -923,13 +926,14 @@ func TestS3CopyObject(t *testing.T) {
 		sourceObjectStats := resp.JSON200
 		destObjectStats := resp.JSON200
 		require.Equal(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress, "source and dest physical address should match")
-		require.Equal(t, userMetadata, destObjectStats.Metadata.AdditionalProperties, "source and dest metadata should match")
+		require.Equal(t, userMetadataExpected, destObjectStats.Metadata.AdditionalProperties, "source and dest metadata should match")
 	})
 
 	t.Run("different_repo", func(t *testing.T) {
 		t.Parallel()
 		// copy the object to different repository. should create another version of the file
 		userMetadataReplace := map[string]string{"X-Amz-Meta-Key1": "value1Replace", "X-Amz-Meta-Key2": "value2Replace"}
+		userMetadataReplaceExpected := map[string]string{"X-Amz-Meta-key1": "value1Replace", "X-Amz-Meta-key2": "value2Replace"}
 
 		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
@@ -973,7 +977,7 @@ func TestS3CopyObject(t *testing.T) {
 
 		// assert that the physical addresses of the objects are not the same
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
-		require.Equal(t, userMetadataReplace, destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
+		require.Equal(t, userMetadataReplaceExpected, destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
 	})
 }
 
@@ -1000,16 +1004,36 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 	defer tearDownTest(repo)
 
 	const contents = "the quick brown fox jumps over the lazy dog."
-	// metadata are the metadata we want on the object.
+	// metadata are the metadata keys sent by the client (with various casing).
+	// These will be lowercased by lakeFS to comply with S3 spec.
 	metadata := map[string]string{
 		"Ascii":     "value",
 		"Non-Ascii": "והארץ היתה תהו ובהו", // "without form and void"
+		"FOO":       "bar",                // All uppercase
+		"MyKey":     "myvalue",            // Mixed case
 	}
-	// encodedMetadata are the metadata a conforming client sends, with
-	// values Q-word encoded according to RFC 2047.
-	encodedMetadata := map[string]string{
+	// metadataExpected are the metadata keys we expect after lowercasing.
+	// Per S3 spec: "Amazon S3 stores user-defined metadata keys in lowercase"
+	metadataExpected := map[string]string{
+		"ascii":     "value",
+		"non-ascii": "והארץ היתה תהו ובהו",
+		"foo":       "bar",      // Lowercased from FOO
+		"mykey":     "myvalue",  // Lowercased from MyKey
+	}
+	// metadataEncoded are the metadata a conforming client sends, with
+	// values Q-word encoded according to RFC 2047 (keys with various casing).
+	metadataEncoded := map[string]string{
 		"Ascii":     "value",
 		"Non-Ascii": "=?utf-8?q?=D7=95=D7=94=D7=90=D7=A8=D7=A5_=D7=94=D7=99=D7=AA=D7=94_=D7=AA?= =?utf-8?q?=D7=94=D7=95_=D7=95=D7=91=D7=94=D7=95?=",
+		"FOO":       "bar",
+		"MyKey":     "myvalue",
+	}
+	// metadataEncodedExpected are the metadata keys we expect after lowercasing (values still encoded).
+	metadataEncodedExpected := map[string]string{
+		"ascii":     "value",
+		"non-ascii": "=?utf-8?q?=D7=95=D7=94=D7=90=D7=A8=D7=A5_=D7=94=D7=99=D7=AA=D7=94_=D7=AA?= =?utf-8?q?=D7=94=D7=95_=D7=95=D7=91=D7=94=D7=95?=",
+		"foo":       "bar",
+		"mykey":     "myvalue",
 	}
 
 	// Headers are _supposed_ to be RFC 2047 encoded on upload.  But this should actually
@@ -1020,13 +1044,13 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 			path := fmt.Sprintf("%sfile.%s", gatewayTestPrefix, encode)
 			s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
 
-			metadataToSend := metadata
+			uploadMetadata := metadata
 			if encode == "rfc2047" {
-				metadataToSend = encodedMetadata
+				uploadMetadata = metadataEncoded
 			}
 			_, err := s3lakefsClient.PutObject(ctx, repo, path, strings.NewReader(contents), int64(len(contents)),
 				minio.PutObjectOptions{
-					UserMetadata: metadataToSend,
+					UserMetadata: uploadMetadata,
 				})
 			require.NoError(t, err, "putObject")
 
@@ -1034,15 +1058,14 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 			require.NoError(t, err, "statObject")
 
 			// The AWS golang SDK does _not_ decode RFC 2047 headers.  The check
-			// here is actually a minor bug because the gateway could choose a
-			// different encoding for the same headers.  But of course it uses the
-			// same encoder we used, so this should never happen.
-			if diffs := deep.Equal(info.UserMetadata, minio.StringMap(encodedMetadata)); diffs != nil {
+			// here verifies that metadata keys are lowercased as per S3 spec.
+			// Values remain encoded per RFC 2047 when originally sent that way.
+			if diffs := deep.Equal(info.UserMetadata, minio.StringMap(metadataEncodedExpected)); diffs != nil {
 				t.Errorf("Different user metadata from S3 gateway: %s", diffs)
 			}
 
 			// The lakeFS API does not need to perform header encoding.  Use it to
-			// check that lakeFS sees the expected values.
+			// check that lakeFS sees the expected values with lowercased keys.
 			statsResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{
 				Path:         file,
 				UserMetadata: aws.Bool(true),
@@ -1054,7 +1077,7 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 			// has a x-aws-meta- prefix.
 			strippedMetadata, err := stripKeyPrefix("X-Amz-Meta-", statsResp.JSON200.Metadata.AdditionalProperties)
 			assert.NoErrorf(t, err, "Failed to strip prefix from metadata keys in %+v", statsResp.JSON200.Metadata.AdditionalProperties)
-			if diffs := deep.Equal(strippedMetadata, metadata); diffs != nil {
+			if diffs := deep.Equal(strippedMetadata, metadataExpected); diffs != nil {
 				t.Errorf("Different user metadata from API: %s", diffs)
 			}
 		})
