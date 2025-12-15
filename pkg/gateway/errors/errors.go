@@ -112,6 +112,7 @@ const (
 	ErrMalformedDate
 	ErrMalformedPresignedDate
 	ErrMalformedCredentialDate
+	ErrInvalidCredentialDate
 	ErrMalformedCredentialRegion
 	ErrMalformedExpires
 	ErrNegativeExpires
@@ -483,6 +484,11 @@ var Codes = errorCodeMap{
 	ErrMalformedCredentialDate: {
 		Code:           "AuthorizationQueryParametersError",
 		Description:    "Error parsing the X-Amz-Credential parameter; incorrect date format \"%s\". This date in the credential must be in the format \"yyyyMMdd\".",
+		HTTPStatusCode: http.StatusBadRequest,
+	},
+	ErrInvalidCredentialDate: {
+		Code:           "AuthorizationHeaderMalformed",
+		Description:    "The authorization header is malformed; Invalid credential date. Date is not the same as X-Amz-Date.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	// FIXME: Should contain the invalid param set as seen in https://github.com/minio/minio/issues/2385.
