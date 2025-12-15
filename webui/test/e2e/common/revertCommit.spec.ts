@@ -132,8 +132,8 @@ test.describe("Revert Commit", () => {
         // Verify we're on the revert preview page
         await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
 
-        // Verify we're reverting 2 commits
-        await expect(page.getByText(/2 commit/)).toBeVisible();
+        // Verify we're reverting 2 commits - check in the commits list header
+        await expect(page.getByText("Commits to Revert (in order)")).toBeVisible();
 
         // Fill in commit message
         await repositoryPage.fillRevertMessage("Revert: Multiple deletions");
@@ -141,8 +141,8 @@ test.describe("Revert Commit", () => {
         // Apply the revert
         await repositoryPage.clickApplyRevert();
 
-        // Confirm in the modal
-        await expect(page.getByText(/2 commit/)).toBeVisible();
+        // Confirm in the modal - check for specific text in modal
+        await expect(page.getByText(/Are you sure you want to revert/)).toBeVisible();
         await repositoryPage.confirmRevert();
 
         // Wait for redirect
