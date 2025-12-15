@@ -119,7 +119,11 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     };
 
     const handleContinue = () => {
-        const commitIds = Array.from(selectedCommits).join(',');
+        // Maintain commit order (not click order) by filtering results
+        const commitIds = results
+            .filter(commit => selectedCommits.has(commit.id))
+            .map(commit => commit.id)
+            .join(',');
         router.push({
             pathname: '/repositories/:repoId/branches/:branchId/revert',
             params: { repoId: repo.id, branchId: reference.id },

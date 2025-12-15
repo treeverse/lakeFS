@@ -45,12 +45,12 @@ const RevertPreviewPage = () => {
                 );
                 setCommitDetails(details);
 
-                // Generate default commit message
+                // Generate default commit message for single commit only
+                // For multiple commits, leave empty to let backend generate individual messages
                 if (commitIds.length === 1) {
                     setCommitMessage(`Revert commit ${commitIds[0].substr(0, 12)}`);
                 } else {
-                    const shortIds = commitIds.map(id => id.substr(0, 12)).join(', ');
-                    setCommitMessage(`Revert commits ${shortIds}`);
+                    setCommitMessage('');
                 }
 
                 setCommitsLoading(false);
@@ -64,11 +64,16 @@ const RevertPreviewPage = () => {
     }, [repo, commitsParam]);
 
     const handleApplyClick = () => {
-        // Validate metadata before showing confirmation modal
-        const metadata = getMetadataIfValid(metadataFields);
-        if (!metadata) {
-            setMetadataFields(touchInvalidFields(metadataFields));
-            return;
+        const commitIds = commitsParam.split(',');
+        const isSingleCommit = commitIds.length === 1;
+
+        // Only validate metadata for single commit (multiple commits don't use custom metadata)
+        if (isSingleCommit) {
+            const metadata = getMetadataIfValid(metadataFields);
+            if (!metadata) {
+                setMetadataFields(touchInvalidFields(metadataFields));
+                return;
+            }
         }
 
         // Validation passed, show confirmation modal
@@ -76,15 +81,19 @@ const RevertPreviewPage = () => {
     };
 
     const handleRevert = async () => {
-        // Get validated metadata (we already validated before opening modal)
-        const metadata = getMetadataIfValid(metadataFields);
-
         setReverting(true);
         setRevertError(null);
         setShowConfirmModal(false);
 
         try {
             const commitIds = commitsParam.split(',');
+            const isSingleCommit = commitIds.length === 1;
+
+            // For single commit, use custom message/metadata/allowEmpty
+            // For multiple commits, use backend defaults (empty message, no metadata, allowEmpty=false)
+            const message = isSingleCommit ? commitMessage : "";
+            const metadata = isSingleCommit ? getMetadataIfValid(metadataFields) : {};
+            const allowEmptyFlag = isSingleCommit ? allowEmpty : false;
 
             // Sequential revert calls - same as lakectl branch_revert.go
             for (const commitId of commitIds) {
@@ -92,10 +101,10 @@ const RevertPreviewPage = () => {
                     repo.id,
                     branchId,
                     commitId,
-                    0,          // parentNumber
-                    allowEmpty, // allowEmpty
-                    commitMessage,  // message
-                    metadata    // metadata
+                    0,              // parentNumber
+                    allowEmptyFlag, // allowEmpty
+                    message,        // message
+                    metadata        // metadata
                 );
             }
 
@@ -128,6 +137,11 @@ const RevertPreviewPage = () => {
         <>
             <p>Are you sure you want to revert <strong>{commitIds.length}</strong> commit{commitIds.length > 1 ? 's' : ''}?</p>
             <p>This will create <strong>{commitIds.length}</strong> new revert commit{commitIds.length > 1 ? 's' : ''} on branch <strong>{branchId}</strong>, reversing the changes from the selected commits in order.</p>
+            {commitIds.length > 1 && (
+                <p className="text-muted mb-0">
+                    <small>Each revert commit will have a default message: &quot;Revert &lt;commit-id&gt;&quot;</small>
+                </p>
+            )}
         </>
     );
 
@@ -159,58 +173,47 @@ const RevertPreviewPage = () => {
                 </ListGroup>
             </Card>
 
-            {/* Commit Message */}
-            <Card className="mb-3">
-                <Card.Header>
-                    <strong>Revert Commit Details</strong>
-                </Card.Header>
-                <Card.Body>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Commit Message</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={3}
-                            value={commitMessage}
-                            onChange={(e) => setCommitMessage(e.target.value)}
-                            placeholder="Describe the revert"
+            {/* Commit Message - only show for single commit revert */}
+            {commitIds.length === 1 && (
+                <Card className="mb-3">
+                    <Card.Header>
+                        <strong>Revert Commit Details</strong>
+                    </Card.Header>
+                    <Card.Body>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Commit Message</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                value={commitMessage}
+                                onChange={(e) => setCommitMessage(e.target.value)}
+                                placeholder="Describe the revert"
+                            />
+                            <Form.Text className="text-muted">
+                                Leave empty to use default: &quot;Revert &lt;commit-id&gt;&quot;.
+                            </Form.Text>
+                        </Form.Group>
+
+                        <MetadataFields
+                            metadataFields={metadataFields}
+                            setMetadataFields={setMetadataFields}
                         />
-                        <Form.Text className="text-muted">
-                            Each revert will create a new commit with this message. Leave empty to use default: &quot;Revert &lt;commit-id&gt;&quot;.
-                        </Form.Text>
-                    </Form.Group>
 
-                    <MetadataFields
-                        metadataFields={metadataFields}
-                        setMetadataFields={setMetadataFields}
-                    />
-
-                    <Form.Group className="mt-3">
-                        <Form.Check
-                            type="checkbox"
-                            id="allow-empty-commit"
-                            label="Allow empty commit (revert without changes)"
-                            checked={allowEmpty}
-                            onChange={(e) => setAllowEmpty(e.target.checked)}
-                        />
-                        <Form.Text className="text-muted">
-                            Check this if the revert produces no changes (e.g., the commit was already reverted).
-                        </Form.Text>
-                    </Form.Group>
-                </Card.Body>
-            </Card>
-
-            {/* Changes Preview */}
-            <Card className="mb-3">
-                <Card.Header>
-                    <strong>Changes Preview</strong>
-                </Card.Header>
-                <Card.Body>
-                    <p className="text-muted mb-0">
-                        This will reverse the changes introduced by the selected {commitIds.length} commit{commitIds.length > 1 ? 's' : ''}.
-                        Each commit will be reverted in the order shown above, creating {commitIds.length} new revert commit{commitIds.length > 1 ? 's' : ''} on the branch.
-                    </p>
-                </Card.Body>
-            </Card>
+                        <Form.Group className="mt-3">
+                            <Form.Check
+                                type="checkbox"
+                                id="allow-empty-commit"
+                                label="Allow empty commit (revert without changes)"
+                                checked={allowEmpty}
+                                onChange={(e) => setAllowEmpty(e.target.checked)}
+                            />
+                            <Form.Text className="text-muted">
+                                Check this if the revert produces no changes (e.g., the commit was already reverted).
+                            </Form.Text>
+                        </Form.Group>
+                    </Card.Body>
+                </Card>
+            )}
 
             {/* Error Display */}
             {revertError && (
