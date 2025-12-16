@@ -242,20 +242,19 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 
 	// Register with file tracker to protect against race with OnReject callback.
 	// This ensures the file won't be deleted until we release the tracker.
+	// Using defer guarantees closer() runs after any Delete() call, even if code is added later.
 	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
+	defer closer()
 
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		// Rejected synchronously - mark for deletion.
-		// The file will be deleted when closer() is called below.
+		// The file will be deleted when closer() is called via defer.
 		tfs.fileTracker.Delete(fileRef.fsRelativePath)
 	}
 	// Note: OnReject may also be called asynchronously for items that exceed MaxCost.
 	// In that case, fileTracker.Delete() will be called again, which is safe because
 	// the tracker handles duplicate deletes correctly.
 
-	// Release tracker - if file was marked for deletion (by sync rejection or async OnReject),
-	// it will be deleted now.
-	closer()
 	return nil
 }
 
