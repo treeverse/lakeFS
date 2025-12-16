@@ -183,7 +183,7 @@ def find_or_download_binary(binary_name: str) -> str:
 
 def run(binary_name: Literal['lakefs', 'lakectl'], args: Optional[list[str]] = None) -> NoReturn:
     '''
-    Run the specified lakeFS binary with the provided arguments.
+    Run the specified lakefs/lakectl binary with the provided arguments.
     '''
     if args is None:
         args = sys.argv[1:]
