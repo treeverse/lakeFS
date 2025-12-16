@@ -155,6 +155,13 @@ export class RepositoryDeletionError extends Error {
     }
 }
 
+export class BareRepositoryError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = this.constructor.name;
+    }
+}
+
 // actual actions:
 class Auth {
     async getAuthCapabilities() {
