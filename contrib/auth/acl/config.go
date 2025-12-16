@@ -80,7 +80,6 @@ func setDefaults() {
 	viper.SetDefault("cache.enabled", true)
 	viper.SetDefault("cache.size", 1024)
 	viper.SetDefault("cache.ttl", 20*time.Second)
-	viper.SetDefault("cache.jitter", 3*time.Second)
 
 	viper.SetDefault("database.local.path", "~/aclserver/metadata")
 	viper.SetDefault("database.local.prefetch_size", 256)
