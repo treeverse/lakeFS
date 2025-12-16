@@ -163,8 +163,7 @@ func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
 	select {
 	case tfs.dirDeleteCh <- dirPath:
 	default:
-		// Channel full, log and skip - directory will remain until next cleanup
-		tfs.logger.WithField("path", dirPath).Warn("directory deletion queue full, skipping cleanup")
+		// Channel full, skip - directory will remain until next cleanup
 		errorsTotal.WithLabelValues(tfs.fsName, "DirDeleteQueueFull").Inc()
 	}
 }
@@ -179,7 +178,6 @@ func (tfs *TierFS) dirDeleteWorker() {
 			return
 		case dirPath := <-tfs.dirDeleteCh:
 			if err := tfs.syncDir.deleteDirRecIfEmpty(dirPath); err != nil {
-				tfs.logger.WithError(err).WithField("path", dirPath).Error("Failed deleting empty dir")
 				errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval").Inc()
 			}
 		}
