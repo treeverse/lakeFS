@@ -148,18 +148,18 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 }
 
 func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
-	p := filepath.Join(tfs.fsLocalBaseDir, string(rPath))
+	fullPath := filepath.Join(tfs.fsLocalBaseDir, string(rPath))
 	if tfs.logger.IsTracing() {
-		tfs.logger.WithField("path", p).Trace("remove from local")
+		tfs.logger.WithField("path", fullPath).Trace("Remove from local")
 	}
-	if err := os.Remove(p); err != nil {
-		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
+	if err := os.Remove(fullPath); err != nil {
+		tfs.logger.WithError(err).WithField("path", fullPath).Warn("Removing file failed")
 		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval").Inc()
 		return
 	}
 
-	// Queue directory deletion (non-blocking)
-	dirPath := filepath.Dir(string(rPath))
+	// Queue directory deletion (non-blocking) - use absolute path for deleteDirRecIfEmpty
+	dirPath := filepath.Dir(fullPath)
 	select {
 	case tfs.dirDeleteCh <- dirPath:
 	default:
@@ -185,10 +185,23 @@ func (tfs *TierFS) dirDeleteWorker() {
 }
 
 // Close shuts down the TierFS, stopping the background worker and waiting for it to finish.
+// Note: We intentionally do NOT call eviction.Close() here because that would clear the cache
+// and delete all cached files. The cache should persist across restarts.
 func (tfs *TierFS) Close() error {
 	close(tfs.done)
 	tfs.wg.Wait()
-	return tfs.eviction.Close()
+
+	// Drain any remaining directory deletion requests
+	for {
+		select {
+		case dirPath := <-tfs.dirDeleteCh:
+			if err := tfs.syncDir.deleteDirRecIfEmpty(dirPath); err != nil {
+				errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval").Inc()
+			}
+		default:
+			return nil
+		}
+	}
 }
 
 func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath, nsPath, filename string) error {
