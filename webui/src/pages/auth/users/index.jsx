@@ -31,7 +31,7 @@ import {useAuth} from "../../../lib/auth/authContext";
 const DEFAULT_LISTING_AMOUNT = 100;
 const DECIMAL_RADIX = 10;
 const USER_NOT_FOUND = "unknown";
-export const GetUserEmailByIdContext = createContext();
+export const GetUserDisplayNameByIdContext = createContext();
 
 const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     const { user } = useAuth();
@@ -220,7 +220,7 @@ const UsersIndexPage = () => {
         return allUsersFromLakeFS(resolveUserDisplayName);
     }, [refresh]);
 
-    const getUserEmailById = useCallback((id) => {
+    const getUserDisplayNameById = useCallback((id) => {
         const userRecord = allUsers?.find(user => user.id === id);
         // return something, so we don't completely break the state
         // this can help us track down issues later on
@@ -232,9 +232,9 @@ const UsersIndexPage = () => {
     }, [allUsers]);
 
     return (
-        <GetUserEmailByIdContext.Provider value={getUserEmailById}>
-            <Outlet context={{ setActiveTab, refresh, setRefresh, allUsers, loading, error, getUserEmailById }} />
-        </GetUserEmailByIdContext.Provider>
+        <GetUserDisplayNameByIdContext.Provider value={getUserDisplayNameById}>
+            <Outlet context={{ setActiveTab, refresh, setRefresh, allUsers, loading, error, getUserDisplayNameById }} />
+        </GetUserDisplayNameByIdContext.Provider>
     )
 }
 

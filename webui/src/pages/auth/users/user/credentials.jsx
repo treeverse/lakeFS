@@ -13,7 +13,7 @@ import {
 import {useRouter} from "../../../../lib/hooks/router";
 import {useAuth} from "../../../../lib/auth/authContext";
 
-const EMAIL_TRUNCATION_THRESHOLD_LENGTH = 40;
+const USER_DISPLAY_NAME_TRUNCATION_THRESHOLD = 40;
 
 
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
@@ -45,7 +45,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             </>
         );
 
-    const getMsg = (email) => (
+    const getMsg = (userDisplayName) => (
         <span>
                 Create new credentials for user{" "}
             <br/>
@@ -55,10 +55,10 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                             overflow-hidden
                             text-truncate
                             align-bottom
-                            ${email.length > EMAIL_TRUNCATION_THRESHOLD_LENGTH ? "w-75" : ""}`}
-                title={email}
+                            ${userDisplayName.length > USER_DISPLAY_NAME_TRUNCATION_THRESHOLD ? "w-75" : ""}`}
+                title={userDisplayName}
             >
-                {email}
+                {userDisplayName}
             </strong>
             ?
         </span>
