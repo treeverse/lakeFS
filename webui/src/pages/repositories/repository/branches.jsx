@@ -23,7 +23,8 @@ import {
     AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton,
     Checkbox,
-    TooltipButton
+    TooltipButton,
+    ToggleSwitch
 } from "../../../lib/components/controls";
 import { useRefs } from "../../../lib/hooks/repo";
 import { useAPIWithPagination } from "../../../lib/hooks/api";
@@ -234,23 +235,34 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, readOn
 };
 
 
-const BranchList = ({ repo, prefix, after, onPaginate }) => {
-    const router = useRouter()
+const navigateToBranches = (router, repoId, prefix, after, showHidden) => {
+    const query = {};
+    if (prefix) query.prefix = prefix;
+    if (after) query.after = after;
+    if (showHidden) query.show_hidden = "true";
+    router.push({
+        pathname: '/repositories/:repoId/branches',
+        params: { repoId },
+        query
+    });
+};
+
+const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => {
+    const router = useRouter();
     const [refresh, setRefresh] = useState(true);
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
     const [pendingFailedBranches, setPendingFailedBranches] = useState(null);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        return branches.list(repo.id, prefix, after);
-    }, [repo.id, refresh, prefix, after]);
+        return branches.list(repo.id, showHidden, prefix, after);
+    }, [repo.id, refresh, prefix, after, showHidden]);
 
     const doRefresh = () => setRefresh(!refresh);
 
-    // Clear selection when pagination or filter changes
     useEffect(() => {
         setSelected([]);
         setPendingFailedBranches(null);
-    }, [prefix, after]);
+    }, [prefix, after, showHidden]);
 
     // Filter selection to only include failed branches that are still visible after refresh
     useEffect(() => {
@@ -432,8 +444,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
                         defaultValue={router.query.prefix}
                         text="Find branch"
                         onFilter={prefix => {
-                            const query = { prefix };
-                            router.push({ pathname: '/repositories/:repoId/branches', params: { repoId: repo.id }, query });
+                            navigateToBranches(router, repo.id, prefix, null, showHidden);
                         }} />
 
                     <RefreshButton onClick={doRefresh} />
@@ -477,6 +488,16 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
                 </ActionGroup>
             </ActionsBar>
+            <div className={"ms-2 mb-3"}>
+                <ToggleSwitch
+                    label="Show hidden"
+                    id="show-hidden-branches-toggle"
+                    defaultChecked={showHidden}
+                    onChange={(checked) => {
+                        navigateToBranches(router, repo.id, router.query.prefix, null, checked);
+                    }}
+                />
+            </div>
             {content}
             <div className={"mt-2"}>
                 lakeFS uses a Git-like branching model. <a href="https://docs.lakefs.io/understand/branching-model.html" target="_blank" rel="noopener noreferrer">Learn more.</a>
@@ -489,7 +510,8 @@ const BranchesContainer = () => {
     const router = useRouter()
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
-    const routerPfx = (router.query.prefix) ? router.query.prefix : "";
+    const prefix = router.query.prefix || "";
+    const showHidden = router.query.show_hidden === "true";
 
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
@@ -498,11 +520,10 @@ const BranchesContainer = () => {
         <BranchList
             repo={repo}
             after={(after) ? after : ""}
-            prefix={routerPfx}
+            prefix={prefix}
+            showHidden={showHidden}
             onPaginate={after => {
-                const query = { after };
-                if (router.query.prefix) query.prefix = router.query.prefix;
-                router.push({ pathname: '/repositories/:repoId/branches', params: { repoId: repo.id }, query });
+                navigateToBranches(router, repo.id, prefix, after, showHidden);
             }} />
     );
 };
