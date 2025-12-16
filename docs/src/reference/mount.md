@@ -722,7 +722,7 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
         ```sh
         journalctl -f -u everest-lakefs-mount-0.0.8-everest-123.service
         ```
-    3.  View full resolved unit:
+    4.  View full resolved unit:
         ```sh
         systemctl cat everest-lakefs-mount-0.0.8-everest-123.service
         ```
