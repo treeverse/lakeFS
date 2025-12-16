@@ -6348,8 +6348,6 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		ev.UserID = user.Username
 	}
 
-	sourceIP := httputil.SourceIP(r)
-
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,
@@ -6358,7 +6356,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"source_ref": ev.SourceRef,
 		"user_id":    ev.UserID,
 		"client":     ev.Client,
-		"source_ip":  sourceIP,
+		"source_ip":  r.RemoteAddr,
 	}).Debug("performing API action")
 	c.Collector.CollectEvent(ev)
 	usageCounter.Add(1)
