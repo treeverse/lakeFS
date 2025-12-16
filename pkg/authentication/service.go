@@ -166,12 +166,9 @@ func (s *APIService) OauthCallback(w http.ResponseWriter, r *http.Request, _ ses
 // context on every client request.
 func addRequestID(headerName string) apiclient.RequestEditorFn {
 	return func(ctx context.Context, req *http.Request) error {
-		reqIDField := ctx.Value(httputil.RequestIDContextKey)
-		if reqIDField == nil {
-			return nil
+		if reqID, ok := ctx.Value(httputil.RequestIDContextKey).(string); ok {
+			req.Header.Add(headerName, reqID)
 		}
-		reqID := reqIDField.(string)
-		req.Header.Add(headerName, reqID)
 		return nil
 	}
 }
