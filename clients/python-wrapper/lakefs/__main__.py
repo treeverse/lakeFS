@@ -17,7 +17,7 @@ import os
 import shutil
 import subprocess
 from collections import namedtuple
-from typing import Optional, NoReturn
+from typing import Literal, Optional, NoReturn
 
 import lakefs_sdk
 
@@ -181,13 +181,21 @@ def find_or_download_binary(binary_name: str) -> str:
     return binary_path
 
 
-def cli_run(args: Optional[list[str]] = None) -> int:
+def run(binary_name: Literal['lakefs', 'lakectl'], args: Optional[list[str]] = None) -> NoReturn:
+    '''
+    Run the specified lakeFS binary with the provided arguments.
+    '''
+    if args is None:
+        args = sys.argv[1:]
+    binary_path = find_or_download_binary(binary_name)
+    run_binary(binary_path, args)
+
+
+def cli_run(args: Optional[list[str]] = None) -> NoReturn:
     '''
     Main entry point for the lakeFS CLI
     '''
-    args = args or sys.argv[1:]
-    lakefs_bin = find_or_download_binary('lakefs')
-    run_binary(lakefs_bin, args)
+    run('lakefs', args)
 
 
 if __name__ == '__main__':
