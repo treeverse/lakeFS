@@ -39,14 +39,24 @@ export class RepositoryPage {
   async switchBranch(name: string): Promise<void> {
     await this.page.getByRole("button", { name: "branch: " }).click();
     await this.page.getByRole("button", { name }).click();
+    // Wait for URL to update after branch switch
+    await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
   }
 
   // file manipulation operations
 
   async deleteFirstObjectInDirectory(dirName: string): Promise<void> {
     await this.page.getByRole("link", { name: dirName }).click();
+
+    // Wait for the table to be visible and stable after navigation
+    await this.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 10000 });
+
     const firstRow = this.page.locator('table tbody tr').first();
     await firstRow.hover();
+
+    // Wait a bit for the button to be stable after hover
+    await this.page.waitForTimeout(500);
+
     await firstRow.locator('button').last().click();
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
@@ -103,7 +113,7 @@ export class RepositoryPage {
   // navigation
 
   async gotoObjectsTab(): Promise<void> {
-    await this.page.getByRole("link", { name: "Objects" }).click();
+    await this.page.getByRole("link", { name: "Objects", exact: true }).first().click();
   }
 
 
@@ -119,10 +129,102 @@ export class RepositoryPage {
     await this.page.getByRole("link", { name: "Settings" }).click();
   }
 
+  async gotoCommitsTab(): Promise<void> {
+    await this.page.getByRole("link", { name: "Commits" }).click();
+  }
+
   async uploadObject(filePath: string): Promise<void> {
     await this.page.getByRole("button", { name: "Upload" }).click();
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
     await fileInput.setInputFiles(filePath);
+  }
+
+  // revert operations
+
+  async clickRevertButton(): Promise<void> {
+    // The button text changes between "Revert" and "Cancel" depending on mode
+    // Wait for at least one button to be visible, then click it
+    const revertButton = this.page.getByRole("button", { name: "Revert" });
+    const cancelButton = this.page.getByRole("button", { name: "Cancel" });
+
+    // Wait for either button to exist
+    try {
+      await revertButton.waitFor({ state: 'visible', timeout: 5000 });
+      await revertButton.click();
+    } catch {
+      // If Revert button not found, try Cancel button
+      await cancelButton.waitFor({ state: 'visible', timeout: 5000 });
+      await cancelButton.click();
+    }
+  }
+
+  async selectCommitsForRevert(commitCount: number): Promise<void> {
+    // Select the first N commits using checkboxes
+    const checkboxes = this.page.locator('input[type="checkbox"]').filter({ hasNot: this.page.locator('input[type="checkbox"][disabled]') });
+    for (let i = 0; i < commitCount; i++) {
+      await checkboxes.nth(i).check();
+    }
+  }
+
+  async clickContinueRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: /Continue/ }).click();
+  }
+
+  async fillRevertMessage(message: string): Promise<void> {
+    const textarea = this.page.getByPlaceholder(/Describe the revert|Revert commit/);
+    await textarea.clear();
+    await textarea.fill(message);
+  }
+
+  async addRevertMetadata(key: string, value: string): Promise<void> {
+    // Click "Add Metadata field" button
+    await this.page.getByRole("button", { name: /Add Metadata field/ }).click();
+
+    // Fill in the last (most recent) key-value pair
+    const keyInputs = this.page.getByPlaceholder("Key");
+    const valueInputs = this.page.getByPlaceholder("Value");
+    const count = await keyInputs.count();
+
+    await keyInputs.nth(count - 1).fill(key);
+    await valueInputs.nth(count - 1).fill(value);
+  }
+
+  async setAllowEmptyCommit(allow: boolean): Promise<void> {
+    const checkbox = this.page.getByLabel(/Allow empty commit/);
+    if (allow) {
+      await checkbox.check();
+    } else {
+      await checkbox.uncheck();
+    }
+  }
+
+  async clickApplyRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: "Apply" }).click();
+  }
+
+  async confirmRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: "Yes" }).click();
+  }
+
+  async cancelRevert(): Promise<void> {
+    await this.page.getByRole("button", { name: "Cancel" }).click();
+  }
+
+  async getCommitsCount(): Promise<number> {
+    // Wait for the commits card to be visible
+    await this.page.locator(".card .list-group").waitFor({ state: "visible" });
+
+    // Count commit items
+    return this.page.locator(".list-group-item .clearfix").count();
+  }
+
+  async getFirstCommitMessage(): Promise<string> {
+    // Wait for commits to load
+    await this.page.locator(".list-group-item").first().waitFor({ state: "visible" });
+
+    const firstCommit = this.page.locator(".list-group-item").first();
+    const message = await firstCommit.locator("h6 a").textContent();
+    return message?.trim() || "";
   }
 }
