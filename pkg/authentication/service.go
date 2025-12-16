@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -54,7 +55,7 @@ type APIService struct {
 }
 
 func NewAPIService(apiEndpoint string, validateIDTokenClaims map[string]string, logger logging.Logger, externalPrincipalsEnabled bool) (*APIService, error) {
-	client, err := apiclient.NewClientWithResponses(apiEndpoint)
+	client, err := apiclient.NewClientWithResponses(apiEndpoint, apiclient.WithRequestEditorFn(addRequestID(httputil.RequestIDHeaderName)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authentication api client: %w", err)
 	}
@@ -159,4 +160,18 @@ func (s *APIService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {
 func (s *APIService) OauthCallback(w http.ResponseWriter, r *http.Request, _ sessions.Store) {
 	s.logger.Warn("OIDC is not implemented")
 	http.Redirect(w, r, "/auth/login", http.StatusNotImplemented)
+}
+
+// addRequestID returns a RequestEditorFn that puts the RequestID from the
+// context on every client request.
+func addRequestID(headerName string) apiclient.RequestEditorFn {
+	return func(ctx context.Context, req *http.Request) error {
+		reqIDField := ctx.Value(httputil.RequestIDContextKey)
+		if reqIDField == nil {
+			return nil
+		}
+		reqID := reqIDField.(string)
+		req.Header.Add(headerName, reqID)
+		return nil
+	}
 }
