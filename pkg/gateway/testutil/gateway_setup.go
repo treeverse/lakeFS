@@ -37,8 +37,8 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
-	// kvPath := filepath.Join(t.TempDir(), "local-kv")
-	store, err := kv.Open(ctx, kvparams.Config{Type: "local", Local: &kvparams.Local{Path: "", PrefetchSize: 256}})
+	const prefetchSize = 256
+	store, err := kv.Open(ctx, kvparams.Config{Type: "local", Local: &kvparams.Local{Path: "", PrefetchSize: prefetchSize}})
 	testutil.MustDo(t, "open kv store", err)
 	t.Cleanup(func() {
 		store.Close()
