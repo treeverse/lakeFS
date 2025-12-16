@@ -6892,5 +6892,4 @@ func TestController_ErrorHandling(t *testing.T) {
 			"upload with If-None-Match on committed object should return 412 Precondition Failed")
 		require.NotNil(t, resp.JSON412, "should have precondition failed response")
 	})
-
 }
