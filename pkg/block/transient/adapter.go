@@ -143,7 +143,9 @@ func (a *Adapter) BlockstoreType() string {
 }
 
 func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
-	return nil, block.ErrOperationNotSupported
+	return &block.BlockstoreMetadata{
+		IsProductionSafe: true,
+	}, nil
 }
 
 func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
