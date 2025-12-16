@@ -17,7 +17,7 @@ import os
 import shutil
 import subprocess
 from collections import namedtuple
-from typing import Optional
+from typing import Optional, NoReturn
 
 import lakefs_sdk
 
@@ -151,16 +151,19 @@ def _find_binary(binary_name: str) -> Optional[str]:
     return binary_path
 
 
-def run_binary(binary_path: str, args: list[str]):
+def run_binary(binary_path: str, args: list[str]) -> NoReturn:
     '''
     Run the binary with the provided arguments.
     '''
-    print(f'running {binary_path}...')
-    try:
-        proc = subprocess.run([binary_path, *args], check=False)
-    except KeyboardInterrupt:
-        return 1
-    return proc.returncode
+    print(f'running {binary_path}...', flush=True)
+    if sys.platform == 'win32':
+        try:
+            proc = subprocess.run([binary_path, *args], check=False)
+        except KeyboardInterrupt:
+            sys.exit(1)
+        sys.exit(proc.returncode)
+    else:
+        os.execvp(binary_path, [binary_path, *args])
 
 
 def find_or_download_binary(binary_name: str) -> str:
@@ -178,14 +181,14 @@ def find_or_download_binary(binary_name: str) -> str:
     return binary_path
 
 
-def cli_run() -> int:
+def cli_run(args: Optional[list[str]] = None) -> int:
     '''
     Main entry point for the lakeFS CLI
     '''
-    args = sys.argv[1:]
+    args = args or sys.argv[1:]
     lakefs_bin = find_or_download_binary('lakefs')
-    return run_binary(lakefs_bin, args)
+    run_binary(lakefs_bin, args)
 
 
 if __name__ == '__main__':
-    sys.exit(cli_run())
+    cli_run()
