@@ -19,7 +19,7 @@ type Config struct {
 }
 
 type Local struct {
-	// Path - Local directory path to store the DB files
+	// Path - Local directory path to store the DB files. If set to memory: then in-memory DB will be used
 	Path string
 	// SyncWrites - Sync ensures data written to disk on each writing instead of mem cache
 	SyncWrites bool
