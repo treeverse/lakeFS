@@ -6831,7 +6831,7 @@ func TestController_ImportStart_Disabled(t *testing.T) {
 
 // TestController_ErrorHandling tests that different error types are properly mapped to HTTP status codes.
 // This is a regression test to ensure that errors from the graveler and KV layers are correctly handled.
-func TestController_ErrorHandling(t *testing.T) {
+func TestController_UploadObject_ErrorHandling(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
