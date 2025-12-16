@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -85,6 +86,9 @@ func (ra *Authenticator) doRequest(ctx context.Context, log logging.Logger, user
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	if reqID, ok := ctx.Value(httputil.RequestIDContextKey).(string); ok {
+		req.Header.Set(httputil.RequestIDHeaderName, reqID)
+	}
 	log = log.WithField("url", req.URL.String())
 
 	log.Trace("starting http request to remote authenticator")
