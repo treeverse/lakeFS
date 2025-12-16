@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -165,6 +166,11 @@ func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	}()
 	_, err = io.Copy(f, reader)
 	if err != nil {
+		// Remove the file if it was partially written.
+		_ = os.Remove(p)
+		if errors.Is(err, syscall.ENOSPC) {
+			return nil, block.ErrStorageLimitExceeded
+		}
 		return nil, err
 	}
 	return &block.PutResponse{}, nil

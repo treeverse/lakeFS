@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var (
@@ -56,8 +57,10 @@ func CheckRetry(ctx context.Context, resp *http.Response, err error, should Shou
 		return false, ctx.Err()
 	}
 
+	logger := logging.FromContext(ctx)
 	// handle client transport errors
 	if err != nil {
+		logger.WithError(err).Debug("error during HTTP request")
 		if v, ok := err.(*url.Error); ok {
 			if redirectsErrorRe.MatchString(v.Error()) || // too many redirects
 				schemeErrorRe.MatchString(v.Error()) || // invalid http scheme/protocol
@@ -74,8 +77,14 @@ func CheckRetry(ctx context.Context, resp *http.Response, err error, should Shou
 		return true, nil
 	}
 
-	// handle HTTP response status code
-	return should.Retry(resp.StatusCode), nil
+	if should.Retry(resp.StatusCode) {
+		logger.WithError(err).WithFields(logging.Fields{
+			"code":   resp.StatusCode,
+			"status": resp.Status,
+		}).Debug("retrying on http response")
+		return true, nil
+	}
+	return false, nil
 }
 
 // lakectl retry policy - we retry in the following cases:
