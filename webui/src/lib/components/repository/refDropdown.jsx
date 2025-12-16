@@ -26,7 +26,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                 if (refType === RefTypeTag) {
                     response = await tags.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
                 } else {
-                    response = await branches.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
+                    response = await branches.list(repo.id, false, pagination.prefix, pagination.after, pagination.amount);
                 }
                 setRefs({loading: false, payload: response, error: null});
             } catch (error) {
