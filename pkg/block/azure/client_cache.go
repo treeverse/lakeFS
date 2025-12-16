@@ -19,7 +19,6 @@ import (
 )
 
 const UDCCacheExpiry = time.Hour
-const UDCCacheWorkaroundDivider = 2
 
 type ClientCache struct {
 	serviceToClient   *xsync.MapOf[string, *service.Client]
