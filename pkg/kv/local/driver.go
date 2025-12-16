@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	DriverName = "local"
+	DriverName          = "local"
+	LocalInMemoryPrefix = "memory:"
 )
 
 var (
@@ -39,7 +40,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 			logger = logging.FromContext(ctx).WithField("store", "local")
 		}
 		opts := badger.DefaultOptions(params.Path)
-		if strings.HasPrefix(params.Path, "memory:") {
+		if strings.HasPrefix(params.Path, LocalInMemoryPrefix) {
+			opts.Dir = ""
 			opts.InMemory = true
 		}
 		opts.Logger = &BadgerLogger{logger}
