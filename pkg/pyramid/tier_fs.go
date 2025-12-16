@@ -233,11 +233,29 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	}
 
 	fileRef := tfs.newLocalFileRef(storageID, namespace, nsPath, filename)
-	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
-		// file was stored by the policy
-		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
+
+	// Rename file to final path BEFORE calling Store() to ensure the file is at fullPath
+	// when OnReject/OnEvict callbacks are invoked (they expect the file at fullPath).
+	if err := tfs.syncDir.renameFile(originalPath, fileRef.fullPath); err != nil {
+		return err
 	}
-	return os.Remove(originalPath)
+
+	// Register with file tracker to protect against race with OnReject callback.
+	// This ensures the file won't be deleted until we release the tracker.
+	// Using defer guarantees closer() runs after any Delete() call, even if code is added later.
+	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
+	defer closer()
+
+	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
+		// Rejected synchronously - mark for deletion.
+		// The file will be deleted when closer() is called via defer.
+		tfs.fileTracker.Delete(fileRef.fsRelativePath)
+	}
+	// Note: OnReject may also be called asynchronously for items that exceed MaxCost.
+	// In that case, fileTracker.Delete() will be called again, which is safe because
+	// the tracker handles duplicate deletes correctly.
+
+	return nil
 }
 
 func (tfs *TierFS) GetRemoteURI(_ context.Context, filename string) (string, error) {
@@ -325,7 +343,14 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 		return nil, fmt.Errorf("file stat: %w", err)
 	}
 
+	// Register with file tracker BEFORE calling Store() to prevent race conditions.
+	// The file tracker ensures the file won't be deleted while we have it open.
+	// The closer will be called when ROFile.Close() is called.
+	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
+
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
+		// File rejected from cache - mark for deletion when all references are closed.
+		// The file will be deleted when closer() is called (via ROFile.Close()).
 		tfs.fileTracker.Delete(fileRef.fsRelativePath)
 		tfs.log(ctx).WithFields(logging.Fields{
 			"storageID": fileRef.storageID,
@@ -338,12 +363,14 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 		File:     fh,
 		rPath:    fileRef.fsRelativePath,
 		eviction: tfs.eviction,
+		closer:   closer,
 	}, nil
 }
 
 // openWithLock reads the referenced file from the block storage
 // and places it in the local FS for further reading.
 // It returns a file handle to the local file.
+// Note: File tracker registration is handled by openFile() which is called after this function.
 func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.File, error) {
 	log := tfs.log(ctx)
 	if tfs.logger.IsTracing() {
@@ -355,8 +382,6 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		}).Trace("try to lock for open")
 	}
 
-	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
-	defer closer()
 	fileFullPath, err := tfs.keyLock.Compute(fileRef.filename, func() (any, error) {
 		// check again file existence, now that we have the lock
 		_, err := os.Stat(fileRef.fullPath)
@@ -463,26 +488,21 @@ type localFileRef struct {
 }
 
 func (tfs *TierFS) storeLocalFile(rPath params.RelativePath, size int64) {
+	// Register with file tracker to coordinate with async OnReject callback.
+	closer := tfs.fileTracker.Open(rPath)
+	defer closer()
+
 	if !tfs.eviction.Store(rPath, size) {
-		// Rejected from cache, so deleted.  This is safe, but can only happen when
-		// the cache size was lowered -- so warn.
+		// Rejected synchronously - mark for deletion.
+		tfs.fileTracker.Delete(rPath)
 		tfs.logger.WithFields(logging.Fields{
 			"path": rPath,
 			"size": size,
-		}).Warn("existing file immediately rejected from cache on startup (safe if cache size changed; continue)")
-
-		// A rare occurrence, (currently) happens when Ristretto cache is not set up
-		// to perform any caching.  So be less strict: prefer to serve the file and
-		// delete it from the cache. It will be removed from disk when the last
-		// surviving file descriptor -- returned from this function -- is closed.
-		if err := os.Remove(filepath.Join(tfs.fsLocalBaseDir, string(rPath))); err != nil {
-			tfs.logger.WithFields(logging.Fields{
-				"path": rPath,
-				"size": size,
-			}).WithError(err).Error("failed to delete immediately-rejected existing file from cache on startup")
-			return
-		}
+		}).Warn("existing file immediately rejected from cache on startup (safe if cache size changed)")
 	}
+	// Note: OnReject may also be called asynchronously for items that exceed MaxCost.
+	// In that case, fileTracker.Delete() will be called, and the file will be deleted
+	// when closer() is called (via defer).
 }
 
 func (tfs *TierFS) newLocalFileRef(storageID, namespace, nsPath, filename string) localFileRef {
