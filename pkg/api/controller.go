@@ -3213,8 +3213,8 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 
 	case errors.Is(err, kv.ErrPredicateFailed):
-		log.Debug("Predicate failed")
-		cb(w, r, http.StatusPreconditionFailed, "Predicate failed")
+		log.Error("KV predicate failed - internal concurrency error that should have been handled by graveler")
+		cb(w, r, http.StatusInternalServerError, "Internal server error")
 
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),

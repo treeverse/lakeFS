@@ -11,10 +11,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-// TestHandleApiErrorCallback_PredicateFailed tests that both kv.ErrPredicateFailed
-// and graveler.ErrPreconditionFailed are properly mapped to HTTP 412 Precondition Failed.
-// This is a regression test for the bug where kv.ErrPredicateFailed was falling through
-// to the default case and returning 500 Internal Server Error instead of 412.
+// TestHandleApiErrorCallback_PredicateFailed tests that kv.ErrPredicateFailed
+// and graveler.ErrPreconditionFailed are properly handled with different status codes:
+// - graveler.ErrPreconditionFailed: HTTP 412 (user-facing conditional operation failure)
+// - kv.ErrPredicateFailed: HTTP 500 (internal KV layer concurrency error that should have been caught by graveler)
 func TestHandleApiErrorCallback_PredicateFailed(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -29,10 +29,10 @@ func TestHandleApiErrorCallback_PredicateFailed(t *testing.T) {
 			expectedBody:   "Precondition failed",
 		},
 		{
-			name:           "kv.ErrPredicateFailed returns 412",
+			name:           "kv.ErrPredicateFailed returns 500",
 			err:            kv.ErrPredicateFailed,
-			expectedStatus: http.StatusPreconditionFailed,
-			expectedBody:   "Precondition failed",
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   "Internal server error",
 		},
 	}
 
