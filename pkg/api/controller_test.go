@@ -6893,9 +6893,4 @@ func TestController_ErrorHandling(t *testing.T) {
 		require.NotNil(t, resp.JSON412, "should have precondition failed response")
 	})
 
-	// Note: kv.ErrPredicateFailed (HTTP 500) is handled in controller.go:3215-3217
-	// It represents an internal KV layer concurrency error that is normally caught and converted
-	// by graveler. If it reaches the API layer, it indicates an internal error and should return 500.
-	// This case is difficult to test via integration tests as it requires the KV layer to leak an error
-	// that graveler should have caught, but the error handling code path is in place.
 }

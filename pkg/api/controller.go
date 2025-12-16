@@ -3212,10 +3212,6 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 
-	case errors.Is(err, kv.ErrPredicateFailed):
-		log.Error("KV predicate failed - internal concurrency error that should have been handled by graveler")
-		cb(w, r, http.StatusInternalServerError, "Internal server error")
-
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
 		errors.Is(err, license.ErrNotImplemented),
@@ -3832,6 +3828,11 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
+		return
+	}
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		c.Logger.WithError(err).Error("KV predicate failed in UploadObject - internal concurrency error")
+		writeError(w, r, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 	if c.handleAPIError(ctx, w, r, err) {
