@@ -10,18 +10,18 @@ import (
 func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 	tests := []struct {
 		name         string
-		headers      map[string][]string
+		headers      map[string]string
 		expectedKeys map[string]string
 	}{
 		{
 			name: "title-case keys from Go canonicalization are lowercased",
-			headers: map[string][]string{
+			headers: map[string]string{
 				// These simulate what Go's HTTP server produces after canonicalization
 				// When a client sends "X-Amz-Meta-FOO", Go canonicalizes to "X-Amz-Meta-Foo"
-				"X-Amz-Meta-Foo":       {"bar"},
-				"X-Amz-Meta-Mykey":     {"myvalue"},
-				"X-Amz-Meta-Allcaps":   {"capsvalue"},
-				"X-Amz-Meta-Mixedcase": {"mixed"},
+				"X-Amz-Meta-Foo":       "bar",
+				"X-Amz-Meta-Mykey":     "myvalue",
+				"X-Amz-Meta-Allcaps":   "capsvalue",
+				"X-Amz-Meta-Mixedcase": "mixed",
 			},
 			expectedKeys: map[string]string{
 				"X-Amz-Meta-foo":       "bar",
@@ -32,9 +32,9 @@ func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 		},
 		{
 			name: "already lowercase keys remain lowercase",
-			headers: map[string][]string{
-				"X-Amz-Meta-Lowercase": {"value1"},
-				"X-Amz-Meta-Another":   {"value2"},
+			headers: map[string]string{
+				"X-Amz-Meta-Lowercase": "value1",
+				"X-Amz-Meta-Another":   "value2",
 			},
 			expectedKeys: map[string]string{
 				"X-Amz-Meta-lowercase": "value1",
@@ -43,10 +43,10 @@ func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 		},
 		{
 			name: "non-metadata headers are ignored",
-			headers: map[string][]string{
-				"X-Amz-Meta-Key": {"metavalue"},
-				"Content-Type":   {"application/json"},
-				"Authorization":  {"Bearer token"},
+			headers: map[string]string{
+				"X-Amz-Meta-Key": "metavalue",
+				"Content-Type":   "application/json",
+				"Authorization":  "Bearer token",
 			},
 			expectedKeys: map[string]string{
 				"X-Amz-Meta-key": "metavalue",
@@ -62,7 +62,7 @@ func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 			// Set headers directly on the request's Header map
 			// This bypasses Go's automatic canonicalization during header parsing
 			for k, v := range tt.headers {
-				req.Header[k] = v
+				req.Header[k] = []string{v}
 			}
 
 			metadata, err := amzMetaAsMetadata(req)
