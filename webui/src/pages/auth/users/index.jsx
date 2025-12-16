@@ -228,7 +228,7 @@ const UsersIndexPage = () => {
             return USER_NOT_FOUND;
         }
 
-        return userRecord.email || userRecord.id;
+        return resolveUserDisplayName(userRecord);
     }, [allUsers]);
 
     return (
