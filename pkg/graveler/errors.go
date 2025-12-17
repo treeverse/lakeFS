@@ -41,6 +41,7 @@ var (
 	ErrSameBranch                   = fmt.Errorf("same branch %w", ErrInvalid)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
 	ErrNoChanges                    = wrapError(ErrUserVisible, "no changes")
+	ErrAlreadyUpToDate              = wrapError(ErrUserVisible, "already up to date")
 	ErrConflictFound                = wrapError(ErrUserVisible, "conflict found")
 	ErrBranchExists                 = fmt.Errorf("branch already exists: %w", ErrNotUnique)
 	ErrTagAlreadyExists             = fmt.Errorf("tag already exists: %w", ErrNotUnique)

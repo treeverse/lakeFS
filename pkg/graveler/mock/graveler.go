@@ -518,12 +518,12 @@ func (mr *MockVersionControllerMockRecorder) DiffUncommitted(ctx, repository, br
 }
 
 // FindMergeBase mocks base method.
-func (m *MockVersionController) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, from, to graveler.Ref) (*graveler.CommitRecord, *graveler.CommitRecord, *graveler.Commit, error) {
+func (m *MockVersionController) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, from, to graveler.Ref) (*graveler.CommitRecord, *graveler.CommitRecord, *graveler.CommitRecord, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindMergeBase", ctx, repository, from, to)
 	ret0, _ := ret[0].(*graveler.CommitRecord)
 	ret1, _ := ret[1].(*graveler.CommitRecord)
-	ret2, _ := ret[2].(*graveler.Commit)
+	ret2, _ := ret[2].(*graveler.CommitRecord)
 	ret3, _ := ret[3].(error)
 	return ret0, ret1, ret2, ret3
 }
@@ -2286,7 +2286,7 @@ func (mr *MockRefManagerMockRecorder) DeleteTag(ctx, repository, tagID interface
 }
 
 // FindMergeBase mocks base method.
-func (m *MockRefManager) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
+func (m *MockRefManager) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, commitIDs ...graveler.CommitID) (*graveler.Commit, graveler.CommitID, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, repository}
 	for _, a := range commitIDs {
@@ -2294,8 +2294,9 @@ func (m *MockRefManager) FindMergeBase(ctx context.Context, repository *graveler
 	}
 	ret := m.ctrl.Call(m, "FindMergeBase", varargs...)
 	ret0, _ := ret[0].(*graveler.Commit)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(graveler.CommitID)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // FindMergeBase indicates an expected call of FindMergeBase.

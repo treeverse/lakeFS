@@ -20,7 +20,8 @@ const (
 
 // FindMergeBase finds the best common ancestor according to the definition in the git-merge-base documentation: https://git-scm.com/docs/git-merge-base
 // One common ancestor is better than another common ancestor if the latter is an ancestor of the former.
-func FindMergeBase(ctx context.Context, getter CommitGetter, repository *graveler.RepositoryRecord, leftID, rightID graveler.CommitID) (*graveler.Commit, error) {
+// Returns the merge base commit and its CommitID.
+func FindMergeBase(ctx context.Context, getter CommitGetter, repository *graveler.RepositoryRecord, leftID, rightID graveler.CommitID) (*graveler.Commit, graveler.CommitID, error) {
 	var cr *graveler.CommitRecord
 	queue := NewCommitsGenerationPriorityQueue()
 	reached := make(map[graveler.CommitID]reachedFlags)
@@ -28,19 +29,19 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repository *gravele
 	reached[leftID] |= fromLeft
 	commit, err := getCommitAndEnqueue(ctx, getter, &queue, repository, leftID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if leftID == rightID {
-		return commit, nil
+		return commit, leftID, nil
 	}
 
 	_, err = getCommitAndEnqueue(ctx, getter, &queue, repository, rightID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	for {
 		if queue.Len() == 0 {
-			return nil, nil
+			return nil, "", nil
 		}
 		cr = heap.Pop(&queue).(*graveler.CommitRecord)
 		commitFlags := reached[cr.CommitID]
@@ -50,7 +51,7 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repository *gravele
 				// all its ancestors were already queued and so, will have entries in 'reached' map
 				_, err := getCommitAndEnqueue(ctx, getter, &queue, repository, parent)
 				if err != nil {
-					return nil, err
+					return nil, "", err
 				}
 			}
 			// mark the parent with the flag values from its descendents. This is done regardless
@@ -60,7 +61,8 @@ func FindMergeBase(ctx context.Context, getter CommitGetter, repository *gravele
 			reached[parent] |= commitFlags
 			if reached[parent]&fromLeft != 0 && reached[parent]&fromRight != 0 {
 				// commit was reached from both left and right nodes
-				return getter.GetCommit(ctx, repository, parent)
+				commit, err := getter.GetCommit(ctx, repository, parent)
+				return commit, parent, err
 			}
 		}
 	}

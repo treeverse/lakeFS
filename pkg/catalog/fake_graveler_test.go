@@ -269,7 +269,7 @@ func (g *FakeGraveler) Merge(ctx context.Context, repository *graveler.Repositor
 	panic("implement me")
 }
 
-func (g *FakeGraveler) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.Ref, to graveler.Ref) (*graveler.CommitRecord, *graveler.CommitRecord, *graveler.Commit, error) {
+func (g *FakeGraveler) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.Ref, to graveler.Ref) (*graveler.CommitRecord, *graveler.CommitRecord, *graveler.CommitRecord, error) {
 	panic("implement me")
 }
 

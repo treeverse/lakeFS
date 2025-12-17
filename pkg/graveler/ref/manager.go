@@ -652,12 +652,13 @@ func (m *Manager) RemoveCommit(ctx context.Context, repository *graveler.Reposit
 	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(commitKey))
 }
 
-func (m *Manager) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, commitIDs ...graveler.CommitID) (*graveler.Commit, error) {
+func (m *Manager) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, commitIDs ...graveler.CommitID) (*graveler.Commit, graveler.CommitID, error) {
 	const allowedCommitsToCompare = 2
 	if len(commitIDs) != allowedCommitsToCompare {
-		return nil, graveler.ErrInvalidMergeBase
+		return nil, "", graveler.ErrInvalidMergeBase
 	}
-	return FindMergeBase(ctx, m, repository, commitIDs[0], commitIDs[1])
+	commit, commitID, err := FindMergeBase(ctx, m, repository, commitIDs[0], commitIDs[1])
+	return commit, commitID, err
 }
 
 func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID, firstParent bool, since *time.Time) (graveler.CommitIterator, error) {

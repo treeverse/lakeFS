@@ -770,7 +770,7 @@ type VersionController interface {
 	Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error)
 
 	// FindMergeBase returns the 'from' commit, the 'to' commit and the merge base commit of 'from' and 'to' commits.
-	FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error)
+	FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *CommitRecord, error)
 
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
@@ -1029,10 +1029,10 @@ type RefManager interface {
 	// RemoveCommit deletes commit from store - used for repository cleanup
 	RemoveCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) error
 
-	// FindMergeBase returns the merge-base for the given CommitIDs
+	// FindMergeBase returns the merge-base commit and its CommitID for the given CommitIDs
 	// see: https://git-scm.com/docs/git-merge-base
 	// and internally: https://github.com/treeverse/lakeFS/blob/09954804baeb36ada74fa17d8fdc13a38552394e/index/dag/commits.go
-	FindMergeBase(ctx context.Context, repository *RepositoryRecord, commitIDs ...CommitID) (*Commit, error)
+	FindMergeBase(ctx context.Context, repository *RepositoryRecord, commitIDs ...CommitID) (*Commit, CommitID, error)
 
 	// Log returns an iterator starting at commit ID up to repository root
 	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID, firstParent bool, since *time.Time) (CommitIterator, error)
@@ -3147,6 +3147,10 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		if err != nil {
 			return nil, err
 		}
+		// Check if source is an ancestor of destination (like Git's "Already up to date")
+		if baseCommit.CommitID == fromCommit.CommitID {
+			return nil, ErrAlreadyUpToDate
+		}
 		lg.WithFields(logging.Fields{
 			"source_meta_range":      fromCommit.MetaRangeID,
 			"destination_meta_range": toCommit.MetaRangeID,
@@ -3504,7 +3508,7 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 	return NewCombinedDiffIterator(compactedDiffIterator, leftValueIterator, stagingIterator), nil
 }
 
-func (g *Graveler) FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+func (g *Graveler) FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *CommitRecord, error) {
 	fromCommit, err := g.dereferenceCommit(ctx, repository, from)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
@@ -3513,14 +3517,18 @@ func (g *Graveler) FindMergeBase(ctx context.Context, repository *RepositoryReco
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by branch %s: %w", to, err)
 	}
-	baseCommit, err := g.RefManager.FindMergeBase(ctx, repository, fromCommit.CommitID, toCommit.CommitID)
+	baseCommit, baseCommitID, err := g.RefManager.FindMergeBase(ctx, repository, fromCommit.CommitID, toCommit.CommitID)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("find merge base: %w", err)
 	}
 	if baseCommit == nil {
 		return nil, nil, nil, ErrNoMergeBase
 	}
-	return fromCommit, toCommit, baseCommit, nil
+	baseCommitRecord := &CommitRecord{
+		CommitID: baseCommitID,
+		Commit:   baseCommit,
+	}
+	return fromCommit, toCommit, baseCommitRecord, nil
 }
 
 func (g *Graveler) Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {

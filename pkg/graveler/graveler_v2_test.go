@@ -358,7 +358,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
-		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit3, nil)
+		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit3, commit3ID, nil)
 		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageID, repository.StorageNamespace, mr1ID, mr2ID, mr3ID, graveler.MergeStrategyNone, []graveler.SetOptionsFunc{}).Times(1).Return(mr4ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr4ID, commit.MetaRangeID)
@@ -454,7 +454,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
-		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit3, nil)
+		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit3, commit3ID, nil)
 		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageID, repository.StorageNamespace, mr1ID, mr2ID, mr3ID, graveler.MergeStrategyNone, []graveler.SetOptionsFunc{}).Times(1).Return(mr4ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr4ID, commit.MetaRangeID)
@@ -501,6 +501,40 @@ func TestGravelerMerge(t *testing.T) {
 		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
 
 		require.ErrorIs(t, err, graveler.ErrTooManyTries)
+		require.Empty(t, val)
+	})
+
+	t.Run("merge source is ancestor of destination - already up to date", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		// First BranchUpdate call from prepareForCommitIDUpdate
+		firstUpdateBranch(test)
+
+		// Setup staging tokens check
+		emptyStagingTokenCombo(test, 2)
+
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
+		test.CommittedManager.EXPECT().List(ctx, repository.StorageID, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+
+		// Second BranchUpdate call from the actual merge operation - this is where the error occurs
+		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+				branchTest := &graveler.Branch{StagingToken: stagingToken4, CommitID: commit1ID, SealedTokens: []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}}
+				_, err := f(branchTest)
+				require.ErrorIs(t, err, graveler.ErrAlreadyUpToDate)
+				return err
+			}).Times(1)
+
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch2ID)).Times(1).Return(rawRefCommit2, nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
+		// Return merge base that equals the source commit (commit2ID), meaning source is ancestor of destination
+		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit2, commit2ID, nil)
+
+		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
+
+		require.ErrorIs(t, err, graveler.ErrAlreadyUpToDate)
 		require.Empty(t, val)
 	})
 }

@@ -2116,7 +2116,7 @@ func (c *Catalog) FindMergeBase(ctx context.Context, repositoryID string, destin
 	if err != nil {
 		return "", "", "", err
 	}
-	return fromCommit.CommitID.String(), toCommit.CommitID.String(), c.addressProvider.ContentAddress(baseCommit), nil
+	return fromCommit.CommitID.String(), toCommit.CommitID.String(), c.addressProvider.ContentAddress(baseCommit.Commit), nil
 }
 
 func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string) (string, error) {

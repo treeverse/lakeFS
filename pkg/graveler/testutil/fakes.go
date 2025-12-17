@@ -426,8 +426,8 @@ func (m *RefsFake) RemoveCommit(_ context.Context, _ *graveler.RepositoryRecord,
 	return nil
 }
 
-func (m *RefsFake) FindMergeBase(context.Context, *graveler.RepositoryRecord, ...graveler.CommitID) (*graveler.Commit, error) {
-	return &graveler.Commit{}, nil
+func (m *RefsFake) FindMergeBase(context.Context, *graveler.RepositoryRecord, ...graveler.CommitID) (*graveler.Commit, graveler.CommitID, error) {
+	return &graveler.Commit{}, "", nil
 }
 
 func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID, bool, *time.Time) (graveler.CommitIterator, error) {
