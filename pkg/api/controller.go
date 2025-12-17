@@ -3171,7 +3171,7 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
-		errors.Is(err, block.ErrStorageLimitExceeded),
+		errors.Is(err, block.ErrWriteFailed),
 		errors.Is(err, auth.ErrInvalidRequest),
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),

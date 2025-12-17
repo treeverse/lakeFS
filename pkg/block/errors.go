@@ -10,5 +10,5 @@ var (
 	ErrForbidden             = errors.New("forbidden")
 	ErrInvalidAddress        = errors.New("invalid address")
 	ErrInvalidNamespace      = errors.New("invalid namespace")
-	ErrStorageLimitExceeded  = errors.New("storage limit exceeded")
+	ErrWriteFailed           = errors.New("failed to write to storage")
 )
