@@ -39,12 +39,16 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		if params.EnableLogging {
 			logger = logging.FromContext(ctx).WithField("store", "local")
 		}
-		opts := badger.DefaultOptions(params.Path)
+
+		// open database options
+		var opts badger.Options
 		if strings.HasPrefix(params.Path, LocalInMemoryPrefix) {
-			opts.Dir = ""
-			opts.InMemory = true
+			opts = badger.DefaultOptions("").WithInMemory(true)
+		} else {
+			opts = badger.DefaultOptions(params.Path)
 		}
-		opts.Logger = &BadgerLogger{logger}
+		opts = opts.WithLogger(&BadgerLogger{logger})
+
 		db, err := badger.Open(opts)
 		if err != nil {
 			return nil, err
