@@ -185,23 +185,11 @@ func (tfs *TierFS) dirDeleteWorker() {
 }
 
 // Close shuts down the TierFS, stopping the background worker and waiting for it to finish.
-// Note: We intentionally do NOT call eviction.Close() here because that would clear the cache
-// and delete all cached files. The cache should persist across restarts.
+// The eviction cache is closed, but the cached files are preserved on disk for reuse after restart.
 func (tfs *TierFS) Close() error {
 	close(tfs.done)
 	tfs.wg.Wait()
-
-	// Drain any remaining directory deletion requests
-	for {
-		select {
-		case dirPath := <-tfs.dirDeleteCh:
-			if err := tfs.syncDir.deleteDirRecIfEmpty(dirPath); err != nil {
-				errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval").Inc()
-			}
-		default:
-			return nil
-		}
-	}
+	return tfs.eviction.Close()
 }
 
 func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath, nsPath, filename string) error {
