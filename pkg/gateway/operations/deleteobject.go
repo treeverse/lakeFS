@@ -7,6 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -28,14 +29,22 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 	uploadID := query.Get(QueryParamUploadID)
 
 	ctx := req.Context()
-	mpu, err := o.MultipartTracker.Get(ctx, uploadID)
+
+	// Get repository record to compute the proper partition
+	repo, err := o.Catalog.Store.GetRepository(ctx, graveler.RepositoryID(o.Repository.Name))
 	if err != nil {
-		o.Log(req).WithError(err).Error("upload id not found in tracker")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		o.Log(req).WithError(err).Error("could not get repository")
+		if errors.Is(err, kv.ErrNotFound) {
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+		}
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
-	if mpu.Path != o.Path {
-		o.Log(req).Error("could not match multipart upload with multipart tracker record")
+
+	partition := graveler.RepoPartition(repo)
+	mpu, err := o.MultipartTracker.Get(ctx, partition, o.Path, uploadID)
+	if err != nil {
+		o.Log(req).WithError(err).Error("upload id not found in tracker")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
@@ -53,7 +62,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 		return
 	}
 
-	if err := o.MultipartTracker.Delete(ctx, uploadID); err != nil {
+	if err := o.MultipartTracker.Delete(ctx, partition, o.Path, uploadID); err != nil {
 		o.Log(req).WithError(err).Warn("could not delete multipart record")
 	}
 

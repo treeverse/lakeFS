@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -195,69 +196,6 @@ func TestS3UploadAndDownload(t *testing.T) {
 	}
 }
 
-func TestMultipartUploadIfNoneMatch(t *testing.T) {
-	t.Parallel()
-	ctx, log, repo := setupTest(t)
-	defer tearDownTest(repo)
-	s3Endpoint := viper.GetString("s3_endpoint")
-	s3Client := createS3Client(s3Endpoint, t)
-	testCases := []struct {
-		Name          string
-		Path          string
-		IfNoneMatch   string
-		ExpectedError string
-	}{
-		{
-			Name: "sanity",
-			Path: "main/object1",
-		},
-		{
-			Name:          "object exists",
-			Path:          "main/object1",
-			IfNoneMatch:   "*",
-			ExpectedError: gtwerrors.ErrPreconditionFailed.Error(),
-		},
-		{
-			Name:        "object doesn't exist",
-			Path:        "main/object2",
-			IfNoneMatch: "*",
-		},
-	}
-
-	for _, tt := range testCases {
-		t.Run(tt.Name, func(t *testing.T) {
-			input := &s3.CreateMultipartUploadInput{
-				Bucket: aws.String(repo),
-				Key:    aws.String(tt.Path),
-			}
-
-			resp, err := s3Client.CreateMultipartUpload(ctx, input)
-			require.NoError(t, err, "failed to create multipart upload")
-
-			parts := make([][]byte, multipartNumberOfParts)
-			for i := 0; i < multipartNumberOfParts; i++ {
-				parts[i] = randstr.Bytes(multipartPartSize + i)
-			}
-
-			completedParts := uploadMultipartParts(t, ctx, s3Client, log, resp, parts, 0)
-			completeInput := &s3.CompleteMultipartUploadInput{
-				Bucket:   resp.Bucket,
-				Key:      resp.Key,
-				UploadId: resp.UploadId,
-				MultipartUpload: &types.CompletedMultipartUpload{
-					Parts: completedParts,
-				},
-			}
-			_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setIfNonMatchHeader(tt.IfNoneMatch)))
-			if tt.ExpectedError != "" {
-				require.ErrorContains(t, err, tt.ExpectedError)
-			} else {
-				require.NoError(t, err, "expected no error but got: %w", err)
-			}
-		})
-	}
-}
-
 func TestS3IfNoneMatch(t *testing.T) {
 	t.Parallel()
 	ctx, _, repo := setupTest(t)
@@ -371,8 +309,24 @@ func TestListBuckets(t *testing.T) {
 	require.Contains(t, reposWithPrefix, secondRepo)
 }
 
-func TestListMultipartUploads(t *testing.T) {
-	t.Parallel()
+func createMultipartHelper(ctx context.Context, t *testing.T, s3Client *s3.Client, repo string, key string) *s3.CreateMultipartUploadOutput {
+	resp, err := s3Client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(key),
+	})
+	require.NoError(t, err, "failed to create multipart upload")
+
+	t.Cleanup(func() {
+		_, _ = s3Client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+			Bucket:   aws.String(repo),
+			Key:      aws.String(key),
+			UploadId: resp.UploadId,
+		})
+	})
+	return resp
+}
+
+func TestMultipartListUploads(t *testing.T) {
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	ctx, log, repo := setupTest(t)
 	defer tearDownTest(repo)
@@ -387,17 +341,8 @@ func TestListMultipartUploads(t *testing.T) {
 	key1 := keysPrefix + obj1
 	key2 := keysPrefix + obj2
 
-	input1 := &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(repo),
-		Key:    aws.String(key1),
-	}
-	input2 := &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(repo),
-		Key:    aws.String(key2),
-	}
 	// create first mpu
-	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
-	require.NoError(t, err, "failed to create multipart upload")
+	resp1 := createMultipartHelper(ctx, t, s3Client, repo, key1)
 	parts := make([][]byte, numOfParts)
 	for i := 0; i < numOfParts; i++ {
 		parts[i] = randstr.Bytes(multipartPartSize + i)
@@ -420,8 +365,7 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, keys, obj1)
 
 	// create second mpu check both appear
-	mpuRes, err := s3Client.CreateMultipartUpload(ctx, input2)
-	require.NoError(t, err, "failed to create multipart upload")
+	mpuRes := createMultipartHelper(ctx, t, s3Client, repo, key2)
 	uploadID := mpuRes.UploadId
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, UploadIdMarker: uploadID})
 	require.NoError(t, err, "failed to list multipart uploads")
@@ -438,6 +382,11 @@ func TestListMultipartUploads(t *testing.T) {
 	require.NotContains(t, keys, obj2)
 
 	// testing key marker and upload id marker for pagination. only records after marker should return
+	require.NotNil(t, output.IsTruncated, "should have IsTruncated field")
+	require.True(t, *output.IsTruncated, "should be truncated with maxUploads=1 and 2 total uploads")
+	require.NotNil(t, output.NextKeyMarker, "should have NextKeyMarker when truncated")
+	require.NotNil(t, output.NextUploadIdMarker, "should have NextUploadIdMarker when truncated")
+
 	keyMarker := output.NextKeyMarker
 	uploadIDMarker := output.NextUploadIdMarker
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads, KeyMarker: keyMarker, UploadIdMarker: uploadIDMarker})
@@ -456,7 +405,210 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, keys, obj2)
 }
 
-func TestListMultipartUploadsUnsupported(t *testing.T) {
+func TestMultipartListUploadsOrdering(t *testing.T) {
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+
+	// Create multipart uploads with keys that should be ordered lexicographically
+	// Using keys that might have different physical addresses but need logical ordering
+	keysPrefix := "main/"
+	testKeys := []string{
+		keysPrefix + "z-last-key",   // Should be last alphabetically
+		keysPrefix + "a-first-key",  // Should be first alphabetically
+		keysPrefix + "m-middle-key", // Should be in middle
+		keysPrefix + "b-second-key", // Should be second
+	}
+
+	// Expected order after sorting
+	expectedOrder := []string{
+		"a-first-key",
+		"b-second-key",
+		"m-middle-key",
+		"z-last-key",
+	}
+
+	// Create all multipart uploads
+	var uploadIDs []string
+	for _, key := range testKeys {
+		resp := createMultipartHelper(ctx, t, s3Client, repo, key)
+		uploadIDs = append(uploadIDs, *resp.UploadId)
+	}
+
+	// List all uploads without pagination
+	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
+		Bucket: aws.String(repo),
+	})
+	require.NoError(t, err, "failed to list multipart uploads")
+	require.Len(t, output.Uploads, len(testKeys), "should return all uploads")
+
+	// Verify ordering - keys should be in lexicographic order
+	actualKeys := extractUploadKeys(output)
+	require.Equal(t, expectedOrder, actualKeys, "uploads should be ordered by key lexicographically")
+
+	// Test with MaxUploads that exactly matches total uploads (request completely fulfilled)
+	outputExact, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
+		Bucket:     aws.String(repo),
+		MaxUploads: aws.Int32(4), // Exactly the number of uploads we have
+	})
+	require.NoError(t, err, "failed to list with exact max uploads")
+	require.Len(t, outputExact.Uploads, 4, "should return all 4 uploads")
+
+	// IsTruncated should be nil or false when not truncated
+	if outputExact.IsTruncated != nil {
+		require.False(t, *outputExact.IsTruncated, "should not be truncated when request is completely fulfilled")
+	}
+
+	// Per AWS spec: NextKeyMarker should be empty when IsTruncated is false
+	if outputExact.NextKeyMarker != nil {
+		require.Empty(t, *outputExact.NextKeyMarker, "NextKeyMarker should be empty when not truncated")
+	}
+	if outputExact.NextUploadIdMarker != nil {
+		require.Empty(t, *outputExact.NextUploadIdMarker, "NextUploadIdMarker should be empty when not truncated")
+	}
+
+	// Test with MaxUploads to ensure ordering is maintained with pagination
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
+		Bucket:     aws.String(repo),
+		MaxUploads: aws.Int32(2),
+	})
+	require.NoError(t, err, "failed to list with max uploads")
+	require.Len(t, output.Uploads, 2, "should return exactly 2 uploads")
+	require.Equal(t, expectedOrder[0], *output.Uploads[0].Key, "first upload should be first in order")
+	require.Equal(t, expectedOrder[1], *output.Uploads[1].Key, "second upload should be second in order")
+	require.NotNil(t, output.IsTruncated)
+	require.True(t, *output.IsTruncated, "should be truncated when maxUploads < total")
+
+	// Test pagination - use markers to get next page
+	require.NotNil(t, output.NextKeyMarker, "should have next key marker")
+	require.NotNil(t, output.NextUploadIdMarker, "should have next upload id marker")
+
+	// Verify markers point to the last item returned (which should be the second upload in sorted order)
+	// The last item should be "b-second-key" (without the branch prefix)
+	require.Equal(t, *output.Uploads[1].Key, *output.NextKeyMarker, "next key marker should be the last key returned")
+	require.Equal(t, *output.Uploads[1].UploadId, *output.NextUploadIdMarker, "next upload id marker should be the last upload id returned")
+
+	output2, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
+		Bucket:         aws.String(repo),
+		MaxUploads:     aws.Int32(2),
+		KeyMarker:      output.NextKeyMarker,
+		UploadIdMarker: output.NextUploadIdMarker,
+	})
+	require.NoError(t, err, "failed to list with markers")
+	require.Len(t, output2.Uploads, 2, "should return remaining 2 uploads")
+
+	// IMPORTANT: Verify the marker itself is NOT included in the next page
+	actualKeys2 := extractUploadKeys(output2)
+	require.NotContains(t, actualKeys2, expectedOrder[1], "second page should NOT contain the marker key")
+
+	require.Equal(t, expectedOrder[2], *output2.Uploads[0].Key, "third upload should be third in order")
+	require.Equal(t, expectedOrder[3], *output2.Uploads[1].Key, "fourth upload should be fourth in order")
+
+	// IsTruncated should be nil or false when not truncated
+	if output2.IsTruncated != nil {
+		require.False(t, *output2.IsTruncated, "should not be truncated on last page")
+	}
+
+	// Per AWS spec: NextKeyMarker should be empty when IsTruncated is false
+	if output2.NextKeyMarker != nil {
+		require.Empty(t, *output2.NextKeyMarker, "NextKeyMarker should be empty when not truncated")
+	}
+	if output2.NextUploadIdMarker != nil {
+		require.Empty(t, *output2.NextUploadIdMarker, "NextUploadIdMarker should be empty when not truncated")
+	}
+}
+
+func TestMultipartListUploadsSameKey(t *testing.T) {
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+
+	// Create multiple multipart uploads for the same key
+	// This tests secondary sorting by upload ID when keys are equal
+	keysPrefix := "main/"
+	sameKeyFull := keysPrefix + "same-key-test" // Full key with branch for creation
+	expectedKey := "same-key-test"              // Expected key without branch in response
+
+	// Create 3 uploads for the same key
+	var uploadIDs []string
+	for i := 0; i < 3; i++ {
+		resp := createMultipartHelper(ctx, t, s3Client, repo, sameKeyFull)
+		uploadIDs = append(uploadIDs, *resp.UploadId)
+		// Small delay to ensure different creation times
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// List all uploads
+	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
+		Bucket: aws.String(repo),
+	})
+	require.NoError(t, err, "failed to list multipart uploads")
+	require.Len(t, output.Uploads, 3, "should return all 3 uploads")
+
+	// All uploads should have the same key (without the branch prefix)
+	for _, upload := range output.Uploads {
+		require.Equal(t, expectedKey, *upload.Key, "all uploads should have the same key")
+	}
+
+	// Upload IDs should be sorted lexicographically as secondary sort
+	var returnedUploadIDs []string
+	for _, upload := range output.Uploads {
+		returnedUploadIDs = append(returnedUploadIDs, *upload.UploadId)
+	}
+
+	// Check that upload IDs are in sorted order
+	sortedUploadIDs := make([]string, len(returnedUploadIDs))
+	copy(sortedUploadIDs, returnedUploadIDs)
+	sort.Strings(sortedUploadIDs)
+	require.Equal(t, sortedUploadIDs, returnedUploadIDs, "upload IDs should be sorted when keys are equal")
+
+	// Test pagination with same key
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
+		Bucket:     aws.String(repo),
+		MaxUploads: aws.Int32(2),
+	})
+	require.NoError(t, err, "failed to list with max uploads")
+	require.Len(t, output.Uploads, 2, "should return 2 uploads")
+	require.NotNil(t, output.IsTruncated)
+	require.True(t, *output.IsTruncated, "should be truncated")
+
+	// Get remaining upload using markers
+	output2, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
+		Bucket:         aws.String(repo),
+		MaxUploads:     aws.Int32(2),
+		KeyMarker:      output.NextKeyMarker,
+		UploadIdMarker: output.NextUploadIdMarker,
+	})
+	require.NoError(t, err, "failed to list with markers")
+	require.Len(t, output2.Uploads, 1, "should return remaining 1 upload")
+
+	// IsTruncated should be nil or false when not truncated
+	if output2.IsTruncated != nil {
+		require.False(t, *output2.IsTruncated, "should not be truncated on last page")
+	}
+
+	// IMPORTANT: Verify the marker upload ID is NOT included in the next page
+	// When paginating with same keys, the upload ID acts as the tie-breaker
+	markerUploadID := *output.NextUploadIdMarker
+	require.NotEqual(t, markerUploadID, *output2.Uploads[0].UploadId, "second page should NOT contain the marker upload ID")
+
+	// The third upload should come after the first two in sorted order
+	require.Equal(t, sortedUploadIDs[2], *output2.Uploads[0].UploadId, "third upload should be last in sorted order")
+
+	// Per AWS spec: NextKeyMarker should be empty when IsTruncated is false
+	if output2.NextKeyMarker != nil {
+		require.Empty(t, *output2.NextKeyMarker, "NextKeyMarker should be empty when not truncated")
+	}
+	if output2.NextUploadIdMarker != nil {
+		require.Empty(t, *output2.NextUploadIdMarker, "NextUploadIdMarker should be empty when not truncated")
+	}
+}
+
+func TestMultipartListUploadsUnsupported(t *testing.T) {
 	t.Parallel()
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	ctx, _, repo := setupTest(t)
@@ -489,6 +641,135 @@ func TestListMultipartUploadsUnsupported(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "NotImplemented")
 	})
+}
+
+func TestMultipartUploadIfNoneMatch(t *testing.T) {
+	ctx, log, repo := setupTest(t)
+	defer tearDownTest(repo)
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+	testCases := []struct {
+		Name          string
+		Path          string
+		IfNoneMatch   string
+		ExpectedError string
+	}{
+		{
+			Name: "sanity",
+			Path: "main/object1",
+		},
+		{
+			Name:          "object exists",
+			Path:          "main/object1",
+			IfNoneMatch:   "*",
+			ExpectedError: gtwerrors.ErrPreconditionFailed.Error(),
+		},
+		{
+			Name:        "object doesn't exist",
+			Path:        "main/object2",
+			IfNoneMatch: "*",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			resp := createMultipartHelper(ctx, t, s3Client, repo, tt.Path)
+			parts := make([][]byte, multipartNumberOfParts)
+			for i := 0; i < multipartNumberOfParts; i++ {
+				parts[i] = randstr.Bytes(multipartPartSize + i)
+			}
+
+			completedParts := uploadMultipartParts(t, ctx, s3Client, log, resp, parts, 0)
+			completeInput := &s3.CompleteMultipartUploadInput{
+				Bucket:   resp.Bucket,
+				Key:      resp.Key,
+				UploadId: resp.UploadId,
+				MultipartUpload: &types.CompletedMultipartUpload{
+					Parts: completedParts,
+				},
+			}
+			_, err := s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setIfNonMatchHeader(tt.IfNoneMatch)))
+			if tt.ExpectedError != "" {
+				require.ErrorContains(t, err, tt.ExpectedError)
+			} else {
+				require.NoError(t, err, "expected no error but got: %w", err)
+			}
+		})
+	}
+}
+
+func TestS3CopyObjectMultipart(t *testing.T) {
+	t.Parallel()
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	// additional repository for copy between repos
+	destRepo := createRepositoryUnique(ctx, t)
+	defer DeleteRepositoryIfAskedTo(ctx, destRepo)
+
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
+	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, mainBranch)
+	destPath := gatewayTestPrefix + "dest-file"
+
+	dest := minio.CopyDestOptions{
+		Bucket: destRepo,
+		Object: destPath,
+	}
+
+	srcs := []minio.CopySrcOptions{
+		{
+			Bucket:     repo,
+			Object:     srcPath,
+			MatchRange: true,
+			Start:      0,
+			End:        minDataContentLengthForMultipart - 1,
+		}, {
+			Bucket:     repo,
+			Object:     srcPath,
+			MatchRange: true,
+			Start:      minDataContentLengthForMultipart,
+			End:        objectLength - 1,
+		},
+	}
+
+	ui, err := s3lakefsClient.ComposeObject(ctx, dest, srcs...)
+	if err != nil {
+		t.Fatalf("minio.Client.ComposeObject from(%+v) to(%+v): %s", srcs, dest, err)
+	}
+
+	if ui.Size != objectLength {
+		t.Errorf("Copied %d bytes when expecting %d", ui.Size, objectLength)
+	}
+
+	// Comparing 2 readers is too much work.  Instead just hash them.
+	// This will fail for malicious bad S3 gateways, but otherwise is
+	// fine.
+	uploadedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
+	if err != nil {
+		t.Fatalf("Get uploaded object: %s", err)
+	}
+	defer func() { _ = uploadedReader.Close() }()
+	uploadedCRC, err := testutil.ChecksumReader(uploadedReader)
+	if err != nil {
+		t.Fatalf("Read uploaded object: %s", err)
+	}
+	if uploadedCRC == 0 {
+		t.Fatal("Impossibly bad luck: uploaded data with CRC64 == 0!")
+	}
+
+	copiedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
+	if err != nil {
+		t.Fatalf("Get copied object: %s", err)
+	}
+	defer func() { _ = copiedReader.Close() }()
+	copiedCRC, err := testutil.ChecksumReader(copiedReader)
+	if err != nil {
+		t.Fatalf("Read copied object: %s", err)
+	}
+
+	if uploadedCRC != copiedCRC {
+		t.Fatal("Copy not equal")
+	}
 }
 
 func extractUploadKeys(output *s3.ListMultipartUploadsOutput) []string {
@@ -754,80 +1035,6 @@ func getOrCreatePathToLargeObject(t *testing.T, ctx context.Context, s3lakefsCli
 		minio.PutObjectOptions{})
 	require.NoError(t, err)
 	return s3Path, largeDataContentLength
-}
-
-func TestS3CopyObjectMultipart(t *testing.T) {
-	t.Parallel()
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
-
-	// additional repository for copy between repos
-	destRepo := createRepositoryUnique(ctx, t)
-	defer DeleteRepositoryIfAskedTo(ctx, destRepo)
-
-	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
-	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, mainBranch)
-	destPath := gatewayTestPrefix + "dest-file"
-
-	dest := minio.CopyDestOptions{
-		Bucket: destRepo,
-		Object: destPath,
-	}
-
-	srcs := []minio.CopySrcOptions{
-		{
-			Bucket:     repo,
-			Object:     srcPath,
-			MatchRange: true,
-			Start:      0,
-			End:        minDataContentLengthForMultipart - 1,
-		}, {
-			Bucket:     repo,
-			Object:     srcPath,
-			MatchRange: true,
-			Start:      minDataContentLengthForMultipart,
-			End:        objectLength - 1,
-		},
-	}
-
-	ui, err := s3lakefsClient.ComposeObject(ctx, dest, srcs...)
-	if err != nil {
-		t.Fatalf("minio.Client.ComposeObject from(%+v) to(%+v): %s", srcs, dest, err)
-	}
-
-	if ui.Size != objectLength {
-		t.Errorf("Copied %d bytes when expecting %d", ui.Size, objectLength)
-	}
-
-	// Comparing 2 readers is too much work.  Instead just hash them.
-	// This will fail for malicious bad S3 gateways, but otherwise is
-	// fine.
-	uploadedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
-	if err != nil {
-		t.Fatalf("Get uploaded object: %s", err)
-	}
-	defer func() { _ = uploadedReader.Close() }()
-	uploadedCRC, err := testutil.ChecksumReader(uploadedReader)
-	if err != nil {
-		t.Fatalf("Read uploaded object: %s", err)
-	}
-	if uploadedCRC == 0 {
-		t.Fatal("Impossibly bad luck: uploaded data with CRC64 == 0!")
-	}
-
-	copiedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
-	if err != nil {
-		t.Fatalf("Get copied object: %s", err)
-	}
-	defer func() { _ = copiedReader.Close() }()
-	copiedCRC, err := testutil.ChecksumReader(copiedReader)
-	if err != nil {
-		t.Fatalf("Read copied object: %s", err)
-	}
-
-	if uploadedCRC != copiedCRC {
-		t.Fatal("Copy not equal")
-	}
 }
 
 func TestS3CopyObject(t *testing.T) {

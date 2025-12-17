@@ -4,13 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const storePartitionKey = "multiparts"
+const (
+	multipartPrefix = "multipart"
+	// compositeKeySeparator is used to separate path and uploadID in the composite key.
+	// Using null byte as it's not valid in S3 object keys or upload IDs.
+	compositeKeySeparator = "\x00"
+)
 
 type Metadata map[string]string
 
@@ -30,9 +36,11 @@ type Upload struct {
 }
 
 type Tracker interface {
-	Create(ctx context.Context, multipart Upload) error
-	Get(ctx context.Context, uploadID string) (*Upload, error)
-	Delete(ctx context.Context, uploadID string) error
+	Create(ctx context.Context, partition string, multipart Upload) error
+	Get(ctx context.Context, partition, path, uploadID string) (*Upload, error)
+	Delete(ctx context.Context, partition, path, uploadID string) error
+	// List returns an iterator over all active multipart uploads in a repository
+	List(ctx context.Context, partition string) (UploadIterator, error)
 }
 
 type tracker struct {
@@ -72,36 +80,49 @@ func protoFromMultipart(m *Upload) *UploadData {
 	}
 }
 
-func (m *tracker) Create(ctx context.Context, multipart Upload) error {
+// multipartUploadPath creates a key for multipart upload in KV storage.
+// Uses kv.FormatPath to create: "multipart/" + path + compositeKeySeparator + uploadID
+// This ensures natural lexicographic ordering by path first, then uploadID.
+func multipartUploadPath(parts ...string) string {
+	return kv.FormatPath(multipartPrefix, strings.Join(parts, compositeKeySeparator))
+}
+
+func (m *tracker) Create(ctx context.Context, partition string, multipart Upload) error {
 	if multipart.UploadID == "" {
 		return ErrInvalidUploadID
 	}
-	return kv.SetMsgIf(ctx, m.store, storePartitionKey, []byte(multipart.UploadID), protoFromMultipart(&multipart), nil)
+	key := []byte(multipartUploadPath(multipart.Path, multipart.UploadID))
+	return kv.SetMsgIf(ctx, m.store, partition, key, protoFromMultipart(&multipart), nil)
 }
 
-func (m *tracker) Get(ctx context.Context, uploadID string) (*Upload, error) {
+func (m *tracker) Get(ctx context.Context, partition, path, uploadID string) (*Upload, error) {
 	if uploadID == "" {
 		return nil, ErrInvalidUploadID
 	}
 	data := &UploadData{}
-	_, err := kv.GetMsg(ctx, m.store, storePartitionKey, []byte(uploadID), data)
+	key := []byte(multipartUploadPath(path, uploadID))
+	_, err := kv.GetMsg(ctx, m.store, partition, key, data)
 	if err != nil {
 		return nil, err
 	}
 	return multipartFromProto(data), nil
 }
 
-func (m *tracker) Delete(ctx context.Context, uploadID string) error {
+func (m *tracker) Delete(ctx context.Context, partition, path, uploadID string) error {
 	if uploadID == "" {
 		return ErrInvalidUploadID
 	}
-	key := []byte(uploadID)
-	if _, err := m.store.Get(ctx, []byte(storePartitionKey), key); err != nil {
+	key := []byte(multipartUploadPath(path, uploadID))
+	if _, err := m.store.Get(ctx, []byte(partition), key); err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return fmt.Errorf("%w uploadID=%s", ErrMultipartUploadNotFound, uploadID)
 		}
 		return err
 	}
 
-	return m.store.Delete(ctx, []byte(storePartitionKey), key)
+	return m.store.Delete(ctx, []byte(partition), key)
+}
+
+func (m *tracker) List(ctx context.Context, partition string) (UploadIterator, error) {
+	return newUploadIterator(ctx, m.store, partition)
 }

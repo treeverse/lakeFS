@@ -10,11 +10,12 @@ import (
 	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -50,7 +51,7 @@ func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, d
 	p, err := getPathFromSource(copySource)
 	if err != nil {
 		logging.FromContext(req.Context()).WithError(err).Error("could not parse copy source path")
-		return permissions.Node{}, gatewayErrors.ErrInvalidCopySource
+		return permissions.Node{}, gatewayerrors.ErrInvalidCopySource
 	}
 
 	return permissions.Node{
@@ -77,7 +78,7 @@ func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOp
 	ent, err := o.Catalog.GetEntry(req.Context(), copySource.Repo, copySource.Reference, copySource.Path, catalog.GetEntryParams{})
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read copy source")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidCopySource))
 		return nil
 	}
 	return ent
@@ -90,7 +91,7 @@ func getPathFromSource(copySource string) (path.ResolvedAbsolutePath, error) {
 	}
 	p, err := path.ResolveAbsolutePath(copySourceDecoded)
 	if err != nil {
-		return path.ResolvedAbsolutePath{}, gatewayErrors.ErrInvalidCopySource
+		return path.ResolvedAbsolutePath{}, gatewayerrors.ErrInvalidCopySource
 	}
 	return p, nil
 }
@@ -105,7 +106,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 		// This is a solution to avoid misleading error messages in gateway. This is a pinpoint fix for the copy object
 		// API, since we decided not to change the entire gateway error handling in order to avoid breaking changes.
 		// See: https://github.com/treeverse/lakeFS/issues/7452
-		apiErr := gatewayErrors.Codes.ToAPIErrWithInternalError(gatewayErrors.ErrInvalidCopySource, err)
+		apiErr := gatewayerrors.Codes.ToAPIErrWithInternalError(gatewayerrors.ErrInvalidCopySource, err)
 		_ = o.EncodeError(w, req, err, apiErr)
 		return
 	}
@@ -115,7 +116,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	metadata, err := amzMetaAsMetadata(req)
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidHeaderValue))
 		return
 	}
 	replaceMetadata := shouldReplaceMetadata(req)
@@ -124,10 +125,10 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	if err != nil {
 		o.Log(req).WithError(err).Error("could create a copy")
 		if errors.Is(err, block.ErrDataNotFound) || errors.Is(err, graveler.ErrNotFound) {
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchKey))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 			return
 		}
-		apiErr := gatewayErrors.Codes.ToAPIErrWithInternalError(gatewayErrors.ErrInvalidCopyDest, err)
+		apiErr := gatewayerrors.Codes.ToAPIErrWithInternalError(gatewayerrors.ErrInvalidCopyDest, err)
 		_ = o.EncodeError(w, req, err, apiErr)
 		return
 	}
@@ -147,7 +148,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	var partNumber int
 	if n, err := strconv.ParseInt(partNumberStr, 10, 32); err != nil { //nolint: mnd
 		o.Log(req).WithError(err).Error("invalid part number")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidPartNumberMarker))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidPartNumberMarker))
 		return
 	} else {
 		partNumber = int(n)
@@ -158,11 +159,23 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		logging.UploadIDFieldKey:   uploadID,
 	}))
 
+	// Get repository record to compute the proper partition
+	repo, err := o.Catalog.Store.GetRepository(req.Context(), graveler.RepositoryID(o.Repository.Name))
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not get repository")
+		if errors.Is(err, kv.ErrNotFound) {
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+		}
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+
+	partition := graveler.RepoPartition(repo)
 	// handle the upload/copy itself
-	multiPart, err := o.MultipartTracker.Get(req.Context(), uploadID)
+	multiPart, err := o.MultipartTracker.Get(req.Context(), partition, o.Path, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read  multipart record")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -173,7 +186,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		resolvedCopySource, err := getPathFromSource(copySource)
 		if err != nil {
 			o.Log(req).WithField("copy_source", copySource).WithError(err).Error("could not parse copy source path")
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidCopySource))
 			return
 		}
 		ent := extractEntryFromCopyReq(w, req, o, resolvedCopySource)
@@ -188,14 +201,14 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 					WithField("copy_source", copySource).
 					WithError(err).
 					Error("Failed to get repository")
-				_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidCopySource))
 				return
 			}
 		}
 
 		if srcRepo.StorageID != o.Repository.StorageID {
 			o.Log(req).WithField("copy_source", copySource).Error("copy between repos with different StorageIDs is not allowed")
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidCopySource))
 			return
 		}
 
@@ -236,7 +249,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 				}).
 				WithError(err).
 				Error("copy part: upload failed")
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 
@@ -258,7 +271,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	if err != nil {
 		o.Log(req).WithField("part", partNumberStr).
 			WithError(err).Error("part upload failed")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	o.SetHeaders(w, resp.ServerSideHeader)
@@ -271,7 +284,7 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		return
 	}
 	if o.Repository.ReadOnly {
-		_ = o.EncodeError(w, req, nil, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository))
+		_ = o.EncodeError(w, req, nil, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrReadOnlyRepository))
 		return
 	}
 
@@ -279,12 +292,12 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not check if branch exists")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	if !branchExists {
 		o.Log(req).Debug("branch not found")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchBucket))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
 		return
 	}
 
@@ -311,7 +324,7 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 
 	if query.Has("tagging") {
 		o.Log(req).Debug("put-object-tagging isn't supported yet")
-		o.EncodeError(w, req, nil, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ERRLakeFSNotSupported))
+		o.EncodeError(w, req, nil, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ERRLakeFSNotSupported))
 		return
 	}
 
@@ -331,7 +344,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 		if err == nil {
 			// In case object exists in catalog, no error returns
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrPreconditionFailed))
 			return
 		}
 	}
@@ -339,14 +352,14 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	condition, err := apifactory.BuildConditionFromParams(ifMatch, ifNoneMatch)
 	if err != nil {
 		if errors.Is(err, graveler.ErrInvalidValue) {
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		if errors.Is(err, catalog.ErrNotImplemented) {
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
 			return
 		}
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	gravelerOpts := graveler.WithCondition(*condition)
@@ -360,7 +373,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, objectPointer, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -368,25 +381,25 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	metadata, err := amzMetaAsMetadata(req)
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidHeaderValue))
 		return
 	}
 	contentType := req.Header.Get("Content-Type")
 	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType, gravelerOpts)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrPreconditionFailed))
 		return
 	}
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrWriteToProtectedBranch))
 		return
 	}
 	if errors.Is(err, graveler.ErrReadOnlyRepository) {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrReadOnlyRepository))
 		return
 	}
 	if err != nil {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	o.SetHeader(w, "ETag", httputil.ETag(blob.Checksum))
