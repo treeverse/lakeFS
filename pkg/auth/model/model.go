@@ -117,9 +117,6 @@ func (u *User) Committer() string {
 	if u.Email != nil && *u.Email != "" {
 		return *u.Email
 	}
-	if u.FriendlyName != nil && *u.FriendlyName != "" {
-		return *u.FriendlyName
-	}
 	return u.Username
 }
 
