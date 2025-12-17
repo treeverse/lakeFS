@@ -515,13 +515,15 @@ func TestGravelerMerge(t *testing.T) {
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageID, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 
-		// Second BranchUpdate call from the actual merge operation - this is where the error occurs
+		// Second BranchUpdate call from the actual merge operation - returns success with current commit
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := &graveler.Branch{StagingToken: stagingToken4, CommitID: commit1ID, SealedTokens: []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}}
-				_, err := f(branchTest)
-				require.ErrorIs(t, err, graveler.ErrAlreadyUpToDate)
-				return err
+				updatedBranch, err := f(branchTest)
+				require.NoError(t, err)
+				require.Equal(t, []graveler.StagingToken{}, updatedBranch.SealedTokens)
+				require.Equal(t, commit1ID, updatedBranch.CommitID) // Commit ID unchanged
+				return nil
 			}).Times(1)
 
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -531,11 +533,15 @@ func TestGravelerMerge(t *testing.T) {
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
 		// Return merge base that equals the source commit (commit2ID), meaning source is ancestor of destination
 		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit2, commit2ID, nil)
+		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken1).Times(1)
+		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Times(1)
+		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
 
 		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
 
-		require.ErrorIs(t, err, graveler.ErrAlreadyUpToDate)
-		require.Empty(t, val)
+		require.NoError(t, err)
+		require.NotEmpty(t, val)
+		require.Equal(t, commit1ID, graveler.CommitID(val.Ref())) // Returns current commit ID, no new commit created
 	})
 }
 

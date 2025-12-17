@@ -50,16 +50,17 @@ def test_reference_merge_into(setup_branch_with_commits):
     repo = lakefs.Repository(branch.repo_id)
     main = repo.branch("main")
 
-    # test merging into same branch
+    # test merging into same branch - should succeed like Git's "Already up to date"
     branch_a = repo.branch("test_branch_merge_into_a").create(branch)
     branch_b = repo.branch("test_branch_merge_into_b").create(branch)
 
-    with pytest.raises(BadRequestException, match=r'.+already up to date.+'):
-        branch_a.merge_into(branch_b, message="MergeNoChanges")
+    # Merge when already up to date should succeed (returns current commit, no new commit created)
+    result = branch_a.merge_into(branch_b, message="MergeNoChanges")
+    assert result is not None
 
-    # allow_empty doesn't bypass "already up to date" - if source is ancestor, there's nothing to merge
-    with pytest.raises(BadRequestException, match=r'.+already up to date.+'):
-        branch_a.merge_into(branch_b, message="MergeNoChangesWithFlag", allow_empty=True)
+    # allow_empty flag doesn't matter when already up to date
+    result2 = branch_a.merge_into(branch_b, message="MergeNoChangesWithFlag", allow_empty=True)
+    assert result2 is not None
 
     # test merging into other branch
     commits = list(branch.log(max_amount=2))

@@ -4259,33 +4259,25 @@ func TestController_MergeBranchWithNoChanges(t *testing.T) {
 	branch2Resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{Name: "branch2", Source: "main"})
 	verifyResponseOK(t, branch2Resp, err)
 
+	// Merge when source is ancestor of destination should succeed (like Git's "Already up to date")
 	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
 		Message: apiutil.Ptr("Merge branch2 to branch1"),
 	})
-	testutil.MustDo(t, "perform merge with no changes", err)
-	if mergeResp.JSON400 == nil || !strings.HasSuffix(mergeResp.JSON400.Message, graveler.ErrAlreadyUpToDate.Error()) {
-		t.Errorf("Merge branches where source is ancestor should fail with ErrAlreadyUpToDate, got %+v", mergeResp)
-	}
+	verifyResponseOK(t, mergeResp, err)
+	// Should return current commit ID (no new commit created)
+	require.NotNil(t, mergeResp.JSON200)
 
-	// AllowEmpty doesn't bypass "already up to date" - if source is ancestor, there's nothing to merge
 	mergeWithAllowEmptyFlagResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
 		Message:    apiutil.Ptr("Merge branch2 to branch1"),
 		AllowEmpty: swag.Bool(true),
 	})
-	testutil.MustDo(t, "perform merge with allow_empty flag", err)
-	if mergeWithAllowEmptyFlagResp.JSON400 == nil || !strings.HasSuffix(mergeWithAllowEmptyFlagResp.JSON400.Message, graveler.ErrAlreadyUpToDate.Error()) {
-		t.Errorf("Merge with AllowEmpty where source is ancestor should still fail with ErrAlreadyUpToDate, got %+v", mergeWithAllowEmptyFlagResp)
-	}
+	verifyResponseOK(t, mergeWithAllowEmptyFlagResp, err)
 
-	// Force only bypasses read-only repository checks, not "already up to date"
 	mergeWithForceFlagResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
 		Message: apiutil.Ptr("Merge branch2 to branch1"),
 		Force:   swag.Bool(true),
 	})
-	testutil.MustDo(t, "perform merge with force flag", err)
-	if mergeWithForceFlagResp.JSON400 == nil || !strings.HasSuffix(mergeWithForceFlagResp.JSON400.Message, graveler.ErrAlreadyUpToDate.Error()) {
-		t.Errorf("Merge with Force where source is ancestor should still fail with ErrAlreadyUpToDate, got %+v", mergeWithForceFlagResp)
-	}
+	verifyResponseOK(t, mergeWithForceFlagResp, err)
 }
 
 func TestController_CreateTag(t *testing.T) {
@@ -6666,19 +6658,18 @@ func TestController_MergePullRequest(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON201)
 
-		// Update with wrong status
+		// Merge when already up to date should succeed (like Git)
 		mergeResp, err := clt.MergePullRequestWithResponse(ctx, repo, resp.JSON201.Id)
 		require.NoError(t, err)
-		require.NotNil(t, mergeResp.JSON400, mergeResp.Status())
-		require.Contains(t, mergeResp.JSON400.Message, "already up to date")
+		require.NotNil(t, mergeResp.JSON200, mergeResp.Status())
 
-		// Verify status
+		// Verify status - since merge succeeded, PR should be marked as merged
 		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
-		require.Equal(t, "open", *getResp.JSON200.Status)
-		require.Nil(t, getResp.JSON200.MergedCommitId)
-		require.Nil(t, getResp.JSON200.ClosedDate)
+		require.Equal(t, "merged", *getResp.JSON200.Status)
+		require.NotNil(t, getResp.JSON200.MergedCommitId)
+		require.NotNil(t, getResp.JSON200.ClosedDate)
 	})
 
 	t.Run("exists with changes", func(t *testing.T) {

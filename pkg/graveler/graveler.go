@@ -3148,8 +3148,16 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			return nil, err
 		}
 		// Check if source is an ancestor of destination (like Git's "Already up to date")
+		// In this case, return success with the current commit ID (no new commit created)
 		if baseCommit.CommitID == fromCommit.CommitID {
-			return nil, ErrAlreadyUpToDate
+			lg.Debug("Merge: already up to date, source is ancestor of destination")
+			// Set commitID to current branch commit and clean up sealed tokens
+			commit = *toCommit.Commit
+			commitID = toCommit.CommitID
+			tokensToDrop = branch.SealedTokens
+			branch.SealedTokens = []StagingToken{}
+			// Keep the same commitID (no new commit created)
+			return branch, nil
 		}
 		lg.WithFields(logging.Fields{
 			"source_meta_range":      fromCommit.MetaRangeID,
