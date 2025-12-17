@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -189,7 +188,7 @@ func TestLakectlCommit(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --amount 1", false, "lakectl_log_with_commit_custom_date", vars)
 
 	// verify the latest commit using 'show commit'
-	ctx := context.Background()
+	ctx := t.Context()
 	getBranchResp, err := client.GetBranchWithResponse(ctx, repoName, mainBranch)
 	if err != nil {
 		t.Fatal("Failed to get branch information", err)
@@ -585,7 +584,7 @@ func TestLakectlAnnotate(t *testing.T) {
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	userName := "test_user"
 	vars := map[string]string{
 		"ID": userName,
@@ -765,7 +764,7 @@ func TestLakectlFsUpload(t *testing.T) {
 }
 
 func getStorageConfig(t *testing.T) *apigen.StorageConfig {
-	storageResp, err := client.GetStorageConfigWithResponse(context.Background())
+	storageResp, err := client.GetStorageConfigWithResponse(t.Context())
 	if err != nil {
 		t.Fatalf("GetStorageConfig failed: %s", err)
 	}

@@ -212,7 +212,7 @@ func TestReaderPermissions(t *testing.T) {
 }
 
 func TestCreateRepo_Unauthorized(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
@@ -280,7 +280,7 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 }
 
 func TestCreatePolicy(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	if !isAdvancedAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
@@ -390,7 +390,7 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 }
 
 func TestUpdatePolicy(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	if !isAdvancedAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}

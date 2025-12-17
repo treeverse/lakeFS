@@ -48,7 +48,7 @@ func gcTestCommit(t *testing.T, ctx context.Context, branch string, daysAgo int)
 }
 
 func TestUnifiedGC(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	prepareForUnifiedGC(t, ctx)
 	committedCreateEvents := []objectEvent{
 		{
