@@ -33,6 +33,8 @@ type Tracker interface {
 	Create(ctx context.Context, multipart Upload) error
 	Get(ctx context.Context, uploadID string) (*Upload, error)
 	Delete(ctx context.Context, uploadID string) error
+	// List returns an iterator over all active multipart uploads
+	List(ctx context.Context) (UploadIterator, error)
 }
 
 type tracker struct {
@@ -104,4 +106,8 @@ func (m *tracker) Delete(ctx context.Context, uploadID string) error {
 	}
 
 	return m.store.Delete(ctx, []byte(storePartitionKey), key)
+}
+
+func (m *tracker) List(ctx context.Context) (UploadIterator, error) {
+	return newSortedUploadIterator(ctx, m.store, storePartitionKey)
 }
