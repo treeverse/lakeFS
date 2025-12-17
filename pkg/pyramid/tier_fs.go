@@ -75,6 +75,13 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		if err != nil {
 			return nil, fmt.Errorf("creating eviction control: %w", err)
 		}
+		c.Logger.WithFields(logging.Fields{
+			"cache_name":        c.FSName,
+			"cache_max_bytes":   c.AllocatedBytes(),
+			"cache_local_dir":   fsLocalBaseDir,
+			"disk_alloc_ratio":  c.DiskAllocProportion,
+			"total_alloc_bytes": c.Local.TotalAllocatedBytes,
+		}).Info("Initialized local cache for committed data")
 	}
 
 	tfs.eviction = c.Eviction
@@ -148,18 +155,18 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 }
 
 func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
-	p := filepath.Join(tfs.fsLocalBaseDir, string(rPath))
+	fullPath := filepath.Join(tfs.fsLocalBaseDir, string(rPath))
 	if tfs.logger.IsTracing() {
-		tfs.logger.WithField("path", p).Trace("remove from local")
+		tfs.logger.WithField("path", fullPath).Trace("Remove from local")
 	}
-	if err := os.Remove(p); err != nil {
-		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
+	if err := os.Remove(fullPath); err != nil {
+		tfs.logger.WithError(err).WithField("path", fullPath).Warn("Removing file failed")
 		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval").Inc()
 		return
 	}
 
-	// Queue directory deletion (non-blocking)
-	dirPath := filepath.Dir(string(rPath))
+	// Queue directory deletion (non-blocking) - use absolute path for deleteDirRecIfEmpty
+	dirPath := filepath.Dir(fullPath)
 	select {
 	case tfs.dirDeleteCh <- dirPath:
 	default:
@@ -185,6 +192,7 @@ func (tfs *TierFS) dirDeleteWorker() {
 }
 
 // Close shuts down the TierFS, stopping the background worker and waiting for it to finish.
+// The eviction cache is closed, but the cached files are preserved on disk for reuse after restart.
 func (tfs *TierFS) Close() error {
 	close(tfs.done)
 	tfs.wg.Wait()

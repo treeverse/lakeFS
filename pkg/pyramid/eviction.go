@@ -2,6 +2,7 @@ package pyramid
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
@@ -11,6 +12,7 @@ import (
 type ristrettoEviction struct {
 	cache         *ristretto.Cache
 	evictCallback func(rPath params.RelativePath, cost int64)
+	closed        atomic.Bool
 }
 
 const (
@@ -67,12 +69,16 @@ func (re *ristrettoEviction) Store(rPath params.RelativePath, filesize int64) bo
 }
 
 func (re *ristrettoEviction) onEvict(item *ristretto.Item) {
+	if re.closed.Load() {
+		return
+	}
 	if item.Value != nil {
 		re.evictCallback(item.Value.(params.RelativePath), item.Cost)
 	}
 }
 
 func (re *ristrettoEviction) Close() error {
+	re.closed.Store(true)
 	re.cache.Close()
 	return nil
 }
