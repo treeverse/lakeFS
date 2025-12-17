@@ -2,7 +2,6 @@ package gs_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"io"
@@ -85,7 +84,7 @@ func TestAdapterNamespace(t *testing.T) {
 }
 
 func TestMultipartUploadWithMD5(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	adapter := newAdapter()
 	defer require.NoError(t, adapter.Close())
 

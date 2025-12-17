@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -91,7 +90,7 @@ func (m *memCollector) Close() {}
 
 func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
-	res, err := clt.SetupWithResponse(context.Background(), apigen.SetupJSONRequestBody{
+	res, err := clt.SetupWithResponse(t.Context(), apigen.SetupJSONRequestBody{
 		Username: "admin",
 	})
 	testutil.Must(t, err)
@@ -107,7 +106,7 @@ func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterfac
 
 func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if viper.Get(config.BlockstoreTypeKey) == nil {
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
@@ -288,7 +287,7 @@ func TestInvalidRoute(t *testing.T) {
 		t.Fatal("failed to create api client:", err)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 	if err != nil {
 		t.Fatalf("failed to get lakefs server version")

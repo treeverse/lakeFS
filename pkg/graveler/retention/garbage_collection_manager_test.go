@@ -2,7 +2,6 @@ package retention_test
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -33,7 +32,7 @@ var cases = []struct {
 }
 
 func TestGarbageCollectionManager_GetUncommittedLocation(t *testing.T) {
-	blockAdapter := mem.New(context.Background())
+	blockAdapter := mem.New(t.Context())
 	refMgr := &testutil.RefsFake{}
 	const prefix = "test_prefix"
 	const runID = "my_test_runID"
@@ -62,8 +61,8 @@ func createTestFile(t *testing.T, filename, testLine string, count int) {
 }
 
 func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T) {
-	ctx := context.Background()
-	blockAdapter := mem.New(context.Background())
+	ctx := t.Context()
+	blockAdapter := mem.New(t.Context())
 	refMgr := &testutil.RefsFake{}
 	const prefix = "test_prefix"
 	const runID = "my_test_runID"

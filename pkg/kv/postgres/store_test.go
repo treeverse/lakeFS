@@ -15,7 +15,7 @@ import (
 )
 
 func TestPostgresKV(t *testing.T) {
-	databaseURI, cleanup := runDBInstance(pool, testutil.UniqueKVTableName())
+	databaseURI, cleanup := runDBInstance(t.Context(), pool, testutil.UniqueKVTableName())
 	t.Cleanup(cleanup)
 
 	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {

@@ -1,7 +1,6 @@
 package catalog_test
 
 import (
-	"context"
 	"net/url"
 	"testing"
 
@@ -40,7 +39,7 @@ func TestWalkEntryIterator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := testutils.NewFakeWalker(iteratorTestCount, tt.max, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
 			parsedURL, _ := url.Parse(fromSourceURIWithPrefix)
-			sut, err := catalog.NewWalkEntryIterator(context.Background(), block.NewWalkerWrapper(w, parsedURL), catalog.ImportPathTypePrefix, prepend, after, continuationToken)
+			sut, err := catalog.NewWalkEntryIterator(t.Context(), block.NewWalkerWrapper(w, parsedURL), catalog.ImportPathTypePrefix, prepend, after, continuationToken)
 			require.NoError(t, err, "creating walk entry iterator")
 			require.NotNil(t, sut)
 

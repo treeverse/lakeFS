@@ -1,7 +1,6 @@
 package ref_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -17,7 +16,7 @@ import (
 func TestTagIterator(t *testing.T) {
 	r, kvStore := testRefManager(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
-	ctx := context.Background()
+	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageID:        "sid",
 		StorageNamespace: "s3://foo",
@@ -120,7 +119,7 @@ func TestTagIterator(t *testing.T) {
 }
 
 func TestTagIterator_CloseTwice(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
@@ -142,7 +141,7 @@ func TestTagIterator_CloseTwice(t *testing.T) {
 }
 
 func TestTagIterator_NextClosed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)

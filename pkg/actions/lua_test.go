@@ -59,11 +59,10 @@ func newLuaActionHook(t *testing.T, server *http.Server, address string, netHTTP
 	return h
 }
 
-func runHook(h actions.Hook) (string, error) {
+func runHook(ctx context.Context, h actions.Hook) (string, error) {
 	var out bytes.Buffer
 
 	// load a user on context
-	ctx := context.Background()
 	ctx = auth.WithUser(ctx, &model.User{
 		CreatedAt: time.Time{},
 		Username:  "user1",
@@ -104,7 +103,7 @@ func TestNewLuaHook(t *testing.T) {
 func TestLuaRun(t *testing.T) {
 	const script = "print(tostring(350 * 239))"
 	h := newLuaActionHook(t, nil, "", true, script)
-	output, err := runHook(h)
+	output, err := runHook(t.Context(), h)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -117,7 +116,7 @@ func TestLuaRun(t *testing.T) {
 func TestLuaRun_NetHttpDisabled(t *testing.T) {
 	const script = `local http = require("net/http")`
 	h := newLuaActionHook(t, nil, "", false, script)
-	_, err := runHook(h)
+	_, err := runHook(t.Context(), h)
 	const expectedErr = "module 'net/http' not found"
 	if err == nil || !strings.Contains(err.Error(), expectedErr) {
 		t.Fatalf("Error=%v, expected: '%s'", err, expectedErr)
@@ -228,7 +227,7 @@ print(code .. " " .. body .. " " .. status)
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			h := newLuaActionHook(t, nil, "", true, tt.Script)
-			output, err := runHook(h)
+			output, err := runHook(t.Context(), h)
 			if tt.ExpectedErr {
 				if err == nil {
 					t.Fatal("Expected error - got none.")
@@ -310,7 +309,7 @@ func TestLuaRunTable(t *testing.T) {
 
 		t.Run(testCase.Name, func(t *testing.T) {
 			h := newLuaActionHook(t, nil, "", true, script)
-			output, err := runHook(h)
+			output, err := runHook(t.Context(), h)
 			if testCase.Error != "" {
 				if !strings.Contains(err.Error(), testCase.Error) {
 					t.Errorf("expected error to contain: '%v', got: %v", testCase.Error, err)
@@ -680,7 +679,7 @@ print(code, resp)
 		t.Run(tt.Name, func(t *testing.T) {
 			lakeFSServer.shouldFail = tt.ShouldFail
 			h := newLuaActionHook(t, ts.Config, ts.URL, true, tt.Script)
-			output, err := runHook(h)
+			output, err := runHook(t.Context(), h)
 
 			if tt.ExpectedErr {
 				if err == nil {

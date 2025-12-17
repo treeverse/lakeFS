@@ -1,7 +1,6 @@
 package loadtest
 
 import (
-	"context"
 	"math"
 	"net/http/httptest"
 	"os"
@@ -41,7 +40,7 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	// Only once
-	ctx := context.Background()
+	ctx := t.Context()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 
 	cfg := &configfactory.ConfigImpl{}

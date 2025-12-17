@@ -138,7 +138,7 @@ func TestCommitsMap(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			commitsMap, err := NewCommitsMap(context.Background(), tc.CommitGetter)
+			commitsMap, err := NewCommitsMap(t.Context(), tc.CommitGetter)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -335,7 +335,7 @@ func TestActiveCommits(t *testing.T) {
 			now := time.Now()
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
-			ctx := context.Background()
+			ctx := t.Context()
 			repositoryRecord := &graveler.RepositoryRecord{
 				RepositoryID: "test",
 			}

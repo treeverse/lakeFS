@@ -1,7 +1,6 @@
 package actions_test
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestHookWriter_OutputWritePath(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	content := "content"
 	contentReader := strings.NewReader(content)
 	ctrl := gomock.NewController(t)
@@ -52,7 +51,7 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	hooks := graveler.HooksNoOp{}
 	runID := hooks.NewRunID()
 	hookRunID := hooks.NewRunID()
