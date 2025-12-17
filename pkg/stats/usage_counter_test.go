@@ -8,7 +8,6 @@ import (
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 

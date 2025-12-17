@@ -12,24 +12,28 @@ import (
 )
 
 const (
-	DriverName = "local"
+	LocalDriverName = "local"
+	MemDriverName   = "mem"
+	memPrefetchSize = 12
 )
 
 var (
-	driverLock = &sync.Mutex{}
-	dbMap      = make(map[string]*Store)
+	localDriverLock = &sync.Mutex{}
+	dbMap           = make(map[string]*Store)
 )
 
-type Driver struct{}
+type LocalDriver struct{}
 
-func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
+type MemDriver struct{}
+
+func (d *LocalDriver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
 	params := kvParams.Local
 	if params == nil {
-		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
+		return nil, fmt.Errorf("missing %s settings: %w", LocalDriverName, kv.ErrDriverConfiguration)
 	}
 
-	driverLock.Lock()
-	defer driverLock.Unlock()
+	localDriverLock.Lock()
+	defer localDriverLock.Unlock()
 	connection, ok := dbMap[params.Path]
 	if !ok {
 		// no database open for this path
@@ -55,7 +59,26 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	return connection, nil
 }
 
+func (d *MemDriver) Open(ctx context.Context, _ kvparams.Config) (kv.Store, error) {
+	// no database open for this path
+	logger := logging.FromContext(ctx).WithField("store", "mem")
+	opts := badger.DefaultOptions("").WithInMemory(true)
+	opts.Logger = &BadgerLogger{logger}
+	db, err := badger.Open(opts)
+	if err != nil {
+		return nil, err
+	}
+	connection := &Store{
+		db:           db,
+		logger:       logger,
+		prefetchSize: memPrefetchSize,
+	}
+	connection.refCount++
+	return connection, nil
+}
+
 //nolint:gochecknoinits
 func init() {
-	kv.Register(DriverName, &Driver{})
+	kv.Register(LocalDriverName, &LocalDriver{})
+	kv.Register(MemDriverName, &MemDriver{})
 }

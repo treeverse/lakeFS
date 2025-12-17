@@ -42,7 +42,6 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/local"
-	"github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -191,7 +190,7 @@ var runCmd = &cobra.Command{
 
 		// initial setup - support only when a local database is configured.
 		// local database lock will make sure that only one instance will run the setup.
-		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
+		if (kvParams.Type == local.LocalDriverName || kvParams.Type == local.MemDriverName) &&
 			baseCfg.Installation.UserName != "" && baseCfg.Installation.AccessKeyID.SecureValue() != "" && baseCfg.Installation.SecretAccessKey.SecureValue() != "" {
 			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, baseCfg.Installation.UserName,
 				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue(), false)

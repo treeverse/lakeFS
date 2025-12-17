@@ -23,7 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/distributed"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	_ "github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 

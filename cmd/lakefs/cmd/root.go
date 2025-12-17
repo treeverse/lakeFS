@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/local"
-	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -60,7 +59,7 @@ func init() {
 // TODO (niro): All this validation logic should be in the config package
 
 func validateQuickstartEnv(cfg *config.BaseConfig) {
-	if (cfg.Database.Type != local.DriverName && cfg.Database.Type != mem.DriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
+	if (cfg.Database.Type != local.LocalDriverName && cfg.Database.Type != local.MemDriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
 		_, _ = fmt.Fprint(os.Stderr, "\nFATAL: quickstart mode can only run with local settings\n")
 		os.Exit(1)
 	}

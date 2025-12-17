@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	_ "github.com/treeverse/lakefs/pkg/kv/local"
 )
 
 type MakeStore func(t testing.TB, ctx context.Context) kv.Store

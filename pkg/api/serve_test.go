@@ -36,7 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	"github.com/treeverse/lakefs/pkg/kv/mem"
+	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -112,7 +112,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	if viper.Get(config.BlockstoreTypeKey) == nil {
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
-	viper.Set("database.type", mem.DriverName)
+	viper.Set("database.type", local.MemDriverName)
 	// Add endpoint so that 'IsAdvancedAuth' will be in effect
 	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 

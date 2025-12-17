@@ -15,7 +15,6 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	_ "github.com/treeverse/lakefs/pkg/kv/local"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 )

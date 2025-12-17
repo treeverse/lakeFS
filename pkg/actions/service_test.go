@@ -22,7 +22,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/mock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
