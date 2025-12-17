@@ -305,6 +305,7 @@ func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 }
 
 func tearDownTest(repoName string) {
+	// We use context.Background() here to ensure the cleanup completes even if the test context is cancelled
 	ctx := context.Background()
 	DeleteRepositoryIfAskedTo(ctx, repoName)
 }
@@ -438,7 +439,7 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
 		}
 
-		adapter, err := NewAdapter(parsedAddress.Scheme)
+		adapter, err := NewAdapter(ctx, parsedAddress.Scheme)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", parsedAddress.Scheme, err)
 		}
