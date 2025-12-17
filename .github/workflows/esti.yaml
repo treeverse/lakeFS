@@ -17,6 +17,7 @@ permissions:
 jobs:
   paths-filter:
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     outputs:
       python-sdk-change: ${{ steps.filter.outputs.python-sdk == 'true' }}
     steps:
@@ -33,6 +34,7 @@ jobs:
     outputs:
       secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     steps:
       - id: enablejobs
         env:
@@ -44,6 +46,7 @@ jobs:
   gen-code:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -91,11 +94,18 @@ jobs:
           name: generated-code
           path: /tmp/generated.tar.gz
 
+      - name: Store ACL binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: acl-binary
+          path: ./acl
+
   deploy-image:
     name: Build and push Docker image
     needs: [ check-secrets, gen-code ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-22.04-16-cores
+    timeout-minutes: 30
     outputs:
       tag: ${{ needs.gen-code.outputs.tag }}
     steps:
@@ -136,6 +146,7 @@ jobs:
 
   login-to-amazon-ecr:
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     needs: [ check-secrets ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
@@ -159,6 +170,7 @@ jobs:
     name: Test unified gc
     needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04-8-cores
+    timeout-minutes: 60
     services:
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
@@ -256,6 +268,7 @@ jobs:
     needs: check-secrets
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -290,12 +303,19 @@ jobs:
     name: Test lakeFS Hadoop FileSystem
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "maven"
 
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -337,6 +357,7 @@ jobs:
     name: Test lakeFS multipart upload with Hadoop S3A
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -395,6 +416,7 @@ jobs:
   build-lakefs-hadoopfs:
     name: Build lakeFS HadoopFS
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -403,7 +425,7 @@ jobs:
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
-          cache: "sbt"
+          cache: "maven"
 
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
@@ -417,6 +439,7 @@ jobs:
   spark-prep:
     name: Prepare Spark Apps
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -440,6 +463,7 @@ jobs:
     name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
     needs: [spark-prep, build-lakefs-hadoopfs, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     strategy:
       matrix:
         spark:
@@ -555,6 +579,7 @@ jobs:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
@@ -606,6 +631,7 @@ jobs:
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
     runs-on: ubuntu-22.04-8-cores
+    timeout-minutes: 20
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -647,6 +673,7 @@ jobs:
     name: Test lakeFS metadata client export with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     env:
       SPARK_TAG: 3.2.1
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -706,6 +733,7 @@ jobs:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -720,14 +748,14 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+      - name: Retrieve ACL binary
+        uses: actions/download-artifact@v4
         with:
-          name: generated-code
-          path: /tmp/
+          name: acl-binary
+          path: .
 
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
+      - name: Make ACL binary executable
+        run: chmod +x acl
 
       # Run ACL server
       - name: Run ACL server
@@ -776,6 +804,7 @@ jobs:
     name: Run latest lakeFS app on AWS S3
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     strategy:
       matrix:
         branch_ownership: [false, true]
@@ -793,14 +822,14 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+      - name: Retrieve ACL binary
+        uses: actions/download-artifact@v4
         with:
-          name: generated-code
-          path: /tmp/
+          name: acl-binary
+          path: .
 
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
+      - name: Make ACL binary executable
+        run: chmod +x acl
 
       # Run ACL server
       - name: Run ACL server
@@ -851,6 +880,7 @@ jobs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -865,14 +895,14 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+      - name: Retrieve ACL binary
+        uses: actions/download-artifact@v4
         with:
-          name: generated-code
-          path: /tmp/
+          name: acl-binary
+          path: .
 
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
+      - name: Make ACL binary executable
+        run: chmod +x acl
 
       # Run ACL server
       - name: Run ACL server
@@ -903,6 +933,7 @@ jobs:
     name: Run latest lakeFS app on Azure with Azure blobstore
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -920,14 +951,14 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+      - name: Retrieve ACL binary
+        uses: actions/download-artifact@v4
         with:
-          name: generated-code
-          path: /tmp/
+          name: acl-binary
+          path: .
 
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
+      - name: Make ACL binary executable
+        run: chmod +x acl
 
       # Run ACL server
       - name: Run ACL server
@@ -962,6 +993,7 @@ jobs:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -982,14 +1014,14 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+      - name: Retrieve ACL binary
+        uses: actions/download-artifact@v4
         with:
-          name: generated-code
-          path: /tmp/
+          name: acl-binary
+          path: .
 
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
+      - name: Make ACL binary executable
+        run: chmod +x acl
 
       # Run ACL server
       - name: Run ACL server
@@ -1039,6 +1071,7 @@ jobs:
     name: Test lakeFS against the python wrapper client
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1101,6 +1134,7 @@ jobs:
     if: ${{ needs.paths-filter.outputs.python-sdk-change == 'true' }}
     name: Test changes in SDK against the python wrapper
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1320,6 +1354,7 @@ jobs:
     name: Run latest lakeFS app on AWS S3 + Basic Auth
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
