@@ -1197,6 +1197,7 @@ func EntryCondition(condition func(*Entry) error) graveler.ConditionFunc {
 	}
 }
 
+// CreateEntry creates or updates an entry in the catalog.
 func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch string, entry DBEntry, opts ...graveler.SetOptionsFunc) error {
 	branchID := graveler.BranchID(branch)
 	ent := newEntryFromCatalogEntry(entry)
