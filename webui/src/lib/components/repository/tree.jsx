@@ -840,11 +840,9 @@ export const Tree = ({
   } else if (results.length === 0) {
     body = (
       <>
-        <div className="me-3">
-          <div className="d-flex flex-column align-items-center">
-            <AlertIcon size={36} /><br/>
-            Nothing here.  Switch to another branch or tag to see something.
-          </div>
+        <div className="d-flex flex-column align-items-center mb-3 mt-3">
+          <AlertIcon size={36} /><br/>
+          Nothing here.  Switch to another branch or tag to see something.
         </div>
       </>
     );
