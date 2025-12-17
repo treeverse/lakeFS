@@ -75,6 +75,13 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		if err != nil {
 			return nil, fmt.Errorf("creating eviction control: %w", err)
 		}
+		c.Logger.WithFields(logging.Fields{
+			"cache_name":        c.FSName,
+			"cache_max_bytes":   c.AllocatedBytes(),
+			"cache_local_dir":   fsLocalBaseDir,
+			"disk_alloc_ratio":  c.DiskAllocProportion,
+			"total_alloc_bytes": c.Local.TotalAllocatedBytes,
+		}).Info("Initialized local cache for committed data")
 	}
 
 	tfs.eviction = c.Eviction
