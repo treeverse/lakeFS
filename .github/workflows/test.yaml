@@ -59,12 +59,16 @@ jobs:
           touch ./webui/dist/index.html
           ref=${{ github.ref_name }}
           release_slug=$(uname -s -m | tr '[:upper:]' '[:lower:]' | sed 's/[ _]/-/g')
-          bencher run --build-time \
-                     --adapter json \
-                      --project lakefs \
-                      --branch "$ref" \
-                      --testbed "github-${release_slug}" \
-                      make test-go
+          if [ -z "$BENCHER_API_TOKEN" ]; then
+            make test-go
+          else
+            bencher run --build-time \
+                       --adapter json \
+                        --project lakefs \
+                        --branch "$ref" \
+                        --testbed "github-${release_slug}" \
+                        make test-go
+          fi
 
   test-webui:
     name: Run webui unit tests
