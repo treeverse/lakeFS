@@ -3831,7 +3831,6 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	if errors.Is(err, kv.ErrPredicateFailed) {
-		c.Logger.WithError(err).Warn("KV predicate failed in UploadObject")
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
 	}
