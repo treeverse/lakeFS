@@ -6828,3 +6828,68 @@ func TestController_ImportStart_Disabled(t *testing.T) {
 	require.NotNil(t, resp.JSON403, "expected a 403 forbidden response, but got none")
 	require.Contains(t, resp.JSON403.Message, "import is not supported for this storage")
 }
+
+// TestController_ErrorHandling tests that different error types are properly mapped to HTTP status codes.
+// This is a regression test to ensure that errors from the graveler and KV layers are correctly handled.
+func TestController_UploadObject_ErrorHandling(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
+	testutil.Must(t, err)
+
+	t.Run("precondition_failed_on_upload_with_if_none_match", func(t *testing.T) {
+		// First upload an object
+		contentType, buf := writeMultipart("content", "test-object", "initial content")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, repo, "main", &apigen.UploadObjectParams{
+			Path: "foo/test-object",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode(), "initial upload should succeed")
+
+		// Try to upload again with If-None-Match: "*" which should fail with 412 Precondition Failed
+		// This tests that graveler.ErrPreconditionFailed is correctly mapped to HTTP 412
+		contentType, buf = writeMultipart("content", "test-object", "overwrite attempt")
+		ifNoneMatch := apigen.IfNoneMatch("*")
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, repo, "main", &apigen.UploadObjectParams{
+			Path:        "foo/test-object",
+			IfNoneMatch: &ifNoneMatch,
+		}, contentType, buf)
+		testutil.Must(t, err)
+		require.Equal(t, http.StatusPreconditionFailed, resp.StatusCode(),
+			"upload with If-None-Match on existing object should return 412 Precondition Failed")
+		require.NotNil(t, resp.JSON412, "should have precondition failed response")
+		require.NotEmpty(t, resp.JSON412.Message, "error message should not be empty")
+	})
+
+	t.Run("precondition_failed_on_committed_object", func(t *testing.T) {
+		// Create a branch for this test
+		_, err := deps.catalog.CreateBranch(ctx, repo, "test-precondition-branch", "main")
+		testutil.Must(t, err)
+
+		// Upload and commit an object
+		contentType, buf := writeMultipart("content", "committed-obj", "committed content")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, repo, "test-precondition-branch", &apigen.UploadObjectParams{
+			Path: "foo/committed-obj",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode())
+
+		_, err = deps.catalog.Commit(ctx, repo, "test-precondition-branch", "commit for precondition test", "tester", nil, nil, nil, false)
+		testutil.Must(t, err)
+
+		// Try to upload with If-None-Match: "*" on committed object - should fail with 412
+		// This verifies that precondition checks work on committed objects too
+		contentType, buf = writeMultipart("content", "committed-obj", "overwrite attempt")
+		ifNoneMatch := apigen.IfNoneMatch("*")
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, repo, "test-precondition-branch", &apigen.UploadObjectParams{
+			Path:        "foo/committed-obj",
+			IfNoneMatch: &ifNoneMatch,
+		}, contentType, buf)
+		testutil.Must(t, err)
+		require.Equal(t, http.StatusPreconditionFailed, resp.StatusCode(),
+			"upload with If-None-Match on committed object should return 412 Precondition Failed")
+		require.NotNil(t, resp.JSON412, "should have precondition failed response")
+	})
+}
