@@ -3830,10 +3830,6 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
 	}
-	if errors.Is(err, kv.ErrPredicateFailed) {
-		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
-		return
-	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

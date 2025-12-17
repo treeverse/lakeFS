@@ -1196,16 +1196,6 @@ func EntryCondition(condition func(*Entry) error) graveler.ConditionFunc {
 }
 
 // CreateEntry creates or updates an entry in the catalog.
-//
-// Possible errors:
-//   - graveler.ErrPreconditionFailed: Returned when a condition (e.g., graveler.WithCondition) fails.
-//     This typically happens when using If-None-Match and the entry already exists.
-//   - kv.ErrPredicateFailed: Returned when a concurrent modification is detected during the write.
-//     This indicates an optimistic locking failure at the KV layer - another request modified
-//     the same staging entry between read and write. This is rare as safeBranchWrite retries.
-//   - graveler.ErrNotFound: Repository or branch not found.
-//   - graveler.ErrWriteToProtectedBranch: Branch is protected from writes.
-//   - graveler.ErrReadOnlyRepository: Repository is read-only (unless Force option is used).
 func (c *Catalog) CreateEntry(ctx context.Context, repositoryID string, branch string, entry DBEntry, opts ...graveler.SetOptionsFunc) error {
 	branchID := graveler.BranchID(branch)
 	ent := newEntryFromCatalogEntry(entry)
