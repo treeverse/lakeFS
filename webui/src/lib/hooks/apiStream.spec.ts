@@ -2,6 +2,7 @@ import { describe, test, expect } from "vitest";
 
 import { iterateAPI, Pagination, Paginator } from './apiStream';
 
+// Return a paginated API to return list.
 function paginateList(list: readonly [string]): (pagination: readonly Pagination) => Promise<Paginator<string>> {
     return async (pagination: readonly Pagination) => {
         let filtered = list;
