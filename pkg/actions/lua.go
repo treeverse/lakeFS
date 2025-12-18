@@ -135,6 +135,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		}
 		req = req.WithContext(auth.WithUser(req.Context(), user))
 		req = req.WithContext(logging.AddFields(req.Context(), getAllowedFields(logging.GetFieldsFromContext(ctx))))
+		req.RemoteAddr = lakefs.LuaRemoteAddr
 		q := req.URL.Query()
 		q.Add("path", h.ScriptPath)
 		req.URL.RawQuery = q.Encode()
