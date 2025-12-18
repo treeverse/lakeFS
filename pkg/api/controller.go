@@ -6110,7 +6110,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 	pr := &catalog.PullRequest{
 		Title:             body.Title,
 		Description:       swag.StringValue(body.Description),
-		Author:            user.Username,
+		Author:            user.Committer(),
 		SourceBranch:      body.SourceBranch,
 		DestinationBranch: body.DestinationBranch,
 	}
