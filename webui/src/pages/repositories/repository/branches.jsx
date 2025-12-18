@@ -15,7 +15,13 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
 
+import { RepoError } from "./error";
+
 import { branches } from "../../../lib/api";
+import { filter, useIteratedAPI } from "../../../lib/hooks/apiStream";
+import { AppContext } from "../../../lib/hooks/appContext";
+import { useRefs } from "../../../lib/hooks/repo";
+import { useRouter } from "../../../lib/hooks/router";
 
 import {
     ActionGroup,
@@ -25,20 +31,16 @@ import {
     Checkbox,
     TooltipButton
 } from "../../../lib/components/controls";
-import { useRefs } from "../../../lib/hooks/repo";
-import { useAPIWithPagination } from "../../../lib/hooks/api";
+import { ConfirmationButton } from "../../../lib/components/modals";
+import { Link } from "../../../lib/components/nav";
 import { Paginator } from "../../../lib/components/pagination";
+import RefDropdown from "../../../lib/components/repository/refDropdown";
+
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
-import RefDropdown from "../../../lib/components/repository/refDropdown";
 import Badge from "react-bootstrap/Badge";
-import { ConfirmationButton } from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
-import { Link } from "../../../lib/components/nav";
-import { useRouter } from "../../../lib/hooks/router";
-import { RepoError } from "./error";
 import { Col, Row } from "react-bootstrap";
-import { AppContext } from "../../../lib/hooks/appContext";
 
 const ImportBranchName = 'import-from-inventory';
 
@@ -233,18 +235,49 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, readOn
     );
 };
 
-
-const BranchList = ({ repo, prefix, after, onPaginate }) => {
+const BranchList = ({ repo, prefix, after, substring, count }) => {
     const router = useRouter()
     const [refresh, setRefresh] = useState(true);
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
     const [pendingFailedBranches, setPendingFailedBranches] = useState(null);
-    const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
-        return branches.list(repo.id, prefix, after);
-    }, [repo.id, refresh, prefix, after]);
+    // TODO(ariels): Add an indicator / button and default to false!
+    const [substringSearch /*, setSubstringSearch*/] = useState(true);
+    const [nextPage, setNextPage] = useState(null, [repo, prefix, after, substring]);
+    const [items, setItems] = useState([], [prefix, nextPage, substring, substringSearch]);
+    const allBranchIterator = useIteratedAPI(
+        { prefix, after },
+        async (pagination) => {
+            let realAfter = after;
+            if (!substringSearch && substring > realAfter) realAfter = substring;
+            if (pagination.after > realAfter) realAfter = pagination.after;
+            return await branches.list(repo.id, pagination.prefix, realAfter);
+        },
+        [prefix, after, substring, substringSearch, refresh],
+    );
 
     const doRefresh = () => setRefresh(!refresh);
+
+    // Update list of displayed branches.
+    useEffect(() => {
+        const branchIterator = filter(
+            allBranchIterator,
+            branch => substring === undefined || branch.id.includes(substring),
+        );
+        (async () => {
+            const newItems = [];
+            let lastId = null;
+            for (let i = 0; i < count; i++) {
+                const result = await branchIterator.next();
+                if (result.done) break;
+                const item = result.value;
+                newItems.push(item);
+                lastId = item.id;
+            }
+            setItems(newItems);
+            if (lastId !== null) setNextPage(lastId);
+        })();
+    }, [prefix, after, substring, count, refresh])
 
     // Clear selection when pagination or filter changes
     useEffect(() => {
@@ -254,13 +287,13 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
     // Filter selection to only include failed branches that are still visible after refresh
     useEffect(() => {
-        if (pendingFailedBranches && results.length > 0) {
-            const visibleBranchIds = results.map(branch => branch.id);
+        if (pendingFailedBranches && items.length > 0) {
+            const visibleBranchIds = items.map(branch => branch.id);
             const visibleFailedBranches = pendingFailedBranches.filter(id => visibleBranchIds.includes(id));
             setSelected(visibleFailedBranches);
             setPendingFailedBranches(null);
         }
-    }, [results, pendingFailedBranches]);
+    }, [items, pendingFailedBranches]);
 
     const handleSelect = (branchId) => {
         setSelected(prev => [...prev, branchId]);
@@ -271,7 +304,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     };
 
     const handleSelectAll = () => {
-        const selectableBranches = results
+        const selectableBranches = items
             .filter(branch => branch.id !== repo.default_branch)
             .map(branch => branch.id);
         setSelected(selectableBranches);
@@ -282,7 +315,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     };
 
     const handleToggleSelectAll = () => {
-        const selectableBranches = results
+        const selectableBranches = items
             .filter(branch => branch.id !== repo.default_branch)
             .map(branch => branch.id);
         const selectableBranchesSet = new Set(selectableBranches);
@@ -348,11 +381,14 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         if (hideModal) hideModal();
     };
 
-    let content;
+    const onPaginate = (after) => {
+        const query = { after, substring };
+        if (router.query.prefix) query.prefix = router.query.prefix;
+        router.push({ pathname: '/repositories/:repoId/branches', params: { repoId: repo.id }, query });
+    };
 
-    if (loading) content = <Loading />;
-    else if (error) content = <AlertError error={error} />;
-    else content = (
+    let content;
+    content = (
         <>
             {deleteError && (
                 <Alert variant="danger" dismissible onClose={() => setDeleteError(null)} className="mb-3">
@@ -370,7 +406,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
             )}
             <Card>
                 <ListGroup variant="flush">
-                    {results.map(branch => (
+                    {items.map(branch => (
                         <BranchWidget
                             key={branch.id}
                             repo={repo}
@@ -387,7 +423,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
         </>
     );
 
-    const selectableBranches = results
+    const selectableBranches = items
         .filter(branch => branch.id !== repo.default_branch)
         .map(branch => branch.id);
     const selectableBranchesSet = new Set(selectableBranches);
@@ -429,10 +465,10 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
                 </ActionGroup>
                 <ActionGroup orientation="right">
                     <PrefixSearchWidget
-                        defaultValue={router.query.prefix}
+                        defaultValue={substring}
                         text="Find branch"
-                        onFilter={prefix => {
-                            const query = { prefix };
+                        onFilter={substring => { // TODO(ariels): rename!
+                            const query = { prefix, substring };
                             router.push({ pathname: '/repositories/:repoId/branches', params: { repoId: repo.id }, query });
                         }} />
 
@@ -488,8 +524,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
 const BranchesContainer = () => {
     const router = useRouter()
     const { repo, loading, error } = useRefs();
-    const { after } = router.query;
-    const routerPfx = (router.query.prefix) ? router.query.prefix : "";
+    const { after, prefix, substring } = router.query;
 
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
@@ -498,12 +533,10 @@ const BranchesContainer = () => {
         <BranchList
             repo={repo}
             after={(after) ? after : ""}
-            prefix={routerPfx}
-            onPaginate={after => {
-                const query = { after };
-                if (router.query.prefix) query.prefix = router.query.prefix;
-                router.push({ pathname: '/repositories/:repoId/branches', params: { repoId: repo.id }, query });
-            }} />
+            count={100}
+            prefix={prefix || ""}
+            substring={substring}
+        />
     );
 };
 
