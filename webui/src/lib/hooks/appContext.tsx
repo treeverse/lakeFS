@@ -6,23 +6,27 @@ type AppContextType = {
 
 type AppContext = {
     darkMode: boolean;
+    sqlQueryTemplates: { [key: string]: string | undefined };
 };
 
 const localStorageKeys = {
     darkMode: 'darkMode',
+    sqlQueryTemplates: 'sqlQueryTemplates',
 };
 
 enum AppActionType {
     setDarkMode = 'setDarkMode',
+    setSqlQueryTemplates = 'setSqlQueryTemplates',
 }
 
 interface Action {
     type: AppActionType;
-    value: boolean;
+    value: boolean | { [key: string]: string | undefined };
 }
 
 const initialLocalSettings: AppContext = {
     darkMode: window.localStorage.getItem(localStorageKeys.darkMode) === String(true),
+    sqlQueryTemplates: JSON.parse(window.localStorage.getItem(localStorageKeys.sqlQueryTemplates) || '{}'),
 };
 
 const initialAppContext: AppContextType = {
@@ -34,6 +38,9 @@ const appContextReducer = (state: AppContextType, action: Action) => {
         case AppActionType.setDarkMode:
             window.localStorage.setItem(localStorageKeys.darkMode, String(action.value));
             return {...state, settings: {...state.settings, darkMode: action.value}};
+        case AppActionType.setSqlQueryTemplates:
+            window.localStorage.setItem(localStorageKeys.sqlQueryTemplates, JSON.stringify(action.value));
+            return {...state, settings: {...state.settings, sqlQueryTemplates: action.value as { [key: string]: string | undefined }}};
         default:
             return state;
     }
