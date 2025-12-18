@@ -97,6 +97,11 @@ func TestMain(m *testing.M) {
 
 	var code int
 	defer func() {
+		if client != nil {
+			if err := client.Close(); err != nil {
+				log.Printf("Error closing storage client: %s", err)
+			}
+		}
 		closer()
 		os.Exit(code)
 	}()

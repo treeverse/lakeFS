@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -131,8 +132,11 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	}, logging.FromContext(ctx))
 	meta := auth.NewKVMetadataManager("serve_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 
+	// Use context.WithoutCancel to prevent test timeout from cancelling catalog's background goroutines
+	// This preserves context values (like logging) while preventing cancellation propagation
+	catalogCtx := context.WithoutCancel(ctx)
 	// Do not validate invalid config (missing required fields).
-	c, err := catalog.New(ctx, catalog.Config{
+	c, err := catalog.New(catalogCtx, catalog.Config{
 		Config:                cfg,
 		KVStore:               kvStore,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
