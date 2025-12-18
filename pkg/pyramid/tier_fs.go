@@ -159,7 +159,7 @@ func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
 	if tfs.logger.IsTracing() {
 		tfs.logger.WithField("path", fullPath).Trace("Remove from local")
 	}
-	if err := os.Remove(fullPath); err != nil {
+	if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
 		tfs.logger.WithError(err).WithField("path", fullPath).Warn("Removing file failed")
 		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval").Inc()
 		return
