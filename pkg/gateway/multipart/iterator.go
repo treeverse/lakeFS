@@ -46,7 +46,7 @@ func newSortedUploadIterator(ctx context.Context, store kv.Store, partitionKey s
 		}
 		data, ok := entry.Value.(*UploadData)
 		if !ok {
-			return nil, fmt.Errorf("unexpected value type: %T", entry.Value)
+			panic(fmt.Sprintf("unexpected value type: %T", entry.Value))
 		}
 		uploads = append(uploads, multipartFromProto(data))
 	}
