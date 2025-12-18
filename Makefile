@@ -19,7 +19,7 @@ GOLANGCI_LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 BUF_CLI_VERSION=v1.54.0
 
 ifndef PACKAGE_VERSION
-	PACKAGE_VERSION=0.1.0-SNAPSHOT
+	PACKAGE_VERSION=0.0.0
 endif
 
 PYTHON_IMAGE=python:3.9
