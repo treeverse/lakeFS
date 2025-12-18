@@ -231,3 +231,59 @@ func TestManager_WriteMetaRange(t *testing.T) {
 		})
 	}
 }
+
+func TestManager_CompareSourceEqualsBase(t *testing.T) {
+	// Test that when source == base (comparing with an ancestor), the Compare function
+	// returns raw diff results instead of filtering them. This is the fix for issue #9802
+	// where comparing a branch with one of its ancestor commits would return empty diff.
+	const (
+		ns         = "test-ns"
+		storageID  = graveler.StorageID("")
+		destID     = graveler.MetaRangeID("dest-metarange")
+		sourceID   = graveler.MetaRangeID("source-metarange")
+		baseID     = graveler.MetaRangeID("source-metarange") // same as source - this is the case we're testing
+	)
+
+	ctrl := gomock.NewController(t)
+	metarangeManager := mock.NewMockMetaRangeManager(ctrl)
+	rangeManager := mock.NewMockRangeManager(ctrl)
+
+	rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
+	rangeManagers[storageID] = rangeManager
+	metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
+	metaRangeManagers[storageID] = metarangeManager
+
+	// Setup mock iterators - one for dest, one for source
+	destIt := mock.NewMockIterator(ctrl)
+	sourceIt := mock.NewMockIterator(ctrl)
+
+	// Set up expectations for creating the iterators
+	metarangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), graveler.StorageNamespace(ns), destID).Return(destIt, nil)
+	metarangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), graveler.StorageNamespace(ns), sourceID).Return(sourceIt, nil)
+
+	// For this test, we just need to verify the function returns without error
+	// and doesn't try to create a base iterator (since source == base should short-circuit)
+	// The key is that we're NOT expecting a third NewMetaRangeIterator call for base
+
+	// Set up the iterators to end immediately for simplicity
+	destIt.EXPECT().Next().Return(false).AnyTimes()
+	destIt.EXPECT().Err().Return(nil).AnyTimes()
+	destIt.EXPECT().Close().AnyTimes()
+	sourceIt.EXPECT().Next().Return(false).AnyTimes()
+	sourceIt.EXPECT().Err().Return(nil).AnyTimes()
+	sourceIt.EXPECT().Close().AnyTimes()
+
+	sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, nil, params)
+
+	// Call Compare with source == base
+	diffIt, err := sut.Compare(context.Background(), storageID, ns, destID, sourceID, baseID)
+	require.NoError(t, err)
+	require.NotNil(t, diffIt)
+
+	// Iterate through the results (should be empty for this test case)
+	for diffIt.Next() {
+		// consume results
+	}
+	require.NoError(t, diffIt.Err())
+	diffIt.Close()
+}
