@@ -6892,4 +6892,41 @@ func TestController_UploadObject_ErrorHandling(t *testing.T) {
 			"upload with If-None-Match on committed object should return 412 Precondition Failed")
 		require.NotNil(t, resp.JSON412, "should have precondition failed response")
 	})
+
+	t.Run("if_match_star_precondition", func(t *testing.T) {
+		// Create a branch for this test
+		_, err := deps.catalog.CreateBranch(ctx, repo, "test-if-match-branch", "main")
+		testutil.Must(t, err)
+
+		// Test 1: If-Match: "*" should fail with 412 when object doesn't exist
+		contentType, buf := writeMultipart("content", "match-obj", "content")
+		ifMatch := apigen.IfMatch("*")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, repo, "test-if-match-branch", &apigen.UploadObjectParams{
+			Path:    "foo/match-obj",
+			IfMatch: &ifMatch,
+		}, contentType, buf)
+		testutil.Must(t, err)
+		require.Equal(t, http.StatusPreconditionFailed, resp.StatusCode(),
+			"upload with If-Match: '*' on non-existing object should return 412 Precondition Failed")
+		require.NotNil(t, resp.JSON412, "should have precondition failed response")
+
+		// Test 2: Upload object without precondition
+		contentType, buf = writeMultipart("content", "match-obj", "initial content")
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, repo, "test-if-match-branch", &apigen.UploadObjectParams{
+			Path: "foo/match-obj",
+		}, contentType, buf)
+		testutil.Must(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode(), "initial upload should succeed")
+
+		// Test 3: If-Match: "*" should succeed when object exists
+		contentType, buf = writeMultipart("content", "match-obj", "updated content")
+		ifMatch = apigen.IfMatch("*")
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, repo, "test-if-match-branch", &apigen.UploadObjectParams{
+			Path:    "foo/match-obj",
+			IfMatch: &ifMatch,
+		}, contentType, buf)
+		testutil.Must(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode(),
+			"upload with If-Match: '*' on existing object should succeed")
+	})
 }
