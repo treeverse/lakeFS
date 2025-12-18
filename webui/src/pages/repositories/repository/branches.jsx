@@ -1,3 +1,4 @@
+
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
@@ -27,9 +28,9 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     AlertError, LinkButton,
-    Loading, PrefixSearchWidget, RefreshButton,
+    Loading, SearchWidget, RefreshButton,
     Checkbox,
-    TooltipButton
+    TooltipButton,
 } from "../../../lib/components/controls";
 import { ConfirmationButton } from "../../../lib/components/modals";
 import { Link } from "../../../lib/components/nav";
@@ -382,8 +383,9 @@ const BranchList = ({ repo, prefix, after, substring, count }) => {
     };
 
     const onPaginate = (after) => {
-        const query = { after, substring };
-        if (router.query.prefix) query.prefix = router.query.prefix;
+        const query = { after };
+        if (prefix !== undefined) query.prefix = prefix;
+        if (substring !== undefined) query.substring = substring;
         router.push({ pathname: '/repositories/:repoId/branches', params: { repoId: repo.id }, query });
     };
 
@@ -464,11 +466,13 @@ const BranchList = ({ repo, prefix, after, substring, count }) => {
                     )}
                 </ActionGroup>
                 <ActionGroup orientation="right">
-                    <PrefixSearchWidget
+                    <SearchWidget
                         defaultValue={substring}
-                        text="Find branch"
-                        onFilter={substring => { // TODO(ariels): rename!
-                            const query = { prefix, substring };
+                        withSubstring={true}
+                        text="Branch"
+                        onFilter={(string, asSubstring) => {
+                            console.log('filter %o %o', string, asSubstring);
+                            const query = asSubstring ? { substring: string } : {prefix: string };
                             router.push({ pathname: '/repositories/:repoId/branches', params: { repoId: repo.id }, query });
                         }} />
 

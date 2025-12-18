@@ -102,7 +102,7 @@
   margin-right: 0;
 }
 
-/* Fix spacing for PrefixSearchWidget when expanded */
+/* Fix spacing for SearchWidget when expanded */
 .action-group form {
   margin-right: var(--spacing-sm);
 }

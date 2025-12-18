@@ -17,7 +17,7 @@ import {
     ActionGroup,
     ActionsBar, ClipboardButton,
     AlertError, LinkButton,
-    Loading, PrefixSearchWidget, RefreshButton
+    Loading, SearchWidget, RefreshButton
 } from "../../../lib/components/controls";
 import { useRefs } from "../../../lib/hooks/repo";
 import { useAPIWithPagination } from "../../../lib/hooks/api";
@@ -255,7 +255,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
             <div className="mb-5">
                 <ActionsBar>
                     <ActionGroup orientation="right">
-                        <PrefixSearchWidget
+                        <SearchWidget
                             defaultValue={router.query.prefix}
                             text="Find Tag"
                             onFilter={prefix => router.push({

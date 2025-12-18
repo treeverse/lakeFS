@@ -8,7 +8,7 @@ import {
     ActionsBar,
     AlertError,
     Loading,
-    PrefixSearchWidget,
+    SearchWidget,
     RefreshButton,
     Warnings
 } from "../../../lib/components/controls";
@@ -1346,7 +1346,7 @@ const ObjectsBrowser = ({ config }) => {
 
         <ActionGroup orientation="right">
           {!showChangesOnly && (
-            <PrefixSearchWidget
+            <SearchWidget
               text="Search by Prefix"
               key={path}
               defaultValue={searchSuffix}

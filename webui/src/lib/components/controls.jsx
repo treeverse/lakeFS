@@ -4,8 +4,8 @@ import dayjs from "dayjs";
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
-import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
+import Tooltip from "react-bootstrap/Tooltip";
 import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
 import {CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon} from "@primer/octicons-react";
@@ -300,7 +300,7 @@ export const ClipboardButton = ({ text, variant, onSuccess, icon = <PasteIcon/>,
     );
 };
 
-export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaultValue = "" }) => {
+export const SearchWidget = ({ onFilter, withSubstring = false, text = "Search by Prefix", defaultValue = "" }) => {
 
     const [expanded, setExpanded] = useState(!!defaultValue)
 
@@ -311,29 +311,30 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
         })
     }, [setExpanded])
 
-    const ref = useRef(null);
+    const searchBoxRef = useRef(null);
+    const isPrefixRef = useRef(null);
 
     const handleSubmit = useCallback((e) => {
         e.preventDefault()
-        onFilter(ref.current.value)
-    }, [ref])
+        onFilter(searchBoxRef.current.value, !isPrefixRef.current?.checked)
+    }, [searchBoxRef])
 
     if (expanded) {
         return (
             <Form onSubmit={handleSubmit} className="prefix-search-form">
-                <InputGroup className="prefix-search-input-group">
+                <Form.Group className="prefix-search-expanded" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Form.Control
-                        ref={ref}
+                        ref={searchBoxRef}
                         autoFocus
                         defaultValue={defaultValue}
                         placeholder={text}
                         aria-label={text}
-                        className="prefix-search-expanded"
                     />
-                    <Button variant="light" onClick={toggle}>
-                        <SearchIcon/>
-                    </Button>
-                </InputGroup>
+                    {withSubstring && <Form.Check ref={isPrefixRef} label="prefix" defaultChecked/>}
+                </Form.Group>
+                <Button variant="light" onClick={toggle}>
+                    <SearchIcon/>
+                </Button>
             </Form>
         )
     }
