@@ -165,7 +165,9 @@ func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	}()
 	_, err = io.Copy(f, reader)
 	if err != nil {
-		return nil, err
+		// Remove the file if it was partially written.
+		_ = os.Remove(p)
+		return nil, errors.Join(err, block.ErrWriteFailed)
 	}
 	return &block.PutResponse{}, nil
 }

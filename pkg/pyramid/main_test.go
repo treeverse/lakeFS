@@ -77,6 +77,7 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	// cleanup
+	_ = fs.Close()
 	_ = os.RemoveAll(baseDir)
 
 	os.Exit(code)
