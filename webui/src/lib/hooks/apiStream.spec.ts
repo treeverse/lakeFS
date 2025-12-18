@@ -22,7 +22,8 @@ function paginateList(list: readonly [string]): (pagination: readonly Pagination
             }
         }
         return Promise.resolve({
-            next_offset: nextOffset, has_more: hasMore, results: filtered,
+            pagination: { next_offset: nextOffset, has_more: hasMore},
+            results: filtered,
         });
     };
 }
