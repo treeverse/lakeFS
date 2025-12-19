@@ -33,6 +33,10 @@ func newClient(port string) (*minio.Client, error) {
 // TestMain spins up a MinIO Container and add a bucket for use in package tests
 func TestMain(m *testing.M) {
 	var err error
+	tmpDir, err := os.MkdirTemp("", "minio-data-*") // map tmp path to volume to reduce change of failure due to out of capacity
+	if err != nil {
+		panic(err)
+	}
 	pool, err = dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
@@ -44,9 +48,9 @@ func TestMain(m *testing.M) {
 			fmt.Sprintf("MINIO_ROOT_USER=%s", minioTestAccessKeyID),
 			fmt.Sprintf("MINIO_ROOT_PASSWORD=%s", minioTestSecretAccessKey),
 		},
-		Cmd: []string{
-			"server",
-			"start",
+		Cmd: []string{"server", "/data"},
+		Mounts: []string{
+			fmt.Sprintf("%s:/data", tmpDir),
 		},
 	})
 	if err != nil {
@@ -55,7 +59,7 @@ func TestMain(m *testing.M) {
 
 	// set cleanup
 	closer := func() {
-		err := pool.Purge(resource)
+		err = pool.Purge(resource)
 		if err != nil {
 			panic("could not purge minio container: " + err.Error())
 		}
