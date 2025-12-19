@@ -1,39 +1,33 @@
-import React, {
-  FC,
-  FormEvent,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { FC, FormEvent, useCallback, useEffect, useState } from "react";
 import { runDuckDBQuery } from "./duckdb";
 import * as arrow from "apache-arrow";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import { ChevronRightIcon, SyncIcon, GearIcon } from "@primer/octicons-react";
+import { ChevronRightIcon, HistoryIcon } from "@primer/octicons-react";
 import dayjs from "dayjs";
 import Table from "react-bootstrap/Table";
-import Modal from "react-bootstrap/Modal";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
 import { SQLEditor } from "./editor";
 import { RendererComponent } from "./types";
 import { AlertError, Loading } from "../../../../lib/components/controls";
-import { AppContext, AppActionType } from "../../../../lib/hooks/appContext";
 
-const MAX_RESULTS_RETURNED = 1000;
+// File size threshold for using LIMIT queries (1MB)
+const LARGE_FILE_THRESHOLD = 1024 * 1024;
+
+// Default row limit for large files
+const DEFAULT_ROW_LIMIT = 1000;
 
 export const DataLoader: FC = () => {
   return <Loading />;
 };
 
-// Default query templates with placeholders
-const DEFAULT_QUERY_TEMPLATES: { [key: string]: string } = {
-  parquet:
-    "SELECT * FROM READ_PARQUET('lakefs://{{repo}}/{{ref}}/{{path}}', hive_partitioning=false) LIMIT 20",
-  csv: "SELECT * FROM READ_CSV('lakefs://{{repo}}/{{ref}}/{{path}}', AUTO_DETECT = TRUE) LIMIT 20",
-  tsv: "SELECT * FROM READ_CSV('lakefs://{{repo}}/{{ref}}/{{path}}', DELIM='\\t', AUTO_DETECT=TRUE) LIMIT 20",
+// Query templates - each type has a limited and full version
+const QUERY_TEMPLATES: { [key: string]: string } = {
+  parquet: `SELECT * FROM READ_PARQUET('lakefs://{{repo}}/{{ref}}/{{path}}', hive_partitioning=false)`,
+  csv: `SELECT * FROM READ_CSV('lakefs://{{repo}}/{{ref}}/{{path}}', AUTO_DETECT=TRUE)`,
+  tsv: `SELECT * FROM READ_CSV('lakefs://{{repo}}/{{ref}}/{{path}}', DELIM='\\t', AUTO_DETECT=TRUE)`,
 };
 
 export const DuckDBRenderer: FC<RendererComponent> = ({
@@ -41,19 +35,10 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
   refId,
   path,
   fileExtension,
+  sizeBytes,
 }) => {
-  const { state, dispatch } = useContext(AppContext);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState("");
-
-  // Get the query template for the current file type
-  const getQueryTemplate = (fileType: string): string => {
-    const customTemplate = state.settings.sqlQueryTemplates[fileType];
-    if (customTemplate) {
-      return customTemplate;
-    }
-    return DEFAULT_QUERY_TEMPLATES[fileType] || "";
-  };
+  const isLargeFile = sizeBytes > LARGE_FILE_THRESHOLD;
+  const [useFullQuery, setUseFullQuery] = useState(!isLargeFile);
 
   // Apply template variables to generate the actual query
   const applyTemplate = (template: string): string => {
@@ -63,14 +48,17 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
       .replace(/\{\{path\}\}/g, path);
   };
 
-  const currentFileType = fileExtension;
-  const currentTemplate = getQueryTemplate(currentFileType);
-  const initialQuery = applyTemplate(currentTemplate);
+  // Get the appropriate query based on file size and user preference
+  const getQuery = (forceFullQuery: boolean = false): string => {
+    let template = QUERY_TEMPLATES[fileExtension] || QUERY_TEMPLATES.parquet;
+    if (!forceFullQuery) {
+      template += " LIMIT " + DEFAULT_ROW_LIMIT;
+    }
+    return applyTemplate(template);
+  };
 
-  const hasCustomTemplate = !!state.settings.sqlQueryTemplates[currentFileType];
-  const hasDefaultTemplate = !!DEFAULT_QUERY_TEMPLATES[currentFileType];
-  const isTemplateSupported = hasDefaultTemplate || hasCustomTemplate;
-
+  const initialQuery = getQuery();
+  const [sql, setSql] = useState(initialQuery);
   const [shouldSubmit, setShouldSubmit] = useState<boolean>(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<arrow.Table<any> | null>(null);
@@ -89,7 +77,6 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
     setShouldSubmit((prev) => !prev);
   }, [setShouldSubmit]);
 
-  const [sql, setSql] = useState(initialQuery);
   const sqlChangeHandler = useCallback(
     (data: React.SetStateAction<string>) => {
       setSql(data);
@@ -97,55 +84,19 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
     [setSql],
   );
 
-  // Reset query to the default template (without re-executing)
-  // Reset query to the current template (custom or default)
+  // Reset query to the default (based on current useFullQuery state)
   const handleResetQuery = useCallback(() => {
-    const query = applyTemplate(currentTemplate);
+    const query = getQuery();
     setSql(query);
-  }, [currentTemplate, repoId, refId, path]);
+  }, [useFullQuery, repoId, refId, path, fileExtension]);
 
-  // Open template customization modal
-  const handleOpenTemplateModal = useCallback(() => {
-    setEditingTemplate(currentTemplate);
-    setShowTemplateModal(true);
-  }, [currentTemplate]);
-
-  // Save custom template (without re-executing)
-  const handleSaveTemplate = useCallback(() => {
-    const defaultTemplate = DEFAULT_QUERY_TEMPLATES[currentFileType] || "";
-    const newTemplates = { ...state.settings.sqlQueryTemplates };
-
-    // If the template matches the default, remove the custom template
-    if (editingTemplate === defaultTemplate) {
-      delete newTemplates[currentFileType];
-    } else {
-      newTemplates[currentFileType] = editingTemplate;
-    }
-
-    dispatch({ type: AppActionType.setSqlQueryTemplates, value: newTemplates });
-    setShowTemplateModal(false);
-    // Apply the new template without executing
-    const newQuery = applyTemplate(editingTemplate);
-    setSql(newQuery);
-  }, [
-    editingTemplate,
-    currentFileType,
-    dispatch,
-    state.settings.sqlQueryTemplates,
-    repoId,
-    refId,
-    path,
-  ]);
-
-  // Reset template to default in the modal (updates the editing template)
-  const handleResetTemplateInModal = useCallback(() => {
-    const defaultTemplate = DEFAULT_QUERY_TEMPLATES[currentFileType] || "";
-    setEditingTemplate(defaultTemplate);
-  }, [currentFileType]);
-
-  // Check if editing template matches the default
-  const isEditingTemplateDefault =
-    editingTemplate === (DEFAULT_QUERY_TEMPLATES[currentFileType] || "");
+  // Handle loading full data for large files
+  const handleLoadFullData = useCallback(() => {
+    setUseFullQuery(true);
+    const fullQuery = getQuery(true);
+    setSql(fullQuery);
+    setShouldSubmit((prev) => !prev);
+  }, [repoId, refId, path, fileExtension]);
 
   useEffect(() => {
     if (!sql) {
@@ -183,42 +134,32 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
       content = <p className="text-md-center mt-5 mb-5">No rows returned.</p>;
     } else {
       const fields = data.schema.fields;
-      const totalRows = data.numRows;
-      let res = data;
-      if (totalRows > MAX_RESULTS_RETURNED) {
-        res = data.slice(0, MAX_RESULTS_RETURNED);
-      }
       content = (
-        <>
-          {res.numRows < data.numRows && (
-            <small>{`Showing only the first ${res.numRows.toLocaleString()} rows (out of ${data.numRows.toLocaleString()})`}</small>
-          )}
-          <div className="object-viewer-sql-results">
-            <Table bordered hover responsive={true}>
-              <thead className="table-dark">
-                <tr>
-                  {fields.map((field, i) => (
-                    <th key={i}>
-                      <div className="d-flex flex-column">
-                        <span>{field.name}</span>
-                        <small>{field.type.toString()}</small>
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[...res].map((row, i) => (
-                  <tr key={`row-${i}`}>
-                    {[...row].map((v, j: number) => {
-                      return <DataRow key={`col-${i}-${j}`} value={v[1]} />;
-                    })}
-                  </tr>
+        <div className="object-viewer-sql-results">
+          <Table bordered hover responsive={true}>
+            <thead className="table-dark">
+              <tr>
+                {fields.map((field, i) => (
+                  <th key={i}>
+                    <div className="d-flex flex-column">
+                      <span>{field.name}</span>
+                      <small>{field.type.toString()}</small>
+                    </div>
+                  </th>
                 ))}
-              </tbody>
-            </Table>
-          </div>
-        </>
+              </tr>
+            </thead>
+            <tbody>
+              {[...data].map((row, i) => (
+                <tr key={`row-${i}`}>
+                  {[...row].map((v, j: number) => {
+                    return <DataRow key={`col-${i}-${j}`} value={v[1]} />;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
       );
     }
   }
@@ -245,33 +186,30 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
                 <Button
                   variant="outline-secondary"
                   onClick={handleResetQuery}
-                  disabled={loading || !isTemplateSupported}
+                  disabled={loading}
                 >
-                  <SyncIcon />
+                  <HistoryIcon />
                 </Button>
               </span>
             </OverlayTrigger>
-            <OverlayTrigger
-              placement="top"
-              overlay={
-                <Tooltip>
-                  {isTemplateSupported
-                    ? `Customize default query template for ${currentFileType.toUpperCase()} files`
-                    : `No template available for ${currentFileType.toUpperCase()} files`}
-                </Tooltip>
-              }
-            >
-              <span>
+            {isLargeFile && !useFullQuery && (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip>
+                    Large file detected. Click to load all rows (may be slow)
+                  </Tooltip>
+                }
+              >
                 <Button
-                  variant={"outline-secondary"}
-                  onClick={handleOpenTemplateModal}
-                  disabled={!isTemplateSupported}
+                  variant="outline-primary"
+                  onClick={handleLoadFullData}
+                  disabled={loading}
                 >
-                  <GearIcon />
-                  {hasCustomTemplate && " *"}
+                  Load All Rows
                 </Button>
-              </span>
-            </OverlayTrigger>
+              </OverlayTrigger>
+            )}
           </div>
 
           <div className="d-flex justify-content-end">
@@ -299,68 +237,6 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
         </div>
       </Form>
       <div className="mt-3">{content}</div>
-
-      <Modal
-        show={showTemplateModal}
-        onHide={() => setShowTemplateModal(false)}
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Customize Query Template for {currentFileType.toUpperCase()} Files
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p className="text-muted mb-3">
-            Customize the default SQL query template. Use placeholders that will
-            be replaced with actual values:
-          </p>
-          <ul className="text-muted small mb-3">
-            <li>
-              <code>{"{{repo}}"}</code> - Repository name
-            </li>
-            <li>
-              <code>{"{{ref}}"}</code> - Branch or commit reference
-            </li>
-            <li>
-              <code>{"{{path}}"}</code> - File path
-            </li>
-          </ul>
-          <Form.Group>
-            <Form.Label>Query Template</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={4}
-              value={editingTemplate}
-              onChange={(e) => setEditingTemplate(e.target.value)}
-              className="font-monospace"
-            />
-          </Form.Group>
-          <div className="mt-3">
-            <small className="text-muted">
-              <strong>Preview:</strong> {applyTemplate(editingTemplate)}
-            </small>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="outline-secondary"
-            onClick={handleResetTemplateInModal}
-            disabled={isEditingTemplateDefault}
-          >
-            Reset to Default
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setShowTemplateModal(false)}
-          >
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveTemplate}>
-            Save Template
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 };
