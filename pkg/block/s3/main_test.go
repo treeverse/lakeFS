@@ -60,6 +60,7 @@ func TestMain(m *testing.M) {
 	// set cleanup
 	closer := func() {
 		err = pool.Purge(resource)
+		_ = os.RemoveAll(tmpDir)
 		if err != nil {
 			panic("could not purge minio container: " + err.Error())
 		}
