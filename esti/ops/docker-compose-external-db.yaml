@@ -1,5 +1,15 @@
 version: "3"
 services:
+  cosmosdb:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator
+    environment:
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false
+      - AZURE_COSMOS_EMULATOR_ENABLE_NONSSL_PORT=true
+      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=0.0.0.0
+    ports:
+      - "10250:10250"
+
   lakefs:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
@@ -22,11 +32,18 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
+    depends_on:
+      cosmosdb:
+        condition: service_started
     command:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache util-linux
+        apk add --no-cache util-linux curl
+        until curl -s http://cosmosdb:10250/_explorer/emulator.pem >/dev/null; do
+          echo "Waiting for Cosmos DB emulator..."
+          sleep 5
+        done
         go test -timeout 20m $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
