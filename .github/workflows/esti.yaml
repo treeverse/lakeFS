@@ -731,7 +731,7 @@ jobs:
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, gen-code]
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
@@ -878,7 +878,7 @@ jobs:
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, gen-code]
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
@@ -931,7 +931,7 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, gen-code]
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
@@ -991,7 +991,7 @@ jobs:
 
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, gen-code]
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
