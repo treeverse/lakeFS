@@ -150,13 +150,16 @@ export const DuckDBRenderer: FC<RendererComponent> = ({
               </tr>
             </thead>
             <tbody>
-              {[...data].map((row, i) => (
-                <tr key={`row-${i}`}>
-                  {[...row].map((v, j: number) => {
-                    return <DataRow key={`col-${i}-${j}`} value={v[1]} />;
-                  })}
-                </tr>
-              ))}
+              {(() => {
+                const columns = fields.map((_, index) => data.getChildAt(index));
+                return Array.from({ length: data.numRows }).map((_, i) => (
+                  <tr key={`row-${i}`}>
+                    {columns.map((col, j) => (
+                      <DataRow key={`col-${i}-${j}`} value={col?.get(i)} />
+                    ))}
+                  </tr>
+                ));
+              })()}
             </tbody>
           </Table>
         </div>
