@@ -65,6 +65,10 @@ jobs:
           path: /tmp/generated.tar.gz
           key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**', './auth/**', './acl') }}
 
+      - name: Unpack cached ACL binary
+        if: steps.restore-cache.outputs.cache-hit == 'true'
+        run: tar -xzf /tmp/generated.tar.gz -C . ./acl
+
       - name: Setup Go
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v4
@@ -89,6 +93,7 @@ jobs:
 
         # must upload artifact in order to download generated later
       - name: Store generated code
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: generated-code
@@ -112,7 +117,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Restore generated code cache
+        id: generated-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/generated.tar.gz
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**', './auth/**', './acl') }}
+
       - name: Retrieve generated code
+        if: steps.generated-cache.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
@@ -221,6 +234,13 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v4
 
+      - name: Restore generated code cache
+        id: generated-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/generated.tar.gz
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**', './auth/**', './acl') }}
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -232,6 +252,7 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       - name: Retrieve generated code
+        if: steps.generated-cache.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
