@@ -2,9 +2,12 @@ package operations
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/catalog"
 )
 
 func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
@@ -31,14 +34,18 @@ func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 			},
 		},
 		{
-			name: "already lowercase keys remain lowercase",
+			name: "special characters like dot and hash are preserved",
 			headers: map[string]string{
-				"X-Amz-Meta-Lowercase": "value1",
-				"X-Amz-Meta-Another":   "value2",
+				"X-Amz-Meta-.":        "dotvalue",
+				"X-Amz-Meta-#":        "hashvalue",
+				"X-Amz-Meta-Test.Key": "dotinkey",
+				"X-Amz-Meta-Test#Key": "hashinkey",
 			},
 			expectedKeys: map[string]string{
-				"X-Amz-Meta-lowercase": "value1",
-				"X-Amz-Meta-another":   "value2",
+				"X-Amz-Meta-.":        "dotvalue",
+				"X-Amz-Meta-#":        "hashvalue",
+				"X-Amz-Meta-test.key": "dotinkey",
+				"X-Amz-Meta-test#key": "hashinkey",
 			},
 		},
 		{
@@ -59,10 +66,8 @@ func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 			req, err := http.NewRequest("PUT", "http://example.com/test", nil)
 			require.NoError(t, err)
 
-			// Set headers directly on the request's Header map
-			// This bypasses Go's automatic canonicalization during header parsing
 			for k, v := range tt.headers {
-				req.Header[k] = []string{v}
+				req.Header.Set(k, v)
 			}
 
 			metadata, err := amzMetaAsMetadata(req)
@@ -119,6 +124,113 @@ func TestAmzMetaAsMetadata_RFC2047Decoding(t *testing.T) {
 			actualValue, exists := metadata[tt.expectedKey]
 			require.True(t, exists, "expected key %q not found", tt.expectedKey)
 			require.Equal(t, tt.expectedValue, actualValue)
+		})
+	}
+}
+
+func TestAmzMetaWriteHeaders(t *testing.T) {
+	tests := []struct {
+		name                string
+		metadata            catalog.Metadata
+		expectedHeaders     map[string]string
+		expectedMissingMeta string // empty string means header should not be set
+	}{
+		{
+			name: "all valid metadata keys",
+			metadata: catalog.Metadata{
+				"X-Amz-Meta-validkey":   "validvalue",
+				"X-Amz-Meta-anotherkey": "anothervalue",
+			},
+			expectedHeaders: map[string]string{
+				"X-Amz-Meta-Validkey":   "validvalue",
+				"X-Amz-Meta-Anotherkey": "anothervalue",
+			},
+			expectedMissingMeta: "",
+		},
+		{
+			name: "special characters like dot and hash",
+			metadata: catalog.Metadata{
+				"X-Amz-Meta-.":        "dotvalue",
+				"X-Amz-Meta-#":        "hashvalue",
+				"X-Amz-Meta-test.key": "dotinkey",
+				"X-Amz-Meta-test#key": "hashinkey",
+			},
+			expectedHeaders: map[string]string{
+				"X-Amz-Meta-.":        "dotvalue",
+				"X-Amz-Meta-#":        "hashvalue",
+				"X-Amz-Meta-Test.key": "dotinkey",
+				"X-Amz-Meta-Test#key": "hashinkey",
+			},
+			expectedMissingMeta: "",
+		},
+		{
+			name: "some invalid metadata keys with non-printable characters",
+			metadata: catalog.Metadata{
+				"X-Amz-Meta-validkey":      "validvalue",
+				"X-Amz-Meta-invalid\x99":   "shouldbeskipped", // non-printable character
+				"X-Amz-Meta-invalid\x7f":   "shouldbeskipped", // DEL character
+				"X-Amz-Meta-unicode\u00e9": "shouldbeskipped", // unicode character (beyond ASCII)
+				"X-Amz-Meta-validkey2":     "validvalue2",
+			},
+			expectedHeaders: map[string]string{
+				"X-Amz-Meta-Validkey":  "validvalue",
+				"X-Amz-Meta-Validkey2": "validvalue2",
+			},
+			expectedMissingMeta: "3",
+		},
+		{
+			name: "all invalid metadata keys",
+			metadata: catalog.Metadata{
+				"X-Amz-Meta-\x01key": "value1", // non-printable start
+				"X-Amz-Meta-key\x02": "value2", // non-printable middle
+				"X-Amz-Meta-":        "empty",  // empty key
+			},
+			expectedHeaders:     map[string]string{},
+			expectedMissingMeta: "3",
+		},
+		{
+			name: "non-metadata headers are ignored",
+			metadata: catalog.Metadata{
+				"X-Amz-Meta-valid":       "value",
+				"Content-Type":           "application/json",
+				"Authorization":          "Bearer token",
+				"X-Amz-Meta-invalid\x03": "shouldbeskipped",
+			},
+			expectedHeaders: map[string]string{
+				"X-Amz-Meta-Valid": "value", // Go canonicalizes header names
+			},
+			expectedMissingMeta: "1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			amzMetaWriteHeaders(w, tt.metadata)
+
+			headers := w.Header()
+
+			// Check expected headers are present
+			for expectedKey, expectedValue := range tt.expectedHeaders {
+				actualValue := headers.Get(expectedKey)
+				require.Equal(t, expectedValue, actualValue, "header %q value mismatch", expectedKey)
+			}
+
+			// Check X-Amz-Missing-Meta header
+			missingMetaValue := headers.Get(amzMissingMetaHeader)
+			if tt.expectedMissingMeta == "" {
+				require.Empty(t, missingMetaValue, "X-Amz-Missing-Meta header should not be set")
+			} else {
+				require.Equal(t, tt.expectedMissingMeta, missingMetaValue, "X-Amz-Missing-Meta header value mismatch")
+			}
+
+			// Ensure no unexpected X-Amz-Meta headers are present
+			for headerName := range headers {
+				if strings.HasPrefix(headerName, "X-Amz-Meta-") {
+					_, expected := tt.expectedHeaders[headerName]
+					require.True(t, expected, "unexpected metadata header: %s", headerName)
+				}
+			}
 		})
 	}
 }
