@@ -93,7 +93,6 @@ jobs:
 
         # must upload artifact in order to download generated later
       - name: Store generated code
-        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: generated-code
