@@ -15,7 +15,7 @@ func TestController_ValidateInterRegionStorage(t *testing.T) {
 
 	t.Run("namespace with the same region as the storage", func(t *testing.T) {
 		opts := []testutil.MockAdapterOption{
-			testutil.WithBlockstoreMetadata(&block.BlockstoreMetadata{Region: swag.String("us-west-2")}),
+			testutil.WithBlockstoreMetadata(block.BlockstoreMetadata{Region: swag.String("us-west-2")}),
 			testutil.WithNamespaceRegion("us-west-2"),
 		}
 		adapter := testutil.NewMockAdapter(opts...)
@@ -26,7 +26,7 @@ func TestController_ValidateInterRegionStorage(t *testing.T) {
 
 	t.Run("namespace region different from storage region", func(t *testing.T) {
 		opts := []testutil.MockAdapterOption{
-			testutil.WithBlockstoreMetadata(&block.BlockstoreMetadata{Region: swag.String("us-east-1")}),
+			testutil.WithBlockstoreMetadata(block.BlockstoreMetadata{Region: swag.String("us-east-1")}),
 			testutil.WithNamespaceRegion("us-west-2"),
 		}
 		adapter := testutil.NewMockAdapter(opts...)

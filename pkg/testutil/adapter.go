@@ -16,7 +16,7 @@ type MockAdapter struct {
 	LastStorageNamespace string
 	LastStorageClass     *string
 
-	blockstoreMetadata *block.BlockstoreMetadata
+	blockstoreMetadata block.BlockstoreMetadata
 	namespaceRegion    *string
 }
 
@@ -39,7 +39,7 @@ func NewMockAdapter(opts ...MockAdapterOption) *MockAdapter {
 	return adapter
 }
 
-func WithBlockstoreMetadata(bm *block.BlockstoreMetadata) func(a *MockAdapter) {
+func WithBlockstoreMetadata(bm block.BlockstoreMetadata) func(a *MockAdapter) {
 	return func(a *MockAdapter) {
 		a.blockstoreMetadata = bm
 	}
@@ -132,11 +132,7 @@ func (a *MockAdapter) BlockstoreType() string {
 }
 
 func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
-	if a.blockstoreMetadata != nil {
-		return a.blockstoreMetadata, nil
-	} else {
-		return nil, block.ErrOperationNotSupported
-	}
+	return &a.blockstoreMetadata, nil
 }
 
 func (a *MockAdapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
