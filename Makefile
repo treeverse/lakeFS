@@ -88,7 +88,7 @@ gen-docs: ## Generate CLI docs automatically
 
 .PHONY: tools
 tools: ## Install tools
-	$(GOCMD) get -tool $(GOLANGCI_LINT)@$(GOLANGCI_LINT_VERSION)
+	$(GOCMD) get -tool $(GOLANGCI_LINT)
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
 client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
