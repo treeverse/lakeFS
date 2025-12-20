@@ -28,9 +28,9 @@ jobs:
           node-version: "22.17.x"
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: 'go.mod'
         id: go
 
       - uses: bufbuild/buf-setup-action@v1.50.0
