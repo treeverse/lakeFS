@@ -6110,7 +6110,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 	pr := &catalog.PullRequest{
 		Title:             body.Title,
 		Description:       swag.StringValue(body.Description),
-		Author:            user.Username,
+		Author:            user.Committer(),
 		SourceBranch:      body.SourceBranch,
 		DestinationBranch: body.DestinationBranch,
 	}
@@ -6348,8 +6348,6 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		ev.UserID = user.Username
 	}
 
-	sourceIP := httputil.SourceIP(r)
-
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,
@@ -6358,7 +6356,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"source_ref": ev.SourceRef,
 		"user_id":    ev.UserID,
 		"client":     ev.Client,
-		"source_ip":  sourceIP,
+		"source_ip":  r.RemoteAddr,
 	}).Debug("performing API action")
 	c.Collector.CollectEvent(ev)
 	usageCounter.Add(1)

@@ -24,6 +24,9 @@ import (
 // LuaClientUserAgent is the default user agent that will be sent to the lakeFS server instance
 var LuaClientUserAgent = "lakefs-lua/" + version.Version
 
+// LuaRemoteAddr is the default remote address for requests sent to the lakeFS server instance
+const LuaRemoteAddr = "[internal (lua)]"
+
 func check(l *lua.State, err error) {
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
@@ -55,6 +58,7 @@ func newLakeFSRequest(ctx context.Context, user *model.User, method, reqURL stri
 		return nil, err
 	}
 	req.Header.Set("User-Agent", LuaClientUserAgent)
+	req.RemoteAddr = LuaRemoteAddr
 	return req, nil
 }
 
