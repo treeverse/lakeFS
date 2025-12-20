@@ -1053,7 +1053,7 @@ jobs:
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose-external-db.yaml
+          compose-file: esti/ops/docker-compose-cosmosdb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
