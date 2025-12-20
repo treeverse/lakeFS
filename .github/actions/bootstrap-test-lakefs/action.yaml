@@ -12,6 +12,14 @@ inputs:
     description: working directory for the docker compose step
     required: false
     default: "."
+  detached:
+    description: "Run docker compose up in detached mode (-d). Set to 'false' to run in foreground."
+    required: false
+    default: "true"
+  wait:
+    description: "When detached, wait for services to be healthy (requires healthchecks)."
+    required: false
+    default: "true"
 runs:
   using: "composite"
   steps:
@@ -39,5 +47,20 @@ runs:
         COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
       shell: bash
       run: |
-        [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
-        docker compose --project-directory ${{ inputs.compose-directory }} ${flags} up ${{ inputs.compose-flags }}
+        set -euo pipefail
+
+        file_flags=()
+        if [[ -n "${{ inputs.compose-file }}" ]]; then
+          file_flags=(-f "${{ inputs.compose-file }}")
+        fi
+
+        up_flags=()
+        if [[ "${{ inputs.detached }}" == "true" ]]; then
+          up_flags+=(-d)
+          if [[ "${{ inputs.wait }}" == "true" ]]; then
+            up_flags+=(--wait)
+          fi
+        fi
+        
+        docker compose --project-directory "${{ inputs.compose-directory }}" "${file_flags[@]}" \
+          up ${up_flags[*]} ${{ inputs.compose-flags }}
