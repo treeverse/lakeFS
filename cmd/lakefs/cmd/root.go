@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"slices"
 	"strings"
 	"sync"
 
@@ -73,31 +72,30 @@ func validateQuickstartEnv(cfg *config.BaseConfig) {
 	}
 }
 
-func useConfig(flagName string) bool {
-	res, err := rootCmd.PersistentFlags().GetBool(flagName)
-	if err != nil {
-		fmt.Printf("%s: %s\n", flagName, err)
-		os.Exit(1)
-	}
-	if res {
-		printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", flagName))
-	}
-	return res
-}
-
 func newConfig() (config.Config, error) {
-	name := ""
+	// Lookup the first configuration flag that is set.
 	configurations := []string{config.QuickstartConfiguration, config.UseLocalConfiguration}
-	if idx := slices.IndexFunc(configurations, useConfig); idx != -1 {
-		name = configurations[idx]
+	configName := ""
+	for _, flagName := range configurations {
+		if res, err := rootCmd.PersistentFlags().GetBool(flagName); err != nil {
+			fmt.Printf("%s: %s\n", flagName, err)
+			os.Exit(1)
+		} else if res {
+			configName = flagName
+			break
+		}
+	}
+	// Print a warning if the configuration flag is set as we use a local configuration.
+	if configName != "" {
+		printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", configName))
 	}
 
-	cfg, err := configfactory.BuildConfig(name)
+	cfg, err := configfactory.BuildConfig(configName)
 	if err != nil {
 		return nil, err
 	}
 
-	if name == config.QuickstartConfiguration {
+	if configName == config.QuickstartConfiguration {
 		validateQuickstartEnv(cfg.GetBaseConfig())
 	}
 	return cfg, nil

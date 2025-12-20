@@ -17,18 +17,19 @@ type CombinedIterator struct {
 // NewCombinedIterator combines multiple ValueIterators into a single CombinedIterator.
 // The returned iterator precedence order is first-to-last in case of matching keys in 2 or more iterators.
 func NewCombinedIterator(iters ...ValueIterator) ValueIterator {
-	if len(iters) == 0 {
+	switch len(iters) {
+	case 0:
 		panic("at least one iterator is required")
-	}
-	if len(iters) == 1 {
+	case 1:
 		return iters[0]
+	default:
+		// Chain iterators left-to-right: combine first two, then add each remaining one
+		result := newCombinedIterator(iters[0], iters[1])
+		for _, iter := range iters[2:] {
+			result = newCombinedIterator(result, iter)
+		}
+		return result
 	}
-	iter := newCombinedIterator(iters[0], iters[1])
-	for i := 2; i < len(iters); i++ {
-		iter = newCombinedIterator(iter, iters[i])
-	}
-
-	return iter
 }
 
 func newCombinedIterator(iterA, iterB ValueIterator) *CombinedIterator {

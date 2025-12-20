@@ -26,6 +26,8 @@ linters:
     - unused
     - whitespace
   settings:
+    gofmt:
+      simplify: true
     mnd:
       ignored-files:
         - pkg/actions/lua/.*
