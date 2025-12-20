@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -32,6 +33,10 @@ const (
 	LoggerServiceName = "rest_api"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
+)
+
+var (
+	sessionMaxAge = int((30 * 24 * time.Hour).Seconds()) // 30 days in seconds
 )
 
 func Serve(
@@ -67,7 +72,7 @@ func Serve(
 	// which breaks OAuth callbacks over HTTP
 	sessionStore.Options = &sessions.Options{
 		Path:     "/",
-		MaxAge:   86400 * 30, // 30 days
+		MaxAge:   sessionMaxAge,
 		HttpOnly: true,
 		Secure:   cfg.GetBaseConfig().TLS.Enabled, // Only set Secure flag when TLS is enabled
 		SameSite: http.SameSiteLaxMode,            // Lax allows OAuth callback redirects
