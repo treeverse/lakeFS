@@ -233,23 +233,6 @@ func (a *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	return props, nil
 }
 
-func (a *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
-	if err := verifyObjectPointer(obj); err != nil {
-		return err
-	}
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	storageID := obj.StorageID
-	key := getKey(obj)
-	if a.data[storageID] != nil {
-		delete(a.data[storageID], key)
-	}
-	if a.properties[storageID] != nil {
-		delete(a.properties[storageID], key)
-	}
-	return nil
-}
-
 func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	if err := verifyObjectPointer(sourceObj); err != nil {
 		return err

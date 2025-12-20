@@ -65,3 +65,20 @@ jobs:
                       --branch "$ref" \
                       --testbed "github-${release_slug}" \
                       make test-go
+
+  test-webui:
+    name: Run webui unit tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: webui/package.json
+          cache: npm
+          cache-dependency-path: webui/package-lock.json
+      - run: npm ci
+        working-directory: webui
+      - run: npm test
+        working-directory: webui

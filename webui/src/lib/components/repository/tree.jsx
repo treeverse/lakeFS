@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 
 import dayjs from "dayjs";
 import {
+  AlertIcon,
   PasteIcon,
   DownloadIcon,
   FileDirectoryIcon,
@@ -835,6 +836,15 @@ export const Tree = ({
     // empty state!
     body = (
       <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />
+    );
+  } else if (results.length === 0) {
+    body = (
+      <>
+        <div className="d-flex flex-column align-items-center mb-3 mt-3">
+          <AlertIcon size={36} /><br/>
+          Nothing here.  Switch to another branch or tag to see something.
+        </div>
+      </>
     );
   } else {
     body = (

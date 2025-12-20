@@ -225,3 +225,7 @@ func (m *mockEviction) Touch(rPath params.RelativePath) {
 func (m *mockEviction) Store(_ params.RelativePath, _ int64) bool {
 	return false
 }
+
+func (m *mockEviction) Close() error {
+	return nil
+}

@@ -81,7 +81,7 @@ export const GroupNav = ({ groupId, page = 'groups' }) => {
     );
 };
 
-export const UserHeader = ({ userEmail, userId, page }) => {
+export const UserHeader = ({ userDisplayName, userId, page }) => {
     return (
         <div className="mb-4">
             <Breadcrumb>
@@ -92,9 +92,9 @@ export const UserHeader = ({ userEmail, userId, page }) => {
                     component={BreadcrumbItem}
                     href={{pathname: '/auth/users/:userId', params: {userId}}}
                     className={truncatedHeaderClass}
-                    title={userEmail}
+                    title={userDisplayName}
                 >
-                    {userEmail}
+                    {userDisplayName}
                 </Link>
             </Breadcrumb>
 
