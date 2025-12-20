@@ -895,7 +895,10 @@ func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMeta
 	if err != nil {
 		return nil, err
 	}
-	return &block.BlockstoreMetadata{Region: &region}, nil
+	return &block.BlockstoreMetadata{
+		IsProductionSafe: true,
+		Region:           &region,
+	}, nil
 }
 
 func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
