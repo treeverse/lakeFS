@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -35,10 +34,6 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-var (
-	sessionMaxAge = int((30 * 24 * time.Hour).Seconds()) // 30 days in seconds
-)
-
 func Serve(
 	cfg config.Config,
 	catalog *catalog.Catalog,
@@ -67,16 +62,6 @@ func Serve(
 		panic(err)
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
-	// Configure cookie options to work with HTTP environments (for testing)
-	// gorilla/sessions v1.4.0 changed defaults to Secure:true + SameSite:None
-	// which breaks OAuth callbacks over HTTP
-	sessionStore.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   sessionMaxAge,
-		HttpOnly: true,
-		Secure:   cfg.GetBaseConfig().TLS.Enabled, // Only set Secure flag when TLS is enabled
-		SameSite: http.SameSiteLaxMode,            // Lax allows OAuth callback redirects
-	}
 	oidcConfig := OIDCConfig(cfg.AuthConfig().GetBaseAuthConfig().OIDC)
 	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().GetBaseAuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
