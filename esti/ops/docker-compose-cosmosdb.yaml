@@ -5,10 +5,9 @@ services:
     environment:
       - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100
       - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false
-      - AZURE_COSMOS_EMULATOR_ENABLE_NONSSL_PORT=true
       - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=0.0.0.0
     ports:
-      - "10250:10250"
+      - "8081:8081"
 
   lakefs:
     extends:
@@ -17,6 +16,17 @@ services:
     depends_on:
       cosmosdb:
         condition: service_started
+    command:
+      - /bin/sh
+      - -c
+      - |
+        # Download and trust the CosmosDB emulator certificate
+        wget -q https://cosmosdb:8081/_explorer/emulator.pem -O /tmp/cosmos-emulator.crt --no-check-certificate
+        # Add certificate to system trust store
+        cp /tmp/cosmos-emulator.crt /usr/local/share/ca-certificates/
+        update-ca-certificates
+        # Start lakeFS
+        /app/lakefs run
     environment:
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-simplified}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -42,11 +52,15 @@ services:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache util-linux curl
-        until curl -s http://cosmosdb:10250/_explorer/emulator.pem >/dev/null; do
+        apk add --no-cache util-linux curl wget ca-certificates
+        # Download and trust the CosmosDB emulator certificate
+        until wget -q https://cosmosdb:8081/_explorer/emulator.pem -O /tmp/cosmos-emulator.crt --no-check-certificate 2>/dev/null; do
           echo "Waiting for Cosmos DB emulator..."
           sleep 5
         done
+        cp /tmp/cosmos-emulator.crt /usr/local/share/ca-certificates/
+        update-ca-certificates
+        # Run tests
         go test -timeout 20m $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
