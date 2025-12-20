@@ -16,17 +16,18 @@ services:
     depends_on:
       cosmosdb:
         condition: service_started
-    command:
+    entrypoint:
       - /bin/sh
       - -c
       - |
         # Download and trust the CosmosDB emulator certificate
+        apk add --no-cache wget ca-certificates
         wget -q https://cosmosdb:8081/_explorer/emulator.pem -O /tmp/cosmos-emulator.crt --no-check-certificate
         # Add certificate to system trust store
         cp /tmp/cosmos-emulator.crt /usr/local/share/ca-certificates/
         update-ca-certificates
         # Start lakeFS
-        /app/lakefs run
+        exec /app/lakefs run
     environment:
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-simplified}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
