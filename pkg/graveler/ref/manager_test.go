@@ -79,7 +79,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockStore := mock.NewMockStore(ctrl)
 	ctx := t.Context()
-	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
+	mockStore.EXPECT().Get(context.Background(), []byte("graveler"), []byte("repos/repo1")).Times(times).Return(&kv.ValueWithPredicate{}, nil)
 	cacheConfig := ref.CacheConfig{
 		Size:   100,
 		Expiry: 20 * time.Millisecond,
@@ -94,16 +94,15 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 	}
 
 	refManager := ref.NewRefManager(cfg, NewStorageConfigMock(config.SingleBlockstoreID))
-	for i := 0; i < calls; i++ {
+	for i := range calls {
 		_, err := refManager.GetRepository(ctx, "repo1")
 		if err != nil {
 			t.Fatalf("Failed to get repository (iteration %d): %s", i, err)
 		}
 	}
 
-	// wait for cache to expire and call again
 	time.Sleep(cacheConfig.Expiry + cacheConfig.Jitter + time.Second)
-	mockStore.EXPECT().Get(ctx, []byte("graveler"), []byte("repos/repo1")).Times(1).Return(&kv.ValueWithPredicate{}, nil)
+	mockStore.EXPECT().Get(context.Background(), []byte("graveler"), []byte("repos/repo1")).Times(1).Return(&kv.ValueWithPredicate{}, nil)
 	_, err := refManager.GetRepository(ctx, "repo1")
 	if err != nil {
 		t.Fatalf("Failed to get repository: %s", err)
@@ -124,7 +123,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 	const repoID = "repo2"
 	const repoInstanceID = "iuid"
 	mockStore.EXPECT().
-		Get(ctx, []byte(repoID+"-"+repoInstanceID), []byte("commits/"+commitID)).
+		Get(context.Background(), []byte(repoID+"-"+repoInstanceID), []byte("commits/"+commitID)).
 		Times(times).
 		Return(&kv.ValueWithPredicate{}, nil)
 
@@ -140,7 +139,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 		CommitCacheConfig:     cacheConfig,
 	}
 	refManager := ref.NewRefManager(cfg, NewStorageConfigMock(config.SingleBlockstoreID))
-	for i := 0; i < calls; i++ {
+	for i := range calls {
 		_, err := refManager.GetCommit(ctx, &graveler.RepositoryRecord{
 			RepositoryID: repoID,
 			Repository:   &graveler.Repository{InstanceUID: repoInstanceID},
@@ -153,7 +152,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 	// wait for cache to expire and call again
 	time.Sleep(cacheConfig.Expiry + cacheConfig.Jitter + time.Second)
 	mockStore.EXPECT().
-		Get(ctx, []byte(repoID+"-"+repoInstanceID), []byte("commits/"+commitID)).
+		Get(context.Background(), []byte(repoID+"-"+repoInstanceID), []byte("commits/"+commitID)).
 		Times(times).
 		Return(&kv.ValueWithPredicate{}, nil)
 	_, err := refManager.GetCommit(ctx, &graveler.RepositoryRecord{
@@ -903,7 +902,7 @@ func TestManager_Log(t *testing.T) {
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 	var previous graveler.CommitID
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		c := graveler.Commit{
 			Committer:    "user1",
 			Message:      "message1",
@@ -1114,7 +1113,7 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	// Running many times to check that it's actually consistent (see issue #1291)
 	const iterations = 50
 
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		res := addressProvider.ContentAddress(commit)
 		assert.Equalf(t, expected, res, "iteration %d content mismatch", i+1)
 	}
@@ -1237,10 +1236,10 @@ func TestManager_ListCommits(t *testing.T) {
 			gravelerCommitReflection := reflect.Indirect(reflect.ValueOf(graveler.Commit{}))
 			listCommitReflection := reflect.Indirect(reflect.ValueOf(*commit.Commit))
 			listCommitFields := make(map[string]struct{})
-			for i := 0; i < listCommitReflection.NumField(); i++ {
+			for i := range listCommitReflection.NumField() {
 				listCommitFields[listCommitReflection.Type().Field(i).Name] = struct{}{}
 			}
-			for i := 0; i < gravelerCommitReflection.NumField(); i++ {
+			for i := range gravelerCommitReflection.NumField() {
 				fieldName := gravelerCommitReflection.Type().Field(i).Name
 				_, exists := listCommitFields[fieldName]
 				if !exists {
