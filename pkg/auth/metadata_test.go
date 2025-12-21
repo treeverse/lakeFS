@@ -24,7 +24,7 @@ func validateInstrumentation(t *testing.T, ctx context.Context, mgr *auth.KVMeta
 }
 
 func TestInstrumentation(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 
 	_ = kvStore.Set(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)), []byte(time.Now().Format(time.RFC3339)))
@@ -55,7 +55,7 @@ func TestInstrumentation(t *testing.T) {
 }
 
 func TestMetadataFields(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 
 	const (

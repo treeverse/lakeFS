@@ -15,7 +15,7 @@ import (
 )
 
 func TestWriter(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	mockFS := mock.NewMockFS(ctrl)
 	defer ctrl.Finish()
@@ -67,7 +67,7 @@ func TestWriter(t *testing.T) {
 }
 
 func TestWriterAbort(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	mockFS := mock.NewMockFS(ctrl)
 	defer ctrl.Finish()
@@ -102,7 +102,7 @@ func TestWriterAbort(t *testing.T) {
 }
 
 func TestWriterAbortAfterClose(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	mockFS := mock.NewMockFS(ctrl)
 	defer ctrl.Finish()

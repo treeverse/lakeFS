@@ -21,8 +21,7 @@ var (
 	pool *dockertest.Pool
 )
 
-func runDBInstance(dockerPool *dockertest.Pool, dbName string) (string, func()) {
-	ctx := context.Background()
+func runDBInstance(ctx context.Context, dockerPool *dockertest.Pool, dbName string) (string, func()) {
 	resource, err := dockerPool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",

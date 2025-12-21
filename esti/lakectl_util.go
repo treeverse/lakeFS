@@ -2,7 +2,6 @@
 package esti
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -291,7 +290,7 @@ func normalizeSecretAccessKey(output string) string {
 
 func GetCommitter(t testing.TB) string {
 	t.Helper()
-	userResp, err := client.GetCurrentUserWithResponse(context.Background())
+	userResp, err := client.GetCurrentUserWithResponse(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, userResp.JSON200)
 	committer := userResp.JSON200.User.Id
@@ -304,7 +303,7 @@ func GetCommitter(t testing.TB) string {
 
 func GetAuthor(t testing.TB) (string, string) {
 	t.Helper()
-	userResp, err := client.GetCurrentUserWithResponse(context.Background())
+	userResp, err := client.GetCurrentUserWithResponse(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, userResp.JSON200)
 	author := userResp.JSON200.User.Id

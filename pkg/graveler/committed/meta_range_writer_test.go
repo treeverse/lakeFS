@@ -1,7 +1,6 @@
 package committed_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -27,7 +26,7 @@ var params = committed.Params{
 }
 
 func TestWriter_WriteRecords(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -97,7 +96,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 }
 
 func TestWriter_OverlappingRanges(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -118,7 +117,7 @@ func TestWriter_OverlappingRanges(t *testing.T) {
 }
 
 func TestWriter_RecordRangeAndClose(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

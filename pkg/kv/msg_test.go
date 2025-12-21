@@ -33,7 +33,7 @@ const randomGetSeed int64 = 3_141_593
 var testTime = time.Now().UTC()
 
 func TestMsgFuncs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 
 	t.Run("set-get", func(t *testing.T) {
@@ -204,7 +204,7 @@ func testGetMsgs(t testing.TB, ctx context.Context, store kv.Store, n int, size 
 }
 
 func BenchmarkDrivers(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 
 	makeMemStore := func(ctx context.Context, t testing.TB) kv.Store {
 		store, err := kv.Open(ctx, kvparams.Config{Type: mem.DriverName})

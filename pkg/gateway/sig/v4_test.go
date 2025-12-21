@@ -2,7 +2,6 @@ package sig_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -138,7 +137,7 @@ func TestSingleChunkPut(t *testing.T) {
 		testAccessKeyID     = "AKIAIOSFODNN7EXAMPLE"
 		testSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
-	ctx := context.Background()
+	ctx := t.Context()
 	creds := aws.Credentials{
 		AccessKeyID:     testAccessKeyID,
 		SecretAccessKey: testSecretAccessKey,
@@ -474,7 +473,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// Sign the request using AWS SDK v4 signer
 			signer := v4.NewSigner()
-			err = signer.SignHTTP(context.Background(), creds, req, "STREAMING-UNSIGNED-PAYLOAD-TRAILER", service, region, time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC))
+			err = signer.SignHTTP(t.Context(), creds, req, "STREAMING-UNSIGNED-PAYLOAD-TRAILER", service, region, time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC))
 			if err != nil {
 				t.Fatalf("Failed to sign request: %v", err)
 			}

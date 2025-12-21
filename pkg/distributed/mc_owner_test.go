@@ -30,7 +30,7 @@ import (
 // TestMostlyCorrectOwnerSingleThreaded tests behaviour with a single owner.
 func TestMostlyCorrectOwnerSingleThreaded(t *testing.T) {
 	// Fail quickly on deadlock
-	ctx, finish := context.WithTimeout(context.Background(), time.Second)
+	ctx, finish := context.WithTimeout(t.Context(), time.Second)
 	defer finish()
 	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
 	if err != nil {
@@ -94,7 +94,7 @@ func (o *Ordering[T]) Slice() []T {
 // times out on its own.
 func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 	// Fail quickly on deadlock
-	ctx, finish := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, finish := context.WithTimeout(t.Context(), 2*time.Second)
 	defer finish()
 	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
 	if err != nil {

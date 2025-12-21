@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func TestRepositoryBasicOps(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	const numOfRepos = 5
 
 	// create repositories
@@ -37,7 +36,7 @@ func TestRepositoryBasicOps(t *testing.T) {
 }
 
 func TestRepositoryCreateSampleRepo(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	name := GenerateUniqueRepositoryName()
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)

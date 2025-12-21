@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -91,7 +90,7 @@ func TestS3PresignedURLExpirationWithCustomTime(t *testing.T) {
 
 		// Presign the request with custom signing time
 		signedURI, _, err := signer.PresignHTTP(
-			context.Background(),
+			ctx,
 			creds,
 			req,
 			payloadHash,

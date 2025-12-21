@@ -75,7 +75,7 @@ func TestDeleteCommitted(t *testing.T) {
 }
 
 func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	name := strings.ToLower(t.Name())
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	repoName := MakeRepositoryName(name)

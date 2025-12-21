@@ -220,7 +220,7 @@ func TestDiff(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fakeLeft := newFakeMetaRangeIterator(tst.leftKeys, tst.leftIdentities)
 			fakeRight := newFakeMetaRangeIterator(tst.rightKeys, tst.rightIdentities)
-			ctx := context.Background()
+			ctx := t.Context()
 			it := committed.NewDiffIterator(ctx, fakeLeft, fakeRight)
 			defer it.Close()
 			var diffs []*graveler.Diff
@@ -264,7 +264,7 @@ func TestDiff(t *testing.T) {
 func TestDiffCancelContext(t *testing.T) {
 	left := newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"v1", "v2"}})
 	right := newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"v1", "v2"}})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	it := committed.NewDiffValueIterator(ctx, left, right)
 	defer it.Close()
@@ -278,7 +278,7 @@ func TestDiffCancelContext(t *testing.T) {
 
 // TODO(Guys): add test for range changed
 func TestNextRange(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1", "i2"}, {"i3", "i4"}}),
 		newFakeMetaRangeIterator([][]string{{"k3", "k4", "k5"}, {"k6", "k7"}}, [][]string{{"i3a", "i4a", "i5a"}, {"i6", "i7"}}))
@@ -357,7 +357,7 @@ func TestNextRange(t *testing.T) {
 }
 
 func TestNextRangeChange(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k3"}, {"k5", "k6"}}, [][]string{{"i1", "i3"}, {"i5", "i6"}}),
 		newFakeMetaRangeIterator([][]string{{"k1", "k2", "k3"}, {"k5", "k6"}}, [][]string{{"i1", "i2", "i3"}, {"i5", "i6"}}))
@@ -377,7 +377,7 @@ func TestNextRangeChange(t *testing.T) {
 }
 
 func TestNextErr(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}),
 		newFakeMetaRangeIterator([][]string{{"k1", "k2", "k3"}}, [][]string{{"i1a", "i2a", "i3a"}}))
@@ -394,7 +394,7 @@ func TestNextErr(t *testing.T) {
 }
 
 func TestSameBounds(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewDiffIterator(ctx,
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1", "i2"}, {"i3", "i4"}}),
 		newFakeMetaRangeIterator([][]string{{"k1", "k2"}, {"k3", "k4"}}, [][]string{{"i1a", "i2a"}, {"i3a", "i4a"}}))
@@ -432,7 +432,7 @@ func TestDiffSeek(t *testing.T) {
 	rightIdentities := [][]string{{"i1", "i3"}, {"i2a", "i2b"}, {"i4", "i5"}, {"i6", "i7a"}}
 	diffTypeByKey := map[string]graveler.DiffType{"k2": removed, "k3a": added, "k3b": added, "k3": added, "k7": changed}
 	diffIdentityByKey := map[string]string{"k2": "i2", "k3a": "i2a", "k3b": "i2b", "k3": "i3", "k7": "i7a"}
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator(left, leftIdentities), newFakeMetaRangeIterator(right, rightIdentities))
 	defer it.Close()
 
@@ -502,7 +502,7 @@ func TestDiffSeek(t *testing.T) {
 }
 
 func TestNextOnClose(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewDiffIterator(ctx, newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1", "i2"}}), newFakeMetaRangeIterator([][]string{{"k1", "k2"}}, [][]string{{"i1a", "i2a"}}))
 	if !it.Next() {
 		t.Fatal("expected iterator to have value")
@@ -518,7 +518,7 @@ func TestDiffErr(t *testing.T) {
 	leftIt := newFakeMetaRangeIterator([][]string{{"k1"}, {"k2"}}, [][]string{{"i1"}, {"i2"}})
 	leftIt.SetErr(leftErr)
 	rightIt := newFakeMetaRangeIterator([][]string{{"k2"}}, [][]string{{"i2a"}})
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewDiffIterator(ctx, leftIt, rightIt)
 	defer it.Close()
 	if it.Next() {

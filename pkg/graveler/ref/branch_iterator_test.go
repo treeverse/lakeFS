@@ -1,7 +1,6 @@
 package ref_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -15,7 +14,7 @@ import (
 func TestBranchSimpleIterator(t *testing.T) {
 	r, kvStore := testRefManager(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
-	ctx := context.Background()
+	ctx := t.Context()
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo1",
 		Repository: &graveler.Repository{
@@ -93,7 +92,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 func TestBranchByCommitIterator(t *testing.T) {
 	r, kvStore := testRefManager(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
-	ctx := context.Background()
+	ctx := t.Context()
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo1",
 		Repository: &graveler.Repository{

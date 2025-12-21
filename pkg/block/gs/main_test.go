@@ -23,21 +23,21 @@ var client *storage.Client
 func TestMain(m *testing.M) {
 	const (
 		emulatorContainerTimeoutSeconds = 10 * 60 // 10 min
-		emulatorTestEndpoint            = "127.0.0.1"
+		emulatorTestIP                  = "127.0.0.1"
 		emulatorTestPort                = "4443"
 		gcsProjectID                    = "testProject"
 	)
 
 	ctx := context.Background()
 	// External port required for '-public-host' configuration in docker cmd
-	endpoint := fmt.Sprintf("%s:%s", emulatorTestEndpoint, emulatorTestPort)
+	const endpoint = emulatorTestIP + ":" + emulatorTestPort
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "fsouza/fake-gcs-server",
-		Tag:        "1.52.2",
+		Tag:        "1.52.3",
 		Cmd: []string{
 			"-scheme", "http",
 			"-backend", "memory",
@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 		ExposedPorts: []string{emulatorTestPort},
 		PortBindings: map[docker.Port][]docker.PortBinding{
 			docker.Port(emulatorTestPort + "/tcp"): {
-				{HostIP: emulatorTestPort, HostPort: emulatorTestPort + "/tcp"},
+				{HostIP: emulatorTestIP, HostPort: emulatorTestPort},
 			},
 		},
 	})
@@ -97,6 +97,11 @@ func TestMain(m *testing.M) {
 
 	var code int
 	defer func() {
+		if client != nil {
+			if err := client.Close(); err != nil {
+				log.Printf("Error closing storage client: %s", err)
+			}
+		}
 		closer()
 		os.Exit(code)
 	}()

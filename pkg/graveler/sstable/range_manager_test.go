@@ -27,7 +27,7 @@ type NoCache struct{}
 func (n *NoCache) Unref() {}
 
 func TestGetEntrySuccess(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
 	mockFS := fsMock.NewMockFS(ctrl)
@@ -51,7 +51,7 @@ func TestGetEntrySuccess(t *testing.T) {
 }
 
 func TestGetEntryCacheFailure(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
 	expectedErr := errors.New("cache failure")
@@ -71,7 +71,7 @@ func TestGetEntryCacheFailure(t *testing.T) {
 }
 
 func TestGetEntryNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
 	mockFS := fsMock.NewMockFS(ctrl)
@@ -95,7 +95,7 @@ func TestGetEntryNotFound(t *testing.T) {
 }
 
 func TestGetWriterSuccess(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
 	mockFS := fsMock.NewMockFS(ctrl)
@@ -118,7 +118,7 @@ func TestGetWriterSuccess(t *testing.T) {
 }
 
 func TestNewPartIteratorSuccess(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
 	mockFS := fsMock.NewMockFS(ctrl)
@@ -147,7 +147,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 }
 
 func TestGetWriterRangeID(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
 	mockFS := fsMock.NewMockFS(ctrl)

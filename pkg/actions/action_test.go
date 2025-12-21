@@ -1,7 +1,6 @@
 package actions_test
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path"
@@ -366,7 +365,7 @@ func TestLoadActions(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			source := tt.configureSource(ctrl)
 			var record graveler.HookRecord
 			res, err := actions.LoadActions(ctx, source, record)
