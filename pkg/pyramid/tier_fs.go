@@ -159,8 +159,8 @@ func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
 	if tfs.logger.IsTracing() {
 		tfs.logger.WithField("path", fullPath).Trace("Remove from local")
 	}
-	if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
-		tfs.logger.WithError(err).WithField("path", fullPath).Warn("Removing file failed")
+	if err := os.Remove(fullPath); err != nil {
+		tfs.logger.WithError(err).WithField("path", fullPath).Info("Removing file failed")
 		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval").Inc()
 		return
 	}
@@ -218,7 +218,9 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	stat, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
-		_ = os.Remove(originalPath)
+		if removeErr := os.Remove(originalPath); removeErr != nil {
+			tfs.log(ctx).WithError(removeErr).WithField("original_path", originalPath).Warn("failed to remove temp file after stat failure")
+		}
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
@@ -233,7 +235,7 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 				"storageID":     storageID,
 				"namespace":     namespace,
 				"original_path": originalPath,
-			}).Error("failed to remove temp file after put failure")
+			}).Warn("failed to remove temp file after put failure")
 		}
 		return fmt.Errorf("adapter put %s %s: %w", namespace, filename, err)
 	}
