@@ -140,7 +140,7 @@ func (m *arenaMap[K, V]) Clear() {
 	m.arena = New[V]()
 }
 
-const KeySizeBound = 16
+const KeySizeBound = 32
 
 func trimKey[K ~string](key K) [KeySizeBound]byte {
 	if len(key) > KeySizeBound {
