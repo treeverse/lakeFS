@@ -99,15 +99,6 @@ require (
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/catalog/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/webui v0.0.0-20251118224848-d2be664caf31
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
