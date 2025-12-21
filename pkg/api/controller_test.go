@@ -6893,3 +6893,47 @@ func TestController_UploadObject_ErrorHandling(t *testing.T) {
 		require.NotNil(t, resp.JSON412, "should have precondition failed response")
 	})
 }
+
+func TestController_AsyncOperationsNotImplemented(t *testing.T) {
+	ctx := context.Background()
+	clt, deps := setupClientWithAdmin(t)
+
+	repoName := "test-async-repo"
+	_, err := deps.catalog.CreateRepository(ctx, repoName, "", onBlock(deps, "async-test"), "main", false)
+	require.NoError(t, err)
+
+	t.Run("commit_async_not_implemented", func(t *testing.T) {
+		resp, err := clt.CommitAsyncWithResponse(ctx, repoName, "main", &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody{
+			Message: "test async commit",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async operations in OSS")
+		require.NotNil(t, resp.JSON501)
+	})
+
+	t.Run("commit_async_status_not_implemented", func(t *testing.T) {
+		resp, err := clt.CommitAsyncStatusWithResponse(ctx, repoName, "main", "CA1234567890")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async status in OSS")
+		require.NotNil(t, resp.JSON501)
+	})
+
+	t.Run("merge_async_not_implemented", func(t *testing.T) {
+		_, err := deps.catalog.CreateBranch(ctx, repoName, "feature", "main")
+		require.NoError(t, err)
+
+		resp, err := clt.MergeIntoBranchAsyncWithResponse(ctx, repoName, "feature", "main", apigen.MergeIntoBranchAsyncJSONRequestBody{
+			Message: swag.String("test async merge"),
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async merge in OSS")
+		require.NotNil(t, resp.JSON501)
+	})
+
+	t.Run("merge_async_status_not_implemented", func(t *testing.T) {
+		resp, err := clt.MergeIntoBranchAsyncStatusWithResponse(ctx, repoName, "feature", "main", "MA1234567890")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async merge status in OSS")
+		require.NotNil(t, resp.JSON501)
+	})
+}
