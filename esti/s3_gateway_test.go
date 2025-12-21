@@ -924,6 +924,11 @@ func TestS3CopyObject(t *testing.T) {
 		sourceObjectStats := resp.JSON200
 		destObjectStats := resp.JSON200
 		require.Equal(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress, "source and dest physical address should match")
+
+		// Verify all metadata keys have the required X-Amz-Meta- prefix
+		for key := range destObjectStats.Metadata.AdditionalProperties {
+			require.Truef(t, strings.HasPrefix(key, amzMetaHeaderPrefix), "Metadata key %q must have prefix %s", key, amzMetaHeaderPrefix)
+		}
 		require.Equal(t, lowercaseKeys(userMetadata), destObjectStats.Metadata.AdditionalProperties, "source and dest metadata should match")
 	})
 
@@ -974,6 +979,11 @@ func TestS3CopyObject(t *testing.T) {
 
 		// assert that the physical addresses of the objects are not the same
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
+
+		// Verify all metadata keys have the required X-Amz-Meta- prefix
+		for key := range destObjectStats.Metadata.AdditionalProperties {
+			require.Truef(t, strings.HasPrefix(key, amzMetaHeaderPrefix), "Metadata key %q must have prefix %s", key, amzMetaHeaderPrefix)
+		}
 		require.Equal(t, lowercaseKeys(userMetadataReplace), destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
 	})
 }
@@ -1073,9 +1083,9 @@ func TestS3PutObjectUserMetadata(t *testing.T) {
 			require.NoError(t, VerifyResponse(statsResp.HTTPResponse, statsResp.Body), "statObject using lakeFS API")
 
 			// Because of #9089, any user metadata uploaded through the S3 gateway
-			// has a x-aws-meta- prefix.
+			// has a x-aws-meta- prefix. Verify all keys have this prefix.
 			strippedMetadata, err := stripKeyPrefix(amzMetaHeaderPrefix, statsResp.JSON200.Metadata.AdditionalProperties)
-			assert.NoErrorf(t, err, "Failed to strip prefix from metadata keys in %+v", statsResp.JSON200.Metadata.AdditionalProperties)
+			require.NoErrorf(t, err, "All metadata keys must have %s prefix, but got: %+v", amzMetaHeaderPrefix, statsResp.JSON200.Metadata.AdditionalProperties)
 
 			// Lower case the input metadata keys to align with S3 spec (keys are stored lowercase)
 			if diffs := deep.Equal(strippedMetadata, lowercaseKeys(metadata)); diffs != nil {

@@ -32,7 +32,6 @@ var (
 // - Letters: 'A'-'Z', 'a'-'z'
 // - Digits: '0'-'9'
 // - Special characters: '-', '_', '.', '#'
-// - Control characters: NUL (0x00), LF (0x0A)
 func isValidMetadataKey(key string) bool {
 	// Empty keys are invalid
 	if len(key) == 0 {
@@ -43,11 +42,6 @@ func isValidMetadataKey(key string) bool {
 		// Only allow ASCII characters
 		if r > unicode.MaxASCII {
 			return false
-		}
-
-		// NUL (0x00) and LF (0x0A) are allowed by S3
-		if r == 0x00 || r == 0x0A {
-			continue
 		}
 
 		if unicode.IsLetter(r) || unicode.IsDigit(r) {
