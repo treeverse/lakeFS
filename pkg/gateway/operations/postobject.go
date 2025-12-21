@@ -227,11 +227,6 @@ func (controller *PostObject) Handle(w http.ResponseWriter, req *http.Request, o
 	case query.Has(CompleteMultipartUploadQueryParam):
 		controller.HandleCompleteMultipartUpload(w, req, o)
 	default:
-		// check first if the client canceled the request
-		if httputil.IsRequestCanceled(req) {
-			w.WriteHeader(httputil.HttpStatusClientClosedRequest)
-			return
-		}
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }

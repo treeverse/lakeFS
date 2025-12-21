@@ -53,11 +53,6 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 		if rngErr != nil {
 			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 			if errors.Is(rngErr, httputil.ErrUnsatisfiableRange) {
-				// check first if the client canceled the request
-				if httputil.IsRequestCanceled(req) {
-					w.WriteHeader(httputil.HttpStatusClientClosedRequest)
-					return
-				}
 				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
 				return
 			}
