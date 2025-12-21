@@ -20,7 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	_ "github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -37,9 +37,13 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
-	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
+	const prefetchSize = 256
+	store, err := kv.Open(ctx, kvparams.Config{Type: "local", Local: &kvparams.Local{Path: "memory:gateway", PrefetchSize: prefetchSize}})
 	testutil.MustDo(t, "open kv store", err)
-	defer store.Close()
+	t.Cleanup(func() {
+		store.Close()
+	})
+
 	multipartTracker := multipart.NewTracker(store)
 
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)

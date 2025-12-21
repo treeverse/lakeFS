@@ -1877,15 +1877,20 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
+		var err error
 		if options.Condition == nil {
-			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
+			err = g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
+		} else {
+			// setFunc is a update function that sets the value regardless of the current value
+			setFunc := func(_ *Value) (*Value, error) {
+				return &value, nil
+			}
+			err = g.handleUpdate(ctx, repository, branchID, branch, key, setFunc, options.Condition)
 		}
-
-		// setFunc is a update function that sets the value regardless of the current value
-		setFunc := func(_ *Value) (*Value, error) {
-			return &value, nil
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			return fmt.Errorf("%w: %s", ErrPreconditionFailed, err)
 		}
-		return g.handleUpdate(ctx, repository, branchID, branch, key, setFunc, options.Condition)
+		return err
 	}, "set")
 	return err
 }

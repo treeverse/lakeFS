@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -35,10 +36,27 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	startTime := time.Now()
 	for branchIterator.Next() {
 		nextMark, count, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, pw, normalizedStorageNamespace, maxFileSize, prepareDuration, w, count, mark, startTime)
-		if err != nil {
+		if err != nil && !errors.Is(err, graveler.ErrBranchNotFound) {
+			// return on error, unless its a branch not found error.
+			// on branch not found, fall through to the next branch (next mark nil on error) to keep duration check.
 			return nil, false, err
 		}
 		if nextMark != nil {
+			break
+		}
+
+		// check if we need to stop - based on prepare duration only.
+		if prepareDuration > 0 && time.Since(startTime) > prepareDuration {
+			if !branchIterator.Next() {
+				// last branch processed, no next mark
+				break
+			}
+			// set next mark to the next branch
+			nextBranchID := branchIterator.Value().BranchID
+			nextMark = &GCUncommittedMark{
+				RunID:    runID,
+				BranchID: nextBranchID,
+			}
 			break
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
 )
 
@@ -101,6 +102,131 @@ func TestVerifyExpiration(t *testing.T) {
 					t.Errorf("expected error %v, got %v", tc.expectedError, err)
 				}
 			}
+		})
+	}
+}
+
+func TestGetAmzDate(t *testing.T) {
+	requestTime := time.Date(2025, 12, 15, 12, 30, 45, 0, time.UTC)
+	validAmzDate := requestTime.Format(v4timeFormat)             // "20240615T123045Z"
+	validCredentialDate := requestTime.Format(v4shortTimeFormat) // "20240615"
+
+	type header struct {
+		name  string
+		value string
+	}
+
+	testCases := []struct {
+		name           string
+		dateParam      string
+		dateHeaders    []header
+		credentialDate string
+		expectedDate   string
+		expectedError  error
+	}{
+		{
+			name:           "valid X-Amz-Date query param with matching credential date",
+			dateParam:      validAmzDate,
+			credentialDate: validCredentialDate,
+			expectedDate:   validAmzDate,
+			expectedError:  nil,
+		},
+		{
+			name:           "valid x-amz-date header with matching credential date",
+			dateHeaders:    []header{{name: "x-amz-date", value: validAmzDate}},
+			credentialDate: validCredentialDate,
+			expectedDate:   validAmzDate,
+			expectedError:  nil,
+		},
+		{
+			name:           "valid date header fallback with matching credential date",
+			dateHeaders:    []header{{name: "date", value: validAmzDate}},
+			credentialDate: validCredentialDate,
+			expectedDate:   validAmzDate,
+			expectedError:  nil,
+		},
+		{
+			name:           "query param takes precedence over header",
+			dateParam:      validAmzDate,
+			dateHeaders:    []header{{name: "x-amz-date", value: "20200101T000000Z"}},
+			credentialDate: validCredentialDate,
+			expectedDate:   validAmzDate,
+			expectedError:  nil,
+		},
+		{
+			name:           "missing date header",
+			dateHeaders:    []header{},
+			credentialDate: validCredentialDate,
+			expectedDate:   "",
+			expectedError:  errors.ErrMissingDateHeader,
+		},
+		{
+			name:           "malformed X-Amz-Date - wrong format",
+			dateHeaders:    []header{{name: "x-amz-date", value: "2024-12-15T12:00:00Z"}},
+			credentialDate: validCredentialDate,
+			expectedDate:   "",
+			expectedError:  errors.ErrMalformedDate,
+		},
+		{
+			name:           "malformed X-Amz-Date - invalid string",
+			dateHeaders:    []header{{name: "x-amz-date", value: "not-a-date"}},
+			credentialDate: validCredentialDate,
+			expectedDate:   "",
+			expectedError:  errors.ErrMalformedDate,
+		},
+		{
+			name:           "malformed credential date - wrong format",
+			dateHeaders:    []header{{name: "x-amz-date", value: validAmzDate}},
+			credentialDate: "2024-12-15", // wrong format
+			expectedDate:   "",
+			expectedError:  errors.ErrMalformedCredentialDate,
+		},
+		{
+			name:           "malformed credential date - empty",
+			dateHeaders:    []header{{name: "x-amz-date", value: validAmzDate}},
+			credentialDate: "",
+			expectedDate:   "",
+			expectedError:  errors.ErrMalformedCredentialDate,
+		},
+		{
+			name:           "credential date one day earlier than X-Amz-Date",
+			dateHeaders:    []header{{name: "x-amz-date", value: validAmzDate}},
+			credentialDate: requestTime.Add(-24 * time.Hour).Format(v4shortTimeFormat),
+			expectedDate:   "",
+			expectedError:  errors.ErrInvalidCredentialDate,
+		},
+		{
+			name:           "credential date one day later than X-Amz-Date",
+			dateHeaders:    []header{{name: "x-amz-date", value: validAmzDate}},
+			credentialDate: requestTime.Add(24 * time.Hour).Format(v4shortTimeFormat),
+			expectedDate:   "",
+			expectedError:  errors.ErrInvalidCredentialDate,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/test", nil)
+			if tc.dateParam != "" {
+				req.URL.RawQuery = "X-Amz-Date=" + tc.dateParam
+			}
+
+			for _, header := range tc.dateHeaders {
+				req.Header.Set(header.name, header.value)
+			}
+
+			ctx := &verificationCtx{
+				Request: req,
+				Query:   req.URL.Query(),
+				AuthValue: V4Auth{
+					Date: tc.credentialDate,
+				},
+			}
+
+			amzDate, err := ctx.getAmzDate()
+
+			require.ErrorIs(t, err, tc.expectedError)
+			require.Equal(t, tc.expectedDate, amzDate)
 		})
 	}
 }

@@ -139,12 +139,6 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("failed to create login token provider")
 		}
 
-		blockstoreType := baseCfg.Blockstore.Type
-		if blockstoreType == "mem" {
-			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
-			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
-		}
-
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
@@ -153,6 +147,16 @@ var runCmd = &cobra.Command{
 		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
+		}
+
+		blockstoreMetadata, err := blockStore.BlockstoreMetadata(ctx)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to get block adapter metadata")
+		}
+		if !blockstoreMetadata.IsProductionSafe {
+			blockstoreType := blockStore.BlockstoreType()
+			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
+			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const (
@@ -62,14 +63,47 @@ var mergeCmd = &cobra.Command{
 			AllowEmpty:  &allowEmpty,
 			SquashMerge: &squash,
 		}
+		ctx := cmd.Context()
+		var mergeResult *apigen.MergeResult
 
-		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
-		if resp != nil && resp.JSON409 != nil {
-			Die("Conflict found.", 1)
-		}
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+		// try asynchronous merge first
+		startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
+		if startResp.JSON501 == nil { // Async supported or error
+			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
+			if startResp.JSON202 == nil {
+				Die("Bad response from server", 1)
+			}
+			taskID := startResp.JSON202.Id
+			err := pollAsyncOperationStatus(ctx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
+				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
+				if err != nil {
+					return nil, err
+				}
+				if resp.JSON200 == nil {
+					Die("Bad response from server", 1)
+				}
+				if apiutil.Value(resp.JSON200.StatusCode) == http.StatusConflict { // Align die msg with sync response of conflict
+					Die("Conflict found.", 1)
+				}
+				mergeResult = resp.JSON200.Result
+				return &resp.JSON200.AsyncTaskStatus, nil
+			})
+			if err != nil {
+				DieErr(err)
+			}
+			if mergeResult == nil {
+				Die("Bad response from server", 1)
+			}
+		} else {
+			resp, err := client.MergeIntoBranchWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
+			if resp != nil && resp.JSON409 != nil {
+				Die("Conflict found.", 1)
+			}
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
+			mergeResult = resp.JSON200
 		}
 
 		Write(mergeCreateTemplate, struct {
@@ -80,7 +114,7 @@ var mergeCmd = &cobra.Command{
 				FromRef: sourceRef.Ref,
 				ToRef:   destinationRef.Ref,
 			},
-			Result: resp.JSON200,
+			Result: mergeResult,
 		})
 	},
 }

@@ -45,6 +45,6 @@ export class RepositoriesPage {
             await expect(this.page.getByRole("heading", { name: SAMPLE_REPO_README_TITLE })).toBeVisible();
             return;
         }
-        expect(this.page.getByRole("heading", { name: REGULAR_REPO_README_TITLE })).toBeVisible();
+        await expect(this.page.getByRole("heading", { name: REGULAR_REPO_README_TITLE })).toBeVisible();
     }
 }

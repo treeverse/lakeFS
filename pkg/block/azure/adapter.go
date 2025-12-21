@@ -445,23 +445,6 @@ func calcETag(contentMD5 []byte, etag *azcore.ETag) string {
 	return ""
 }
 
-func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
-	var err error
-	defer reportMetrics("Remove", obj.StorageID, time.Now(), nil, &err)
-	qualifiedKey, err := resolveBlobURLInfo(obj)
-	if err != nil {
-		return err
-	}
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
-	if err != nil {
-		return err
-	}
-	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
-
-	_, err = blobURL.Delete(ctx, nil)
-	return err
-}
-
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Copy", sourceObj.StorageID, time.Now(), nil, &err)
@@ -633,7 +616,9 @@ func (a *Adapter) BlockstoreType() string {
 }
 
 func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
-	return nil, block.ErrOperationNotSupported
+	return &block.BlockstoreMetadata{
+		IsProductionSafe: true,
+	}, nil
 }
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {

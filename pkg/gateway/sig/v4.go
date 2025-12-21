@@ -353,9 +353,9 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 		return "", errors.ErrMalformedCredentialDate
 	}
 
-	// ensure same date
+	// ensure request date matches signature date
 	if sigTS.Year() != ts.Year() || sigTS.Month() != ts.Month() || sigTS.Day() != ts.Day() {
-		return "", errors.ErrMalformedCredentialDate
+		return "", errors.ErrInvalidCredentialDate
 	}
 
 	return amzDate, nil
