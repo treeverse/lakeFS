@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	}
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "fsouza/fake-gcs-server",
-		Tag:        "1.52.2",
+		Tag:        "1.52.3",
 		Cmd: []string{
 			"-scheme", "http",
 			"-backend", "memory",
