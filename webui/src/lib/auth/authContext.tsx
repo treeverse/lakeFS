@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect } from "react";
+import React, {
+    createContext,
+    useContext,
+    useMemo,
+    useState,
+    ReactNode,
+    useCallback,
+    useEffect,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api";
 import { getCurrentRelativeUrl, isPublicAuthRoute, ROUTES } from "../utils";
@@ -10,7 +18,7 @@ export const AUTH_STATUS = {
     PENDING: "pending",
 } as const;
 
-export type AuthStatus = typeof AUTH_STATUS[keyof typeof AUTH_STATUS];
+export type AuthStatus = (typeof AUTH_STATUS)[keyof typeof AUTH_STATUS];
 
 type User = { id?: string } | null;
 
@@ -29,23 +37,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User>(null);
     const navigate = useNavigate();
 
-    const refreshUser = useCallback(
-        async ({ useCache = true }: { useCache?: boolean } = {}) => {
-            if (!useCache && status !== AUTH_STATUS.AUTHENTICATED) setStatus(AUTH_STATUS.PENDING);
-            try {
-                const u = useCache
-                    ? await auth.getCurrentUserWithCache()
-                    : await auth.getCurrentUser();
-                const ok = Boolean(u?.id);
-                setUser(ok ? u : null);
-                setStatus(ok ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED);
-            } catch {
-                setUser(null);
-                setStatus(AUTH_STATUS.UNAUTHENTICATED);
-            }
-        },
-        []
-    );
+    const refreshUser = useCallback(async ({ useCache = true }: { useCache?: boolean } = {}) => {
+        if (!useCache && status !== AUTH_STATUS.AUTHENTICATED) setStatus(AUTH_STATUS.PENDING);
+        try {
+            const u = useCache ? await auth.getCurrentUserWithCache() : await auth.getCurrentUser();
+            const ok = Boolean(u?.id);
+            setUser(ok ? u : null);
+            setStatus(ok ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED);
+        } catch {
+            setUser(null);
+            setStatus(AUTH_STATUS.UNAUTHENTICATED);
+        }
+    }, []);
 
     // When we get a 401, clear local auth and navigate to the login page.
     // We set `redirected: true` and pass `next` (the current URL) so the login page
@@ -64,16 +67,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     }, [navigate]);
 
-    useEffect(() => { void refreshUser({ useCache: false }); }, []);
+    useEffect(() => {
+        void refreshUser({ useCache: false });
+    }, []);
 
     useEffect(() => {
         const onPageShow = (e: PageTransitionEvent) => {
-            if ((e).persisted) {
+            if (e.persisted) {
                 void refreshUser({ useCache: false });
             }
         };
-        window.addEventListener('pageshow', onPageShow);
-        return () => window.removeEventListener('pageshow', onPageShow);
+        window.addEventListener("pageshow", onPageShow);
+        return () => window.removeEventListener("pageshow", onPageShow);
     }, [refreshUser]);
 
     useEffect(() => {
@@ -91,7 +96,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value = useMemo<AuthContextType>(
         () => ({ status, user, refreshUser, setStatus, onUnauthenticated }),
-        [status, user, refreshUser, onUnauthenticated]
+        [status, user, refreshUser, onUnauthenticated],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

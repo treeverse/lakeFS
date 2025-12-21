@@ -4,7 +4,7 @@ import { PluginRepoCreationForm } from "../pluginRepoCreationForm";
 import { RepositoryCreateForm } from "../../../lib/components/repositoryCreateForm";
 
 const DefaultRepoCreationFormPlugin: PluginRepoCreationForm = {
-    build: ({formID, configs, formValid, setFormValid, onSubmit, error}) => {
+    build: ({ formID, configs, formValid, setFormValid, onSubmit, error }) => {
         const config = configs && configs.length ? configs[0] : null;
         return (
             <RepositoryCreateForm
@@ -20,7 +20,6 @@ const DefaultRepoCreationFormPlugin: PluginRepoCreationForm = {
     allowSampleRepoCreationFunc: () => {
         return true;
     },
-}
+};
 
 export default DefaultRepoCreationFormPlugin;
-

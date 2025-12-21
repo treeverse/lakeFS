@@ -7,5 +7,8 @@ export type LoginStrategyResult = {
 };
 
 export interface PluginLoginStrategy {
-    getLoginStrategy(loginConfig: LoginConfig, router: ReturnType<typeof useRouter>): LoginStrategyResult;
+    getLoginStrategy(
+        loginConfig: LoginConfig,
+        router: ReturnType<typeof useRouter>,
+    ): LoginStrategyResult;
 }

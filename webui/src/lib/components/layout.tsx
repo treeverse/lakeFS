@@ -1,9 +1,9 @@
 import React, { FC, useContext, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { ConfigProvider } from "../hooks/configProvider";
-import TopNav from './navbar';
+import TopNav from "./navbar";
 import { AppContext } from "../hooks/appContext";
-import {AUTH_STATUS, useAuth} from "../auth/authContext";
+import { AUTH_STATUS, useAuth } from "../auth/authContext";
 
 const Layout: FC = () => {
     const { status } = useAuth();
@@ -13,13 +13,13 @@ const Layout: FC = () => {
     useEffect(() => {
         document.documentElement.setAttribute(
             "data-bs-theme",
-            state.settings.darkMode ? "dark" : "light"
+            state.settings.darkMode ? "dark" : "light",
         );
     }, [state.settings.darkMode]);
 
     return (
         <ConfigProvider>
-            {showTopNav && <TopNav/>}
+            {showTopNav && <TopNav />}
             <div className="main-app">
                 <Outlet />
             </div>

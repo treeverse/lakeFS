@@ -20,12 +20,12 @@ const DarkModeToggle: FC = () => {
             duration={750}
             placeholder=""
             style={{
-                color: 'white',
-                fontSize: 'var(--spacing-xl)',
-                marginRight: 'var(--spacing-md)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                color: "white",
+                fontSize: "var(--spacing-xl)",
+                marginRight: "var(--spacing-md)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
             }}
         />
     );

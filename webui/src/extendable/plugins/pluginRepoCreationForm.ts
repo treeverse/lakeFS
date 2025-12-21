@@ -7,7 +7,7 @@ type RepoCreationFormParams = {
     setFormValid: unknown;
     onSubmit: unknown;
     error: null | undefined;
-}
+};
 
 export interface PluginRepoCreationForm {
     build: (params: RepoCreationFormParams) => React.ReactElement;
