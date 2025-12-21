@@ -170,7 +170,7 @@ type ListMultipartUploadsOutput struct {
 	Uploads            []Upload `xml:"Upload"`
 	NextKeyMarker      string   `xml:"NextKeyMarker,omitempty"`
 	NextUploadIDMarker string   `xml:"NextUploadIdMarker,omitempty"`
-	IsTruncated        bool     `xml:"IsTruncated,omitempty"`
+	IsTruncated        bool     `xml:"IsTruncated"`
 	MaxUploads         int32    `xml:"MaxUploads,omitempty"`
 }
 

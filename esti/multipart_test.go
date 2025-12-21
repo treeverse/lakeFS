@@ -36,13 +36,8 @@ func TestMultipartUpload(t *testing.T) {
 	defer tearDownTest(repo)
 	file := "multipart_file"
 	path := mainBranch + "/" + file
-	input := &s3.CreateMultipartUploadInput{
-		Bucket: aws.String(repo),
-		Key:    aws.String(path),
-	}
 
-	resp, err := svc.CreateMultipartUpload(ctx, input)
-	require.NoError(t, err, "failed to create multipart upload")
+	resp := createMultipartHelper(ctx, t, svc, repo, path)
 	logger.Info("Created multipart upload request")
 
 	parts := make([][]byte, multipartNumberOfParts)
@@ -101,30 +96,20 @@ func TestMultipartUploadAbort(t *testing.T) {
 
 	t.Run("exists", func(t *testing.T) {
 		const objPath = mainBranch + "/multipart_file1"
-		createInput := &s3.CreateMultipartUploadInput{
-			Bucket: aws.String(repo),
-			Key:    aws.String(objPath),
-		}
-		createResp, err := svc.CreateMultipartUpload(ctx, createInput)
-		require.NoError(t, err, "CreateMultipartUpload")
+		createResp := createMultipartHelper(ctx, t, svc, repo, objPath)
 
 		abortInput := &s3.AbortMultipartUploadInput{
 			Bucket:   aws.String(repo),
 			Key:      aws.String(objPath),
 			UploadId: createResp.UploadId,
 		}
-		_, err = svc.AbortMultipartUpload(ctx, abortInput)
+		_, err := svc.AbortMultipartUpload(ctx, abortInput)
 		require.NoError(t, err, "AbortMultipartUpload")
 	})
 
 	t.Run("unknown_upload_id", func(t *testing.T) {
 		const objPath = mainBranch + "/multipart_file2"
-		createInput := &s3.CreateMultipartUploadInput{
-			Bucket: aws.String(repo),
-			Key:    aws.String(objPath),
-		}
-		createResp, err := svc.CreateMultipartUpload(ctx, createInput)
-		require.NoError(t, err, "CreateMultipartUpload")
+		createResp := createMultipartHelper(ctx, t, svc, repo, objPath)
 
 		uploadID := aws.ToString(createResp.UploadId)
 		// reverse the upload id to get valid unknown upload id
@@ -135,25 +120,20 @@ func TestMultipartUploadAbort(t *testing.T) {
 			Key:      aws.String(objPath),
 			UploadId: aws.String(unknownUploadID),
 		}
-		_, err = svc.AbortMultipartUpload(ctx, abortInput)
+		_, err := svc.AbortMultipartUpload(ctx, abortInput)
 		require.Error(t, err, "AbortMultipartUpload should fail with unknown upload id")
 	})
 
 	t.Run("unknown_key", func(t *testing.T) {
 		const objPath = mainBranch + "/multipart_file3"
-		createInput := &s3.CreateMultipartUploadInput{
-			Bucket: aws.String(repo),
-			Key:    aws.String(objPath),
-		}
-		createResp, err := svc.CreateMultipartUpload(ctx, createInput)
-		require.NoError(t, err, "CreateMultipartUpload")
+		createResp := createMultipartHelper(ctx, t, svc, repo, objPath)
 
 		abortInput := &s3.AbortMultipartUploadInput{
 			Bucket:   aws.String(repo),
 			Key:      aws.String(mainBranch + "/unknown_file"),
 			UploadId: createResp.UploadId,
 		}
-		_, err = svc.AbortMultipartUpload(ctx, abortInput)
+		_, err := svc.AbortMultipartUpload(ctx, abortInput)
 		require.Error(t, err, "AbortMultipartUpload should fail with unknown key")
 	})
 }
