@@ -3,6 +3,7 @@ package retention
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -29,19 +30,35 @@ type CommitsMap struct {
 }
 
 // BinaryCommitID holds the bytes of a commit ID as a string.  It has exactly
-// arena.KEY_SIZE_BOUND bytes.
+// arena.KeySizeBound bytes.
 type BinaryCommitID string
 
-func ToBinaryCommitID(hexID graveler.CommitID) BinaryCommitID {
+var (
+	ErrBadCommitID = errors.New("bad format commit ID")
+)
+
+func ToBinaryCommitID(hexID graveler.CommitID) (BinaryCommitID, error) {
 	b, err := hex.DecodeString(string(hexID))
 	if err != nil {
 		// This check should happen at compile time but the Go type system is far too
-		// weak for that.  It is safe here because **all commit IDs are the same size**
-		// - if the size is wrong, the code will always fail integration testing.  So
-		// "it cannot happen".
-		panic(fmt.Sprintf("decode hex %s: %s", hexID, err))
+		// weak for that.  It is safe here because **all commit IDs are hex** - if not,
+		// this code will always fail integration testing.  So "it cannot happen".
+		return "", fmt.Errorf("%w: decode hex %s: %s", ErrBadCommitID, hexID, err)
 	}
-	return BinaryCommitID(b[:arena.KEY_SIZE_BOUND])
+	if len(b) < arena.KeySizeBound {
+		return "", fmt.Errorf("%w: %d too short", ErrBadCommitID, len(b))
+	}
+	return BinaryCommitID(b[:arena.KeySizeBound]), nil
+}
+
+func MustToBinaryCommitID(hexID graveler.CommitID) BinaryCommitID {
+	ret, err := ToBinaryCommitID(hexID)
+	if err != nil {
+		// See ToBinaryCommitID - this cannot happen in the system, and is caught by
+		// testing.
+		panic(err)
+	}
+	return ret
 }
 
 func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (CommitsMap, error) {
@@ -53,7 +70,7 @@ func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (Co
 	defer it.Close()
 	for it.Next() {
 		commit := it.Value()
-		initialMap.Put(ToBinaryCommitID(commit.CommitID), nodeFromCommit(commit.Commit))
+		initialMap.Put(MustToBinaryCommitID(commit.CommitID), nodeFromCommit(commit.Commit))
 	}
 	initialMap.Optimize()
 	return CommitsMap{
@@ -67,13 +84,13 @@ func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (Co
 
 // Set sets a commit.  It will not be looked up again in CommitGetter.
 func (c *CommitsMap) Set(id graveler.CommitID, node CommitNode) {
-	c.Map.Put(ToBinaryCommitID(id), node)
+	c.Map.Put(MustToBinaryCommitID(id), node)
 }
 
 // Get gets a commit.  If the commit has not been Set it uses CommitGetter
 // to read it.
 func (c *CommitsMap) Get(id graveler.CommitID) (*CommitNode, error) {
-	ret := c.Map.Get(ToBinaryCommitID(id))
+	ret := c.Map.Get(MustToBinaryCommitID(id))
 	if ret != nil {
 		return ret, nil
 	}
@@ -82,7 +99,7 @@ func (c *CommitsMap) Get(id graveler.CommitID) (*CommitNode, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get missing commit ID %s: %w", id, err)
 	}
-	ret = c.Map.Put(ToBinaryCommitID(id), nodeFromCommit(commit))
+	ret = c.Map.Put(MustToBinaryCommitID(id), nodeFromCommit(commit))
 	c.NumMisses++
 	createdAt := time.UnixMicro(ret.CreationUsecs)
 	c.Log.WithFields(logging.Fields{
@@ -200,7 +217,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 func makeCommitMap(commitNodes arena.Map[BinaryCommitID, CommitNode], commitSet map[graveler.CommitID]struct{}) map[graveler.CommitID]graveler.MetaRangeID {
 	res := make(map[graveler.CommitID]graveler.MetaRangeID)
 	for commitID := range commitSet {
-		res[commitID] = commitNodes.Get(ToBinaryCommitID(commitID)).MetaRangeID
+		res[commitID] = commitNodes.Get(MustToBinaryCommitID(commitID)).MetaRangeID
 	}
 	return res
 }
