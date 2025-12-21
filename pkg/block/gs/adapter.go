@@ -325,20 +325,6 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	return props, nil
 }
 
-func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
-	var err error
-	defer reportMetrics("Remove", obj.StorageID, time.Now(), nil, &err)
-	bucket, key, err := a.extractParamsFromObj(obj)
-	if err != nil {
-		return err
-	}
-	err = a.client.Bucket(bucket).Object(key).Delete(ctx)
-	if err != nil {
-		return fmt.Errorf("Object(%q).Delete: %w", key, err)
-	}
-	return nil
-}
-
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Copy", sourceObj.StorageID, time.Now(), nil, &err)
@@ -695,7 +681,9 @@ func (a *Adapter) BlockstoreType() string {
 }
 
 func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
-	return nil, block.ErrOperationNotSupported
+	return &block.BlockstoreMetadata{
+		IsProductionSafe: true,
+	}, nil
 }
 
 func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {

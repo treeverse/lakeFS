@@ -1,12 +1,13 @@
 package cmd
 
 import (
-	"net/http"
-	"time"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
+
+	"net/http"
+	"time"
 )
 
 var authUsersList = &cobra.Command{
@@ -31,11 +32,12 @@ var authUsersList = &cobra.Command{
 		rows := make([][]interface{}, len(users))
 		for i, user := range users {
 			ts := time.Unix(user.CreationDate, 0).String()
-			rows[i] = []interface{}{user.Id, ts}
+			username := cmdutils.Coalesce(user.FriendlyName, user.Email, user.Id)
+			rows[i] = []interface{}{user.Id, username, ts}
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"User ID", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []interface{}{"ID", "User", "Creation Date"}, &pagination, amount)
 	},
 }
 

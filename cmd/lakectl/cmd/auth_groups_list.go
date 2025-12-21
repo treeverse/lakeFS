@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 var authGroupsListCmd = &cobra.Command{
@@ -30,11 +31,11 @@ var authGroupsListCmd = &cobra.Command{
 		rows := make([][]interface{}, len(groups))
 		for i, group := range groups {
 			ts := time.Unix(group.CreationDate, 0).String()
-			rows[i] = []interface{}{group.Id, ts}
+			rows[i] = []interface{}{group.Id, cmdutils.Coalesce(group.Name, group.Id), ts}
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []interface{}{"ID", "Group Name", "Creation Date"}, &pagination, amount)
 	},
 }
 

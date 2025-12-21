@@ -1,7 +1,8 @@
 interface User {
   id: string;
-  email: string;
-  friendly_name: string;
+  creation_date: number;
+  email?: string;
+  friendly_name?: string;
 }
 
 export const resolveUserDisplayName = (user: User): string => {

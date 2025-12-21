@@ -5,7 +5,7 @@ import Button from "react-bootstrap/Button";
 import Tooltip from "react-bootstrap/Tooltip";
 import {OverlayTrigger} from "react-bootstrap";
 import { ButtonVariant } from "react-bootstrap/esm/types";
-import { GetUserEmailByIdContext } from "../../pages/auth/users";
+import { GetUserDisplayNameByIdContext } from "../../pages/auth/users";
 
 interface ConfirmationModalProps {
     show: boolean;
@@ -29,7 +29,7 @@ interface ConfirmationButtonProps {
 // Extend the ConfirmationButtonProps, but omit the msg property,
 // so we can extend it for this use case
 interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProps, "msg"> {
-    msg: ReactNode | ((email: string) => ReactNode);
+    msg: ReactNode | ((userDisplayName: string) => ReactNode);
     userId: string;
 }
 export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = "danger" }) => {
@@ -50,12 +50,12 @@ export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, ms
 };
 
 export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProps> = ({ userId, msg, onConfirm, variant, modalVariant, size, disabled = false, tooltip = null, children }) => {
-    const getUserEmailById = useContext(GetUserEmailByIdContext);
-    const email = useMemo(() => getUserEmailById(userId), [userId, getUserEmailById]);
+    const getUserDisplayNameById = useContext(GetUserDisplayNameByIdContext);
+    const userDisplayName = useMemo(() => getUserDisplayNameById(userId), [userId, getUserDisplayNameById]);
 
     let msgNode: ReactNode;
     if (typeof msg === "function") {
-        msgNode = msg(email);
+        msgNode = msg(userDisplayName);
     } else {
         msgNode = msg;
     }
