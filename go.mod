@@ -62,6 +62,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
+	github.com/DmitriyVTitov/size v1.5.0
 	github.com/IBM/pgxpoolprometheus v1.1.1
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/NVIDIA/sortedmap v1.30.0
@@ -124,14 +125,13 @@ require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
-	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.50.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/NVIDIA/cstruct v1.30.0 // indirect
-	github.com/NVIDIA/sortedmap v1.30.0 // indirect
 	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
 	github.com/aws/aws-sdk-go v1.48.11 // indirect
