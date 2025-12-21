@@ -169,6 +169,7 @@ nav:
               - Monitoring using Prometheus: reference/monitor.md
               - Auditing: reference/auditing.md
           - Migrating away: howto/migrate-away.md
+          - Async Commit and Merge: howto/async-commit-merge.md
   - lakeFS Enterprise &nbsp; 🚀:
       - Features: enterprise/index.md
       - lakeFS Cloud: cloud/index.md
