@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestDownloadMetadataObject(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	repo := createRepositoryUnique(ctx, t)
 	UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930", nil)

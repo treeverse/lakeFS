@@ -18,7 +18,7 @@ import (
 
 func newTestStagingManager(t *testing.T) (context.Context, graveler.StagingManager) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	return ctx, staging.NewManager(ctx, store, kv.NewStoreLimiter(store, ratelimit.NewUnlimited()), false, nil)
 }
@@ -154,7 +154,7 @@ func setupDrop(ctx context.Context, t *testing.T, numOfValues int, s graveler.St
 }
 
 func TestDropAsync(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	ch := make(chan bool)
 	s := staging.NewManager(ctx, store, kv.NewStoreLimiter(store, ratelimit.NewUnlimited()), false, nil)

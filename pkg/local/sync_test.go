@@ -4,7 +4,6 @@
 package local_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,7 +27,7 @@ import (
 func TestSyncManager_download(t *testing.T) {
 	currentUID := os.Getuid()
 	currentGID := os.Getgid()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testCases := []struct {
 		Name             string
@@ -252,7 +251,7 @@ func TestSyncManager_download(t *testing.T) {
 }
 
 func TestSyncManager_upload(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testCases := []struct {
 		Name            string
@@ -427,7 +426,7 @@ func TestSyncManager_download_symlinks(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			testFolderPath := t.TempDir()
@@ -508,7 +507,7 @@ func TestSyncManager_download_symlinks(t *testing.T) {
 }
 
 func TestSyncManager_upload_symlinks(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testCases := []struct {
 		Name             string

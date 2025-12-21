@@ -1876,7 +1876,7 @@ func runMergeTests(tests testCases, t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					ctx := context.Background()
+					ctx := t.Context()
 					writer := mock.NewMockMetaRangeWriter(ctrl)
 					for _, action := range expectedResult.expectedActions {
 						switch action.action {
@@ -1936,7 +1936,7 @@ func TestMergeCancelContext(t *testing.T) {
 			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1}).
 			AddValueRecords(makeV("b", "dest:b"))
 		writer := mock.NewMockMetaRangeWriter(ctrl)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 		err := committed.Merge(ctx, sCtx, writer, nil, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
@@ -1951,7 +1951,7 @@ func TestMergeCancelContext(t *testing.T) {
 			AddValueRecords(makeV("a", "base:a"), makeV("c", "base:c"))
 		destination := testutil.NewFakeIterator()
 		writer := mock.NewMockMetaRangeWriter(ctrl)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 		err := committed.Merge(ctx, sCtx, writer, nil, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
@@ -1968,7 +1968,7 @@ func TestMergeCancelContext(t *testing.T) {
 			AddRange(&committed.Range{ID: "three", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1}).
 			AddValueRecords(makeV("b", "dest:b"))
 		writer := mock.NewMockMetaRangeWriter(ctrl)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 		err := committed.Merge(ctx, sCtx, writer, nil, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
@@ -1983,7 +1983,7 @@ func TestMergeCancelContext(t *testing.T) {
 			AddRange(&committed.Range{ID: "one", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1}).
 			AddValueRecords(makeV("b", "dest:b"))
 		writer := mock.NewMockMetaRangeWriter(ctrl)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 		err := committed.Merge(ctx, sCtx, writer, nil, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")

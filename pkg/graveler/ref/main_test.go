@@ -1,7 +1,6 @@
 package ref_test
 
 import (
-	"context"
 	"flag"
 	"os"
 	"testing"
@@ -32,7 +31,7 @@ var (
 
 func testRefManager(t testing.TB) (graveler.RefManager, kv.Store) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),
@@ -47,7 +46,7 @@ func testRefManager(t testing.TB) (graveler.RefManager, kv.Store) {
 
 func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.Store) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	cfg := ref.ManagerConfig{
 		Executor:              batch.NopExecutor(),

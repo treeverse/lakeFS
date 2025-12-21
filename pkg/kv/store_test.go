@@ -58,7 +58,7 @@ func (m *MockDriver) Open(_ context.Context, params kvparams.Config) (kv.Store, 
 
 func TestRegister(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("open", func(t *testing.T) {
 		md := &MockDriver{Name: "md"}

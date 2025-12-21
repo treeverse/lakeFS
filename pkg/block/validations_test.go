@@ -1,7 +1,6 @@
 package block_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/go-openapi/swag"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestController_ValidateInterRegionStorage(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("namespace with the same region as the storage", func(t *testing.T) {
 		opts := []testutil.MockAdapterOption{

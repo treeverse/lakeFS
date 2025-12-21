@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -128,7 +127,7 @@ func TestConfig_DomainNamePrefix(t *testing.T) {
 }
 
 func TestConfig_BuildBlockAdapter(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	t.Run("local block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)

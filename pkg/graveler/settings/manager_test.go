@@ -46,7 +46,7 @@ func (m *mockCache) GetOrSetWithExpiry(k interface{}, setFn cache.SetFnWithExpir
 }
 
 func TestNonExistent(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := prepareTest(t, ctx, nil, nil)
 	setting := &settings.ExampleSettings{}
 	err := m.Get(ctx, repository, "settingKey", setting)
@@ -59,7 +59,7 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestSaveAndGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mc := &mockCache{
 		c: make(map[interface{}]interface{}),
 	}
@@ -94,7 +94,7 @@ func TestSaveAndGet(t *testing.T) {
 }
 
 func TestGetLatest(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := prepareTest(t, ctx, nil, nil)
 	err := m.Save(ctx, repository, "settingKey", newSetting(5, 6, "hello"), nil)
 	testutil.Must(t, err)
@@ -110,7 +110,7 @@ func TestGetLatest(t *testing.T) {
 }
 
 func TestConditionalUpdate(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mc := &mockCache{
 		c: make(map[interface{}]interface{}),
 	}

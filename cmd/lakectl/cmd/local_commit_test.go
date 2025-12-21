@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -209,7 +208,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 			defer server.Close()
 
 			testClient := getTestClient(t, server.URL)
-			res := hasExternalChange(context.Background(), testClient, remote, idx)
+			res := hasExternalChange(t.Context(), testClient, remote, idx)
 			require.Equal(t, tc.expectedResult, res)
 		})
 	}

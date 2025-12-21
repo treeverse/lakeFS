@@ -91,7 +91,7 @@ func (m *memCollector) Close() {}
 
 func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
-	res, err := clt.SetupWithResponse(context.Background(), apigen.SetupJSONRequestBody{
+	res, err := clt.SetupWithResponse(t.Context(), apigen.SetupJSONRequestBody{
 		Username: "admin",
 	})
 	testutil.Must(t, err)
@@ -107,7 +107,7 @@ func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterfac
 
 func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if viper.Get(config.BlockstoreTypeKey) == nil {
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
@@ -132,8 +132,11 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	}, logging.FromContext(ctx))
 	meta := auth.NewKVMetadataManager("serve_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 
+	// Use context.WithoutCancel to prevent test timeout from cancelling catalog's background goroutines
+	// This preserves context values (like logging) while preventing cancellation propagation
+	catalogCtx := context.WithoutCancel(ctx)
 	// Do not validate invalid config (missing required fields).
-	c, err := catalog.New(ctx, catalog.Config{
+	c, err := catalog.New(catalogCtx, catalog.Config{
 		Config:                cfg,
 		KVStore:               kvStore,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
@@ -288,7 +291,7 @@ func TestInvalidRoute(t *testing.T) {
 		t.Fatal("failed to create api client:", err)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 	if err != nil {
 		t.Fatalf("failed to get lakefs server version")

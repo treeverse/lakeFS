@@ -36,8 +36,7 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-GOTEST_PARALLELISM=4
-
+GOTEST_FLAGS=-count=1 -race -failfast
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
 
@@ -182,7 +181,7 @@ esti: ## run esti (system testing)
 test: test-go test-hadoopfs  ## Run tests for the project
 
 test-go: gen-api			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
-	go list -f '{{.Dir}}/...' -m | xargs $(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" ./...
+	go list -f '{{.Dir}}/...' -m | xargs $(GOTEST) -coverprofile=cover.out -cover $(GOTEST_FLAGS) ./...
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test

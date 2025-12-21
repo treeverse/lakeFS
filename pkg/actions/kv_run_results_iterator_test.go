@@ -28,7 +28,7 @@ const (
 )
 
 func TestRunResultsIterator(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 
 	keyMap, keyList := createTestData(t, ctx, kvStore)

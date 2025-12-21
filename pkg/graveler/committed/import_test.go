@@ -1,7 +1,6 @@
 package committed_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -400,7 +399,7 @@ func Test_import(t *testing.T) {
 			t.Run(tst.name, func(t *testing.T) {
 				ctrl := gomock.NewController(t)
 				defer ctrl.Finish()
-				ctx := context.Background()
+				ctx := t.Context()
 				writer := mock.NewMockMetaRangeWriter(ctrl)
 				for _, action := range expectedResult.expectedActions {
 					switch action.action {

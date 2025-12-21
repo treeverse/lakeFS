@@ -160,7 +160,7 @@ func TestAuditChecker_PassVersionOnRequest(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	installationID := "a-sample-installation-id"
 	for _, version := range []string{"v1", "v1.2", "v2.0.1"} {
 		t.Run(version, func(t *testing.T) {
@@ -212,7 +212,7 @@ func TestAuditChecker_Check(t *testing.T) {
 		}},
 		{name: "failed", alerts: []Alert{}, statusCode: http.StatusInternalServerError, wantErr: true},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	installationID := "a-sample-installation-id"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -284,7 +284,7 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 
 	installationID := "a-sample-installation-id"
 	checker := NewAuditChecker(svr.URL, "v1.0", installationID, nil)
-	ctx := context.Background()
+	ctx := t.Context()
 	memLog := &MemLogger{}
 	checker.CheckAndLog(ctx, memLog)
 

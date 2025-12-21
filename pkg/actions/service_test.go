@@ -68,7 +68,7 @@ func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writ
 }
 
 func TestServiceRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	var lastManifest *actions.RunManifest
 	var writerBytes []byte
@@ -254,7 +254,7 @@ hooks:
 }
 
 func TestDisableHooksRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	testOutputWriter, ctrl, ts, record := setupTest(t)
 	defer ts.Close()
 
@@ -292,7 +292,7 @@ func TestDisableHooksRun(t *testing.T) {
 }
 
 func TestMissingEnvVar(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	testOutputWriter, ctrl, _, record := setupTest(t)
 
 	actionContent := `name: test action
@@ -341,7 +341,7 @@ hooks:
 }
 
 func TestHookIf(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
 		if statusCode, err := strconv.Atoi(code); err == nil {
@@ -622,7 +622,7 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 }
 
 func TestNewRunID(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	testOutputWriter, ctrl, _, _ := setupTest(t)
 	testSource := mock.NewMockSource(ctrl)
 	mockStatsCollector := NewActionStatsMockCollector()

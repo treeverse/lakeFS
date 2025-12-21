@@ -1,7 +1,6 @@
 package committed_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -114,7 +113,7 @@ func TestManager_WriteRange(t *testing.T) {
 			expectedTimes := min(len(tt.records), maxRecords)
 			if tt.errorIs == nil {
 				rangeWriter.EXPECT().Abort().Return(nil)
-				rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
+				rangeManager.EXPECT().GetWriter(t.Context(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 				rangeWriter.EXPECT().WriteRecord(gomock.Any()).Return(nil).Times(expectedTimes)
 				rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
 					DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
@@ -123,7 +122,7 @@ func TestManager_WriteRange(t *testing.T) {
 			}
 
 			it := testutils.NewFakeValueIterator(tt.records)
-			rangeInfo, err := sut.WriteRange(context.Background(), tt.writeStorageID, ns, it)
+			rangeInfo, err := sut.WriteRange(t.Context(), tt.writeStorageID, ns, it)
 			if tt.errorIs != nil {
 				require.ErrorIs(t, err, tt.errorIs)
 			} else {
@@ -202,7 +201,7 @@ func TestManager_WriteMetaRange(t *testing.T) {
 
 			if tt.errorIs == nil {
 				minKey := ""
-				metarangeManager.EXPECT().NewWriter(context.Background(), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
+				metarangeManager.EXPECT().NewWriter(t.Context(), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
 				metarangeWriter.EXPECT().WriteRange(gomock.Any()).Return(nil).
 					DoAndReturn(func(info committed.Range) error {
 						if string(info.MinKey) < minKey {
@@ -221,7 +220,7 @@ func TestManager_WriteMetaRange(t *testing.T) {
 			metaRangeManagers[tt.initStorageID] = metarangeManager
 			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, nil, params)
 
-			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), tt.writeStorageID, ns, tt.records)
+			actualMetarangeID, err := sut.WriteMetaRange(t.Context(), tt.writeStorageID, ns, tt.records)
 			if tt.errorIs != nil {
 				require.ErrorIs(t, err, tt.errorIs)
 			} else {

@@ -257,7 +257,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 				Store: gravelerMock,
 			}
 			// test method
-			ctx := context.Background()
+			ctx := t.Context()
 			got, hasMore, err := c.ListRepositories(ctx, tt.args.limit, tt.args.prefix, tt.args.searchString, tt.args.after)
 			if tt.wantErr && err == nil {
 				t.Fatal("ListRepositories err nil, expected error")
@@ -296,7 +296,7 @@ func TestCatalog_BranchExists(t *testing.T) {
 				Store: gravelerMock,
 			}
 			// test method
-			ctx := context.Background()
+			ctx := t.Context()
 			exists, err := c.BranchExists(ctx, "repo", tt.Branch)
 			if err != nil {
 				t.Fatal("BranchExists failed:", err)
@@ -413,7 +413,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 				Store: gravelerMock,
 			}
 			// test method
-			ctx := context.Background()
+			ctx := t.Context()
 			got, hasMore, err := c.ListBranches(ctx, "repo", tt.args.prefix, tt.args.limit, tt.args.after)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListBranches() error = %v, wantErr %v", err, tt.wantErr)
@@ -510,7 +510,7 @@ func TestCatalog_ListTags(t *testing.T) {
 			c := &catalog.Catalog{
 				Store: gravelerMock,
 			}
-			ctx := context.Background()
+			ctx := t.Context()
 			got, hasMore, err := c.ListTags(ctx, "repo", "", tt.args.limit, tt.args.after)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListTags() error = %v, wantErr %v", err, tt.wantErr)
@@ -631,7 +631,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 				Store: gravelerMock,
 			}
 			// test method
-			ctx := context.Background()
+			ctx := t.Context()
 			got, hasMore, err := c.ListEntries(ctx, "repo", "ref", tt.args.prefix, tt.args.after, tt.args.delimiter, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
@@ -648,7 +648,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 }
 
 func TestCatalog_PrepareGCUncommitted(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tests := []struct {
 		name                   string
 		numBranch              int
