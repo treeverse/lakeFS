@@ -68,7 +68,7 @@ var mergeCmd = &cobra.Command{
 
 		// try asynchronous merge first
 		startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
-		if startResp.JSON501 == nil { // Async supported or error
+		if err == nil && startResp.JSON501 == nil { // Async supported or error
 			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
 			if startResp.JSON202 == nil {
 				Die("Bad response from server", 1)

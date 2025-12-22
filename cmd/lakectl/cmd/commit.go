@@ -56,7 +56,7 @@ var commitCmd = &cobra.Command{
 
 		// try asynchronous commit first
 		startResp, err := client.CommitAsyncWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
-		if startResp.JSON501 == nil { // Async supported or error
+		if err == nil && startResp.JSON501 == nil { // Async supported or error
 			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
 			if startResp.JSON202 == nil {
 				Die("Bad response from server", 1)
