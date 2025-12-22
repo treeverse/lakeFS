@@ -11,14 +11,14 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Capabilities {
+pub struct CapabilitiesConfig {
     #[serde(rename = "async_ops", skip_serializing_if = "Option::is_none")]
     pub async_ops: Option<bool>,
 }
 
-impl Capabilities {
-    pub fn new() -> Capabilities {
-        Capabilities {
+impl CapabilitiesConfig {
+    pub fn new() -> CapabilitiesConfig {
+        CapabilitiesConfig {
             async_ops: None,
         }
     }

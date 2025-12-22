@@ -11,7 +11,7 @@
 |**storageConfig** | [**StorageConfig**](StorageConfig.md) |  |  [optional] |
 |**storageConfigList** | [**List&lt;StorageConfig&gt;**](StorageConfig.md) |  |  [optional] |
 |**uiConfig** | [**UIConfig**](UIConfig.md) |  |  [optional] |
-|**capabilities** | [**Capabilities**](Capabilities.md) |  |  [optional] |
+|**capabilitiesConfig** | [**CapabilitiesConfig**](CapabilitiesConfig.md) |  |  [optional] |
 
 
 

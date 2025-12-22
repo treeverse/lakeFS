@@ -16,7 +16,7 @@ docs/AuthenticationToken.md
 docs/BranchCreation.md
 docs/BranchProtectionRule.md
 docs/BranchesApi.md
-docs/Capabilities.md
+docs/CapabilitiesConfig.md
 docs/CherryPickCreation.md
 docs/CommPrefsInput.md
 docs/Commit.md
@@ -178,7 +178,7 @@ src/models/auth_capabilities.rs
 src/models/authentication_token.rs
 src/models/branch_creation.rs
 src/models/branch_protection_rule.rs
-src/models/capabilities.rs
+src/models/capabilities_config.rs
 src/models/cherry_pick_creation.rs
 src/models/comm_prefs_input.rs
 src/models/commit.rs

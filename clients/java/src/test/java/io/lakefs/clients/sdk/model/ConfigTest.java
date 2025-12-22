@@ -18,7 +18,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.Capabilities;
+import io.lakefs.clients.sdk.model.CapabilitiesConfig;
 import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.UIConfig;
 import io.lakefs.clients.sdk.model.VersionConfig;
@@ -76,11 +76,11 @@ public class ConfigTest {
     }
 
     /**
-     * Test the property 'capabilities'
+     * Test the property 'capabilitiesConfig'
      */
     @Test
-    public void capabilitiesTest() {
-        // TODO: test capabilities
+    public void capabilitiesConfigTest() {
+        // TODO: test capabilitiesConfig
     }
 
 }

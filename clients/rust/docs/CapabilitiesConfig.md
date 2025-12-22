@@ -1,4 +1,4 @@
-# Capabilities
+# CapabilitiesConfig
 
 ## Properties
 

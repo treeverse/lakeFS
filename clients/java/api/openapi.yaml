@@ -10728,8 +10728,6 @@ components:
           import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
-        capabilities:
-          async_ops: true
         storage_config:
           blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
@@ -10748,6 +10746,8 @@ components:
           version: version
           upgrade_recommended: true
           upgrade_url: upgrade_url
+        capabilities_config:
+          async_ops: true
         ui_config:
           custom_viewers:
           - extensions:
@@ -10777,8 +10777,8 @@ components:
           type: array
         ui_config:
           $ref: '#/components/schemas/UIConfig'
-        capabilities:
-          $ref: '#/components/schemas/Capabilities'
+        capabilities_config:
+          $ref: '#/components/schemas/CapabilitiesConfig'
       type: object
     VersionConfig:
       example:
@@ -10851,7 +10851,7 @@ components:
       - name
       - url
       type: object
-    Capabilities:
+    CapabilitiesConfig:
       example:
         async_ops: true
       properties:

@@ -2215,13 +2215,13 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
 	uiConfig := c.getUIConfig()
-	capabilities := c.getCapabilities()
+	capabilitiesConfig := c.getCapabilitiesConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{
-		StorageConfig:     storageCfg,
-		VersionConfig:     &versionConfig,
-		StorageConfigList: &storageCfgList,
-		UiConfig:          uiConfig,
-		Capabilities:      capabilities,
+		StorageConfig:      storageCfg,
+		VersionConfig:      &versionConfig,
+		StorageConfigList:  &storageCfgList,
+		UiConfig:           uiConfig,
+		CapabilitiesConfig: capabilitiesConfig,
 	})
 }
 
@@ -5987,10 +5987,10 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 	}
 }
 
-func (c *Controller) getCapabilities() *apigen.Capabilities {
+func (c *Controller) getCapabilitiesConfig() *apigen.CapabilitiesConfig {
 	capabilitiesConfig := c.Config.CapabilitiesConfig()
 	asyncOps := capabilitiesConfig.GetAsyncOps()
-	return &apigen.Capabilities{
+	return &apigen.CapabilitiesConfig{
 		AsyncOps: &asyncOps,
 	}
 }

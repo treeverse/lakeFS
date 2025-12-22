@@ -19,7 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.Capabilities;
+import io.lakefs.clients.sdk.model.CapabilitiesConfig;
 import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.UIConfig;
 import io.lakefs.clients.sdk.model.VersionConfig;
@@ -73,9 +73,9 @@ public class Config {
   @SerializedName(SERIALIZED_NAME_UI_CONFIG)
   private UIConfig uiConfig;
 
-  public static final String SERIALIZED_NAME_CAPABILITIES = "capabilities";
-  @SerializedName(SERIALIZED_NAME_CAPABILITIES)
-  private Capabilities capabilities;
+  public static final String SERIALIZED_NAME_CAPABILITIES_CONFIG = "capabilities_config";
+  @SerializedName(SERIALIZED_NAME_CAPABILITIES_CONFIG)
+  private CapabilitiesConfig capabilitiesConfig;
 
   public Config() {
   }
@@ -172,24 +172,24 @@ public class Config {
   }
 
 
-  public Config capabilities(Capabilities capabilities) {
+  public Config capabilitiesConfig(CapabilitiesConfig capabilitiesConfig) {
     
-    this.capabilities = capabilities;
+    this.capabilitiesConfig = capabilitiesConfig;
     return this;
   }
 
    /**
-   * Get capabilities
-   * @return capabilities
+   * Get capabilitiesConfig
+   * @return capabilitiesConfig
   **/
   @javax.annotation.Nullable
-  public Capabilities getCapabilities() {
-    return capabilities;
+  public CapabilitiesConfig getCapabilitiesConfig() {
+    return capabilitiesConfig;
   }
 
 
-  public void setCapabilities(Capabilities capabilities) {
-    this.capabilities = capabilities;
+  public void setCapabilitiesConfig(CapabilitiesConfig capabilitiesConfig) {
+    this.capabilitiesConfig = capabilitiesConfig;
   }
 
   /**
@@ -251,13 +251,13 @@ public class Config {
         Objects.equals(this.storageConfig, config.storageConfig) &&
         Objects.equals(this.storageConfigList, config.storageConfigList) &&
         Objects.equals(this.uiConfig, config.uiConfig) &&
-        Objects.equals(this.capabilities, config.capabilities)&&
+        Objects.equals(this.capabilitiesConfig, config.capabilitiesConfig)&&
         Objects.equals(this.additionalProperties, config.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(versionConfig, storageConfig, storageConfigList, uiConfig, capabilities, additionalProperties);
+    return Objects.hash(versionConfig, storageConfig, storageConfigList, uiConfig, capabilitiesConfig, additionalProperties);
   }
 
   @Override
@@ -268,7 +268,7 @@ public class Config {
     sb.append("    storageConfig: ").append(toIndentedString(storageConfig)).append("\n");
     sb.append("    storageConfigList: ").append(toIndentedString(storageConfigList)).append("\n");
     sb.append("    uiConfig: ").append(toIndentedString(uiConfig)).append("\n");
-    sb.append("    capabilities: ").append(toIndentedString(capabilities)).append("\n");
+    sb.append("    capabilitiesConfig: ").append(toIndentedString(capabilitiesConfig)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -296,7 +296,7 @@ public class Config {
     openapiFields.add("storage_config");
     openapiFields.add("storage_config_list");
     openapiFields.add("ui_config");
-    openapiFields.add("capabilities");
+    openapiFields.add("capabilities_config");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -341,9 +341,9 @@ public class Config {
       if (jsonObj.get("ui_config") != null && !jsonObj.get("ui_config").isJsonNull()) {
         UIConfig.validateJsonElement(jsonObj.get("ui_config"));
       }
-      // validate the optional field `capabilities`
-      if (jsonObj.get("capabilities") != null && !jsonObj.get("capabilities").isJsonNull()) {
-        Capabilities.validateJsonElement(jsonObj.get("capabilities"));
+      // validate the optional field `capabilities_config`
+      if (jsonObj.get("capabilities_config") != null && !jsonObj.get("capabilities_config").isJsonNull()) {
+        CapabilitiesConfig.validateJsonElement(jsonObj.get("capabilities_config"));
       }
   }
 

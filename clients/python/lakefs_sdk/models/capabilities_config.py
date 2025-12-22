@@ -25,9 +25,9 @@ try:
 except ImportError:
     from pydantic import BaseModel, StrictBool
 
-class Capabilities(BaseModel):
+class CapabilitiesConfig(BaseModel):
     """
-    Capabilities
+    CapabilitiesConfig
     """
     async_ops: Optional[StrictBool] = None
     __properties = ["async_ops"]
@@ -46,8 +46,8 @@ class Capabilities(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> Capabilities:
-        """Create an instance of Capabilities from a JSON string"""
+    def from_json(cls, json_str: str) -> CapabilitiesConfig:
+        """Create an instance of CapabilitiesConfig from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -59,15 +59,15 @@ class Capabilities(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> Capabilities:
-        """Create an instance of Capabilities from a dict"""
+    def from_dict(cls, obj: dict) -> CapabilitiesConfig:
+        """Create an instance of CapabilitiesConfig from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return Capabilities.parse_obj(obj)
+            return CapabilitiesConfig.parse_obj(obj)
 
-        _obj = Capabilities.parse_obj({
+        _obj = CapabilitiesConfig.parse_obj({
             "async_ops": obj.get("async_ops")
         })
         return _obj

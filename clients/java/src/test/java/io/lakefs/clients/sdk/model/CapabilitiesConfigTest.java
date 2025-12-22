@@ -24,17 +24,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for Capabilities
+ * Model tests for CapabilitiesConfig
  */
-public class CapabilitiesTest {
-    private final Capabilities model = new Capabilities();
+public class CapabilitiesConfigTest {
+    private final CapabilitiesConfig model = new CapabilitiesConfig();
 
     /**
-     * Model tests for Capabilities
+     * Model tests for CapabilitiesConfig
      */
     @Test
-    public void testCapabilities() {
-        // TODO: test Capabilities
+    public void testCapabilitiesConfig() {
+        // TODO: test CapabilitiesConfig
     }
 
     /**

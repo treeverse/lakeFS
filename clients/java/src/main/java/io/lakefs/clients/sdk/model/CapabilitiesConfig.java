@@ -47,18 +47,18 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * Capabilities
+ * CapabilitiesConfig
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Capabilities {
+public class CapabilitiesConfig {
   public static final String SERIALIZED_NAME_ASYNC_OPS = "async_ops";
   @SerializedName(SERIALIZED_NAME_ASYNC_OPS)
   private Boolean asyncOps;
 
-  public Capabilities() {
+  public CapabilitiesConfig() {
   }
 
-  public Capabilities asyncOps(Boolean asyncOps) {
+  public CapabilitiesConfig asyncOps(Boolean asyncOps) {
     
     this.asyncOps = asyncOps;
     return this;
@@ -91,9 +91,9 @@ public class Capabilities {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the Capabilities instance itself
+   * @return the CapabilitiesConfig instance itself
    */
-  public Capabilities putAdditionalProperty(String key, Object value) {
+  public CapabilitiesConfig putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -132,9 +132,9 @@ public class Capabilities {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Capabilities capabilities = (Capabilities) o;
-    return Objects.equals(this.asyncOps, capabilities.asyncOps)&&
-        Objects.equals(this.additionalProperties, capabilities.additionalProperties);
+    CapabilitiesConfig capabilitiesConfig = (CapabilitiesConfig) o;
+    return Objects.equals(this.asyncOps, capabilitiesConfig.asyncOps)&&
+        Objects.equals(this.additionalProperties, capabilitiesConfig.additionalProperties);
   }
 
   @Override
@@ -145,7 +145,7 @@ public class Capabilities {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Capabilities {\n");
+    sb.append("class CapabilitiesConfig {\n");
     sb.append("    asyncOps: ").append(toIndentedString(asyncOps)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -180,12 +180,12 @@ public class Capabilities {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Capabilities
+  * @throws IOException if the JSON Element is invalid with respect to CapabilitiesConfig
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!Capabilities.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in Capabilities is not found in the empty JSON string", Capabilities.openapiRequiredFields.toString()));
+        if (!CapabilitiesConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in CapabilitiesConfig is not found in the empty JSON string", CapabilitiesConfig.openapiRequiredFields.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
@@ -195,16 +195,16 @@ public class Capabilities {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!Capabilities.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'Capabilities' and its subtypes
+       if (!CapabilitiesConfig.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'CapabilitiesConfig' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<Capabilities> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(Capabilities.class));
+       final TypeAdapter<CapabilitiesConfig> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(CapabilitiesConfig.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<Capabilities>() {
+       return (TypeAdapter<T>) new TypeAdapter<CapabilitiesConfig>() {
            @Override
-           public void write(JsonWriter out, Capabilities value) throws IOException {
+           public void write(JsonWriter out, CapabilitiesConfig value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -227,12 +227,12 @@ public class Capabilities {
            }
 
            @Override
-           public Capabilities read(JsonReader in) throws IOException {
+           public CapabilitiesConfig read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             Capabilities instance = thisAdapter.fromJsonTree(jsonObj);
+             CapabilitiesConfig instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -259,18 +259,18 @@ public class Capabilities {
   }
 
  /**
-  * Create an instance of Capabilities given an JSON string
+  * Create an instance of CapabilitiesConfig given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of Capabilities
-  * @throws IOException if the JSON string is invalid with respect to Capabilities
+  * @return An instance of CapabilitiesConfig
+  * @throws IOException if the JSON string is invalid with respect to CapabilitiesConfig
   */
-  public static Capabilities fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, Capabilities.class);
+  public static CapabilitiesConfig fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, CapabilitiesConfig.class);
   }
 
  /**
-  * Convert an instance of Capabilities to an JSON string
+  * Convert an instance of CapabilitiesConfig to an JSON string
   *
   * @return JSON string
   */

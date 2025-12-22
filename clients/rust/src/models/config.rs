@@ -20,8 +20,8 @@ pub struct Config {
     pub storage_config_list: Option<Vec<models::StorageConfig>>,
     #[serde(rename = "ui_config", skip_serializing_if = "Option::is_none")]
     pub ui_config: Option<Box<models::UiConfig>>,
-    #[serde(rename = "capabilities", skip_serializing_if = "Option::is_none")]
-    pub capabilities: Option<Box<models::Capabilities>>,
+    #[serde(rename = "capabilities_config", skip_serializing_if = "Option::is_none")]
+    pub capabilities_config: Option<Box<models::CapabilitiesConfig>>,
 }
 
 impl Config {
@@ -31,7 +31,7 @@ impl Config {
             storage_config: None,
             storage_config_list: None,
             ui_config: None,
-            capabilities: None,
+            capabilities_config: None,
         }
     }
 }
