@@ -60,6 +60,7 @@ from lakefs_sdk.models.auth_capabilities import AuthCapabilities
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.branch_creation import BranchCreation
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
+from lakefs_sdk.models.capabilities import Capabilities
 from lakefs_sdk.models.cherry_pick_creation import CherryPickCreation
 from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.models.commit import Commit

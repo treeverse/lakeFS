@@ -1360,6 +1360,8 @@ components:
           $ref: "#/components/schemas/StorageConfigList"
         ui_config:
           $ref: "#/components/schemas/UIConfig"
+        capabilities:
+          $ref: "#/components/schemas/Capabilities"
     VersionConfig:
       type: object
       properties:
@@ -1398,6 +1400,11 @@ components:
           type: array
           items:
             type: string
+    Capabilities:
+      type: object
+      properties:
+        async_ops:
+          type: boolean
     GarbageCollectionConfig:
       type: object
       properties:

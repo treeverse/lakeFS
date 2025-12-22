@@ -103,6 +103,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.AuthenticationToken.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.BranchCreation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.BranchProtectionRule.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Capabilities.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.CherryPickCreation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.CommPrefsInput.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Commit.CustomTypeAdapterFactory());

@@ -10728,6 +10728,8 @@ components:
           import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
+        capabilities:
+          async_ops: true
         storage_config:
           blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
@@ -10775,6 +10777,8 @@ components:
           type: array
         ui_config:
           $ref: '#/components/schemas/UIConfig'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
       type: object
     VersionConfig:
       example:
@@ -10846,6 +10850,13 @@ components:
       required:
       - name
       - url
+      type: object
+    Capabilities:
+      example:
+        async_ops: true
+      properties:
+        async_ops:
+          type: boolean
       type: object
     GarbageCollectionConfig:
       example:
