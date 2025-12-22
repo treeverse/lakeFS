@@ -2288,7 +2288,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 
 				// update the task in the kv store with the new "updated_at", only if its status is not changed
 				currTask.UpdatedAt = timestamppb.Now()
-				err = kv.SetMsgIf(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), currTask, predicate)
+				err = kv.SetMsgIf(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), currTaskStatus, predicate)
 				if err != nil {
 					if !errors.Is(err, kv.ErrPredicateFailed) {
 						c.log(ctx).WithError(err).Error("Catalog failed to update task status")
