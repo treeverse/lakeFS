@@ -74,7 +74,8 @@ const (
 	RestoreRefsTaskIDPrefix               = "RR"
 	GarbageCollectionPrepareCommitsPrefix = "GCPC"
 
-	TaskExpiryTime = 24 * time.Hour
+	TaskExpiryTime        = 24 * time.Hour
+	TaskHeartbeatInterval = 5 * time.Second
 
 	// LinkAddressTime the time address is valid from get to link
 	LinkAddressTime             = 6 * time.Hour
@@ -2266,7 +2267,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			select {
 			case <-cancelCtx.Done():
 				return
-			case <-time.After(5 * time.Second):
+			case <-time.After(TaskHeartbeatInterval):
 				// get the task status from the kv store
 				predicate, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, currTaskStatus)
 				if err != nil {
