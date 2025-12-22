@@ -52,12 +52,13 @@ export class RepositoryPage {
     await this.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 10000 });
 
     const firstRow = this.page.locator('table tbody tr').first();
+    const actionButton = firstRow.locator('button').last();
+
+    // Hover and wait for the action button to actually become visible
     await firstRow.hover();
+    await actionButton.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Wait a bit for the button to be stable after hover
-    await this.page.waitForTimeout(500);
-
-    await firstRow.locator('button').last().click();
+    await actionButton.click();
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
   }
