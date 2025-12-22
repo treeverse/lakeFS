@@ -1,18 +1,71 @@
 # Changelog
 
-## (next - minor version bump)
+## next
+
+## v1.74.0
 
 :new: What's new:
 
+### UI
+- Pull Request/Compare Navigation: Added Pull Request button to Compare tab and Compare button to Branches tab (#9795)
+- Branch Management: Added multi-branch deletion with checkbox selection (#9796)
+- Revert Actions: Introduced Branch revert UI (#9807)
+- Visibility: Added ability to show hidden branches (#9812)
+- Added message for bare repositories (#9817)
+- Added warnings for empty paths in Web UI (#9797)
+
+### lakectl
 - If `lakectl` is not configured, running `lakectl login` now runs a
   dialogue to configure the server endpoint URL.  On Enterprise, this allows
   running `lakectl login` zero configuration. (#9659)
-- Remove default configuration of server.endpoint_url in lakectl.  Its value
+- Remove default configuration of server.endpoint_url in lakectl. Its value
   was http://localhost:8000 which is not generally useful. (#9659)
 
   This is technically a **breaking change**.  It may affect some CI
   workflows, or some configurations relying on port forwarding.  As one
   workaround, the environment variable `LAKECTL_SERVER_ENDPOINT_URL`
+
+- Identity Display: lakectl now shows names instead of IDs for externally-defined users and groups (#9806)
+
+### S3 Gateway
+- Validation: Added expiry validation for S3 gateway requests (#9710)
+- Operations: Added prefix to ListBuckets operation (#9798)
+- Error Handling: Use correct error for mismatched Sig V4 credential date (#9813)
+
+### Infrastructure
+- Async Workflows: New Async Commit/Merge Infrastructure (#9732) with timeout handling (#9757)
+
+### Garbage Collection (GC)
+- Feature: Added a CLI runner for prepare gc commits (#9768)
+
+### Core Logic & API
+- Validation: Enforce non-empty metadata keys in forms (#9650)
+- Observability: Propagate X-Request-ID header to external auth services (#9816)
+- GC Performance: Reduced memory consumption of prepare gc active commits (#9779)
+- GC Logic: Added duration check during GC prepare uncommitted (#9763)
+
+:bug: Bugs Fixed
+
+### UI
+- Display Fixes: Fixed name display on the Pull Request page (#9821) and in the path view (#9818)
+- Login: Fixed missing error message in UI after a failed login attempt (#9775)
+
+### lakectl
+- OIDC: Fixed `lakectl login` redirects when using OIDC authentication (#9717)
+
+### Core Logic & API
+- Headers: Now returns Content-Range header on `ErrUnsatisfiableRange` (#9743)
+- Stability: Fixed 500 error on preconditions (#9804)
+- Logging: Fixed logging for requests from remote addresses without port numbers (#9825)
+- GC Logic: Fixed issue where lakeFS would skip "branch not found" during gc prepare uncommitted (#9792)
+
+### S3 Gateway
+- Handle s3 context cancellation error in s3gw (#9856)
+
+### Backend
+- Resource Leaks: Fixed file handle and goroutine leaks in Pyramid with proper cleanup (#9787)
+- Race Conditions: Fixed import start race condition (#9808)
+- Storage: Fixed local adapter error when no space is left on device (#9827)
 
 ## v1.73.0
 
