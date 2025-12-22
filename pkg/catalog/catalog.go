@@ -45,6 +45,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -2247,7 +2248,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 		Id:        taskID,
 		UpdatedAt: timestamppb.Now(),
 	}
-	reflect.ValueOf(taskStatus).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
+	setTaskInStatus(taskStatus, task)
 
 	// make sure we use background context as soon as we submit the task the request is done
 	ctx := context.Background()
@@ -2257,8 +2258,49 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 		return err
 	}
 
+	// start heartbeat: a background goroutine to update the task status in the kv store every 5 seconds, until the task is done
+	cancelCtx, cancel := context.WithCancel(ctx)
+	currTaskStatus := proto.Clone(taskStatus) // deep copy of the task status, to avoid race conditions
+	go func() {
+		for {
+			select {
+			case <-cancelCtx.Done():
+				return
+			case <-time.After(5 * time.Second):
+				// get the task status from the kv store
+				predicate, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, currTaskStatus)
+				if err != nil {
+					c.log(ctx).WithError(err).Error("Catalog failed to get task status")
+					continue
+				}
+				// get the task from the task status
+				currTask := getTaskFromStatus(currTaskStatus)
+				if currTask == nil {
+					c.log(ctx).Error("Catalog failed to get task")
+					continue
+				}
+				if currTask.Done {
+					// task is done, so we can stop the heartbeat
+					cancel() // cancel just in case
+					return
+				}
+
+				// update the task in the kv store with the new "updated_at", only if its status is not changed
+				currTask.UpdatedAt = timestamppb.Now()
+				err = kv.SetMsgIf(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), currTask, predicate)
+				if err != nil {
+					if !errors.Is(err, kv.ErrPredicateFailed) {
+						c.log(ctx).WithError(err).Error("Catalog failed to update task status")
+					}
+					continue
+				}
+			}
+		}
+	}()
+
 	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
+		defer cancel()
 		for stepIdx, step := range steps {
 			// call the step function
 			err := step.Func(ctx)
@@ -2290,6 +2332,18 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 		}
 	})
 	return nil
+}
+
+func getTaskFromStatus(statusMsg protoreflect.ProtoMessage) *Task {
+	taskField := reflect.ValueOf(statusMsg).Elem().FieldByName("Task")
+	if !taskField.IsValid() || taskField.IsNil() {
+		return nil
+	}
+	return taskField.Interface().(*Task)
+}
+
+func setTaskInStatus(statusMsg protoreflect.ProtoMessage, task *Task) {
+	reflect.ValueOf(statusMsg).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
 }
 
 // DeleteExpiredRepositoryTasks deletes all expired tasks for the given repository
@@ -2782,7 +2836,7 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if !IsTaskID(prefix, taskID) {
 		return graveler.ErrNotFound
 	}
-	if err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
+	if _, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
 	checkAndMarkTaskExpired(statusMsg, expiryDuration)
@@ -2794,13 +2848,8 @@ func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration
 		return
 	}
 
-	taskField := reflect.ValueOf(statusMsg).Elem().FieldByName("Task")
-	if !taskField.IsValid() || taskField.IsNil() {
-		return
-	}
-
-	task := taskField.Interface().(*Task)
-	if task.UpdatedAt == nil {
+	task := getTaskFromStatus(statusMsg)
+	if task == nil || task.UpdatedAt == nil {
 		return
 	}
 
