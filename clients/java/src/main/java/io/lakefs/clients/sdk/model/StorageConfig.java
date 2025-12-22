@@ -95,6 +95,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_DESCRIPTION)
   private String blockstoreDescription;
 
+  public static final String SERIALIZED_NAME_ASYNC_SUPPORT = "async_support";
+  @SerializedName(SERIALIZED_NAME_ASYNC_SUPPORT)
+  private Boolean asyncSupport;
+
   public StorageConfig() {
   }
 
@@ -328,6 +332,27 @@ public class StorageConfig {
     this.blockstoreDescription = blockstoreDescription;
   }
 
+
+  public StorageConfig asyncSupport(Boolean asyncSupport) {
+    
+    this.asyncSupport = asyncSupport;
+    return this;
+  }
+
+   /**
+   * Get asyncSupport
+   * @return asyncSupport
+  **/
+  @javax.annotation.Nullable
+  public Boolean getAsyncSupport() {
+    return asyncSupport;
+  }
+
+
+  public void setAsyncSupport(Boolean asyncSupport) {
+    this.asyncSupport = asyncSupport;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -393,13 +418,14 @@ public class StorageConfig {
         Objects.equals(this.importValidityRegex, storageConfig.importValidityRegex) &&
         Objects.equals(this.preSignMultipartUpload, storageConfig.preSignMultipartUpload) &&
         Objects.equals(this.blockstoreId, storageConfig.blockstoreId) &&
-        Objects.equals(this.blockstoreDescription, storageConfig.blockstoreDescription)&&
+        Objects.equals(this.blockstoreDescription, storageConfig.blockstoreDescription) &&
+        Objects.equals(this.asyncSupport, storageConfig.asyncSupport)&&
         Objects.equals(this.additionalProperties, storageConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, blockstoreId, blockstoreDescription, additionalProperties);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, blockstoreId, blockstoreDescription, asyncSupport, additionalProperties);
   }
 
   @Override
@@ -417,6 +443,7 @@ public class StorageConfig {
     sb.append("    preSignMultipartUpload: ").append(toIndentedString(preSignMultipartUpload)).append("\n");
     sb.append("    blockstoreId: ").append(toIndentedString(blockstoreId)).append("\n");
     sb.append("    blockstoreDescription: ").append(toIndentedString(blockstoreDescription)).append("\n");
+    sb.append("    asyncSupport: ").append(toIndentedString(asyncSupport)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -451,6 +478,7 @@ public class StorageConfig {
     openapiFields.add("pre_sign_multipart_upload");
     openapiFields.add("blockstore_id");
     openapiFields.add("blockstore_description");
+    openapiFields.add("async_support");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

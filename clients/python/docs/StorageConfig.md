@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **pre_sign_multipart_upload** | **bool** |  | [optional] 
 **blockstore_id** | **str** |  | [optional] 
 **blockstore_description** | **str** |  | [optional] 
+**async_support** | **bool** |  | [optional] 
 
 ## Example
 

@@ -47,7 +47,8 @@ class TestStorageConfig(unittest.TestCase):
                 import_validity_regex = '',
                 pre_sign_multipart_upload = True,
                 blockstore_id = '',
-                blockstore_description = ''
+                blockstore_description = '',
+                async_support = True
             )
         else:
             return StorageConfig(

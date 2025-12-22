@@ -2261,6 +2261,8 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 	if defaultNamespacePrefix != nil {
 		info.DefaultNamespacePrefix = *defaultNamespacePrefix
 	}
+
+	asyncSupport := swag.Bool(c.Config.GetVersionContext() != config.VersionContext)
 	return &apigen.StorageConfig{
 		BlockstoreId:                     swag.String(storage.ID()),
 		BlockstoreDescription:            swag.String(storage.BlockstoreDescription()),
@@ -2273,6 +2275,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		ImportSupport:                    info.ImportSupport,
 		ImportValidityRegex:              info.ImportValidityRegex,
 		PreSignMultipartUpload:           swag.Bool(info.PreSignSupportMultipart),
+		AsyncSupport:                     asyncSupport,
 	}, nil
 }
 

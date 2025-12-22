@@ -1343,6 +1343,9 @@ components:
           type: string
         blockstore_description:
           type: string
+        async_support:
+          type: boolean
+          description: Async operations support in server *EXPERIMENTAL*
 
     StorageConfigList:
       type: array

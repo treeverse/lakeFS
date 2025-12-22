@@ -18,6 +18,7 @@
 |**preSignMultipartUpload** | **Boolean** |  |  [optional] |
 |**blockstoreId** | **String** |  |  [optional] |
 |**blockstoreDescription** | **String** |  |  [optional] |
+|**asyncSupport** | **Boolean** |  |  [optional] |
 
 
 

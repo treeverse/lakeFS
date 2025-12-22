@@ -54,7 +54,8 @@ class TestConfig(unittest.TestCase):
                     import_validity_regex = '', 
                     pre_sign_multipart_upload = True, 
                     blockstore_id = '', 
-                    blockstore_description = '', ),
+                    blockstore_description = '', 
+                    async_support = True, ),
                 storage_config_list = [
                     lakefs_sdk.models.storage_config.StorageConfig(
                         blockstore_type = '', 
@@ -67,7 +68,8 @@ class TestConfig(unittest.TestCase):
                         import_validity_regex = '', 
                         pre_sign_multipart_upload = True, 
                         blockstore_id = '', 
-                        blockstore_description = '', )
+                        blockstore_description = '', 
+                        async_support = True, )
                     ],
                 ui_config = lakefs_sdk.models.ui_config.UIConfig(
                     custom_viewers = [

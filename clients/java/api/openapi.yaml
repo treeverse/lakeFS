@@ -10667,6 +10667,7 @@ components:
         import_validity_regex: import_validity_regex
         default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
+        async_support: true
       properties:
         blockstore_type:
           type: string
@@ -10690,6 +10691,8 @@ components:
           type: string
         blockstore_description:
           type: string
+        async_support:
+          type: boolean
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
@@ -10717,6 +10720,7 @@ components:
           import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
+          async_support: true
         - blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
           blockstore_namespace_example: blockstore_namespace_example
@@ -10728,6 +10732,7 @@ components:
           import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
+          async_support: true
         storage_config:
           blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
@@ -10740,6 +10745,7 @@ components:
           import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
+          async_support: true
         version_config:
           latest_version: latest_version
           version_context: version_context

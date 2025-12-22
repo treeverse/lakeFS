@@ -125,4 +125,12 @@ public class StorageConfigTest {
         // TODO: test blockstoreDescription
     }
 
+    /**
+     * Test the property 'asyncSupport'
+     */
+    @Test
+    public void asyncSupportTest() {
+        // TODO: test asyncSupport
+    }
+
 }
