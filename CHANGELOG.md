@@ -1,10 +1,10 @@
 # Changelog
 
+## next
+
 ## v1.74.0
 
 :new: What's new:
-
-
 
 ### UI
 - Pull Request/Compare Navigation: Added Pull Request button to Compare tab and Compare button to Branches tab (#9795)
@@ -36,17 +36,13 @@
 - Async Workflows: New Async Commit/Merge Infrastructure (#9732) with timeout handling (#9757)
 
 ### Garbage Collection (GC)
-- GC Performance: Reduced memory consumption of prepare gc active commits (#9779)
-- GC Logic: Added duration check during GC prepare uncommitted (#9763) 
 - Feature: Added a CLI runner for prepare gc commits (#9768)
 
 ### Core Logic & API
 - Validation: Enforce non-empty metadata keys in forms (#9650)
 - Observability: Propagate X-Request-ID header to external auth services (#9816)
-
-### Python SDK
-- Utility: Updated `lakefs.Repository.__str__` to return the repository ID/name (#9801)
-
+- GC Performance: Reduced memory consumption of prepare gc active commits (#9779)
+- GC Logic: Added duration check during GC prepare uncommitted (#9763)
 
 :bug: Bugs Fixed
 
@@ -57,10 +53,11 @@
 ### lakectl
 - OIDC: Fixed `lakectl login` redirects when using OIDC authentication (#9717)
 
-### API
+### Core Logic & API
 - Headers: Now returns Content-Range header on `ErrUnsatisfiableRange` (#9743)
 - Stability: Fixed 500 error on preconditions (#9804)
 - Logging: Fixed logging for requests from remote addresses without port numbers (#9825)
+- GC Logic: Fixed issue where lakeFS would skip "branch not found" during gc prepare uncommitted (#9792)
 
 ### S3 Gateway
 - Handle s3 context cancellation error in s3gw (#9856)
@@ -69,12 +66,6 @@
 - Resource Leaks: Fixed file handle and goroutine leaks in Pyramid with proper cleanup (#9787)
 - Race Conditions: Fixed import start race condition (#9808)
 - Storage: Fixed local adapter error when no space is left on device (#9827)
-
-### GC
-- GC Logic: Fixed issue where lakeFS would skip "branch not found" during gc prepare uncommitted (#9792)
-
-### Python SDK
-- Migration: Fixed missing `lakefs.quickstart` and `lakefs.download` following the pyproject.toml migration (#9784)
 
 ## v1.73.0
 
