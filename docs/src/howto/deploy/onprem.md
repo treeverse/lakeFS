@@ -204,7 +204,6 @@ blockstore:
 ### Limitations
 
 !!! warning ""
-    - Using a local adapter on a shared location is relativly new and not battle-tested yet
     - lakeFS doesn't control the way a shared location is managed across machines
     - When using lakectl or the lakeFS UI, you can currently import only directories. If you need to import a single file, use the [HTTP API](https://docs.lakefs.io/reference/api.html#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`.
     - Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
