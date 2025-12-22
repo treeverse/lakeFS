@@ -34,6 +34,7 @@ const (
 
 	// SingleBlockstoreID - Represents a single blockstore system
 	SingleBlockstoreID = ""
+	VersionContext     = "lakeFS"
 )
 
 const (
@@ -563,7 +564,7 @@ type BaseConfig struct {
 }
 
 func (c *BaseConfig) GetVersionContext() string {
-	return "lakeFS"
+	return VersionContext
 }
 
 func ValidateBlockstore(c *Blockstore) error {

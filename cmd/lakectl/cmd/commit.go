@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -44,6 +46,13 @@ var commitCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		client := getClient()
+
+		versionResp, err := client.GetLakeFSVersionWithResponse(ctx)
+		DieOnErrorOrUnexpectedStatusCode(versionResp, err, http.StatusOK)
+		if versionResp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+
 		body := apigen.CommitJSONRequestBody{
 			Message: message,
 			Metadata: &apigen.CommitCreation_Metadata{
@@ -53,17 +62,17 @@ var commitCmd = &cobra.Command{
 			AllowEmpty: &emptyCommitBool,
 		}
 		var commit *apigen.Commit
-
-		// try asynchronous commit first
-		startResp, err := client.CommitAsyncWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
-		if startResp.JSON501 == nil { // Async supported or error
+		isAsync := swag.StringValue(versionResp.JSON200.VersionContext) != config.VersionContext
+		// run asynchronous commit first
+		if isAsync {
+			startResp, err := client.CommitAsyncWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
 			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
 			if startResp.JSON202 == nil {
 				Die("Bad response from server", 1)
 			}
 
 			taskID := startResp.JSON202.Id
-			err := pollAsyncOperationStatus(ctx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
+			err = pollAsyncOperationStatus(ctx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
 				resp, err := client.CommitAsyncStatusWithResponse(ctx, branchURI.Repository, branchURI.Ref, taskID)
 				if err != nil {
 					return nil, err
