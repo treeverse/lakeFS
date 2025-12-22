@@ -58,7 +58,8 @@ export class RepositoryPage {
     await firstRow.hover();
     await actionButton.waitFor({ state: 'visible', timeout: 5000 });
 
-    await actionButton.click();
+    // Force click to bypass any overlay issues (navbar intercepting)
+    await actionButton.click({ force: true });
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
   }
