@@ -304,6 +304,9 @@ func TestInvalidRoute(t *testing.T) {
 	if errMsg != expectedErrMsg {
 		t.Fatalf("client response error message: %s, expected: %s", errMsg, expectedErrMsg)
 	}
+	if resp.StatusCode() != http.StatusNotFound {
+		t.Fatalf("expected status code %d, got %d for invalid API endpoint", http.StatusNotFound, resp.StatusCode())
+	}
 }
 
 func TestNotImplementedAPI(t *testing.T) {
