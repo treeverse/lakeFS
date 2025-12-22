@@ -10856,6 +10856,7 @@ components:
         async_ops: true
       properties:
         async_ops:
+          description: are async operations enabled in server. *EXPERIMENTAL*
           type: boolean
       type: object
     GarbageCollectionConfig:

@@ -12,6 +12,7 @@ use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CapabilitiesConfig {
+    /// are async operations enabled in server. *EXPERIMENTAL*
     #[serde(rename = "async_ops", skip_serializing_if = "Option::is_none")]
     pub async_ops: Option<bool>,
 }

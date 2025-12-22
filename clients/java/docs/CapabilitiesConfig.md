@@ -7,7 +7,7 @@
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**asyncOps** | **Boolean** |  |  [optional] |
+|**asyncOps** | **Boolean** | are async operations enabled in server. *EXPERIMENTAL* |  [optional] |
 
 
 

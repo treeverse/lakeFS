@@ -65,7 +65,7 @@ public class CapabilitiesConfig {
   }
 
    /**
-   * Get asyncOps
+   * are async operations enabled in server. *EXPERIMENTAL*
    * @return asyncOps
   **/
   @javax.annotation.Nullable

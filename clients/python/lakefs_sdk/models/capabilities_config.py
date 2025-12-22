@@ -21,15 +21,15 @@ import json
 
 from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, StrictBool
+    from pydantic.v1 import BaseModel, Field, StrictBool
 except ImportError:
-    from pydantic import BaseModel, StrictBool
+    from pydantic import BaseModel, Field, StrictBool
 
 class CapabilitiesConfig(BaseModel):
     """
     CapabilitiesConfig
     """
-    async_ops: Optional[StrictBool] = None
+    async_ops: Optional[StrictBool] = Field(None, description="are async operations enabled in server. *EXPERIMENTAL*")
     __properties = ["async_ops"]
 
     class Config:
