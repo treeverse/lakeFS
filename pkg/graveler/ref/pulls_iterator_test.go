@@ -1,7 +1,6 @@
 package ref_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -15,7 +14,7 @@ import (
 
 func TestPullsIterator(t *testing.T) {
 	r, kvStore := testRefManager(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	totalCount := 100
 	now := time.Now().UTC()
 
@@ -135,7 +134,7 @@ func TestPullsIterator(t *testing.T) {
 }
 
 func TestPullsIterator_CloseTwice(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
@@ -155,7 +154,7 @@ func TestPullsIterator_CloseTwice(t *testing.T) {
 }
 
 func TestPullsIterator_NextClosed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)

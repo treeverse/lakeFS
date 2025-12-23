@@ -19,14 +19,14 @@ var secret string = "Secret"
 
 func SetupService(t *testing.T, secret string) (*auth.BasicAuthService, kv.Store) {
 	t.Helper()
-	kvStore := kvtest.GetStore(context.Background(), t)
+	kvStore := kvtest.GetStore(t.Context(), t)
 	return auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte(secret)), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable()), kvStore
 }
 
 func TestBasicAuthService_Users(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	s, store := SetupService(t, secret)
 	username := "testUser"
 
@@ -75,7 +75,7 @@ func TestBasicAuthService_Users(t *testing.T) {
 }
 
 func TestBasicAuthService_Credentials(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	s, _ := SetupService(t, secret)
 	username := "testUser"
 	accessKeyID := "SomeAccessKeyID"
@@ -118,7 +118,7 @@ func TestBasicAuthService_Credentials(t *testing.T) {
 }
 
 func TestBasicAuthService_CredentialsImport(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	s, store := SetupService(t, secret)
 	username := "testUser"
 	accessKeyID := "SomeAccessKeyID"
@@ -173,7 +173,7 @@ func TestBasicAuthService_CredentialsImport(t *testing.T) {
 }
 
 func TestBasicAuthService_Migrate(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	accessKeyID := "SomeAccessKeyID"
 	secretAccessKey := "SomeSecretAccessKey"
 

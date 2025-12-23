@@ -23,7 +23,7 @@ func (m *mockMetadataProvider) GetMetadata(context.Context) (map[string]string, 
 }
 
 func TestNewMetadata(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := logging.Dummy()
 
 	t.Run("extract installation_id", func(t *testing.T) {

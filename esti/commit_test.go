@@ -165,7 +165,7 @@ func TestCommitWithTombstone(t *testing.T) {
 }
 
 func TestCommitReadOnlyRepo(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	name := strings.ToLower(t.Name())
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	repoName := MakeRepositoryName(name)

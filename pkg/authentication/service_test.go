@@ -83,7 +83,7 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			validateTokenClaims := map[string]string{tt.validateClaim: tt.validateClaimValue}
 			mockClient, s := NewTestApiService(t, validateTokenClaims, false)
-			ctx := context.Background()
+			ctx := t.Context()
 			requestEq := gomock.Eq(apiclient.STSLoginJSONRequestBody{
 				RedirectUri: redirectURI,
 				Code:        code,
@@ -135,7 +135,7 @@ func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string, ex
 
 func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, map[string]string{}, true)
-	ctx := context.Background()
+	ctx := t.Context()
 	principalId := "arn"
 	externalLoginInfo := map[string]interface{}{"IdentityToken": "Token"}
 
@@ -171,7 +171,7 @@ func TestAPIService_RequestIDPropagation(t *testing.T) {
 	service, err := authentication.NewAPIService(server.URL, nil, logging.ContextUnavailable(), false)
 	require.NoError(t, err)
 
-	ctx := context.WithValue(context.Background(), httputil.RequestIDContextKey, requestID)
+	ctx := context.WithValue(t.Context(), httputil.RequestIDContextKey, requestID)
 	_, err = service.ValidateSTS(ctx, "code", "redirect", "state")
 	require.NoError(t, err)
 	require.True(t, called, "Expected server to be called")

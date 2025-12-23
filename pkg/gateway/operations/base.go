@@ -109,6 +109,11 @@ func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) e
 }
 
 func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, entity interface{}, statusCode int) {
+	// check first if the client canceled the request
+	if httputil.IsRequestCanceled(req) {
+		w.WriteHeader(httputil.HttpStatusClientClosedRequest)
+		return
+	}
 	err := EncodeResponse(w, entity, statusCode)
 	if err != nil {
 		o.Log(req).WithError(err).Error("encoding response failed")
@@ -149,6 +154,11 @@ func (o *Operation) SetHeaders(w http.ResponseWriter, headers http.Header) {
 }
 
 func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	// check first if the client canceled the request
+	if httputil.IsRequestCanceled(req) {
+		w.WriteHeader(httputil.HttpStatusClientClosedRequest)
+		return req
+	}
 	err := fallbackError
 	if errors.Is(originalError, kv.ErrSlowDown) {
 		err = gwerrors.ErrSlowDown.ToAPIErr()
@@ -187,6 +197,11 @@ type RepoOperation struct {
 }
 
 func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	// check first if the client canceled the request
+	if httputil.IsRequestCanceled(req) {
+		w.WriteHeader(httputil.HttpStatusClientClosedRequest)
+		return req
+	}
 	err := fallbackError
 	if errors.Is(originalError, kv.ErrSlowDown) {
 		err = gwerrors.ErrSlowDown.ToAPIErr()
@@ -219,6 +234,11 @@ type PathOperation struct {
 }
 
 func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	// check first if the client canceled the request
+	if httputil.IsRequestCanceled(req) {
+		w.WriteHeader(httputil.HttpStatusClientClosedRequest)
+		return req
+	}
 	err := fallbackError
 	if errors.Is(originalError, kv.ErrSlowDown) {
 		err = gwerrors.ErrSlowDown.ToAPIErr()

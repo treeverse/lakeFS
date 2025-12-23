@@ -45,7 +45,7 @@ var (
 
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	userName := uuid.New().String()
 	_, err := s.CreateUser(ctx, &model.User{
 		Username: userName,
@@ -144,7 +144,7 @@ func describeAllowed(allowed bool) string {
 }
 
 func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	s := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
@@ -194,7 +194,7 @@ func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 }
 
 func TestAuthService_ListPaged(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	s := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
@@ -249,7 +249,7 @@ func TestAuthService_ListPaged(t *testing.T) {
 
 func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	// setup user with policies for benchmark
-	ctx := context.Background()
+	ctx := b.Context()
 	kvStore := kvtest.GetStore(ctx, b)
 
 	serviceWithoutCache := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
@@ -282,7 +282,7 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 
 func benchmarkKVListEffectivePolicies(b *testing.B, s *authacl.AuthService, userName string) {
 	b.ResetTimer()
-	ctx := context.Background()
+	ctx := b.Context()
 	for n := 0; n < b.N; n++ {
 		_, _, err := s.ListEffectivePolicies(ctx, userName, &model.PaginationParams{Amount: -1})
 		if err != nil {
@@ -296,7 +296,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 	groupNames := []string{"groupA", "groupB"}
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
@@ -364,7 +364,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	groupNames := []string{"groupA", "groupB", "groupC"}
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
@@ -448,7 +448,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 	groupNames := []string{"groupA", "groupB", "groupC"}
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
@@ -613,7 +613,7 @@ func TestACL(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {

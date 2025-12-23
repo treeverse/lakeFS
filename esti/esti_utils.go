@@ -87,8 +87,7 @@ func (i *ArrayFlags) Set(value string) error {
 	return nil
 }
 
-func EnvCleanup(client apigen.ClientWithResponsesInterface, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep ArrayFlags) error {
-	ctx := context.Background()
+func EnvCleanup(ctx context.Context, client apigen.ClientWithResponsesInterface, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep ArrayFlags) error {
 	errRepos := DeleteAllRepositories(ctx, client, repositoriesToKeep)
 	errGroups := DeleteAllGroups(ctx, client, groupsToKeep)
 	errPolicies := DeleteAllPolicies(ctx, client, policiesToKeep)
@@ -295,7 +294,7 @@ func MakeRepositoryName(name string) string {
 }
 
 func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	name := MakeRepositoryName(t.Name())
 	log := logger.WithField("testName", name)
 	repo := createRepositoryUnique(ctx, t)
@@ -304,6 +303,7 @@ func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 }
 
 func tearDownTest(repoName string) {
+	// We use context.Background() here to ensure the cleanup completes even if the test context is cancelled
 	ctx := context.Background()
 	DeleteRepositoryIfAskedTo(ctx, repoName)
 }
@@ -328,7 +328,10 @@ func createRepositoryUnique(ctx context.Context, t testing.TB) string {
 }
 
 func GenerateUniqueRepositoryName() string {
-	return "repo-" + xid.New().String()
+	id := xid.New().String()
+	// format: repo-<first two chars>-<rest>
+	// in order to avoid matching format with short commit id
+	return "repo-" + id[:2] + "-" + id[2:]
 }
 
 func GenerateUniqueStorageNamespace(repoName string) string {
@@ -437,7 +440,7 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
 		}
 
-		adapter, err := NewAdapter(parsedAddress.Scheme)
+		adapter, err := NewAdapter(ctx, parsedAddress.Scheme)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", parsedAddress.Scheme, err)
 		}

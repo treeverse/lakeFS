@@ -1,7 +1,6 @@
 package committed_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -133,7 +132,7 @@ func TestCompare(t *testing.T) {
 			defer diffIt.Close()
 			base := makeBaseIterator(tst.baseKeys)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			it := committed.NewCompareValueIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 			defer it.Close()
 
@@ -177,7 +176,7 @@ func TestCompareSeek(t *testing.T) {
 	diffIt := testutil.NewDiffIter(diffs)
 	baseKeys := []string{"k2", "k3", "k4", "k6"}
 	base := makeBaseIterator(baseKeys)
-	ctx := context.Background()
+	ctx := t.Context()
 	it := committed.NewCompareValueIterator(ctx, committed.NewDiffIteratorWrapper(diffIt), base)
 	// expected diffs, +k1, -k2, Chng:k3,+k7, Conf:k9,
 	defer it.Close()

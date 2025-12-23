@@ -166,7 +166,8 @@ type Properties struct {
 }
 
 type BlockstoreMetadata struct {
-	Region *string
+	IsProductionSafe bool
+	Region           *string
 }
 
 type PutResponse struct {

@@ -2215,11 +2215,13 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
 	uiConfig := c.getUIConfig()
+	capabilitiesConfig := c.getCapabilitiesConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{
-		StorageConfig:     storageCfg,
-		VersionConfig:     &versionConfig,
-		StorageConfigList: &storageCfgList,
-		UiConfig:          uiConfig,
+		StorageConfig:      storageCfg,
+		VersionConfig:      &versionConfig,
+		StorageConfigList:  &storageCfgList,
+		UiConfig:           uiConfig,
+		CapabilitiesConfig: capabilitiesConfig,
 	})
 }
 
@@ -5982,6 +5984,12 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 
 	return &apigen.UIConfig{
 		CustomViewers: &apigenViewers,
+	}
+}
+
+func (c *Controller) getCapabilitiesConfig() *apigen.CapabilitiesConfig {
+	return &apigen.CapabilitiesConfig{
+		AsyncOps: swag.Bool(c.Config.CapabilitiesConfig().GetAsyncOps()),
 	}
 }
 

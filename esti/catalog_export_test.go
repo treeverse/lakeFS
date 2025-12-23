@@ -585,7 +585,7 @@ func uploadToPhysicalAddress(t *testing.T, ctx context.Context, repo, branch, ob
 	require.NoError(t, err)
 	physicalAddress = physicalAddress.JoinPath("data", objPath)
 
-	adapter, err := NewAdapter(physicalAddress.Scheme)
+	adapter, err := NewAdapter(ctx, physicalAddress.Scheme)
 	require.NoError(t, err)
 
 	stats, err := adapter.Upload(ctx, physicalAddress, strings.NewReader(objContent))

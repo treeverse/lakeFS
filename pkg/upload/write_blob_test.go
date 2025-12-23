@@ -2,7 +2,6 @@ package upload_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/md5" //nolint:gosec
 	"crypto/rand"
 	"fmt"
@@ -53,7 +52,7 @@ func TestWriteBlob(t *testing.T) {
 				Identifier:       upload.DefaultPathProvider.NewPath(),
 			}
 			opts := block.PutOpts{StorageClass: tc.storageClass}
-			blob, err := upload.WriteBlob(context.Background(), adapter, objectPointer, reader, tc.size, opts)
+			blob, err := upload.WriteBlob(t.Context(), adapter, objectPointer, reader, tc.size, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
