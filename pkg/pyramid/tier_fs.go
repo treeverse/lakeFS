@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -32,9 +33,20 @@ type TierFS struct {
 	fsName         string
 	fsLocalBaseDir string
 	remotePrefix   string
+
+	// dirDeleteCh is a channel for queuing directory deletion requests
+	dirDeleteCh chan string
+	// done is a channel to signal shutdown to the background worker
+	done chan struct{}
+	// wg is used to wait for the background worker to finish
+	wg sync.WaitGroup
 }
 
-const workspaceDir = "workspace"
+const (
+	workspaceDir = "workspace"
+	// dirDeleteChSize is the buffer size for the directory deletion channel
+	dirDeleteChSize = 1000
+)
 
 // NewFS creates a new TierFS.
 // It will traverse the existing local folders and will update
@@ -53,20 +65,33 @@ func NewFS(c *params.InstanceParams) (FS, error) {
 		syncDir:        &directory{ceilingDir: fsLocalBaseDir},
 		keyLock:        cache.NewChanOnlyOne(),
 		remotePrefix:   c.BlockStoragePrefix,
+		dirDeleteCh:    make(chan string, dirDeleteChSize),
+		done:           make(chan struct{}),
 	}
-	tfs.fileTracker = NewFileTracker(tfs.removeFromLocalInternal)
+	tfs.fileTracker = NewFileTracker(tfs.deleteLocalCacheFile)
 	if c.Eviction == nil {
 		var err error
 		c.Eviction, err = newRistrettoEviction(c.AllocatedBytes(), tfs.removeFromLocal)
 		if err != nil {
 			return nil, fmt.Errorf("creating eviction control: %w", err)
 		}
+		c.Logger.WithFields(logging.Fields{
+			"cache_name":        c.FSName,
+			"cache_max_bytes":   c.AllocatedBytes(),
+			"cache_local_dir":   fsLocalBaseDir,
+			"disk_alloc_ratio":  c.DiskAllocProportion,
+			"total_alloc_bytes": c.Local.TotalAllocatedBytes,
+		}).Info("Initialized local cache for committed data")
 	}
 
 	tfs.eviction = c.Eviction
 	if err := tfs.handleExistingFiles(); err != nil {
 		return nil, fmt.Errorf("handling existing files: %w", err)
 	}
+
+	// Start background worker for directory deletions
+	tfs.wg.Add(1)
+	go tfs.dirDeleteWorker()
 
 	return tfs, nil
 }
@@ -129,24 +154,54 @@ func (tfs *TierFS) removeFromLocal(rPath params.RelativePath, filesize int64) {
 	tfs.fileTracker.Delete(rPath)
 }
 
-func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
-	p := path.Join(tfs.fsLocalBaseDir, string(rPath))
+func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
+	fullPath := filepath.Join(tfs.fsLocalBaseDir, string(rPath))
 	if tfs.logger.IsTracing() {
-		tfs.logger.WithField("path", p).Trace("remove from local")
+		tfs.logger.WithField("path", fullPath).Trace("Remove from local")
 	}
-	if err := os.Remove(p); err != nil {
-		tfs.logger.WithError(err).WithField("path", p).Error("Removing file failed")
-		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval")
+	if err := os.Remove(fullPath); err != nil {
+		if os.IsNotExist(err) {
+			// File already deleted - this is fine, can happen with async ristretto callbacks
+			tfs.logger.WithError(err).WithField("path", fullPath).Debug("File already deleted, possibly async eviction callback")
+			return
+		}
+		tfs.logger.WithError(err).WithField("path", fullPath).Info("Removing file failed")
+		errorsTotal.WithLabelValues(tfs.fsName, "FileRemoval").Inc()
 		return
 	}
 
-	// Delete Dir async
-	go func() {
-		if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
-			tfs.logger.WithError(err).Error("Failed deleting empty dir")
-			errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
+	// Queue directory deletion (non-blocking) - use absolute path for deleteDirRecIfEmpty
+	dirPath := filepath.Dir(fullPath)
+	select {
+	case tfs.dirDeleteCh <- dirPath:
+	default:
+		// Channel full, skip - directory will remain until next cleanup
+		errorsTotal.WithLabelValues(tfs.fsName, "DirDeleteQueueFull").Inc()
+	}
+}
+
+// dirDeleteWorker processes directory deletion requests from the channel.
+// It runs as a background goroutine and exits when the done channel is closed.
+func (tfs *TierFS) dirDeleteWorker() {
+	defer tfs.wg.Done()
+	for {
+		select {
+		case <-tfs.done:
+			return
+		case dirPath := <-tfs.dirDeleteCh:
+			if err := tfs.syncDir.deleteDirRecIfEmpty(dirPath); err != nil {
+				errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval").Inc()
+			}
 		}
-	}()
+	}
+}
+
+// Close shuts down the TierFS, stopping the background worker and waiting for it to finish.
+// The eviction cache is closed, but the cached files are preserved on disk for reuse after restart.
+func (tfs *TierFS) Close() error {
+	close(tfs.done)
+	tfs.wg.Wait()
+	return tfs.eviction.Close()
 }
 
 func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath, nsPath, filename string) error {
@@ -164,40 +219,56 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", originalPath, err)
 	}
-	defer func() {
-		if f != nil {
-			// If there is an error, remove the temp file (in the happy path, it's removed at the end of the "store" func)
-			if removeErr := os.Remove(originalPath); removeErr != nil {
-				tfs.log(ctx).WithFields(logging.Fields{
-					"storageID":     storageID,
-					"namespace":     namespace,
-					"original_path": originalPath,
-				}).Error("failed to remove temp file")
-			}
-		}
-	}()
 
 	stat, err := f.Stat()
 	if err != nil {
+		_ = f.Close()
+		if removeErr := os.Remove(originalPath); removeErr != nil {
+			tfs.log(ctx).WithError(removeErr).WithField("original_path", originalPath).Warn("failed to remove temp file after stat failure")
+		}
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
-	if _, err = tfs.adapter.Put(ctx, tfs.objPointer(storageID, namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
+	_, err = tfs.adapter.Put(ctx, tfs.objPointer(storageID, namespace, filename), stat.Size(), f, block.PutOpts{})
+	if closeErr := f.Close(); closeErr != nil {
+		tfs.log(ctx).WithError(closeErr).WithField("original_path", originalPath).Warn("failed to close file after put")
+	}
+	if err != nil {
+		// Remove temp file on adapter.Put failure
+		if removeErr := os.Remove(originalPath); removeErr != nil {
+			tfs.log(ctx).WithError(removeErr).WithFields(logging.Fields{
+				"storageID":     storageID,
+				"namespace":     namespace,
+				"original_path": originalPath,
+			}).Warn("failed to remove temp file after put failure")
+		}
 		return fmt.Errorf("adapter put %s %s: %w", namespace, filename, err)
 	}
 
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("closing file %s: %w", filename, err)
-	}
-	f = nil
-
 	fileRef := tfs.newLocalFileRef(storageID, namespace, nsPath, filename)
-	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
-		// file was stored by the policy
-		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
-	} else {
-		return os.Remove(originalPath)
+
+	// Rename file to final path BEFORE calling Store() to ensure the file is at fullPath
+	// when OnReject/OnEvict callbacks are invoked (they expect the file at fullPath).
+	if err := tfs.syncDir.renameFile(originalPath, fileRef.fullPath); err != nil {
+		return err
 	}
+
+	// Register with file tracker to protect against race with OnReject callback.
+	// This ensures the file won't be deleted until we release the tracker.
+	// Using defer guarantees closer() runs after any Delete() call, even if code is added later.
+	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
+	defer closer()
+
+	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
+		// Rejected synchronously - mark for deletion.
+		// The file will be deleted when closer() is called via defer.
+		tfs.fileTracker.Delete(fileRef.fsRelativePath)
+	}
+	// Note: OnReject may also be called asynchronously for items that exceed MaxCost.
+	// In that case, fileTracker.Delete() will be called again, which is safe because
+	// the tracker handles duplicate deletes correctly.
+
+	return nil
 }
 
 func (tfs *TierFS) GetRemoteURI(_ context.Context, filename string) (string, error) {
@@ -245,32 +316,20 @@ func (tfs *TierFS) Open(ctx context.Context, storageID, namespace, filename stri
 		return nil, err
 	}
 
-	// check if file is there - without taking the lock
 	fileRef := tfs.newLocalFileRef(storageID, namespace, nsPath, filename)
-	fh, err := os.Open(fileRef.fullPath)
-	if err == nil {
-		if tfs.logger.IsTracing() {
-			tfs.log(ctx).WithFields(logging.Fields{
-				"storageID": storageID,
-				"namespace": namespace,
-				"ns_path":   nsPath,
-				"filename":  filename,
-			}).Trace("opened locally")
-		}
-		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
-		return tfs.openFile(ctx, fileRef, fh)
-	}
-	if !os.IsNotExist(err) {
-		return nil, fmt.Errorf("open file: %w", err)
-	}
 
-	cacheAccess.WithLabelValues(tfs.fsName, "Miss").Inc()
-	fh, err = tfs.openWithLock(ctx, fileRef)
+	// Register with file tracker FIRST to prevent eviction during the open process.
+	// This protects against a race where the file could be evicted between checking
+	// its existence and opening it.
+	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
+
+	fh, err := tfs.openOrDownload(ctx, fileRef)
 	if err != nil {
+		closer()
 		return nil, err
 	}
 
-	return tfs.openFile(ctx, fileRef, fh)
+	return tfs.wrapFile(ctx, fileRef, fh, closer)
 }
 
 func (tfs *TierFS) Exists(ctx context.Context, storageID, namespace, filename string) (bool, error) {
@@ -278,14 +337,135 @@ func (tfs *TierFS) Exists(ctx context.Context, storageID, namespace, filename st
 	return tfs.adapter.Exists(ctx, tfs.objPointer(storageID, namespace, filename))
 }
 
-// openFile converts an os.File to pyramid.ROFile and updates the eviction control.
-func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.File) (*ROFile, error) {
+// openOrDownload opens a local file, downloading it first if needed.
+// The caller must already hold a file tracker reference to prevent eviction races.
+func (tfs *TierFS) openOrDownload(ctx context.Context, fileRef localFileRef) (*os.File, error) {
+	// Fast path: try to open directly
+	fh, err := os.Open(fileRef.fullPath)
+	if err == nil {
+		if tfs.logger.IsTracing() {
+			tfs.log(ctx).WithFields(logging.Fields{
+				"storageID": fileRef.storageID,
+				"namespace": fileRef.namespace,
+				"file":      fileRef.filename,
+				"fullpath":  fileRef.fullPath,
+			}).Trace("opened locally")
+		}
+		cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
+		return fh, nil
+	}
+	if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("open file: %w", err)
+	}
+
+	// Slow path: ensure file exists (download if needed)
+	cacheAccess.WithLabelValues(tfs.fsName, "Miss").Inc()
+	if err := tfs.ensureFileExists(ctx, fileRef); err != nil {
+		return nil, err
+	}
+
+	// Open after ensuring existence
+	fh, err = os.Open(fileRef.fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("open file after download: %w", err)
+	}
+	return fh, nil
+}
+
+// ensureFileExists ensures the file exists locally, downloading from block storage if needed.
+// Uses Compute to deduplicate concurrent downloads of the same file.
+func (tfs *TierFS) ensureFileExists(ctx context.Context, fileRef localFileRef) error {
+	_, err := tfs.keyLock.Compute(fileRef.filename, func() (any, error) {
+		// Check if file was downloaded by another goroutine while we waited
+		if _, err := os.Stat(fileRef.fullPath); err == nil {
+			if tfs.logger.IsTracing() {
+				tfs.log(ctx).WithFields(logging.Fields{
+					"storageID": fileRef.storageID,
+					"namespace": fileRef.namespace,
+					"file":      fileRef.filename,
+					"fullpath":  fileRef.fullPath,
+				}).Trace("got lock; file exists after all")
+			}
+			cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
+			return nil, nil
+		} else if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("stat file: %w", err)
+		}
+
+		return nil, tfs.downloadFromStorage(ctx, fileRef)
+	})
+	return err
+}
+
+// downloadFromStorage downloads a file from block storage to local disk.
+func (tfs *TierFS) downloadFromStorage(ctx context.Context, fileRef localFileRef) error {
+	if tfs.logger.IsTracing() {
+		tfs.log(ctx).WithFields(logging.Fields{
+			"storageID": fileRef.storageID,
+			"namespace": fileRef.namespace,
+			"file":      fileRef.filename,
+			"fullpath":  fileRef.fullPath,
+		}).Trace("get file from block storage")
+	}
+
+	// Use background context because Compute shares the result with multiple callers.
+	// Using a caller's context could cause one caller's cancellation to fail the fetch for all waiting callers.
+	backgroundCtx := logging.AddFields(context.Background(), logging.GetFieldsFromContext(ctx))
+	reader, err := tfs.adapter.Get(backgroundCtx, tfs.objPointer(fileRef.storageID, fileRef.namespace, fileRef.filename))
+	if err != nil {
+		return fmt.Errorf("read from block storage: %w", err)
+	}
+	defer func() { _ = reader.Close() }()
+
+	// Write to temp file first - otherwise the file is available to other readers with partial data
+	writer, err := tfs.syncDir.createTempFile(fileRef.fullPath)
+	if err != nil {
+		return fmt.Errorf("creating temp file: %w", err)
+	}
+	tmpFullPath := writer.Name()
+
+	written, err := io.Copy(writer, reader)
+	if err != nil {
+		_ = writer.Close()
+		_ = os.Remove(tmpFullPath)
+		return fmt.Errorf("copying data to file: %w", err)
+	}
+	downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
+
+	if err = writer.Close(); err != nil {
+		_ = os.Remove(tmpFullPath)
+		return fmt.Errorf("closing temp file: %w", err)
+	}
+
+	// Atomic rename to final path
+	if tfs.logger.IsTracing() {
+		tfs.log(ctx).WithFields(logging.Fields{
+			"storageID":    fileRef.storageID,
+			"namespace":    fileRef.namespace,
+			"file":         fileRef.filename,
+			"tmp_fullpath": tmpFullPath,
+			"fullpath":     fileRef.fullPath,
+		}).Trace("rename downloaded file")
+	}
+	if err = tfs.syncDir.renameFile(tmpFullPath, fileRef.fullPath); err != nil {
+		return fmt.Errorf("rename temp file: %w", err)
+	}
+
+	return nil
+}
+
+// wrapFile wraps an os.File in an ROFile with eviction tracking.
+func (tfs *TierFS) wrapFile(ctx context.Context, fileRef localFileRef, fh *os.File, closer func()) (*ROFile, error) {
 	stat, err := fh.Stat()
 	if err != nil {
+		closer()
+		_ = fh.Close()
 		return nil, fmt.Errorf("file stat: %w", err)
 	}
 
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
+		// File rejected from cache - mark for deletion when all references are closed.
+		// The file will be deleted when closer() is called (via ROFile.Close()).
 		tfs.fileTracker.Delete(fileRef.fsRelativePath)
 		tfs.log(ctx).WithFields(logging.Fields{
 			"storageID": fileRef.storageID,
@@ -298,102 +478,8 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 		File:     fh,
 		rPath:    fileRef.fsRelativePath,
 		eviction: tfs.eviction,
+		closer:   closer,
 	}, nil
-}
-
-// openWithLock reads the referenced file from the block storage
-// and places it in the local FS for further reading.
-// It returns a file handle to the local file.
-func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.File, error) {
-	log := tfs.log(ctx)
-	if tfs.logger.IsTracing() {
-		log.WithFields(logging.Fields{
-			"storageID": fileRef.storageID,
-			"namespace": fileRef.namespace,
-			"file":      fileRef.filename,
-			"fullpath":  fileRef.fullPath,
-		}).Trace("try to lock for open")
-	}
-
-	closer := tfs.fileTracker.Open(fileRef.fsRelativePath)
-	defer closer()
-	fileFullPath, err := tfs.keyLock.Compute(fileRef.filename, func() (interface{}, error) {
-		// check again file existence, now that we have the lock
-		_, err := os.Stat(fileRef.fullPath)
-		if err == nil {
-			if log.IsTracing() {
-				log.WithFields(logging.Fields{
-					"storageID": fileRef.storageID,
-					"namespace": fileRef.namespace,
-					"file":      fileRef.filename,
-					"fullpath":  fileRef.fullPath,
-				}).Trace("got lock; file exists after all")
-			}
-			cacheAccess.WithLabelValues(tfs.fsName, "Hit").Inc()
-
-			return fileRef.fullPath, nil
-		}
-		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("stat file: %w", err)
-		}
-
-		if log.IsTracing() {
-			log.WithFields(logging.Fields{
-				"storageID": fileRef.storageID,
-				"namespace": fileRef.namespace,
-				"file":      fileRef.filename,
-				"fullpath":  fileRef.fullPath,
-			}).Trace("get file from block storage")
-		}
-		reader, err := tfs.adapter.Get(ctx, tfs.objPointer(fileRef.storageID, fileRef.namespace, fileRef.filename))
-		if err != nil {
-			return nil, fmt.Errorf("read from block storage: %w", err)
-		}
-		defer func() { _ = reader.Close() }()
-
-		// write to temp file - otherwise the file is available to other readers with partial data
-		writer, err := tfs.syncDir.createTempFile(fileRef.fullPath)
-		if err != nil {
-			return nil, fmt.Errorf("creating file: %w", err)
-		}
-		tmpFullPath := writer.Name()
-		written, err := io.Copy(writer, reader)
-		if err != nil {
-			_ = writer.Close()
-			_ = os.Remove(tmpFullPath)
-			return nil, fmt.Errorf("copying data to file: %w", err)
-		}
-		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
-
-		if err = writer.Close(); err != nil {
-			return nil, fmt.Errorf("writer close: %w", err)
-		}
-
-		// copy from temp path to actual path
-		if log.IsTracing() {
-			log.WithFields(logging.Fields{
-				"storageID":    fileRef.storageID,
-				"namespace":    fileRef.namespace,
-				"file":         fileRef.filename,
-				"tmp_fullpath": tmpFullPath,
-				"fullpath":     fileRef.fullPath,
-			}).Trace("rename downloaded file")
-		}
-		if err = tfs.syncDir.renameFile(tmpFullPath, fileRef.fullPath); err != nil {
-			return nil, fmt.Errorf("rename temp file: %w", err)
-		}
-
-		return fileRef.fullPath, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	fh, err := os.Open(fileFullPath.(string))
-	if err != nil {
-		return nil, fmt.Errorf("open file: %w", err)
-	}
-	return fh, nil
 }
 
 func validateFilename(filename string) error {
@@ -408,44 +494,44 @@ func validateFilename(filename string) error {
 
 // localFileRef consists of all possible local file references
 type localFileRef struct {
-	storageID      string
-	namespace      string
-	filename       string
-	fullPath       string
+	// storageID is the block storage identifier
+	storageID string
+	// namespace is the storage namespace URL (e.g., "s3://bucket")
+	namespace string
+	// filename is the name of the file within the namespace
+	filename string
+	// fullPath is the absolute path to the file on the local filesystem
+	fullPath string
+	// fsRelativePath is the path relative to the TierFS base directory, used for cache eviction
 	fsRelativePath params.RelativePath
 }
 
 func (tfs *TierFS) storeLocalFile(rPath params.RelativePath, size int64) {
+	// Register with file tracker to coordinate with async OnReject callback.
+	closer := tfs.fileTracker.Open(rPath)
+	defer closer()
+
 	if !tfs.eviction.Store(rPath, size) {
-		// Rejected from cache, so deleted.  This is safe, but can only happen when
-		// the cache size was lowered -- so warn.
+		// Rejected synchronously - mark for deletion.
+		tfs.fileTracker.Delete(rPath)
 		tfs.logger.WithFields(logging.Fields{
 			"path": rPath,
 			"size": size,
-		}).Warn("existing file immediately rejected from cache on startup (safe if cache size changed; continue)")
-
-		// A rare occurrence, (currently) happens when Ristretto cache is not set up
-		// to perform any caching.  So be less strict: prefer to serve the file and
-		// delete it from the cache. It will be removed from disk when the last
-		// surviving file descriptor -- returned from this function -- is closed.
-		if err := os.Remove(string(rPath)); err != nil {
-			tfs.logger.WithFields(logging.Fields{
-				"path": rPath,
-				"size": size,
-			}).Error("failed to delete immediately-rejected existing file from cache on startup")
-			return
-		}
+		}).Warn("existing file immediately rejected from cache on startup (safe if cache size changed)")
 	}
+	// Note: OnReject may also be called asynchronously for items that exceed MaxCost.
+	// In that case, fileTracker.Delete() will be called, and the file will be deleted
+	// when closer() is called (via defer).
 }
 
 func (tfs *TierFS) newLocalFileRef(storageID, namespace, nsPath, filename string) localFileRef {
-	rPath := path.Join(nsPath, filename)
+	rPath := filepath.Join(nsPath, filename)
 	return localFileRef{
 		storageID:      storageID,
 		namespace:      namespace,
 		filename:       filename,
 		fsRelativePath: params.RelativePath(rPath),
-		fullPath:       path.Join(tfs.fsLocalBaseDir, rPath),
+		fullPath:       filepath.Join(tfs.fsLocalBaseDir, rPath),
 	}
 }
 
@@ -467,11 +553,11 @@ func (tfs *TierFS) createNSWorkspaceDir(namespace string) error {
 }
 
 func (tfs *TierFS) workspaceDirPath(namespace string) string {
-	return path.Join(tfs.fsLocalBaseDir, namespace, workspaceDir)
+	return filepath.Join(tfs.fsLocalBaseDir, namespace, workspaceDir)
 }
 
 func (tfs *TierFS) workspaceTempFilePath(namespace string) string {
-	return path.Join(tfs.workspaceDirPath(namespace), uuid.Must(uuid.NewRandom()).String())
+	return filepath.Join(tfs.workspaceDirPath(namespace), uuid.Must(uuid.NewRandom()).String())
 }
 
 // Convert the storageID and namespace to a filepath to be used for storage
@@ -497,7 +583,6 @@ func parseNamespacePath(storageID, namespace string) (string, error) {
 	// If there is a non-empty storageID, we need to add another level to the path
 	if storageID == config.SingleBlockstoreID {
 		return nsPath, nil
-	} else {
-		return storageID + ":" + nsPath, nil
 	}
+	return storageID + ":" + nsPath, nil
 }

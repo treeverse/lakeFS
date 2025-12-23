@@ -362,6 +362,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS)
 	if err != nil {
+		_ = rangeFS.Close()
+		_ = metaRangeFS.Close()
 		cancelFn()
 		return nil, err
 	}
@@ -421,7 +423,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		DeleteSensor:             deleteSensor,
 		WorkPool:                 workPool,
 	})
-	closers = append(closers, &ctxCloser{cancelFn})
+	closers = append(closers, &ctxCloser{cancelFn}, rangeFS, metaRangeFS)
 
 	errToStatusFunc := cfg.ErrorToStatusCodeAndMsg
 	if errToStatusFunc == nil {
