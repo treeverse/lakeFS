@@ -959,6 +959,16 @@ class Commits {
         return response.json();
     }
 
+    /**
+     * @param {string} repoId
+     * @param {string} branchId
+     * @param {string} message
+     * @param {Object} metadata
+     * @param {number|null|undefined} date
+     * @param {boolean} allowEmpty
+     * @param {boolean} force
+     * @param {string|null|undefined} sourceMetarange
+     */
     async commitAsync(repoId, branchId, message, metadata = {}, date = null, allowEmpty = false, force = false, sourceMetarange = null) {
         const query = sourceMetarange ? qs({source_metarange: sourceMetarange}) : '';
         const body = {
@@ -983,7 +993,7 @@ class Commits {
         return response.json();
     }
 
-    async commitStatus(repoId, branchId, taskId) {
+    async commitAsyncStatus(repoId, branchId, taskId) {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async/${taskId}/status`
         );
@@ -1034,6 +1044,17 @@ class Refs {
         }
     }
 
+    /**
+     * @param {string} repoId
+     * @param {string} sourceRef
+     * @param {string} destinationBranch
+     * @param {string|undefined} strategy
+     * @param {string|undefined} message
+     * @param {Object|undefined} metadata
+     * @param {boolean|undefined} force
+     * @param {boolean|undefined} allowEmpty
+     * @param {boolean|undefined} squashMerge
+     */
     async mergeAsync(repoId, sourceRef, destinationBranch, strategy = "", message = "", metadata = {}, force = false, allowEmpty = false, squashMerge = false) {
         const body = {
             strategy,
@@ -1058,7 +1079,7 @@ class Refs {
         return response.json();
     }
 
-    async mergeStatus(repoId, sourceRef, destinationBranch, taskId) {
+    async mergeAsyncStatus(repoId, sourceRef, destinationBranch, taskId) {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/async/${taskId}/status`
         );
