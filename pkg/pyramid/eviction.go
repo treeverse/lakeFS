@@ -2,7 +2,6 @@ package pyramid
 
 import (
 	"fmt"
-	"sync/atomic"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
@@ -12,7 +11,6 @@ import (
 type ristrettoEviction struct {
 	cache         *ristretto.Cache
 	evictCallback func(rPath params.RelativePath, cost int64)
-	closed        atomic.Bool
 }
 
 const (
@@ -34,12 +32,18 @@ const (
 func newRistrettoEviction(capacity int64, evict func(rPath params.RelativePath, cost int64)) (params.Eviction, error) {
 	re := &ristrettoEviction{evictCallback: evict}
 
-	// Scale numCounters based on capacity to avoid excessive memory usage for small caches.
-	// Default 10M counters is too much for test environments with small cache sizes.
-	// For small caches (< 100MB), use ~100 counters per 1MB of capacity.
-	numCountersToUse := int64(numCounters)
+	// Scale numCounters based on capacity to avoid excessive memory usage for small caches
+	// Default 10M counters is too much for test environments with small cache sizes
+	var numCountersToUse int64 = numCounters
 	if capacity < smallCacheThreshold {
-		numCountersToUse = max(capacity/bytesPerCounter, minCounters)
+		// Use a more reasonable ratio: ~100 counters per 1MB of capacity
+		numCountersToUse = capacity / bytesPerCounter
+		if numCountersToUse < minCounters {
+			numCountersToUse = minCounters
+		}
+		if numCountersToUse > numCounters {
+			numCountersToUse = numCounters // Don't exceed default for large caches
+		}
 	}
 
 	cache, err := ristretto.NewCache(&ristretto.Config{
@@ -69,16 +73,7 @@ func (re *ristrettoEviction) Store(rPath params.RelativePath, filesize int64) bo
 }
 
 func (re *ristrettoEviction) onEvict(item *ristretto.Item) {
-	if re.closed.Load() {
-		return
-	}
 	if item.Value != nil {
 		re.evictCallback(item.Value.(params.RelativePath), item.Cost)
 	}
-}
-
-func (re *ristrettoEviction) Close() error {
-	re.closed.Store(true)
-	re.cache.Close()
-	return nil
 }
