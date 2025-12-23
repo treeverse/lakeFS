@@ -2,6 +2,14 @@
 
 ## next
 
+## v1.74.1
+
+:new: What's new:
+- Add Capabilities Property In Config (#9876)
+
+:bug: Bugs Fixed
+- Fix: lakectl async Commit and Merge flow (#9878)
+
 ## v1.74.0
 
 :new: What's new:
@@ -63,7 +71,6 @@
 - Handle s3 context cancellation error in s3gw (#9856)
 
 ### Backend
-- Resource Leaks: Fixed file handle and goroutine leaks in Pyramid with proper cleanup (#9787)
 - Race Conditions: Fixed import start race condition (#9808)
 - Storage: Fixed local adapter error when no space is left on device (#9827)
 
