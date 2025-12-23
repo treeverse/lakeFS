@@ -159,7 +159,7 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 		{name: "empty_physical_address", repo: "", branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "", parts: fakeParts, statusCode: http.StatusBadRequest},
 		{name: "empty_physical_address", repo: repo, branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "", parts: fakeParts, statusCode: http.StatusBadRequest},
 		{name: "empty_upload_id", repo: repo, branch: mainBranch, objName: "obj", uploadID: "", physicalAddress: "addr", parts: fakeParts, statusCode: http.StatusNotFound}, // produces invalid endpoint
-		{name: "no_parts", repo: repo, branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "addr", parts: nil, statusCode: http.StatusNotFound},     // produces invalid endpoint
+		{name: "no_parts", repo: repo, branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "addr", parts: nil, statusCode: http.StatusBadRequest},
 	}
 
 	for _, tt := range tests {
