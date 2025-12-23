@@ -40,9 +40,6 @@
 - Operations: Added prefix to ListBuckets operation (#9798)
 - Error Handling: Use correct error for mismatched Sig V4 credential date (#9813)
 
-### Infrastructure
-- Async Workflows: New Async Commit/Merge Infrastructure (#9732) with timeout handling (#9757)
-
 ### Garbage Collection (GC)
 - Feature: Added a CLI runner for prepare gc commits (#9768)
 
@@ -57,9 +54,6 @@
 ### UI
 - Display Fixes: Fixed name display on the Pull Request page (#9821) and in the path view (#9818)
 - Login: Fixed missing error message in UI after a failed login attempt (#9775)
-
-### lakectl
-- OIDC: Fixed `lakectl login` redirects when using OIDC authentication (#9717)
 
 ### Core Logic & API
 - Headers: Now returns Content-Range header on `ErrUnsatisfiableRange` (#9743)
