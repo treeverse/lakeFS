@@ -162,6 +162,7 @@ func (tfs *TierFS) deleteLocalCacheFile(rPath params.RelativePath) {
 	if err := os.Remove(fullPath); err != nil {
 		if os.IsNotExist(err) {
 			// File already deleted - this is fine, can happen with async ristretto callbacks
+			tfs.logger.WithError(err).WithField("path", fullPath).Debug("File already deleted, possibly async eviction callback")
 			return
 		}
 		tfs.logger.WithError(err).WithField("path", fullPath).Info("Removing file failed")
@@ -409,7 +410,8 @@ func (tfs *TierFS) downloadFromStorage(ctx context.Context, fileRef localFileRef
 
 	// Use background context because Compute shares the result with multiple callers.
 	// Using a caller's context could cause one caller's cancellation to fail the fetch for all waiting callers.
-	reader, err := tfs.adapter.Get(context.Background(), tfs.objPointer(fileRef.storageID, fileRef.namespace, fileRef.filename))
+	backgroundCtx := logging.AddFields(context.Background(), logging.GetFieldsFromContext(ctx))
+	reader, err := tfs.adapter.Get(backgroundCtx, tfs.objPointer(fileRef.storageID, fileRef.namespace, fileRef.filename))
 	if err != nil {
 		return fmt.Errorf("read from block storage: %w", err)
 	}
