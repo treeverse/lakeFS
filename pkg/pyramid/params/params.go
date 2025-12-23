@@ -2,6 +2,7 @@ package params
 
 import (
 	"fmt"
+	"io"
 	"math"
 
 	"github.com/mitchellh/go-homedir"
@@ -15,6 +16,8 @@ type RelativePath string
 
 // Eviction abstracts eviction control.
 type Eviction interface {
+	io.Closer
+
 	// Touch indicates the eviction that the file has been used now
 	Touch(path RelativePath)
 
