@@ -298,8 +298,7 @@ object GarbageCollection {
                        firstSlice,
                        startTime,
                        cutoffTime,
-                       success,
-                       expiredAddresses.count()
+                       success
                       )
     logger.info(s"Report summary=$summary")
   }
@@ -344,8 +343,7 @@ object GarbageCollection {
       firstSlice: String,
       startTime: java.time.Instant,
       cutoffTime: java.time.Instant,
-      success: Boolean,
-      numDeletedObjects: Long
+      success: Boolean
   ): String = {
     val dstPath = new Path(s"$dst/summary.json")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
@@ -354,8 +352,7 @@ object GarbageCollection {
       "success" -> success,
       "first_slice" -> firstSlice,
       "start_time" -> DateTimeFormatter.ISO_INSTANT.format(startTime),
-      "cutoff_time" -> DateTimeFormatter.ISO_INSTANT.format(cutoffTime),
-      "num_deleted_objects" -> numDeletedObjects
+      "cutoff_time" -> DateTimeFormatter.ISO_INSTANT.format(cutoffTime)
     )
     val summary = compact(render(jsonSummary))
     val stream = dstFS.create(dstPath)

@@ -234,7 +234,6 @@ class GarbageCollectionSpec
           summary("first_slice").str should be(firstSlice)
           summary("start_time").str should be(DateTimeFormatter.ISO_INSTANT.format(startTime))
           summary("success").bool should be(success)
-          summary("num_deleted_objects").num should be(df.count())
 
           val deletedDF = spark.read.parquet(deletedPath.toString)
           deletedDF.count() should be(df.count())
@@ -256,8 +255,7 @@ class GarbageCollectionSpec
                                              "",
                                              java.time.Clock.systemUTC.instant(),
                                              java.time.Clock.systemUTC.instant(),
-                                             false,
-                                             0
+                                             false
                                             )
           try {
             GarbageCollection.readMarkedAddresses(dir.toString + "/",
@@ -286,8 +284,7 @@ class GarbageCollectionSpec
                                              "",
                                              java.time.Clock.systemUTC.instant(),
                                              java.time.Clock.systemUTC.instant(),
-                                             true,
-                                             0
+                                             true
                                             )
 
           val df = GarbageCollection.readMarkedAddresses(dir.toString + "/", runID, "output_prefix")
