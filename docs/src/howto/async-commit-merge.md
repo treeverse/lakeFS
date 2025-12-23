@@ -64,8 +64,8 @@ The `completed` boolean indicates whether the operation has finished, regardless
 - `completed: false` - Operation is still in progress (`pending` or `running`)
 - `completed: true` - Operation has finished (check `result` or `error` for outcome)
 
-!!! warning "Operation ID Retention: 24 Hours"
-Operation results are retained for **24 hours** after completion. After this window, the operation ID becomes invalid and status queries return 404. Always retrieve and store results promptly after completion.
+!!! warning
+    Operation results are retained for **24 hours** after completion. After this window, the operation ID becomes invalid and status queries return 404. Always retrieve and store results promptly after completion.
 
 ## Using lakectl
 
@@ -115,7 +115,7 @@ curl -X POST "https://lakefs.example.com/api/v1/repositories/example-repo/branch
 }
 ```
 
-!!! important "Save the operation ID"
+!!! important
     Store the `id` for status queries. The ID is required to retrieve results.
 
 ### Checking Commit Status
@@ -257,7 +257,7 @@ def poll_operation(get_status_func, max_wait=30):
 ```
 
 
-!!! tip "Efficient Polling"
+!!! tip
     Start with short intervals for quick operations, then back off for longer tasks. This provides fast feedback while reducing server load.
 
 ## Timeouts and Expiration
