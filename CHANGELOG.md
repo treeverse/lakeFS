@@ -2,6 +2,14 @@
 
 ## next
 
+## v1.74.1
+
+:new: What's new:
+- Add Capabilities Property In Config (#9876)
+
+:bug: Bugs Fixed
+- Fix: lakectl async Commit and Merge flow (#9878)
+
 ## v1.74.0
 
 :new: What's new:
