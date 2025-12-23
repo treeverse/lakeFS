@@ -6,7 +6,6 @@ import org.apache.commons.lang3.time.DateUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.storage.StorageLevel
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -193,15 +192,24 @@ object GarbageCollection {
         val committedDF =
           committedLister.listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
 
-        addressesToDelete = dataDF
+        // Write addresses to delete directly to parquet (no persist) to reduce disk space usage.
+        // This allows Spark to release shuffle files immediately after writing.
+        val reportDst = formatRunPath(storageNamespace, runID, outputPrefix)
+        val deletedPath = s"$reportDst/deleted"
+        dataDF
           .select("address")
           .repartition(dataDF.col("address"))
           .except(committedDF)
           .except(uncommittedDF)
-          .persist(StorageLevel.MEMORY_AND_DISK)
+          .write
+          .parquet(deletedPath)
 
+        // Release input DataFrames
         committedDF.unpersist()
         uncommittedDF.unpersist()
+
+        // Read back from parquet for sweep and reporting
+        addressesToDelete = spark.read.parquet(deletedPath)
       }
 
       // delete marked addresses
@@ -281,7 +289,7 @@ object GarbageCollection {
     val reportDst = formatRunPath(storageNamespace, runID, outputPrefix)
     logger.info(s"Report for mark_id=$runID path=$reportDst")
 
-    expiredAddresses.write.parquet(s"$reportDst/deleted")
+    // Parquet is already written during mark phase, only write text report
     expiredAddresses.write.text(s"$reportDst/deleted.text")
 
     val summary =

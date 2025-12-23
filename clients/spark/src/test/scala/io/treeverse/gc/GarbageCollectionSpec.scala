@@ -210,16 +210,23 @@ class GarbageCollectionSpec
           val success = true
           val df = Seq("file1", "file2").toDF("address")
 
+          // Parquet is now written during mark phase, simulate that here
+          val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "unified", runID)
+          val deletedPath = dir.resolve(rootPath.resolve("deleted"))
+          df.write.parquet(deletedPath.toString)
+
+          // Read back parquet as would happen in the actual flow
+          val addressesToDelete = spark.read.parquet(deletedPath.toString)
+
           GarbageCollection.writeReports(dir.toString + "/",
                                          runID,
                                          firstSlice,
                                          startTime,
                                          startTime,
                                          success,
-                                         df
+                                         addressesToDelete
                                         )
 
-          val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "unified", runID)
           val summaryPath = dir.resolve(rootPath.resolve("summary.json"))
           val summary = ujson.read(os.read(os.Path(summaryPath)))
 
@@ -229,7 +236,6 @@ class GarbageCollectionSpec
           summary("success").bool should be(success)
           summary("num_deleted_objects").num should be(df.count())
 
-          val deletedPath = dir.resolve(rootPath.resolve("deleted"))
           val deletedDF = spark.read.parquet(deletedPath.toString)
           deletedDF.count() should be(df.count())
           df.except(deletedDF.select(col("address"))).count() should be(0)
