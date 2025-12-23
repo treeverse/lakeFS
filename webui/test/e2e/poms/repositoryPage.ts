@@ -37,14 +37,14 @@ export class RepositoryPage {
   }
 
   async switchBranch(name: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Compared to branch: " }).click();
+    await this.page.getByRole("button", { name: "branch: " }).click();
     await this.page.getByRole("button", { name, exact: true }).first().click();
     // Wait for URL to update after branch switch
     await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
   }
 
-  async selectBranch(name: string): Promise<void> {
-    await this.page.getByRole("button", { name: "branch: " }).click();
+  async selectComparedToBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Compared to branch: " }).click();
     await this.page.getByRole("button", { name, exact: true }).first().click();
     // Wait for URL to update after branch switch
     await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });

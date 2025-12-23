@@ -30,7 +30,7 @@ test.describe("Commit and Merge Operations", () => {
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.gotoObjectsTab();
-        await repositoryPage.selectBranch(SOURCE_BRANCH);
+        await repositoryPage.switchBranch(SOURCE_BRANCH);
 
         const fileName = "commit-test.txt";
         const filePath = path.join(__dirname, fileName);
@@ -65,7 +65,7 @@ test.describe("Commit and Merge Operations", () => {
         await repositoryPage.gotoCompareTab();
 
         // Set up comparison: feature-branch -> main
-        await repositoryPage.switchBranch(SOURCE_BRANCH);
+        await repositoryPage.selectComparedToBranch(SOURCE_BRANCH);
 
         // Wait for diff to load
         await expect(page.getByText("commit-test.txt")).toBeVisible({ timeout: 10000 });
@@ -92,7 +92,7 @@ test.describe("Commit and Merge Operations", () => {
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.gotoObjectsTab();
-        await repositoryPage.selectBranch(SOURCE_BRANCH);
+        await repositoryPage.switchBranch(SOURCE_BRANCH);
 
         await expect(page.getByRole("button", { name: "Uncommitted Changes" })).not.toBeVisible();
     });
@@ -112,7 +112,7 @@ test.describe("Commit and Merge Operations", () => {
         const tempBranch = "temp-conflict-branch";
         await repositoryPage.createBranch(tempBranch);
         await repositoryPage.gotoObjectsTab();
-        await repositoryPage.selectBranch(tempBranch);
+        await repositoryPage.switchBranch(tempBranch);
 
         const fileName = "conflict-test.txt";
         const filePath = path.join(__dirname, fileName);
@@ -135,7 +135,7 @@ test.describe("Commit and Merge Operations", () => {
 
         // Now modify same file on feature branch
         await repositoryPage.gotoObjectsTab();
-        await repositoryPage.selectBranch(SOURCE_BRANCH);
+        await repositoryPage.switchBranch(SOURCE_BRANCH);
 
         fs.writeFileSync(filePath, "Version on feature branch");
         await repositoryPage.uploadObject(filePath);
