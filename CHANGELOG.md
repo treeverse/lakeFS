@@ -2,6 +2,11 @@
 
 ## next
 
+## v1.74.2
+
+:bug: Bugs Fixed
+- Fix lakectl commit/merge panic (#9888)
+
 ## v1.74.1
 
 :new: What's new:
