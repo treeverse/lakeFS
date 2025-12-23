@@ -330,7 +330,10 @@ func createRepositoryUnique(ctx context.Context, t testing.TB) string {
 }
 
 func GenerateUniqueRepositoryName() string {
-	return "repo-" + xid.New().String()
+	id := xid.New().String()
+	// format: repo-<first two chars>-<rest>
+	// in order to avoid matching format with short commit id
+	return "repo-" + id[:2] + "-" + id[2:]
 }
 
 func GenerateUniqueStorageNamespace(repoName string) string {

@@ -32,7 +32,7 @@ const (
 )
 
 func TestSimpleWriteRead(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 
@@ -43,7 +43,7 @@ func TestSimpleWriteRead(t *testing.T) {
 }
 
 func TestReadFailDuringWrite(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	namespace := uniqueNamespace()
 	filename := "file1"
 	f, err := fs.Create(ctx, "", namespace)
@@ -64,7 +64,7 @@ func TestReadFailDuringWrite(t *testing.T) {
 }
 
 func TestOneWriteTwoStorageIDs(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 	content := []byte("hello world!")
@@ -78,7 +78,7 @@ func TestOneWriteTwoStorageIDs(t *testing.T) {
 }
 
 func TestTwoWritesTwoStorageIDs(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 	content1 := []byte("hello world!")
@@ -112,7 +112,7 @@ func TestEvictionMultipleNamespaces(t *testing.T) {
 }
 
 func TestStartup(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	fsName := uniqueNamespace()
 	// cleanup
 	baseDir := path.Join(os.TempDir(), fsName)
@@ -148,7 +148,7 @@ func TestStartup(t *testing.T) {
 		DiskAllocProportion: 1.0,
 		SharedParams: params.SharedParams{
 			Logger:             logging.ContextUnavailable(),
-			Adapter:            mem.New(t.Context()),
+			Adapter:            mem.New(context.Background()),
 			BlockStoragePrefix: blockStoragePrefix,
 			Local: params.LocalDiskParams{
 				BaseDir:             os.TempDir(),
@@ -176,7 +176,7 @@ func TestStartup(t *testing.T) {
 }
 
 func testEviction(t *testing.T, namespaces ...string) {
-	ctx := t.Context()
+	ctx := context.Background()
 	// making sure to fill the cache
 	fileBytes := 512 * 1024
 	numFiles := 5 * allocatedDiskBytes / fileBytes
@@ -205,9 +205,9 @@ func testEviction(t *testing.T, namespaces ...string) {
 }
 
 func TestMultipleConcurrentReads(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	var baseDir string
-	fs, baseDir = createFSWithEviction(ctx, &mockEv{})
+	fs, baseDir = createFSWithEviction(&mockEv{})
 
 	defer func() { _ = os.RemoveAll(baseDir) }()
 
@@ -244,7 +244,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 }
 
 func TestRemoveTempFileOnStoreError(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 
 	// Create a temporary directory for testing
 	tempDir := t.TempDir()
@@ -340,10 +340,6 @@ func (*mockEv) Touch(params.RelativePath) {}
 
 func (*mockEv) Store(params.RelativePath, int64) bool {
 	return true
-}
-
-func (*mockEv) Close() error {
-	return nil
 }
 
 // mockFailingAdapter is a mock adapter that fails on Put operations

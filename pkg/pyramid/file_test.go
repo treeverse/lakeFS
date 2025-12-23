@@ -13,7 +13,7 @@ import (
 )
 
 func TestPyramidWriteFile(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	filename := uuid.New().String()
 
 	fh, err := os.CreateTemp("", filename)
@@ -63,7 +63,7 @@ func TestPyramidWriteFile(t *testing.T) {
 }
 
 func TestWriteValidate(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	filename := uuid.New().String()
 	fh, err := os.CreateTemp("", filename)
 	if err != nil {
@@ -97,7 +97,7 @@ func TestWriteValidate(t *testing.T) {
 }
 
 func TestMultipleWriteCalls(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	filename := uuid.New().String()
 	fh, err := os.CreateTemp("", filename)
 	if err != nil {
@@ -131,7 +131,7 @@ func TestMultipleWriteCalls(t *testing.T) {
 }
 
 func TestAbort(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	filename := uuid.New().String()
 	fh, err := os.CreateTemp("", filename)
 	if err != nil {
@@ -224,8 +224,4 @@ func (m *mockEviction) Touch(rPath params.RelativePath) {
 
 func (m *mockEviction) Store(_ params.RelativePath, _ int64) bool {
 	return false
-}
-
-func (m *mockEviction) Close() error {
-	return nil
 }
