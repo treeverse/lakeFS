@@ -207,6 +207,7 @@ jobs:
           - 1.72.0
           - 1.73.0
           - 1.74.0
+          - 1.74.1
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
