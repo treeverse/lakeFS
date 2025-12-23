@@ -293,13 +293,7 @@ object GarbageCollection {
     expiredAddresses.write.text(s"$reportDst/deleted.text")
 
     val summary =
-      writeJsonSummary(reportDst,
-                       runID,
-                       firstSlice,
-                       startTime,
-                       cutoffTime,
-                       success
-                      )
+      writeJsonSummary(reportDst, runID, firstSlice, startTime, cutoffTime, success)
     logger.info(s"Report summary=$summary")
   }
 
