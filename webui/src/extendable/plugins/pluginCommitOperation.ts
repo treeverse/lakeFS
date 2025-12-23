@@ -7,15 +7,6 @@ export interface CommitParams {
     source_metarange?: string;
 }
 
-export interface MergeParams {
-    message?: string;
-    metadata?: { [key: string]: string };
-    strategy?: string;
-    force?: boolean;
-    allow_empty?: boolean;
-    squash_merge?: boolean;
-}
-
 export interface CommitResult {
     id: string;
     parents: string[];
@@ -28,21 +19,10 @@ export interface CommitResult {
     version?: number;
 }
 
-export interface MergeResult {
-    reference: string;
-}
-
-export interface PluginCommitMergeStrategy {
+export interface PluginCommitOperation {
     commit(
         repoId: string,
         branchId: string,
         params: CommitParams
     ): Promise<CommitResult>;
-
-    merge(
-        repoId: string,
-        sourceRef: string,
-        destinationBranch: string,
-        params: MergeParams
-    ): Promise<MergeResult>;
 }

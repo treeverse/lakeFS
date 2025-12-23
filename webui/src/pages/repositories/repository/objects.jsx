@@ -1393,9 +1393,10 @@ const ObjectsBrowser = ({ config }) => {
                 enabled={hasChanges && !repo?.read_only} 
                 onCommit={async (commitDetails, done) => {
                   try {
-                    await pluginManager.commitMergeStrategy.commit(repo.id, reference.id, {
-                      message: commitDetails.message,
-                      metadata: commitDetails.metadata
+                    const { message, metadata } = commitDetails;
+                    await pluginManager.commitOperation.commit(repo.id, reference.id, {
+                      message,
+                      metadata
                     });
                     setActionError(null);
                     

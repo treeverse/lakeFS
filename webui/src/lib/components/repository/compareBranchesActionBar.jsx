@@ -88,13 +88,10 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         }
         setMergeState({merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy})
         try {
-            await pluginManager.commitMergeStrategy.merge(repo.id, source, dest, {
-                message: message || undefined,
-                metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-                strategy: strategy || undefined,
-                force: false,
-                allow_empty: false,
-                squash_merge: false
+            await pluginManager.mergeOperation.merge(repo.id, source, dest, {
+                message,
+                metadata,
+                strategy
             });
             setMergeState({
                 merging: mergeState.merging,
