@@ -1,6 +1,7 @@
 ---
 title: Asynchronous Commit and Merge
 description: Perform large commit and merge operations asynchronously to avoid timeouts and indeterminate outcomes.
+status: enterprise
 ---
 
 # Asynchronous Commit and Merge
@@ -14,21 +15,61 @@ Asynchronous commit and merge handle large operations that may exceed timeout li
 
 Use async operations when:
 
-- Committing or merging millions of objects that exceed gateway timeout limits
+- Committing or merging millions of objects that exceed your environment's gateway timeout limits
 - Operations take longer than your load balancer timeout
 - Running in CI/CD pipelines where you need reliable completion status
 
-For standard operations with smaller datasets, synchronous endpoints work well and provide immediate results.
+For standard operations with smaller datasets, synchronous endpoints work just as well and provide immediate results.
 
 ## Prerequisites
 
 - lakeFS Enterprise or lakeFS Cloud
-- Same RBAC permissions as synchronous operations (see [Permissions](#permissions))
-- When polling programmatically, ability to persist the operation ID
+- Same RBAC permissions as the synchronous operations (see [Permissions](#permissions))
+
+## How It Works
+
+Async operations follow a two-step pattern:
+
+1. **Submit the operation** - Returns immediately with an `id` (HTTP 202 Accepted)
+2. **Poll for status** - Check operation status until completion
+
+lakectl handles this workflow automatically. When using the API directly, you're responsible for polling.
+
+## Understanding Operation States
+
+Async operations progress through several states:
+
+| State | Description | completed | Result Available |
+|-------|-------------|-----------|------------------|
+| `pending` | Operation submitted and queued, waiting for processing | `false` | No |
+| `running` | Operation is actively executing | `false` | No |
+| `completed` (success) | Operation finished successfully | `true` | Yes (in `result` field) |
+| `completed` (failed) | Operation finished with an error | `true` | No (see `error` field) |
+| `expired` | Operation timed out after 20 minutes | `true` | No (see `error` field) |
+
+### State Transitions
+
+```
+[submitted] → pending → running → completed (success/failure)
+                 ↓         ↓
+                 └─────────┴──→ expired (after 20 minutes)
+```
+
+Operations expire if `update_time` hasn't changed for 20 minutes, regardless of whether they're pending in the queue or actively running.
+
+### The `completed` Field
+
+The `completed` boolean indicates whether the operation has finished, regardless of success or failure:
+
+- `completed: false` - Operation is still in progress (`pending` or `running`)
+- `completed: true` - Operation has finished (check `result` or `error` for outcome)
+
+!!! warning "Operation ID Retention: 24 Hours"
+Operation results are retained for **24 hours** after completion. After this window, the operation ID becomes invalid and status queries return 404. Always retrieve and store results promptly after completion.
 
 ## Using lakectl
 
-lakectl automatically detects whether async operations are available and uses them when supported, falling back to synchronous operations in OSS installations. The command syntax is identical in both cases:
+lakectl automatically detects whether async operations are available by checking the server's configuration endpoint for async operation support. When supported (lakeFS Enterprise), lakectl uses async operations; otherwise it falls back to synchronous operations (lakeFS OSS). The command syntax is identical in both cases:
 
 ### Commit
 
@@ -70,12 +111,12 @@ curl -X POST "https://lakefs.example.com/api/v1/repositories/example-repo/branch
 **Response (202 Accepted):**
 ```json
 {
-  "id": "op_a1b2c3d4e5f6"
+  "id": "CAfghAkY5zWt3ofFm5stOX"
 }
 ```
 
 !!! important "Save the operation ID"
-Store the `id` for status queries. The ID is required to retrieve results.
+    Store the `id` for status queries. The ID is required to retrieve results.
 
 ### Checking Commit Status
 
@@ -83,14 +124,14 @@ Store the `id` for status queries. The ID is required to retrieve results.
 
 **Request:**
 ```bash
-curl "https://lakefs.example.com/api/v1/repositories/example-repo/branches/main/commits/async/op_a1b2c3d4e5f6/status" \
+curl "https://lakefs.example.com/api/v1/repositories/example-repo/branches/main/commits/async/CAfghAkY5zWt3ofFm5stOX/status" \
   -H "Authorization: Bearer ${LAKEFS_ACCESS_TOKEN}"
 ```
 
 **Response (In Progress):**
 ```json
 {
-  "task_id": "op_a1b2c3d4e5f6",
+  "task_id": "CAfghAkY5zWt3ofFm5stOX",
   "completed": false,
   "update_time": "2024-12-19T10:02:15Z"
 }
@@ -99,7 +140,7 @@ curl "https://lakefs.example.com/api/v1/repositories/example-repo/branches/main/
 **Response (Completed Successfully):**
 ```json
 {
-  "task_id": "op_a1b2c3d4e5f6",
+  "task_id": "CAfghAkY5zWt3ofFm5stOX",
   "completed": true,
   "update_time": "2024-12-19T10:05:43Z",
   "result": {
@@ -122,7 +163,7 @@ curl "https://lakefs.example.com/api/v1/repositories/example-repo/branches/main/
 **Response (Failure due to branch protection):**
 ```json
 {
-  "task_id": "op_a1b2c3d4e5f6",
+  "task_id": "CAfghAkY5zWt3ofFm5stOX",
   "completed": true,
   "update_time": "2024-12-19T10:04:22Z",
   "error": {
@@ -153,7 +194,7 @@ curl -X POST "https://lakefs.example.com/api/v1/repositories/example-repo/refs/f
 **Response (202 Accepted):**
 ```json
 {
-  "id": "op_z9y8x7w6v5u4"
+  "id": "DBpqrBnZ6xUu4pgGn6tuPY"
 }
 ```
 
@@ -163,14 +204,14 @@ curl -X POST "https://lakefs.example.com/api/v1/repositories/example-repo/refs/f
 
 **Request:**
 ```bash
-curl "https://lakefs.example.com/api/v1/repositories/example-repo/refs/feature-branch/merge/main/async/op_z9y8x7w6v5u4/status" \
+curl "https://lakefs.example.com/api/v1/repositories/example-repo/refs/feature-branch/merge/main/async/DBpqrBnZ6xUu4pgGn6tuPY/status" \
   -H "Authorization: Bearer ${LAKEFS_ACCESS_TOKEN}"
 ```
 
 **Response (Completed Successfully):**
 ```json
 {
-  "task_id": "op_z9y8x7w6v5u4",
+  "task_id": "DBpqrBnZ6xUu4pgGn6tuPY",
   "completed": true,
   "update_time": "2024-12-19T14:35:12Z",
   "result": {
@@ -182,7 +223,7 @@ curl "https://lakefs.example.com/api/v1/repositories/example-repo/refs/feature-b
 **Response (Failure due to merge conflict):**
 ```json
 {
-  "task_id": "op_z9y8x7w6v5u4",
+  "task_id": "DBpqrBnZ6xUu4pgGn6tuPY",
   "completed": true,
   "update_time": "2024-12-19T14:32:45Z",
   "error": {
@@ -191,47 +232,6 @@ curl "https://lakefs.example.com/api/v1/repositories/example-repo/refs/feature-b
   "status_code": 409
 }
 ```
-
-## How It Works
-
-Async operations follow a two-step pattern:
-
-1. **Submit the operation** - Returns immediately with an `id` (HTTP 202 Accepted)
-2. **Poll for status** - Check operation status until completion
-
-lakectl handles this workflow automatically. When using the API directly, you're responsible for polling.
-
-## Understanding Operation States
-
-Async operations progress through several states:
-
-| State | Description | completed | Result Available |
-|-------|-------------|-----------|------------------|
-| `pending` | Operation submitted and queued, waiting for processing | `false` | No |
-| `running` | Operation is actively executing | `false` | No |
-| `completed` (success) | Operation finished successfully | `true` | Yes (in `result` field) |
-| `completed` (failed) | Operation finished with an error | `true` | No (see `error` field) |
-| `expired` | Operation timed out after 20 minutes | `true` | No (see `error` field) |
-
-### State Transitions
-
-```
-[submitted] → pending → running → completed (success/failure)
-                 ↓         ↓
-                 └─────────┴──→ expired (after 20 minutes)
-```
-
-Operations expire if `update_time` hasn't changed for 20 minutes, regardless of whether they're pending in the queue or actively running.
-
-### The `completed` Field
-
-The `completed` boolean indicates whether the operation has finished, regardless of success or failure:
-
-- `completed: false` - Operation is still in progress (`pending` or `running`)
-- `completed: true` - Operation has finished (check `result` or `error` for outcome)
-
-!!! warning "Operation ID Retention: 24 Hours"
-    Operation results are retained for **24 hours** after completion. After this window, the operation ID becomes invalid and status queries return 404. Always retrieve and store results promptly after completion.
 
 ## Polling Strategy
 
@@ -256,15 +256,9 @@ def poll_operation(get_status_func, max_wait=30):
         wait_time = min(wait_time * 2, max_wait)  # Cap at max_wait seconds
 ```
 
-### Polling Intervals
-
-- **Initial poll**: 1 second after submission
-- **Subsequent polls**: Double the interval (1s → 2s → 4s → 8s → ...)
-- **Maximum interval**: 30 seconds
-- **Timeout handling**: Operations expire after 20 minutes if not completed
 
 !!! tip "Efficient Polling"
-Start with short intervals for quick operations, then back off for longer tasks. This provides fast feedback while reducing server load.
+    Start with short intervals for quick operations, then back off for longer tasks. This provides fast feedback while reducing server load.
 
 ## Timeouts and Expiration
 
@@ -279,7 +273,7 @@ When you query the status endpoint, it checks if `update_time` is older than 20 
 **Expired operation response:**
 ```json
 {
-  "task_id": "op_abc123",
+  "task_id": "ECtuvCpA7yVv5qhHo7uvQZ",
   "completed": true,
   "update_time": "2024-12-19T10:22:00Z",
   "error": {
@@ -303,7 +297,7 @@ Async operations return the same error codes as their synchronous counterparts. 
 **Operation Expired (408):**
 ```json
 {
-  "task_id": "op_abc123",
+  "task_id": "ECtuvCpA7yVv5qhHo7uvQZ",
   "completed": true,
   "update_time": "2024-12-19T10:22:00Z",
   "error": {
@@ -356,7 +350,6 @@ The status endpoints also require these same permissions, as they check authoriz
 ## Limitations
 
 - **No cancellation**: Once submitted, async operations cannot be canceled. They will run to completion or timeout.
-- **Enterprise only**: Async operations are not available in lakeFS OSS.
 - **No SDK wrapper yet**: High-level SDK support is planned but not yet available. Use the REST API directly for now.
 - **Concurrent operations**: Multiple operations can be submitted to the same branch and will run in parallel. They coordinate through branch locking, which may cause temporary lock errors under heavy contention. See [Branch Lock Contention](#branch-lock-contention) in Troubleshooting for details.
 
@@ -367,6 +360,7 @@ The status endpoints also require these same permissions, as they check authoriz
 **Symptom:** Status endpoint returns 404 for a valid operation ID.
 
 **Possible causes:**
+
 - Operation ID was mistyped
 - More than 24 hours have passed since completion
 - Operation was submitted to a different repository or branch
@@ -378,6 +372,7 @@ The status endpoints also require these same permissions, as they check authoriz
 **Symptom:** Operation status remains `pending` for an unusually long time.
 
 **Possible causes:**
+
 - lakeFS server is under heavy load
 - Database connectivity issues
 - Worker processes not running
@@ -391,6 +386,7 @@ The status endpoints also require these same permissions, as they check authoriz
 **Cause:** Multiple concurrent operations are trying to modify the same branch. The system automatically retries internally, but if contention persists, the operation fails.
 
 **Solution:**
+
 - Implement retry logic with exponential backoff in your application
 - Consider spacing out operations to the same branch
 - For batch operations, process them serially rather than in parallel
@@ -418,11 +414,13 @@ def submit_with_retry(submit_func, max_retries=3):
 **Symptom:** Operation expires before expected, even for moderate-sized commits.
 
 **Possible causes:**
+
 - Hooks taking too long to execute
 - Database performance issues
 - Network latency to object storage
 
 **Solution:**
+
 - Review hook execution times
 - Optimize database queries and indexes
 - Check object storage latency metrics
