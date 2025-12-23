@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -55,6 +56,17 @@ var mergeCmd = &cobra.Command{
 			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
 		}
 
+		ctx := cmd.Context()
+		configResp, err := client.GetConfigWithResponse(ctx)
+		DieOnErrorOrUnexpectedStatusCode(configResp, err, http.StatusOK)
+		if configResp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		isAsync := false
+		if configResp.JSON200.CapabilitiesConfig != nil {
+			isAsync = swag.BoolValue(configResp.JSON200.CapabilitiesConfig.AsyncOps)
+		}
 		body := apigen.MergeIntoBranchJSONRequestBody{
 			Message:     &message,
 			Metadata:    &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
@@ -63,18 +75,17 @@ var mergeCmd = &cobra.Command{
 			AllowEmpty:  &allowEmpty,
 			SquashMerge: &squash,
 		}
-		ctx := cmd.Context()
 		var mergeResult *apigen.MergeResult
-
-		// try asynchronous merge first
-		startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
-		if startResp.JSON501 == nil { // Async supported or error
+		// asynchronous merge
+		if isAsync {
+			startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
 			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
 			if startResp.JSON202 == nil {
 				Die("Bad response from server", 1)
 			}
+
 			taskID := startResp.JSON202.Id
-			err := pollAsyncOperationStatus(ctx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
+			err = pollAsyncOperationStatus(ctx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
 				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
 				if err != nil {
 					return nil, err
