@@ -1,6 +1,6 @@
 module github.com/treeverse/lakefs
 
-go 1.24.4
+go 1.25.5
 
 require (
 	cloud.google.com/go v0.120.0 // indirect
@@ -44,16 +44,16 @@ require (
 	github.com/vbauerster/mpb/v5 v5.4.0
 	github.com/xitongsys/parquet-go v1.6.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20241021075129-b732d2ac9c9b
-	golang.org/x/crypto v0.42.0
+	golang.org/x/crypto v0.46.0
 	golang.org/x/oauth2 v0.31.0
-	golang.org/x/term v0.35.0
+	golang.org/x/term v0.38.0
 	google.golang.org/api v0.234.0
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require golang.org/x/sync v0.17.0
+require golang.org/x/sync v0.19.0
 
 require (
 	cloud.google.com/go/compute/metadata v0.7.0
@@ -62,8 +62,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
+	github.com/DmitriyVTitov/size v1.5.0
 	github.com/IBM/pgxpoolprometheus v1.1.1
 	github.com/Masterminds/sprig/v3 v3.2.3
+	github.com/NVIDIA/sortedmap v1.30.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond/v2 v2.5.0
@@ -83,27 +85,20 @@ require (
 	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf
 	github.com/databricks/databricks-sdk-go v0.26.2
 	github.com/dgraph-io/badger/v4 v4.7.0
+	github.com/elnormous/contenttype v1.0.4
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.35.2
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
-	github.com/gorilla/securecookie v1.1.1
-	github.com/gorilla/sessions v1.2.1
+	github.com/gorilla/securecookie v1.1.2
+	github.com/gorilla/sessions v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
-	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/catalog/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20251118224848-d2be664caf31
-	github.com/treeverse/lakefs/webui v0.0.0-20251118224848-d2be664caf31
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
@@ -127,6 +122,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
+	github.com/NVIDIA/cstruct v1.30.0 // indirect
 	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
 	github.com/aws/aws-sdk-go v1.48.11 // indirect
@@ -149,7 +145,6 @@ require (
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
-	github.com/elnormous/contenttype v1.0.4 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -195,7 +190,6 @@ require (
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/samber/mo v1.11.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect
@@ -264,7 +258,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/opencontainers/runc v1.3.0 // indirect
+	github.com/opencontainers/runc v1.3.3 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
@@ -278,11 +272,11 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.11.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/mod v0.27.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
-	golang.org/x/tools v0.36.0
+	golang.org/x/mod v0.30.0 // indirect
+	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/tools v0.39.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/grpc v1.72.1 // indirect

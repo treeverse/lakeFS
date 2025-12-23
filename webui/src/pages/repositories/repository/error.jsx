@@ -1,7 +1,7 @@
 import {useRouter} from "../../../lib/hooks/router";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
-import {repositories, RepositoryDeletionError} from "../../../lib/api";
+import {repositories, RepositoryDeletionError, BareRepositoryError} from "../../../lib/api";
 import {TrashIcon} from "@primer/octicons-react";
 import React from "react";
 import {AlertError} from "../../../lib/components/controls";
@@ -12,7 +12,7 @@ const RepositoryInDeletionContainer = ({repoId}) => {
         <Alert variant="warning">
             <Alert.Heading>Repository is undergoing deletion</Alert.Heading>
             This may take several seconds. You can retry the deletion process by pressing the delete button again.
-            <hr />
+            <hr/>
             <div className="d-flex justify-content-end">
                 <Button variant="danger" className="mt-3" onClick={
                     async () => {
@@ -30,9 +30,31 @@ const RepositoryInDeletionContainer = ({repoId}) => {
     );
 };
 
+const BareRepositoryContainer = () => (
+    <Alert variant="info">
+        <Alert.Heading>Repository Not Initialized</Alert.Heading>
+        <p className="mb-2">
+            This repository is empty (bare) and has no branches or commits.
+            Bare repositories are typically used for backup/restore operations with <code>lakectl refs-restore</code>.
+        </p>
+        <p>
+            <a
+                href="https://docs.lakefs.io/howto/backup-and-restore.html"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                Learn more about bare repositories.
+            </a>
+        </p>
+    </Alert>
+);
+
 export const RepoError = ({error}) => {
     if (error instanceof RepositoryDeletionError) {
         return <RepositoryInDeletionContainer repoId={error.repoId}/>;
+    }
+    if (error instanceof BareRepositoryError) {
+        return <BareRepositoryContainer />;
     }
     return <AlertError error={error}/>;
 };

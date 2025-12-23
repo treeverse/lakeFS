@@ -1,18 +1,19 @@
-import React, {useCallback, useRef, useState} from "react";
-import {RefTypeBranch} from "../../../constants";
-import {ActionGroup, ActionsBar, AlertError, RefreshButton} from "../controls";
-import {MetadataFields} from "./metadata";
-import {getMetadataIfValid, touchInvalidFields} from "./metadataHelpers";
-import {GitMergeIcon} from "@primer/octicons-react";
+import React, { useCallback, useRef, useState } from "react";
+import { RefTypeBranch } from "../../../constants";
+import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../controls";
+import { MetadataFields } from "./metadata";
+import { getMetadataIfValid, touchInvalidFields } from "./metadataHelpers";
+import { GitMergeIcon, GitPullRequestIcon } from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
-import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
+import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import CompareBranchesSelection from "./compareBranchesSelection";
+import { useRouter } from "../../../lib/hooks/router";
 import {usePluginManager} from "../../../extendable/plugins/pluginsContext";
 
 const CompareBranchesActionsBar = (
-    {repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff}
+    { repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff }
 ) => {
     return <ActionsBar>
         <ActionGroup orientation="left">
@@ -27,22 +28,30 @@ const CompareBranchesActionsBar = (
 
         <ActionGroup orientation="right">
 
-            <RefreshButton onClick={doRefresh}/>
+            <RefreshButton onClick={doRefresh} />
 
             {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
-                <MergeButton
-                    repo={repo}
-                    disabled={((compareReference.id === reference.id) || isEmptyDiff || repo?.read_only)}
-                    source={compareReference.id}
-                    dest={reference.id}
-                    onDone={doRefresh}
-                />
+                <div>
+                    <PullRequestButton
+                        repo={repo}
+                        disabled={((compareReference.id === reference.id) || isEmptyDiff || repo?.read_only)}
+                        source={compareReference.id}
+                        dest={reference.id}
+                    />
+                    <MergeButton
+                        repo={repo}
+                        disabled={((compareReference.id === reference.id) || isEmptyDiff || repo?.read_only)}
+                        source={compareReference.id}
+                        dest={reference.id}
+                        onDone={doRefresh}
+                    />
+                </div>
             }
         </ActionGroup>
     </ActionsBar>;
 };
 
-const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
+const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     const pluginManager = usePluginManager();
     const textRef = useRef(null);
     const [metadataFields, setMetadataFields] = useState([])
@@ -55,9 +64,8 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
     const [mergeState, setMergeState] = useState(initialMerge);
 
     const onClickMerge = useCallback(() => {
-            setMergeState({merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy})
-        }
-    );
+        setMergeState({ merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy })
+    });
 
     const onStrategyChange = (event) => {
         setMergeState({
@@ -86,7 +94,7 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
         if (strategy === "none") {
             strategy = "";
         }
-        setMergeState({merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy})
+        setMergeState({ merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy })
         try {
             await pluginManager.mergeOperation.merge(repo.id, source, dest, {
                 message,
@@ -102,7 +110,7 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
             onDone();
             hide();
         } catch (err) {
-            setMergeState({merging: mergeState.merging, show: mergeState.show, err: err, strategy: mergeState.strategy})
+            setMergeState({ merging: mergeState.merging, show: mergeState.show, err: err, strategy: mergeState.strategy })
         }
     }
 
@@ -128,9 +136,9 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                             />
                         </Form.Group>
 
-                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
                     </Form>
-                    <FormControl sx={{m: 1, minWidth: 120}}>
+                    <FormControl sx={{ m: 1, minWidth: 120 }}>
                         <InputLabel id="demo-select-small" className="text-secondary">Strategy</InputLabel>
                         <Select
                             labelId="demo-select-small"
@@ -151,7 +159,7 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                         from <b>{source}</b> (&rdquo;source-wins&rdquo;). In case no selection is made,
                         the merge process will fail in case of a conflict.
                     </FormHelperText>
-                    {(mergeState.err) ? (<AlertError error={mergeState.err}/>) : (<></>)}
+                    {(mergeState.err) ? (<AlertError error={mergeState.err} />) : (<></>)}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={mergeState.merging} onClick={hide}>
@@ -163,9 +171,27 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                 </Modal.Footer>
             </Modal>
             <Button variant="success" disabled={disabled} onClick={() => onClickMerge()}>
-                <GitMergeIcon/> {"Merge"}
+                <GitMergeIcon /> {"Merge"}
             </Button>
         </>
+    );
+}
+
+const PullRequestButton = ({ repo, source, dest, disabled = false }) => {
+    const router = useRouter();
+
+    const onClick = () => {
+        router.push({
+            pathname: '/repositories/:repoId/pulls/create',
+            params: { repoId: repo.id },
+            query: { ref: dest, compare: source }
+        });
+    }
+
+    return (
+        <Button variant="primary" disabled={disabled} onClick={onClick}>
+            <GitPullRequestIcon /> {"Create Pull Request"}
+        </Button>
     );
 }
 

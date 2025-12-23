@@ -46,7 +46,7 @@ func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 		URLPresignTTL: time.Duration(numSeconds) * time.Second,
 	}
 
-	presignedURL, err := awsiam.PresignGetCallerIdentityFromAuthParams(context.Background(), params, stsClient)
+	presignedURL, err := awsiam.PresignGetCallerIdentityFromAuthParams(t.Context(), params, stsClient)
 	require.NoError(t, err)
 	u, err := url.Parse(presignedURL)
 	require.NoError(t, err)

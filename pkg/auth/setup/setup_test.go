@@ -1,7 +1,6 @@
 package setup_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -18,7 +17,7 @@ import (
 
 func SetupService(t *testing.T, secret string) (*auth.BasicAuthService, kv.Store) {
 	t.Helper()
-	kvStore := kvtest.GetStore(context.Background(), t)
+	kvStore := kvtest.GetStore(t.Context(), t)
 	return auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte(secret)), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable()), kvStore
@@ -26,7 +25,7 @@ func SetupService(t *testing.T, secret string) (*auth.BasicAuthService, kv.Store
 
 func TestAddAdminUser(t *testing.T) {
 	authService, _ := SetupService(t, "secret")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// setup admin user
 	superuser := &model.SuperuserConfiguration{

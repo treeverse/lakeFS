@@ -2,7 +2,6 @@ package parquet_test
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"testing"
 
@@ -39,7 +38,7 @@ coordinates	BYTE_ARRAY
 func TestOpen(t *testing.T) {
 	out := bytes.Buffer{}
 	l := lua.NewState()
-	lualibs.OpenSafe(l, context.Background(), lualibs.OpenSafeConfig{}, &out)
+	lualibs.OpenSafe(l, t.Context(), lualibs.OpenSafeConfig{}, &out)
 	parquet.Open(l)
 	json.Open(l)
 

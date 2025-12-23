@@ -37,15 +37,15 @@ type ClientAdapter interface {
 	Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error)
 }
 
-type AdapterFactory map[string]func() (ClientAdapter, error)
+type AdapterFactory map[string]func(context.Context) (ClientAdapter, error)
 
 // NewAdapter returns a ClientAdapter for protocol.
-func NewAdapter(protocol string) (ClientAdapter, error) {
+func NewAdapter(ctx context.Context, protocol string) (ClientAdapter, error) {
 	factory, ok := adapterFactory[protocol]
 	if !ok {
 		return nil, helpers.ErrUnsupportedProtocol
 	}
-	return factory()
+	return factory(ctx)
 }
 
 var adapterFactory = AdapterFactory{
@@ -58,8 +58,8 @@ type s3Adapter struct {
 	svc *s3.Client
 }
 
-func newS3Adapter() (ClientAdapter, error) {
-	cfg, err := config.LoadDefaultConfig(context.Background())
+func newS3Adapter(ctx context.Context) (ClientAdapter, error) {
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("aws load default config: %w", err)
 	}

@@ -1,7 +1,6 @@
 package actions_test
 
 import (
-	"context"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestTaskResultsIterator(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	_, keyList := createTestData(t, ctx, kvStore)
 

@@ -16,13 +16,12 @@ type MockAdapter struct {
 	LastStorageNamespace string
 	LastStorageClass     *string
 
-	blockstoreMetadata *block.BlockstoreMetadata
+	blockstoreMetadata block.BlockstoreMetadata
 	namespaceRegion    *string
 }
 
 var (
 	errorGetPropertiesNotImplemented = errors.New("getProperties method not implemented in mock adapter")
-	errorRemoveNotImplemented        = errors.New("remove method not implemented in mock adapter")
 	errorCopyNotImplemented          = errors.New("copy method not implemented in mock adapter")
 )
 
@@ -40,7 +39,7 @@ func NewMockAdapter(opts ...MockAdapterOption) *MockAdapter {
 	return adapter
 }
 
-func WithBlockstoreMetadata(bm *block.BlockstoreMetadata) func(a *MockAdapter) {
+func WithBlockstoreMetadata(bm block.BlockstoreMetadata) func(a *MockAdapter) {
 	return func(a *MockAdapter) {
 		a.blockstoreMetadata = bm
 	}
@@ -92,10 +91,6 @@ func (a *MockAdapter) GetProperties(_ context.Context, _ block.ObjectPointer) (b
 	return block.Properties{}, errorGetPropertiesNotImplemented
 }
 
-func (a *MockAdapter) Remove(_ context.Context, _ block.ObjectPointer) error {
-	return errorRemoveNotImplemented
-}
-
 func (a *MockAdapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return errorCopyNotImplemented
 }
@@ -137,11 +132,7 @@ func (a *MockAdapter) BlockstoreType() string {
 }
 
 func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
-	if a.blockstoreMetadata != nil {
-		return a.blockstoreMetadata, nil
-	} else {
-		return nil, block.ErrOperationNotSupported
-	}
+	return &a.blockstoreMetadata, nil
 }
 
 func (a *MockAdapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {

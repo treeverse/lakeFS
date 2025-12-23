@@ -1,18 +1,18 @@
 package ref_test
 
 import (
-	"context"
 	"errors"
-	"github.com/go-test/deep"
 	"testing"
 	"time"
+
+	"github.com/go-test/deep"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 )
 
 func TestCommitIterator(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	baseTime, err := time.Parse(time.RFC3339, "1999-12-31T23:59:59Z")
 	if err != nil {
 		t.Fatal(err)

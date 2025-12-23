@@ -428,6 +428,10 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {
 		logger.WithError(err).WithField("user", accessKey).Error("authenticate")
+		// Wrap authentication-specific errors to ensure they return 401 instead of 404/500
+		if errors.Is(err, auth.ErrNotFound) || errors.Is(err, auth.ErrInvalidSecretAccessKey) {
+			return nil, fmt.Errorf("%w: %w", ErrAuthenticatingRequest, err)
+		}
 		return nil, err
 	}
 	user, err := authService.GetUser(ctx, username)

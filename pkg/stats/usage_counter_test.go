@@ -1,7 +1,6 @@
 package stats_test
 
 import (
-	"context"
 	"math/rand"
 	"testing"
 
@@ -67,7 +66,7 @@ func TestUsageCounter(t *testing.T) {
 
 func TestUsageReporter(t *testing.T) {
 	// create a store
-	ctx := context.Background()
+	ctx := t.Context()
 	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
 	if err != nil {
 		t.Fatal(err)

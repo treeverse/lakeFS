@@ -34,18 +34,8 @@ type Import struct {
 	mu            sync.Mutex
 }
 
-func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Logger, kvStore kv.Store, repository *graveler.RepositoryRecord, importID string) (*Import, error) {
-	status := graveler.ImportStatus{
-		ID:        graveler.ImportID(importID),
-		UpdatedAt: time.Now(),
-	}
-	repoPartition := graveler.RepoPartition(repository)
-	// Must be set first
-	err := kv.SetMsg(ctx, kvStore, repoPartition, []byte(graveler.ImportsPath(importID)), graveler.ProtoFromImportStatus(&status))
-	if err != nil {
-		return nil, err
-	}
-	dbPath, err := os.MkdirTemp("", "import_"+importID)
+func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Logger, kvStore kv.Store, repository *graveler.RepositoryRecord, status graveler.ImportStatus) (*Import, error) {
+	dbPath, err := os.MkdirTemp("", "import_"+status.ID.String())
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +50,7 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 		kvStore:       kvStore,
 		status:        status,
 		logger:        logger,
-		repoPartition: repoPartition,
+		repoPartition: graveler.RepoPartition(repository),
 		mu:            sync.Mutex{},
 	}
 

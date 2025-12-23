@@ -2,7 +2,6 @@ package esti
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -230,7 +229,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.NoError(t, err)
 		vars["PREFIX"] = "dir_marker/"
 		vars["LOCAL_DIR"] = dataDir
-		_, err = UploadContent(context.Background(), vars["REPO"], vars["BRANCH"], vars["PREFIX"], "", nil)
+		_, err = UploadContent(t.Context(), vars["REPO"], vars["BRANCH"], vars["PREFIX"], "", nil)
 		require.NoError(t, err)
 		runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
@@ -298,7 +297,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		// Create symlink using metadata
 		symlinkFile := "symlink_to_target.txt"
 		content := ""
-		_, err := UploadContentWithMetadata(context.Background(), client, repoName, symlinkBranch, symlinkFile, map[string]string{
+		_, err := UploadContentWithMetadata(t.Context(), client, repoName, symlinkBranch, symlinkFile, map[string]string{
 			apiutil.SymlinkMetadataKey: "target_file.txt",
 		}, "text/plain", strings.NewReader(content))
 		require.NoError(t, err)
@@ -591,7 +590,7 @@ func TestLakectlLocal_pull(t *testing.T) {
 		metadata := map[string]string{
 			apiutil.SymlinkMetadataKey: "target_file.txt",
 		}
-		ctx := context.Background()
+		ctx := t.Context()
 		uploadResponse, err := UploadContentWithMetadata(ctx, client, repoName, symlinkBranch, symlinkFile, metadata, "text/plain", bytes.NewReader([]byte{}))
 		require.NoError(t, err)
 		require.Equal(t, uploadResponse.StatusCode(), http.StatusCreated)

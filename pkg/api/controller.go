@@ -771,13 +771,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.LoginJSONRequestBody) {
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
-	if err != nil {
-		if errors.Is(err, ErrAuthenticatingRequest) {
-			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-			return
-		}
-		c.Logger.WithError(err).Error("Unexpected error during user authentication")
-		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -2221,11 +2215,13 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
 	uiConfig := c.getUIConfig()
+	capabilitiesConfig := c.getCapabilitiesConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{
-		StorageConfig:     storageCfg,
-		VersionConfig:     &versionConfig,
-		StorageConfigList: &storageCfgList,
-		UiConfig:          uiConfig,
+		StorageConfig:      storageCfg,
+		VersionConfig:      &versionConfig,
+		StorageConfigList:  &storageCfgList,
+		UiConfig:           uiConfig,
+		CapabilitiesConfig: capabilitiesConfig,
 	})
 }
 
@@ -3136,6 +3132,10 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		log.Debug("Expired or invalid address token")
 		cb(w, r, http.StatusBadRequest, err)
 
+	case errors.Is(err, ErrAuthenticatingRequest):
+		log.Debug("Authentication failed")
+		cb(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
@@ -3173,6 +3173,7 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
+		errors.Is(err, block.ErrWriteFailed),
 		errors.Is(err, auth.ErrInvalidRequest),
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
@@ -3792,9 +3793,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 					Identifier:       c.PathProvider.NewPath(),
 				}
 				blob, err = upload.WriteBlob(ctx, c.BlockAdapter, objectPointer, part, -1, opts)
-				if err != nil {
+				if c.handleAPIError(ctx, w, r, err) {
 					_ = part.Close()
-					writeError(w, r, http.StatusInternalServerError, err)
 					return
 				}
 				contentUploaded = true
@@ -5987,6 +5987,12 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 	}
 }
 
+func (c *Controller) getCapabilitiesConfig() *apigen.CapabilitiesConfig {
+	return &apigen.CapabilitiesConfig{
+		AsyncOps: swag.Bool(c.Config.CapabilitiesConfig().GetAsyncOps()),
+	}
+}
+
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := auth.GetUser(ctx)
@@ -6112,7 +6118,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 	pr := &catalog.PullRequest{
 		Title:             body.Title,
 		Description:       swag.StringValue(body.Description),
-		Author:            user.Username,
+		Author:            user.Committer(),
 		SourceBranch:      body.SourceBranch,
 		DestinationBranch: body.DestinationBranch,
 	}
@@ -6350,8 +6356,6 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		ev.UserID = user.Username
 	}
 
-	sourceIP := httputil.SourceIP(r)
-
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,
@@ -6360,7 +6364,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"source_ref": ev.SourceRef,
 		"user_id":    ev.UserID,
 		"client":     ev.Client,
-		"source_ip":  sourceIP,
+		"source_ip":  r.RemoteAddr,
 	}).Debug("performing API action")
 	c.Collector.CollectEvent(ev)
 	usageCounter.Add(1)

@@ -123,6 +123,22 @@ export class AuthenticationError extends Error {
     }
 }
 
+export class ClientError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.status = status;
+        this.name = this.constructor.name;
+    }
+}
+
+export class ServerError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.status = status;
+        this.name = this.constructor.name;
+    }
+}
+
 export class MergeError extends Error {
     constructor(message, payload) {
         super(message);
@@ -136,6 +152,13 @@ export class RepositoryDeletionError extends Error {
         super(message);
         this.name = this.constructor.name;
         this.repoId = repoId;
+    }
+}
+
+export class BareRepositoryError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = this.constructor.name;
     }
 }
 
@@ -163,8 +186,14 @@ class Auth {
         if (response.status === 401) {
             throw new AuthenticationError('invalid credentials', response.status);
         }
+        if (response.status >= 500) {
+            throw new ServerError('server error during authentication', response.status);
+        }
+        if (response.status >= 400) {
+            throw new ClientError('client error during authentication', response.status);
+        }
         if (response.status !== 200) {
-            throw new AuthenticationError('Unknown authentication error', response.status);
+            throw new Error('Unknown error during authentication');
         }
 
         this.clearCurrentUser();
@@ -543,13 +572,43 @@ class Branches {
         }
     }
 
-    async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+    async list(repoId, showHidden, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({prefix, after, amount, show_hidden: showHidden});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list branches: ${await extractError(response)}`);
         }
         return response.json();
+    }
+
+    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = "", metadata = {}) {
+        const body = {
+            ref: commitRef,
+            parent_number: parentNumber,
+            allow_empty: allowEmpty
+        };
+
+        // Add commit_overrides only if we have a non-empty message or metadata
+        const hasMessage = message && message.trim() !== "";
+        const hasMetadata = Object.keys(metadata).length > 0;
+
+        if (hasMessage || hasMetadata) {
+            body.commit_overrides = {};
+            if (hasMessage) {
+                body.commit_overrides.message = message;
+            }
+            if (hasMetadata) {
+                body.commit_overrides.metadata = metadata;
+            }
+        }
+
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/revert`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
     }
 }
 

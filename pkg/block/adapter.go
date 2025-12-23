@@ -166,7 +166,8 @@ type Properties struct {
 }
 
 type BlockstoreMetadata struct {
-	Region *string
+	IsProductionSafe bool
+	Region           *string
 }
 
 type PutResponse struct {
@@ -201,7 +202,6 @@ type Adapter interface {
 	Exists(ctx context.Context, obj ObjectPointer) (bool, error)
 	GetRange(ctx context.Context, obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(ctx context.Context, obj ObjectPointer) (Properties, error)
-	Remove(ctx context.Context, obj ObjectPointer) error
 	Copy(ctx context.Context, sourceObj, destinationObj ObjectPointer) error
 
 	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)

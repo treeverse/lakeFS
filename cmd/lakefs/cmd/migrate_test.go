@@ -1,7 +1,6 @@
 package cmd_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestDoMigrate(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("not_initialized", func(t *testing.T) {
 		kvStore := kvtest.GetStore(ctx, t)

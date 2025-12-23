@@ -17,7 +17,7 @@ var errRegion = errors.New("failed to get region")
 
 func TestClientCache(t *testing.T) {
 	const defaultRegion = "us-west-2"
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(defaultRegion))
 	testutil.Must(t, err)
 

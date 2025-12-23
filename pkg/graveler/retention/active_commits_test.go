@@ -2,6 +2,8 @@ package retention
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
@@ -20,11 +22,23 @@ type testCommit struct {
 	parents    []graveler.CommitID
 }
 
-func newTestCommit(daysPassed int, parents ...graveler.CommitID) testCommit {
+func newTestCommit(daysPassed int, parents ...string) testCommit {
+	hParents := make([]graveler.CommitID, len(parents))
+	for i, p := range parents {
+		hParents[i] = h256(p)
+	}
 	return testCommit{
 		daysPassed: daysPassed,
-		parents:    parents,
+		parents:    hParents,
 	}
+}
+
+func hashSlice[S ~string](s []S) []S {
+	ret := make([]S, len(s))
+	for index, value := range s {
+		ret[index] = S(h256(string(value)))
+	}
+	return ret
 }
 
 // findMainAncestryLeaves returns commits which are not the first parent of any child.
@@ -91,6 +105,13 @@ func (c *fakeRepositoryCommitGetter) Get(_ context.Context, id graveler.CommitID
 	return c.AnotherCommit.Commit, nil
 }
 
+// d256 digests s into 256 bytes, as a CommitID.
+func h256(s string) graveler.CommitID {
+	hash := sha256.Sum256([]byte(s))
+	encoded := hex.EncodeToString(hash[:])
+	return graveler.CommitID(encoded)
+}
+
 func TestCommitsMap(t *testing.T) {
 	cases := []struct {
 		Name         string
@@ -101,13 +122,13 @@ func TestCommitsMap(t *testing.T) {
 			CommitGetter: &fakeRepositoryCommitGetter{
 				Commits: []*graveler.CommitRecord{
 					{
-						CommitID: "a",
+						CommitID: h256("a"),
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:A"),
 						},
 					},
 					{
-						CommitID: "b",
+						CommitID: h256("b"),
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:B"),
 						},
@@ -120,14 +141,14 @@ func TestCommitsMap(t *testing.T) {
 			CommitGetter: &fakeRepositoryCommitGetter{
 				Commits: []*graveler.CommitRecord{
 					{
-						CommitID: "a",
+						CommitID: h256("a"),
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:A"),
 						},
 					},
 				},
 				AnotherCommit: &graveler.CommitRecord{
-					CommitID: "b",
+					CommitID: h256("b"),
 					Commit: &graveler.Commit{
 						MetaRangeID: graveler.MetaRangeID("metarange:B"),
 					},
@@ -138,26 +159,26 @@ func TestCommitsMap(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			commitsMap, err := NewCommitsMap(context.Background(), tc.CommitGetter)
+			commitsMap, err := NewCommitsMap(t.Context(), tc.CommitGetter)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			a, err := commitsMap.Get(graveler.CommitID("a"))
+			a, err := commitsMap.Get(h256("a"))
 			if err != nil {
 				t.Errorf("Failed to get a: %s", err)
 			}
 			if a.MetaRangeID != "metarange:A" {
 				t.Errorf("Got metarange %s for a, expected \"metarange:A\"", a.MetaRangeID)
 			}
-			b, err := commitsMap.Get(graveler.CommitID("b"))
+			b, err := commitsMap.Get(h256("b"))
 			if err != nil {
 				t.Errorf("Failed to get b: %s", err)
 			}
 			if b.MetaRangeID != "metarange:B" {
 				t.Errorf("Got metarange %s for b, expected \"metarange:B\"", b.MetaRangeID)
 			}
-			c, err := commitsMap.Get(graveler.CommitID("c"))
+			c, err := commitsMap.Get(graveler.CommitID(h256("c")))
 			if !errors.Is(err, graveler.ErrNotFound) {
 				t.Errorf("Got node %+v, error %s for c, expected not found", c.MetaRangeID, err)
 			}
@@ -186,7 +207,7 @@ func TestActiveCommits(t *testing.T) {
 		"old_heads": {
 			commits: map[string]testCommit{
 				"a": newTestCommit(15),
-				"b": newTestCommit(20, "a"),
+				"b": newTestCommit(20),
 				"c": newTestCommit(20, "a"),
 				"d": newTestCommit(20, "a"),
 			},
@@ -335,7 +356,7 @@ func TestActiveCommits(t *testing.T) {
 			now := time.Now()
 			ctrl := gomock.NewController(t)
 			refManagerMock := mock.NewMockRefManager(ctrl)
-			ctx := context.Background()
+			ctx := t.Context()
 			repositoryRecord := &graveler.RepositoryRecord{
 				RepositoryID: "test",
 			}
@@ -345,7 +366,7 @@ func TestActiveCommits(t *testing.T) {
 				branches = append(branches, &graveler.BranchRecord{
 					BranchID: graveler.BranchID(head),
 					Branch: &graveler.Branch{
-						CommitID: graveler.CommitID(head),
+						CommitID: h256(head),
 					},
 				})
 				garbageCollectionRules.BranchRetentionDays[head] = retentionDays
@@ -357,23 +378,28 @@ func TestActiveCommits(t *testing.T) {
 			var commitsRecords []*graveler.CommitRecord
 			for commitID, commit := range tst.commits {
 				commitsRecords = append(commitsRecords, &graveler.CommitRecord{
-					CommitID: graveler.CommitID(commitID),
+					CommitID: h256(commitID),
 					Commit: &graveler.Commit{
 						Parents:      commit.parents,
 						CreationDate: now.AddDate(0, 0, -commit.daysPassed),
 						Version:      graveler.CurrentCommitVersion,
-						MetaRangeID:  graveler.MetaRangeID("mr-" + commitID),
+						MetaRangeID:  graveler.MetaRangeID("mr-" + string(h256(commitID))),
 					},
 				})
+			}
+
+			commitsWithHashedKeys := make(map[string]testCommit, len(tst.commits))
+			for k, v := range tst.commits {
+				commitsWithHashedKeys[string(h256(k))] = v
 			}
 
 			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
 
 			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
-				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
-				testutil.NewFakeBranchIterator(branches)), &repositoryCommitGetter{
-				refManager: refManagerMock,
-				repository: repositoryRecord,
+				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, commitsWithHashedKeys)),
+				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetterAdapter{
+				RefManager: refManagerMock,
+				Repository: repositoryRecord,
 			}, garbageCollectionRules)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
@@ -381,11 +407,12 @@ func TestActiveCommits(t *testing.T) {
 			validateMetaRangeIDs(t, gcCommits)
 			activeCommitIDs := testMapToCommitIDs(gcCommits)
 
-			sort.Strings(tst.expectedActiveIDs)
+			expectedActiveIDs := hashSlice(tst.expectedActiveIDs)
+			sort.Strings(expectedActiveIDs)
 			sort.Slice(activeCommitIDs, func(i, j int) bool {
 				return activeCommitIDs[i].Ref() < activeCommitIDs[j].Ref()
 			})
-			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(activeCommitIDs)); diff != nil {
+			if diff := deep.Equal(testToStringArray(activeCommitIDs), expectedActiveIDs); diff != nil {
 				t.Errorf("active commits ids diff=%s", diff)
 			}
 		})

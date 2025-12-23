@@ -116,7 +116,7 @@ func TestIntercept(t *testing.T) {
 			provider := awsiam.NewSecurityProviderAWSIAMRole(logger, iamAuthParams, testClient, tt.initialToken, nil, presignOpts)
 
 			req := httptest.NewRequest("GET", "http://example.com", nil)
-			err := provider.Intercept(context.Background(), req)
+			err := provider.Intercept(t.Context(), req)
 
 			if tt.expectedError != nil {
 				require.ErrorIs(t, err, errTokenGenerationFailed)

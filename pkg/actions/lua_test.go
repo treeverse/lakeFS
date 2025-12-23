@@ -17,7 +17,9 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-test/deep"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -57,11 +59,10 @@ func newLuaActionHook(t *testing.T, server *http.Server, address string, netHTTP
 	return h
 }
 
-func runHook(h actions.Hook) (string, error) {
+func runHook(ctx context.Context, h actions.Hook) (string, error) {
 	var out bytes.Buffer
 
 	// load a user on context
-	ctx := context.Background()
 	ctx = auth.WithUser(ctx, &model.User{
 		CreatedAt: time.Time{},
 		Username:  "user1",
@@ -102,7 +103,7 @@ func TestNewLuaHook(t *testing.T) {
 func TestLuaRun(t *testing.T) {
 	const script = "print(tostring(350 * 239))"
 	h := newLuaActionHook(t, nil, "", true, script)
-	output, err := runHook(h)
+	output, err := runHook(t.Context(), h)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -115,7 +116,7 @@ func TestLuaRun(t *testing.T) {
 func TestLuaRun_NetHttpDisabled(t *testing.T) {
 	const script = `local http = require("net/http")`
 	h := newLuaActionHook(t, nil, "", false, script)
-	_, err := runHook(h)
+	_, err := runHook(t.Context(), h)
 	const expectedErr = "module 'net/http' not found"
 	if err == nil || !strings.Contains(err.Error(), expectedErr) {
 		t.Fatalf("Error=%v, expected: '%s'", err, expectedErr)
@@ -226,7 +227,7 @@ print(code .. " " .. body .. " " .. status)
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			h := newLuaActionHook(t, nil, "", true, tt.Script)
-			output, err := runHook(h)
+			output, err := runHook(t.Context(), h)
 			if tt.ExpectedErr {
 				if err == nil {
 					t.Fatal("Expected error - got none.")
@@ -308,7 +309,7 @@ func TestLuaRunTable(t *testing.T) {
 
 		t.Run(testCase.Name, func(t *testing.T) {
 			h := newLuaActionHook(t, nil, "", true, script)
-			output, err := runHook(h)
+			output, err := runHook(t.Context(), h)
 			if testCase.Error != "" {
 				if !strings.Contains(err.Error(), testCase.Error) {
 					t.Errorf("expected error to contain: '%v', got: %v", testCase.Error, err)
@@ -678,7 +679,7 @@ print(code, resp)
 		t.Run(tt.Name, func(t *testing.T) {
 			lakeFSServer.shouldFail = tt.ShouldFail
 			h := newLuaActionHook(t, ts.Config, ts.URL, true, tt.Script)
-			output, err := runHook(h)
+			output, err := runHook(t.Context(), h)
 
 			if tt.ExpectedErr {
 				if err == nil {
@@ -883,4 +884,74 @@ func (s *testLakeFSServer) DiffBranch(w http.ResponseWriter, _ *http.Request, re
 	}
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+// TestLuaRemoteAddr verifies that Lua requests have RemoteAddr set to "[internal (lua)]"
+func TestLuaRemoteAddr(t *testing.T) {
+	t.Run("lakefs_client_remote_addr", func(t *testing.T) {
+		// Create a test server that captures the request
+		var capturedRequest *http.Request
+		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			capturedRequest = r
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"id":"test","commit_id":"abc123"}`))
+		}))
+		defer testServer.Close()
+
+		// Create a minimal Lua script that makes an API call
+		// We need at least one lakefs API call to trigger the RemoteAddr code path
+		script := `
+		local lakefs = require("lakefs")
+		lakefs.create_tag("repo", "ref", "tag")
+		`
+
+		mockStatsCollector := NewActionStatsMockCollector()
+		actionConfig := actions.Config{
+			Enabled: true,
+			Lua:     struct{ NetHTTPEnabled bool }{NetHTTPEnabled: true},
+		}
+
+		h, err := actions.NewLuaHook(
+			actions.ActionHook{
+				ID:          "test-remote-addr",
+				Type:        actions.HookTypeLua,
+				Description: "Test RemoteAddr is set",
+				Properties: map[string]interface{}{
+					"script": script,
+				},
+			},
+			&actions.Action{},
+			actionConfig,
+			testServer.Config,
+			testServer.URL,
+			&mockStatsCollector)
+		require.NoError(t, err)
+
+		// Run the hook
+		ctx := context.Background()
+		ctx = auth.WithUser(ctx, &model.User{
+			Username: "test-user",
+		})
+
+		_ = h.Run(ctx, graveler.HookRecord{
+			RunID:     "test-run",
+			EventType: graveler.EventTypePreCreateTag,
+			Repository: &graveler.RepositoryRecord{
+				RepositoryID: "test-repo",
+				Repository: &graveler.Repository{
+					StorageNamespace: "local://test",
+				},
+			},
+			SourceRef: "main",
+			TagID:     "test-tag",
+			Commit: graveler.Commit{
+				Version: 1,
+			},
+		}, nil)
+
+		// Even if the hook fails due to routing issues, we should have captured the request
+		require.NotNil(t, capturedRequest, "Expected to capture a request")
+		require.Equal(t, lakefs.LuaRemoteAddr, capturedRequest.RemoteAddr,
+			"Expected RemoteAddr to be '[internal (lua)]' for Lua requests")
+	})
 }

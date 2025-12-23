@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -11,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
 	"github.com/treeverse/lakefs/pkg/authentication/mock"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -81,7 +83,7 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			validateTokenClaims := map[string]string{tt.validateClaim: tt.validateClaimValue}
 			mockClient, s := NewTestApiService(t, validateTokenClaims, false)
-			ctx := context.Background()
+			ctx := t.Context()
 			requestEq := gomock.Eq(apiclient.STSLoginJSONRequestBody{
 				RedirectUri: redirectURI,
 				Code:        code,
@@ -133,7 +135,7 @@ func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string, ex
 
 func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, map[string]string{}, true)
-	ctx := context.Background()
+	ctx := t.Context()
 	principalId := "arn"
 	externalLoginInfo := map[string]interface{}{"IdentityToken": "Token"}
 
@@ -148,4 +150,29 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
 	require.NoError(t, err)
 	require.Equal(t, principalId, resp.Id)
+}
+
+func TestAPIService_RequestIDPropagation(t *testing.T) {
+	const requestID = "test-request-id-12345"
+	called := false
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		if actual := r.Header.Get("X-Request-ID"); actual != requestID {
+			t.Errorf("Got request ID %q, expected %q", actual, requestID)
+		}
+		// Return a valid STS login response
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"claims": {"sub": "test-user"}}`))
+	}))
+	defer server.Close()
+
+	service, err := authentication.NewAPIService(server.URL, nil, logging.ContextUnavailable(), false)
+	require.NoError(t, err)
+
+	ctx := context.WithValue(t.Context(), httputil.RequestIDContextKey, requestID)
+	_, err = service.ValidateSTS(ctx, "code", "redirect", "state")
+	require.NoError(t, err)
+	require.True(t, called, "Expected server to be called")
 }
