@@ -61,7 +61,10 @@ var commitCmd = &cobra.Command{
 			AllowEmpty: &emptyCommitBool,
 		}
 		var commit *apigen.Commit
-		isAsync := swag.BoolValue(configResp.JSON200.CapabilitiesConfig.AsyncOps)
+		isAsync := false
+		if configResp.JSON200.CapabilitiesConfig != nil {
+			isAsync = swag.BoolValue(configResp.JSON200.CapabilitiesConfig.AsyncOps)
+		}
 		// run asynchronous commit first
 		if isAsync {
 			startResp, err := client.CommitAsyncWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
