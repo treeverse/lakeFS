@@ -24,6 +24,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/go-openapi/swag"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -92,7 +93,7 @@ func EnvCleanup(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	errGroups := DeleteAllGroups(ctx, client, groupsToKeep)
 	errPolicies := DeleteAllPolicies(ctx, client, policiesToKeep)
 	errUsers := DeleteAllUsers(ctx, client, usersToKeep)
-	return errors.Join(errRepos, errGroups, errPolicies, errUsers)
+	return multierror.Append(errRepos, errGroups, errPolicies, errUsers).ErrorOrNil()
 }
 
 func DeleteAllRepositories(ctx context.Context, client apigen.ClientWithResponsesInterface, repositoriesToKeep ArrayFlags) error {
@@ -121,17 +122,17 @@ func DeleteAllRepositories(ctx context.Context, client apigen.ClientWithResponse
 		nextOffset = resp.JSON200.Pagination.NextOffset
 	}
 
-	var errs []error
+	var errs *multierror.Error
 	for _, id := range repositoriesToDelete {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, id, &apigen.DeleteRepositoryParams{})
 		if err != nil {
-			errs = append(errs, fmt.Errorf("delete repository: %s, err: %w", id, err))
+			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, err: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = append(errs, fmt.Errorf("delete repository: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
 	}
 
-	return errors.Join(errs...)
+	return errs.ErrorOrNil()
 }
 
 func DeleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInterface, groupsToKeep ArrayFlags) error {
@@ -160,16 +161,16 @@ func DeleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInter
 	}
 
 	// delete groups
-	var errs []error
+	var errs *multierror.Error
 	for _, id := range groupsToDelete {
 		resp, err := client.DeleteGroupWithResponse(ctx, id)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("delete group: %s, err: %w", id, err))
+			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, err: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = append(errs, fmt.Errorf("delete group: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
 	}
-	return errors.Join(errs...)
+	return errs.ErrorOrNil()
 }
 
 func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterface, usersToKeep ArrayFlags) error {
@@ -188,7 +189,8 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 		}
 		for _, user := range resp.JSON200.Results {
 			if !slices.Contains(usersToKeep, user.Id) {
-				usersToDelete = append(usersToDelete, user.Id)
+				usersToKeep = usersToDelete
+				usersToKeep = append(usersToKeep, user.Id)
 			}
 		}
 		if !resp.JSON200.Pagination.HasMore {
@@ -198,16 +200,16 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 	}
 
 	// delete users
-	var errs []error
+	var errs *multierror.Error
 	for _, id := range usersToDelete {
 		resp, err := client.DeleteUserWithResponse(ctx, id)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("delete user %s: %w", id, err))
+			errs = multierror.Append(errs, fmt.Errorf("delete user %s: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = append(errs, fmt.Errorf("delete user %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+			errs = multierror.Append(errs, fmt.Errorf("delete user %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
 	}
-	return errors.Join(errs...)
+	return errs.ErrorOrNil()
 }
 
 func DeleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInterface, policiesToKeep ArrayFlags) error {
@@ -236,16 +238,16 @@ func DeleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInt
 	}
 
 	// delete policies
-	var errs []error
+	var errs *multierror.Error
 	for _, id := range policiesToDelete {
 		resp, err := client.DeletePolicyWithResponse(ctx, id)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("delete policy %s: %w", id, err))
+			errs = multierror.Append(errs, fmt.Errorf("delete policy %s: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = append(errs, fmt.Errorf("delete policy %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+			errs = multierror.Append(errs, fmt.Errorf("delete policy %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
 	}
-	return errors.Join(errs...)
+	return errs.ErrorOrNil()
 }
 
 // CleanupUser - A helper function to remove created users during test
