@@ -15,7 +15,6 @@ PY_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" -e PYTHON_PO
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
 
-GOLANGCI_LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 BUF_CLI_VERSION=v1.54.0
 
 ifndef PACKAGE_VERSION
@@ -87,7 +86,6 @@ gen-docs: ## Generate CLI docs automatically
 
 .PHONY: tools
 tools: ## Install tools
-	$(GOCMD) get -tool $(GOLANGCI_LINT)
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
 client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
