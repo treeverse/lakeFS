@@ -63,7 +63,10 @@ var mergeCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 
-		isAsync := swag.BoolValue(configResp.JSON200.CapabilitiesConfig.AsyncOps)
+		isAsync := false
+		if configResp.JSON200.CapabilitiesConfig != nil {
+			isAsync = swag.BoolValue(configResp.JSON200.CapabilitiesConfig.AsyncOps)
+		}
 		body := apigen.MergeIntoBranchJSONRequestBody{
 			Message:     &message,
 			Metadata:    &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
