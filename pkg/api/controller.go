@@ -113,6 +113,11 @@ type Controller struct {
 	loginTokenProvider authentication.LoginTokenProvider
 }
 
+type AuthOpts struct {
+	// this function is called in authorizeCallback when authorization fails
+	onFailure func(w http.ResponseWriter, r *http.Request, httpStatusCode int, error interface{})
+}
+
 var usageCounter = stats.NewUsageCounter()
 
 func NewController(
@@ -3676,12 +3681,7 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.UploadObjectPreflightParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "UploadObjectPreflight", permissions.PermissionParams{Repository: &repository, Path: &params.Path}, nil) {
 		return
 	}
 
@@ -3692,12 +3692,7 @@ func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.UploadObjectParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "UploadObject", permissions.PermissionParams{Repository: &repository, Path: &params.Path}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3861,12 +3856,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body apigen.StageObjectJSONRequestBody, repository, branch string, params apigen.StageObjectParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "StageObject", permissions.PermissionParams{Repository: &repository, Path: &params.Path}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -4761,12 +4751,7 @@ func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repos
 }
 
 func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CreateSymlinkFileParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "CreateSymlinkFile", permissions.PermissionParams{Repository: &repository, Path: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -4960,14 +4945,10 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 }
 
 func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.HeadObjectParams) {
-	if !c.authorizeCallback(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-		writeResponse(w, r, code, nil)
-	}) {
+	if !c.authorizeReq(w, r, "HeadObject", permissions.PermissionParams{Repository: &repository, Path: &params.Path},
+		&AuthOpts{onFailure: func(w http.ResponseWriter, r *http.Request, httpStatusCode int, error interface{}) {
+			writeResponse(w, r, httpStatusCode, nil)
+		}}) {
 		return
 	}
 	ctx := r.Context()
@@ -5103,12 +5084,7 @@ func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, r
 }
 
 func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.GetObjectParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetObject", permissions.PermissionParams{Repository: &repository, Path: &params.Path}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -5331,12 +5307,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 }
 
 func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.StatObjectParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "StatObject", permissions.PermissionParams{Repository: &repository, Path: &params.Path}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -5399,12 +5370,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 }
 
 func (c *Controller) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Request, body apigen.UpdateObjectUserMetadataJSONRequestBody, repository, branch string, params apigen.UpdateObjectUserMetadataParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "UpdateObjectUserMetadata", permissions.PermissionParams{Repository: &repository, Path: &params.Path}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -5420,12 +5386,7 @@ func (c *Controller) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Req
 }
 
 func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.GetUnderlyingPropertiesParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repository, params.Path),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetUnderlyingProperties", permissions.PermissionParams{Repository: &repository, Path: &params.Path}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -6392,11 +6353,11 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) apigen.P
 	return pagination
 }
 
-func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, perms permissions.Node, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, perms permissions.Node, onFailure func(w http.ResponseWriter, r *http.Request, httpStatusCode int, error interface{})) bool {
 	ctx := r.Context()
 	user, err := auth.GetUser(ctx)
 	if err != nil {
-		cb(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		onFailure(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}
 
@@ -6408,15 +6369,15 @@ func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, p
 		ClientIP:            clientIP,
 	})
 	if err != nil {
-		cb(w, r, http.StatusInternalServerError, err)
+		onFailure(w, r, http.StatusInternalServerError, err)
 		return false
 	}
 	if resp.Error != nil {
-		cb(w, r, http.StatusUnauthorized, resp.Error)
+		onFailure(w, r, http.StatusUnauthorized, resp.Error)
 		return false
 	}
 	if !resp.Allowed {
-		cb(w, r, http.StatusInternalServerError, "User does not have the required permissions")
+		onFailure(w, r, http.StatusInternalServerError, "User does not have the required permissions")
 		return false
 	}
 	return true
@@ -6424,6 +6385,19 @@ func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, p
 
 func (c *Controller) authorize(w http.ResponseWriter, r *http.Request, perms permissions.Node) bool {
 	return c.authorizeCallback(w, r, perms, writeError)
+}
+
+func (c *Controller) authorizeReq(w http.ResponseWriter, r *http.Request, operationId string, params permissions.PermissionParams, opts *AuthOpts) bool {
+	desc := permissions.GetPermissionDescriptor(operationId)
+	if desc == nil {
+		c.Logger.Error(fmt.Sprintf("missing permission descriptor for %s", operationId))
+		return false
+	}
+	onFailure := writeError
+	if opts != nil && opts.onFailure != nil {
+		onFailure = opts.onFailure
+	}
+	return c.authorizeCallback(w, r, desc.Permission(params), onFailure)
 }
 
 func (c *Controller) isNameValid(name, nameType string) (bool, string) {
