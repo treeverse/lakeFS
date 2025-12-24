@@ -19,8 +19,7 @@ export const resolveRef = async (repoId, refId) => {
             if (isBareRepo) {
                 throw new BareRepositoryError('Repository has no branches');
             }
-        }
-        if (!(error instanceof BadRequestError)) {
+        } else if (!(error instanceof BadRequestError)) {
             throw error;
         }
     }
