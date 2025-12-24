@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
@@ -37,6 +38,7 @@ var (
 	ErrMissingValue        = errors.New("missing value")
 	ErrNotFound            = errors.New("not found")
 	ErrPredicateFailed     = errors.New("predicate failed")
+	ErrConflict            = fmt.Errorf("%w (giving up)", ErrPredicateFailed)
 	ErrSetupFailed         = errors.New("setup failed")
 	ErrUnknownDriver       = errors.New("unknown driver")
 	ErrTableNotActive      = errors.New("table not active")
@@ -85,6 +87,14 @@ type ScanOptions struct {
 	BatchSize int
 }
 
+// Operations are a simple(r) KV CRUD, exposed to transactions.  In particular, there are no predicates in transactions.
+type Operations interface {
+	Get(ctx context.Context, partitionKey, key []byte) ([]byte, error)
+	Set(ctx context.Context, partitionKey, key, value []byte) error
+	Delete(ctx context.Context, partitionKey, key []byte) error
+	Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error)
+}
+
 type Store interface {
 	// Get returns a result containing the Value and Predicate for the given key, or ErrNotFound if key doesn't exist
 	//   Predicate can be used for SetIf operation
@@ -108,6 +118,25 @@ type Store interface {
 
 	// Close access to the database store. After calling Close the instance is unusable.
 	Close()
+}
+
+type TransactionOpts struct {
+	// Backoff could become an exponential backoff.
+	Backoff backoff.BackOff
+}
+
+// Transactioner is implemented by some Stores.
+type Transactioner interface {
+	// Transact runs fn as a single transaction.  Typically it uses
+	// optimistic concurrency: It runs fn and trie to commit it
+	// atomically.  If any keys read by fn change while it is running,
+	// it may retry according to opts.
+	Transact(ctx context.Context, fn func(operations Operations) error, opts TransactionOpts) error
+}
+
+type TransactionerStore interface {
+	Store
+	Transactioner
 }
 
 // EntriesIterator used to enumerate over Scan results

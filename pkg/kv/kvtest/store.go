@@ -67,6 +67,11 @@ func DriverTest(t *testing.T, ms MakeStore) {
 	t.Run("SecondaryIterator", func(t *testing.T) { testSecondaryIterator(t, ms) })
 }
 
+func DriverTransactionsTest(t *testing.T, ms MakeStore) {
+	t.Helper()
+	t.Run("Transactions", func(t *testing.T) { testTransactions(t, ms) })
+}
+
 func testDriverOpen(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store1 := ms(t, ctx)

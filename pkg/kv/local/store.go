@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -34,11 +36,15 @@ type Store struct {
 	path         string
 }
 
-func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
-	k := composeKey(partitionKey, key)
-	start := time.Now()
-	log := s.logger.WithField("key", string(k)).WithField("op", "get").WithContext(ctx)
-	log.Trace("performing operation")
+var _ kv.TransactionerStore = (*Store)(nil)
+
+func getFromTxn(ctx context.Context, log logging.Logger, txn *badger.Txn, partitionKey, key []byte) ([]byte, error) {
+	log = log.WithContext(ctx).WithFields(logging.Fields{
+		"partition": string(partitionKey),
+		"key":       string(key),
+		"op":        "get",
+	})
+
 	if len(partitionKey) == 0 {
 		log.WithError(kv.ErrMissingPartitionKey).Warn("got empty partition key")
 		return nil, kv.ErrMissingPartitionKey
@@ -48,24 +54,34 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		return nil, kv.ErrMissingKey
 	}
 
+	start := time.Now()
+	k := composeKey(partitionKey, key)
+	log.Trace("performing operation")
+	item, err := txn.Get(k)
+	if errors.Is(err, badger.ErrKeyNotFound) {
+		return nil, kv.ErrNotFound
+	}
+	if err != nil {
+		log.WithError(err).Error("error getting key")
+		return nil, err
+	}
+	value, err := item.ValueCopy(nil)
+	if err != nil {
+		err = fmt.Errorf("extract key: %w", err)
+		log.WithError(err).Error("operation failed")
+		return nil, err
+	}
+	log.WithField("took", time.Since(start)).WithError(err).WithField("size", len(value)).Trace("operation complete")
+	return value, nil
+}
+
+func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
 	var value []byte
 	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(k)
-		if errors.Is(err, badger.ErrKeyNotFound) {
-			return kv.ErrNotFound
-		}
-		if err != nil {
-			log.WithError(err).Error("error getting key")
-			return err
-		}
-		value, err = item.ValueCopy(nil)
-		if err != nil {
-			log.WithError(err).Error("error getting value for key")
-			return err
-		}
-		return nil
+		var err error
+		value, err = getFromTxn(ctx, s.logger, txn, partitionKey, key)
+		return err
 	})
-	log.WithField("took", time.Since(start)).WithError(err).WithField("size", len(value)).Trace("operation complete")
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +91,13 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}, nil
 }
 
-func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
+func setFromTxn(ctx context.Context, log logging.Logger, txn *badger.Txn, partitionKey, key, value []byte) error {
 	k := composeKey(partitionKey, key)
 	start := time.Now()
-	log := s.logger.WithField("key", string(k)).WithField("op", "set").WithContext(ctx)
+	log = log.WithFields(logging.Fields{
+		"key": string(k),
+		"op":  "set",
+	}).WithContext(ctx)
 	log.Trace("performing operation")
 	if len(partitionKey) == 0 {
 		log.WithError(kv.ErrMissingPartitionKey).Warn("got empty partition key")
@@ -92,15 +111,19 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 		log.WithError(kv.ErrMissingValue).Warn("got nil value")
 		return kv.ErrMissingValue
 	}
-	err := s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(k, value)
-	})
+	err := txn.Set(k, value)
 	if err != nil {
 		log.WithError(err).Error("error setting value")
 		return err
 	}
 	log.WithField("took", time.Since(start)).Trace("done setting value")
 	return nil
+}
+
+func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		return setFromTxn(ctx, s.logger, txn, partitionKey, key, value)
+	})
 }
 
 func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
@@ -161,13 +184,13 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	return err
 }
 
-func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
+func deleteFromTxn(ctx context.Context, log logging.Logger, txn *badger.Txn, partitionKey, key []byte) error {
 	k := composeKey(partitionKey, key)
 	start := time.Now()
-	log := s.logger.
-		WithField("key", string(k)).
-		WithField("op", "delete").
-		WithContext(ctx)
+	log = log.WithFields(logging.Fields{
+		"key": string(k),
+		"op":  "delete",
+	}).WithContext(ctx)
 	log.Trace("performing operation")
 	if len(partitionKey) == 0 {
 		log.WithError(kv.ErrMissingPartitionKey).Warn("got empty partition key")
@@ -177,9 +200,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		log.WithError(kv.ErrMissingKey).Warn("got empty key")
 		return kv.ErrMissingKey
 	}
-	err := s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete(k)
-	})
+	err := txn.Delete(k)
 	took := time.Since(start)
 	log = log.WithField("took", took)
 	if err != nil {
@@ -190,8 +211,14 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
-	log := s.logger.WithFields(logging.Fields{
+func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		return deleteFromTxn(ctx, s.logger, txn, partitionKey, key)
+	})
+}
+
+func scanFromTxn(ctx context.Context, log logging.Logger, txn *badger.Txn, partitionKey []byte, prefetchSize int, options kv.ScanOptions) (kv.EntriesIterator, error) {
+	log = log.WithFields(logging.Fields{
 		"partition_key": string(partitionKey),
 		"start_key":     string(options.KeyStart),
 		"op":            "scan",
@@ -203,9 +230,8 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	}
 
 	prefix := partitionRange(partitionKey)
-	txn := s.db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
-	opts.PrefetchSize = s.prefetchSize
+	opts.PrefetchSize = prefetchSize
 	if options.BatchSize != 0 && opts.PrefetchSize != 0 && options.BatchSize < opts.PrefetchSize {
 		opts.PrefetchSize = options.BatchSize
 	}
@@ -223,6 +249,11 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	}, nil
 }
 
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+	txn := s.db.NewTransaction(false)
+	return scanFromTxn(ctx, s.logger, txn, partitionKey, s.prefetchSize, options)
+}
+
 func (s *Store) Close() {
 	driverLock.Lock()
 	defer driverLock.Unlock()
@@ -231,4 +262,54 @@ func (s *Store) Close() {
 		_ = s.db.Close()
 		delete(dbMap, s.path)
 	}
+}
+
+func (s *Store) Transact(ctx context.Context, fn func(operations kv.Operations) error, opts kv.TransactionOpts) error {
+	for {
+		err := s.db.Update(func(txn *badger.Txn) error {
+			return fn(s.newBadgerOperations(txn))
+		})
+		if err == nil || !errors.Is(err, badger.ErrConflict) {
+			// TODO(ariels): Wrap err in a kv-ish error.
+			return err
+		}
+		if opts.Backoff != nil {
+			duration := opts.Backoff.NextBackOff()
+			if duration == backoff.Stop {
+				break
+			}
+			time.Sleep(duration)
+		}
+	}
+	return kv.ErrConflict
+}
+
+func (s *Store) newBadgerOperations(txn *badger.Txn) *operations {
+	return &operations{
+		s.logger.WithField("txn", time.Now().String()),
+		txn,
+		s.prefetchSize,
+	}
+}
+
+type operations struct {
+	logger       logging.Logger
+	txn          *badger.Txn
+	prefetchSize int
+}
+
+func (op *operations) Get(ctx context.Context, partitionKey, key []byte) ([]byte, error) {
+	return getFromTxn(ctx, op.logger, op.txn, partitionKey, key)
+}
+
+func (op *operations) Set(ctx context.Context, partitionKey, key, value []byte) error {
+	return setFromTxn(ctx, op.logger, op.txn, partitionKey, key, value)
+}
+
+func (op *operations) Delete(ctx context.Context, partitionKey, key []byte) error {
+	return deleteFromTxn(ctx, op.logger, op.txn, partitionKey, key)
+}
+
+func (op *operations) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+	return scanFromTxn(ctx, op.logger, op.txn, partitionKey, op.prefetchSize, options)
 }
