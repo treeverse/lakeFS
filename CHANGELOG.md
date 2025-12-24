@@ -2,6 +2,10 @@
 
 ## next
 
+## v1.74.3
+
+🏢 Includes only changes for Enterprise.
+
 ## v1.74.2
 
 :bug: Bugs Fixed
