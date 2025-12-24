@@ -470,15 +470,15 @@ _Hooks_ can be either a Lua script that lakeFS will execute itself, an external 
 1. Open up your favorite text editor (or emacs), and paste the following YAML: 
 
     ```yaml
-    name: Check Commit Message and Metadata
-    on:
+name: Check Commit Message and Metadata
+on:
     pre-commit:
-        branches: 
+        branches:
         - etl**
-    hooks:
-    - id: check_metadata
-        type: lua
-        properties:
+hooks:
+  - id: check_metadata
+    type: lua
+    properties:
         script: |
             commit_message=action.commit.message
             if commit_message and #commit_message>0 then

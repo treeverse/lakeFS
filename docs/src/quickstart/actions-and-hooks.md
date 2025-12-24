@@ -27,39 +27,39 @@ _Hooks_ can be either a [Lua](../howto/hooks/lua.md) script that lakeFS will exe
     ```yaml
     name: Check Commit Message and Metadata
     on:
-      pre-commit:
-        branches:
-          - etl**
+        pre-commit:
+            branches: 
+            - etl**
     hooks:
       - id: check_metadata
         type: lua
         properties:
-        script: |
-            commit_message=action.commit.message
-            if commit_message and #commit_message>0 then
-                print("✅ The commit message exists and is not empty: " .. commit_message)
-            else
-                error("\n\n❌ A commit message must be provided")
-            end
-
-            job_name=action.commit.metadata["job_name"]
-            if job_name == nil then
-                error("\n❌ Commit metadata must include job_name")
-            else
-                print("✅ Commit metadata includes job_name: " .. job_name)
-            end
-
-            version=action.commit.metadata["version"]
-            if version == nil then
-                error("\n❌ Commit metadata must include version")
-            else
-                print("✅ Commit metadata includes version: " .. version)
-                if tonumber(version) then
-                    print("✅ Commit metadata version is numeric")
+            script: |
+                commit_message=action.commit.message
+                if commit_message and #commit_message>0 then
+                    print("✅ The commit message exists and is not empty: " .. commit_message)
                 else
-                    error("\n❌ Version metadata must be numeric: " .. version)
+                    error("\n\n❌ A commit message must be provided")
                 end
-            end
+
+                job_name=action.commit.metadata["job_name"]
+                if job_name == nil then
+                    error("\n❌ Commit metadata must include job_name")
+                else
+                    print("✅ Commit metadata includes job_name: " .. job_name)
+                end
+
+                version=action.commit.metadata["version"]
+                if version == nil then
+                    error("\n❌ Commit metadata must include version")
+                else
+                    print("✅ Commit metadata includes version: " .. version)
+                    if tonumber(version) then
+                        print("✅ Commit metadata version is numeric")
+                    else
+                        error("\n❌ Version metadata must be numeric: " .. version)
+                    end
+                end
     ```
 3. Save this file as `/tmp/check_commit_metadata.yml`
 
