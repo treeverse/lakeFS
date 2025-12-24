@@ -69,7 +69,7 @@ func TestLocalLoad(t *testing.T) {
 		Config:            cfg,
 		KVStore:           kvStore,
 		PathProvider:      upload.DefaultPathProvider,
-		ConflictResolvers: catalogfactory.BuildConflictResolvers(cfg, blockAdapter),
+		ConflictResolvers: catalogfactory.BuildConflictResolvers(ctx, cfg, blockAdapter),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
