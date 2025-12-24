@@ -144,4 +144,14 @@ tr:hover .row-hover .btn-outline-danger {
 [data-bs-theme="dark"] .tree-container .dropdown-divider,
 [data-bs-theme="dark"] .change-entry-row .dropdown-divider {
   border-color: #374151;
+}
+
+.row-action-btn {
+  color: #000000;
+  opacity: 1;
+}
+
+.row-action-btn.active {
+  color: #6c757d;
+  opacity: 0.7;
 } 
