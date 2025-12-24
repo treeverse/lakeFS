@@ -2,6 +2,12 @@
 
 ## next
 
+## v1.74.4
+
+:bug: Bugs Fixed
+- UI: Branch not found error on tag selection (#9903)
+- Improve file handling and concurrency in local metadata cache (#9879)
+
 ## v1.74.3
 
 🏢 Includes only changes for Enterprise.
