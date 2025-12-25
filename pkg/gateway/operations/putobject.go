@@ -114,6 +114,10 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 
 	metadata, err := amzMetaAsMetadata(req)
 	if err != nil {
+		if errors.Is(err, gatewayErrors.ErrMetadataTooLarge) {
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrMetadataTooLarge))
+			return
+		}
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
 		return
@@ -367,6 +371,10 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// write metadata
 	metadata, err := amzMetaAsMetadata(req)
 	if err != nil {
+		if errors.Is(err, gatewayErrors.ErrMetadataTooLarge) {
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrMetadataTooLarge))
+			return
+		}
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidHeaderValue))
 		return

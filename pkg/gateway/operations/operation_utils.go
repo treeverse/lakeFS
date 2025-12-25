@@ -8,11 +8,15 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
+	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const amzMetaHeaderPrefix = "X-Amz-Meta-"
+
+// Maximum size for user-defined metadata (2 KB). See: https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
+const maxUserMetadataSize = 2 * 1024
 
 var (
 	rfc2047Decoder = new(mime.WordDecoder)
@@ -22,12 +26,20 @@ var (
 func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
 	metadata := make(catalog.Metadata)
 	var err error
+
+	var userMetadataSize int
 	for k := range req.Header {
-		if strings.HasPrefix(k, amzMetaHeaderPrefix) {
+		name, found := strings.CutPrefix(k, amzMetaHeaderPrefix)
+		if found {
 			value, decodeErr := rfc2047Decoder.DecodeHeader(req.Header.Get(k))
 			if decodeErr != nil {
 				err = errors.Join(err, decodeErr)
 				continue
+			}
+			userMetadataSize += len(name) + len(value)
+			if userMetadataSize > maxUserMetadataSize {
+				err = gatewayErrors.ErrMetadataTooLarge
+				break
 			}
 			metadata[k] = value
 		}

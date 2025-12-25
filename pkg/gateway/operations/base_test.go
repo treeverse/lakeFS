@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -152,4 +153,54 @@ func TestOperation_EncodeResponse_NormalResponse(t *testing.T) {
 
 	// Verify that the status code is 200
 	assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200 for normal response")
+}
+
+func TestAmzMetaAsMetadata(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPut, "/test", nil)
+	req.Header.Set("X-Amz-Meta-Key1", "Value1")
+	req.Header.Set("X-Amz-Meta-Key2", "Value2")
+
+	metadata, err := amzMetaAsMetadata(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "Value1", metadata["X-Amz-Meta-Key1"])
+	assert.Equal(t, "Value2", metadata["X-Amz-Meta-Key2"])
+}
+
+func TestAmzMetaAsMetadata_ExactLimit(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPut, "/test", nil)
+	// Create metadata that is exactly at the 2KB limit
+	// User key is "Key" (3 bytes), so we need value of 2048 - 3 = 2045 bytes
+	valueSize := maxUserMetadataSize - len("Key")
+	value := strings.Repeat("a", valueSize)
+	req.Header.Set("X-Amz-Meta-Key", value)
+
+	metadata, err := amzMetaAsMetadata(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, value, metadata["X-Amz-Meta-Key"])
+}
+
+func TestAmzMetaAsMetadata_ExceedingLimit(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPut, "/test", nil)
+	valueSize := maxUserMetadataSize - len("Key") + 1
+	req.Header.Set("X-Amz-Meta-Key", strings.Repeat("a", valueSize))
+
+	_, err := amzMetaAsMetadata(req)
+
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, gwerrors.ErrMetadataTooLarge)
+}
+
+func TestAmzMetaAsMetadata_MultipleHeadersExceedingLimit(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPut, "/test", nil)
+	value := string(make([]byte, 1000))
+	req.Header.Set("X-Amz-Meta-Key1", value)
+	req.Header.Set("X-Amz-Meta-Key2", value)
+	req.Header.Set("X-Amz-Meta-Key3", value)
+
+	_, err := amzMetaAsMetadata(req)
+
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, gwerrors.ErrMetadataTooLarge)
 }
