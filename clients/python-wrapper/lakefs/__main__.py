@@ -17,7 +17,7 @@ import os
 import shutil
 import subprocess
 from collections import namedtuple
-from typing import Optional
+from typing import Optional, NoReturn
 
 import lakefs_sdk
 
@@ -151,20 +151,19 @@ def _find_binary(binary_name: str) -> Optional[str]:
     return binary_path
 
 
-def run_binary(binary_path: str, args: list[str]):
+def run_binary(binary_path: str, args: list[str]) -> NoReturn:
     '''
     Run the binary with the provided arguments.
     '''
-    if not binary_path:
-        raise RuntimeError("binary not found")
-    binary_name = os.path.basename(binary_path)
-    try:
-        print(f'running {binary_path}...')
-        proc = subprocess.run(
-            [binary_path] + args, check=False, env=os.environ)
-        return proc.returncode
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Error executing {binary_name}: {e}") from e
+    print(f'running {binary_path}...', flush=True)
+    if sys.platform == 'win32':
+        try:
+            proc = subprocess.run([binary_path, *args], check=False)
+        except KeyboardInterrupt:
+            sys.exit(1)
+        sys.exit(proc.returncode)
+    else:
+        os.execvp(binary_path, [binary_path, *args])
 
 
 def find_or_download_binary(binary_name: str) -> str:
@@ -177,16 +176,27 @@ def find_or_download_binary(binary_name: str) -> str:
     if not binary_path:
         _download_binaries()
         binary_path = _find_binary(binary_name)
+    if not binary_path:
+        raise RuntimeError("binary not found")
     return binary_path
 
 
-def cli_run() -> int:
+def run(binary_name: str, args: Optional[list[str]] = None) -> NoReturn:
+    '''
+    Run the specified lakefs/lakectl binary with the provided arguments.
+    '''
+    if args is None:
+        args = sys.argv[1:]
+    binary_path = find_or_download_binary(binary_name)
+    run_binary(binary_path, args)
+
+
+def cli_run(args: Optional[list[str]] = None) -> NoReturn:
     '''
     Main entry point for the lakeFS CLI
     '''
-    args = sys.argv[1:]
-    return run_binary(find_or_download_binary('lakefs'), args)
+    run('lakefs', args)
 
 
 if __name__ == '__main__':
-    sys.exit(cli_run())
+    cli_run()
