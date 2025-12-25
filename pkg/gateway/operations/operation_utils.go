@@ -38,7 +38,7 @@ func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
 			}
 			userMetadataSize += len(name) + len(value)
 			if userMetadataSize > maxUserMetadataSize {
-				err = gatewayErrors.ErrMetadataTooLarge
+				err = errors.Join(err, gatewayErrors.ErrMetadataTooLarge)
 				break
 			}
 			metadata[k] = value

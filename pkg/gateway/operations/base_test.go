@@ -194,7 +194,7 @@ func TestAmzMetaAsMetadata_ExceedingLimit(t *testing.T) {
 
 func TestAmzMetaAsMetadata_MultipleHeadersExceedingLimit(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/test", nil)
-	value := string(make([]byte, 1000))
+	value := strings.Repeat("a", 1000)
 	req.Header.Set("X-Amz-Meta-Key1", value)
 	req.Header.Set("X-Amz-Meta-Key2", value)
 	req.Header.Set("X-Amz-Meta-Key3", value)
