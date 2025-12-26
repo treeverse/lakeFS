@@ -4,6 +4,11 @@ node_modules/
 # Build output
 dist/
 
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
 # npm
 package-lock.json
 npm-debug.log*
