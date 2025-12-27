@@ -830,13 +830,13 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 
 		// Add tombstone
 		records[i] = append(records[i], &graveler.ValueRecord{
-			Key:   fmt.Appendf(nil, "%s_tombstone", branchID),
+			Key:   []byte(branchID + "_tombstone"),
 			Value: nil,
 		})
 
 		diffs[i] = append(diffs[i], graveler.Diff{
 			Type: graveler.DiffTypeRemoved,
-			Key:  fmt.Appendf(nil, "%s_tombstone", branchID),
+			Key:  []byte(branchID + "_tombstone"),
 		})
 
 		// Add external address

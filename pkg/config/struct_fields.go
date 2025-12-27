@@ -129,7 +129,7 @@ func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string
 
 func parseTag(field reflect.StructField, tag, squashValue string) (string, bool) {
 	if tagValue, ok := field.Tag.Lookup(tag); ok {
-		if before, ok0 := strings.CutSuffix(tagValue, squashValue); ok0 {
+		if before, found := strings.CutSuffix(tagValue, squashValue); found {
 			return before, true
 		}
 		return tagValue, false

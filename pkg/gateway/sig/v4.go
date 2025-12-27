@@ -401,7 +401,7 @@ func sign(key []byte, msg string) []byte {
 }
 
 func createSignature(key, dateStamp, region, service string) []byte {
-	kDate := sign(fmt.Appendf(nil, "AWS4%s", key), dateStamp)
+	kDate := sign([]byte("AWS4"+key), dateStamp)
 	kRegion := sign(kDate, region)
 	kService := sign(kRegion, service)
 	kSigning := sign(kService, v4scopeTerminator)
