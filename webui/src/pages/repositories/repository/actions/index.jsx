@@ -195,9 +195,8 @@ const ActionsList = ({
             {content}
             {results.length > 0 && (
                 <div>
-                    {/* eslint-disable-next-line react/jsx-no-target-blank */}
                     Actions can be configured to run when predefined events occur.{" "}
-                    <a href="https://docs.lakefs.io/howto/hooks/" target="_blank">
+                    <a href="https://docs.lakefs.io/howto/hooks/" target="_blank" rel="noreferrer">
                         Learn more.
                     </a>
                 </div>
