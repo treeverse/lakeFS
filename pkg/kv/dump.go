@@ -141,6 +141,17 @@ var SectionMapping = map[string][]string{
 	"kv":    {"kv-internal-metadata"},         // kv internal metadata
 }
 
+// GetAllKnownPartitions returns all partitions defined in SectionMapping
+func GetAllKnownPartitions() []string {
+	partitionSet := make(map[string]struct{})
+	for _, partitions := range SectionMapping {
+		for _, partition := range partitions {
+			partitionSet[partition] = struct{}{}
+		}
+	}
+	return slices.Collect(maps.Keys(partitionSet))
+}
+
 // CreateDump creates a complete dump with the specified sections
 func CreateDump(ctx context.Context, store Store, sections []string) (*DumpFormat, error) {
 	// If no sections specified, dump all partitions
@@ -171,6 +182,23 @@ func CreateDump(ctx context.Context, store Store, sections []string) (*DumpForma
 
 	dump := &DumpFormat{
 		Version:   "1.0", // Current format version
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Entries:   entries,
+	}
+
+	return dump, nil
+}
+
+// CreateDumpWithPartitions creates a dump with specific partitions
+func CreateDumpWithPartitions(ctx context.Context, store Store, partitions []string) (*DumpFormat, error) {
+	dumper := NewDumper(store)
+	entries, err := dumper.DumpPartitions(ctx, partitions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dump partitions: %w", err)
+	}
+
+	dump := &DumpFormat{
+		Version:   "1.0",
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Entries:   entries,
 	}
