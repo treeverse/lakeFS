@@ -10746,6 +10746,8 @@ components:
           version: version
           upgrade_recommended: true
           upgrade_url: upgrade_url
+        capabilities_config:
+          async_ops: true
         ui_config:
           custom_viewers:
           - extensions:
@@ -10775,6 +10777,8 @@ components:
           type: array
         ui_config:
           $ref: '#/components/schemas/UIConfig'
+        capabilities_config:
+          $ref: '#/components/schemas/CapabilitiesConfig'
       type: object
     VersionConfig:
       example:
@@ -10846,6 +10850,14 @@ components:
       required:
       - name
       - url
+      type: object
+    CapabilitiesConfig:
+      example:
+        async_ops: true
+      properties:
+        async_ops:
+          description: are async operations enabled in server. *EXPERIMENTAL*
+          type: boolean
       type: object
     GarbageCollectionConfig:
       example:

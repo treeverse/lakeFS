@@ -1360,6 +1360,8 @@ components:
           $ref: "#/components/schemas/StorageConfigList"
         ui_config:
           $ref: "#/components/schemas/UIConfig"
+        capabilities_config:
+          $ref: "#/components/schemas/CapabilitiesConfig"
     VersionConfig:
       type: object
       properties:
@@ -1398,6 +1400,12 @@ components:
           type: array
           items:
             type: string
+    CapabilitiesConfig:
+      type: object
+      properties:
+        async_ops:
+          description: are async operations enabled in server. *EXPERIMENTAL*
+          type: boolean
     GarbageCollectionConfig:
       type: object
       properties:

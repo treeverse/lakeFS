@@ -4,22 +4,15 @@ lakectl command line wrapper
 """
 
 import sys
-from lakefs.__main__ import (
-    run_binary,
-    find_or_download_binary
-)
+from typing import NoReturn, Optional
+from lakefs.__main__ import run
 
 
-def cli_run() -> int:
+def cli_run(args: Optional[list[str]] = None) -> NoReturn:
     '''
-    Main entry point for the lakeFS CLI
+    Main entry point for the lakectl CLI
     '''
-    args = sys.argv[1:]
-    return run_binary(find_or_download_binary('lakectl'), args)
-
-
-if __name__ == '__main__':
-    sys.exit(cli_run())
+    run("lakectl", args)
 
 
 if __name__ == '__main__':

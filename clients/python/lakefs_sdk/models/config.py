@@ -24,6 +24,7 @@ try:
     from pydantic.v1 import BaseModel, conlist
 except ImportError:
     from pydantic import BaseModel, conlist
+from lakefs_sdk.models.capabilities_config import CapabilitiesConfig
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.ui_config import UIConfig
 from lakefs_sdk.models.version_config import VersionConfig
@@ -36,7 +37,8 @@ class Config(BaseModel):
     storage_config: Optional[StorageConfig] = None
     storage_config_list: Optional[conlist(StorageConfig)] = None
     ui_config: Optional[UIConfig] = None
-    __properties = ["version_config", "storage_config", "storage_config_list", "ui_config"]
+    capabilities_config: Optional[CapabilitiesConfig] = None
+    __properties = ["version_config", "storage_config", "storage_config_list", "ui_config", "capabilities_config"]
 
     class Config:
         """Pydantic configuration"""
@@ -78,6 +80,9 @@ class Config(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of ui_config
         if self.ui_config:
             _dict['ui_config'] = self.ui_config.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of capabilities_config
+        if self.capabilities_config:
+            _dict['capabilities_config'] = self.capabilities_config.to_dict()
         return _dict
 
     @classmethod
@@ -93,7 +98,8 @@ class Config(BaseModel):
             "version_config": VersionConfig.from_dict(obj.get("version_config")) if obj.get("version_config") is not None else None,
             "storage_config": StorageConfig.from_dict(obj.get("storage_config")) if obj.get("storage_config") is not None else None,
             "storage_config_list": [StorageConfig.from_dict(_item) for _item in obj.get("storage_config_list")] if obj.get("storage_config_list") is not None else None,
-            "ui_config": UIConfig.from_dict(obj.get("ui_config")) if obj.get("ui_config") is not None else None
+            "ui_config": UIConfig.from_dict(obj.get("ui_config")) if obj.get("ui_config") is not None else None,
+            "capabilities_config": CapabilitiesConfig.from_dict(obj.get("capabilities_config")) if obj.get("capabilities_config") is not None else None
         })
         return _obj
 
