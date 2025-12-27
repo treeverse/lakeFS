@@ -1,15 +1,15 @@
 interface User {
-  id: string;
-  creation_date: number;
-  email?: string;
-  friendly_name?: string;
+    id: string;
+    creation_date: number;
+    email?: string;
+    friendly_name?: string;
 }
 
 export const resolveUserDisplayName = (user: User): string => {
-  if (!user) return "";
-  if (user?.email?.length) return user.email;
-  if (user?.friendly_name?.length) return user.friendly_name;
-  return user.id;
+    if (!user) return "";
+    if (user?.email?.length) return user.email;
+    if (user?.friendly_name?.length) return user.friendly_name;
+    return user.id;
 };
 
 export const ROUTES = {
@@ -21,7 +21,9 @@ export const ROUTES = {
 } as const;
 
 export const isPublicAuthRoute = (path: string) =>
-    path === ROUTES.LOGIN || path.startsWith(ROUTES.OIDC_PREFIX) || path.startsWith(ROUTES.SAML_PREFIX);
+    path === ROUTES.LOGIN ||
+    path.startsWith(ROUTES.OIDC_PREFIX) ||
+    path.startsWith(ROUTES.SAML_PREFIX);
 
 export const getCurrentRelativeUrl = () =>
     window.location.pathname + (window.location.search || "") + (window.location.hash || "");
@@ -34,8 +36,7 @@ export const normalizeNext = (raw?: string | null) => {
 
     try {
         const u = new URL(candidate, window.location.origin);
-        if (u.pathname === "/" || u.pathname === ROUTES.LOGIN)
-            return ROUTES.REPOSITORIES;
+        if (u.pathname === "/" || u.pathname === ROUTES.LOGIN) return ROUTES.REPOSITORIES;
 
         return u.pathname + (u.search || "") + (u.hash || "");
     } catch {

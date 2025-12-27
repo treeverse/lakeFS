@@ -1,11 +1,10 @@
 import { PluginCustomObjectRenderers } from "../pluginCustomObjectRenderers";
 
 const DefaultCustomObjectRenderersPlugin: PluginCustomObjectRenderers = {
-    init: () => {
-    },
+    init: () => {},
     get: () => {
         return null;
-    }
-}
+    },
+};
 
 export default DefaultCustomObjectRenderersPlugin;

@@ -1,37 +1,34 @@
-import React, {useEffect} from "react";
-import {useOutletContext} from "react-router-dom";
-import {
-    ActionGroup,
-    ActionsBar,
-    AlertError,
-    RefreshButton
-} from "../../lib/components/controls";
-import {ConfirmationButton} from "../../lib/components/modals";
-import {auth} from "../../lib/api";
-import {useState} from "react";
-import {CredentialsShowModal, CredentialsTable} from "../../lib/components/auth/credentials";
-import {useRouter} from "../../lib/hooks/router";
-import {resolveUserDisplayName} from "../../lib/utils";
-import {useAuth} from "../../lib/auth/authContext";
+import React, { useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../../lib/components/controls";
+import { ConfirmationButton } from "../../lib/components/modals";
+import { auth } from "../../lib/api";
+import { useState } from "react";
+import { CredentialsShowModal, CredentialsTable } from "../../lib/components/auth/credentials";
+import { useRouter } from "../../lib/hooks/router";
+import { resolveUserDisplayName } from "../../lib/utils";
+import { useAuth } from "../../lib/auth/authContext";
 
 const CredentialsContainer = () => {
     const router = useRouter();
-    const {user} = useAuth();
+    const { user } = useAuth();
     const [refreshToken, setRefreshToken] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [createdKey, setCreatedKey] = useState(null);
-    const {after} = router.query;
+    const { after } = router.query;
 
     const createKey = () => {
-        return auth.createCredentials(user.id)
-            .catch(err => {
+        return auth
+            .createCredentials(user.id)
+            .catch((err) => {
                 setCreateError(err);
-            }).then(key => {
+            })
+            .then((key) => {
                 setCreateError(null);
                 setRefreshToken(!refreshToken);
                 return key;
-            })
-    }
+            });
+    };
 
     return (
         <>
@@ -41,46 +38,61 @@ const CredentialsContainer = () => {
                         variant="success"
                         modalVariant="success"
                         msg={
-                            <span>Create a new Access Key for user <strong>{resolveUserDisplayName(user)}</strong>?</span>}
-                        onConfirm={hide => {
+                            <span>
+                                Create a new Access Key for user{" "}
+                                <strong>{resolveUserDisplayName(user)}</strong>?
+                            </span>
+                        }
+                        onConfirm={(hide) => {
                             createKey()
-                                .then(key => {
-                                    setCreatedKey(key)
+                                .then((key) => {
+                                    setCreatedKey(key);
                                 })
                                 .finally(hide);
-                        }}>
+                        }}
+                    >
                         Create Access Key
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
-                    <RefreshButton onClick={() => setRefreshToken(!refreshToken)}/>
+                    <RefreshButton onClick={() => setRefreshToken(!refreshToken)} />
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                An access key-pair is the set of credentials used to access lakeFS. <a
-                href="https://docs.lakefs.io/reference/authorization.html#authentication" target="_blank"
-                rel="noopener noreferrer">Learn more.</a>
+                An access key-pair is the set of credentials used to access lakeFS.{" "}
+                <a
+                    href="https://docs.lakefs.io/reference/authorization.html#authentication"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Learn more.
+                </a>
             </div>
 
-            {(!!createError) && <AlertError error={createError}/>}
+            {!!createError && <AlertError error={createError} />}
 
             <CredentialsShowModal
                 credentials={createdKey}
-                show={(!!createdKey)}
+                show={!!createdKey}
                 onHide={() => {
-                    setCreatedKey(null)
-                }}/>
+                    setCreatedKey(null);
+                }}
+            />
 
-            {(!!user) && <CredentialsTable
-                userId={user.id}
-                currentAccessKey={user.accessKeyId}
-                refresh={refreshToken}
-                after={(after) ? after : ""}
-                onPaginate={after => router.push({
-                    pathname: '/auth/credentials',
-                    query: {after}
-                })}
-            />}
+            {!!user && (
+                <CredentialsTable
+                    userId={user.id}
+                    currentAccessKey={user.accessKeyId}
+                    refresh={refreshToken}
+                    after={after ? after : ""}
+                    onPaginate={(after) =>
+                        router.push({
+                            pathname: "/auth/credentials",
+                            query: { after },
+                        })
+                    }
+                />
+            )}
         </>
     );
 };
@@ -88,8 +100,7 @@ const CredentialsContainer = () => {
 const CredentialsPage = () => {
     const [setActiveTab] = useOutletContext();
     useEffect(() => setActiveTab("credentials"), [setActiveTab]);
-    return <CredentialsContainer/>;
+    return <CredentialsContainer />;
 };
-
 
 export default CredentialsPage;

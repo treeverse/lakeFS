@@ -1,11 +1,11 @@
 import React from "react";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
-import L from 'leaflet';
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
 
-const parseGeoJSON = data => {
+const parseGeoJSON = (data) => {
     try {
         return JSON.parse(data);
     } catch {
@@ -21,9 +21,7 @@ export const GeoJSONPreview = ({ data }) => {
 
     const bounds = L.geoJSON(geoJsonData).getBounds();
 
-    const mapProps = bounds.isValid()
-        ? { bounds }
-        : { center: [0, 0], zoom: 2 };
+    const mapProps = bounds.isValid() ? { bounds } : { center: [0, 0], zoom: 2 };
 
     return (
         <div className="geojson-map-wrapper">
@@ -36,8 +34,7 @@ export const GeoJSONPreview = ({ data }) => {
                     // You’re telling the map where to get its background tiles (using three mirror subdomains for performance) and providing
                     // fallback servers if one goes down.
                     url="https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png"
-                    subdomains={['a', 'b', 'c']}
-
+                    subdomains={["a", "b", "c"]}
                     // .org credits the OpenStreetMap project and contributors (the source of the map data)
                     // .de credits the German tile hosting server (the infrastructure serving the tiles).
                     attribution={`
@@ -65,12 +62,12 @@ export const GeoJSONPreview = ({ data }) => {
                         if (src.includes("tile.openstreetmap.de")) {
                             img.src = src.replace(
                                 "tile.openstreetmap.de",
-                                "tile.openstreetmap.fr/osmfr"
+                                "tile.openstreetmap.fr/osmfr",
                             );
                         } else if (src.includes("tile.openstreetmap.fr/osmfr")) {
                             img.src = src.replace(
                                 "tile.openstreetmap.fr/osmfr",
-                                "tile.openstreetmap.org"
+                                "tile.openstreetmap.org",
                             );
                         }
                     }}

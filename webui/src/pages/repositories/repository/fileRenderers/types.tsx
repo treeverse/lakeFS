@@ -8,7 +8,7 @@ export interface RendererComponent {
     presign?: boolean;
 }
 
-export interface RendererComponentWithText extends RendererComponent{
+export interface RendererComponentWithText extends RendererComponent {
     text: string;
 }
 
@@ -25,5 +25,5 @@ export enum FileType {
     TEXT,
     UNSUPPORTED,
     TOO_LARGE,
-    GEOJSON
+    GEOJSON,
 }

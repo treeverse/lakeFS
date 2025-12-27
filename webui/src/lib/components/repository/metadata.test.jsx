@@ -1,8 +1,8 @@
 import React from "react";
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MetadataFields } from './metadata';
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MetadataFields } from "./metadata";
 
 /**
  * MetadataFieldsWrapper is a component wrapper used for testing the MetadataFields component.
@@ -16,85 +16,92 @@ import { MetadataFields } from './metadata';
 const MetadataFieldsWrapper = ({ initialFields }) => {
     const [fields, setFields] = React.useState(initialFields);
 
-    return (<MetadataFields metadataFields={fields} setMetadataFields={setFields}/>);
+    return <MetadataFields metadataFields={fields} setMetadataFields={setFields} />;
 };
 
-describe('MetadataFields validation flow', () => {
-    it('does not show error when key is valid', () => {
-        render(<MetadataFieldsWrapper initialFields={[{ key: 'environment', value: 'prod', touched: false }]} />);
+describe("MetadataFields validation flow", () => {
+    it("does not show error when key is valid", () => {
+        render(
+            <MetadataFieldsWrapper
+                initialFields={[{ key: "environment", value: "prod", touched: false }]}
+            />,
+        );
 
-        expect(screen.queryByText('Key is required')).not.toBeInTheDocument();
+        expect(screen.queryByText("Key is required")).not.toBeInTheDocument();
     });
 
-    it('shows error when key is empty', () => {
-        render(<MetadataFieldsWrapper initialFields={[{ key: '', value: '', touched: true }]} />);
+    it("shows error when key is empty", () => {
+        render(<MetadataFieldsWrapper initialFields={[{ key: "", value: "", touched: true }]} />);
 
-        expect(screen.getByText('Key is required')).toBeInTheDocument();
+        expect(screen.getByText("Key is required")).toBeInTheDocument();
     });
 
-    it('shows error when key is whitespace only', () => {
-        render(<MetadataFieldsWrapper initialFields={[{ key: '  ', value: '', touched: true }]} />);
+    it("shows error when key is whitespace only", () => {
+        render(<MetadataFieldsWrapper initialFields={[{ key: "  ", value: "", touched: true }]} />);
 
-        expect(screen.getByText('Key is required')).toBeInTheDocument();
+        expect(screen.getByText("Key is required")).toBeInTheDocument();
     });
 
-    it('shows error after user blurs empty key field', async () => {
+    it("shows error after user blurs empty key field", async () => {
         const user = userEvent.setup();
 
-        render(<MetadataFieldsWrapper initialFields={[{ key: '', value: '', touched: false }]} />);
-        expect(screen.queryByText('Key is required')).not.toBeInTheDocument();
+        render(<MetadataFieldsWrapper initialFields={[{ key: "", value: "", touched: false }]} />);
+        expect(screen.queryByText("Key is required")).not.toBeInTheDocument();
 
-        const keyInput = screen.getByPlaceholderText('Key');
+        const keyInput = screen.getByPlaceholderText("Key");
         await user.click(keyInput);
         await user.tab();
 
-        expect(await screen.findByText('Key is required')).toBeInTheDocument();
+        expect(await screen.findByText("Key is required")).toBeInTheDocument();
     });
 
-    it('clears error when user enters a valid key after blur', async () => {
+    it("clears error when user enters a valid key after blur", async () => {
         const user = userEvent.setup();
 
-        render(<MetadataFieldsWrapper initialFields={[{ key: '', value: '', touched: false }]} />);
+        render(<MetadataFieldsWrapper initialFields={[{ key: "", value: "", touched: false }]} />);
 
-        const keyInput = screen.getByPlaceholderText('Key');
+        const keyInput = screen.getByPlaceholderText("Key");
         await user.click(keyInput);
         await user.tab();
-        expect(await screen.findByText('Key is required')).toBeInTheDocument();
+        expect(await screen.findByText("Key is required")).toBeInTheDocument();
 
-        await user.type(keyInput, 'env');
+        await user.type(keyInput, "env");
 
-        expect(screen.queryByText('Key is required')).not.toBeInTheDocument();
-        expect(keyInput).not.toHaveClass('is-invalid');
-        expect(keyInput).toHaveValue('env');
+        expect(screen.queryByText("Key is required")).not.toBeInTheDocument();
+        expect(keyInput).not.toHaveClass("is-invalid");
+        expect(keyInput).toHaveValue("env");
     });
 
-    it('adds a new metadata field row when clicking Add button', async () => {
+    it("adds a new metadata field row when clicking Add button", async () => {
         const user = userEvent.setup();
 
         render(<MetadataFieldsWrapper initialFields={[]} />);
 
         await user.click(screen.getByText(/Add Metadata field/i));
 
-        expect(screen.getAllByPlaceholderText('Key')).toHaveLength(1);
-        expect(screen.getByPlaceholderText('Value')).toHaveValue('');
+        expect(screen.getAllByPlaceholderText("Key")).toHaveLength(1);
+        expect(screen.getByPlaceholderText("Value")).toHaveValue("");
     });
 
-    it('removes the correct metadata row', async () => {
+    it("removes the correct metadata row", async () => {
         const user = userEvent.setup();
 
-        render(<MetadataFieldsWrapper initialFields={[
-            { key: 'a', value: '1', touched: false },
-            { key: 'b', value: '2', touched: false }
-        ]} />);
+        render(
+            <MetadataFieldsWrapper
+                initialFields={[
+                    { key: "a", value: "1", touched: false },
+                    { key: "b", value: "2", touched: false },
+                ]}
+            />,
+        );
 
-        const firstDeleteButton = screen.getByRole('button', { name: 'Remove metadata field 1' });
+        const firstDeleteButton = screen.getByRole("button", { name: "Remove metadata field 1" });
 
         await user.click(firstDeleteButton);
 
-        const keyInputs = screen.getAllByPlaceholderText('Key');
+        const keyInputs = screen.getAllByPlaceholderText("Key");
         expect(keyInputs).toHaveLength(1);
-        expect(keyInputs[0]).toHaveValue('b');
-        expect(screen.queryByDisplayValue('a')).not.toBeInTheDocument();
+        expect(keyInputs[0]).toHaveValue("b");
+        expect(screen.queryByDisplayValue("a")).not.toBeInTheDocument();
     });
 });
-

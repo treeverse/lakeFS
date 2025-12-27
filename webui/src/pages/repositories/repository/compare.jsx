@@ -1,19 +1,19 @@
-import React, {useEffect} from "react";
-import {useOutletContext} from "react-router-dom";
-import {Loading} from "../../../lib/components/controls";
-import {useRefs} from "../../../lib/hooks/repo";
-import {useRouter} from "../../../lib/hooks/router";
-import {RepoError} from "./error";
+import React, { useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import { Loading } from "../../../lib/components/controls";
+import { useRefs } from "../../../lib/hooks/repo";
+import { useRouter } from "../../../lib/hooks/router";
+import { RepoError } from "./error";
 import CompareBranches from "../../../lib/components/repository/compareBranches";
 
 const CompareContainer = () => {
     const router = useRouter();
-    const {loading, error, repo, reference, compare} = useRefs();
+    const { loading, error, repo, reference, compare } = useRefs();
 
-    const {prefix} = router.query;
+    const { prefix } = router.query;
 
-    if (loading) return <Loading/>;
-    if (error) return <RepoError error={error}/>;
+    if (loading) return <Loading />;
+    if (error) return <RepoError error={error} />;
 
     return (
         <CompareBranches
@@ -30,7 +30,7 @@ const CompareContainer = () => {
 const RepositoryComparePage = () => {
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("compare"), [setActivePage]);
-    return <CompareContainer/>;
+    return <CompareContainer />;
 };
 
 export default RepositoryComparePage;

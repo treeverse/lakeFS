@@ -1,4 +1,4 @@
-import {LoginStrategyResult, PluginLoginStrategy} from "../pluginLoginStrategy";
+import { LoginStrategyResult, PluginLoginStrategy } from "../pluginLoginStrategy";
 import { LoginConfig } from "../../pages/auth/login";
 
 class RedirectToSSOStrategyPlugin implements PluginLoginStrategy {

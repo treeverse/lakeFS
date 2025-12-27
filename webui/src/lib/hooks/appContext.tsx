@@ -9,11 +9,11 @@ type AppContext = {
 };
 
 const localStorageKeys = {
-    darkMode: 'darkMode',
+    darkMode: "darkMode",
 };
 
 enum AppActionType {
-    setDarkMode = 'setDarkMode',
+    setDarkMode = "setDarkMode",
 }
 
 interface Action {
@@ -33,31 +33,27 @@ const appContextReducer = (state: AppContextType, action: Action) => {
     switch (action.type) {
         case AppActionType.setDarkMode:
             window.localStorage.setItem(localStorageKeys.darkMode, String(action.value));
-            return {...state, settings: {...state.settings, darkMode: action.value}};
+            return { ...state, settings: { ...state.settings, darkMode: action.value } };
         default:
             return state;
     }
-}
+};
 
 type ContextType = {
-    state: AppContextType,
-    dispatch: React.Dispatch<Action>,
+    state: AppContextType;
+    dispatch: React.Dispatch<Action>;
 };
 
 const AppContext = createContext<ContextType>({
     state: initialAppContext,
-    dispatch: () => null
+    dispatch: () => null,
 });
 
 // @ts-expect-error - it doesn't like the "children" prop
-const WithAppContext: React.FC = ({children}) => {
+const WithAppContext: React.FC = ({ children }) => {
     const [state, dispatch] = useReducer(appContextReducer, initialAppContext);
 
-    return (
-        <AppContext.Provider value={{state, dispatch}}>
-            {children}
-        </AppContext.Provider>
-    )
-}
+    return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
+};
 
 export { WithAppContext, AppContext, AppActionType };

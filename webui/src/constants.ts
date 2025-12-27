@@ -1,12 +1,12 @@
-export const RefTypeBranch = 'branch';
-export const RefTypeCommit = 'commit';
-export const RefTypeTag = 'tag';
+export const RefTypeBranch = "branch";
+export const RefTypeCommit = "commit";
+export const RefTypeTag = "tag";
 export const PageSize = 5;
 
 export enum TreeRowType {
     Object,
     Prefix,
-    Table
+    Table,
 }
 
 export enum PullStatus {
@@ -14,4 +14,3 @@ export enum PullStatus {
     closed = "closed",
     merged = "merged",
 }
-
