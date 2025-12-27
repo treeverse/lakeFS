@@ -1,0 +1,22 @@
+npmName: "@treeverse/lakefs-client"
+npmVersion: "0.0.0"
+supportsES6: true
+withInterfaces: true
+useSingleRequestParameter: true
+typescriptThreePlus: true
+enumNameSuffix: ""
+enumPropertyNaming: "original"
+modelPropertyNaming: "camelCase"
+paramNaming: "camelCase"
+
+# Use string enums for better type safety
+stringEnums: true
+
+# File naming convention
+fileNaming: "camelCase"
+
+# Disable runtime checks for cleaner generated code
+withoutRuntimeChecks: false
+
+# Skip operationId validation to allow flexible API structure
+skipOperationExample: true

@@ -1,0 +1,50 @@
+{
+  "name": "@treeverse/lakefs-client",
+  "version": "0.0.0",
+  "description": "TypeScript/JavaScript client for lakeFS API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "src/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "lakefs",
+    "data-versioning",
+    "api-client",
+    "typescript",
+    "git-for-data"
+  ],
+  "author": "Treeverse",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/treeverse/lakeFS.git",
+    "directory": "clients/typescript"
+  },
+  "homepage": "https://lakefs.io",
+  "bugs": {
+    "url": "https://github.com/treeverse/lakeFS/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {}
+}

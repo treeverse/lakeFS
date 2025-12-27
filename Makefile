@@ -130,8 +130,28 @@ client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and 
 		--additional-properties disallowAdditionalPropertiesIfNotPresent=false,useSingleRequestParameter=true,hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='sdk',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.sdk,modelPackage=io.lakefs.clients.sdk.model,mainPackage=io.lakefs.clients.sdk,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python client-java
-clients: client-python client-java sdk-rust
+client-typescript: api/swagger.yml  ## Generate SDK for TypeScript client
+	@rm -rf clients/typescript
+	@mkdir -p clients/typescript
+	@cp clients/typescript-static/.openapi-generator-ignore clients/typescript
+	@cp clients/typescript-static/package.json clients/typescript/package.json
+	@cp clients/typescript-static/tsconfig.json clients/typescript/tsconfig.json
+	@echo "Generating TypeScript client SDK"
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/api/swagger.yml \
+		-g typescript-fetch \
+		-c /mnt/clients/typescript-static/typescript-codegen-config.yaml \
+		--http-user-agent "lakefs-typescript-sdk/$(PACKAGE_VERSION)" \
+		--git-user-id treeverse --git-repo-id lakeFS \
+		-o /mnt/clients/typescript
+	@echo "Cleaning up duplicate exports from multi-tagged operations"
+	@$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -w /mnt/clients/typescript-static node:18 node cleanup-exports.js
+	@echo "Building TypeScript client"
+	@$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -w /mnt/clients/typescript node:18 /bin/sh -c "npm install && npm run build"
+	@test -d clients/typescript/dist || (echo "TypeScript build failed - dist directory not created"; exit 1)
+
+.PHONY: clients client-python client-java client-typescript
+clients: client-python client-java sdk-rust client-typescript
 
 package-python: package-python-sdk package-python-wrapper
 
@@ -267,13 +287,16 @@ validate-client-java:
 validate-client-rust:
 	git diff --quiet -- clients/rust || (echo "Modification verification failed! rust client"; false)
 
+validate-client-typescript:
+	git diff --quiet -- clients/typescript || (echo "Modification verification failed! typescript client"; false)
+
 validate-python-wrapper:
 	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq
 	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
 
 # Run all validation/linting steps
 checks-validator: lint validate-fmt validate-proto \
-	validate-client-python validate-client-java validate-client-rust validate-reference \
+	validate-client-python validate-client-java validate-client-rust validate-client-typescript validate-reference \
 	validate-mockgen \
 	validate-permissions-gen \
 	validate-wrapper validate-wrapgen-testcode
