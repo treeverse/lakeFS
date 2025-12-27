@@ -63,15 +63,15 @@ func canonicalJavaV2Query(q url.Values) string {
 		return escaped[i][0] < escaped[j][0]
 	})
 	// output
-	out := ""
+	var out strings.Builder
 	for i, pair := range escaped {
-		out += pair[0] + "=" + pair[1]
+		out.WriteString(pair[0] + "=" + pair[1])
 		isLast := i == len(escaped)-1
 		if !isLast {
-			out += "&"
+			out.WriteString("&")
 		}
 	}
-	return out
+	return out.String()
 }
 
 type JavaV2Signer struct {

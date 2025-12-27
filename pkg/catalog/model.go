@@ -111,7 +111,7 @@ func (j Metadata) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
-func (j *Metadata) Scan(src interface{}) error {
+func (j *Metadata) Scan(src any) error {
 	if src == nil {
 		return nil
 	}

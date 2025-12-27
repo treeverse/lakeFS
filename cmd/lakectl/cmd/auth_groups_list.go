@@ -28,14 +28,14 @@ var authGroupsListCmd = &cobra.Command{
 		}
 
 		groups := resp.JSON200.Results
-		rows := make([][]interface{}, len(groups))
+		rows := make([][]any, len(groups))
 		for i, group := range groups {
 			ts := time.Unix(group.CreationDate, 0).String()
-			rows[i] = []interface{}{group.Id, cmdutils.Coalesce(group.Name, group.Id), ts}
+			rows[i] = []any{group.Id, cmdutils.Coalesce(group.Name, group.Id), ts}
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"ID", "Group Name", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []any{"ID", "Group Name", "Creation Date"}, &pagination, amount)
 	},
 }
 

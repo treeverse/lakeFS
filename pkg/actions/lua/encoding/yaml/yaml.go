@@ -30,7 +30,7 @@ func check(l *lua.State, err error) {
 }
 
 func yamlMarshal(l *lua.State) int {
-	var t interface{}
+	var t any
 	var err error
 	if !l.IsNil(1) {
 		t, err = util.PullTable(l, 1)
@@ -46,7 +46,7 @@ func yamlMarshal(l *lua.State) int {
 
 func yamlUnmarshal(l *lua.State) int {
 	payload := lua.CheckString(l, 1)
-	var output interface{}
+	var output any
 	check(l, yaml.Unmarshal([]byte(payload), &output))
 	return util.DeepPush(l, output)
 }

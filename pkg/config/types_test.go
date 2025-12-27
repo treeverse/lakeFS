@@ -22,12 +22,12 @@ type StringsStruct struct {
 func TestStrings(t *testing.T) {
 	cases := []struct {
 		Name     string
-		Source   map[string]interface{}
+		Source   map[string]any
 		Expected StringsStruct
 	}{
 		{
 			Name: "single string",
-			Source: map[string]interface{}{
+			Source: map[string]any{
 				"s": "value",
 			},
 			Expected: StringsStruct{
@@ -35,7 +35,7 @@ func TestStrings(t *testing.T) {
 			},
 		}, {
 			Name: "comma-separated string",
-			Source: map[string]interface{}{
+			Source: map[string]any{
 				"s": "the,quick,brown",
 			},
 			Expected: StringsStruct{
@@ -43,7 +43,7 @@ func TestStrings(t *testing.T) {
 			},
 		}, {
 			Name: "multiple strings",
-			Source: map[string]interface{}{
+			Source: map[string]any{
 				"s": []string{"the", "quick", "brown"},
 			},
 			Expected: StringsStruct{
@@ -51,7 +51,7 @@ func TestStrings(t *testing.T) {
 			},
 		}, {
 			Name: "other values",
-			Source: map[string]interface{}{
+			Source: map[string]any{
 				"s": []string{"yes"},
 				"i": 17,
 			},
@@ -147,21 +147,21 @@ func errorsMatch(err, target error) bool {
 func TestOnlyString(t *testing.T) {
 	cases := []struct {
 		Name     string
-		Source   map[string]interface{}
+		Source   map[string]any
 		Expected *OnlyStringStruct
 		Err      error
 	}{
 		{
 			Name:     "String",
-			Source:   map[string]interface{}{"S": "string"},
+			Source:   map[string]any{"S": "string"},
 			Expected: &OnlyStringStruct{S: "string"},
 		}, {
 			Name:   "Number",
-			Source: map[string]interface{}{"S": 17},
+			Source: map[string]any{"S": 17},
 			Err:    config.ErrMustBeString,
 		}, {
 			Name:   "Struct",
-			Source: map[string]interface{}{"S": OnlyStringStruct{S: "string nested in struct"}},
+			Source: map[string]any{"S": OnlyStringStruct{S: "string nested in struct"}},
 			Err:    config.ErrMustBeString,
 		},
 	}
@@ -275,8 +275,8 @@ func TestStringToStructHookFunc(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Source   string
-		Result   interface{}
-		Expected interface{}
+		Result   any
+		Expected any
 	}{
 		{
 			Name:     "Empty string",

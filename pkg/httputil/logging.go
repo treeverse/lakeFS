@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"context"
+	"maps"
 	"net/http"
 	"strings"
 	"time"
@@ -78,9 +79,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			}
 			if isAdvancedAuth {
 				requestFields[logging.RequestIDFieldKey] = reqID
-				for k, v := range fields {
-					requestFields[k] = v
-				}
+				maps.Copy(requestFields, fields)
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			writer.Header().Set(requestIDHeaderName, reqID)

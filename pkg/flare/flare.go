@@ -137,7 +137,7 @@ func WithEnv(vars []string) Option {
 }
 
 // ProcessConfig takes a config struct, marshals it to YAML and writes it out to outputPath
-func (f *Flare) ProcessConfig(cfg interface{}, outputPath, fileName string, getWriterFunc GetFileWriterFunc) (retErr error) {
+func (f *Flare) ProcessConfig(cfg any, outputPath, fileName string, getWriterFunc GetFileWriterFunc) (retErr error) {
 	yamlCfg, err := yaml.Marshal(cfg)
 	if err != nil {
 		return err

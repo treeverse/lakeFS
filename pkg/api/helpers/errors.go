@@ -72,7 +72,7 @@ type UserVisibleAPIError struct {
 
 // space stringifies non-nil elements from s... and returns all the
 // non-empty resulting strings joined with spaces.
-func spaced(s ...interface{}) string {
+func spaced(s ...any) string {
 	ret := make([]string, 0, len(s))
 	for _, t := range s {
 		if t != nil {
@@ -101,7 +101,7 @@ func (e UserVisibleAPIError) Unwrap() error {
 // wrapping a response from the server.  It searches for a non-nil
 // unsuccessful HTTPResponse field and uses its message, along with a Body
 // that it assumes is an api.Error.
-func ResponseAsError(response interface{}) error {
+func ResponseAsError(response any) error {
 	if response == nil {
 		return nil
 	}

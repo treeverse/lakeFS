@@ -176,7 +176,7 @@ func TestAWSSigVerify(t *testing.T) {
 			}
 
 			r := rand.New(rand.NewSource(seed))
-			for i := 0; i < numRounds; i++ {
+			for range numRounds {
 				path := s3utils.EncodePath("my-branch/ariels/x/" + testutil.RandomString(r, pathLength))
 				bucketURL := &url.URL{
 					Scheme: "s3",

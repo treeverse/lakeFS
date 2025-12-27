@@ -20,12 +20,12 @@ func (c CommitsGenerationPriorityQueue) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
-func (c *CommitsGenerationPriorityQueue) Push(x interface{}) {
+func (c *CommitsGenerationPriorityQueue) Push(x any) {
 	rec := x.(*graveler.CommitRecord)
 	*c = append(*c, rec)
 }
 
-func (c *CommitsGenerationPriorityQueue) Pop() interface{} {
+func (c *CommitsGenerationPriorityQueue) Pop() any {
 	cc := *c
 	n := len(cc) - 1
 	item := cc[n]

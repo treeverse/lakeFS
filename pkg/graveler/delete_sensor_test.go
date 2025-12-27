@@ -162,7 +162,7 @@ func TestDeletedSensor_CheckNonBlocking(t *testing.T) {
 	}
 	sensor := graveler.NewDeleteSensor(1, cb, graveler.WithCBBufferSize(1))
 	ctx := t.Context()
-	for i := 0; i < 11; i++ {
+	for range 11 {
 		select {
 		case <-closerCh:
 			t.Fatal("should not block")

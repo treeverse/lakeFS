@@ -23,7 +23,7 @@ func randomFilepath(basename string) string {
 	const maxDepthLevel = 10
 	const maxDirSuffixes = 3
 	depth := rand.Intn(maxDepthLevel) //nolint:gosec
-	for i := 0; i < depth; i++ {
+	for range depth {
 		// tests, safe
 		dirSuffix := rand.Intn(maxDirSuffixes) //nolint:gosec
 		sb.WriteString(fmt.Sprintf("dir%d/", dirSuffix))
@@ -42,7 +42,7 @@ func defaultTarget(method, url, body, typ string) vegeta.Target {
 func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int) []vegeta.Target {
 	now := time.Now().UnixNano()
 	result := make([]vegeta.Target, num)
-	for i := 0; i < num; i++ {
+	for i := range num {
 		// tests, safe
 		randomContent := rand.Int() //nolint:gosec
 		fileContent := "--" + boundary + "\n" +

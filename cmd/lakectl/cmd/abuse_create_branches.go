@@ -81,7 +81,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		// generate create branch requests
 		generator.Setup(func(add stress.GeneratorAddFn) {
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				add(fmt.Sprintf("%s-%d", branchPrefix, i))
 			}
 		})

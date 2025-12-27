@@ -420,12 +420,12 @@ const s3ChunkSignatureStr = ";chunk-signature="
 //	"10000;chunk-signature=..." => "10000", "chunk-signature=..."
 func parseS3ChunkExtension(buf []byte) ([]byte, []byte) {
 	buf = trimTrailingWhitespace(buf)
-	semi := bytes.Index(buf, []byte(s3ChunkSignatureStr))
+	before, after, ok := bytes.Cut(buf, []byte(s3ChunkSignatureStr))
 	// Chunk signature not found, return the whole buffer.
-	if semi == -1 {
+	if !ok {
 		return buf, nil
 	}
-	return buf[:semi], buf[semi+len(s3ChunkSignatureStr):]
+	return before, after
 }
 
 // parse hex to uint64.

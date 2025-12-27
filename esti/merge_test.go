@@ -53,7 +53,7 @@ func TestMergeAndList(t *testing.T) {
 
 func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Context, repo, branch, strategy string, checksums map[string]string, iteration int) []apigen.ObjectStats {
 	const addedFiles = 10
-	for i := 0; i < addedFiles; i++ {
+	for i := range addedFiles {
 		p := fmt.Sprintf("%d.txt", i)
 		logger.WithFields(logging.Fields{"iteration": iteration, "path": p}).Info("Upload content to branch")
 		checksum, content := UploadFileRandomData(ctx, t, repo, branch, p, nil)

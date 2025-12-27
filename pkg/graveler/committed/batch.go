@@ -27,7 +27,7 @@ func NewBatchCloser(numClosers int) *BatchCloser {
 	}
 
 	ret.wg.Add(numClosers)
-	for i := 0; i < numClosers; i++ {
+	for range numClosers {
 		go ret.handleClose()
 	}
 

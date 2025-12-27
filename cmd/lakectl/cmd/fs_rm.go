@@ -37,19 +37,17 @@ var fsRmCmd = &cobra.Command{
 		success := true
 		var errorsWg sync.WaitGroup
 		errors := make(chan error)
-		errorsWg.Add(1)
-		go func() {
-			defer errorsWg.Done()
+		errorsWg.Go(func() {
 			for err := range errors {
 				_, _ = fmt.Fprintln(os.Stderr, err)
 				success = false
 			}
-		}()
+		})
 
 		var deleteWg sync.WaitGroup
 		paths := make(chan string)
 		deleteWg.Add(concurrency)
-		for i := 0; i < concurrency; i++ {
+		for range concurrency {
 			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg)
 		}
 

@@ -15,7 +15,7 @@ func TestNewEntryToValueIterator(t *testing.T) {
 	var entryRecords []*catalog.EntryRecord
 
 	// generate data
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		record := &catalog.EntryRecord{
 			Path:  catalog.Path(fmt.Sprintf("path%d", i)),
 			Entry: &catalog.Entry{Address: fmt.Sprintf("addr%d", i)},

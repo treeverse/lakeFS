@@ -30,7 +30,7 @@ var (
 	errWrongValueType = errors.New("wrong value type")
 )
 
-type Properties map[string]interface{}
+type Properties map[string]any
 
 func (p Properties) getRequiredProperty(key string) (string, error) {
 	raw, ok := p[key]

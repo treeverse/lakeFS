@@ -21,7 +21,7 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 	concurrency := 1000
 	pathDir := path.Join(name, "a/b/c/")
 
-	for i := 0; i < concurrency; i++ {
+	for i := range concurrency {
 		// create and delete
 		filepath := path.Join(pathDir, strconv.Itoa(i))
 		wg.Add(2)
@@ -56,7 +56,7 @@ func TestConcurrentRenameDeleteDir(t *testing.T) {
 	concurrency := 1000
 	pathDir := path.Join(name, "a/b/c/")
 
-	for i := 0; i < concurrency; i++ {
+	for i := range concurrency {
 		// create and delete
 		originalPath := path.Join(name, strconv.Itoa(i))
 		require.NoError(t, os.WriteFile(originalPath, []byte("some data"), os.ModePerm))

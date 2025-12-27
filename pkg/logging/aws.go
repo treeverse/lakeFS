@@ -8,7 +8,7 @@ type AWSAdapter struct {
 	Logger Logger
 }
 
-func (l *AWSAdapter) Logf(classification logging.Classification, format string, v ...interface{}) {
+func (l *AWSAdapter) Logf(classification logging.Classification, format string, v ...any) {
 	if classification == logging.Warn {
 		l.Logger.Warnf(format, v...)
 	} else {

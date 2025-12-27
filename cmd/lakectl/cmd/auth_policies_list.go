@@ -28,13 +28,13 @@ var authPoliciesList = &cobra.Command{
 		}
 
 		policies := resp.JSON200.Results
-		rows := make([][]interface{}, len(policies))
+		rows := make([][]any, len(policies))
 		for i, policy := range policies {
 			ts := time.Unix(*policy.CreationDate, 0).String()
-			rows[i] = []interface{}{policy.Id, ts}
+			rows[i] = []any{policy.Id, ts}
 		}
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []any{"Policy ID", "Creation Date"}, &pagination, amount)
 	},
 }
 

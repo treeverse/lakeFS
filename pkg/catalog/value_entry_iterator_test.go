@@ -13,7 +13,7 @@ func TestNewValueToEntryIterator(t *testing.T) {
 	var valueRecords []*graveler.ValueRecord
 
 	// generate data
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		record := &EntryRecord{
 			Path:  Path(fmt.Sprintf("path%d", i)),
 			Entry: &Entry{Address: fmt.Sprintf("addr%d", i)},

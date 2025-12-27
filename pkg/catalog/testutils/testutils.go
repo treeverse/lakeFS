@@ -153,7 +153,7 @@ func (w *FakeWalker) createEntries(count int) {
 	// tests, safe
 	//nolint:gosec
 	randGen := rand.New(rand.NewSource(seed))
-	for i := 0; i < count; i++ {
+	for i := range count {
 		relativeKey := testutil.RandomString(randGen, randomKeyLength)
 		fullkey := w.uriPrefix + "/" + relativeKey
 		ents[i] = block.ObjectStoreEntry{

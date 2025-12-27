@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 )
 
-func ValidateStorageNamespace(v interface{}) error {
+func ValidateStorageNamespace(v any) error {
 	s, ok := v.(StorageNamespace)
 	if !ok {
 		panic(ErrInvalidType)
@@ -19,7 +19,7 @@ func ValidateStorageNamespace(v interface{}) error {
 	return nil
 }
 
-func ValidateRef(v interface{}) error {
+func ValidateRef(v any) error {
 	s, ok := v.(Ref)
 	if !ok {
 		panic(ErrInvalidType)
@@ -33,7 +33,7 @@ func ValidateRef(v interface{}) error {
 	return nil
 }
 
-func ValidateBranchID(v interface{}) error {
+func ValidateBranchID(v any) error {
 	s, ok := v.(BranchID)
 	if !ok {
 		panic(ErrInvalidType)
@@ -47,7 +47,7 @@ func ValidateBranchID(v interface{}) error {
 	return nil
 }
 
-func ValidateTagID(v interface{}) error {
+func ValidateTagID(v any) error {
 	s, ok := v.(TagID)
 	if !ok {
 		panic(ErrInvalidType)
@@ -80,7 +80,7 @@ func ValidateTagID(v interface{}) error {
 	return nil
 }
 
-func ValidatePullRequestID(v interface{}) error {
+func ValidatePullRequestID(v any) error {
 	s, ok := v.(PullRequestID)
 	if !ok {
 		panic(ErrInvalidType)
@@ -99,7 +99,7 @@ func isControlCodeOrSpace(r rune) bool {
 	return r <= space
 }
 
-func ValidateRepositoryID(v interface{}) error {
+func ValidateRepositoryID(v any) error {
 	var repositoryID string
 	switch s := v.(type) {
 	case string:
@@ -118,7 +118,7 @@ func ValidateRepositoryID(v interface{}) error {
 	return nil
 }
 
-func ValidateRequiredStrategy(v interface{}) error {
+func ValidateRequiredStrategy(v any) error {
 	s, ok := v.(string)
 	if !ok {
 		panic(ErrInvalidType)

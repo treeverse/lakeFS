@@ -72,8 +72,8 @@ func DisableColors() {
 }
 
 type Table struct {
-	Headers []interface{}
-	Rows    [][]interface{}
+	Headers []any
+	Rows    [][]any
 }
 
 type Pagination struct {
@@ -86,7 +86,7 @@ type Pagination struct {
 // render combinations, e.g. bold-green.
 type ColoredText struct {
 	Colors text.Colors
-	Text   interface{} // Usually just a string, but anything goes
+	Text   any // Usually just a string, but anything goes
 }
 
 // String converts c to a string with ANSI control codes.
@@ -103,32 +103,32 @@ func (c ColoredText) Add(color text.Color) ColoredText {
 }
 
 // Colored returns text as ColoredText with no Color if it is not already ColoredText.
-func Colored(text interface{}) ColoredText {
+func Colored(text any) ColoredText {
 	if c, ok := text.(ColoredText); ok {
 		return c
 	}
 	return ColoredText{Colors: nil, Text: text}
 }
 
-func WriteTo(tpl string, data interface{}, w io.Writer) {
+func WriteTo(tpl string, data any, w io.Writer) {
 	templ := template.New("output")
 	templ.Funcs(template.FuncMap{
-		"red": func(arg interface{}) ColoredText {
+		"red": func(arg any) ColoredText {
 			return Colored(arg).Add(text.FgHiRed)
 		},
-		"yellow": func(arg interface{}) ColoredText {
+		"yellow": func(arg any) ColoredText {
 			return Colored(arg).Add(text.FgHiYellow)
 		},
-		"green": func(arg interface{}) ColoredText {
+		"green": func(arg any) ColoredText {
 			return Colored(arg).Add(text.FgHiGreen)
 		},
-		"blue": func(arg interface{}) ColoredText {
+		"blue": func(arg any) ColoredText {
 			return Colored(arg).Add(text.FgHiBlue)
 		},
-		"bold": func(arg interface{}) ColoredText {
+		"bold": func(arg any) ColoredText {
 			return Colored(arg).Add(text.Bold)
 		},
-		"underline": func(arg interface{}) ColoredText {
+		"underline": func(arg any) ColoredText {
 			return Colored(arg).Add(text.Underline)
 		},
 		"date": func(ts int64) string {
@@ -137,7 +137,7 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 		"ljust": func(length int, s string) string {
 			return text.AlignLeft.Apply(s, length)
 		},
-		"json": func(v interface{}) string {
+		"json": func(v any) string {
 			encoded, err := json.MarshalIndent(v, "", "  ")
 			if err != nil {
 				panic(fmt.Sprintf("failed to encode JSON: %s", err.Error()))
@@ -199,11 +199,11 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 	}
 }
 
-func Write(tpl string, data interface{}) {
+func Write(tpl string, data any) {
 	WriteTo(tpl, data, os.Stdout)
 }
 
-func WriteIfVerbose(tpl string, data interface{}) {
+func WriteIfVerbose(tpl string, data any) {
 	if verboseMode {
 		WriteTo(tpl, data, os.Stdout)
 	}
@@ -218,7 +218,7 @@ func Die(errMsg string, code int) {
 	os.Exit(code)
 }
 
-func DieFmt(msg string, args ...interface{}) {
+func DieFmt(msg string, args ...any) {
 	errMsg := fmt.Sprintf(msg, args...)
 	Die(errMsg, 1)
 }
@@ -247,21 +247,21 @@ func DieErr(err error) {
 	os.Exit(1)
 }
 
-func RetrieveError(response interface{}, err error) error {
+func RetrieveError(response any, err error) error {
 	if err != nil {
 		return err
 	}
 	return helpers.ResponseAsError(response)
 }
 
-func dieOnResponseError(response interface{}, err error) {
+func dieOnResponseError(response any, err error) {
 	retrievedErr := RetrieveError(response, err)
 	if retrievedErr != nil {
 		DieErr(retrievedErr)
 	}
 }
 
-func DieOnErrorOrUnexpectedStatusCode(response interface{}, err error, expectedStatusCode int) {
+func DieOnErrorOrUnexpectedStatusCode(response any, err error, expectedStatusCode int) {
 	dieOnResponseError(response, err)
 	var statusCode int
 	if httpResponse, ok := response.(*http.Response); ok {
@@ -290,7 +290,7 @@ func DieOnHTTPError(httpResponse *http.Response) {
 	}
 }
 
-func PrintTable(rows [][]interface{}, headers []interface{}, paginator *apigen.Pagination, amount int) {
+func PrintTable(rows [][]any, headers []any, paginator *apigen.Pagination, amount int) {
 	ctx := struct {
 		Table      *Table
 		Pagination *Pagination

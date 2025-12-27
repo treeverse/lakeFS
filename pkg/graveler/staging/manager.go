@@ -58,7 +58,7 @@ func (m *Manager) OnCleanup(cleanupCallback func()) {
 
 func (m *Manager) getBatchedEntryData(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.StagedEntryData, error) {
 	batchKey := fmt.Sprintf("StagingGet:%s:%s", st, key)
-	dt, err := m.batchExecutor.BatchFor(ctx, batchKey, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	dt, err := m.batchExecutor.BatchFor(ctx, batchKey, MaxBatchDelay, batch.ExecuterFunc(func() (any, error) {
 		dt := &graveler.StagedEntryData{}
 		_, err := kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, dt)
 		return dt, err

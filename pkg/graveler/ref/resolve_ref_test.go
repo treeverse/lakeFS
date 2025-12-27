@@ -32,7 +32,7 @@ func TestResolveRawRef(t *testing.T) {
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 	var previous graveler.CommitID
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		c := graveler.Commit{
 			Committer:    "user1",
 			Message:      "message1",

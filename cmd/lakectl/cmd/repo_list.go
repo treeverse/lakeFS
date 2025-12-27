@@ -30,13 +30,13 @@ var repoListCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 		repos := resp.JSON200.Results
-		rows := make([][]interface{}, len(repos))
+		rows := make([][]any, len(repos))
 		for i, repo := range repos {
 			ts := time.Unix(repo.CreationDate, 0).String()
-			rows[i] = []interface{}{repo.Id, ts, repo.DefaultBranch, repo.Id, repo.StorageNamespace}
+			rows[i] = []any{repo.Id, ts, repo.DefaultBranch, repo.Id, repo.StorageNamespace}
 		}
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage ID", "Storage Namespace"}, &pagination, amount)
+		PrintTable(rows, []any{"Repository", "Creation Date", "Default Ref Name", "Storage ID", "Storage Namespace"}, &pagination, amount)
 	},
 }
 

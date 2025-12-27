@@ -12,7 +12,7 @@ import (
 func TestCommitsGenerationPriorityQueue_Len(t *testing.T) {
 	const maxItems = 7
 	q := ref.NewCommitsGenerationPriorityQueue()
-	for i := 0; i < maxItems; i++ {
+	for i := range maxItems {
 		if q.Len() != i {
 			t.Fatalf("Queue Len=%d, expected=%d", q.Len(), i)
 		}
@@ -54,11 +54,11 @@ func TestCommitsGenerationPriorityQueue_Push(t *testing.T) {
 func TestCommitsGenerationPriorityQueue_Pop(t *testing.T) {
 	const maxItems = 7
 	q := ref.NewCommitsGenerationPriorityQueue()
-	for i := 0; i < maxItems; i++ {
+	for i := range maxItems {
 		id := graveler.CommitID(strconv.Itoa(i))
 		q.Push(&graveler.CommitRecord{CommitID: id})
 	}
-	for i := 0; i < maxItems; i++ {
+	for i := range maxItems {
 		item := q.Pop().(*graveler.CommitRecord)
 		expectedID := graveler.CommitID(strconv.Itoa(maxItems - i - 1))
 		if item.CommitID != expectedID {

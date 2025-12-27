@@ -98,7 +98,7 @@ func (o *Operation) HandleUnsupported(w http.ResponseWriter, req *http.Request, 
 	return false
 }
 
-func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) error {
+func EncodeResponse(w http.ResponseWriter, entity any, statusCode int) error {
 	// We don't indent the XML document because of Java.
 	// See: https://github.com/spulec/moto/issues/1870
 	payload, err := xml.Marshal(entity)
@@ -108,7 +108,7 @@ func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) e
 	return EncodeXMLBytes(w, payload, statusCode)
 }
 
-func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, entity interface{}, statusCode int) {
+func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, entity any, statusCode int) {
 	// check first if the client canceled the request
 	if httputil.IsRequestCanceled(req) {
 		w.WriteHeader(httputil.HttpStatusClientClosedRequest)
@@ -120,7 +120,7 @@ func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, ent
 	}
 }
 
-func DecodeXMLBody(reader io.Reader, entity interface{}) error {
+func DecodeXMLBody(reader io.Reader, entity any) error {
 	body := reader
 	content, err := io.ReadAll(body)
 	if err != nil {

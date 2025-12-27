@@ -191,7 +191,7 @@ func parseUsageKey(key []byte) (installationsID string, year int, month int, err
 
 // formatUsageKey formats a usage key for the given installation ID, year and month.
 func formatUsageKey(installationID string, year, month int) []byte {
-	return []byte(fmt.Sprintf("usage/monthly/%s/%04d%02d", installationID, year, month))
+	return fmt.Appendf(nil, "usage/monthly/%s/%04d%02d", installationID, year, month)
 }
 
 // persistUsageCounters persists the current usage counters to the storage

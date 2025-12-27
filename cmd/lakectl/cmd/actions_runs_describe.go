@@ -108,8 +108,8 @@ func convertRunResultTable(r *apigen.ActionRun) *Table {
 	}
 	status := statusColor.Sprint(r.Status)
 	return &Table{
-		Headers: []interface{}{"Run ID", "Event", "Branch", "Start Time", "End Time", "Commit ID", "Status"},
-		Rows: [][]interface{}{
+		Headers: []any{"Run ID", "Event", "Branch", "Start Time", "End Time", "Commit ID", "Status"},
+		Rows: [][]any{
 			{runID, r.EventType, r.Branch, r.StartTime, r.EndTime, r.CommitId, status},
 		},
 	}
@@ -130,8 +130,8 @@ func convertHookResultsTables(results []apigen.HookRun) []*Table {
 		}
 		status := statusColor.Sprint(r.Status)
 		tables[i] = &Table{
-			Headers: []interface{}{"Hook Run ID", "Hook ID", "Start Time", "End Time", "Action", "Status"},
-			Rows: [][]interface{}{
+			Headers: []any{"Hook Run ID", "Hook ID", "Start Time", "End Time", "Action", "Status"},
+			Rows: [][]any{
 				{hookRunID, r.HookId, r.StartTime, r.EndTime, r.Action, status},
 			},
 		}

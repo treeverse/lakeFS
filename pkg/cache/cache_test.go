@@ -21,14 +21,14 @@ func TestCache(t *testing.T) {
 	c := cache.NewCache(cacheSize, time.Hour*12, cache.NewJitterFn(time.Millisecond))
 
 	numCalls := 0
-	for i := 0; i < n; i++ {
+	for i := range n {
 		var k int
 		if i%2 == 0 {
 			k = worldSize - 1
 		} else {
 			k = (i / 2) % (worldSize - 1)
 		}
-		actual, err := c.GetOrSet(k, func() (interface{}, error) {
+		actual, err := c.GetOrSet(k, func() (any, error) {
 			numCalls++
 			return k * k, nil
 		})
@@ -60,13 +60,13 @@ func TestCacheRace(t *testing.T) {
 	start := make(chan struct{})
 	wg := sync.WaitGroup{}
 
-	for i := 0; i < parallelism; i++ {
+	for i := range parallelism {
 		wg.Add(1)
 		go func(i int) {
 			<-start
-			for j := 0; j < n; j++ {
+			for j := range n {
 				k := j % worldSize
-				kk, err := c.GetOrSet(k, func() (interface{}, error) {
+				kk, err := c.GetOrSet(k, func() (any, error) {
 					return k * k, nil
 				})
 				if err != nil {
@@ -87,12 +87,12 @@ func TestCacheRace(t *testing.T) {
 // Spy manages a setFn that always returns a constant and spies on whether
 // it was called.
 type Spy struct {
-	value  interface{}
+	value  any
 	expiry time.Duration
 	called bool
 }
 
-func NewSpy(value interface{}, expiry time.Duration) *Spy {
+func NewSpy(value any, expiry time.Duration) *Spy {
 	return &Spy{
 		value:  value,
 		expiry: expiry,
@@ -103,7 +103,7 @@ func NewSpy(value interface{}, expiry time.Duration) *Spy {
 // MakeSetFn returns a SetFn that remembers it was called and returns the
 // configured value.
 func (s *Spy) MakeSetFn() cache.SetFnWithExpiry {
-	return cache.SetFnWithExpiry(func() (interface{}, time.Duration, error) {
+	return cache.SetFnWithExpiry(func() (any, time.Duration, error) {
 		s.called = true
 		return s.value, s.expiry, nil
 	})

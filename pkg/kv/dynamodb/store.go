@@ -581,9 +581,7 @@ func (s *Store) StartPeriodicCheck() {
 	if interval <= 0 {
 		return
 	}
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		s.logger.WithField("interval", interval).Debug("Starting DynamoDB health check")
 		// check first and loop for checking every interval
 		s.Check()
@@ -597,7 +595,7 @@ func (s *Store) StartPeriodicCheck() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 func (s *Store) Check() {

@@ -15,9 +15,9 @@ func TestOnlyOne_ComputeInSequence(t *testing.T) {
 		two = "bar"
 	)
 	c := cache.NewChanOnlyOne()
-	first, err := c.Compute("foo", func() (interface{}, error) { return one, nil })
+	first, err := c.Compute("foo", func() (any, error) { return one, nil })
 	testutil.MustDo(t, "first Compute", err)
-	second, err := c.Compute("foo", func() (interface{}, error) { return two, nil })
+	second, err := c.Compute("foo", func() (any, error) { return two, nil })
 	testutil.MustDo(t, "second Compute", err)
 	if first.(string) != one {
 		t.Errorf("got first compute %s, expected %s", first, one)
@@ -37,7 +37,7 @@ func TestOnlyOne_ComputeConcurrentlyOnce(t *testing.T) {
 	did100 := false
 	go func(didIt *bool) {
 		defer wg.Done()
-		value, err := c.Compute("foo", func() (interface{}, error) {
+		value, err := c.Compute("foo", func() (any, error) {
 			close(ch)
 			*didIt = true
 			time.Sleep(time.Millisecond * 100)
@@ -54,7 +54,7 @@ func TestOnlyOne_ComputeConcurrentlyOnce(t *testing.T) {
 	go func(didIt *bool) {
 		defer wg.Done()
 		time.Sleep(10 * time.Millisecond)
-		value, err := c.Compute("foo", func() (interface{}, error) {
+		value, err := c.Compute("foo", func() (any, error) {
 			*didIt = true
 			return 101, nil
 		})
@@ -67,7 +67,7 @@ func TestOnlyOne_ComputeConcurrentlyOnce(t *testing.T) {
 	go func(didIt *bool) {
 		defer wg.Done()
 		time.Sleep(5 * time.Millisecond)
-		value, err := c.Compute("foo", func() (interface{}, error) {
+		value, err := c.Compute("foo", func() (any, error) {
 			*didIt = true
 			return 102, nil
 		})

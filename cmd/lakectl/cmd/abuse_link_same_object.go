@@ -32,7 +32,7 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 
 		// setup generator to use the key
 		generator.Setup(func(add stress.GeneratorAddFn) {
-			for i := 0; i < amount; i++ {
+			for range amount {
 				add(key)
 			}
 		})

@@ -11,9 +11,9 @@ import (
 )
 
 type Record struct {
-	Partition string      `json:"partition"`
-	Key       string      `json:"key"`
-	Value     interface{} `json:"value"`
+	Partition string `json:"partition"`
+	Key       string `json:"key"`
+	Value     any    `json:"value"`
 }
 
 type MatchRecord struct {
@@ -111,7 +111,7 @@ func patternMatch(pattern string, str string) bool {
 func NewRecord(partition, path string, rawValue []byte) (*Record, error) {
 	mt := FindMessageTypeRecord(partition, path)
 
-	var value interface{}
+	var value any
 	if mt == nil {
 		value = rawValue
 	} else {

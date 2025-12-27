@@ -105,12 +105,12 @@ var entryCmd = &cobra.Command{
 
 		var errCount int64
 		startingLine := make(chan bool)
-		for i := 0; i < concurrency; i++ {
+		for i := range concurrency {
 			wid := fmt.Sprintf("-%02d", i)
 			go func() {
 				defer wg.Done()
 				<-startingLine
-				for reqID := 0; reqID < requests; reqID++ {
+				for range requests {
 					id, err := nanoid.New(createEntryPathLength)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)

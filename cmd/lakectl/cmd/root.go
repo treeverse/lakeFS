@@ -916,8 +916,7 @@ func initConfig() {
 
 	// Inform viper of all expected fields.
 	// Otherwise, it fails to deserialize from the environment.
-	var conf Configuration
-	keys := lakefsconfig.GetStructKeys(reflect.TypeOf(conf), "mapstructure", "squash")
+	keys := lakefsconfig.GetStructKeys(reflect.TypeFor[Configuration](), "mapstructure", "squash")
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}

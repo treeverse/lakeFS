@@ -26,7 +26,7 @@ func TestPathPartitionProvider(t *testing.T) {
 			WithPathProviderTellTime(tellTime),
 		)
 
-		for i := 0; i < times; i++ {
+		for range times {
 			path1 := provider.NewPath()
 			tm = tm.Add(2 * interval)
 			path2 := provider.NewPath()
@@ -51,10 +51,10 @@ func TestPathPartitionProvider(t *testing.T) {
 			WithPathProviderTellTime(tellTime),
 		)
 
-		for i := 0; i < times; i++ {
+		for range times {
 			// first series will have the same partition
 			first := make([]string, size)
-			for n := 0; n < size; n++ {
+			for n := range size {
 				first[n] = provider.NewPath()
 			}
 			for n := 1; n < size; n++ {
@@ -67,7 +67,7 @@ func TestPathPartitionProvider(t *testing.T) {
 
 			// second series will have the same partition
 			second := make([]string, size)
-			for n := 0; n < size; n++ {
+			for n := range size {
 				second[n] = provider.NewPath()
 			}
 			for n := 1; n < size; n++ {

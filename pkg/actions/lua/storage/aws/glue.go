@@ -215,7 +215,7 @@ func getTable(c *GlueClient) lua.Function {
 			panic("unreachable")
 		}
 		// Unmarshal the JSON to a map.
-		var itemMap map[string]interface{}
+		var itemMap map[string]any
 		err = json.Unmarshal(jsonBytes, &itemMap)
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
@@ -247,7 +247,7 @@ func createDatabase(c *GlueClient) lua.Function {
 		}
 		// decode opts if provided and override defaults
 		if !l.IsNoneOrNil(2) {
-			var t interface{}
+			var t any
 			t, err := util.PullTable(l, 2)
 			if err != nil {
 				lua.Errorf(l, "PullTable: %s", err.Error())

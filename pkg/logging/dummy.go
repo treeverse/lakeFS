@@ -12,7 +12,7 @@ func (d DummyLogger) WithContext(ctx context.Context) Logger {
 	return d
 }
 
-func (d DummyLogger) WithField(key string, value interface{}) Logger {
+func (d DummyLogger) WithField(key string, value any) Logger {
 	return d
 }
 
@@ -24,74 +24,74 @@ func (d DummyLogger) WithError(err error) Logger {
 	return d
 }
 
-func (d DummyLogger) Trace(args ...interface{}) {
+func (d DummyLogger) Trace(args ...any) {
 
 }
 
-func (d DummyLogger) Debug(args ...interface{}) {
+func (d DummyLogger) Debug(args ...any) {
 
 }
 
-func (d DummyLogger) Info(args ...interface{}) {
+func (d DummyLogger) Info(args ...any) {
 
 }
 
-func (d DummyLogger) Warn(args ...interface{}) {
+func (d DummyLogger) Warn(args ...any) {
 
 }
 
-func (d DummyLogger) Warning(args ...interface{}) {
+func (d DummyLogger) Warning(args ...any) {
 
 }
 
-func (d DummyLogger) Error(args ...interface{}) {
+func (d DummyLogger) Error(args ...any) {
 
 }
 
-func (d DummyLogger) Fatal(args ...interface{}) {
+func (d DummyLogger) Fatal(args ...any) {
 
 }
 
-func (d DummyLogger) Panic(args ...interface{}) {
+func (d DummyLogger) Panic(args ...any) {
 
 }
 
-func (d DummyLogger) Log(level logrus.Level, args ...interface{}) {
+func (d DummyLogger) Log(level logrus.Level, args ...any) {
 
 }
 
-func (d DummyLogger) Tracef(format string, args ...interface{}) {
+func (d DummyLogger) Tracef(format string, args ...any) {
 
 }
 
-func (d DummyLogger) Debugf(format string, args ...interface{}) {
+func (d DummyLogger) Debugf(format string, args ...any) {
 
 }
 
-func (d DummyLogger) Infof(format string, args ...interface{}) {
+func (d DummyLogger) Infof(format string, args ...any) {
 
 }
 
-func (d DummyLogger) Warnf(format string, args ...interface{}) {
+func (d DummyLogger) Warnf(format string, args ...any) {
 
 }
 
-func (d DummyLogger) Warningf(format string, args ...interface{}) {
+func (d DummyLogger) Warningf(format string, args ...any) {
 
 }
 
-func (d DummyLogger) Errorf(format string, args ...interface{}) {
+func (d DummyLogger) Errorf(format string, args ...any) {
 
 }
 
-func (d DummyLogger) Fatalf(format string, args ...interface{}) {
+func (d DummyLogger) Fatalf(format string, args ...any) {
 
 }
 
-func (d DummyLogger) Panicf(format string, args ...interface{}) {
+func (d DummyLogger) Panicf(format string, args ...any) {
 
 }
-func (d DummyLogger) Logf(level logrus.Level, format string, args ...interface{}) {
+func (d DummyLogger) Logf(level logrus.Level, format string, args ...any) {
 
 }
 func (d DummyLogger) IsTracing() bool {

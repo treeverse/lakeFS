@@ -24,7 +24,7 @@ var localListCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		var rows [][]interface{}
+		var rows [][]any
 		for _, d := range dirs {
 			idx, err := local.ReadIndex(filepath.Join(localPath, d))
 			if err != nil {
@@ -40,7 +40,7 @@ var localListCmd = &cobra.Command{
 			IndicesListTable *Table
 		}{
 			IndicesListTable: &Table{
-				Headers: []interface{}{
+				Headers: []any{
 					"Directory",
 					"Remote URI",
 					"Synced commit",

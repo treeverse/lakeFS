@@ -34,11 +34,11 @@ var branchProtectListCmd = &cobra.Command{
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		patterns := make([][]interface{}, len(*resp.JSON200))
+		patterns := make([][]any, len(*resp.JSON200))
 		for i, rule := range *resp.JSON200 {
-			patterns[i] = []interface{}{rule.Pattern}
+			patterns[i] = []any{rule.Pattern}
 		}
-		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &apigen.Pagination{
+		PrintTable(patterns, []any{"Branch Name Pattern"}, &apigen.Pagination{
 			HasMore: false,
 			Results: len(patterns),
 		}, len(patterns))

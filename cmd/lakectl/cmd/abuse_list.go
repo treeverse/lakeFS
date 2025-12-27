@@ -29,7 +29,7 @@ var abuseListCmd = &cobra.Command{
 
 		// generate randomly selected keys as input
 		generator.Setup(func(add stress.GeneratorAddFn) {
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				add(strconv.Itoa(i + 1))
 			}
 		})

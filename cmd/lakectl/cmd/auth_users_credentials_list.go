@@ -36,13 +36,13 @@ var authUsersCredentialsList = &cobra.Command{
 		}
 
 		credentials := resp.JSON200.Results
-		rows := make([][]interface{}, len(credentials))
+		rows := make([][]any, len(credentials))
 		for i, c := range credentials {
 			ts := time.Unix(c.CreationDate, 0).String()
-			rows[i] = []interface{}{c.AccessKeyId, ts}
+			rows[i] = []any{c.AccessKeyId, ts}
 		}
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, &pagination, amount)
+		PrintTable(rows, []any{"Access Key ID", "Issued Date"}, &pagination, amount)
 	},
 }
 

@@ -50,7 +50,7 @@ func removeBranches(ctx context.Context, client *apigen.ClientWithResponses, par
 
 	wg := &sync.WaitGroup{}
 	wg.Add(parallelism)
-	for i := 0; i < parallelism; i++ {
+	for range parallelism {
 		go func() {
 			for branch := range toDelete {
 				resp, err := client.DeleteBranchWithResponse(ctx, repo, branch, &apigen.DeleteBranchParams{})
@@ -91,7 +91,7 @@ var abuseMergeCmd = &cobra.Command{
 
 		// generate branch names as input
 		generator.Setup(func(add stress.GeneratorAddFn) {
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				add(fmt.Sprintf("%s-%04d", branchPrefix, i+1))
 			}
 		})

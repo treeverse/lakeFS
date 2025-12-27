@@ -21,7 +21,7 @@ func TestSanityAPI(t *testing.T) {
 	const numOfFiles = 5
 	paths := make([]string, numOfFiles)
 	contents := make([]string, numOfFiles)
-	for i := 0; i < numOfFiles; i++ {
+	for i := range numOfFiles {
 		paths[i] = fmt.Sprintf("file%d", i)
 		_, contents[i] = UploadFileRandomData(ctx, t, repo, mainBranch, paths[i], nil)
 	}

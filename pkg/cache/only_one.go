@@ -6,7 +6,7 @@ import "sync"
 type OnlyOne interface {
 	// Compute returns the value of calling fn(), but only calls fn once concurrently for
 	// each k.
-	Compute(k interface{}, fn func() (interface{}, error)) (interface{}, error)
+	Compute(k any, fn func() (any, error)) (any, error)
 }
 
 type ChanOnlyOne struct {
@@ -21,11 +21,11 @@ func NewChanOnlyOne() *ChanOnlyOne {
 
 type chanAndResult struct {
 	ch    chan struct{}
-	value interface{}
+	value any
 	err   error
 }
 
-func (c *ChanOnlyOne) Compute(k interface{}, fn func() (interface{}, error)) (interface{}, error) {
+func (c *ChanOnlyOne) Compute(k any, fn func() (any, error)) (any, error) {
 	stop := chanAndResult{ch: make(chan struct{})}
 	actual, inFlight := c.m.LoadOrStore(k, &stop)
 	actualStop := actual.(*chanAndResult)

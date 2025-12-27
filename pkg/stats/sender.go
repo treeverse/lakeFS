@@ -37,7 +37,7 @@ type LoggerAdapter struct {
 	logging.Logger
 }
 
-func (l *LoggerAdapter) Printf(msg string, args ...interface{}) {
+func (l *LoggerAdapter) Printf(msg string, args ...any) {
 	l.Tracef(msg, args...)
 }
 

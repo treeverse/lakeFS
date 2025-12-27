@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"time"
 
@@ -872,12 +873,8 @@ func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBran
 }
 
 func (p ProtectedBranchesManagerFake) IsBlocked(_ context.Context, _ *graveler.RepositoryRecord, branchID graveler.BranchID, _ graveler.BranchProtectionBlockedAction) (bool, error) {
-	for _, branch := range p.protectedBranches {
-		if branch == string(branchID) {
-			return true, nil
-		}
-	}
-	return false, nil
+	blocked := slices.Contains(p.protectedBranches, string(branchID))
+	return blocked, nil
 }
 
 func (m *RefsFake) GetRepositoryMetadata(_ context.Context, _ graveler.RepositoryID) (graveler.RepositoryMetadata, error) {

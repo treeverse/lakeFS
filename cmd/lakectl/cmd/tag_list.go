@@ -32,9 +32,9 @@ var tagListCmd = &cobra.Command{
 		}
 
 		refs := resp.JSON200.Results
-		rows := make([][]interface{}, len(refs))
+		rows := make([][]any, len(refs))
 		for i, row := range refs {
-			rows[i] = []interface{}{row.Id, row.CommitId}
+			rows[i] = []any{row.Id, row.CommitId}
 		}
 
 		tmplArgs := struct {
@@ -42,7 +42,7 @@ var tagListCmd = &cobra.Command{
 			Pagination *Pagination
 		}{
 			TagTable: &Table{
-				Headers: []interface{}{"Tag", "Commit ID"},
+				Headers: []any{"Tag", "Commit ID"},
 				Rows:    rows,
 			},
 		}
@@ -54,7 +54,7 @@ var tagListCmd = &cobra.Command{
 				After:   pagination.NextOffset,
 			}
 		}
-		PrintTable(rows, []interface{}{"Tag", "Commit ID"}, &pagination, amount)
+		PrintTable(rows, []any{"Tag", "Commit ID"}, &pagination, amount)
 	},
 }
 

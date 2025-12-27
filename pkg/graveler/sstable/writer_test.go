@@ -48,7 +48,7 @@ func TestWriter(t *testing.T) {
 		}).AnyTimes()
 
 	// Do the actual writing
-	for i := 0; i < writes; i++ {
+	for i := range writes {
 		err = dw.WriteRecord(committed.Record{
 			Key:   []byte(keys[i]),
 			Value: []byte("some-data"),
@@ -141,7 +141,7 @@ func TestWriterAbortAfterClose(t *testing.T) {
 
 func randomStrings(writes int) []string {
 	var keys []string
-	for i := 0; i < writes; i++ {
+	for range writes {
 		keys = append(keys, randstr.String(20, "abcdefghijklmnopqrstuvwyz0123456789"))
 	}
 	return keys

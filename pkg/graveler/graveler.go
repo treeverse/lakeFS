@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -463,12 +464,7 @@ func (cp CommitParents) Identity() []byte {
 }
 
 func (cp CommitParents) Contains(commitID CommitID) bool {
-	for _, c := range cp {
-		if c == commitID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(cp, commitID)
 }
 
 func (cp CommitParents) AsStringSlice() []string {
@@ -1148,11 +1144,11 @@ type StagingManager interface {
 }
 
 // BranchLockerFunc callback function when branch is locked for operation (ex: writer or metadata updater)
-type BranchLockerFunc func() (interface{}, error)
+type BranchLockerFunc func() (any, error)
 
 type BranchLocker interface {
-	Writer(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockedFn BranchLockerFunc) (interface{}, error)
-	MetadataUpdater(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockeFn BranchLockerFunc) (interface{}, error)
+	Writer(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockedFn BranchLockerFunc) (any, error)
+	MetadataUpdater(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockeFn BranchLockerFunc) (any, error)
 }
 
 func (id RepositoryID) String() string {
@@ -3130,9 +3126,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 
 	// Ensure a copy of metadata: it will be modified to add the strategy key.
 	metadata := make(map[string]string, len(commitParams.Metadata)+1)
-	for k, v := range commitParams.Metadata {
-		metadata[k] = v
-	}
+	maps.Copy(metadata, commitParams.Metadata)
 
 	lg := g.log(ctx).WithFields(logging.Fields{
 		"repository":  repository.RepositoryID,

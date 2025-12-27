@@ -139,7 +139,7 @@ func doHTTPRequestWithLog(ctx context.Context, req *http.Request, buf *bytes.Buf
 
 // doHTTPRequestResponseWithLog execute a http request with specified timeout. Output variable 'respJSON', if set, used to json decode the response.
 // returns the response status code or -1 on error
-func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJSON interface{}, buf *bytes.Buffer, timeout time.Duration) (int, error) {
+func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJSON any, buf *bytes.Buffer, timeout time.Duration) (int, error) {
 	req = req.WithContext(ctx)
 
 	client := &http.Client{
@@ -172,7 +172,7 @@ func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJS
 	return resp.StatusCode, nil
 }
 
-func extractQueryParams(props map[string]interface{}, envGetter EnvGetter) (map[string][]SecureString, error) {
+func extractQueryParams(props map[string]any, envGetter EnvGetter) (map[string][]SecureString, error) {
 	params, ok := props[queryParamsPropertyKey]
 	if !ok {
 		return nil, nil
@@ -185,7 +185,7 @@ func extractQueryParams(props map[string]interface{}, envGetter EnvGetter) (map[
 
 	res := map[string][]SecureString{}
 	for k, v := range paramsMap {
-		if ar, ok := v.([]interface{}); ok {
+		if ar, ok := v.([]any); ok {
 			for _, v := range ar {
 				av, ok := v.(string)
 				if !ok {
@@ -214,7 +214,7 @@ func extractQueryParams(props map[string]interface{}, envGetter EnvGetter) (map[
 	return res, nil
 }
 
-func extractHeaders(props map[string]interface{}, envGetter EnvGetter) (map[string]SecureString, error) {
+func extractHeaders(props map[string]any, envGetter EnvGetter) (map[string]SecureString, error) {
 	params, ok := props[HeadersPropertyKey]
 	if !ok {
 		return map[string]SecureString{}, nil

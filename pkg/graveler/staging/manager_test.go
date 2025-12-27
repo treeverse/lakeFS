@@ -145,10 +145,10 @@ func TestDrop(t *testing.T) {
 }
 
 func setupDrop(ctx context.Context, t *testing.T, numOfValues int, s graveler.StagingManager) {
-	for i := 0; i < numOfValues; i++ {
-		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
+	for i := range numOfValues {
+		err := s.Set(ctx, "t1", fmt.Appendf(nil, "key%04d", i), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
 		testutil.Must(t, err)
-		err = s.Set(ctx, "t2", []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
+		err = s.Set(ctx, "t2", fmt.Appendf(nil, "key%04d", i), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
 		testutil.Must(t, err)
 	}
 }
@@ -318,8 +318,8 @@ func TestList(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
 		token := graveler.StagingToken(fmt.Sprintf("t_%d", numOfValues))
-		for i := 0; i < numOfValues; i++ {
-			err := s.Set(ctx, token, []byte(fmt.Sprintf("key%04d", i)), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
+		for i := range numOfValues {
+			err := s.Set(ctx, token, fmt.Appendf(nil, "key%04d", i), newTestValue(fmt.Sprintf("identity%d", i), fmt.Sprintf("value%d", i)), false)
 			testutil.Must(t, err)
 		}
 		res := make([]*graveler.ValueRecord, 0, numOfValues)
@@ -335,7 +335,7 @@ func TestList(t *testing.T) {
 			t.Errorf("got unexpected number of results. expected=%d, got=%d", numOfValues, len(res))
 		}
 		for i, e := range res {
-			if !bytes.Equal(e.Key, []byte(fmt.Sprintf("key%04d", i))) {
+			if !bytes.Equal(e.Key, fmt.Appendf(nil, "key%04d", i)) {
 				t.Fatalf("got unexpected key from List at index %d: expected: key%04d, got: %s", i, i, string(e.Key))
 			}
 			if string(e.Data) != fmt.Sprintf("value%d", i) {
@@ -348,8 +348,8 @@ func TestList(t *testing.T) {
 func TestSeek(t *testing.T) {
 	ctx, s := newTestStagingManager(t)
 	numOfValues := 100
-	for i := 0; i < numOfValues; i++ {
-		err := s.Set(ctx, "t1", []byte(fmt.Sprintf("key%04d", i)), newTestValue("identity1", "value1"), false)
+	for i := range numOfValues {
+		err := s.Set(ctx, "t1", fmt.Appendf(nil, "key%04d", i), newTestValue("identity1", "value1"), false)
 		testutil.Must(t, err)
 	}
 	it := s.List(ctx, "t1", 0)

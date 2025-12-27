@@ -29,13 +29,13 @@ var branchListCmd = &cobra.Command{
 		}
 
 		refs := resp.JSON200.Results
-		rows := make([][]interface{}, len(refs))
+		rows := make([][]any, len(refs))
 		for i, row := range refs {
-			rows[i] = []interface{}{row.Id, row.CommitId}
+			rows[i] = []any{row.Id, row.CommitId}
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Branch", "Commit ID"}, &pagination, amount)
+		PrintTable(rows, []any{"Branch", "Commit ID"}, &pagination, amount)
 	},
 }
 

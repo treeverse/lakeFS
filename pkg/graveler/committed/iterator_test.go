@@ -23,7 +23,7 @@ func mustMarshalRange(rng committed.Range) []byte {
 
 func makeValueBytesForRangeKey(key graveler.Key, idx int) []byte {
 	return committed.MustMarshalValue(&graveler.Value{
-		Identity: []byte(fmt.Sprintf("%s:%d", key, idx)),
+		Identity: fmt.Appendf(nil, "%s:%d", key, idx),
 		Data:     mustMarshalRange(committed.Range{ID: ""}),
 	})
 }

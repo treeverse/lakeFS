@@ -51,29 +51,6 @@ func (mr *MockDriverMockRecorder) Open(ctx, params interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockDriver)(nil).Open), ctx, params)
 }
 
-// MockPredicate is a mock of Predicate interface.
-type MockPredicate struct {
-	ctrl     *gomock.Controller
-	recorder *MockPredicateMockRecorder
-}
-
-// MockPredicateMockRecorder is the mock recorder for MockPredicate.
-type MockPredicateMockRecorder struct {
-	mock *MockPredicate
-}
-
-// NewMockPredicate creates a new mock instance.
-func NewMockPredicate(ctrl *gomock.Controller) *MockPredicate {
-	mock := &MockPredicate{ctrl: ctrl}
-	mock.recorder = &MockPredicateMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPredicate) EXPECT() *MockPredicateMockRecorder {
-	return m.recorder
-}
-
 // MockStore is a mock of Store interface.
 type MockStore struct {
 	ctrl     *gomock.Controller

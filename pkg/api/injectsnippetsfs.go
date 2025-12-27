@@ -101,4 +101,4 @@ func (s *memFileFileInfo) Size() int64        { return int64(len(s.file.data)) }
 func (s *memFileFileInfo) Mode() fs.FileMode  { return fs.ModeTemporary }
 func (s *memFileFileInfo) ModTime() time.Time { return time.Time{} }
 func (s *memFileFileInfo) IsDir() bool        { return false }
-func (s *memFileFileInfo) Sys() interface{}   { return nil }
+func (s *memFileFileInfo) Sys() any           { return nil }

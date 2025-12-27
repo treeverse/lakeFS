@@ -751,7 +751,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 		test.RefManager.EXPECT().GetCommit(gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(&graveler.Commit{}, nil)
 		test.CommittedManager.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(cUtils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
 	}
-	for i := 0; i < numBranches; i++ {
+	for i := range numBranches {
 		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
 		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
 		branch := &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}}
@@ -768,7 +768,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 
 		records[i] = make([]*graveler.ValueRecord, 0, numRecords)
 		diffs[i] = make([]graveler.Diff, 0, numRecords)
-		for j := 0; j < numRecords; j++ {
+		for j := range numRecords {
 			var (
 				addressType catalog.Entry_AddressType
 				address     string
@@ -830,13 +830,13 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 
 		// Add tombstone
 		records[i] = append(records[i], &graveler.ValueRecord{
-			Key:   []byte(fmt.Sprintf("%s_tombstone", branchID)),
+			Key:   []byte(branchID + "_tombstone"),
 			Value: nil,
 		})
 
 		diffs[i] = append(diffs[i], graveler.Diff{
 			Type: graveler.DiffTypeRemoved,
-			Key:  []byte(fmt.Sprintf("%s_tombstone", branchID)),
+			Key:  []byte(branchID + "_tombstone"),
 		})
 
 		// Add external address

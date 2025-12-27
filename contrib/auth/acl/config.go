@@ -43,7 +43,7 @@ func NewConfig() (*Config, error) {
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
-	keys := config.GetStructKeys(reflect.TypeOf(c), "mapstructure", "squash")
+	keys := config.GetStructKeys(reflect.TypeFor[*Config](), "mapstructure", "squash")
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}

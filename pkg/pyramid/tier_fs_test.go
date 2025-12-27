@@ -182,7 +182,7 @@ func testEviction(t *testing.T, namespaces ...string) {
 	numFiles := 5 * allocatedDiskBytes / fileBytes
 	// write
 	content := make([]byte, fileBytes)
-	for i := 0; i < numFiles; i++ {
+	for i := range numFiles {
 		filename := "file_" + strconv.Itoa(i)
 		_, err := rand.Read(content)
 		if err != nil {
@@ -192,7 +192,7 @@ func testEviction(t *testing.T, namespaces ...string) {
 	}
 
 	// read
-	for i := 0; i < numFiles; i++ {
+	for i := range numFiles {
 		filename := "file_" + strconv.Itoa(i)
 
 		f, err := fs.Open(ctx, "", namespaces[i%len(namespaces)], filename)
@@ -230,7 +230,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	adapter.wait = make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(concurrencyLevel)
-	for i := 0; i < concurrencyLevel; i++ {
+	for range concurrencyLevel {
 		go func() {
 			defer wg.Done()
 			_ = checkContent(t, ctx, config.SingleBlockstoreID, namespace, filename, content)

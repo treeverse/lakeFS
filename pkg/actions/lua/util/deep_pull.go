@@ -44,7 +44,7 @@ func PullStringTable(l *lua.State, idx int) (map[string]string, error) {
 	return table, nil
 }
 
-func PullTable(l *lua.State, idx int) (interface{}, error) {
+func PullTable(l *lua.State, idx int) (any, error) {
 	if !l.IsTable(idx) {
 		return nil, fmt.Errorf("need a table at index %d, got %s: %w", idx, lua.TypeNameOf(l, idx), ErrCannotPull)
 	}
@@ -52,7 +52,7 @@ func PullTable(l *lua.State, idx int) (interface{}, error) {
 	return pullTableRec(l, idx)
 }
 
-func pullTableRec(l *lua.State, idx int) (interface{}, error) {
+func pullTableRec(l *lua.State, idx int) (any, error) {
 	if !l.CheckStack(2) {
 		return nil, ErrStackExhausted
 	}
@@ -62,7 +62,7 @@ func pullTableRec(l *lua.State, idx int) (interface{}, error) {
 		return pullArrayRec(l, idx)
 	}
 
-	table := make(map[string]interface{})
+	table := make(map[string]any)
 
 	l.PushNil()
 	for l.Next(idx) {
@@ -111,8 +111,8 @@ func isArray(l *lua.State, idx int) bool {
 	return l.ToBoolean(-1)
 }
 
-func pullArrayRec(l *lua.State, idx int) (interface{}, error) {
-	table := make([]interface{}, lua.LengthEx(l, idx))
+func pullArrayRec(l *lua.State, idx int) (any, error) {
+	table := make([]any, lua.LengthEx(l, idx))
 
 	l.PushNil()
 	for l.Next(idx) {
@@ -135,7 +135,7 @@ func pullArrayRec(l *lua.State, idx int) (interface{}, error) {
 	return table, nil
 }
 
-func toGoValue(l *lua.State, idx int) (interface{}, error) {
+func toGoValue(l *lua.State, idx int) (any, error) {
 	t := l.TypeOf(idx)
 	switch t {
 	case lua.TypeBoolean:

@@ -72,7 +72,7 @@ func parseFlags() (*config, error) {
 	if typesArg == "" {
 		return nil, errNoTypes
 	}
-	for _, t := range strings.Split(typesArg, ",") {
+	for t := range strings.SplitSeq(typesArg, ",") {
 		name := strings.TrimSpace(t)
 		if name != "" {
 			cfg.types = append(cfg.types, name)

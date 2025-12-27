@@ -16,7 +16,7 @@ func TestComposeAll(t *testing.T) {
 		t.Run("compose_"+strconv.Itoa(numberOfParts), func(t *testing.T) {
 			// prepare data
 			parts := make([]string, numberOfParts)
-			for i := 0; i < numberOfParts; i++ {
+			for i := range numberOfParts {
 				parts[i] = fmt.Sprintf("part%d", i)
 			}
 

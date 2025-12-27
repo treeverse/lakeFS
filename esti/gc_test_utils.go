@@ -36,7 +36,7 @@ func getDockerArgs(workingDirectory string, localJar string) []string {
 
 // handlePipe calls log on each line of pipe, and writes nil or an error to
 // ch when done.
-func handlePipe(pipe io.ReadCloser, log func(messages ...interface{}), ch chan<- error) {
+func handlePipe(pipe io.ReadCloser, log func(messages ...any), ch chan<- error) {
 	reader := bufio.NewReader(pipe)
 	go func() {
 		var err error
