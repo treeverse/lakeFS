@@ -19,7 +19,7 @@ func KeyGenerator(length int) string {
 		if err != nil {
 			continue // let's retry until we have enough entropy
 		}
-		for i := 0; i < length; i++ {
+		for i := range length {
 			c := bbuf[i]
 			b.WriteByte(AkiaAlphabet[int(c)%len(AkiaAlphabet)])
 		}

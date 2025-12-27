@@ -54,7 +54,7 @@ func prepareRequest(l *lua.State) *http.Request {
 		reqMethod  = http.MethodGet
 		reqURL     string
 		reqBody    io.Reader
-		reqHeaders map[string]interface{}
+		reqHeaders map[string]any
 	)
 	switch l.TypeOf(1) {
 	case lua.TypeString:
@@ -68,7 +68,7 @@ func prepareRequest(l *lua.State) *http.Request {
 		// extract request parameters from table
 		value, err := util.PullTable(l, 1)
 		check(l, err)
-		tbl := value.(map[string]interface{})
+		tbl := value.(map[string]any)
 		if s, ok := tbl["url"].(string); ok {
 			reqURL = s
 		}
@@ -79,7 +79,7 @@ func prepareRequest(l *lua.State) *http.Request {
 		if s, ok := tbl["method"].(string); ok {
 			reqMethod = s
 		}
-		if m, ok := tbl["headers"].(map[string]interface{}); ok {
+		if m, ok := tbl["headers"].(map[string]any); ok {
 			reqHeaders = m
 		}
 	default:
@@ -97,12 +97,12 @@ func prepareRequest(l *lua.State) *http.Request {
 }
 
 // requestAddHeader add headers to request. each table value can be single a string or array(table) of strings
-func requestAddHeader(reqHeaders map[string]interface{}, req *http.Request) {
+func requestAddHeader(reqHeaders map[string]any, req *http.Request) {
 	for k, v := range reqHeaders {
 		switch vv := v.(type) {
 		case string:
 			req.Header.Add(k, vv)
-		case map[string]interface{}:
+		case map[string]any:
 			for _, val := range vv {
 				if s, ok := val.(string); ok {
 					req.Header.Add(k, s)
@@ -114,7 +114,7 @@ func requestAddHeader(reqHeaders map[string]interface{}, req *http.Request) {
 
 // pushResponseHeader response headers as table. the result table will include single value or table of values for multiple values
 func pushResponseHeader(l *lua.State, header http.Header) {
-	m := make(map[string]interface{}, len(header))
+	m := make(map[string]any, len(header))
 	for k, v := range header {
 		if len(v) == 1 {
 			m[k] = v[0]

@@ -26,12 +26,12 @@ import (
 //	|                          |
 //	| []t                      | table with array properties, with `t`
 //	|                          | values recursively resolved
-func DeepPush(l *lua.State, v interface{}) int {
+func DeepPush(l *lua.State, v any) int {
 	forwardOnType(l, v)
 	return 1
 }
 
-func forwardOnType(l *lua.State, val interface{}) {
+func forwardOnType(l *lua.State, val any) {
 	switch val := val.(type) {
 	case nil:
 		l.PushNil()
@@ -79,10 +79,10 @@ func forwardOnType(l *lua.State, val interface{}) {
 	}
 }
 
-func forwardOnReflect(l *lua.State, val interface{}) {
+func forwardOnReflect(l *lua.State, val any) {
 	switch v := reflect.ValueOf(val); v.Kind() {
 	case reflect.Array, reflect.Slice:
-		recurseOnFuncSlice(l, func(i int) interface{} { return v.Index(i).Interface() }, v.Len())
+		recurseOnFuncSlice(l, func(i int) any { return v.Index(i).Interface() }, v.Len())
 
 	case reflect.Map:
 		l.CreateTable(0, v.Len())
@@ -102,10 +102,10 @@ func forwardOnReflect(l *lua.State, val interface{}) {
 
 // the hack of using a func(int)interface{} makes it that it is valid for any
 // type of slice
-func recurseOnFuncSlice(l *lua.State, input func(int) interface{}, n int) {
+func recurseOnFuncSlice(l *lua.State, input func(int) any, n int) {
 	l.CreateTable(n, 0)
 	luaArray(l)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		forwardOnType(l, input(i))
 		l.RawSetInt(-2, i+1)
 	}

@@ -137,7 +137,7 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, map[string]string{}, true)
 	ctx := t.Context()
 	principalId := "arn"
-	externalLoginInfo := map[string]interface{}{"IdentityToken": "Token"}
+	externalLoginInfo := map[string]any{"IdentityToken": "Token"}
 
 	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
 		&apiclient.ExternalPrincipalLoginResponse{

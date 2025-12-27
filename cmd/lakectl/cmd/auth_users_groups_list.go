@@ -29,14 +29,14 @@ var authUsersGroupsList = &cobra.Command{
 		}
 
 		groups := resp.JSON200.Results
-		rows := make([][]interface{}, len(groups))
+		rows := make([][]any, len(groups))
 		for i, group := range groups {
 			ts := time.Unix(group.CreationDate, 0).String()
-			rows[i] = []interface{}{group.Id, ts}
+			rows[i] = []any{group.Id, ts}
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []any{"Group ID", "Creation Date"}, &pagination, amount)
 	},
 }
 

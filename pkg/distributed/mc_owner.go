@@ -283,7 +283,7 @@ func (w *MostlyCorrectOwner) releaseIf(ctx context.Context, owner string, prefix
 // identify the owner uniquely.
 func (w *MostlyCorrectOwner) Own(ctx context.Context, owner, key string) (func(), error) {
 	owner = fmt.Sprintf("%s#%s", owner, nanoid.Must())
-	prefixedKey := []byte(fmt.Sprintf("%s/%s", w.Prefix, key))
+	prefixedKey := fmt.Appendf(nil, "%s/%s", w.Prefix, key)
 	err := w.startOwningKey(ctx, owner, prefixedKey)
 	if err != nil {
 		return nil, fmt.Errorf("start owning %s for %s: %w", owner, key, err)

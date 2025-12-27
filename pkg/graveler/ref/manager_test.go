@@ -675,9 +675,7 @@ func TestManager_ListBranches(t *testing.T) {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
 	visibleBranches = append(visibleBranches, "main")
-	sort.Slice(visibleBranches, func(i, j int) bool {
-		return visibleBranches[i] < visibleBranches[j]
-	})
+	slices.Sort(visibleBranches)
 	if !reflect.DeepEqual(bvs, visibleBranches) {
 		t.Fatalf("unexpected branch list: %v", bvs)
 	}
@@ -698,9 +696,7 @@ func TestManager_ListBranches(t *testing.T) {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
 	allBranches = append(allBranches, "main")
-	sort.Slice(allBranches, func(i, j int) bool {
-		return allBranches[i] < allBranches[j]
-	})
+	slices.Sort(allBranches)
 	if !reflect.DeepEqual(bs, allBranches) {
 		t.Fatalf("unexpected branch list: %v", bs)
 	}

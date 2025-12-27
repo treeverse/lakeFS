@@ -49,15 +49,15 @@ func EncodePath(pathName string) string {
 	if reservedObjectNames.MatchString(pathName) {
 		return pathName
 	}
-	var encodedPathname string
+	var encodedPathname strings.Builder
 	for _, s := range pathName {
 		if 'A' <= s && s <= 'Z' || 'a' <= s && s <= 'z' || '0' <= s && s <= '9' { // §2.3 Unreserved characters (mark)
-			encodedPathname += string(s)
+			encodedPathname.WriteString(string(s))
 			continue
 		}
 		switch s {
 		case '-', '_', '.', '~', '/': // §2.3 Unreserved characters (mark)
-			encodedPathname += string(s)
+			encodedPathname.WriteString(string(s))
 			continue
 		default:
 			runeLen := utf8.RuneLen(s)
@@ -69,11 +69,11 @@ func EncodePath(pathName string) string {
 			utf8.EncodeRune(u, s)
 			for _, r := range u {
 				h := hex.EncodeToString([]byte{r})
-				encodedPathname += "%" + strings.ToUpper(h)
+				encodedPathname.WriteString("%" + strings.ToUpper(h))
 			}
 		}
 	}
-	return encodedPathname
+	return encodedPathname.String()
 }
 
 type SigContext interface {

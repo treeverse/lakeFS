@@ -38,16 +38,16 @@ var usageSummaryCmd = &cobra.Command{
 		}{
 			InstallationID: summary.InstallationId,
 			Reports: &Table{
-				Headers: []interface{}{
+				Headers: []any{
 					"Year",
 					"Month",
 					"Usage",
 				},
-				Rows: make([][]interface{}, 0, len(summary.Reports)),
+				Rows: make([][]any, 0, len(summary.Reports)),
 			},
 		}
 		for _, report := range summary.Reports {
-			data.Reports.Rows = append(data.Reports.Rows, []interface{}{
+			data.Reports.Rows = append(data.Reports.Rows, []any{
 				report.Year,
 				report.Month,
 				report.Count,
