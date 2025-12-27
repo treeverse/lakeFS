@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+*.build
+
+# Test coverage
+coverage
+
+# Generated files
+content.go
+
+# Lock files
+package-lock.json
+yarn.lock
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# Misc
+pub/
