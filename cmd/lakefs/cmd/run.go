@@ -167,7 +167,7 @@ var runCmd = &cobra.Command{
 			Config:                  cfg,
 			KVStore:                 kvStore,
 			PathProvider:            upload.DefaultPathProvider,
-			ConflictResolvers:       catalogfactory.BuildConflictResolvers(cfg, blockStore),
+			ConflictResolvers:       catalogfactory.BuildConflictResolvers(ctx, cfg, blockStore),
 			ErrorToStatusCodeAndMsg: api.ErrorToStatusAndMsg,
 		}
 
