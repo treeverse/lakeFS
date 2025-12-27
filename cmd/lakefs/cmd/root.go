@@ -82,12 +82,10 @@ func newConfig() (config.Config, error) {
 			os.Exit(1)
 		} else if res {
 			configName = flagName
+			// Print a warning for using local configuration
+			printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", configName))
 			break
 		}
-	}
-	// Print a warning if the configuration flag is set as we use a local configuration.
-	if configName != "" {
-		printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", configName))
 	}
 
 	cfg, err := configfactory.BuildConfig(configName)
