@@ -1393,11 +1393,7 @@ const ObjectsBrowser = ({ config }) => {
                 enabled={hasChanges && !repo?.read_only} 
                 onCommit={async (commitDetails, done) => {
                   try {
-                    const { message, metadata } = commitDetails;
-                    await pluginManager.commitOperation.commit(repo.id, reference.id, {
-                      message,
-                      metadata
-                    });
+                    await pluginManager.commitOperation.commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata);
                     setActionError(null);
                     
                     // Reset to normal view after commit

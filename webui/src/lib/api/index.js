@@ -959,18 +959,14 @@ class Commits {
         return response.json();
     }
 
-    async commitAsync(repoId, branchId, message, metadata = {}, date = null, allowEmpty = false, force = false, sourceMetarange = null) {
-        const query = sourceMetarange ? qs({source_metarange: sourceMetarange}) : '';
+    async commitAsync(repoId, branchId, message, metadata = {}) {
         const body = {
             message,
-            metadata,
-            allow_empty: allowEmpty,
-            force,
-            ...(date !== null && { date })
+            metadata
         };
 
         const response = await apiRequest(
-            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async${query ? '?' + query : ''}`,
+            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async`,
             {
                 method: 'POST',
                 body: JSON.stringify(body),
@@ -1034,14 +1030,11 @@ class Refs {
         }
     }
 
-    async mergeAsync(repoId, sourceRef, destinationBranch, strategy = "", message = "", metadata = {}, force = false, allowEmpty = false, squashMerge = false) {
+    async mergeAsync(repoId, sourceRef, destinationBranch, strategy = "", message = "", metadata = {}) {
         const body = {
             strategy,
             message,
-            metadata,
-            force,
-            allow_empty: allowEmpty,
-            squash_merge: squashMerge
+            metadata
         };
 
         const response = await apiRequest(

@@ -1,6 +1,5 @@
 import { commits } from "../../../lib/api";
 import {
-    CommitParams,
     CommitResult,
     PluginCommitOperation
 } from "../pluginCommitOperation";
@@ -9,13 +8,9 @@ class SyncCommitPlugin implements PluginCommitOperation {
     async commit(
         repoId: string,
         branchId: string,
-        params: CommitParams
+        message: string,
+        metadata?: { [key: string]: string }
     ): Promise<CommitResult> {
-        const message = params.message || undefined;
-        const metadata = params.metadata && Object.keys(params.metadata).length > 0
-            ? params.metadata
-            : undefined;
-
         return await commits.commit(
             repoId,
             branchId,
