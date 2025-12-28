@@ -10,10 +10,7 @@ import { commits as commitsAPI, branches as branchesAPI } from "../../../../lib/
 import { AlertError, Loading } from "../../../../lib/components/controls";
 import { ConfirmationModal } from "../../../../lib/components/modals";
 import { MetadataFields } from "../../../../lib/components/repository/metadata";
-import {
-    getMetadataIfValid,
-    touchInvalidFields,
-} from "../../../../lib/components/repository/metadataHelpers";
+import { getMetadataIfValid, touchInvalidFields } from "../../../../lib/components/repository/metadataHelpers";
 import { useRefs } from "../../../../lib/hooks/repo";
 import { useRouter } from "../../../../lib/hooks/router";
 import { RepoError } from "../error";
@@ -42,9 +39,7 @@ const RevertPreviewPage = () => {
             try {
                 setCommitsLoading(true);
                 const commitIds = commitsParam.split(",");
-                const details = await Promise.all(
-                    commitIds.map((id) => commitsAPI.get(repo.id, id)),
-                );
+                const details = await Promise.all(commitIds.map((id) => commitsAPI.get(repo.id, id)));
                 setCommitDetails(details);
 
                 // Generate default commit message for single commit only
@@ -143,15 +138,12 @@ const RevertPreviewPage = () => {
             </p>
             <p>
                 This will create <strong>{commitIds.length}</strong> new revert commit
-                {commitIds.length > 1 ? "s" : ""} on branch <strong>{branchId}</strong>, reversing
-                the changes from the selected commits in order.
+                {commitIds.length > 1 ? "s" : ""} on branch <strong>{branchId}</strong>, reversing the changes from the
+                selected commits in order.
             </p>
             {commitIds.length > 1 && (
                 <p className="text-muted mb-0">
-                    <small>
-                        Each revert commit will have a default message: &quot;Revert
-                        &lt;commit-id&gt;&quot;
-                    </small>
+                    <small>Each revert commit will have a default message: &quot;Revert &lt;commit-id&gt;&quot;</small>
                 </p>
             )}
         </>
@@ -204,10 +196,7 @@ const RevertPreviewPage = () => {
                             </Form.Text>
                         </Form.Group>
 
-                        <MetadataFields
-                            metadataFields={metadataFields}
-                            setMetadataFields={setMetadataFields}
-                        />
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
                     </Card.Body>
                 </Card>
             )}
@@ -227,8 +216,7 @@ const RevertPreviewPage = () => {
                             onChange={(e) => setAllowEmpty(e.target.checked)}
                         />
                         <Form.Text className="text-muted">
-                            Check this if the revert produces no changes (e.g., the commit was
-                            already reverted).
+                            Check this if the revert produces no changes (e.g., the commit was already reverted).
                         </Form.Text>
                     </Form.Group>
                 </Card.Body>

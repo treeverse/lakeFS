@@ -8,22 +8,13 @@ import Accordion from "react-bootstrap/Accordion";
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
-export const RepositoryCreateForm = ({
-    formID,
-    config,
-    onSubmit,
-    formValid,
-    setFormValid,
-    error = null,
-}) => {
+export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setFormValid, error = null }) => {
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
 
     const [repoValid, setRepoValid] = useState(null);
     const defaultNamespacePrefix = config.default_namespace_prefix;
 
-    const [storageNamespaceValid, setStorageNamespaceValid] = useState(
-        defaultNamespacePrefix ? true : null,
-    );
+    const [storageNamespaceValid, setStorageNamespaceValid] = useState(defaultNamespacePrefix ? true : null);
     const [defaultBranchValid, setDefaultBranchValid] = useState(true);
     const [addSampleData, setAddSampleData] = useState(false);
 
@@ -36,21 +27,16 @@ export const RepositoryCreateForm = ({
         setRepoValid(isRepoValid);
         setFormValid(isRepoValid && storageNamespaceValid && defaultBranchValid);
         if (defaultNamespacePrefix) {
-            storageNamespaceField.current.value =
-                defaultNamespacePrefix + repoNameField.current.value;
+            storageNamespaceField.current.value = defaultNamespacePrefix + repoNameField.current.value;
             checkStorageNamespaceValidity();
         }
     };
 
     const checkStorageNamespaceValidity = () => {
-        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(
-            storageNamespaceField.current.value,
-        );
+        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(storageNamespaceField.current.value);
         setStorageNamespaceValid(isStorageNamespaceValid);
         setFormValid(
-            isStorageNamespaceValid &&
-                defaultBranchValid &&
-                repoValidityRegex.test(repoNameField.current.value),
+            isStorageNamespaceValid && defaultBranchValid && repoValidityRegex.test(repoNameField.current.value),
         );
     };
 
@@ -65,9 +51,7 @@ export const RepositoryCreateForm = ({
         ? config.blockstore_namespace_ValidityRegex
         : DEFAULT_BLOCKSTORE_VALIDITY_REGEX;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
-    const storageNamespaceExample = config
-        ? config.blockstore_namespace_example
-        : DEFAULT_BLOCKSTORE_EXAMPLE;
+    const storageNamespaceExample = config ? config.blockstore_namespace_example : DEFAULT_BLOCKSTORE_EXAMPLE;
 
     useEffect(() => {
         if (repoNameField.current) {
@@ -112,8 +96,7 @@ export const RepositoryCreateForm = ({
                 </FloatingLabel>
                 {repoValid === false && (
                     <Form.Text className="text-danger">
-                        The repository ID must be 3-63 lowercase alphanumeric characters or hyphens{" "}
-                        {"'-'"}.
+                        The repository ID must be 3-63 lowercase alphanumeric characters or hyphens {"'-'"}.
                     </Form.Text>
                 )}
             </Form.Group>
@@ -134,9 +117,7 @@ export const RepositoryCreateForm = ({
                         onChange={checkDefaultBranchValidity}
                     />
                 </FloatingLabel>
-                {defaultBranchValid === false && (
-                    <Form.Text className="text-danger">Invalid Branch.</Form.Text>
-                )}
+                {defaultBranchValid === false && <Form.Text className="text-danger">Invalid Branch.</Form.Text>}
             </Form.Group>
             <Form.Group className="mt-3">
                 <FloatingLabel label="Storage Namespace" controlId="storageNamespaceCtrl">

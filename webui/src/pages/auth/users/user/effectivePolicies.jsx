@@ -61,8 +61,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
                     <p>
                         <small>
                             <strong>
-                                All policies attached to this user, through direct attachment or via
-                                group memberships
+                                All policies attached to this user, through direct attachment or via group memberships
                             </strong>
                         </small>
                     </p>

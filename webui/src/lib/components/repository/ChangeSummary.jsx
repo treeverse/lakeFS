@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-    ClockIcon,
-    DiffAddedIcon,
-    DiffIgnoredIcon,
-    DiffModifiedIcon,
-    DiffRemovedIcon,
-} from "@primer/octicons-react";
+import { ClockIcon, DiffAddedIcon, DiffIgnoredIcon, DiffModifiedIcon, DiffRemovedIcon } from "@primer/octicons-react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { humanSize } from "./tree";
 
@@ -46,11 +40,7 @@ export default ({ prefix, getMore }) => {
     useEffect(() => {
         const calculateChanges = async () => {
             // get pages until reaching the max change size
-            if (
-                resultsState.results &&
-                resultsState.results.length >= MAX_NUM_OBJECTS &&
-                !pullMore
-            ) {
+            if (resultsState.results && resultsState.results.length >= MAX_NUM_OBJECTS && !pullMore) {
                 setLoading(false);
                 return;
             }
@@ -96,8 +86,7 @@ export default ({ prefix, getMore }) => {
                 overlay={
                     <Tooltip>
                         <span className={"small font-weight-bold"}>
-                            Can&apos;t show summary for a change with more than {MAX_NUM_OBJECTS}{" "}
-                            objects
+                            Can&apos;t show summary for a change with more than {MAX_NUM_OBJECTS} objects
                         </span>
                     </Tooltip>
                 }
@@ -120,34 +109,26 @@ export default ({ prefix, getMore }) => {
             <div className="m-1 small text-start">
                 {summaryData.added.count > 0 && (
                     <>
-                        <span className={"color-fg-added"}>
-                            {summaryData.added.count.toLocaleString()}
-                        </span>{" "}
-                        objects added (total {humanSize(summaryData.added.sizeBytes)})<br />
+                        <span className={"color-fg-added"}>{summaryData.added.count.toLocaleString()}</span> objects
+                        added (total {humanSize(summaryData.added.sizeBytes)})<br />
                     </>
                 )}
                 {summaryData.removed.count > 0 && (
                     <>
-                        <span className={"color-fg-removed"}>
-                            {summaryData.removed.count.toLocaleString()}
-                        </span>{" "}
-                        objects removed (total {humanSize(summaryData.removed.sizeBytes)})<br />
+                        <span className={"color-fg-removed"}>{summaryData.removed.count.toLocaleString()}</span> objects
+                        removed (total {humanSize(summaryData.removed.sizeBytes)})<br />
                     </>
                 )}
                 {summaryData.changed.count > 0 && (
                     <>
-                        <span className={"color-fg-changed"}>
-                            {summaryData.changed.count.toLocaleString()}
-                        </span>{" "}
-                        objects changed
+                        <span className={"color-fg-changed"}>{summaryData.changed.count.toLocaleString()}</span> objects
+                        changed
                         <br />
                     </>
                 )}
                 {summaryData.conflict.count > 0 && (
                     <>
-                        <span className={"color-fg-conflict"}>
-                            {summaryData.conflict.count.toLocaleString()}
-                        </span>{" "}
+                        <span className={"color-fg-conflict"}>{summaryData.conflict.count.toLocaleString()}</span>{" "}
                         conflicts
                         <br />
                     </>

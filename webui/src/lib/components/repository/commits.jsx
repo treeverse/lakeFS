@@ -2,10 +2,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import { ClipboardButton, LinkButton } from "../controls";
 import { BrowserIcon, LinkIcon, PackageIcon, PlayIcon } from "@primer/octicons-react";
 import Table from "react-bootstrap/Table";
-import {
-    MetadataRow,
-    MetadataUIButton,
-} from "../../../pages/repositories/repository/commits/commit/metadata";
+import { MetadataRow, MetadataUIButton } from "../../../pages/repositories/repository/commits/commit/metadata";
 import { Link } from "../nav";
 import dayjs from "dayjs";
 import Card from "react-bootstrap/Card";
@@ -39,11 +36,7 @@ const CommitActions = ({ repo, commit }) => {
                 >
                     <PlayIcon />
                 </LinkButton>
-                <ClipboardButton
-                    variant={buttonVariant}
-                    text={commit.id}
-                    tooltip="Copy ID to clipboard"
-                />
+                <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="Copy ID to clipboard" />
                 <ClipboardButton
                     variant={buttonVariant}
                     text={`lakefs://${repo.id}/${commit.id}`}
@@ -167,11 +160,7 @@ const CommitInfo = ({ repo, commit }) => {
 };
 
 export const CommitMessage = ({ commit }) =>
-    commit.message?.length ? (
-        <span>{commit.message}</span>
-    ) : (
-        <span className="text-muted">(No commit message)</span>
-    );
+    commit.message?.length ? <span>{commit.message}</span> : <span className="text-muted">(No commit message)</span>;
 
 export const CommitInfoCard = ({ repo, commit, bare = false }) => {
     const content = (

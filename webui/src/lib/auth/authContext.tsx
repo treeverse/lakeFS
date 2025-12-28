@@ -1,12 +1,4 @@
-import React, {
-    createContext,
-    useContext,
-    useMemo,
-    useState,
-    ReactNode,
-    useCallback,
-    useEffect,
-} from "react";
+import React, { createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api";
 import { getCurrentRelativeUrl, isPublicAuthRoute, ROUTES } from "../utils";

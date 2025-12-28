@@ -86,9 +86,7 @@ const RunSummary = ({ repo, run }) => {
                     <td>
                         <strong>Start Time</strong>
                     </td>
-                    <td>
-                        {!run.start_time ? <Na /> : <FormattedDate dateValue={run.start_time} />}
-                    </td>
+                    <td>{!run.start_time ? <Na /> : <FormattedDate dateValue={run.start_time} />}</td>
                 </tr>
                 <tr>
                     <td>
@@ -139,11 +137,7 @@ const HookLog = ({ repo, run, execution }) => {
                     }}
                     disabled={execution.status === "skipped"}
                 >
-                    {expanded ? (
-                        <ChevronDownIcon size="small" />
-                    ) : (
-                        <ChevronRightIcon size="small" />
-                    )}
+                    {expanded ? <ChevronDownIcon size="small" /> : <ChevronRightIcon size="small" />}
                 </Button>{" "}
                 <ActionStatusIcon status={execution.status} /> {execution.hook_id}
                 <small>{duration}</small>
@@ -158,12 +152,7 @@ const ExecutionsExplorer = ({ repo, run, executions }) => {
     return (
         <div className="hook-logs">
             {executions.map((exec) => (
-                <HookLog
-                    key={`${exec.hook_id}-${exec.hook_run_id}`}
-                    repo={repo}
-                    run={run}
-                    execution={exec}
-                />
+                <HookLog key={`${exec.hook_id}-${exec.hook_run_id}`} repo={repo} run={run} execution={exec} />
             ))}
         </div>
     );
@@ -206,11 +195,7 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
 
                     <ListGroup>
                         {actions.map((actionName) => (
-                            <ListGroup.Item
-                                action
-                                key={actionName}
-                                onClick={() => onSelectAction(actionName)}
-                            >
+                            <ListGroup.Item action key={actionName} onClick={() => onSelectAction(actionName)}>
                                 <PlayIcon /> {actionName}
                             </ListGroup.Item>
                         ))}
@@ -224,10 +209,7 @@ const ActionBrowser = ({ repo, run, hooks, onSelectAction, selectedAction = null
 
 const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
     const { response, error, loading } = useAPI(async () => {
-        const [run, hooks] = await Promise.all([
-            actions.getRun(repo.id, runId),
-            actions.listRunHooks(repo.id, runId),
-        ]);
+        const [run, hooks] = await Promise.all([actions.getRun(repo.id, runId), actions.listRunHooks(repo.id, runId)]);
         return { run, hooks };
     }, [repo.id, runId]);
 

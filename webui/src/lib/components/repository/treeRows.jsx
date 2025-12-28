@@ -77,12 +77,7 @@ export const ObjectTreeEntryRow = ({
     const rowActions = [];
     if (onClickExpandDiff) {
         rowActions.push(
-            new RowAction(
-                null,
-                null,
-                diffExpanded ? "Hide object changes" : "Show object changes",
-                onClickExpandDiff,
-            ),
+            new RowAction(null, null, diffExpanded ? "Hide object changes" : "Show object changes", onClickExpandDiff),
         );
     }
     if (onRevert) {
@@ -129,11 +124,8 @@ export const PrefixTreeEntryRow = ({
     }
     const rowActions = [];
     rowActions.push(
-        new RowAction(
-            null,
-            null,
-            showSummary ? "Hide change summary" : "Calculate change summary",
-            () => setShowSummary(!showSummary),
+        new RowAction(null, null, showSummary ? "Hide change summary" : "Calculate change summary", () =>
+            setShowSummary(!showSummary),
         ),
     );
     if (onRevert) {
@@ -193,9 +185,7 @@ const TableRow = ({
             <td className="tree-path">
                 <span style={{ marginLeft: depth * 20 + "px" }}>
                     {pathSection}
-                    {onExpand && (
-                        <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand} />
-                    )}
+                    {onExpand && <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand} />}
                     {loading ? <ClockIcon /> : ""}
                 </span>
             </td>
@@ -277,10 +267,7 @@ export const DiffIndicationIcon = ({ entry, rowType }) => {
     }
 
     return (
-        <OverlayTrigger
-            placement="bottom"
-            overlay={<Tooltip id={tooltipId}>{tooltipText}</Tooltip>}
-        >
+        <OverlayTrigger placement="bottom" overlay={<Tooltip id={tooltipId}>{tooltipText}</Tooltip>}>
             <span>{diffIcon}</span>
         </OverlayTrigger>
     );

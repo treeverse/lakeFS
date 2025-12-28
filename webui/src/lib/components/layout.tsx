@@ -11,10 +11,7 @@ const Layout: FC = () => {
 
     const { state } = useContext(AppContext);
     useEffect(() => {
-        document.documentElement.setAttribute(
-            "data-bs-theme",
-            state.settings.darkMode ? "dark" : "light",
-        );
+        document.documentElement.setAttribute("data-bs-theme", state.settings.darkMode ? "dark" : "light");
     }, [state.settings.darkMode]);
 
     return (

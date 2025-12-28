@@ -21,9 +21,7 @@ export const ROUTES = {
 } as const;
 
 export const isPublicAuthRoute = (path: string) =>
-    path === ROUTES.LOGIN ||
-    path.startsWith(ROUTES.OIDC_PREFIX) ||
-    path.startsWith(ROUTES.SAML_PREFIX);
+    path === ROUTES.LOGIN || path.startsWith(ROUTES.OIDC_PREFIX) || path.startsWith(ROUTES.SAML_PREFIX);
 
 export const getCurrentRelativeUrl = () =>
     window.location.pathname + (window.location.search || "") + (window.location.hash || "");

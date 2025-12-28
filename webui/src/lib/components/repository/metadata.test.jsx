@@ -21,11 +21,7 @@ const MetadataFieldsWrapper = ({ initialFields }) => {
 
 describe("MetadataFields validation flow", () => {
     it("does not show error when key is valid", () => {
-        render(
-            <MetadataFieldsWrapper
-                initialFields={[{ key: "environment", value: "prod", touched: false }]}
-            />,
-        );
+        render(<MetadataFieldsWrapper initialFields={[{ key: "environment", value: "prod", touched: false }]} />);
 
         expect(screen.queryByText("Key is required")).not.toBeInTheDocument();
     });

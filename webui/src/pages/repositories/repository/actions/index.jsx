@@ -123,15 +123,7 @@ const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onF
     );
 };
 
-const ActionsList = ({
-    repo,
-    after,
-    onPaginate,
-    branch,
-    commit,
-    onFilterBranch,
-    onFilterCommit,
-}) => {
+const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, onFilterCommit }) => {
     const [refresh, setRefresh] = useState(false);
     const { results, loading, error, nextPage } = useAPIWithPagination(async () => {
         return await actions.listRuns(repo.id, branch, commit, after);

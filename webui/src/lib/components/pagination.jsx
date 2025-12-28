@@ -9,11 +9,7 @@ export const Paginator = ({ onPaginate, nextPage = null, after = "" }) => {
             <Button variant="secondary" disabled={after === ""} onClick={() => onPaginate("")}>
                 Back to Start
             </Button>{" "}
-            <Button
-                variant="primary"
-                disabled={nextPage === null}
-                onClick={() => onPaginate(nextPage)}
-            >
+            <Button variant="primary" disabled={nextPage === null} onClick={() => onPaginate(nextPage)}>
                 Next Page
             </Button>
         </div>

@@ -63,8 +63,8 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                     <Card.Body>
                         {requireAdmin && (
                             <Card.Text>
-                                Please specify the name of the first admin account, or leave it as
-                                the default &apos;admin&apos;.
+                                Please specify the name of the first admin account, or leave it as the default
+                                &apos;admin&apos;.
                             </Card.Text>
                         )}
 
@@ -109,13 +109,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                             {!!setupError && <AlertError error={setupError} />}
                             <Button variant="primary" disabled={disabled} type="submit">
                                 {disabled ? (
-                                    <Spinner
-                                        as="span"
-                                        animation="border"
-                                        size="sm"
-                                        role="status"
-                                        aria-hidden="true"
-                                    />
+                                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
                                 ) : (
                                     "Setup"
                                 )}

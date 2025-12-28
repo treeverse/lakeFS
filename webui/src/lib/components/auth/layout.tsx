@@ -15,9 +15,7 @@ type AuthOutletContext = [(tab: string) => void];
 
 const rbacDismissedKey = "lakefs:ui:acl:dismissRBACAlert";
 export const AuthLayout = () => {
-    const [showRBACAlert, setShowRBACAlert] = useState(
-        !window.localStorage.getItem(rbacDismissedKey),
-    );
+    const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState("credentials");
     const { RBAC: rbac } = useLoginConfigContext();
 
@@ -36,15 +34,10 @@ export const AuthLayout = () => {
                             }}
                         >
                             <InfoIcon /> Enhance Your Security with{" "}
-                            <Alert.Link
-                                href={"https://docs.lakefs.io/reference/security/rbac.html"}
-                            >
+                            <Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>
                                 Role-Based Access Control
                             </Alert.Link>{" "}
-                            – Available on{" "}
-                            <Alert.Link href={"https://lakefs.cloud/register"}>
-                                lakeFS Cloud
-                            </Alert.Link>{" "}
+                            – Available on <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link>{" "}
                             and{" "}
                             <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>
                                 lakeFS Enterprise
@@ -112,19 +105,12 @@ export const AuthLayout = () => {
                                     <InfoIcon /> <b>Role-based access control not configured.</b>
                                 </p>
                                 This feature is enabled on{" "}
-                                <Alert.Link href={"https://lakefs.cloud/register"}>
-                                    lakeFS Cloud
-                                </Alert.Link>{" "}
-                                and{" "}
+                                <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link> and{" "}
                                 <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>
                                     lakeFS Enterprise
                                 </Alert.Link>
                                 .{" "}
-                                <Alert.Link
-                                    href={
-                                        "https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/"
-                                    }
-                                >
+                                <Alert.Link href={"https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/"}>
                                     Learn More
                                 </Alert.Link>
                             </Alert>

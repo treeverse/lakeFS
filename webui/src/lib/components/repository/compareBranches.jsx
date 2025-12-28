@@ -10,14 +10,7 @@ import { URINavigator } from "./tree";
 import CompareBranchesActionsBar from "./compareBranchesActionBar";
 import { DiffActionType, DiffContext } from "../../hooks/diffContext";
 
-const CompareBranches = ({
-    repo,
-    reference,
-    compareReference,
-    showActionsBar,
-    prefix = "",
-    baseSelectURL,
-}) => {
+const CompareBranches = ({ repo, reference, compareReference, showActionsBar, prefix = "", baseSelectURL }) => {
     const { dispatch } = useContext(DiffContext);
 
     const [internalRefresh, setInternalRefresh] = useState(true);
@@ -35,14 +28,7 @@ const CompareBranches = ({
         }
 
         const getMoreResults = () =>
-            refsAPI.diff(
-                repo.id,
-                reference.id,
-                compareReference.id,
-                afterUpdated,
-                prefix,
-                delimiter,
-            );
+            refsAPI.diff(repo.id, reference.id, compareReference.id, afterUpdated, prefix, delimiter);
         return await appendMoreResults(
             resultsState,
             prefix,

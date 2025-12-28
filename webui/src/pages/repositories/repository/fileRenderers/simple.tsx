@@ -7,20 +7,13 @@ import { AlertError, Loading } from "../../../../lib/components/controls";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { IpynbRenderer as NbRenderer } from "react-ipynb-renderer";
 import { guessLanguage } from "./index";
-import {
-    RendererComponent,
-    RendererComponentWithText,
-    RendererComponentWithTextCallback,
-} from "./types";
+import { RendererComponent, RendererComponentWithText, RendererComponentWithTextCallback } from "./types";
 
 import "react-ipynb-renderer/dist/styles/default.css";
 import { useMarkdownProcessor } from "./useMarkdownProcessor";
 import { AppContext } from "../../../../lib/hooks/appContext";
 import { GeoJSONPreview } from "../../../../lib/components/repository/GeoJSONPreview";
-import {
-    github as lightTheme,
-    nightOwl as darkTheme,
-} from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { github as lightTheme, nightOwl as darkTheme } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
     return (
@@ -33,11 +26,7 @@ export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
     );
 };
 
-export const UnsupportedFileType: FC<RendererComponent> = ({
-    path,
-    fileExtension,
-    contentType,
-}) => {
+export const UnsupportedFileType: FC<RendererComponent> = ({ path, fileExtension, contentType }) => {
     return (
         <Alert variant="warning" className="m-5">
             <div>
@@ -48,13 +37,7 @@ export const UnsupportedFileType: FC<RendererComponent> = ({
     );
 };
 
-export const TextDownloader: FC<RendererComponentWithTextCallback> = ({
-    repoId,
-    refId,
-    path,
-    presign,
-    onReady,
-}) => {
+export const TextDownloader: FC<RendererComponentWithTextCallback> = ({ repoId, refId, path, presign, onReady }) => {
     const { response, error, loading } = useAPI(
         async () => await objects.get(repoId, refId, path, presign),
         [repoId, refId, path],
@@ -71,21 +54,11 @@ export const TextDownloader: FC<RendererComponentWithTextCallback> = ({
     return <>{component}</>;
 };
 
-export const MarkdownRenderer: FC<RendererComponentWithText> = ({
-    text,
-    repoId,
-    refId,
-    path,
-    presign = false,
-}) => {
+export const MarkdownRenderer: FC<RendererComponentWithText> = ({ text, repoId, refId, path, presign = false }) => {
     return useMarkdownProcessor(text, repoId, refId, path, presign);
 };
 
-export const TextRenderer: FC<RendererComponentWithText> = ({
-    contentType,
-    fileExtension,
-    text,
-}) => {
+export const TextRenderer: FC<RendererComponentWithText> = ({ contentType, fileExtension, text }) => {
     const { state } = useContext(AppContext);
     const language = guessLanguage(fileExtension, contentType) ?? "plaintext";
     const syntaxHighlightStyle = state.settings.darkMode ? darkTheme : lightTheme;
@@ -107,14 +80,7 @@ export const TextRenderer: FC<RendererComponentWithText> = ({
 };
 
 export const IpynbRenderer: FC<RendererComponentWithText> = ({ text }) => {
-    return (
-        <NbRenderer
-            ipynb={JSON.parse(text)}
-            syntaxTheme="ghcolors"
-            language="python"
-            bgTransparent={true}
-        />
-    );
+    return <NbRenderer ipynb={JSON.parse(text)} syntaxTheme="ghcolors" language="python" bgTransparent={true} />;
 };
 
 export const ImageRenderer: FC<RendererComponent> = ({ repoId, refId, path, presign }) => {

@@ -44,12 +44,7 @@ Text and whatever and hey look at this image:
         const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${await getImageUrl(
-            TEST_REPO,
-            TEST_REF,
-            `${ADDITIONAL_PATH}/${TEST_FILE_NAME}`,
-            false,
-        )})
+![lakefs://image.png](${await getImageUrl(TEST_REPO, TEST_REF, `${ADDITIONAL_PATH}/${TEST_FILE_NAME}`, false)})
 `;
 
         const result = await remark()
@@ -122,12 +117,7 @@ Text and whatever and hey look at this image:
         const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${await getImageUrl(
-            TEST_REPO,
-            TEST_REF,
-            `${markdownFilePath}/${TEST_FILE_NAME}`,
-            false,
-        )})
+![lakefs://image.png](${await getImageUrl(TEST_REPO, TEST_REF, `${markdownFilePath}/${TEST_FILE_NAME}`, false)})
 `;
 
         const result = await remark()

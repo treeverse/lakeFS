@@ -141,9 +141,7 @@ const GroupsContainer = () => {
 
     if (error) return <AlertError error={error} />;
     if (loading) return <Loading />;
-    const headers = simplified
-        ? ["", "Group Name", "Permission", "Created At"]
-        : ["", "Group Name", "Created At"];
+    const headers = simplified ? ["", "Group Name", "Permission", "Created At"] : ["", "Group Name", "Created At"];
 
     return (
         <>
@@ -257,9 +255,7 @@ const GroupsContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={(after) =>
-                    router.push({ pathname: "/auth/groups", query: { prefix, after } })
-                }
+                onPaginate={(after) => router.push({ pathname: "/auth/groups", query: { prefix, after } })}
             />
         </>
     );

@@ -20,10 +20,7 @@ const MAX_FILE_SIZE = 20971520; // 20MiB
 export const Renderers: { [fileType in FileType]: FC<RendererComponent> } = {
     [FileType.DATA]: (props) => <DuckDBRenderer {...props} />,
     [FileType.MARKDOWN]: (props) => (
-        <TextDownloader
-            {...props}
-            onReady={(text) => <MarkdownRenderer {...props} text={text} />}
-        />
+        <TextDownloader {...props} onReady={(text) => <MarkdownRenderer {...props} text={text} />} />
     ),
     [FileType.IPYNB]: (props) => (
         <TextDownloader {...props} onReady={(text) => <IpynbRenderer {...props} text={text} />} />
@@ -162,16 +159,12 @@ export function guessType(contentType?: string, fileExtension?: string): FileTyp
 export const ObjectRenderer: FC<RendererComponent> = (props: RendererComponent) => {
     const pluginManager = usePluginManager();
 
-    const customRenderer = pluginManager.customObjectRenderers.get(
-        props.contentType,
-        props.fileExtension,
-    );
+    const customRenderer = pluginManager.customObjectRenderers.get(props.contentType, props.fileExtension);
     if (customRenderer) {
         return customRenderer(props);
     }
 
     const fileType = guessType(props.contentType, props.fileExtension);
-    if (fileType !== FileType.DATA && props.sizeBytes > MAX_FILE_SIZE)
-        return Renderers[FileType.TOO_LARGE](props);
+    if (fileType !== FileType.DATA && props.sizeBytes > MAX_FILE_SIZE) return Renderers[FileType.TOO_LARGE](props);
     return Renderers[fileType](props);
 };

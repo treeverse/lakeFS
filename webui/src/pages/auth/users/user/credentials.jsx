@@ -2,17 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { UserHeaderWithContext } from "./userHeaderWithContext";
 import { auth } from "../../../../lib/api";
-import {
-    CredentialsShowModal,
-    CredentialsTable,
-} from "../../../../lib/components/auth/credentials";
+import { CredentialsShowModal, CredentialsTable } from "../../../../lib/components/auth/credentials";
 import { ConfirmationButtonWithContext } from "../../../../lib/components/modals";
-import {
-    ActionGroup,
-    ActionsBar,
-    AlertError,
-    RefreshButton,
-} from "../../../../lib/components/controls";
+import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../../../../lib/components/controls";
 import { useRouter } from "../../../../lib/hooks/router";
 import { useAuth } from "../../../../lib/auth/authContext";
 

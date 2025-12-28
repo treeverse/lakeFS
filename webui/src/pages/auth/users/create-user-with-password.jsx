@@ -49,11 +49,7 @@ const CreateUserWithPasswordForm = ({ token, email }) => {
                             onSubmit={async (e) => {
                                 e.preventDefault();
                                 try {
-                                    await auth.updatePasswordByToken(
-                                        token,
-                                        e.target.password.value,
-                                        email,
-                                    );
+                                    await auth.updatePasswordByToken(token, e.target.password.value, email);
                                     setReqActivateUserError(null);
                                     router.push("/auth/login");
                                 } catch (err) {
@@ -94,12 +90,7 @@ const CreateUserWithPasswordForm = ({ token, email }) => {
                 </Card>
                 <ActionsBar>
                     <ActionGroup orientation="right">
-                        <Button
-                            form="activate-user"
-                            type="submit"
-                            className="create-user"
-                            disabled={!formValid}
-                        >
+                        <Button form="activate-user" type="submit" className="create-user" disabled={!formValid}>
                             Create
                         </Button>
                         <Button

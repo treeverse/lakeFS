@@ -68,9 +68,8 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                                     variant="outline-danger"
                                     msg={
                                         <span>
-                                            Are you sure you{"'"}d like to remove user{" "}
-                                            <strong>{userId}</strong> from group{" "}
-                                            <strong>{group.name}</strong>?
+                                            Are you sure you{"'"}d like to remove user <strong>{userId}</strong> from
+                                            group <strong>{group.name}</strong>?
                                         </span>
                                     }
                                     onConfirm={() => {
@@ -104,9 +103,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                         resolveEntityFn={resolveGroupDisplayName}
                         onHide={() => setShowAddModal(false)}
                         onAttach={(selected) => {
-                            Promise.all(
-                                selected.map((group) => auth.addUserToGroup(userId, group.id)),
-                            )
+                            Promise.all(selected.map((group) => auth.addUserToGroup(userId, group.id)))
                                 .then(() => {
                                     setRefresh(!refresh);
                                     setAttachError(null);

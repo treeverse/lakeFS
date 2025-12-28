@@ -10,8 +10,6 @@ export const allUsersFromLakeFS = async (resolveUserDisplayNameFN = (user) => us
         after = results.pagination.next_offset;
         hasMore = results.pagination.has_more;
     } while (hasMore);
-    usersList.sort((a, b) =>
-        resolveUserDisplayNameFN(a).localeCompare(resolveUserDisplayNameFN(b)),
-    );
+    usersList.sort((a, b) => resolveUserDisplayNameFN(a).localeCompare(resolveUserDisplayNameFN(b)));
     return usersList;
 };

@@ -17,31 +17,19 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
     const onChangeKey = (i) => {
         return (e) => {
             const newKey = e.currentTarget.value;
-            setMetadataFields((prev) => [
-                ...prev.slice(0, i),
-                { ...prev[i], key: newKey },
-                ...prev.slice(i + 1),
-            ]);
+            setMetadataFields((prev) => [...prev.slice(0, i), { ...prev[i], key: newKey }, ...prev.slice(i + 1)]);
         };
     };
 
     const onChangeValue = (i) => {
         return (e) => {
             const newValue = e.currentTarget.value;
-            setMetadataFields((prev) => [
-                ...prev.slice(0, i),
-                { ...prev[i], value: newValue },
-                ...prev.slice(i + 1),
-            ]);
+            setMetadataFields((prev) => [...prev.slice(0, i), { ...prev[i], value: newValue }, ...prev.slice(i + 1)]);
         };
     };
 
     const onBlurKey = (i) => () => {
-        setMetadataFields((prev) => [
-            ...prev.slice(0, i),
-            { ...prev[i], touched: true },
-            ...prev.slice(i + 1),
-        ]);
+        setMetadataFields((prev) => [...prev.slice(0, i), { ...prev[i], touched: true }, ...prev.slice(i + 1)]);
     };
 
     const onRemoveKeyValue = (i) => {
@@ -69,9 +57,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
                                     isInvalid={fieldError}
                                 />
                                 {fieldError && (
-                                    <Form.Control.Feedback type="invalid">
-                                        {fieldError}
-                                    </Form.Control.Feedback>
+                                    <Form.Control.Feedback type="invalid">{fieldError}</Form.Control.Feedback>
                                 )}
                             </Col>
                             <Col md={{ span: 5 }}>

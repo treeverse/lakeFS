@@ -39,8 +39,7 @@ const CredentialsContainer = () => {
                         modalVariant="success"
                         msg={
                             <span>
-                                Create a new Access Key for user{" "}
-                                <strong>{resolveUserDisplayName(user)}</strong>?
+                                Create a new Access Key for user <strong>{resolveUserDisplayName(user)}</strong>?
                             </span>
                         }
                         onConfirm={(hide) => {

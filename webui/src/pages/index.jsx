@@ -69,61 +69,31 @@ export const IndexPage = () => {
                                     <Route index element={<RepositoriesPage />} />
                                     <Route path=":repoId" element={<RepositoryPageLayout />}>
                                         <Route path="objects" element={<RepositoryObjectsPage />} />
-                                        <Route
-                                            path="object"
-                                            element={<RepositoryObjectsViewPage />}
-                                        />
+                                        <Route path="object" element={<RepositoryObjectsViewPage />} />
                                         <Route path="commits">
                                             <Route index element={<RepositoryCommitsPage />} />
-                                            <Route
-                                                path=":commitId"
-                                                element={<RepositoryCommitPage />}
-                                            />
+                                            <Route path=":commitId" element={<RepositoryCommitPage />} />
                                         </Route>
                                         <Route path="branches">
                                             <Route index element={<RepositoryBranchesPage />} />
-                                            <Route
-                                                path=":branchId/revert"
-                                                element={<RepositoryRevertPage />}
-                                            />
+                                            <Route path=":branchId/revert" element={<RepositoryRevertPage />} />
                                         </Route>
                                         <Route path="tags" element={<RepositoryTagsPage />} />
                                         <Route path="pulls">
                                             <Route index element={<RepositoryPullsListPage />} />
-                                            <Route
-                                                path="create"
-                                                element={<RepositoryCreatePullPage />}
-                                            />
-                                            <Route
-                                                path=":pullId"
-                                                element={<RepositoryPullDetailsPage />}
-                                            />
+                                            <Route path="create" element={<RepositoryCreatePullPage />} />
+                                            <Route path=":pullId" element={<RepositoryPullDetailsPage />} />
                                         </Route>
-                                        <Route
-                                            path="compare/*"
-                                            element={<RepositoryComparePage />}
-                                        />
+                                        <Route path="compare/*" element={<RepositoryComparePage />} />
                                         <Route path="actions">
                                             <Route index element={<RepositoryActionsPage />} />
-                                            <Route
-                                                path=":runId"
-                                                element={<RepositoryActionPage />}
-                                            />
+                                            <Route path=":runId" element={<RepositoryActionPage />} />
                                         </Route>
                                         <Route path="settings" element={<SettingsLayout />}>
                                             <Route index element={<Navigate to="general" />} />
-                                            <Route
-                                                path="general"
-                                                element={<RepositoryGeneralSettingsPage />}
-                                            />
-                                            <Route
-                                                path="retention"
-                                                element={<RepositoryRetentionPage />}
-                                            />
-                                            <Route
-                                                path="branches"
-                                                element={<RepositorySettingsBranchesPage />}
-                                            />
+                                            <Route path="general" element={<RepositoryGeneralSettingsPage />} />
+                                            <Route path="retention" element={<RepositoryRetentionPage />} />
+                                            <Route path="branches" element={<RepositorySettingsBranchesPage />} />
                                         </Route>
                                         <Route index element={<Navigate to="objects" />} />
                                     </Route>
@@ -137,35 +107,21 @@ export const IndexPage = () => {
                                             <Route path=":userId">
                                                 <Route index element={<Navigate to="groups" />} />
                                                 <Route path="groups" element={<UserGroupsPage />} />
-                                                <Route
-                                                    exact
-                                                    path="policies"
-                                                    element={<UserPoliciesPage />}
-                                                />
+                                                <Route exact path="policies" element={<UserPoliciesPage />} />
                                                 <Route
                                                     exact
                                                     path="policies/effective"
                                                     element={<UserEffectivePoliciesPage />}
                                                 />
-                                                <Route
-                                                    exact
-                                                    path="credentials"
-                                                    element={<UserCredentialsPage />}
-                                                />
+                                                <Route exact path="credentials" element={<UserCredentialsPage />} />
                                             </Route>
                                         </Route>
                                         <Route path="groups">
                                             <Route index element={<GroupsPage />} />
                                             <Route path=":groupId">
                                                 <Route index element={<Navigate to="members" />} />
-                                                <Route
-                                                    path="members"
-                                                    element={<GroupMembersPage />}
-                                                />
-                                                <Route
-                                                    path="policies"
-                                                    element={<GroupPoliciesPage />}
-                                                />
+                                                <Route path="members" element={<GroupMembersPage />} />
+                                                <Route path="policies" element={<GroupPoliciesPage />} />
                                             </Route>
                                         </Route>
                                         <Route path="policies">
@@ -174,10 +130,7 @@ export const IndexPage = () => {
                                         </Route>
                                     </Route>
                                 </Route>
-                                <Route
-                                    path="api/v1/auth/get-token/release-token/*"
-                                    element={<Redirect />}
-                                />
+                                <Route path="api/v1/auth/get-token/release-token/*" element={<Redirect />} />
                                 <Route path="*" element={<Navigate to="/repositories" replace />} />
                             </Route>
                             <Route path="auth" element={<Layout />}>

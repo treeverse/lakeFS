@@ -59,10 +59,7 @@ export const getContentType = (headers: Headers): string | undefined => {
 const FileObjectsViewerPage = () => {
     const { repo, loading: repoLoading, error: repoError } = useRefs();
     const { config, error: configsError, loading: configLoading } = useConfigContext();
-    const { storageConfig, error: storageConfigError } = getRepoStorageConfig(
-        config?.storages,
-        repo,
-    );
+    const { storageConfig, error: storageConfigError } = getRepoStorageConfig(config?.storages, repo);
 
     const { repoId } = useParams<ObjectViewerPathParams>();
     const queryString = useQuery<ObjectViewerQueryString>();

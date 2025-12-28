@@ -8,10 +8,7 @@ interface PluginManagerProviderProps {
     children: React.ReactNode;
 }
 
-export const PluginManagerProvider: React.FC<PluginManagerProviderProps> = ({
-    pluginManager,
-    children,
-}) => {
+export const PluginManagerProvider: React.FC<PluginManagerProviderProps> = ({ pluginManager, children }) => {
     return <PluginsContext.Provider value={pluginManager}>{children}</PluginsContext.Provider>;
 };
 

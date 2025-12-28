@@ -100,12 +100,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
                         <Dropdown.Item
                             onClick={async (e) => {
                                 try {
-                                    const resp = await objects.getStat(
-                                        repo.id,
-                                        reference.id,
-                                        entry.path,
-                                        true,
-                                    );
+                                    const resp = await objects.getStat(repo.id, reference.id, entry.path, true);
                                     copyTextToClipboard(resp.physical_address);
                                 } catch (err) {
                                     alert(err);
@@ -144,9 +139,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
 
                     <Dropdown.Item
                         onClick={(e) => {
-                            copyTextToClipboard(
-                                `lakefs://${repo.id}/${reference.id}/${entry.path}`,
-                            );
+                            copyTextToClipboard(`lakefs://${repo.id}/${reference.id}/${entry.path}`);
                             e.preventDefault();
                         }}
                     >
@@ -182,11 +175,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
                 onConfirm={onSubmitDeletion}
             />
 
-            <StatModal
-                entry={entry}
-                show={showObjectStat}
-                onHide={() => setShowObjectStat(false)}
-            />
+            <StatModal entry={entry} show={showObjectStat} onHide={() => setShowObjectStat(false)} />
 
             <OriginModal
                 entry={entry}
@@ -365,23 +354,14 @@ const PrefixSizeModal = ({ show, onHide, entry, repo, reference }) => {
     }, [show, repo.id, reference.id, entry.path, setProgress]);
 
     let content = (
-        <Loading
-            message={`Finding all objects (${progress.toLocaleString()} so far). This could take a while...`}
-        />
+        <Loading message={`Finding all objects (${progress.toLocaleString()} so far). This could take a while...`} />
     );
 
     if (error) {
         content = <AlertError error={error} />;
     }
     if (!loading && !error && response) {
-        content = (
-            <PrefixSizeInfoCard
-                repo={repo}
-                reference={reference}
-                entry={entry}
-                totalObjects={response}
-            />
-        );
+        content = <PrefixSizeInfoCard repo={repo} reference={reference} entry={entry} totalObjects={response} />;
     }
 
     if (!loading && !error && !response) {
@@ -498,11 +478,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
 
     let button;
     if (entry.path_type === "common_prefix") {
-        button = (
-            <Link href={{ pathname: "/repositories/:repoId/objects", query, params }}>
-                {buttonText}
-            </Link>
-        );
+        button = <Link href={{ pathname: "/repositories/:repoId/objects", query, params }}>{buttonText}</Link>;
     } else if (entry.diff_type === "removed") {
         button = <span>{buttonText}</span>;
     } else {
@@ -528,10 +504,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
         size = <Na />;
     } else {
         size = (
-            <OverlayTrigger
-                placement="bottom"
-                overlay={<Tooltip>{entry.size_bytes} bytes</Tooltip>}
-            >
+            <OverlayTrigger placement="bottom" overlay={<Tooltip>{entry.size_bytes} bytes</Tooltip>}>
                 <span>{humanSize(entry.size_bytes)}</span>
             </OverlayTrigger>
         );
@@ -603,8 +576,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
             <tr className={rowClass}>
                 <td className="diff-indicator">{diffIndicator || ""}</td>
                 <td className="tree-path">
-                    {entry.path_type === "common_prefix" ? <FileDirectoryIcon /> : <FileIcon />}{" "}
-                    {button}
+                    {entry.path_type === "common_prefix" ? <FileDirectoryIcon /> : <FileIcon />} {button}
                 </td>
                 <td className="tree-size">{size}</td>
                 <td className="tree-modified">{modified}</td>
@@ -656,16 +628,12 @@ export const URINavigator = ({
 }) => {
     const parts = pathParts(path, isPathToFile);
     const params = { repoId: repo.id };
-    const displayedReference =
-        reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
+    const displayedReference = reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
 
     return (
         <div className="d-flex">
             <div className="lakefs-uri flex-grow-1">
-                <div
-                    title={displayedReference}
-                    className="w-100 text-nowrap overflow-hidden text-truncate"
-                >
+                <div title={displayedReference} className="w-100 text-nowrap overflow-hidden text-truncate">
                     {relativeTo === "" ? (
                         <>
                             <strong>lakefs://</strong>
@@ -749,11 +717,7 @@ const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
     return (
         <Container className="get-started-container pb-5">
             <div className="mb-4">
-                <img
-                    src="/getting-started.png"
-                    alt="Empty repository"
-                    className="img-fluid get-started-image"
-                />
+                <img src="/getting-started.png" alt="Empty repository" className="img-fluid get-started-image" />
             </div>
 
             <h2 className="mb-0">Your repository is ready!</h2>
@@ -768,9 +732,7 @@ const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
                                     <DownloadIcon size={24} />
                                 </div>
                                 <Card.Title>Import Data</Card.Title>
-                                <Card.Text>
-                                    Import existing data from {config.config.blockstore_type}
-                                </Card.Text>
+                                <Card.Text>Import existing data from {config.config.blockstore_type}</Card.Text>
                                 <Button
                                     variant="primary"
                                     className="mt-auto"
@@ -800,9 +762,7 @@ const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
                                     <PlusIcon size={24} />
                                 </div>
                                 <Card.Title>Upload Objects</Card.Title>
-                                <Card.Text>
-                                    Upload individual files directly to your repository
-                                </Card.Text>
+                                <Card.Text>Upload individual files directly to your repository</Card.Text>
                                 <Button variant="primary" className="mt-auto" onClick={onUpload}>
                                     Upload Files
                                 </Button>
@@ -835,14 +795,7 @@ export const Tree = ({
     let body;
     if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
         // empty state!
-        body = (
-            <GetStarted
-                config={config}
-                onUpload={onUpload}
-                onImport={onImport}
-                readOnly={repo.readOnly}
-            />
-        );
+        body = <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />;
     } else if (results.length === 0) {
         body = (
             <>
@@ -880,12 +833,7 @@ export const Tree = ({
         <div className="tree-container">
             <Card>
                 <Card.Header>
-                    <URINavigator
-                        path={path}
-                        repo={repo}
-                        reference={reference}
-                        hasCopyButton={true}
-                    />
+                    <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true} />
                 </Card.Header>
                 <Card.Body>{body}</Card.Body>
             </Card>

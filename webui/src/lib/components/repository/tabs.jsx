@@ -54,25 +54,13 @@ export const RepositoryNavTabs = ({ active }) => {
             >
                 <GitCommitIcon /> Commits
             </Link>
-            <Link
-                active={active === "branches"}
-                href={`/repositories/${repoId}/branches`}
-                component={NavItem}
-            >
+            <Link active={active === "branches"} href={`/repositories/${repoId}/branches`} component={NavItem}>
                 <GitBranchIcon /> Branches
             </Link>
-            <Link
-                active={active === "tags"}
-                href={`/repositories/${repoId}/tags`}
-                component={NavItem}
-            >
+            <Link active={active === "tags"} href={`/repositories/${repoId}/tags`} component={NavItem}>
                 <TagIcon /> Tags
             </Link>
-            <Link
-                active={active === "pulls"}
-                href={`/repositories/${repoId}/pulls`}
-                component={NavItem}
-            >
+            <Link active={active === "pulls"} href={`/repositories/${repoId}/pulls`} component={NavItem}>
                 {/* TODO (gilo): the icon is very similar to the compare icon, consider changing it*/}
                 <GitPullRequestIcon /> Pull Requests
             </Link>
@@ -83,18 +71,10 @@ export const RepositoryNavTabs = ({ active }) => {
             >
                 <GitCompareIcon /> Compare
             </Link>
-            <Link
-                active={active === "actions"}
-                href={`/repositories/${repoId}/actions`}
-                component={NavItem}
-            >
+            <Link active={active === "actions"} href={`/repositories/${repoId}/actions`} component={NavItem}>
                 <PlayIcon /> Actions
             </Link>
-            <Link
-                active={active === "settings"}
-                href={`/repositories/${repoId}/settings`}
-                component={NavItem}
-            >
+            <Link active={active === "settings"} href={`/repositories/${repoId}/settings`} component={NavItem}>
                 <GearIcon /> Settings
             </Link>
         </Nav>

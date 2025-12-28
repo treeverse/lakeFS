@@ -32,13 +32,7 @@ interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProp
     msg: ReactNode | ((userDisplayName: string) => ReactNode);
     userId: string;
 }
-export const ConfirmationModal: FC<ConfirmationModalProps> = ({
-    show,
-    onHide,
-    msg,
-    onConfirm,
-    variant = "danger",
-}) => {
+export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = "danger" }) => {
     return (
         <Modal show={show} onHide={onHide}>
             <Modal.Header>
@@ -69,10 +63,7 @@ export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProp
     children,
 }) => {
     const getUserDisplayNameById = useContext(GetUserDisplayNameByIdContext);
-    const userDisplayName = useMemo(
-        () => getUserDisplayNameById(userId),
-        [userId, getUserDisplayNameById],
-    );
+    const userDisplayName = useMemo(() => getUserDisplayNameById(userId), [userId, getUserDisplayNameById]);
 
     let msgNode: ReactNode;
     if (typeof msg === "function") {
@@ -114,10 +105,7 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({
     );
     if (tooltip !== null) {
         btn = (
-            <OverlayTrigger
-                placement="bottom"
-                overlay={<Tooltip id="confirmation-tooltip">{tooltip}</Tooltip>}
-            >
+            <OverlayTrigger placement="bottom" overlay={<Tooltip id="confirmation-tooltip">{tooltip}</Tooltip>}>
                 {btn}
             </OverlayTrigger>
         );

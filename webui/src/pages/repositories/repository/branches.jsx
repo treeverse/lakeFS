@@ -62,8 +62,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
             <>
                 <p>{deleteMsg}</p>
                 <Alert variant="warning">
-                    <strong>Warning</strong> this is a system branch used for importing data to
-                    lakeFS
+                    <strong>Warning</strong> this is a system branch used for importing data to lakeFS
                 </Alert>
             </>
         );
@@ -82,10 +81,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                         onRemove={() => onDeselect && onDeselect(branch.id)}
                     />
                 </Col>
-                <Col
-                    title={branch.id}
-                    className="flex-grow-1 text-nowrap overflow-hidden text-truncate align-middle"
-                >
+                <Col title={branch.id} className="flex-grow-1 text-nowrap overflow-hidden text-truncate align-middle">
                     <h6 className="mb-0">
                         <Link
                             href={{
@@ -151,11 +147,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                         >
                             {branch.commit_id.substr(0, 12)}
                         </LinkButton>
-                        <ClipboardButton
-                            variant={buttonVariant}
-                            text={branch.id}
-                            tooltip="Copy ID to clipboard"
-                        />
+                        <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="Copy ID to clipboard" />
                         <ClipboardButton
                             variant={buttonVariant}
                             text={`lakefs://${repo.id}/${branch.id}`}
@@ -175,21 +167,12 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
     );
 };
 
-const CreateBranchButton = ({
-    repo,
-    variant = "success",
-    onCreate = null,
-    readOnly = false,
-    children,
-}) => {
+const CreateBranchButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(false);
     const [error, setError] = useState(null);
     const textRef = useRef(null);
-    const defaultBranch = useMemo(
-        () => ({ id: repo.default_branch, type: "branch" }),
-        [repo.default_branch],
-    );
+    const defaultBranch = useMemo(() => ({ id: repo.default_branch, type: "branch" }), [repo.default_branch]);
     const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
 
     const hide = () => {
@@ -230,12 +213,7 @@ const CreateBranchButton = ({
                         }}
                     >
                         <Form.Group controlId="name" className="mb-3">
-                            <Form.Control
-                                type="text"
-                                placeholder="Branch Name"
-                                name="text"
-                                ref={textRef}
-                            />
+                            <Form.Control type="text" placeholder="Branch Name" name="text" ref={textRef} />
                         </Form.Group>
                         <Form.Group controlId="source" className="mb-3">
                             <RefDropdown
@@ -303,9 +281,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
     useEffect(() => {
         if (pendingFailedBranches && results.length > 0) {
             const visibleBranchIds = results.map((branch) => branch.id);
-            const visibleFailedBranches = pendingFailedBranches.filter((id) =>
-                visibleBranchIds.includes(id),
-            );
+            const visibleFailedBranches = pendingFailedBranches.filter((id) => visibleBranchIds.includes(id));
             setSelected(visibleFailedBranches);
             setPendingFailedBranches(null);
         }
@@ -336,8 +312,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
             .map((branch) => branch.id);
         const selectableBranchesSet = new Set(selectableBranches);
         const visibleSelected = selected.filter((id) => selectableBranchesSet.has(id));
-        const allSelected =
-            selectableBranches.length > 0 && selectableBranches.length === visibleSelected.length;
+        const allSelected = selectableBranches.length > 0 && selectableBranches.length === visibleSelected.length;
 
         if (allSelected) {
             handleSelectNone();
@@ -375,9 +350,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
         doRefresh();
 
         if (failedDeletions.length > 0) {
-            const errorMessages = failedDeletions.map(
-                (f) => `${f.branchId}: ${f.error?.message || "Unknown error"}`,
-            );
+            const errorMessages = failedDeletions.map((f) => `${f.branchId}: ${f.error?.message || "Unknown error"}`);
             const errorDetails = {
                 message: `Failed to delete ${failedDeletions.length} branch(es)`,
                 failedBranches: failedDeletions.map((f) => f.branchId),
@@ -405,15 +378,8 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
         content = (
             <>
                 {deleteError && (
-                    <Alert
-                        variant="danger"
-                        dismissible
-                        onClose={() => setDeleteError(null)}
-                        className="mb-3"
-                    >
-                        <Alert.Heading>
-                            {deleteError.message || "Failed to delete branches"}
-                        </Alert.Heading>
+                    <Alert variant="danger" dismissible onClose={() => setDeleteError(null)} className="mb-3">
+                        <Alert.Heading>{deleteError.message || "Failed to delete branches"}</Alert.Heading>
                         {deleteError.errors && deleteError.errors.length > 0 && (
                             <div
                                 style={{
@@ -450,9 +416,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
             </>
         );
 
-    const selectableBranches = results
-        .filter((branch) => branch.id !== repo.default_branch)
-        .map((branch) => branch.id);
+    const selectableBranches = results.filter((branch) => branch.id !== repo.default_branch).map((branch) => branch.id);
     const selectableBranchesSet = new Set(selectableBranches);
 
     // Filter selected to only include visible branches
@@ -460,8 +424,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
     const branchesToDelete = visibleSelected.filter((id) => id !== repo.default_branch);
     const deleteCount = branchesToDelete.length;
 
-    const allSelected =
-        selectableBranches.length > 0 && selectableBranches.length === visibleSelected.length;
+    const allSelected = selectableBranches.length > 0 && selectableBranches.length === visibleSelected.length;
     const someSelected = visibleSelected.length > 0 && !allSelected;
     const selectedCount = visibleSelected.length;
 
@@ -486,9 +449,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                     >
                         {selectionIcon}
                     </Button>
-                    {selectedCount > 0 && (
-                        <span className="ms-2 align-self-center">{selectedCount} selected</span>
-                    )}
+                    {selectedCount > 0 && <span className="ms-2 align-self-center">{selectedCount} selected</span>}
                 </ActionGroup>
                 <ActionGroup orientation="right">
                     <PrefixSearchWidget
@@ -530,8 +491,8 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                                 )}
                                 {branchesToDelete.some((id) => id === ImportBranchName) && (
                                     <Alert variant="warning" className="mt-2">
-                                        <strong>Warning:</strong> One or more selected branches are
-                                        system branches used for importing data to lakeFS
+                                        <strong>Warning:</strong> One or more selected branches are system branches used
+                                        for importing data to lakeFS
                                     </Alert>
                                 )}
                             </>
@@ -540,12 +501,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                         Delete
                     </ConfirmationButton>
 
-                    <CreateBranchButton
-                        repo={repo}
-                        readOnly={repo?.read_only}
-                        variant="success"
-                        onCreate={doRefresh}
-                    >
+                    <CreateBranchButton repo={repo} readOnly={repo?.read_only} variant="success" onCreate={doRefresh}>
                         <GitBranchIcon /> Create Branch
                     </CreateBranchButton>
                 </ActionGroup>

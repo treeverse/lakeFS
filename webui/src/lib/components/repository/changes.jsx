@@ -188,23 +188,13 @@ export const TreeItemRow = ({
     );
 };
 
-export const TreeEntryPaginator = ({
-    path,
-    setAfterUpdated,
-    nextPage,
-    depth = 0,
-    loading = false,
-}) => {
+export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth = 0, loading = false }) => {
     let pathSectionText = "Load more results ...";
     if (path !== "") {
         pathSectionText = `Load more results for prefix ${path} ....`;
     }
     return (
-        <tr
-            key={"row-" + path}
-            className={"tree-entry-row diff-more"}
-            onClick={() => setAfterUpdated(nextPage)}
-        >
+        <tr key={"row-" + path} className={"tree-entry-row diff-more"} onClick={() => setAfterUpdated(nextPage)}>
             <td className="diff-indicator" />
             <td className="tree-path tree-path-action">
                 <span style={{ marginLeft: depth * 20 + "px", color: "#007bff" }}>
@@ -259,13 +249,8 @@ export const ChangesTreeContainer = ({
     emptyStateComponent,
 }) => {
     // Manages expand/collapse state for all directories in the tree.
-    const {
-        isAllExpanded,
-        expandAll,
-        collapseAll,
-        markDirAsManuallyToggled,
-        wasDirManuallyToggled,
-    } = useExpandCollapseDirs();
+    const { isAllExpanded, expandAll, collapseAll, markDirAsManuallyToggled, wasDirManuallyToggled } =
+        useExpandCollapseDirs();
 
     if (results.length === 0) {
         if (emptyStateComponent) {
@@ -284,12 +269,7 @@ export const ChangesTreeContainer = ({
                 <Card.Header className="d-flex justify-content-between align-items-center">
                     {delimiter !== "" && uriNavigator}
                     <div className="d-flex gap-2">
-                        <TooltipButton
-                            tooltip="Expand All"
-                            size="sm"
-                            variant="outline-secondary"
-                            onClick={expandAll}
-                        >
+                        <TooltipButton tooltip="Expand All" size="sm" variant="outline-secondary" onClick={expandAll}>
                             <FileDirectoryFillIcon className="me-1" />
                             <FoldDownIcon />
                         </TooltipButton>

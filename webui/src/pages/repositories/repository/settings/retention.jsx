@@ -148,42 +148,24 @@ const GCPolicy = ({ repo }) => {
                         <div className="flex-grow-1">Garbage collection policy</div>
                         <RefreshButton className={"ms-1"} onClick={doRefresh} />
                         {!error && !loading && !isPolicyNotSet && (
-                            <Button
-                                className={"ms-2 btn-secondary"}
-                                disabled={isActionsDisabled}
-                                onClick={onDelete}
-                            >
+                            <Button className={"ms-2 btn-secondary"} disabled={isActionsDisabled} onClick={onDelete}>
                                 Delete Policy
                             </Button>
                         )}
-                        <Button
-                            className={"ms-2"}
-                            disabled={isActionsDisabled}
-                            onClick={() => setShowCreate(true)}
-                        >
+                        <Button className={"ms-2"} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>
                             Edit Policy
                         </Button>
                     </div>
                 </h4>
             </div>
             <p className="mt-3">
-                This policy determines for how long objects are kept in the storage after they are
-                deleted in lakeFS.{" "}
-                <a
-                    href="https://docs.lakefs.io/howto/garbage-collection/"
-                    target="_blank"
-                    rel="noreferrer"
-                >
+                This policy determines for how long objects are kept in the storage after they are deleted in lakeFS.{" "}
+                <a href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank" rel="noreferrer">
                     Learn more.
                 </a>
             </p>
             <div className={"mt-3"}>{content}</div>
-            <PolicyEditor
-                onSubmit={onSubmit}
-                onHide={() => setShowCreate(false)}
-                show={showCreate}
-                {...editorProps}
-            />
+            <PolicyEditor onSubmit={onSubmit} onHide={() => setShowCreate(false)} show={showCreate} {...editorProps} />
         </div>
     );
 };

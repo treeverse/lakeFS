@@ -88,13 +88,10 @@ const PoliciesContainer = () => {
             </ActionsBar>
             {rbac === "simplified" && (
                 <Warning>
-                    <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated
-                    and will be replaced by ACL (Access Control Lists) in future releases. For more
-                    information on the transition from RBAC to ACL, please visit our{" "}
-                    <a href="https://docs.lakefs.io/posts/security_update.html">
-                        documentation page
-                    </a>
-                    .
+                    <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated and will be replaced
+                    by ACL (Access Control Lists) in future releases. For more information on the transition from RBAC
+                    to ACL, please visit our{" "}
+                    <a href="https://docs.lakefs.io/posts/security_update.html">documentation page</a>.
                 </Warning>
             )}
             <div className="auth-learn-more">
@@ -159,9 +156,7 @@ const PoliciesContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={(after) =>
-                    router.push({ pathname: "/auth/policies", query: { prefix, after } })
-                }
+                onPaginate={(after) => router.push({ pathname: "/auth/policies", query: { prefix, after } })}
             />
         </>
     );

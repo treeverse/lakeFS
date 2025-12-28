@@ -13,15 +13,7 @@ import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from "@primer
 import { tags, branches, commits } from "../../api";
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from "../../../constants";
 
-const RefSelector = ({
-    repo,
-    selected,
-    selectRef,
-    withCommits,
-    withWorkspace,
-    withTags,
-    amount = 300,
-}) => {
+const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: "", prefix: "", amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
@@ -32,12 +24,7 @@ const RefSelector = ({
             try {
                 let response;
                 if (refType === RefTypeTag) {
-                    response = await tags.list(
-                        repo.id,
-                        pagination.prefix,
-                        pagination.after,
-                        pagination.amount,
-                    );
+                    response = await tags.list(repo.id, pagination.prefix, pagination.after, pagination.amount);
                 } else {
                     response = await branches.list(
                         repo.id,
@@ -243,10 +230,7 @@ const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, wi
                     {!!selected && namedRef === selected.id ? (
                         <strong>{namedRef}</strong>
                     ) : (
-                        <Button
-                            variant="link"
-                            onClick={() => selectRef({ id: namedRef, type: refType })}
-                        >
+                        <Button variant="link" onClick={() => selectRef({ id: namedRef, type: refType })}>
                             {namedRef}
                         </Button>
                     )}
@@ -321,13 +305,7 @@ const RefDropdown = ({
     const target = useRef(null);
 
     const popover = (
-        <Overlay
-            target={target.current}
-            show={show}
-            placement="bottom"
-            rootClose={true}
-            onHide={() => setShow(false)}
-        >
+        <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
             <Popover className="ref-popover">
                 <Popover.Body>
                     <RefSelector

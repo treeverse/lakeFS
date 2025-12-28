@@ -7,8 +7,7 @@ import RedirectToSSOStrategyPlugin from "./impls/RedirectToSSOStrategyPlugin";
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
-    private _customObjectRenderers: PluginCustomObjectRenderers =
-        DefaultCustomObjectRenderersPlugin;
+    private _customObjectRenderers: PluginCustomObjectRenderers = DefaultCustomObjectRenderersPlugin;
     private _loginStrategy: PluginLoginStrategy = RedirectToSSOStrategyPlugin;
 
     overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
@@ -19,9 +18,7 @@ export class PluginManager {
         return this._repoCreationForm;
     }
 
-    overridePluginCustomObjectRenderers(
-        pluginCustomObjectRenderers: PluginCustomObjectRenderers,
-    ): void {
+    overridePluginCustomObjectRenderers(pluginCustomObjectRenderers: PluginCustomObjectRenderers): void {
         this._customObjectRenderers = pluginCustomObjectRenderers;
     }
 

@@ -66,8 +66,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                                     modalVariant="danger"
                                     msg={
                                         <span>
-                                            Are you sure you{"'"}d like to detach policy{" "}
-                                            <strong>{policy.id}</strong>?
+                                            Are you sure you{"'"}d like to detach policy <strong>{policy.id}</strong>?
                                         </span>
                                     }
                                     onConfirm={() => {
@@ -99,11 +98,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                         searchFn={(prefix, after) => auth.listPolicies(prefix, after, PageSize)}
                         onHide={() => setShowAddModal(false)}
                         onAttach={(selected) => {
-                            Promise.all(
-                                selected.map((policy) =>
-                                    auth.attachPolicyToGroup(groupId, policy.id),
-                                ),
-                            )
+                            Promise.all(selected.map((policy) => auth.attachPolicyToGroup(groupId, policy.id)))
                                 .then(() => {
                                     setRefresh(!refresh);
                                     setAttachError(null);

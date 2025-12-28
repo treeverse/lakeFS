@@ -49,10 +49,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
         );
         const startIndex = after ? parseInt(after, 10) : 0;
         const page = filteredUsers.slice(startIndex, startIndex + PageSize);
-        const nextOffset =
-            startIndex + PageSize < filteredUsers.length
-                ? (startIndex + PageSize).toString()
-                : null;
+        const nextOffset = startIndex + PageSize < filteredUsers.length ? (startIndex + PageSize).toString() : null;
 
         return {
             results: page,
@@ -73,9 +70,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 <DataTable
                     keyFn={(user) => user.id}
                     rowFn={(user) => [
-                        <Link
-                            href={{ pathname: "/auth/users/:userId", params: { userId: user.id } }}
-                        >
+                        <Link href={{ pathname: "/auth/users/:userId", params: { userId: user.id } }}>
                             {resolveUserDisplayName(user)}
                         </Link>,
                         <FormattedDate dateValue={user.creation_date} />,
@@ -91,8 +86,8 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                                     msg={
                                         <span>
                                             Are you sure you{"'"}d like to remove user{" "}
-                                            <strong>{resolveUserDisplayName(user)}</strong> from
-                                            group <strong>{groupId}</strong>?
+                                            <strong>{resolveUserDisplayName(user)}</strong> from group{" "}
+                                            <strong>{groupId}</strong>?
                                         </span>
                                     }
                                     onConfirm={() => {
@@ -122,14 +117,10 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                         modalTitle={"Add to Group"}
                         addText={"Add to Group"}
                         resolveEntityFn={resolveUserDisplayName}
-                        searchFn={(prefix, after) =>
-                            searchUsers(prefix, after, resolveUserDisplayName)
-                        }
+                        searchFn={(prefix, after) => searchUsers(prefix, after, resolveUserDisplayName)}
                         onHide={() => setShowAddModal(false)}
                         onAttach={(selected) => {
-                            Promise.all(
-                                selected.map((user) => auth.addUserToGroup(user.id, groupId)),
-                            )
+                            Promise.all(selected.map((user) => auth.addUserToGroup(user.id, groupId)))
                                 .then(() => {
                                     setRefresh(!refresh);
                                     setAttachError(null);

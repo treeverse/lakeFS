@@ -49,15 +49,9 @@ export const AttachModal = ({
                     results={response.results}
                     rowFn={(ent) => [
                         <Checkbox
-                            defaultChecked={selected.some(
-                                (selectedEnt) => selectedEnt.id === ent.id,
-                            )}
+                            defaultChecked={selected.some((selectedEnt) => selectedEnt.id === ent.id)}
                             onAdd={() => setSelected([...selected, ent])}
-                            onRemove={() =>
-                                setSelected(
-                                    selected.filter((selectedEnt) => selectedEnt.id !== ent.id),
-                                )
-                            }
+                            onRemove={() => setSelected(selected.filter((selectedEnt) => selectedEnt.id !== ent.id))}
                             name={"selected"}
                         />,
                         <strong>{resolveEntityFn(ent)}</strong>,
@@ -212,12 +206,7 @@ export const EntityActionModal = ({
                 >
                     <FormControl ref={idField} autoFocus placeholder={placeholder} type="text" />
                     {showExtraField && (
-                        <FormControl
-                            ref={extraField}
-                            placeholder={extraPlaceholder}
-                            type="text"
-                            className="mt-3"
-                        />
+                        <FormControl ref={extraField} placeholder={extraPlaceholder} type="text" className="mt-3" />
                     )}
                 </Form>
 

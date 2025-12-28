@@ -16,11 +16,7 @@ interface SetupCompleteProps {
     apiEndpoint: string;
 }
 
-export const SetupComplete: FC<SetupCompleteProps> = ({
-    accessKeyId,
-    secretAccessKey,
-    apiEndpoint,
-}) => {
+export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAccessKey, apiEndpoint }) => {
     const router = useRouter();
     const { state } = useContext(AppContext);
     const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
@@ -78,8 +74,8 @@ export const SetupComplete: FC<SetupCompleteProps> = ({
                                 </div>
                             </div>
                             <Alert className="mt-4" variant="warning">
-                                This is the <strong>only</strong> time that the secret access keys
-                                can be viewed or downloaded. You cannot recover them later.
+                                This is the <strong>only</strong> time that the secret access keys can be viewed or
+                                downloaded. You cannot recover them later.
                                 <div className="mt-3 text-md-center">
                                     <DownloadCredentialsButton
                                         accessKeyId={accessKeyId}
@@ -90,11 +86,7 @@ export const SetupComplete: FC<SetupCompleteProps> = ({
                             </Alert>
                             <h5>lakectl</h5>
                             <div className="ms-2 mt-2">
-                                <a
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    href="https://docs.lakefs.io/reference/cli.html"
-                                >
+                                <a target="_blank" rel="noreferrer" href="https://docs.lakefs.io/reference/cli.html">
                                     lakectl
                                 </a>{" "}
                                 is a CLI tool for working with lakeFS.
@@ -107,15 +99,11 @@ export const SetupComplete: FC<SetupCompleteProps> = ({
                                     >
                                         lakeFS release package
                                     </a>{" "}
-                                    and save the above credentials file as{" "}
-                                    <code>~/.lakectl.yaml</code>.
+                                    and save the above credentials file as <code>~/.lakectl.yaml</code>.
                                 </p>
                             </div>
                             <div className="mt-3 text-md-center">
-                                <Button
-                                    className="p-2 pl-3 pr-3 after-setup-btn"
-                                    onClick={goToLoginHandler}
-                                >
+                                <Button className="p-2 pl-3 pr-3 after-setup-btn" onClick={goToLoginHandler}>
                                     Go To Login
                                 </Button>
                             </div>

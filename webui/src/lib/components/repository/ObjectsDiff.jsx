@@ -32,10 +32,7 @@ export const ObjectsDiff = ({ diffType, repoId, leftRef, rightRef, path }) => {
     const { state } = useContext(AppContext);
     const { repo, error: repoError, loading: repoLoading } = useRefs();
     const { config, error: configsError, loading: configLoading } = useConfigContext();
-    const { storageConfig, error: storageConfigError } = getRepoStorageConfig(
-        config?.storages,
-        repo,
-    );
+    const { storageConfig, error: storageConfigError } = getRepoStorageConfig(config?.storages, repo);
     const hooksLoading = repoLoading || configLoading;
     const hooksError = hooksLoading ? null : repoError || configsError || storageConfigError;
 
@@ -47,26 +44,14 @@ export const ObjectsDiff = ({ diffType, repoId, leftRef, rightRef, path }) => {
     switch (diffType) {
         case "changed":
         case "conflict":
-            left = useAPI(
-                async () => objects.getStat(repoId, leftRef, path),
-                [repoId, leftRef, path],
-            );
-            right = useAPI(
-                async () => objects.getStat(repoId, rightRef, path),
-                [repoId, rightRef, path],
-            );
+            left = useAPI(async () => objects.getStat(repoId, leftRef, path), [repoId, leftRef, path]);
+            right = useAPI(async () => objects.getStat(repoId, rightRef, path), [repoId, rightRef, path]);
             break;
         case "added":
-            right = useAPI(
-                async () => objects.getStat(repoId, rightRef, path),
-                [repoId, rightRef, path],
-            );
+            right = useAPI(async () => objects.getStat(repoId, rightRef, path), [repoId, rightRef, path]);
             break;
         case "removed":
-            left = useAPI(
-                async () => objects.getStat(repoId, leftRef, path),
-                [repoId, leftRef, path],
-            );
+            left = useAPI(async () => objects.getStat(repoId, leftRef, path), [repoId, leftRef, path]);
             break;
         default:
             return <AlertError error={"Unsupported diff type " + diffType} />;
@@ -82,8 +67,7 @@ export const ObjectsDiff = ({ diffType, repoId, leftRef, rightRef, path }) => {
         return <NoContentDiff left={leftStat} right={rightStat} diffType={diffType} />;
     }
     const objectTooBig =
-        (leftStat && leftStat.size_bytes > maxDiffSizeBytes) ||
-        (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
+        (leftStat && leftStat.size_bytes > maxDiffSizeBytes) || (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
     if (objectTooBig) {
         return (
             <AlertError
@@ -141,17 +125,7 @@ const NoContentDiff = ({ left, right, diffType }) => {
     );
 };
 
-const ContentDiff = ({
-    config,
-    repoId,
-    path,
-    leftRef,
-    rightRef,
-    leftSize,
-    rightSize,
-    diffType,
-    settings,
-}) =>
+const ContentDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, settings }) =>
     isImage(path) ? (
         <ImageCardDiff
             config={config}
@@ -177,29 +151,13 @@ const ContentDiff = ({
         />
     );
 
-const TextDiff = ({
-    config,
-    repoId,
-    path,
-    leftRef,
-    rightRef,
-    leftSize,
-    rightSize,
-    diffType,
-    isDarkMode,
-}) => {
+const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, isDarkMode }) => {
     const left =
         leftRef &&
-        useAPI(
-            async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui),
-            [repoId, leftRef, path],
-        );
+        useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui), [repoId, leftRef, path]);
     const right =
         rightRef &&
-        useAPI(
-            async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui),
-            [repoId, rightRef, path],
-        );
+        useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui), [repoId, rightRef, path]);
 
     if ((left && left.loading) || (right && right.loading)) return <Loading />;
     const err = (left && left.error) || (right && right.error);
@@ -219,16 +177,7 @@ const TextDiff = ({
     );
 };
 
-const ImageCardDiff = ({
-    config,
-    repoId,
-    path,
-    leftRef,
-    rightRef,
-    leftSize,
-    rightSize,
-    diffType,
-}) => {
+const ImageCardDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType }) => {
     const query = qs({ path, presign: config.pre_sign_support_ui });
     const oldUrl = leftRef && buildUrl(repoId, leftRef, query);
     const newUrl = rightRef && buildUrl(repoId, rightRef, query);
@@ -239,9 +188,7 @@ const ImageCardDiff = ({
             <div className="image-diff-card-container">
                 {oldUrl && (
                     <Card className="image-diff-card-flex">
-                        <Card.Header className="text-danger text-center image-diff-header-deleted">
-                            Deleted
-                        </Card.Header>
+                        <Card.Header className="text-danger text-center image-diff-header-deleted">Deleted</Card.Header>
                         <Card.Body className="d-flex overflow-auto justify-content-center p-3">
                             <img className="image-diff-card" src={oldUrl} alt="old" />
                         </Card.Body>
@@ -249,9 +196,7 @@ const ImageCardDiff = ({
                 )}
                 {newUrl && (
                     <Card className="image-diff-card-flex">
-                        <Card.Header className="text-success text-center image-diff-header-added">
-                            Added
-                        </Card.Header>
+                        <Card.Header className="text-success text-center image-diff-header-added">Added</Card.Header>
                         <Card.Body className="d-flex overflow-auto justify-content-center p-3">
                             <img className="image-diff-card" src={newUrl} alt="new" />
                         </Card.Body>
@@ -268,12 +213,10 @@ function validateDiffInput(left, right, diffType) {
             if (!left && !right) return <AlertError error={"Invalid diff input"} />;
             break;
         case "added":
-            if (!right)
-                return <AlertError error={"Invalid diff input: right hand-side is missing"} />;
+            if (!right) return <AlertError error={"Invalid diff input: right hand-side is missing"} />;
             break;
         case "removed":
-            if (!left)
-                return <AlertError error={"Invalid diff input: left hand-side is missing"} />;
+            if (!left) return <AlertError error={"Invalid diff input: left hand-side is missing"} />;
             break;
         case "conflict":
             break;

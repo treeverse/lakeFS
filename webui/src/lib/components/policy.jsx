@@ -40,8 +40,7 @@ export const PolicyEditor = ({
     const bodyField = useRef(null);
 
     useEffect(() => {
-        if (policy === null && !!idField.current && idField.current.value === "")
-            idField.current.focus();
+        if (policy === null && !!idField.current && idField.current.value === "") idField.current.focus();
     });
 
     const [body, setBody] = useState("");
@@ -70,8 +69,7 @@ export const PolicyEditor = ({
             setError(error);
             return false;
         }
-        const promise =
-            policy === null ? onSubmit(idField.current.value, statement) : onSubmit(statement);
+        const promise = policy === null ? onSubmit(idField.current.value, statement) : onSubmit(statement);
         return promise
             .then((res) => {
                 setSavedBody(statement);
@@ -149,9 +147,7 @@ export const PolicyDisplay = ({ policy, asJSON }) => {
     let childComponent;
     if (asJSON) {
         childComponent = (
-            <pre className={"policy-body"}>
-                {JSON.stringify({ statement: policy.statement }, null, 4)}
-            </pre>
+            <pre className={"policy-body"}>{JSON.stringify({ statement: policy.statement }, null, 4)}</pre>
         );
     } else {
         childComponent = (

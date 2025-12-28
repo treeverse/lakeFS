@@ -32,9 +32,7 @@ export const fieldsToMetadata = (metadataFields) => {
  * @returns {Array<{key: string, value: string, touched: boolean}>} New array with invalid fields touched
  */
 export const touchInvalidFields = (metadataFields) => {
-    return metadataFields.map((field) =>
-        isInvalidKey(field.key) ? { ...field, touched: true } : field,
-    );
+    return metadataFields.map((field) => (isInvalidKey(field.key) ? { ...field, touched: true } : field));
 };
 
 /**

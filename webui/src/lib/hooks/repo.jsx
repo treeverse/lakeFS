@@ -1,14 +1,6 @@
 import React, { useContext, createContext } from "react";
 
-import {
-    repositories,
-    branches,
-    commits,
-    NotFoundError,
-    tags,
-    BadRequestError,
-    BareRepositoryError,
-} from "../api";
+import { repositories, branches, commits, NotFoundError, tags, BadRequestError, BareRepositoryError } from "../api";
 import { useRouter } from "./router";
 import { useAPI } from "./api";
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from "../../constants";

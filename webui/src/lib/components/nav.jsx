@@ -6,35 +6,33 @@ import Nav from "react-bootstrap/Nav";
 import { buildURL } from "../hooks/router";
 
 const wrapComponent = (component) => {
-    const linkWrapper = React.forwardRef(
-        ({ navigate, onClick, to, target, replace, state, ...rest }, ref) => {
-            const href = useHref(to);
-            const handleClick = useLinkClickHandler(to, {
-                replace,
-                state,
-                target,
-            });
+    const linkWrapper = React.forwardRef(({ navigate, onClick, to, target, replace, state, ...rest }, ref) => {
+        const href = useHref(to);
+        const handleClick = useLinkClickHandler(to, {
+            replace,
+            state,
+            target,
+        });
 
-            const props = {
-                ...rest,
-                ref,
-                href,
-                onClick: (event) => {
-                    if (onClick && typeof onClick === "function") {
-                        onClick(event);
-                    }
+        const props = {
+            ...rest,
+            ref,
+            href,
+            onClick: (event) => {
+                if (onClick && typeof onClick === "function") {
+                    onClick(event);
+                }
 
-                    if (!event.defaultPrevented) {
-                        handleClick(event);
-                    }
-                },
-                target,
-                replace,
-                navigate,
-            };
-            return React.createElement(component, props);
-        },
-    );
+                if (!event.defaultPrevented) {
+                    handleClick(event);
+                }
+            },
+            target,
+            replace,
+            navigate,
+        };
+        return React.createElement(component, props);
+    });
     linkWrapper.displayName = "linkWrapper";
     return linkWrapper;
 };

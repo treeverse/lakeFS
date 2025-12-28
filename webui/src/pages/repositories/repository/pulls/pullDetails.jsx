@@ -78,10 +78,7 @@ const PullDetailsContent = ({ repo, pull }) => {
                 {isPullOpen() && (
                     <>
                         <div className="bottom-buttons-group d-flex justify-content-end">
-                            <ClosePullButton
-                                onClick={changePullStatus(PullStatus.closed)}
-                                loading={loading}
-                            />
+                            <ClosePullButton onClick={changePullStatus(PullStatus.closed)} loading={loading} />
                             {!formattedDiffError && (
                                 <MergePullButton
                                     onClick={mergePullRequest}
@@ -172,12 +169,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const ClosePullButton = ({ onClick, loading }) => (
-    <Button
-        variant="outline-secondary"
-        className="text-secondary-emphasis"
-        disabled={loading}
-        onClick={onClick}
-    >
+    <Button variant="outline-secondary" className="text-secondary-emphasis" disabled={loading} onClick={onClick}>
         {loading ? (
             <span className="spinner-border spinner-border-sm text-light" role="status" />
         ) : (

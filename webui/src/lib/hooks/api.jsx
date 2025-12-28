@@ -33,10 +33,7 @@ export const useAPIWithPagination = (promise, deps = []) => {
         // calculate current state on API response
         setPagination({
             error: null,
-            nextPage:
-                !!response.pagination && response.pagination.has_more
-                    ? response.pagination.next_offset
-                    : null,
+            nextPage: !!response.pagination && response.pagination.has_more ? response.pagination.next_offset : null,
             loading: false,
             results: response.results,
         });

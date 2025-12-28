@@ -12,10 +12,7 @@ export const useExpandCollapseDirs = () => {
         });
     }, []);
 
-    const wasDirManuallyToggled = useCallback(
-        (path) => manuallyToggledDirs.has(path),
-        [manuallyToggledDirs],
-    );
+    const wasDirManuallyToggled = useCallback((path) => manuallyToggledDirs.has(path), [manuallyToggledDirs]);
 
     const expandAll = useCallback(() => {
         setManuallyToggledDirs(new Set());

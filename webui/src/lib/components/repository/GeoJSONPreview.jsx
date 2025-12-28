@@ -60,15 +60,9 @@ export const GeoJSONPreview = ({ data }) => {
                         // That’s how the fallback mechanism works here: when a tile fails, we catch it and point the browser
                         // to a backup tile server by changing the image’s src.
                         if (src.includes("tile.openstreetmap.de")) {
-                            img.src = src.replace(
-                                "tile.openstreetmap.de",
-                                "tile.openstreetmap.fr/osmfr",
-                            );
+                            img.src = src.replace("tile.openstreetmap.de", "tile.openstreetmap.fr/osmfr");
                         } else if (src.includes("tile.openstreetmap.fr/osmfr")) {
-                            img.src = src.replace(
-                                "tile.openstreetmap.fr/osmfr",
-                                "tile.openstreetmap.org",
-                            );
+                            img.src = src.replace("tile.openstreetmap.fr/osmfr", "tile.openstreetmap.org");
                         }
                     }}
                 />

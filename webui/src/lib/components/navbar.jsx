@@ -31,9 +31,7 @@ const NavUserInfo = () => {
                     </>
                 )}
                 <FeedPersonIcon size={28} verticalAlign={"middle"} />{" "}
-                <span style={{ marginLeft: 6, fontSize: 18 }}>
-                    {user.friendly_name || user.id}{" "}
-                </span>
+                <span style={{ marginLeft: 6, fontSize: 18 }}>{user.friendly_name || user.id} </span>
             </>
         );
     };
@@ -92,11 +90,7 @@ const TopNav = () => {
                 </Link>
                 <Navbar.Toggle aria-controls="navbarScroll" />
                 <Navbar.Collapse id="navbarScroll">
-                    <Nav
-                        className="me-auto my-2 my-lg-0"
-                        style={{ maxHeight: "100px" }}
-                        navbarScroll
-                    >
+                    <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: "100px" }} navbarScroll>
                         <TopNavLink href="/repositories">Repositories</TopNavLink>
                         <TopNavLink href="/auth">Administration</TopNavLink>
                     </Nav>

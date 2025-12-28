@@ -3,10 +3,7 @@ import { AlertError, Loading } from "../../../../../lib/components/controls";
 import { useRefs } from "../../../../../lib/hooks/repo";
 import { useAPI, useAPIWithPagination } from "../../../../../lib/hooks/api";
 import { commits, refs } from "../../../../../lib/api";
-import {
-    ChangesTreeContainer,
-    defaultGetMoreChanges,
-} from "../../../../../lib/components/repository/changes";
+import { ChangesTreeContainer, defaultGetMoreChanges } from "../../../../../lib/components/repository/changes";
 import { useRouter } from "../../../../../lib/hooks/router";
 import { URINavigator } from "../../../../../lib/components/repository/tree";
 import { appendMoreResults } from "../../objects";
@@ -26,16 +23,10 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return;
-        if (!commit.parents || commit.parents.length === 0)
-            return { results: [], pagination: { has_more: false } };
+        if (!commit.parents || commit.parents.length === 0) return { results: [], pagination: { has_more: false } };
 
-        return await appendMoreResults(
-            resultsState,
-            prefix,
-            afterUpdated,
-            setAfterUpdated,
-            setResultsState,
-            () => refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter),
+        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, () =>
+            refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter),
         );
     }, [repo.id, commit.id, afterUpdated, prefix]);
 

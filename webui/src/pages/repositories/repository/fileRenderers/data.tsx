@@ -130,11 +130,7 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
         <div>
             <Form onSubmit={handleSubmit}>
                 <Form.Group className="mt-2 mb-1" controlId="objectQuery">
-                    <SQLEditor
-                        initialValue={initialQuery}
-                        onChange={sqlChangeHandler}
-                        onRun={handleRun}
-                    />
+                    <SQLEditor initialValue={initialQuery} onChange={sqlChangeHandler} onRun={handleRun} />
                 </Form.Group>
 
                 <div className="d-flex mb-4">

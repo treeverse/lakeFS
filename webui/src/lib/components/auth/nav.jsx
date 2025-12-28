@@ -9,8 +9,7 @@ import { Link, NavItem } from "../nav";
 import { useAPI } from "../../hooks/api";
 import { auth } from "../../api";
 
-const truncatedHeaderClass =
-    "d-inline-block w-50 text-nowrap overflow-hidden text-truncate align-middle";
+const truncatedHeaderClass = "d-inline-block w-50 text-nowrap overflow-hidden text-truncate align-middle";
 
 export const UserNav = ({ userId, page = "groups" }) => {
     const { RBAC: rbac } = useLoginConfigContext();

@@ -42,8 +42,7 @@ const DeleteRepositoryModal = ({ repo, show, onSubmit, onCancel }) => {
                     <li>All tags</li>
                     <li>All repository configuration</li>
                 </ul>
-                Data in the underlying object store will not be deleted by this action. <br />{" "}
-                <br />
+                Data in the underlying object store will not be deleted by this action. <br /> <br />
                 Please type <strong>{repo.id}</strong> to confirm: <br />
                 <Form.Control
                     className="mt-2"

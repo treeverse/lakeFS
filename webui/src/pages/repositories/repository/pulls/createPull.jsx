@@ -13,15 +13,7 @@ import { pulls as pullsAPI } from "../../../../lib/api";
 import CompareBranchesSelection from "../../../../lib/components/repository/compareBranchesSelection";
 import { DiffContext, WithDiffContext } from "../../../../lib/hooks/diffContext";
 
-const CreatePullForm = ({
-    repo,
-    reference,
-    compare,
-    title,
-    setTitle,
-    description,
-    setDescription,
-}) => {
+const CreatePullForm = ({ repo, reference, compare, title, setTitle, description, setDescription }) => {
     const router = useRouter();
     let [loading, setLoading] = useState(false);
     let [error, setError] = useState(null);
@@ -81,18 +73,10 @@ const CreatePullForm = ({
             </Form.Group>
             {error && <AlertError error={error} onDismiss={() => setError(null)} />}
             <div>
-                <Button
-                    variant="success"
-                    disabled={!title || loading || isEmptyDiff}
-                    onClick={submitForm}
-                >
+                <Button variant="success" disabled={!title || loading || isEmptyDiff} onClick={submitForm}>
                     {loading && (
                         <>
-                            <span
-                                className="spinner-border spinner-border-sm text-light"
-                                role="status"
-                            />{" "}
-                            {""}
+                            <span className="spinner-border spinner-border-sm text-light" role="status" /> {""}
                         </>
                     )}
                     Create Pull Request

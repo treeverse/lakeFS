@@ -35,12 +35,7 @@ const LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH = "main";
 
 const CreateRepositoryButton = ({ variant = "success", enabled = false, onClick }) => {
     return (
-        <Button
-            variant={variant}
-            disabled={!enabled}
-            onClick={onClick}
-            className="d-flex align-items-center"
-        >
+        <Button variant={variant} disabled={!enabled} onClick={onClick} className="d-flex align-items-center">
             <RepoIcon className="me-2" /> Create Repository
         </Button>
     );
@@ -63,14 +58,7 @@ const GettingStartedCreateRepoButton = ({
         >
             {creatingRepo && (
                 <>
-                    <Spinner
-                        as="span"
-                        role="status"
-                        aria-hidden="true"
-                        animation="border"
-                        size="sm"
-                        className="me-2"
-                    />
+                    <Spinner as="span" role="status" aria-hidden="true" animation="border" size="sm" className="me-2" />
                     <span className="visually-hidden">Loading...</span>
                 </>
             )}
@@ -156,9 +144,8 @@ const GetStarted = ({
             <Row className="text-container">
                 <Col md={7}>
                     <p className="lead mb-4">
-                        Create your first sample repository to get started with lakeFS. This
-                        includes sample data, quickstart instructions, and everything you need to
-                        explore lakeFS capabilities.
+                        Create your first sample repository to get started with lakeFS. This includes sample data,
+                        quickstart instructions, and everything you need to explore lakeFS capabilities.
                     </p>
 
                     {allowSampleRepoCreation && (
@@ -192,11 +179,7 @@ const GetStarted = ({
                 </Col>
             </Row>
 
-            <img
-                src="/getting-started.png"
-                alt="getting-started"
-                className="getting-started-image"
-            />
+            <img src="/getting-started.png" alt="getting-started" className="getting-started-image" />
         </Card>
     );
 };
@@ -258,9 +241,7 @@ const RepositoryList = ({
                                             </Link>
                                         </h5>
                                         <div className="repository-created-date">
-                                            <span
-                                                title={dayjs.unix(repo.creation_date).toISOString()}
-                                            >
+                                            <span title={dayjs.unix(repo.creation_date).toISOString()}>
                                                 Created {dayjs.unix(repo.creation_date).fromNow()}
                                             </span>
                                         </div>
@@ -291,9 +272,7 @@ const RepositoryList = ({
                                         <div className="detail-item-compact storage-namespace">
                                             <div className="detail-label-compact">Namespace</div>
                                             <div className="detail-value-compact">
-                                                <code className="text-truncate">
-                                                    {repo.storage_namespace}
-                                                </code>
+                                                <code className="text-truncate">{repo.storage_namespace}</code>
                                             </div>
                                         </div>
                                     </div>
@@ -358,16 +337,11 @@ const RepositoriesPage = () => {
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
-    const allowSampleRepoCreation =
-        pluginManager.repoCreationForm.allowSampleRepoCreationFunc(storageConfigs);
+    const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(storageConfigs);
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
         // note that this is only called on a single storage config server
-        if (
-            !err &&
-            storageConfigs.length &&
-            storageConfigs[0]?.blockstore_type === LOCAL_BLOCKSTORE_TYPE
-        ) {
+        if (!err && storageConfigs.length && storageConfigs[0]?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
             const sampleRepo = {
                 name: LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME,
                 storage_namespace: `local://${LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME}`,
@@ -380,14 +354,7 @@ const RepositoriesPage = () => {
         }
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
-    }, [
-        showCreateRepositoryModal,
-        setShowCreateRepositoryModal,
-        loading,
-        err,
-        storageConfigs,
-        createRepo,
-    ]);
+    }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, storageConfigs, createRepo]);
 
     return (
         <Container fluid="xl" className="mt-3">

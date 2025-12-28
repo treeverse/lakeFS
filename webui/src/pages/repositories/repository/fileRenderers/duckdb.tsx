@@ -43,10 +43,7 @@ const DUCKDB_STRING_CONSTANT = 2;
 const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
 
 // returns a mapping of `lakefs://..` URIs to their `s3://...` equivalent
-async function extractFiles(
-    conn: AsyncDuckDBConnection,
-    sql: string,
-): Promise<{ [name: string]: string }> {
+async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{ [name: string]: string }> {
     const tokenized = await conn.bindings.tokenize(sql);
     const r = Math.random(); // random number to make sure the S3 gateway picks up the request
     let prev = 0;
@@ -81,17 +78,13 @@ export async function runDuckDBQuery(sql: string): Promise<arrow.Table<any>> {
         // real authentication is done using the existing swagger cookie or token
         await conn.query(`SET s3_access_key_id='use_swagger_credentials';`);
         await conn.query(`SET s3_secret_access_key='these_are_meaningless_but_must_be_set';`);
-        await conn.query(
-            `SET s3_endpoint='${document.location.protocol}//${document.location.host}';`,
-        );
+        await conn.query(`SET s3_endpoint='${document.location.protocol}//${document.location.host}';`);
 
         // register lakefs uri-ed files as s3 files
         const fileMap = await extractFiles(conn, sql);
         const fileNames = Object.getOwnPropertyNames(fileMap);
         await Promise.all(
-            fileNames.map((fileName) =>
-                db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true),
-            ),
+            fileNames.map((fileName) => db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)),
         );
         // execute the query
         result = await conn.query(sql);

@@ -29,13 +29,7 @@ import { useRouter } from "../../../../lib/hooks/router";
 import { RepoError } from "../error";
 import { RefTypeBranch } from "../../../../constants";
 
-const CommitWidget = ({
-    repo,
-    commit,
-    revertMode = false,
-    isSelected = false,
-    onToggleSelect = null,
-}) => {
+const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, onToggleSelect = null }) => {
     const buttonVariant = "light";
 
     return (
@@ -65,10 +59,8 @@ const CommitWidget = ({
                         <p>
                             <small>
                                 <strong>{commit.committer}</strong> committed at{" "}
-                                <strong>
-                                    {dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}
-                                </strong>{" "}
-                                ({dayjs.unix(commit.creation_date).fromNow()})
+                                <strong>{dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> (
+                                {dayjs.unix(commit.creation_date).fromNow()})
                             </small>
                         </p>
                     </div>
@@ -182,10 +174,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                         </Button>
                     )}
                     {isBranch && (
-                        <Button
-                            variant={revertMode ? "secondary" : "light"}
-                            onClick={handleRevertClick}
-                        >
+                        <Button variant={revertMode ? "secondary" : "light"} onClick={handleRevertClick}>
                             {revertMode ? "Cancel" : "Revert"}
                         </Button>
                     )}

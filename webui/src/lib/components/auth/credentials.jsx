@@ -12,11 +12,7 @@ import { ConfirmationButton } from "../modals";
 import { Paginator } from "../pagination";
 import { AppContext } from "../../hooks/appContext";
 
-export const DownloadCredentialsButton = ({
-    accessKeyId,
-    secretAccessKey,
-    apiEndpoint = "/api/v1",
-}) => {
+export const DownloadCredentialsButton = ({ accessKeyId, secretAccessKey, apiEndpoint = "/api/v1" }) => {
     const downloadContent =
         "data:application/octet-stream," +
         encodeURIComponent(`# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
@@ -143,8 +139,7 @@ export const CredentialsShowModal = ({ credentials, show, onHide }) => {
                 </Table>
 
                 <Alert variant="warning" className="mt-3">
-                    Copy the Secret Access Key and store it somewhere safe. You will not be able to
-                    access it again.
+                    Copy the Secret Access Key and store it somewhere safe. You will not be able to access it again.
                     <div className="mt-3 text-md-center">
                         <DownloadCredentialsButton
                             accessKeyId={credentials.access_key_id}

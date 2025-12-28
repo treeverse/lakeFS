@@ -67,10 +67,7 @@ import pMap from "p-map";
 import { formatAlertText } from "../../../lib/components/repository/errors";
 import { ChangesTreeContainer } from "../../../lib/components/repository/changes";
 import { MetadataFields } from "../../../lib/components/repository/metadata";
-import {
-    getMetadataIfValid,
-    touchInvalidFields,
-} from "../../../lib/components/repository/metadataHelpers";
+import { getMetadataIfValid, touchInvalidFields } from "../../../lib/components/repository/metadataHelpers";
 import { ConfirmationModal } from "../../../lib/components/modals";
 import { Link } from "../../../lib/components/nav";
 import Card from "react-bootstrap/Card";
@@ -79,14 +76,7 @@ const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
-export async function appendMoreResults(
-    resultsState,
-    prefix,
-    lastSeenPath,
-    setLastSeenPath,
-    setResultsState,
-    getMore,
-) {
+export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
     let resultsFiltered = resultsState.results;
     if (resultsState.prefix !== prefix) {
         // prefix changed, need to delete previous results
@@ -101,18 +91,13 @@ export async function appendMoreResults(
 
     const { results, pagination } = await getMore();
     // Ensure concatenated results maintain lexicographic order
-    const concatenatedResults = resultsFiltered
-        .concat(results)
-        .sort((a, b) => a.path.localeCompare(b.path));
+    const concatenatedResults = resultsFiltered.concat(results).sort((a, b) => a.path.localeCompare(b.path));
     setResultsState({ prefix: prefix, results: concatenatedResults, pagination: pagination });
     return { results: resultsState.results, pagination: pagination };
 }
 
 const isAbortedError = (error, controller) => {
-    return (
-        (error instanceof DOMException && error.name === "AbortError") ||
-        controller?.signal?.aborted
-    );
+    return (error instanceof DOMException && error.name === "AbortError") || controller?.signal?.aborted;
 };
 
 const CommitButton = ({ repo, onCommit, enabled = false }) => {
@@ -161,10 +146,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                             <Form.Control type="text" placeholder="Commit Message" ref={textRef} />
                         </Form.Group>
 
-                        <MetadataFields
-                            metadataFields={metadataFields}
-                            setMetadataFields={setMetadataFields}
-                        />
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
                     </Form>
                     {alertText ? <Alert variant="danger">{alertText}</Alert> : <span />}
                 </Modal.Body>
@@ -202,16 +184,7 @@ export const useInterval = (callback, delay) => {
     }, [delay]);
 };
 
-const ImportModal = ({
-    config,
-    repoId,
-    referenceId,
-    referenceType,
-    path = "",
-    onDone,
-    onHide,
-    show = false,
-}) => {
+const ImportModal = ({ config, repoId, referenceId, referenceType, path = "", onDone, onHide, show = false }) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
@@ -314,16 +287,13 @@ const ImportModal = ({
                             setMetadataFields={setMetadataFields}
                             err={importError}
                             className={
-                                importPhase === ImportPhase.NotStarted ||
-                                importPhase === ImportPhase.Failed
+                                importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed
                                     ? ""
                                     : "d-none"
                             }
                         />
                     }
-                    {importPhase === ImportPhase.InProgress && (
-                        <ImportProgress numObjects={numberOfImportedObjects} />
-                    )}
+                    {importPhase === ImportPhase.InProgress && <ImportProgress numObjects={numberOfImportedObjects} />}
                     {importPhase === ImportPhase.Completed && (
                         <ImportDone branch={branchId} numObjects={numberOfImportedObjects} />
                     )}
@@ -373,12 +343,7 @@ const uploadFile = async (config, repo, reference, destinationPath, file, onProg
         if (config.blockstore_type === "azure") {
             additionalHeaders = { "x-ms-blob-type": "BlockBlob" };
         }
-        const getResp = await staging.get(
-            repo.id,
-            reference.id,
-            destinationPath,
-            config.pre_sign_support_ui,
-        );
+        const getResp = await staging.get(repo.id, reference.id, destinationPath, config.pre_sign_support_ui);
         try {
             const uploadResponse = await uploadWithProgress(
                 getResp.presigned_url,
@@ -389,19 +354,9 @@ const uploadFile = async (config, repo, reference, destinationPath, file, onProg
             );
             const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
             const checksum = extractChecksumFromResponse(parsedHeaders);
-            await staging.link(
-                repo.id,
-                reference.id,
-                destinationPath,
-                getResp,
-                checksum,
-                file.size,
-                file.type,
-            );
+            await staging.link(repo.id, reference.id, destinationPath, getResp, checksum, file.size, file.type);
         } catch (error) {
-            throw new Error(
-                `Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ""}`,
-            );
+            throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ""}`);
         }
     } else {
         await objects.upload(repo.id, reference.id, destinationPath, file, onProgress);
@@ -555,13 +510,8 @@ const UploadButtonText = ({ inProgress, uploadingCount, filesLength, averageProg
     if (inProgress) {
         return (
             <>
-                <span
-                    className="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden="true"
-                ></span>
-                Uploading{" "}
-                {uploadingCount > 0 ? `${uploadingCount} / ${filesLength}` : averageProgress + "%"}
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Uploading {uploadingCount > 0 ? `${uploadingCount} / ${filesLength}` : averageProgress + "%"}
                 ...
             </>
         );
@@ -574,17 +524,7 @@ const UploadButtonText = ({ inProgress, uploadingCount, filesLength, averageProg
     );
 };
 
-const UploadButton = ({
-    config,
-    repo,
-    reference,
-    path,
-    onDone,
-    onClick,
-    onHide,
-    show = false,
-    disabled = false,
-}) => {
+const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false }) => {
     const initialState = {
         inProgress: false,
         error: null,
@@ -603,9 +543,7 @@ const UploadButton = ({
         (acceptedFiles) => {
             if (uploadState.inProgress) return;
 
-            const newFiles = acceptedFiles.filter(
-                (f) => !files.some((existing) => existing.path === f.path),
-            );
+            const newFiles = acceptedFiles.filter((f) => !files.some((existing) => existing.path === f.path));
             if (newFiles.length === 0) return;
 
             const nextFiles = [...files, ...newFiles];
@@ -816,22 +754,13 @@ const UploadButton = ({
     const totalSize = files.reduce((a, f) => a + f.size, 0);
     const canUpload = files.length > 0 && !uploadState.inProgress;
 
-    const totalProgress = files.reduce(
-        (sum, file) => sum + (fileStates[file.path]?.percent || 0),
-        0,
-    );
+    const totalProgress = files.reduce((sum, file) => sum + (fileStates[file.path]?.percent || 0), 0);
     const averageProgress = files.length > 0 ? Math.round(totalProgress / files.length) : 0;
     const uploadingCount = files.filter((f) => fileStates[f.path]?.status === "uploading").length;
 
     return (
         <>
-            <Modal
-                size="xl"
-                show={show}
-                onHide={hide}
-                backdrop="static"
-                keyboard={!uploadState.inProgress}
-            >
+            <Modal size="xl" show={show} onHide={hide} backdrop="static" keyboard={!uploadState.inProgress}>
                 <Modal.Header closeButton={!uploadState.inProgress}>
                     <Modal.Title>
                         <UploadIcon className="me-2" />
@@ -858,21 +787,13 @@ const UploadButton = ({
                                     "aria-disabled": uploadState.inProgress,
                                 })}
                             >
-                                <input
-                                    {...getInputProps({ "aria-disabled": uploadState.inProgress })}
-                                />
+                                <input {...getInputProps({ "aria-disabled": uploadState.inProgress })} />
                                 <div
-                                    className={
-                                        isDragAccept
-                                            ? "file-drop-zone file-drop-zone-focus"
-                                            : "file-drop-zone"
-                                    }
+                                    className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}
                                 >
                                     <UploadIcon size={24} className="file-drop-zone-icon" />
                                     <div className="file-drop-zone-text">
-                                        {isDragAccept
-                                            ? "Drop files here"
-                                            : "Drag & drop files or folders here"}
+                                        {isDragAccept ? "Drop files here" : "Drag & drop files or folders here"}
                                     </div>
                                     <div className="file-drop-zone-hint">or click to browse</div>
                                 </div>
@@ -895,9 +816,7 @@ const UploadButton = ({
                             <div className="upload-items-container">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                     <h5 className="mb-0">Files to Upload ({files.length})</h5>
-                                    <span className="text-muted">
-                                        Total size: {humanSize(totalSize)}
-                                    </span>
+                                    <span className="text-muted">Total size: {humanSize(totalSize)}</span>
                                 </div>
 
                                 <div className="upload-items-header d-none d-md-grid">
@@ -909,9 +828,7 @@ const UploadButton = ({
                                 <div className="upload-items-list">
                                     {files.map((file) => {
                                         const fileState = fileStates[file.path];
-                                        const isUploading =
-                                            uploadState.inProgress ||
-                                            fileState?.status === "uploading";
+                                        const isUploading = uploadState.inProgress || fileState?.status === "uploading";
                                         return (
                                             <UploadCandidate
                                                 key={file.path}
@@ -919,17 +836,12 @@ const UploadButton = ({
                                                 destination={fileDestinations[file.path] || ""}
                                                 state={fileState}
                                                 onDestinationChange={(newDest) =>
-                                                    handleIndividualDestinationChange(
-                                                        file.path,
-                                                        newDest,
-                                                    )
+                                                    handleIndividualDestinationChange(file.path, newDest)
                                                 }
                                                 onRemove={() => handleRemoveFile(file.path)}
                                                 isUploading={isUploading}
                                                 isEditing={editingDestinations[file.path] || false}
-                                                onEditToggle={(editMode) =>
-                                                    handleEditToggle(file.path, editMode)
-                                                }
+                                                onEditToggle={(editMode) => handleEditToggle(file.path, editMode)}
                                             />
                                         );
                                     })}
@@ -964,11 +876,7 @@ const UploadButton = ({
                 variant={!config.import_support ? "success" : "light"}
                 disabled={disabled || !reference || reference.type !== RefTypeBranch}
                 onClick={onClick}
-                title={
-                    !reference || reference.type !== RefTypeBranch
-                        ? "Select a branch to upload"
-                        : "Upload objects"
-                }
+                title={!reference || reference.type !== RefTypeBranch ? "Select a branch to upload" : "Upload objects"}
             >
                 <UploadIcon /> Upload Object
             </Button>
@@ -985,9 +893,7 @@ export const EmptyChangesState = ({ repo, reference, toggleShowChanges }) => {
                     <p className="text-muted mb-1">
                         No uncommitted changes on <code>{reference.id}</code>!
                     </p>
-                    <p className="text-muted mb-4">
-                        Upload or modify files to see them appear here.
-                    </p>
+                    <p className="text-muted mb-4">Upload or modify files to see them appear here.</p>
                     <Link
                         href={{
                             pathname: "/repositories/:repoId/objects",
@@ -1050,29 +956,14 @@ const TreeContainer = ({
     const { results, error, loading, nextPage } = useAPIWithPagination(() => {
         if (showChangesOnly) {
             // Show only changes - use current path to filter changes
-            return appendMoreResults(
-                resultsState,
-                path,
-                lastSeenPath,
-                setLastSeenPath,
-                setResultsState,
-                () => refs.changes(repo.id, reference.id, lastSeenPath, path, delimiter),
+            return appendMoreResults(resultsState, path, lastSeenPath, setLastSeenPath, setResultsState, () =>
+                refs.changes(repo.id, reference.id, lastSeenPath, path, delimiter),
             );
         } else {
             // Show all objects
             return objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui);
         }
-    }, [
-        repo.id,
-        reference.id,
-        path,
-        after,
-        refreshToken,
-        showChangesOnly,
-        internalRefresh,
-        lastSeenPath,
-        delimiter,
-    ]);
+    }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, lastSeenPath, delimiter]);
 
     // Merge changes with objects for highlighting
     const mergedResults = React.useMemo(() => {
@@ -1087,12 +978,7 @@ const TreeContainer = ({
         // Map direct changes and identify affected directories
         changesData.results.forEach((change) => {
             // Map change type to what EntryRow expects
-            const mappedType =
-                change.type === "removed"
-                    ? "removed"
-                    : change.type === "added"
-                      ? "added"
-                      : "changed";
+            const mappedType = change.type === "removed" ? "removed" : change.type === "added" ? "added" : "changed";
 
             changesMap.set(change.path, mappedType);
 
@@ -1138,12 +1024,7 @@ const TreeContainer = ({
         const allResults = [
             ...enhancedResults,
             ...missingItems.map((item) => {
-                const mappedType =
-                    item.type === "removed"
-                        ? "removed"
-                        : item.type === "added"
-                          ? "added"
-                          : "changed";
+                const mappedType = item.type === "removed" ? "removed" : item.type === "added" ? "added" : "changed";
                 return {
                     ...item,
                     diff_type: mappedType,
@@ -1168,12 +1049,7 @@ const TreeContainer = ({
         onRefresh();
     };
 
-    const getMoreUncommittedChanges = (
-        lastSeenPath,
-        changesPath,
-        useDelimiter = true,
-        amount = -1,
-    ) => {
+    const getMoreUncommittedChanges = (lastSeenPath, changesPath, useDelimiter = true, amount = -1) => {
         return refs.changes(
             repo.id,
             reference.id,
@@ -1198,19 +1074,12 @@ const TreeContainer = ({
 
     // If showing changes only, use ChangesTreeContainer
     if (showChangesOnly) {
-        const rawChangesResults =
-            resultsState.results.length > 0 ? resultsState.results : results || [];
+        const rawChangesResults = resultsState.results.length > 0 ? resultsState.results : results || [];
         // Always sort changes lexicographically to maintain consistent ordering
         const changesResults = rawChangesResults.sort((a, b) => a.path.localeCompare(b.path));
 
         if (changesResults.length === 0) {
-            return (
-                <EmptyChangesState
-                    repo={repo}
-                    reference={reference}
-                    toggleShowChanges={toggleShowChangesOnly}
-                />
-            );
+            return <EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />;
         }
 
         const committedRef = reference.id + "@";
@@ -1235,9 +1104,7 @@ const TreeContainer = ({
 
         return (
             <>
-                {actionError && (
-                    <AlertError error={actionError} onDismiss={() => setActionError(null)} />
-                )}
+                {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
                 <ChangesTreeContainer
                     results={changesResults}
                     delimiter={delimiter}
@@ -1267,8 +1134,7 @@ const TreeContainer = ({
                     changesTreeMessage={
                         <p>
                             Showing {changesResults.length} change
-                            {changesResults.length !== 1 ? "s" : ""} for branch{" "}
-                            <strong>{reference.id}</strong>
+                            {changesResults.length !== 1 ? "s" : ""} for branch <strong>{reference.id}</strong>
                         </p>
                     }
                     noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
@@ -1288,14 +1154,9 @@ const TreeContainer = ({
     return (
         <>
             {deleteState.error && (
-                <AlertError
-                    error={deleteState.error}
-                    onDismiss={() => setDeleteState(initialState)}
-                />
+                <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)} />
             )}
-            {actionError && (
-                <AlertError error={actionError} onDismiss={() => setActionError(null)} />
-            )}
+            {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
             <Tree
                 config={{ config }}
                 repo={repo}
@@ -1326,9 +1187,7 @@ const ReadmeContainer = ({ config, repo, reference, path = "", refreshDep = "" }
     let readmePath = "";
 
     if (path) {
-        readmePath = path.endsWith("/")
-            ? `${path}${README_FILE_NAME}`
-            : `${path}/${README_FILE_NAME}`;
+        readmePath = path.endsWith("/") ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
     } else {
         readmePath = README_FILE_NAME;
     }
@@ -1369,10 +1228,7 @@ const NoGCRulesWarning = ({ repoId }) => {
 
     const { response } = useAPI(async () => {
         const repo = await repositories.get(repoId);
-        if (
-            !repo.storage_namespace.startsWith("s3:") &&
-            !repo.storage_namespace.startsWith("http")
-        ) {
+        if (!repo.storage_namespace.startsWith("s3:") && !repo.storage_namespace.startsWith("http")) {
             return false;
         }
         const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), "days");
@@ -1391,13 +1247,8 @@ const NoGCRulesWarning = ({ repoId }) => {
     if (show && response) {
         return (
             <Alert variant="warning" onClose={closeAndRemember} dismissible>
-                <strong>Warning</strong>: No garbage collection rules configured for this
-                repository.{" "}
-                <a
-                    href="https://docs.lakefs.io/howto/garbage-collection/"
-                    target="_blank"
-                    rel="noreferrer"
-                >
+                <strong>Warning</strong>: No garbage collection rules configured for this repository.{" "}
+                <a href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank" rel="noreferrer">
                     Learn More
                 </a>
                 .
@@ -1538,9 +1389,7 @@ const ObjectsBrowser = ({ config }) => {
                                         size="sm"
                                         onClick={() => {
                                             // Trigger the commit modal by finding the actual button and clicking it
-                                            const commitBtn = document.querySelector(
-                                                "[data-commit-btn] button",
-                                            );
+                                            const commitBtn = document.querySelector("[data-commit-btn] button");
                                             if (commitBtn) {
                                                 commitBtn.click();
                                             }
@@ -1591,11 +1440,7 @@ const ObjectsBrowser = ({ config }) => {
 
                     <RefreshButton onClick={refresh} />
 
-                    <Button
-                        variant="success"
-                        disabled={repo?.read_only}
-                        onClick={() => setShowUpload(true)}
-                    >
+                    <Button variant="success" disabled={repo?.read_only} onClick={() => setShowUpload(true)}>
                         <UploadIcon /> Upload
                     </Button>
 
@@ -1699,9 +1544,7 @@ const ObjectsBrowser = ({ config }) => {
                 </ActionGroup>
             </ActionsBar>
 
-            {actionError && (
-                <AlertError error={actionError} onDismiss={() => setActionError(null)} />
-            )}
+            {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
 
             <NoGCRulesWarning repoId={repo.id} />
 
@@ -1765,11 +1608,7 @@ const RepositoryObjectsPage = () => {
     if (repoLoading || configsLoading) return <Loading />;
     if (repoError || configsError) return <RepoError error={repoError || configsError} />;
 
-    const {
-        storageConfig,
-        loading: configLoading,
-        error: configError,
-    } = getRepoStorageConfig(config?.storages, repo);
+    const { storageConfig, loading: configLoading, error: configError } = getRepoStorageConfig(config?.storages, repo);
     if (configLoading) return <Loading />;
     if (configError) return <RepoError error={configError} />;
 

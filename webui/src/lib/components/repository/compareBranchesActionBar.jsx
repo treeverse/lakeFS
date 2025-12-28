@@ -12,14 +12,7 @@ import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/
 import CompareBranchesSelection from "./compareBranchesSelection";
 import { useRouter } from "../../../lib/hooks/router";
 
-const CompareBranchesActionsBar = ({
-    repo,
-    reference,
-    compareReference,
-    baseSelectURL,
-    doRefresh,
-    isEmptyDiff,
-}) => {
+const CompareBranchesActionsBar = ({ repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff }) => {
     return (
         <ActionsBar>
             <ActionGroup orientation="left">
@@ -39,21 +32,13 @@ const CompareBranchesActionsBar = ({
                     <div>
                         <PullRequestButton
                             repo={repo}
-                            disabled={
-                                compareReference.id === reference.id ||
-                                isEmptyDiff ||
-                                repo?.read_only
-                            }
+                            disabled={compareReference.id === reference.id || isEmptyDiff || repo?.read_only}
                             source={compareReference.id}
                             dest={reference.id}
                         />
                         <MergeButton
                             repo={repo}
-                            disabled={
-                                compareReference.id === reference.id ||
-                                isEmptyDiff ||
-                                repo?.read_only
-                            }
+                            disabled={compareReference.id === reference.id || isEmptyDiff || repo?.read_only}
                             source={compareReference.id}
                             dest={reference.id}
                             onDone={doRefresh}
@@ -162,10 +147,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                             />
                         </Form.Group>
 
-                        <MetadataFields
-                            metadataFields={metadataFields}
-                            setMetadataFields={setMetadataFields}
-                        />
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
                     </Form>
                     <FormControl sx={{ m: 1, minWidth: 120 }}>
                         <InputLabel id="demo-select-small" className="text-secondary">
@@ -185,10 +167,10 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                         </Select>
                     </FormControl>
                     <FormHelperText className="text-secondary">
-                        In case of a merge conflict, this option will force the merge process to
-                        automatically favor changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or
-                        from <b>{source}</b> (&rdquo;source-wins&rdquo;). In case no selection is
-                        made, the merge process will fail in case of a conflict.
+                        In case of a merge conflict, this option will force the merge process to automatically favor
+                        changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or from <b>{source}</b>{" "}
+                        (&rdquo;source-wins&rdquo;). In case no selection is made, the merge process will fail in case
+                        of a conflict.
                     </FormHelperText>
                     {mergeState.err ? <AlertError error={mergeState.err} /> : <></>}
                 </Modal.Body>

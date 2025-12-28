@@ -64,9 +64,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     // especially when state updates occur, such as searchPrefix updating with each typed letter.
     useEffect(() => {
         if (allUsers) {
-            const filtered = allUsers.filter((user) =>
-                resolveUserDisplayName(user).startsWith(prefix),
-            );
+            const filtered = allUsers.filter((user) => resolveUserDisplayName(user).startsWith(prefix));
             const hasMorePages = after + DEFAULT_LISTING_AMOUNT < filtered.length;
             const paginatedFilteredUsers = filtered.slice(after, after + DEFAULT_LISTING_AMOUNT);
             setPaginationData({ hasMorePages, paginatedFilteredUsers });
@@ -85,9 +83,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     if (authCapabilities.loading) return <Loading />;
 
     const canInviteUsers =
-        !authCapabilities.error &&
-        authCapabilities.response &&
-        authCapabilities.response.invite_user;
+        !authCapabilities.error && authCapabilities.response && authCapabilities.response.invite_user;
 
     return (
         <>
@@ -191,13 +187,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     );
 };
 
-const UserActionsActionGroup = ({
-    canInviteUsers,
-    selected,
-    onClickInvite,
-    onClickCreate,
-    onConfirmDelete,
-}) => {
+const UserActionsActionGroup = ({ canInviteUsers, selected, onClickInvite, onClickCreate, onConfirmDelete }) => {
     return (
         <ActionGroup orientation="left">
             <Button hidden={!canInviteUsers} variant="primary" onClick={onClickInvite}>
@@ -223,13 +213,7 @@ export const UsersPage = () => {
     const { setActiveTab, refresh, setRefresh, allUsers, loading, error } = useOutletContext();
     useEffect(() => setActiveTab("users"), [setActiveTab]);
     return (
-        <UsersContainer
-            refresh={refresh}
-            setRefresh={setRefresh}
-            allUsers={allUsers}
-            loading={loading}
-            error={error}
-        />
+        <UsersContainer refresh={refresh} setRefresh={setRefresh} allUsers={allUsers} loading={loading} error={error} />
     );
 };
 

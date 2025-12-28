@@ -3,14 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {
-    auth,
-    AuthenticationError,
-    ClientError,
-    ServerError,
-    setup,
-    SETUP_STATE_INITIALIZED,
-} from "../../lib/api";
+import { auth, AuthenticationError, ClientError, ServerError, setup, SETUP_STATE_INITIALIZED } from "../../lib/api";
 import { AlertError, Loading } from "../../lib/components/controls";
 import { useRouter } from "../../lib/hooks/router";
 import { useAPI } from "../../lib/hooks/api";
@@ -101,20 +94,14 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                             } catch (err) {
                                 if (err instanceof AuthenticationError) {
                                     // Invalid credentials (401)
-                                    const message =
-                                        loginConfig.login_failed_message ||
-                                        "The credentials don't match.";
+                                    const message = loginConfig.login_failed_message || "The credentials don't match.";
                                     setLoginError(message);
                                 } else if (err instanceof ServerError) {
                                     // Server errors (5xx)
-                                    setLoginError(
-                                        "A server error occurred. Please try again in a few moments.",
-                                    );
+                                    setLoginError("A server error occurred. Please try again in a few moments.");
                                 } else if (err instanceof ClientError) {
                                     // Other client errors (4xx) - bad request, rate limiting, etc.
-                                    setLoginError(
-                                        "Unable to process login request. Please try again.",
-                                    );
+                                    setLoginError("Unable to process login request. Please try again.");
                                 } else {
                                     // Network errors, refreshUser errors, or other unexpected errors
                                     const message =
@@ -162,10 +149,7 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                                         document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
                                     });
                                     if (loginConfig.fallback_login_url) {
-                                        window.location.href = withNext(
-                                            loginConfig.fallback_login_url,
-                                            next,
-                                        );
+                                        window.location.href = withNext(loginConfig.fallback_login_url, next);
                                     }
                                 }}
                             >
@@ -194,24 +178,14 @@ const LoginPage = () => {
 
     if (loading) return <Loading />;
     if (error)
-        return (
-            <AlertError
-                error={error}
-                className="mt-1 w-50 m-auto"
-                onDismiss={() => window.location.reload()}
-            />
-        );
+        return <AlertError error={error} className="mt-1 w-50 m-auto" onDismiss={() => window.location.reload()} />;
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    if (
-        setupResponse &&
-        (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)
-    ) {
+    if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
         return <Navigate to={{ pathname: ROUTES.SETUP, search: location.search }} replace />;
     }
 
-    if (redirectedFromQuery)
-        return <Navigate to={cleanUrl} replace state={{ redirected: true, next }} />;
+    if (redirectedFromQuery) return <Navigate to={cleanUrl} replace state={{ redirected: true, next }} />;
 
     const loginConfig = setupResponse?.login_config;
 

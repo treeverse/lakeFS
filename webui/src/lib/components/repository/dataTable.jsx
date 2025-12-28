@@ -14,14 +14,7 @@ import PropTypes from "prop-types";
  * @param {string} props.className Additional CSS class names
  * @returns {JSX.Element} DataTable component
  */
-const DataTable = ({
-    columns,
-    data,
-    bordered = true,
-    hover = true,
-    responsive = true,
-    className = "",
-}) => {
+const DataTable = ({ columns, data, bordered = true, hover = true, responsive = true, className = "" }) => {
     if (!data || data.length === 0) {
         return (
             <div className="text-center p-4">

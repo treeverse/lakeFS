@@ -34,17 +34,9 @@ const CompareBranchesSelection = ({
         });
 
     const onSelectRef = (reference) =>
-        route(
-            compareReference
-                ? { ref: reference.id, compare: compareReference.id }
-                : { ref: reference.id },
-        );
+        route(compareReference ? { ref: reference.id, compare: compareReference.id } : { ref: reference.id });
     const onSelectCompare = (compareReference) =>
-        route(
-            reference
-                ? { ref: reference.id, compare: compareReference.id }
-                : { compare: compareReference.id },
-        );
+        route(reference ? { ref: reference.id, compare: compareReference.id } : { compare: compareReference.id });
 
     return (
         <>
@@ -74,11 +66,7 @@ const CompareBranchesSelection = ({
             <OverlayTrigger placement="bottom" overlay={<Tooltip>Switch directions</Tooltip>}>
                 <span>
                     <Button variant={"link"} onClick={handleSwitchRefs}>
-                        <ArrowSwitchIcon
-                            className="me-2 mt-2"
-                            size="small"
-                            verticalAlign="middle"
-                        />
+                        <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle" />
                     </Button>
                 </span>
             </OverlayTrigger>

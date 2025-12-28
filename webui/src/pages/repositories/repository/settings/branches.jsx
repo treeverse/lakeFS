@@ -95,13 +95,10 @@ const SettingsContainer = () => {
                     </h4>
                 </div>
                 <div>
-                    Define branch protection rules to prevent direct changes.&nbsp; Changes to
-                    protected branches can only be done by merging from other branches.&nbsp;
+                    Define branch protection rules to prevent direct changes.&nbsp; Changes to protected branches can
+                    only be done by merging from other branches.&nbsp;
                     {/* eslint-disable-next-line react/jsx-no-target-blank */}
-                    <a
-                        href="https://docs.lakefs.io/reference/protected_branches.html"
-                        target="_blank"
-                    >
+                    <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">
                         Learn more.
                     </a>
                 </div>
@@ -183,9 +180,7 @@ const CreateRuleModal = ({ show, hideFn, onSuccess, repoID, currentRulesResponse
                                 autoFocus
                                 ref={patternField}
                                 onChange={() =>
-                                    setCreateButtonDisabled(
-                                        !patternField.current || !patternField.current.value,
-                                    )
+                                    setCreateButtonDisabled(!patternField.current || !patternField.current.value)
                                 }
                             />
                         </Col>

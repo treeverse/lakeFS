@@ -77,11 +77,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                         >
                             {tag.commit_id.substr(0, 12)}
                         </LinkButton>
-                        <ClipboardButton
-                            variant={buttonVariant}
-                            text={tag.id}
-                            tooltip="Copy ID to clipboard"
-                        />
+                        <ClipboardButton variant={buttonVariant} text={tag.id} tooltip="Copy ID to clipboard" />
                         <ClipboardButton
                             variant={buttonVariant}
                             text={`lakefs://${repo.id}/${tag.id}`}
@@ -101,21 +97,12 @@ const TagWidget = ({ repo, tag, onDelete }) => {
     );
 };
 
-const CreateTagButton = ({
-    repo,
-    variant = "success",
-    onCreate = null,
-    readOnly = false,
-    children,
-}) => {
+const CreateTagButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(true);
     const [error, setError] = useState(null);
     const textRef = useRef(null);
-    const defaultRef = useMemo(
-        () => ({ id: repo.default_branch, type: "branch" }),
-        [repo.default_branch],
-    );
+    const defaultRef = useMemo(() => ({ id: repo.default_branch, type: "branch" }), [repo.default_branch]);
     const [selectedRef, setSelectedRef] = useState(defaultRef);
 
     const hide = () => {
@@ -164,9 +151,7 @@ const CreateTagButton = ({
                                 placeholder="Tag Name"
                                 name="text"
                                 ref={textRef}
-                                onChange={() =>
-                                    setDisabled(!textRef.current || !textRef.current.value)
-                                }
+                                onChange={() => setDisabled(!textRef.current || !textRef.current.value)}
                             />
                         </Form.Group>
                         <Form.Group controlId="source">
@@ -213,8 +198,8 @@ const EmptyTagsState = ({ repo, onCreateTag }) => {
                         No tags yet
                     </h2>
                     <p className="text-muted mb-4 fs-5">
-                        Tags help you mark important points in your data&apos;s history, like
-                        releases, experiments, or versions.
+                        Tags help you mark important points in your data&apos;s history, like releases, experiments, or
+                        versions.
                         <br />
                         They&apos;re perfect for{" "}
                         <a
@@ -315,12 +300,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
 
                         <RefreshButton onClick={doRefresh} />
 
-                        <CreateTagButton
-                            repo={repo}
-                            readOnly={repo?.read_only}
-                            variant="success"
-                            onCreate={doRefresh}
-                        >
+                        <CreateTagButton repo={repo} readOnly={repo?.read_only} variant="success" onCreate={doRefresh}>
                             <TagIcon /> Create Tag
                         </CreateTagButton>
                     </ActionGroup>

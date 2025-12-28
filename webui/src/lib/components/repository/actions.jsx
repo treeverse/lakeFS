@@ -2,12 +2,7 @@ import React from "react";
 
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
-import {
-    CheckCircleFillIcon,
-    StopwatchIcon,
-    XCircleFillIcon,
-    SkipIcon,
-} from "@primer/octicons-react";
+import { CheckCircleFillIcon, StopwatchIcon, XCircleFillIcon, SkipIcon } from "@primer/octicons-react";
 
 export const ActionStatusIcon = ({ status, className = null }) => {
     let icon = <StopwatchIcon fill="orange" verticalAlign="middle" />;

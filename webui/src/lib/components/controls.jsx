@@ -8,14 +8,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import Table from "react-bootstrap/Table";
 import { OverlayTrigger } from "react-bootstrap";
-import {
-    CheckIcon,
-    PasteIcon,
-    SearchIcon,
-    SyncIcon,
-    AlertIcon,
-    AlertFillIcon,
-} from "@primer/octicons-react";
+import { CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon } from "@primer/octicons-react";
 import { Link } from "./nav";
 import {
     Box,
@@ -67,10 +60,7 @@ export const useDebouncedState = (dependsOn, debounceFn, wait = 300) => {
 };
 
 export const DebouncedFormControl = React.forwardRef((props, ref) => {
-    const onChange = debounce(
-        props.onChange,
-        props.debounce !== undefined ? props.debounce : defaultDebounceMs,
-    );
+    const onChange = debounce(props.onChange, props.debounce !== undefined ? props.debounce : defaultDebounceMs);
     return <Form.Control ref={ref} {...{ ...props, onChange }} />;
 });
 DebouncedFormControl.displayName = "DebouncedFormControl";
@@ -78,11 +68,7 @@ DebouncedFormControl.displayName = "DebouncedFormControl";
 export const Spinner = () => {
     return (
         <div className="loading-spinner mb-3">
-            <div
-                className="spinner-border text-primary"
-                role="status"
-                style={{ width: "3rem", height: "3rem" }}
-            >
+            <div className="spinner-border text-primary" role="status" style={{ width: "3rem", height: "3rem" }}>
                 <span className="visually-hidden">Loading...</span>
             </div>
         </div>
@@ -112,12 +98,7 @@ export const AlertError = ({ error, onDismiss = null, className = null }) => {
     const alertClassName = `${className} text-wrap text-break shadow-sm`.trim();
 
     return (
-        <Alert
-            className={alertClassName}
-            variant="danger"
-            dismissible={onDismiss !== null}
-            onClose={onDismiss}
-        >
+        <Alert className={alertClassName} variant="danger" dismissible={onDismiss !== null} onClose={onDismiss}>
             <div className="alert-error-body">
                 <div className="me-3">
                     <AlertFillIcon size={24} />
@@ -143,10 +124,7 @@ export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => 
 export const ActionGroup = ({ children, orientation = "left", className = "" }) => {
     const side = orientation === "right" ? "ms-auto" : "";
     return (
-        <div
-            role="toolbar"
-            className={`${side} mb-2 btn-toolbar action-group-${orientation} ${className}`}
-        >
+        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation} ${className}`}>
             {children}
         </div>
     );
@@ -265,14 +243,7 @@ export const LinkButton = ({ href, children, buttonVariant, tooltip = null }) =>
     );
 };
 
-export const TooltipButton = ({
-    onClick,
-    variant,
-    children,
-    tooltip,
-    className = "",
-    size = "sm",
-}) => {
+export const TooltipButton = ({ onClick, variant, children, tooltip, className = "", size = "sm" }) => {
     return (
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
             <Button variant={variant} onClick={onClick} className={className} size={size}>
@@ -440,9 +411,7 @@ export const DataTable = ({
                             <td>
                                 <span className="row-hover">
                                     {actions.map((action) => (
-                                        <span key={`${keyFn(row)}-${action.key}`}>
-                                            {action.buttonFn(row)}
-                                        </span>
+                                        <span key={`${keyFn(row)}-${action.key}`}>{action.buttonFn(row)}</span>
                                     ))}
                                 </span>
                             </td>
@@ -526,24 +495,12 @@ export const ProgressSpinner = ({ text, changingElement = "" }) => {
     );
 };
 
-export const ExitConfirmationDialog = ({
-    dialogAlert,
-    dialogDescription,
-    onExit,
-    onContinue,
-    isOpen = false,
-}) => {
+export const ExitConfirmationDialog = ({ dialogAlert, dialogDescription, onExit, onContinue, isOpen = false }) => {
     return (
-        <Dialog
-            open={isOpen}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-        >
+        <Dialog open={isOpen} aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description">
             <DialogTitle id="alert-dialog-title">{dialogAlert}</DialogTitle>
             <DialogContent>
-                <DialogContentText id="alert-dialog-description">
-                    {dialogDescription}
-                </DialogContentText>
+                <DialogContentText id="alert-dialog-description">{dialogDescription}</DialogContentText>
             </DialogContent>
             <DialogActions>
                 <MuiButton onClick={onContinue} autoFocus>
@@ -575,8 +532,7 @@ export const GrayOut = ({ children }) => (
     </div>
 );
 
-export const WrapIf = ({ enabled, Component, children }) =>
-    enabled ? <Component>{children}</Component> : children;
+export const WrapIf = ({ enabled, Component, children }) => (enabled ? <Component>{children}</Component> : children);
 
 export const SearchInput = ({ searchPrefix, setSearchPrefix, placeholder }) => {
     return (

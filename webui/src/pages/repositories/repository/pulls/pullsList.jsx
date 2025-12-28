@@ -16,12 +16,7 @@ import { useRouter } from "../../../../lib/hooks/router";
 import { RepoError } from "../error";
 import { Link } from "../../../../lib/components/nav";
 import { PullStatus } from "../../../../constants";
-import {
-    ArrowLeftIcon,
-    GitMergeIcon,
-    GitPullRequestClosedIcon,
-    GitPullRequestIcon,
-} from "@primer/octicons-react";
+import { ArrowLeftIcon, GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from "@primer/octicons-react";
 
 const PullIcon = ({ status }) => {
     switch (status) {
@@ -48,8 +43,7 @@ const PullWidget = ({ repo, pull }) => {
             const statusDesc = pull.status === PullStatus.closed ? "Closed" : "Merged";
             return (
                 <>
-                    {statusDesc} {dayjs(pull.closed_date).fromNow()} by{" "}
-                    <strong>{pull.author}</strong>.
+                    {statusDesc} {dayjs(pull.closed_date).fromNow()} by <strong>{pull.author}</strong>.
                 </>
             );
         }
