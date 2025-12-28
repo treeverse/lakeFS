@@ -30,6 +30,7 @@ test.describe("Commit and Merge Operations", () => {
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.gotoObjectsTab();
+        await repositoryPage.switchBranch(DEST_BRANCH);
         await repositoryPage.switchBranch(SOURCE_BRANCH);
 
         const fileName = "commit-test.txt";
