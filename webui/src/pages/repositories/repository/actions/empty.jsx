@@ -1,7 +1,7 @@
-import React from "react";
-import { PlayIcon, BookIcon, CheckCircleIcon, LightBulbIcon } from "@primer/octicons-react";
-import { Card, Row, Col, Button } from "react-bootstrap";
-import { TextRenderer } from "../fileRenderers/simple";
+import React from 'react';
+import { PlayIcon, BookIcon, CheckCircleIcon, LightBulbIcon } from '@primer/octicons-react';
+import { Card, Row, Col, Button } from 'react-bootstrap';
+import { TextRenderer } from '../fileRenderers/simple';
 
 // Example used for empty state
 const yamlExample = `# Actions are configured in the _lakefs_actions/ 

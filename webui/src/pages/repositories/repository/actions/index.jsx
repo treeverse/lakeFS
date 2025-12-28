@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     ActionGroup,
     ActionsBar,
@@ -9,27 +9,27 @@ import {
     Na,
     RefreshButton,
     TooltipButton,
-} from "../../../../lib/components/controls";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { useAPIWithPagination } from "../../../../lib/hooks/api";
-import { actions } from "../../../../lib/api";
-import { FilterIcon, XIcon } from "@primer/octicons-react";
-import { Table } from "react-bootstrap";
-import { Paginator } from "../../../../lib/components/pagination";
-import { ActionStatusIcon } from "../../../../lib/components/repository/actions";
-import { Link } from "../../../../lib/components/nav";
-import { useRouter } from "../../../../lib/hooks/router";
-import { RepoError } from "../error";
-import { EmptyActionsState } from "./empty";
+} from '../../../../lib/components/controls';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { useAPIWithPagination } from '../../../../lib/hooks/api';
+import { actions } from '../../../../lib/api';
+import { FilterIcon, XIcon } from '@primer/octicons-react';
+import { Table } from 'react-bootstrap';
+import { Paginator } from '../../../../lib/components/pagination';
+import { ActionStatusIcon } from '../../../../lib/components/repository/actions';
+import { Link } from '../../../../lib/components/nav';
+import { useRouter } from '../../../../lib/hooks/router';
+import { RepoError } from '../error';
+import { EmptyActionsState } from './empty';
 
 const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
     return (
         <tr>
             <td>
-                <ActionStatusIcon className="me-2" status={run.status} />{" "}
+                <ActionStatusIcon className="me-2" status={run.status} />{' '}
                 <Link
                     href={{
-                        pathname: "/repositories/:repoId/actions/:runId",
+                        pathname: '/repositories/:repoId/actions/:runId',
                         params: { repoId: repo.id, runId: run.run_id },
                     }}
                 >
@@ -41,7 +41,7 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
                 <Link
                     className="me-2"
                     href={{
-                        pathname: "/repositories/:repoId/objects",
+                        pathname: '/repositories/:repoId/objects',
                         params: { repoId: repo.id },
                         query: { ref: run.branch },
                     }}
@@ -70,7 +70,7 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
                         <Link
                             className="me-2"
                             href={{
-                                pathname: "/repositories/:repoId/commits/:commitId",
+                                pathname: '/repositories/:repoId/commits/:commitId',
                                 params: { repoId: repo.id, commitId: run.commit_id },
                             }}
                         >
@@ -155,7 +155,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
                 key="branch"
                 variant="light"
                 tooltip="remove branch filter"
-                onClick={() => onFilterBranch("")}
+                onClick={() => onFilterBranch('')}
             >
                 <XIcon /> {branch}
             </TooltipButton>,
@@ -168,7 +168,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
                 key="commit"
                 variant="light"
                 tooltip="remove commit filter"
-                onClick={() => onFilterCommit("")}
+                onClick={() => onFilterCommit('')}
             >
                 <XIcon /> {commit.substr(0, 12)}
             </TooltipButton>,
@@ -187,7 +187,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
             {content}
             {results.length > 0 && (
                 <div>
-                    Actions can be configured to run when predefined events occur.{" "}
+                    Actions can be configured to run when predefined events occur.{' '}
                     <a href="https://docs.lakefs.io/howto/hooks/" target="_blank" rel="noreferrer">
                         Learn more.
                     </a>
@@ -200,8 +200,8 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
 const ActionsContainer = () => {
     const router = useRouter();
     const { after } = router.query;
-    const commit = router.query.commit ? router.query.commit : "";
-    const branch = router.query.branch ? router.query.branch : "";
+    const commit = router.query.commit ? router.query.commit : '';
+    const branch = router.query.branch ? router.query.branch : '';
 
     const { repo, loading, error } = useRefs();
 
@@ -238,7 +238,7 @@ const ActionsContainer = () => {
 
 export const RepositoryActionsPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("actions"), [setActivePage]);
+    useEffect(() => setActivePage('actions'), [setActivePage]);
     return <ActionsContainer />;
 };
 

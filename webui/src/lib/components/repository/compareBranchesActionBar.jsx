@@ -1,16 +1,16 @@
-import React, { useCallback, useRef, useState } from "react";
-import { refs as refsAPI } from "../../../lib/api";
-import { RefTypeBranch } from "../../../constants";
-import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../controls";
-import { MetadataFields } from "./metadata";
-import { getMetadataIfValid, touchInvalidFields } from "./metadataHelpers";
-import { GitMergeIcon, GitPullRequestIcon } from "@primer/octicons-react";
-import Button from "react-bootstrap/Button";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
-import CompareBranchesSelection from "./compareBranchesSelection";
-import { useRouter } from "../../../lib/hooks/router";
+import React, { useCallback, useRef, useState } from 'react';
+import { refs as refsAPI } from '../../../lib/api';
+import { RefTypeBranch } from '../../../constants';
+import { ActionGroup, ActionsBar, AlertError, RefreshButton } from '../controls';
+import { MetadataFields } from './metadata';
+import { getMetadataIfValid, touchInvalidFields } from './metadataHelpers';
+import { GitMergeIcon, GitPullRequestIcon } from '@primer/octicons-react';
+import Button from 'react-bootstrap/Button';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
+import CompareBranchesSelection from './compareBranchesSelection';
+import { useRouter } from '../../../lib/hooks/router';
 
 const CompareBranchesActionsBar = ({ repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff }) => {
     return (
@@ -57,7 +57,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
         merging: false,
         show: false,
         err: null,
-        strategy: "none",
+        strategy: 'none',
     };
     const [mergeState, setMergeState] = useState(initialMerge);
 
@@ -94,8 +94,8 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
         const message = textRef.current.value;
 
         let strategy = mergeState.strategy;
-        if (strategy === "none") {
-            strategy = "";
+        if (strategy === 'none') {
+            strategy = '';
         }
         setMergeState({
             merging: true,
@@ -139,7 +139,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                                 placeholder="Commit Message (Optional)"
                                 ref={textRef}
                                 onKeyDown={(e) => {
-                                    if (e.key === "Enter" && !e.shiftKey) {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
                                         onSubmit();
                                     }
@@ -161,14 +161,14 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                             className="text-secondary"
                             onChange={onStrategyChange}
                         >
-                            <MenuItem value={"none"}>Default</MenuItem>
-                            <MenuItem value={"source-wins"}>source-wins</MenuItem>
-                            <MenuItem value={"dest-wins"}>dest-wins</MenuItem>
+                            <MenuItem value={'none'}>Default</MenuItem>
+                            <MenuItem value={'source-wins'}>source-wins</MenuItem>
+                            <MenuItem value={'dest-wins'}>dest-wins</MenuItem>
                         </Select>
                     </FormControl>
                     <FormHelperText className="text-secondary">
                         In case of a merge conflict, this option will force the merge process to automatically favor
-                        changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or from <b>{source}</b>{" "}
+                        changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or from <b>{source}</b>{' '}
                         (&rdquo;source-wins&rdquo;). In case no selection is made, the merge process will fail in case
                         of a conflict.
                     </FormHelperText>
@@ -179,12 +179,12 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                         Cancel
                     </Button>
                     <Button variant="success" disabled={mergeState.merging} onClick={onSubmit}>
-                        {mergeState.merging ? "Merging..." : "Merge"}
+                        {mergeState.merging ? 'Merging...' : 'Merge'}
                     </Button>
                 </Modal.Footer>
             </Modal>
             <Button variant="success" disabled={disabled} onClick={() => onClickMerge()}>
-                <GitMergeIcon /> {"Merge"}
+                <GitMergeIcon /> {'Merge'}
             </Button>
         </>
     );
@@ -195,7 +195,7 @@ const PullRequestButton = ({ repo, source, dest, disabled = false }) => {
 
     const onClick = () => {
         router.push({
-            pathname: "/repositories/:repoId/pulls/create",
+            pathname: '/repositories/:repoId/pulls/create',
             params: { repoId: repo.id },
             query: { ref: dest, compare: source },
         });
@@ -203,7 +203,7 @@ const PullRequestButton = ({ repo, source, dest, disabled = false }) => {
 
     return (
         <Button variant="primary" disabled={disabled} onClick={onClick}>
-            <GitPullRequestIcon /> {"Create Pull Request"}
+            <GitPullRequestIcon /> {'Create Pull Request'}
         </Button>
     );
 };

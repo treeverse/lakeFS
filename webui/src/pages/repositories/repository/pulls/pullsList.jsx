@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import Card from "react-bootstrap/Card";
-import ListGroup from "react-bootstrap/ListGroup";
-import Alert from "react-bootstrap/Alert";
-import { Tab, Tabs } from "react-bootstrap";
-import Button from "react-bootstrap/Button";
-import dayjs from "dayjs";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import Card from 'react-bootstrap/Card';
+import ListGroup from 'react-bootstrap/ListGroup';
+import Alert from 'react-bootstrap/Alert';
+import { Tab, Tabs } from 'react-bootstrap';
+import Button from 'react-bootstrap/Button';
+import dayjs from 'dayjs';
 
-import { ActionGroup, AlertError, Loading } from "../../../../lib/components/controls";
-import { pulls as pullsAPI } from "../../../../lib/api";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { useAPIWithPagination } from "../../../../lib/hooks/api";
-import { Paginator } from "../../../../lib/components/pagination";
-import { useRouter } from "../../../../lib/hooks/router";
-import { RepoError } from "../error";
-import { Link } from "../../../../lib/components/nav";
-import { PullStatus } from "../../../../constants";
-import { ArrowLeftIcon, GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from "@primer/octicons-react";
+import { ActionGroup, AlertError, Loading } from '../../../../lib/components/controls';
+import { pulls as pullsAPI } from '../../../../lib/api';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { useAPIWithPagination } from '../../../../lib/hooks/api';
+import { Paginator } from '../../../../lib/components/pagination';
+import { useRouter } from '../../../../lib/hooks/router';
+import { RepoError } from '../error';
+import { Link } from '../../../../lib/components/nav';
+import { PullStatus } from '../../../../constants';
+import { ArrowLeftIcon, GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from '@primer/octicons-react';
 
 const PullIcon = ({ status }) => {
     switch (status) {
@@ -40,7 +40,7 @@ const PullWidget = ({ repo, pull }) => {
                 </>
             );
         } else if (pull.status === PullStatus.closed || pull.status === PullStatus.merged) {
-            const statusDesc = pull.status === PullStatus.closed ? "Closed" : "Merged";
+            const statusDesc = pull.status === PullStatus.closed ? 'Closed' : 'Merged';
             return (
                 <>
                     {statusDesc} {dayjs(pull.closed_date).fromNow()} by <strong>{pull.author}</strong>.
@@ -53,11 +53,11 @@ const PullWidget = ({ repo, pull }) => {
         <ListGroup.Item className="pull-row pt-3 pb-3 clearfix" id={pull.id}>
             <div className="float-start">
                 <h6>
-                    <PullIcon status={pull.status} />{" "}
+                    <PullIcon status={pull.status} />{' '}
                     <Link
                         className="pull-title"
                         href={{
-                            pathname: "/repositories/:repoId/pulls/:pullId",
+                            pathname: '/repositories/:repoId/pulls/:pullId',
                             params: { repoId: repo.id, pullId: pull.id },
                         }}
                     >
@@ -123,7 +123,7 @@ const PullsList = ({ repo, after, prefix, onPaginate }) => {
                         variant="success"
                         onClick={() =>
                             router.push({
-                                pathname: "/repositories/:repoId/pulls/create",
+                                pathname: '/repositories/:repoId/pulls/create',
                                 params: { repoId: repo.id },
                             })
                         }
@@ -141,7 +141,7 @@ const PullsContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
-    const routerPfx = router.query.prefix || "";
+    const routerPfx = router.query.prefix || '';
 
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
@@ -149,7 +149,7 @@ const PullsContainer = () => {
     return (
         <PullsList
             repo={repo}
-            after={after || ""}
+            after={after || ''}
             prefix={routerPfx}
             onPaginate={(after) => {
                 const query = { after };
@@ -157,7 +157,7 @@ const PullsContainer = () => {
                     query.prefix = router.query.prefix;
                 }
                 router.push({
-                    pathname: "/repositories/:repoId/pulls",
+                    pathname: '/repositories/:repoId/pulls',
                     params: { repoId: repo.id },
                     query,
                 });
@@ -168,7 +168,7 @@ const PullsContainer = () => {
 
 const RepositoryPullsListPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("pulls"), [setActivePage]);
+    useEffect(() => setActivePage('pulls'), [setActivePage]);
     return <PullsContainer />;
 };
 

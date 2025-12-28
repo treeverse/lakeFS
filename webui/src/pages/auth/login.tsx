@@ -1,15 +1,15 @@
-import React, { useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import Card from "react-bootstrap/Card";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import { auth, AuthenticationError, ClientError, ServerError, setup, SETUP_STATE_INITIALIZED } from "../../lib/api";
-import { AlertError, Loading } from "../../lib/components/controls";
-import { useRouter } from "../../lib/hooks/router";
-import { useAPI } from "../../lib/hooks/api";
-import { usePluginManager } from "../../extendable/plugins/pluginsContext";
-import { LAKEFS_POST_LOGIN_NEXT, useAuth } from "../../lib/auth/authContext";
-import { normalizeNext, ROUTES } from "../../lib/utils";
+import React, { useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import { auth, AuthenticationError, ClientError, ServerError, setup, SETUP_STATE_INITIALIZED } from '../../lib/api';
+import { AlertError, Loading } from '../../lib/components/controls';
+import { useRouter } from '../../lib/hooks/router';
+import { useAPI } from '../../lib/hooks/api';
+import { usePluginManager } from '../../extendable/plugins/pluginsContext';
+import { LAKEFS_POST_LOGIN_NEXT, useAuth } from '../../lib/auth/authContext';
+import { normalizeNext, ROUTES } from '../../lib/utils';
 
 type NavigateState = { redirected?: boolean; next?: string };
 
@@ -23,7 +23,7 @@ export interface LoginConfig {
     username_ui_placeholder?: string;
     password_ui_placeholder?: string;
     login_url: string;
-    login_url_method?: "none" | "redirect" | "select";
+    login_url_method?: 'none' | 'redirect' | 'select';
     login_failed_message?: string;
     fallback_login_url?: string;
     fallback_login_label?: string;
@@ -33,7 +33,7 @@ export interface LoginConfig {
 
 export const withNext = (url: string, next: string) => {
     const u = new URL(url, window.location.origin);
-    u.searchParams.set("next", normalizeNext(next));
+    u.searchParams.set('next', normalizeNext(next));
     return u.toString();
 };
 
@@ -41,18 +41,18 @@ export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     const st = location.state ?? {};
     const qp = new URLSearchParams(location.search);
 
-    const redirectedFromQuery = qp.get("redirected") === "true";
+    const redirectedFromQuery = qp.get('redirected') === 'true';
     const redirected = Boolean(st.redirected) || redirectedFromQuery;
-    const next = normalizeNext(st.next ?? qp.get("next"));
+    const next = normalizeNext(st.next ?? qp.get('next'));
 
     // If `redirected=true` appears in the URL, we drop it from the query and carry
     // `redirected: true` in history state for exactly one render. On the next render
     // the URL is clean, while `redirected` from state triggers the login strategy.
     // Any subsequent navigation replaces the history entry, so the state does not persist.
-    qp.delete("redirected");
+    qp.delete('redirected');
 
     const qs = qp.toString();
-    const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ""}${location.hash ?? ""}`;
+    const cleanUrl = `${location.pathname}${qs ? `?${qs}` : ''}${location.hash ?? ''}`;
 
     return { redirected, redirectedFromQuery, next, cleanUrl };
 };
@@ -65,10 +65,10 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
     // Resolve "next" for post-login navigation
     const state = (location.state as NavigateState | null) ?? null;
     const qp = new URLSearchParams(location.search);
-    const next = normalizeNext(state?.next ?? qp.get("next"));
+    const next = normalizeNext(state?.next ?? qp.get('next'));
 
-    const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
-    const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
+    const usernamePlaceholder = loginConfig.username_ui_placeholder || 'Access Key ID';
+    const passwordPlaceholder = loginConfig.password_ui_placeholder || 'Secret Access Key';
 
     return (
         <div className="d-flex align-items-center justify-content-center">
@@ -86,8 +86,8 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                             const formData = new FormData(form);
                             try {
                                 setLoginError(null);
-                                const username = formData.get("username");
-                                const password = formData.get("password");
+                                const username = formData.get('username');
+                                const password = formData.get('password');
                                 await auth.login(username, password);
                                 window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
                                 await refreshUser({ useCache: false });
@@ -98,16 +98,16 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                                     setLoginError(message);
                                 } else if (err instanceof ServerError) {
                                     // Server errors (5xx)
-                                    setLoginError("A server error occurred. Please try again in a few moments.");
+                                    setLoginError('A server error occurred. Please try again in a few moments.');
                                 } else if (err instanceof ClientError) {
                                     // Other client errors (4xx) - bad request, rate limiting, etc.
-                                    setLoginError("Unable to process login request. Please try again.");
+                                    setLoginError('Unable to process login request. Please try again.');
                                 } else {
                                     // Network errors, refreshUser errors, or other unexpected errors
                                     const message =
                                         err instanceof Error
                                             ? err.message
-                                            : "Unable to complete login. Please try again.";
+                                            : 'Unable to complete login. Please try again.';
                                     setLoginError(message);
                                 }
                             }
@@ -138,7 +138,7 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                             Login
                         </Button>
                     </Form>
-                    <div className={"mt-2 mb-1"}>
+                    <div className={'mt-2 mb-1'}>
                         {loginConfig.fallback_login_url ? (
                             <Button
                                 variant="link"
@@ -153,10 +153,10 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                                     }
                                 }}
                             >
-                                {loginConfig.fallback_login_label || "Try another way to login"}
+                                {loginConfig.fallback_login_label || 'Try another way to login'}
                             </Button>
                         ) : (
-                            ""
+                            ''
                         )}
                     </div>
                 </Card.Body>
@@ -174,7 +174,7 @@ const LoginPage = () => {
     const { redirected, redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
 
     // Persist next for post-login redirect
-    if (next && next.startsWith("/")) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
+    if (next && next.startsWith('/')) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
 
     if (loading) return <Loading />;
     if (error)

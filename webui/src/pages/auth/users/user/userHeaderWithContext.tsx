@@ -1,6 +1,6 @@
-import React, { FC, useContext } from "react";
-import { UserHeader } from "../../../../lib/components/auth/nav";
-import { GetUserDisplayNameByIdContext } from "../index";
+import React, { FC, useContext } from 'react';
+import { UserHeader } from '../../../../lib/components/auth/nav';
+import { GetUserDisplayNameByIdContext } from '../index';
 
 export interface UserHeaderWithContextProps {
     userId: string;

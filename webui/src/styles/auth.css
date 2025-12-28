@@ -17,7 +17,7 @@
 }
 
 .auth-page .nav-tabs .nav-link.active::before {
-    content: "";
+    content: '';
     position: absolute;
     bottom: -2px;
     left: 0;

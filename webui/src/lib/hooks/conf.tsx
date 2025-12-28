@@ -1,7 +1,7 @@
-import React, { ReactNode, createContext, useContext, useMemo } from "react";
+import React, { ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { useAPI } from "./api";
-import { setup } from "../api";
+import { useAPI } from './api';
+import { setup } from '../api';
 
 type LoginConfig = {
     RBAC: string | null;
@@ -19,8 +19,8 @@ const initValue = {
     FallbackLoginUrl: null,
     LoginCookieNames: [],
     LoginFailedMessage: null,
-    LoginUrl: "",
-    LogoutUrl: "",
+    LoginUrl: '',
+    LogoutUrl: '',
 };
 
 export const LoginConfigContext = createContext<LoginConfig>(initValue);
@@ -30,7 +30,7 @@ export const WithLoginConfigContext = ({ children }: { children: ReactNode }) =>
     // this will be fixed when we have proper types for the API
     const lc = useMemo(
         () =>
-            error || loading || !("login_config" in (response as Record<string, unknown>))
+            error || loading || !('login_config' in (response as Record<string, unknown>))
                 ? initValue
                 : ((response as Record<string, unknown>).login_config as LoginConfig) || {},
         [response],

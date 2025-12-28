@@ -1,24 +1,24 @@
-import Layout from "../../../lib/components/layout";
-import React, { useRef, useState } from "react";
-import { Navigate } from "react-router-dom";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
-import Form from "react-bootstrap/Form";
-import { auth } from "../../../lib/api";
-import { ActionGroup, ActionsBar, AlertError } from "../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import { useRouter } from "../../../lib/hooks/router";
+import Layout from '../../../lib/components/layout';
+import React, { useRef, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import { auth } from '../../../lib/api';
+import { ActionGroup, ActionsBar, AlertError } from '../../../lib/components/controls';
+import Button from 'react-bootstrap/Button';
+import { useRouter } from '../../../lib/hooks/router';
 
-const TOKEN_PARAM_NAME = "token";
-const EMAIL_PARAM_NAME = "email";
+const TOKEN_PARAM_NAME = 'token';
+const EMAIL_PARAM_NAME = 'email';
 
 const CreateUserWithPasswordForm = ({ token, email }) => {
     const router = useRouter();
 
     const onPasswordChange = () => {
-        const v1 = newPwdField.current.value || "";
-        const v2 = confirmPasswordField.current.value || "";
+        const v1 = newPwdField.current.value || '';
+        const v2 = confirmPasswordField.current.value || '';
         if (v1.length > 0 && v2.length > 0) {
             const isPasswordMatch = v1 === v2;
             setFormValid(isPasswordMatch);
@@ -51,7 +51,7 @@ const CreateUserWithPasswordForm = ({ token, email }) => {
                                 try {
                                     await auth.updatePasswordByToken(token, e.target.password.value, email);
                                     setReqActivateUserError(null);
-                                    router.push("/auth/login");
+                                    router.push('/auth/login');
                                 } catch (err) {
                                     setReqActivateUserError(err);
                                 }
@@ -96,7 +96,7 @@ const CreateUserWithPasswordForm = ({ token, email }) => {
                         <Button
                             className="cancel-create-user"
                             onClick={() => {
-                                router.push("/");
+                                router.push('/');
                             }}
                         >
                             Cancel

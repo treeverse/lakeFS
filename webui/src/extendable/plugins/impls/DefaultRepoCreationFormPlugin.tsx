@@ -1,7 +1,7 @@
-import React from "react";
+import React from 'react';
 
-import { PluginRepoCreationForm } from "../pluginRepoCreationForm";
-import { RepositoryCreateForm } from "../../../lib/components/repositoryCreateForm";
+import { PluginRepoCreationForm } from '../pluginRepoCreationForm';
+import { RepositoryCreateForm } from '../../../lib/components/repositoryCreateForm';
 
 const DefaultRepoCreationFormPlugin: PluginRepoCreationForm = {
     build: ({ formID, configs, formValid, setFormValid, onSubmit, error }) => {

@@ -1,22 +1,22 @@
-import React, { FC } from "react";
-import { useParams } from "react-router-dom";
-import { Box } from "@mui/material";
-import Alert from "react-bootstrap/Alert";
-import Card from "react-bootstrap/Card";
+import React, { FC } from 'react';
+import { useParams } from 'react-router-dom';
+import { Box } from '@mui/material';
+import Alert from 'react-bootstrap/Alert';
+import Card from 'react-bootstrap/Card';
 
-import { useAPI } from "../../../lib/hooks/api";
-import { useQuery } from "../../../lib/hooks/router";
-import { objects } from "../../../lib/api";
-import { ObjectRenderer } from "./fileRenderers";
-import { AlertError } from "../../../lib/components/controls";
-import { URINavigator } from "../../../lib/components/repository/tree";
-import { RefTypeBranch } from "../../../constants";
-import { RefContextProvider, useRefs } from "../../../lib/hooks/repo";
-import { useConfigContext } from "../../../lib/hooks/configProvider";
-import { linkToPath } from "../../../lib/api";
-import { getRepoStorageConfig } from "./utils";
+import { useAPI } from '../../../lib/hooks/api';
+import { useQuery } from '../../../lib/hooks/router';
+import { objects } from '../../../lib/api';
+import { ObjectRenderer } from './fileRenderers';
+import { AlertError } from '../../../lib/components/controls';
+import { URINavigator } from '../../../lib/components/repository/tree';
+import { RefTypeBranch } from '../../../constants';
+import { RefContextProvider, useRefs } from '../../../lib/hooks/repo';
+import { useConfigContext } from '../../../lib/hooks/configProvider';
+import { linkToPath } from '../../../lib/api';
+import { getRepoStorageConfig } from './utils';
 
-import "../../../styles/quickstart.css";
+import '../../../styles/quickstart.css';
 
 type ObjectViewerPathParams = {
     objectName: string;
@@ -42,18 +42,18 @@ interface FileContentsProps {
 }
 
 export const Loading: FC = () => {
-    return <Alert variant={"info"}>Loading...</Alert>;
+    return <Alert variant={'info'}>Loading...</Alert>;
 };
 
 export const getFileExtension = (objectName: string): string => {
-    const objectNameParts = objectName.split(".");
+    const objectNameParts = objectName.split('.');
     return objectNameParts[objectNameParts.length - 1];
 };
 
 export const getContentType = (headers: Headers): string | undefined => {
     if (!headers) return undefined;
 
-    return headers.get("Content-Type") ?? undefined;
+    return headers.get('Content-Type') ?? undefined;
 };
 
 const FileObjectsViewerPage = () => {
@@ -63,8 +63,8 @@ const FileObjectsViewerPage = () => {
 
     const { repoId } = useParams<ObjectViewerPathParams>();
     const queryString = useQuery<ObjectViewerQueryString>();
-    const refId = queryString["ref"] ?? "";
-    const path = queryString["path"] ?? "";
+    const refId = queryString['ref'] ?? '';
+    const path = queryString['path'] ?? '';
     const {
         response,
         error: apiError,
@@ -87,11 +87,11 @@ const FileObjectsViewerPage = () => {
         const contentType = getContentType((response as any)?.headers);
         const sizeBytes = parseInt(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (response as any)?.headers.get("Content-Length"),
+            (response as any)?.headers.get('Content-Length'),
         );
         content = (
             <FileContents
-                repoId={repoId || ""}
+                repoId={repoId || ''}
                 // ref type is unknown since we lost that context while reaching here (and it's not worth a url param).
                 // Effectively it means that if the ref is commit, we won't truncate it in the URI navigator,
                 // which is a better behaviour than truncating it when it's a branch/tag.
@@ -117,7 +117,7 @@ export const FileContents: FC<FileContentsProps> = ({
     loading,
     error,
     contentType = undefined,
-    fileExtension = "",
+    fileExtension = '',
     sizeBytes = -1,
     showFullNavigator = true,
     presign = false,
@@ -146,9 +146,9 @@ export const FileContents: FC<FileContentsProps> = ({
     );
 
     return (
-        <Card className={"file-content-card"}>
-            <Card.Header className={"file-content-heading"}>{titleComponent}</Card.Header>
-            <Card.Body className={"file-content-body"}>
+        <Card className={'file-content-card'}>
+            <Card.Header className={'file-content-heading'}>{titleComponent}</Card.Header>
+            <Card.Body className={'file-content-body'}>
                 <Box sx={{ mx: 1 }}>
                     <ObjectRenderer
                         repoId={repoId}

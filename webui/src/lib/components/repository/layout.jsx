@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-import Container from "react-bootstrap/Container";
-import Breadcrumb from "react-bootstrap/Breadcrumb";
-import Stack from "react-bootstrap/Stack";
+import Container from 'react-bootstrap/Container';
+import Breadcrumb from 'react-bootstrap/Breadcrumb';
+import Stack from 'react-bootstrap/Stack';
 
-import { useRefs } from "../../hooks/repo";
-import { Outlet } from "react-router-dom";
-import { RepositoryNavTabs } from "./tabs";
-import { Link } from "../nav";
-import { RefContextProvider } from "../../hooks/repo";
-import { ReadOnlyBadge } from "../badges";
+import { useRefs } from '../../hooks/repo';
+import { Outlet } from 'react-router-dom';
+import { RepositoryNavTabs } from './tabs';
+import { Link } from '../nav';
+import { RefContextProvider } from '../../hooks/repo';
+import { ReadOnlyBadge } from '../badges';
 
 const RepoNav = () => {
     const { repo, reference } = useRefs();
-    const [repoId, setRepoId] = useState("");
+    const [repoId, setRepoId] = useState('');
     useEffect(() => {
         if (repo) {
             setRepoId(repo.id);
@@ -21,7 +21,7 @@ const RepoNav = () => {
     }, [repo]);
 
     const repoLink = {
-        pathname: "/repositories/:repoId/objects",
+        pathname: '/repositories/:repoId/objects',
         params: { repoId },
     };
     if (reference?.id) {
@@ -31,7 +31,7 @@ const RepoNav = () => {
     return (
         <Stack direction="horizontal" gap={2}>
             <Breadcrumb>
-                <Link href={{ pathname: "/repositories" }} component={Breadcrumb.Item}>
+                <Link href={{ pathname: '/repositories' }} component={Breadcrumb.Item}>
                     Repositories
                 </Link>
                 <Link href={repoLink} component={Breadcrumb.Item}>
@@ -43,8 +43,8 @@ const RepoNav = () => {
     );
 };
 
-export const RepositoryPageLayout = ({ fluid = "sm" }) => {
-    const [activePage, setActivePage] = useState("objects");
+export const RepositoryPageLayout = ({ fluid = 'sm' }) => {
+    const [activePage, setActivePage] = useState('objects');
     return (
         <RefContextProvider>
             <div>

@@ -1,19 +1,19 @@
-import React, { FC, useContext } from "react";
-import Alert from "react-bootstrap/Alert";
-import { humanSize } from "../../../../lib/components/repository/tree";
-import { useAPI } from "../../../../lib/hooks/api";
-import { objects, qs } from "../../../../lib/api";
-import { AlertError, Loading } from "../../../../lib/components/controls";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { IpynbRenderer as NbRenderer } from "react-ipynb-renderer";
-import { guessLanguage } from "./index";
-import { RendererComponent, RendererComponentWithText, RendererComponentWithTextCallback } from "./types";
+import React, { FC, useContext } from 'react';
+import Alert from 'react-bootstrap/Alert';
+import { humanSize } from '../../../../lib/components/repository/tree';
+import { useAPI } from '../../../../lib/hooks/api';
+import { objects, qs } from '../../../../lib/api';
+import { AlertError, Loading } from '../../../../lib/components/controls';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { IpynbRenderer as NbRenderer } from 'react-ipynb-renderer';
+import { guessLanguage } from './index';
+import { RendererComponent, RendererComponentWithText, RendererComponentWithTextCallback } from './types';
 
-import "react-ipynb-renderer/dist/styles/default.css";
-import { useMarkdownProcessor } from "./useMarkdownProcessor";
-import { AppContext } from "../../../../lib/hooks/appContext";
-import { GeoJSONPreview } from "../../../../lib/components/repository/GeoJSONPreview";
-import { github as lightTheme, nightOwl as darkTheme } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import 'react-ipynb-renderer/dist/styles/default.css';
+import { useMarkdownProcessor } from './useMarkdownProcessor';
+import { AppContext } from '../../../../lib/hooks/appContext';
+import { GeoJSONPreview } from '../../../../lib/components/repository/GeoJSONPreview';
+import { github as lightTheme, nightOwl as darkTheme } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
     return (
@@ -60,7 +60,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({ text, repoId, 
 
 export const TextRenderer: FC<RendererComponentWithText> = ({ contentType, fileExtension, text }) => {
     const { state } = useContext(AppContext);
-    const language = guessLanguage(fileExtension, contentType) ?? "plaintext";
+    const language = guessLanguage(fileExtension, contentType) ?? 'plaintext';
     const syntaxHighlightStyle = state.settings.darkMode ? darkTheme : lightTheme;
 
     return (
@@ -70,8 +70,8 @@ export const TextRenderer: FC<RendererComponentWithText> = ({ contentType, fileE
             style={syntaxHighlightStyle}
             customStyle={{
                 margin: 0,
-                padding: "var(--spacing-md)",
-                borderRadius: "var(--radius-md)",
+                padding: 'var(--spacing-md)',
+                borderRadius: 'var(--radius-md)',
             }}
         >
             {text}

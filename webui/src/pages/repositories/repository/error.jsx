@@ -1,10 +1,10 @@
-import { useRouter } from "../../../lib/hooks/router";
-import Alert from "react-bootstrap/Alert";
-import Button from "react-bootstrap/Button";
-import { repositories, RepositoryDeletionError, BareRepositoryError } from "../../../lib/api";
-import { TrashIcon } from "@primer/octicons-react";
-import React from "react";
-import { AlertError } from "../../../lib/components/controls";
+import { useRouter } from '../../../lib/hooks/router';
+import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
+import { repositories, RepositoryDeletionError, BareRepositoryError } from '../../../lib/api';
+import { TrashIcon } from '@primer/octicons-react';
+import React from 'react';
+import { AlertError } from '../../../lib/components/controls';
 
 const RepositoryInDeletionContainer = ({ repoId }) => {
     const router = useRouter();
@@ -23,7 +23,7 @@ const RepositoryInDeletionContainer = ({ repoId }) => {
                         } catch {
                             // continue regardless of error
                         }
-                        return router.push("/repositories");
+                        return router.push('/repositories');
                     }}
                 >
                     <TrashIcon /> Delete Repository

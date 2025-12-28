@@ -1,6 +1,6 @@
-import React from "react";
-import Table from "react-bootstrap/Table";
-import PropTypes from "prop-types";
+import React from 'react';
+import Table from 'react-bootstrap/Table';
+import PropTypes from 'prop-types';
 
 /**
  * A reusable data table component with modern styling
@@ -14,7 +14,7 @@ import PropTypes from "prop-types";
  * @param {string} props.className Additional CSS class names
  * @returns {JSX.Element} DataTable component
  */
-const DataTable = ({ columns, data, bordered = true, hover = true, responsive = true, className = "" }) => {
+const DataTable = ({ columns, data, bordered = true, hover = true, responsive = true, className = '' }) => {
     if (!data || data.length === 0) {
         return (
             <div className="text-center p-4">
@@ -48,7 +48,7 @@ const DataTable = ({ columns, data, bordered = true, hover = true, responsive = 
                                 return (
                                     <td
                                         key={`cell-${rowIndex}-${colIndex}`}
-                                        className={`${cellClass} ${column.cellClassName || ""}`}
+                                        className={`${cellClass} ${column.cellClassName || ''}`}
                                     >
                                         {column.Cell
                                             ? column.Cell({ value: cellValue, row })
@@ -71,10 +71,10 @@ const DataTable = ({ columns, data, bordered = true, hover = true, responsive = 
  * @returns {string} CSS class name
  */
 const getCellClassName = (value) => {
-    if (typeof value === "string") return "string-cell";
-    if (typeof value === "number") return "number-cell";
-    if (value instanceof Date) return "date-cell";
-    return "";
+    if (typeof value === 'string') return 'string-cell';
+    if (typeof value === 'number') return 'number-cell';
+    if (value instanceof Date) return 'date-cell';
+    return '';
 };
 
 /**
@@ -84,10 +84,10 @@ const getCellClassName = (value) => {
  * @returns {string|number|JSX.Element} Formatted value
  */
 const formatCellValue = (value) => {
-    if (value === null || value === undefined) return "";
+    if (value === null || value === undefined) return '';
 
-    if (typeof value === "number") {
-        return value.toLocaleString("en-US");
+    if (typeof value === 'number') {
+        return value.toLocaleString('en-US');
     }
 
     if (value instanceof Date) {

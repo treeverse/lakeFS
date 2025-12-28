@@ -1,15 +1,15 @@
-import { Fragment, createElement, useEffect, useState } from "react";
-import * as prod from "react/jsx-runtime";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import remarkGfm from "remark-gfm";
-import remarkHtml from "remark-html";
-import rehypeRaw from "rehype-raw";
-import rehypeReact from "rehype-react";
-import rehypeWrap from "rehype-wrap";
-import { unified } from "unified";
-import imageUriReplacer from "../../../../lib/remark-plugins/imageUriReplacer";
-import { CustomMarkdownCodeComponent } from "./CustomMarkdownRenderer";
+import { Fragment, createElement, useEffect, useState } from 'react';
+import * as prod from 'react/jsx-runtime';
+import remarkParse from 'remark-parse';
+import remarkRehype from 'remark-rehype';
+import remarkGfm from 'remark-gfm';
+import remarkHtml from 'remark-html';
+import rehypeRaw from 'rehype-raw';
+import rehypeReact from 'rehype-react';
+import rehypeWrap from 'rehype-wrap';
+import { unified } from 'unified';
+import imageUriReplacer from '../../../../lib/remark-plugins/imageUriReplacer';
+import { CustomMarkdownCodeComponent } from './CustomMarkdownRenderer';
 
 // @ts-expect-error: the react types are missing.
 const options: Options = {
@@ -50,7 +50,7 @@ export function useMarkdownProcessor(
                 .use(remarkRehype, { allowDangerousHtml: true })
                 .use(rehypeRaw)
                 .use(rehypeReact, options)
-                .use(rehypeWrap, { wrapper: "div.object-viewer-markdown" })
+                .use(rehypeWrap, { wrapper: 'div.object-viewer-markdown' })
                 .process(text);
 
             setContent(file.result);

@@ -40,15 +40,15 @@
 }
 
 /* Dark mode specific fixes */
-[data-bs-theme="dark"] .form-control {
+[data-bs-theme='dark'] .form-control {
     background-color: #2d3748;
     color: #f9fafb;
     border-color: #4b5563;
 }
 
 /* Fix search bar in dark mode */
-[data-bs-theme="dark"] .search-input-group .form-control,
-[data-bs-theme="dark"] .search-input-group .input-group-text {
+[data-bs-theme='dark'] .search-input-group .form-control,
+[data-bs-theme='dark'] .search-input-group .input-group-text {
     background-color: #2d3748 !important;
     color: #f9fafb !important;
     border-color: #4b5563 !important;

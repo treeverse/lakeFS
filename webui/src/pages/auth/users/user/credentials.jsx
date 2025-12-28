@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import { UserHeaderWithContext } from "./userHeaderWithContext";
-import { auth } from "../../../../lib/api";
-import { CredentialsShowModal, CredentialsTable } from "../../../../lib/components/auth/credentials";
-import { ConfirmationButtonWithContext } from "../../../../lib/components/modals";
-import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../../../../lib/components/controls";
-import { useRouter } from "../../../../lib/hooks/router";
-import { useAuth } from "../../../../lib/auth/authContext";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { UserHeaderWithContext } from './userHeaderWithContext';
+import { auth } from '../../../../lib/api';
+import { CredentialsShowModal, CredentialsTable } from '../../../../lib/components/auth/credentials';
+import { ConfirmationButtonWithContext } from '../../../../lib/components/modals';
+import { ActionGroup, ActionsBar, AlertError, RefreshButton } from '../../../../lib/components/controls';
+import { useRouter } from '../../../../lib/hooks/router';
+import { useAuth } from '../../../../lib/auth/authContext';
 
 const USER_DISPLAY_NAME_TRUNCATION_THRESHOLD = 40;
 
@@ -33,7 +33,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             {createError && <AlertError error={createError} />}
             <CredentialsTable
                 userId={userId}
-                currentAccessKey={user ? user.accessKeyId : ""}
+                currentAccessKey={user ? user.accessKeyId : ''}
                 refresh={refresh}
                 after={after}
                 onPaginate={onPaginate}
@@ -50,7 +50,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                             overflow-hidden
                             text-truncate
                             align-bottom
-                            ${userDisplayName.length > USER_DISPLAY_NAME_TRUNCATION_THRESHOLD ? "w-75" : ""}`}
+                            ${userDisplayName.length > USER_DISPLAY_NAME_TRUNCATION_THRESHOLD ? 'w-75' : ''}`}
                 title={userDisplayName}
             >
                 {userDisplayName}
@@ -60,7 +60,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
     );
     return (
         <>
-            <UserHeaderWithContext userId={userId} page={"credentials"} />
+            <UserHeaderWithContext userId={userId} page={'credentials'} />
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -110,10 +110,10 @@ const UserCredentialsContainer = () => {
     ) : (
         <UserCredentialsList
             userId={userId}
-            after={after ? after : ""}
+            after={after ? after : ''}
             onPaginate={(after) =>
                 router.push({
-                    pathname: "/auth/users/:userId/credentials",
+                    pathname: '/auth/users/:userId/credentials',
                     query: { after },
                     params: { userId },
                 })
@@ -124,7 +124,7 @@ const UserCredentialsContainer = () => {
 
 const UserCredentialsPage = () => {
     const { setActiveTab } = useOutletContext();
-    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    useEffect(() => setActiveTab('users'), [setActiveTab]);
     return <UserCredentialsContainer />;
 };
 

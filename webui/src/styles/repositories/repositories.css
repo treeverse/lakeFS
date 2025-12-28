@@ -166,30 +166,30 @@
 }
 
 /* Dark Mode Adjustments */
-[data-bs-theme="dark"] .repository-card {
+[data-bs-theme='dark'] .repository-card {
     background-color: var(--surface);
     border-color: var(--border);
 }
 
-[data-bs-theme="dark"] .repository-card:hover {
+[data-bs-theme='dark'] .repository-card:hover {
     border-color: var(--primary);
 }
 
-[data-bs-theme="dark"] .detail-item {
+[data-bs-theme='dark'] .detail-item {
     background-color: rgba(59, 130, 246, 0.05);
 }
 
-[data-bs-theme="dark"] .detail-item:hover {
+[data-bs-theme='dark'] .detail-item:hover {
     background-color: rgba(59, 130, 246, 0.1);
 }
 
-[data-bs-theme="dark"] .detail-value code {
+[data-bs-theme='dark'] .detail-value code {
     background-color: rgba(59, 130, 246, 0.15);
     color: var(--primary-light);
 }
 
 /* Dark mode fix for repo item code */
-[data-bs-theme="dark"] .repository-item code {
+[data-bs-theme='dark'] .repository-item code {
     background-color: #374151;
     color: #93c5fd;
     border: 1px solid #4b5563;

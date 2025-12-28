@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import Button from "react-bootstrap/Button";
-import Dropdown from "react-bootstrap/Dropdown";
+import React, { useEffect, useState } from 'react';
+import Button from 'react-bootstrap/Button';
+import Dropdown from 'react-bootstrap/Dropdown';
 
-import { useAPIWithPagination } from "../../../lib/hooks/api";
-import { auth } from "../../../lib/api";
-import { ConfirmationButton } from "../../../lib/components/modals";
-import { Paginator } from "../../../lib/components/pagination";
+import { useAPIWithPagination } from '../../../lib/hooks/api';
+import { auth } from '../../../lib/api';
+import { ConfirmationButton } from '../../../lib/components/modals';
+import { Paginator } from '../../../lib/components/pagination';
 import {
     ActionGroup,
     ActionsBar,
@@ -17,13 +17,13 @@ import {
     RefreshButton,
     useDebouncedState,
     SearchInput,
-} from "../../../lib/components/controls";
-import { useRouter } from "../../../lib/hooks/router";
-import { Link } from "../../../lib/components/nav";
-import { EntityActionModal } from "../../../lib/components/auth/forms";
-import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
-import { useLoginConfigContext } from "../../../lib/hooks/conf";
-import { useAuthOutletContext } from "../../../lib/components/auth/layout";
+} from '../../../lib/components/controls';
+import { useRouter } from '../../../lib/hooks/router';
+import { Link } from '../../../lib/components/nav';
+import { EntityActionModal } from '../../../lib/components/auth/forms';
+import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from '../validation';
+import { useLoginConfigContext } from '../../../lib/hooks/conf';
+import { useAuthOutletContext } from '../../../lib/components/auth/layout';
 
 interface PermissionTypes {
     Read: string;
@@ -35,10 +35,10 @@ interface PermissionTypes {
 type PermissionType = keyof PermissionTypes;
 
 const permissions: PermissionTypes = {
-    Read: "Read repository data and metadata, and manage own credentials.",
-    Write: "Read and write repository data and metadata, and manage own credentials.",
-    Super: "Perform all operations on repository, and manage own credentials.",
-    Admin: "Do anything.",
+    Read: 'Read repository data and metadata, and manage own credentials.',
+    Write: 'Read and write repository data and metadata, and manage own credentials.',
+    Super: 'Perform all operations on repository, and manage own credentials.',
+    Admin: 'Do anything.',
 };
 
 type ACLPermissionButtonProps = {
@@ -49,19 +49,19 @@ type ACLPermissionButtonProps = {
 
 const ACLPermission: React.FC<ACLPermissionButtonProps> = ({ initialValue, onSelect, variant }) => {
     const [value, setValue] = useState<string | undefined>(initialValue);
-    const [title, setTitle] = useState<string>("");
-    variant ||= "secondary";
+    const [title, setTitle] = useState<string>('');
+    variant ||= 'secondary';
 
     useEffect(() => {
         if (!initialValue) {
-            setTitle("(unknown)");
+            setTitle('(unknown)');
             return;
         }
 
         if (Object.keys(permissions).includes(initialValue)) {
             setTitle(permissions[initialValue as PermissionType]);
         } else {
-            setTitle("(unknown)");
+            setTitle('(unknown)');
         }
     }, [initialValue]);
 
@@ -99,7 +99,7 @@ const getACLMaybe = async (groupId: string) => {
     try {
         return await auth.getACL(groupId);
     } catch (e) {
-        if (e.message.toLowerCase().includes("no acl")) {
+        if (e.message.toLowerCase().includes('no acl')) {
             return null;
         }
         throw e;
@@ -114,14 +114,14 @@ const GroupsContainer = () => {
     const [refresh, setRefresh] = useState(false);
 
     const router = useRouter();
-    const prefix = router.query.prefix ? router.query.prefix : "";
-    const after = router.query.after ? router.query.after : "";
+    const prefix = router.query.prefix ? router.query.prefix : '';
+    const after = router.query.after ? router.query.after : '';
 
     const lc = useLoginConfigContext();
-    const simplified = lc.RBAC === "simplified";
+    const simplified = lc.RBAC === 'simplified';
 
     const [searchPrefix, setSearchPrefix] = useDebouncedState(prefix, (search) =>
-        router.push({ pathname: "/auth/groups", query: { prefix: search } }),
+        router.push({ pathname: '/auth/groups', query: { prefix: search } }),
     );
 
     const { results, loading, error, nextPage } = useAPIWithPagination(async () => {
@@ -141,7 +141,7 @@ const GroupsContainer = () => {
 
     if (error) return <AlertError error={error} />;
     if (loading) return <Loading />;
-    const headers = simplified ? ["", "Group Name", "Permission", "Created At"] : ["", "Group Name", "Created At"];
+    const headers = simplified ? ['', 'Group Name', 'Permission', 'Created At'] : ['', 'Group Name', 'Created At'];
 
     return (
         <>
@@ -178,7 +178,7 @@ const GroupsContainer = () => {
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                A group is a collection of users.{" "}
+                A group is a collection of users.{' '}
                 <a
                     href="https://docs.lakefs.io/reference/authorization.html#authorization"
                     target="_blank"
@@ -203,7 +203,7 @@ const GroupsContainer = () => {
                 }}
                 title="Create Group"
                 placeholder="Group Name (e.g. 'DataTeam')"
-                actionName={"Create"}
+                actionName={'Create'}
                 validationFunction={disallowPercentSign(INVALID_GROUP_NAME_ERROR_MESSAGE)}
                 showExtraField={true}
                 extraPlaceholder="Group Description (optional)"
@@ -222,7 +222,7 @@ const GroupsContainer = () => {
                         />,
                         <Link
                             href={{
-                                pathname: "/auth/groups/:groupId",
+                                pathname: '/auth/groups/:groupId',
                                 params: { groupId: group.id },
                             }}
                         >
@@ -255,7 +255,7 @@ const GroupsContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={(after) => router.push({ pathname: "/auth/groups", query: { prefix, after } })}
+                onPaginate={(after) => router.push({ pathname: '/auth/groups', query: { prefix, after } })}
             />
         </>
     );
@@ -263,7 +263,7 @@ const GroupsContainer = () => {
 
 export const GroupsPage = () => {
     const [setActiveTab] = useAuthOutletContext();
-    useEffect(() => setActiveTab("groups"), [setActiveTab]);
+    useEffect(() => setActiveTab('groups'), [setActiveTab]);
     return <GroupsContainer />;
 };
 

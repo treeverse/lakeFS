@@ -1,4 +1,4 @@
-import React, { createContext, useReducer } from "react";
+import React, { createContext, useReducer } from 'react';
 
 type DiffContextType = {
     results: object[] | null;
@@ -8,7 +8,7 @@ type DiffContextType = {
 };
 
 enum DiffActionType {
-    setResults = "setResults",
+    setResults = 'setResults',
 }
 
 interface Action {

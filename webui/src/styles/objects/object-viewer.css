@@ -14,8 +14,8 @@
 
 /* Make images in object viewer scale to fit their container */
 .object-viewer img,
-[class*="object-viewer"] img,
-[class*="fileViewer"] img,
+[class*='object-viewer'] img,
+[class*='fileViewer'] img,
 .file-content-body img {
     max-width: 100%;
     height: auto;
@@ -115,7 +115,7 @@
 }
 
 /* Dark mode adjustments for data tables */
-[data-bs-theme="dark"] .object-viewer-sql-results .table-dark th {
+[data-bs-theme='dark'] .object-viewer-sql-results .table-dark th {
     background-color: var(--background-alt);
     color: var(--text-light);
     border: none;
@@ -125,16 +125,16 @@
     z-index: 10;
 }
 
-[data-bs-theme="dark"] .object-viewer-sql-results .table th,
-[data-bs-theme="dark"] .object-viewer-sql-results .table td {
+[data-bs-theme='dark'] .object-viewer-sql-results .table th,
+[data-bs-theme='dark'] .object-viewer-sql-results .table td {
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
 }
 
-[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:nth-child(odd) {
+[data-bs-theme='dark'] .object-viewer-sql-results tbody tr:nth-child(odd) {
     background-color: rgba(31, 41, 55, 0.5);
 }
 
-[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:hover {
+[data-bs-theme='dark'] .object-viewer-sql-results tbody tr:hover {
     background-color: rgba(59, 130, 246, 0.1);
 }

@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     GitBranchIcon,
     GitCompareIcon,
@@ -9,13 +9,13 @@ import {
     CheckboxIcon,
     CheckIcon,
     DashIcon,
-} from "@primer/octicons-react";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import ListGroup from "react-bootstrap/ListGroup";
+} from '@primer/octicons-react';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import ListGroup from 'react-bootstrap/ListGroup';
 
-import { branches } from "../../../lib/api";
+import { branches } from '../../../lib/api';
 
 import {
     ActionGroup,
@@ -29,28 +29,28 @@ import {
     Checkbox,
     TooltipButton,
     ToggleSwitch,
-} from "../../../lib/components/controls";
-import { useRefs } from "../../../lib/hooks/repo";
-import { useAPIWithPagination } from "../../../lib/hooks/api";
-import { Paginator } from "../../../lib/components/pagination";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import RefDropdown from "../../../lib/components/repository/refDropdown";
-import Badge from "react-bootstrap/Badge";
-import { ConfirmationButton } from "../../../lib/components/modals";
-import Alert from "react-bootstrap/Alert";
-import { Link } from "../../../lib/components/nav";
-import { useRouter } from "../../../lib/hooks/router";
-import { RepoError } from "./error";
-import { Col, Row } from "react-bootstrap";
-import { AppContext } from "../../../lib/hooks/appContext";
+} from '../../../lib/components/controls';
+import { useRefs } from '../../../lib/hooks/repo';
+import { useAPIWithPagination } from '../../../lib/hooks/api';
+import { Paginator } from '../../../lib/components/pagination';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import RefDropdown from '../../../lib/components/repository/refDropdown';
+import Badge from 'react-bootstrap/Badge';
+import { ConfirmationButton } from '../../../lib/components/modals';
+import Alert from 'react-bootstrap/Alert';
+import { Link } from '../../../lib/components/nav';
+import { useRouter } from '../../../lib/hooks/router';
+import { RepoError } from './error';
+import { Col, Row } from 'react-bootstrap';
+import { AppContext } from '../../../lib/hooks/appContext';
 
-const ImportBranchName = "import-from-inventory";
+const ImportBranchName = 'import-from-inventory';
 
 const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDeselect }) => {
     const { state } = useContext(AppContext);
     const router = useRouter();
-    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+    const buttonVariant = state.settings.darkMode ? 'outline-light' : 'outline-dark';
     const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
         <>
@@ -69,7 +69,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
     }
 
     return (
-        <ListGroup.Item style={selected ? { backgroundColor: "rgba(0, 123, 255, 0.1)" } : {}}>
+        <ListGroup.Item style={selected ? { backgroundColor: 'rgba(0, 123, 255, 0.1)' } : {}}>
             <Row className="d-flex align-items-center justify-content-between">
                 <Col md="auto" className="d-flex align-items-center">
                     <Checkbox
@@ -85,7 +85,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                     <h6 className="mb-0">
                         <Link
                             href={{
-                                pathname: "/repositories/:repoId/objects",
+                                pathname: '/repositories/:repoId/objects',
                                 params: { repoId: repo.id },
                                 query: { ref: branch.id },
                             }}
@@ -95,7 +95,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
 
                         {isDefault && (
                             <>
-                                {" "}
+                                {' '}
                                 <Badge variant="info">Default</Badge>
                             </>
                         )}
@@ -124,7 +124,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                                 size="sm"
                                 onClick={() => {
                                     router.push({
-                                        pathname: "/repositories/:repoId/compare",
+                                        pathname: '/repositories/:repoId/compare',
                                         params: { repoId: repo.id },
                                         query: { ref: repo.default_branch, compare: branch.id },
                                     });
@@ -139,7 +139,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                     <ButtonGroup className="branch-actions ms-2">
                         <LinkButton
                             href={{
-                                pathname: "/repositories/:repoId/commits/:commitId",
+                                pathname: '/repositories/:repoId/commits/:commitId',
                                 params: { repoId: repo.id, commitId: branch.commit_id },
                             }}
                             buttonVariant={buttonVariant}
@@ -167,12 +167,12 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
     );
 };
 
-const CreateBranchButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
+const CreateBranchButton = ({ repo, variant = 'success', onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(false);
     const [error, setError] = useState(null);
     const textRef = useRef(null);
-    const defaultBranch = useMemo(() => ({ id: repo.default_branch, type: "branch" }), [repo.default_branch]);
+    const defaultBranch = useMemo(() => ({ id: repo.default_branch, type: 'branch' }), [repo.default_branch]);
     const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
 
     const hide = () => {
@@ -218,8 +218,8 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, readOn
                         <Form.Group controlId="source" className="mb-3">
                             <RefDropdown
                                 repo={repo}
-                                emptyText={"Select Source Branch"}
-                                prefix={"From "}
+                                emptyText={'Select Source Branch'}
+                                prefix={'From '}
                                 selected={selectedBranch}
                                 selectRef={(refId) => {
                                     setSelectedBranch(refId);
@@ -252,9 +252,9 @@ const navigateToBranches = (router, repoId, prefix, after, showHidden) => {
     const query = {};
     if (prefix) query.prefix = prefix;
     if (after) query.after = after;
-    if (showHidden) query.show_hidden = "true";
+    if (showHidden) query.show_hidden = 'true';
     router.push({
-        pathname: "/repositories/:repoId/branches",
+        pathname: '/repositories/:repoId/branches',
         params: { repoId },
         query,
     });
@@ -350,7 +350,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
         doRefresh();
 
         if (failedDeletions.length > 0) {
-            const errorMessages = failedDeletions.map((f) => `${f.branchId}: ${f.error?.message || "Unknown error"}`);
+            const errorMessages = failedDeletions.map((f) => `${f.branchId}: ${f.error?.message || 'Unknown error'}`);
             const errorDetails = {
                 message: `Failed to delete ${failedDeletions.length} branch(es)`,
                 failedBranches: failedDeletions.map((f) => f.branchId),
@@ -379,13 +379,13 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
             <>
                 {deleteError && (
                     <Alert variant="danger" dismissible onClose={() => setDeleteError(null)} className="mb-3">
-                        <Alert.Heading>{deleteError.message || "Failed to delete branches"}</Alert.Heading>
+                        <Alert.Heading>{deleteError.message || 'Failed to delete branches'}</Alert.Heading>
                         {deleteError.errors && deleteError.errors.length > 0 && (
                             <div
                                 style={{
-                                    maxHeight: "200px",
-                                    overflowY: "auto",
-                                    marginTop: "0.5rem",
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    marginTop: '0.5rem',
                                 }}
                             >
                                 <ul className="mb-0">
@@ -445,7 +445,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                     <Button
                         variant="light"
                         onClick={handleToggleSelectAll}
-                        title={allSelected ? "Deselect all" : "Select all"}
+                        title={allSelected ? 'Deselect all' : 'Select all'}
                     >
                         {selectionIcon}
                     </Button>
@@ -469,7 +469,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                         msg={
                             <>
                                 Are you sure you&apos;d like to delete {deleteCount} branch
-                                {deleteCount !== 1 ? "es" : ""}?
+                                {deleteCount !== 1 ? 'es' : ''}?
                                 {branchesToDelete.length > 0 && branchesToDelete.length <= 10 && (
                                     <ul className="mt-2 mb-0">
                                         {branchesToDelete.map((branchId) => (
@@ -506,7 +506,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                     </CreateBranchButton>
                 </ActionGroup>
             </ActionsBar>
-            <div className={"ms-2 mb-3"}>
+            <div className={'ms-2 mb-3'}>
                 <ToggleSwitch
                     label="Show hidden"
                     id="show-hidden-branches-toggle"
@@ -517,8 +517,8 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                 />
             </div>
             {content}
-            <div className={"mt-2"}>
-                lakeFS uses a Git-like branching model.{" "}
+            <div className={'mt-2'}>
+                lakeFS uses a Git-like branching model.{' '}
                 <a
                     href="https://docs.lakefs.io/understand/branching-model.html"
                     target="_blank"
@@ -535,8 +535,8 @@ const BranchesContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
-    const prefix = router.query.prefix || "";
-    const showHidden = router.query.show_hidden === "true";
+    const prefix = router.query.prefix || '';
+    const showHidden = router.query.show_hidden === 'true';
 
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
@@ -544,7 +544,7 @@ const BranchesContainer = () => {
     return (
         <BranchList
             repo={repo}
-            after={after ? after : ""}
+            after={after ? after : ''}
             prefix={prefix}
             showHidden={showHidden}
             onPaginate={(after) => {
@@ -556,7 +556,7 @@ const BranchesContainer = () => {
 
 const RepositoryBranchesPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("branches"), [setActivePage]);
+    useEffect(() => setActivePage('branches'), [setActivePage]);
     return <BranchesContainer />;
 };
 

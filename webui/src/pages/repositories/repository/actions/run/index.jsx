@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
-import { AlertError, FormattedDate, Loading, Na } from "../../../../../lib/components/controls";
-import { useRefs } from "../../../../../lib/hooks/repo";
-import { useAPI } from "../../../../../lib/hooks/api";
-import { actions } from "../../../../../lib/api";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import ListGroup from "react-bootstrap/ListGroup";
-import { ChevronDownIcon, ChevronRightIcon, HomeIcon, PlayIcon } from "@primer/octicons-react";
-import Button from "react-bootstrap/Button";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
-import { ActionStatusIcon } from "../../../../../lib/components/repository/actions";
-import Table from "react-bootstrap/Table";
-import { Link } from "../../../../../lib/components/nav";
-import { useRouter } from "../../../../../lib/hooks/router";
+import { AlertError, FormattedDate, Loading, Na } from '../../../../../lib/components/controls';
+import { useRefs } from '../../../../../lib/hooks/repo';
+import { useAPI } from '../../../../../lib/hooks/api';
+import { actions } from '../../../../../lib/api';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import ListGroup from 'react-bootstrap/ListGroup';
+import { ChevronDownIcon, ChevronRightIcon, HomeIcon, PlayIcon } from '@primer/octicons-react';
+import Button from 'react-bootstrap/Button';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import { ActionStatusIcon } from '../../../../../lib/components/repository/actions';
+import Table from 'react-bootstrap/Table';
+import { Link } from '../../../../../lib/components/nav';
+import { useRouter } from '../../../../../lib/hooks/router';
 
 dayjs.extend(duration);
 
@@ -52,7 +52,7 @@ const RunSummary = ({ repo, run }) => {
                             <Link
                                 className="me-2"
                                 href={{
-                                    pathname: "/repositories/:repoId/objects",
+                                    pathname: '/repositories/:repoId/objects',
                                     params: { repoId: repo.id },
                                     query: { ref: run.branch },
                                 }}
@@ -73,7 +73,7 @@ const RunSummary = ({ repo, run }) => {
                             <Link
                                 className="me-2"
                                 href={{
-                                    pathname: "/repositories/:repoId/commits/:commitId",
+                                    pathname: '/repositories/:repoId/commits/:commitId',
                                     params: { repoId: repo.id, commitId: run.commit_id },
                                 }}
                             >
@@ -102,7 +102,7 @@ const RunSummary = ({ repo, run }) => {
 const HookLog = ({ repo, run, execution }) => {
     const [expanded, setExpanded] = useState(false);
     const { response, loading, error } = useAPI(() => {
-        if (!expanded) return "";
+        if (!expanded) return '';
         return actions.getRunHookOutput(repo.id, run.run_id, execution.hook_run_id);
     }, [repo.id, execution.hook_id, execution.hook_run_id, expanded]);
 
@@ -117,14 +117,14 @@ const HookLog = ({ repo, run, execution }) => {
         }
     }
 
-    let duration = "(running)";
-    if (execution.status === "completed" || execution.status === "failed") {
+    let duration = '(running)';
+    if (execution.status === 'completed' || execution.status === 'failed') {
         const endTs = dayjs(execution.end_time);
         const startTs = dayjs(execution.start_time);
         const diff = dayjs.duration(endTs.diff(startTs)).asSeconds();
         duration = `(${execution.status} in ${diff}s)`;
-    } else if (execution.status === "skipped") {
-        duration = "(skipped)";
+    } else if (execution.status === 'skipped') {
+        duration = '(skipped)';
     }
 
     return (
@@ -135,10 +135,10 @@ const HookLog = ({ repo, run, execution }) => {
                     onClick={() => {
                         setExpanded(!expanded);
                     }}
-                    disabled={execution.status === "skipped"}
+                    disabled={execution.status === 'skipped'}
                 >
                     {expanded ? <ChevronDownIcon size="small" /> : <ChevronRightIcon size="small" />}
-                </Button>{" "}
+                </Button>{' '}
                 <ActionStatusIcon status={execution.status} /> {execution.hook_id}
                 <small>{duration}</small>
             </p>
@@ -247,7 +247,7 @@ const ActionContainer = () => {
                 const query = {};
                 if (action) query.action = action;
                 router.push({
-                    pathname: "/repositories/:repoId/actions/:runId",
+                    pathname: '/repositories/:repoId/actions/:runId',
                     query,
                     params,
                 });
@@ -258,7 +258,7 @@ const ActionContainer = () => {
 
 const RepositoryActionPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("actions"), [setActivePage]);
+    useEffect(() => setActivePage('actions'), [setActivePage]);
     return <ActionContainer />;
 };
 

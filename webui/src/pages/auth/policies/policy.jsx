@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
-import { PencilIcon } from "@primer/octicons-react";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import { PencilIcon } from '@primer/octicons-react';
 
-import { PolicyHeader } from "../../../lib/components/auth/nav";
-import { useAPI } from "../../../lib/hooks/api";
-import { auth } from "../../../lib/api";
-import { PolicyDisplay, PolicyEditor } from "../../../lib/components/policy";
-import { ActionGroup, ActionsBar, Loading, AlertError } from "../../../lib/components/controls";
-import { useRouter } from "../../../lib/hooks/router";
+import { PolicyHeader } from '../../../lib/components/auth/nav';
+import { useAPI } from '../../../lib/hooks/api';
+import { auth } from '../../../lib/api';
+import { PolicyDisplay, PolicyEditor } from '../../../lib/components/policy';
+import { ActionGroup, ActionsBar, Loading, AlertError } from '../../../lib/components/controls';
+import { useRouter } from '../../../lib/hooks/router';
 
 const PolicyView = ({ policyId }) => {
     const [jsonView, setJsonView] = useState(false);
@@ -75,7 +75,7 @@ const PolicyContainer = () => {
 
 const PolicyPage = () => {
     const [setActiveTab] = useOutletContext();
-    useEffect(() => setActiveTab("policies"), [setActiveTab]);
+    useEffect(() => setActiveTab('policies'), [setActiveTab]);
     return <PolicyContainer />;
 };
 

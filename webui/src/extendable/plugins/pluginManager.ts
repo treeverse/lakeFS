@@ -1,9 +1,9 @@
-import { PluginRepoCreationForm } from "./pluginRepoCreationForm";
-import DefaultRepoCreationFormPlugin from "./impls/DefaultRepoCreationFormPlugin";
-import { PluginCustomObjectRenderers } from "./pluginCustomObjectRenderers";
-import DefaultCustomObjectRenderersPlugin from "./impls/DefaultCustomObjectRenderers";
-import { PluginLoginStrategy } from "./pluginLoginStrategy";
-import RedirectToSSOStrategyPlugin from "./impls/RedirectToSSOStrategyPlugin";
+import { PluginRepoCreationForm } from './pluginRepoCreationForm';
+import DefaultRepoCreationFormPlugin from './impls/DefaultRepoCreationFormPlugin';
+import { PluginCustomObjectRenderers } from './pluginCustomObjectRenderers';
+import DefaultCustomObjectRenderersPlugin from './impls/DefaultCustomObjectRenderers';
+import { PluginLoginStrategy } from './pluginLoginStrategy';
+import RedirectToSSOStrategyPlugin from './impls/RedirectToSSOStrategyPlugin';
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;

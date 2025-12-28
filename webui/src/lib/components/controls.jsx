@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import dayjs from "dayjs";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import dayjs from 'dayjs';
 
-import Form from "react-bootstrap/Form";
-import Alert from "react-bootstrap/Alert";
-import Button from "react-bootstrap/Button";
-import Tooltip from "react-bootstrap/Tooltip";
-import Overlay from "react-bootstrap/Overlay";
-import Table from "react-bootstrap/Table";
-import { OverlayTrigger } from "react-bootstrap";
-import { CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon } from "@primer/octicons-react";
-import { Link } from "./nav";
+import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
+import Tooltip from 'react-bootstrap/Tooltip';
+import Overlay from 'react-bootstrap/Overlay';
+import Table from 'react-bootstrap/Table';
+import { OverlayTrigger } from 'react-bootstrap';
+import { CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon } from '@primer/octicons-react';
+import { Link } from './nav';
 import {
     Box,
     Button as MuiButton,
@@ -20,8 +20,8 @@ import {
     DialogContentText,
     DialogTitle,
     Typography,
-} from "@mui/material";
-import InputGroup from "react-bootstrap/InputGroup";
+} from '@mui/material';
+import InputGroup from 'react-bootstrap/InputGroup';
 
 const defaultDebounceMs = 300;
 
@@ -63,19 +63,19 @@ export const DebouncedFormControl = React.forwardRef((props, ref) => {
     const onChange = debounce(props.onChange, props.debounce !== undefined ? props.debounce : defaultDebounceMs);
     return <Form.Control ref={ref} {...{ ...props, onChange }} />;
 });
-DebouncedFormControl.displayName = "DebouncedFormControl";
+DebouncedFormControl.displayName = 'DebouncedFormControl';
 
 export const Spinner = () => {
     return (
         <div className="loading-spinner mb-3">
-            <div className="spinner-border text-primary" role="status" style={{ width: "3rem", height: "3rem" }}>
+            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
                 <span className="visually-hidden">Loading...</span>
             </div>
         </div>
     );
 };
 
-export const Loading = ({ message = "Loading..." }) => {
+export const Loading = ({ message = 'Loading...' }) => {
     return (
         <div className="loading-container d-flex flex-column align-items-center justify-content-center py-5">
             <Spinner />
@@ -109,8 +109,8 @@ export const AlertError = ({ error, onDismiss = null, className = null }) => {
     );
 };
 
-export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
-    if (typeof dateValue === "number") {
+export const FormattedDate = ({ dateValue, format = 'MM/DD/YYYY HH:mm:ss' }) => {
+    if (typeof dateValue === 'number') {
         return <span>{dayjs.unix(dateValue).format(format)}</span>;
     }
 
@@ -121,8 +121,8 @@ export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => 
     );
 };
 
-export const ActionGroup = ({ children, orientation = "left", className = "" }) => {
-    const side = orientation === "right" ? "ms-auto" : "";
+export const ActionGroup = ({ children, orientation = 'left', className = '' }) => {
+    const side = orientation === 'right' ? 'ms-auto' : '';
     return (
         <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation} ${className}`}>
             {children}
@@ -135,7 +135,7 @@ export const ActionsBar = ({ children }) => {
 };
 
 export const copyTextToClipboard = async (text, onSuccess, onError) => {
-    const textArea = document.createElement("textarea");
+    const textArea = document.createElement('textarea');
 
     //
     // *** This styling is an extra step which is likely not required. ***
@@ -154,25 +154,25 @@ export const copyTextToClipboard = async (text, onSuccess, onError) => {
     //
 
     // Place in top-left corner of screen regardless of scroll position.
-    textArea.style.position = "fixed";
+    textArea.style.position = 'fixed';
     textArea.style.top = 0;
     textArea.style.left = 0;
 
     // Ensure it has a small width and height. Setting to 1px / 1em
     // doesn't work as this gives a negative w/h on some browsers.
-    textArea.style.width = "2em";
-    textArea.style.height = "2em";
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
 
     // We don't need padding, reducing the size if it does flash render.
     textArea.style.padding = 0;
 
     // Clean up any borders.
-    textArea.style.border = "none";
-    textArea.style.outline = "none";
-    textArea.style.boxShadow = "none";
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
 
     // Avoid flash of white box if rendered for any reason.
-    textArea.style.background = "transparent";
+    textArea.style.background = 'transparent';
 
     textArea.value = text;
 
@@ -182,10 +182,10 @@ export const copyTextToClipboard = async (text, onSuccess, onError) => {
 
     let err = null;
     try {
-        if ("clipboard" in navigator) {
+        if ('clipboard' in navigator) {
             await navigator.clipboard.writeText(text);
         } else {
-            document.execCommand("copy", true, text);
+            document.execCommand('copy', true, text);
         }
     } catch (e) {
         err = e;
@@ -213,12 +213,12 @@ export const useHover = () => {
         () => {
             const node = ref.current;
             if (node) {
-                node.addEventListener("mouseover", handleMouseOver);
-                node.addEventListener("mouseout", handleMouseOut);
+                node.addEventListener('mouseover', handleMouseOver);
+                node.addEventListener('mouseout', handleMouseOut);
 
                 return () => {
-                    node.removeEventListener("mouseover", handleMouseOver);
-                    node.removeEventListener("mouseout", handleMouseOut);
+                    node.removeEventListener('mouseover', handleMouseOver);
+                    node.removeEventListener('mouseout', handleMouseOut);
                 };
             }
         },
@@ -243,7 +243,7 @@ export const LinkButton = ({ href, children, buttonVariant, tooltip = null }) =>
     );
 };
 
-export const TooltipButton = ({ onClick, variant, children, tooltip, className = "", size = "sm" }) => {
+export const TooltipButton = ({ onClick, variant, children, tooltip, className = '', size = 'sm' }) => {
     return (
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
             <Button variant={variant} onClick={onClick} className={className} size={size}>
@@ -259,7 +259,7 @@ export const ClipboardButton = ({
     onSuccess,
     icon = <PasteIcon />,
     onError,
-    tooltip = "Copy to clipboard",
+    tooltip = 'Copy to clipboard',
     ...rest
 }) => {
     const [show, setShow] = useState(false);
@@ -299,7 +299,7 @@ export const ClipboardButton = ({
     );
 };
 
-export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaultValue = "" }) => {
+export const PrefixSearchWidget = ({ onFilter, text = 'Search by Prefix', defaultValue = '' }) => {
     const [expanded, setExpanded] = useState(!!defaultValue);
 
     const toggle = useCallback(
@@ -353,9 +353,9 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
 
 export const RefreshButton = ({
     onClick,
-    size = "md",
-    variant = "light",
-    tooltip = "Refresh",
+    size = 'md',
+    variant = 'light',
+    tooltip = 'Refresh',
     icon = <SyncIcon />,
 }) => {
     return (
@@ -379,14 +379,14 @@ export const DataTable = ({
     }
 
     return (
-        <Table className="w-100" style={{ tableLayout: "fixed" }}>
+        <Table className="w-100" style={{ tableLayout: 'fixed' }}>
             <thead>
                 <tr>
                     {headers.map((header, i) => (
                         <th
                             key={header}
                             title={header}
-                            style={firstFixedCol && i === 0 ? { width: "30px" } : {}}
+                            style={firstFixedCol && i === 0 ? { width: '30px' } : {}}
                             className="text-nowrap overflow-hidden text-truncate align-middle"
                         >
                             {header}
@@ -479,9 +479,9 @@ export const Warnings = ({ warnings = [] }) => {
     );
 };
 
-export const ProgressSpinner = ({ text, changingElement = "" }) => {
+export const ProgressSpinner = ({ text, changingElement = '' }) => {
     return (
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box>
                 <CircularProgress size={50} />
             </Box>
@@ -512,7 +512,7 @@ export const ExitConfirmationDialog = ({ dialogAlert, dialogDescription, onExit,
     );
 };
 
-export const ExperimentalOverlayTooltip = ({ children, show = true, placement = "auto" }) => {
+export const ExperimentalOverlayTooltip = ({ children, show = true, placement = 'auto' }) => {
     const experimentalTooltip = () => <Tooltip id="button-tooltip">Experimental</Tooltip>;
     return show ? (
         <OverlayTrigger placement={placement} overlay={experimentalTooltip()}>
@@ -524,9 +524,9 @@ export const ExperimentalOverlayTooltip = ({ children, show = true, placement = 
 };
 
 export const GrayOut = ({ children }) => (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: 'relative' }}>
         <div>
-            <div className={"gray-out overlay"} />
+            <div className={'gray-out overlay'} />
             {children}
         </div>
     </div>

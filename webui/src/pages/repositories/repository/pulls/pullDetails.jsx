@@ -1,23 +1,23 @@
-import React, { useContext, useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import { GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from "@primer/octicons-react";
-import dayjs from "dayjs";
-import Markdown from "react-markdown";
+import React, { useContext, useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import Badge from 'react-bootstrap/Badge';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import { GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from '@primer/octicons-react';
+import dayjs from 'dayjs';
+import Markdown from 'react-markdown';
 
-import { AlertError, Loading } from "../../../../lib/components/controls";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { useRouter } from "../../../../lib/hooks/router";
-import { RepoError } from "../error";
-import { pulls as pullsAPI } from "../../../../lib/api";
-import { useAPI } from "../../../../lib/hooks/api";
-import { Link } from "../../../../lib/components/nav";
-import CompareBranches from "../../../../lib/components/repository/compareBranches";
-import { PullStatus, RefTypeBranch } from "../../../../constants";
-import { DiffContext, WithDiffContext } from "../../../../lib/hooks/diffContext";
-import Alert from "react-bootstrap/Alert";
+import { AlertError, Loading } from '../../../../lib/components/controls';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { useRouter } from '../../../../lib/hooks/router';
+import { RepoError } from '../error';
+import { pulls as pullsAPI } from '../../../../lib/api';
+import { useAPI } from '../../../../lib/hooks/api';
+import { Link } from '../../../../lib/components/nav';
+import CompareBranches from '../../../../lib/components/repository/compareBranches';
+import { PullStatus, RefTypeBranch } from '../../../../constants';
+import { DiffContext, WithDiffContext } from '../../../../lib/hooks/diffContext';
+import Alert from 'react-bootstrap/Alert';
 
 const PullDetailsContent = ({ repo, pull }) => {
     let [loading, setLoading] = useState(false);
@@ -65,8 +65,8 @@ const PullDetailsContent = ({ repo, pull }) => {
             </div>
             <Card className="mt-4">
                 <Card.Header>
-                    <span className="text-capitalize">{pull.status}</span> {""}
-                    on {headerDate.format("MMM D, YYYY")} ({headerDate.fromNow()}).
+                    <span className="text-capitalize">{pull.status}</span> {''}
+                    on {headerDate.format('MMM D, YYYY')} ({headerDate.fromNow()}).
                 </Card.Header>
                 <Card.Body className="description">
                     <Markdown>{pull.description}</Markdown>
@@ -119,7 +119,7 @@ const PullInfo = ({ repo, pull }) => (
         <StatusBadge status={pull.status} />
         <span className="ms-2">
             <strong>{pull.author}</strong> {`${getActionText(pull.status)} `}
-            <BranchLink repo={repo} branch={pull.source_branch} /> {""}
+            <BranchLink repo={repo} branch={pull.source_branch} /> {''}
             into <BranchLink repo={repo} branch={pull.destination_branch} />.
         </span>
     </>
@@ -128,13 +128,13 @@ const PullInfo = ({ repo, pull }) => (
 function getActionText(status) {
     switch (status) {
         case PullStatus.open:
-            return "wants to merge";
+            return 'wants to merge';
         case PullStatus.closed:
-            return "wanted to merge";
+            return 'wanted to merge';
         case PullStatus.merged:
-            return "merged";
+            return 'merged';
         default:
-            return ""; // shouldn't happen
+            return ''; // shouldn't happen
     }
 }
 
@@ -143,25 +143,25 @@ const StatusBadge = ({ status }) => {
     switch (status) {
         case PullStatus.open:
             return (
-                <Badge pill bg={"success"}>
+                <Badge pill bg={'success'}>
                     {<GitPullRequestIcon />} {text}
                 </Badge>
             );
         case PullStatus.closed:
             return (
-                <Badge pill bg={"secondary"}>
+                <Badge pill bg={'secondary'}>
                     {<GitPullRequestClosedIcon />} {text}
                 </Badge>
             );
         case PullStatus.merged:
             return (
-                <Badge pill bg={"primary"}>
+                <Badge pill bg={'primary'}>
                     {<GitMergeIcon />} {text}
                 </Badge>
             );
         default:
             return (
-                <Badge pill bg={"light"}>
+                <Badge pill bg={'light'}>
                     {text}
                 </Badge>
             );
@@ -193,17 +193,17 @@ const MergePullButton = ({ onClick, isEmptyDiff, loading }) => (
 // message example: "<author> merged commit <commit-id> into master 2 days ago."
 const MergedCommitDetails = ({ repo, pull }) => (
     <div>
-        <strong>{pull.author}</strong> merged {""}
+        <strong>{pull.author}</strong> merged {''}
         <Link
             href={{
-                pathname: "/repositories/:repoId/commits/:commitId",
+                pathname: '/repositories/:repoId/commits/:commitId',
                 params: { repoId: repo.id, commitId: pull.merged_commit_id },
             }}
         >
             commit {pull.merged_commit_id.substring(0, 7)}
-        </Link>{" "}
-        {""}
-        into <BranchLink repo={repo} branch={pull.destination_branch} /> {""}
+        </Link>{' '}
+        {''}
+        into <BranchLink repo={repo} branch={pull.destination_branch} /> {''}
         {dayjs(pull.closed_date).fromNow()}.
     </div>
 );
@@ -211,7 +211,7 @@ const MergedCommitDetails = ({ repo, pull }) => (
 const BranchLink = ({ repo, branch }) => (
     <Link
         href={{
-            pathname: "/repositories/:repoId/objects",
+            pathname: '/repositories/:repoId/objects',
             params: { repoId: repo.id },
             query: { ref: branch },
         }}
@@ -222,10 +222,10 @@ const BranchLink = ({ repo, branch }) => (
 
 // this is pretty hacky, but there seem to be no other way to detect this specific error
 function getFormattedDiffError(error) {
-    const notFoundSuffix = ": not found";
+    const notFoundSuffix = ': not found';
     if (error?.message?.endsWith(notFoundSuffix)) {
         const { message } = error;
-        for (let getCommitPrefix of ["get commit by ref ", "get commit by branch "]) {
+        for (let getCommitPrefix of ['get commit by ref ', 'get commit by branch ']) {
             if (message.startsWith(getCommitPrefix)) {
                 const branch = message.split(getCommitPrefix)[1].split(notFoundSuffix)[0];
                 return `Branch '${branch}' not found.`;
@@ -263,7 +263,7 @@ const PullDetailsContainer = () => {
 
 const RepositoryPullDetailsPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("pulls"), [setActivePage]);
+    useEffect(() => setActivePage('pulls'), [setActivePage]);
     return (
         <WithDiffContext>
             <PullDetailsContainer />

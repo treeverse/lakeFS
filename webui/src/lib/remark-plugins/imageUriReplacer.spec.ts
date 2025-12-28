@@ -1,16 +1,16 @@
-import { remark } from "remark";
-import { describe, test, expect } from "vitest";
-import { getImageUrl } from "./imageUriReplacer";
+import { remark } from 'remark';
+import { describe, test, expect } from 'vitest';
+import { getImageUrl } from './imageUriReplacer';
 
-import imageUriReplacer from "./imageUriReplacer";
+import imageUriReplacer from './imageUriReplacer';
 
-const TEST_REPO = "test-repo";
-const TEST_REF = "test-ref";
-const TEST_FILE_NAME = "image.png";
-const ADDITIONAL_PATH = "additional/path";
+const TEST_REPO = 'test-repo';
+const TEST_REF = 'test-ref';
+const TEST_FILE_NAME = 'image.png';
+const ADDITIONAL_PATH = 'additional/path';
 
-describe("imageUriReplacer", async () => {
-    test("Basic replacement", async () => {
+describe('imageUriReplacer', async () => {
+    test('Basic replacement', async () => {
         const markdown = `# README
 
 Text and whatever and hey look at this image:
@@ -27,14 +27,14 @@ Text and whatever and hey look at this image:
             .use(imageUriReplacer, {
                 repo: TEST_REPO,
                 ref: TEST_REF,
-                path: "",
+                path: '',
                 presign: false,
             })
             .process(markdown);
         expect(result.toString()).toEqual(markdownWithReplacedImage);
     });
 
-    test("Replacement with additional path", async () => {
+    test('Replacement with additional path', async () => {
         const markdown = `# README
 
 Text and whatever and hey look at this image:
@@ -51,14 +51,14 @@ Text and whatever and hey look at this image:
             .use(imageUriReplacer, {
                 repo: TEST_REPO,
                 ref: TEST_REF,
-                path: "",
+                path: '',
                 presign: false,
             })
             .process(markdown);
         expect(result.toString()).toEqual(markdownWithReplacedImage);
     });
 
-    test("Supports relative paths w/o leading slash", async () => {
+    test('Supports relative paths w/o leading slash', async () => {
         const markdown = `# README
 
 Text and whatever and hey look at this image:
@@ -75,14 +75,14 @@ Text and whatever and hey look at this image:
             .use(imageUriReplacer, {
                 repo: TEST_REPO,
                 ref: TEST_REF,
-                path: "",
+                path: '',
                 presign: false,
             })
             .process(markdown);
         expect(result.toString()).toEqual(markdownWithReplacedImage);
     });
 
-    test("Supports relative paths w/ leading slash", async () => {
+    test('Supports relative paths w/ leading slash', async () => {
         const markdown = `# README
 
 Text and whatever and hey look at this image:
@@ -99,15 +99,15 @@ Text and whatever and hey look at this image:
             .use(imageUriReplacer, {
                 repo: TEST_REPO,
                 ref: TEST_REF,
-                path: "",
+                path: '',
                 presign: false,
             })
             .process(markdown);
         expect(result.toString()).toEqual(markdownWithReplacedImage);
     });
 
-    test("Supports relative paths ./", async () => {
-        const markdownFilePath = "test";
+    test('Supports relative paths ./', async () => {
+        const markdownFilePath = 'test';
         const markdown = `# README
 
 Text and whatever and hey look at this image:

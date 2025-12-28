@@ -1,9 +1,9 @@
-import React from "react";
-import { NavLink as RouterLink, useHref, useLinkClickHandler } from "react-router-dom";
+import React from 'react';
+import { NavLink as RouterLink, useHref, useLinkClickHandler } from 'react-router-dom';
 
-import Nav from "react-bootstrap/Nav";
+import Nav from 'react-bootstrap/Nav';
 
-import { buildURL } from "../hooks/router";
+import { buildURL } from '../hooks/router';
 
 const wrapComponent = (component) => {
     const linkWrapper = React.forwardRef(({ navigate, onClick, to, target, replace, state, ...rest }, ref) => {
@@ -19,7 +19,7 @@ const wrapComponent = (component) => {
             ref,
             href,
             onClick: (event) => {
-                if (onClick && typeof onClick === "function") {
+                if (onClick && typeof onClick === 'function') {
                     onClick(event);
                 }
 
@@ -33,12 +33,12 @@ const wrapComponent = (component) => {
         };
         return React.createElement(component, props);
     });
-    linkWrapper.displayName = "linkWrapper";
+    linkWrapper.displayName = 'linkWrapper';
     return linkWrapper;
 };
 
 export const Link = (props) => {
-    const dontPassTheseProps = ["href", "to", "children", "components", "component"];
+    const dontPassTheseProps = ['href', 'to', 'children', 'components', 'component'];
     const filteredProps = Object.entries(props).filter(([key]) => {
         return !dontPassTheseProps.includes(key);
     });

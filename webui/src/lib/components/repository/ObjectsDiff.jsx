@@ -1,32 +1,32 @@
-import React, { useContext } from "react";
-import { useAPI } from "../../hooks/api";
-import { objects, qs } from "../../api";
-import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
-import { AlertError, Loading } from "../controls";
-import { humanSize } from "./tree";
-import Alert from "react-bootstrap/Alert";
-import Card from "react-bootstrap/Card";
-import { InfoIcon } from "@primer/octicons-react";
-import { useConfigContext } from "../../hooks/configProvider";
-import { AppContext } from "../../hooks/appContext";
-import { useRefs } from "../../hooks/repo";
-import { getRepoStorageConfig } from "../../../pages/repositories/repository/utils";
+import React, { useContext } from 'react';
+import { useAPI } from '../../hooks/api';
+import { objects, qs } from '../../api';
+import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued';
+import { AlertError, Loading } from '../controls';
+import { humanSize } from './tree';
+import Alert from 'react-bootstrap/Alert';
+import Card from 'react-bootstrap/Card';
+import { InfoIcon } from '@primer/octicons-react';
+import { useConfigContext } from '../../hooks/configProvider';
+import { AppContext } from '../../hooks/appContext';
+import { useRefs } from '../../hooks/repo';
+import { getRepoStorageConfig } from '../../../pages/repositories/repository/utils';
 
 const maxDiffSizeBytes = 120 << 10;
 const supportedReadableFormats = [
-    "txt",
-    "text",
-    "md",
-    "csv",
-    "tsv",
-    "yaml",
-    "yml",
-    "json",
-    "jsonl",
-    "ndjson",
-    "geojson",
+    'txt',
+    'text',
+    'md',
+    'csv',
+    'tsv',
+    'yaml',
+    'yml',
+    'json',
+    'jsonl',
+    'ndjson',
+    'geojson',
 ];
-const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "webp"];
+const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
 
 export const ObjectsDiff = ({ diffType, repoId, leftRef, rightRef, path }) => {
     const { state } = useContext(AppContext);
@@ -42,19 +42,19 @@ export const ObjectsDiff = ({ diffType, repoId, leftRef, rightRef, path }) => {
     let left;
     let right;
     switch (diffType) {
-        case "changed":
-        case "conflict":
+        case 'changed':
+        case 'conflict':
             left = useAPI(async () => objects.getStat(repoId, leftRef, path), [repoId, leftRef, path]);
             right = useAPI(async () => objects.getStat(repoId, rightRef, path), [repoId, rightRef, path]);
             break;
-        case "added":
+        case 'added':
             right = useAPI(async () => objects.getStat(repoId, rightRef, path), [repoId, rightRef, path]);
             break;
-        case "removed":
+        case 'removed':
             left = useAPI(async () => objects.getStat(repoId, leftRef, path), [repoId, leftRef, path]);
             break;
         default:
-            return <AlertError error={"Unsupported diff type " + diffType} />;
+            return <AlertError error={'Unsupported diff type ' + diffType} />;
     }
 
     if (hooksLoading || (left && left.loading) || (right && right.loading)) return <Loading />;
@@ -73,10 +73,10 @@ export const ObjectsDiff = ({ diffType, repoId, leftRef, rightRef, path }) => {
             <AlertError
                 error={
                     path +
-                    " is too big (> " +
+                    ' is too big (> ' +
                     humanSize(maxDiffSizeBytes) +
-                    "). To view its diff please download" +
-                    " the objects and use an external diff tool."
+                    '). To view its diff please download' +
+                    ' the objects and use an external diff tool.'
                 }
             />
         );
@@ -101,7 +101,7 @@ export const ObjectsDiff = ({ diffType, repoId, leftRef, rightRef, path }) => {
 function readableObject(path) {
     if (isImage(path)) return true;
     for (const ext of supportedReadableFormats) {
-        if (path.endsWith("." + ext)) {
+        if (path.endsWith('.' + ext)) {
             return true;
         }
     }
@@ -117,8 +117,8 @@ const NoContentDiff = ({ left, right, diffType }) => {
             </span>
             <span>
                 <Alert variant="light">
-                    <InfoIcon />{" "}
-                    {`lakeFS supports content diff for ${supportedFileExtensions.join(",")} file formats only`}
+                    <InfoIcon />{' '}
+                    {`lakeFS supports content diff for ${supportedFileExtensions.join(',')} file formats only`}
                 </Alert>
             </span>
         </div>
@@ -209,19 +209,19 @@ const ImageCardDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, righ
 
 function validateDiffInput(left, right, diffType) {
     switch (diffType) {
-        case "changed":
-            if (!left && !right) return <AlertError error={"Invalid diff input"} />;
+        case 'changed':
+            if (!left && !right) return <AlertError error={'Invalid diff input'} />;
             break;
-        case "added":
-            if (!right) return <AlertError error={"Invalid diff input: right hand-side is missing"} />;
+        case 'added':
+            if (!right) return <AlertError error={'Invalid diff input: right hand-side is missing'} />;
             break;
-        case "removed":
-            if (!left) return <AlertError error={"Invalid diff input: left hand-side is missing"} />;
+        case 'removed':
+            if (!left) return <AlertError error={'Invalid diff input: left hand-side is missing'} />;
             break;
-        case "conflict":
+        case 'conflict':
             break;
         default:
-            return <AlertError error={"Unknown diff type: " + diffType} />;
+            return <AlertError error={'Unknown diff type: ' + diffType} />;
     }
 }
 
@@ -232,7 +232,7 @@ const StatDiff = ({ left, right, diffType }) => {
     const leftSize = left && left.size_bytes;
     return (
         <>
-            <div className={"stats-diff-block"}>
+            <div className={'stats-diff-block'}>
                 <DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType} />
             </div>
         </>
@@ -243,7 +243,7 @@ const DiffSizeReport = ({ leftSize, rightSize, diffType }) => {
     let label = diffType;
     let size;
     switch (diffType) {
-        case "changed":
+        case 'changed':
             size = leftSize - rightSize;
             if (size === 0) {
                 return (
@@ -254,62 +254,62 @@ const DiffSizeReport = ({ leftSize, rightSize, diffType }) => {
             }
             if (size < 0) {
                 size = -size;
-                label = "added";
+                label = 'added';
             } else {
-                label = "removed";
+                label = 'removed';
             }
             break;
-        case "conflict": // conflict will compare left and right. further details: https://github.com/treeverse/lakeFS/issues/3269
+        case 'conflict': // conflict will compare left and right. further details: https://github.com/treeverse/lakeFS/issues/3269
             return (
                 <div>
                     <span className={label}>{label} </span>
                     <span>both source and destination file were changed.</span>
-                    <span className={"diff-size"}> Source: {humanSize(leftSize)}</span>
+                    <span className={'diff-size'}> Source: {humanSize(leftSize)}</span>
                     <span> in size, </span>
-                    <span className={"diff-size"}> Destination: {humanSize(rightSize)}</span>
+                    <span className={'diff-size'}> Destination: {humanSize(rightSize)}</span>
                     <span> in size</span>
                 </div>
             );
-        case "added":
+        case 'added':
             size = rightSize;
             break;
-        case "removed":
+        case 'removed':
             size = leftSize;
             break;
         default:
-            return <AlertError error={"Unknown diff type: " + diffType} />;
+            return <AlertError error={'Unknown diff type: ' + diffType} />;
     }
 
     return (
         <div>
             <span className={label}>{label} </span>
-            <span className={"diff-size"}>{humanSize(size)}</span>
+            <span className={'diff-size'}>{humanSize(size)}</span>
             <span> in size</span>
         </div>
     );
 };
 
 const ImageDiffSummary = ({ leftSize, rightSize, diffType }) => {
-    let diffValue = "";
-    let cls = "";
-    if (diffType === "changed" && leftSize !== null && rightSize !== null) {
+    let diffValue = '';
+    let cls = '';
+    if (diffType === 'changed' && leftSize !== null && rightSize !== null) {
         const d = rightSize - leftSize;
-        const sign = d > 0 ? "+" : "-";
+        const sign = d > 0 ? '+' : '-';
         const abs = Math.abs(d);
-        const pct = leftSize > 0 ? ((abs / leftSize) * 100).toFixed(1) : "0.0";
-        cls = d > 0 ? "text-success" : "text-danger";
+        const pct = leftSize > 0 ? ((abs / leftSize) * 100).toFixed(1) : '0.0';
+        cls = d > 0 ? 'text-success' : 'text-danger';
         diffValue = `${sign}${humanSize(abs)} (${pct}%)`;
-    } else if (diffType === "added") {
-        cls = "text-success";
+    } else if (diffType === 'added') {
+        cls = 'text-success';
         diffValue = `+${humanSize(rightSize)}`;
-    } else if (diffType === "removed") {
-        cls = "text-danger";
+    } else if (diffType === 'removed') {
+        cls = 'text-danger';
         diffValue = `-${humanSize(leftSize)}`;
     }
     return <div className={`text-center mb-2 ${cls} image-diff-summary`}>{diffValue}</div>;
 };
 
-const isImage = (path) => imageExtensions.some((ext) => path.toLowerCase().endsWith("." + ext));
+const isImage = (path) => imageExtensions.some((ext) => path.toLowerCase().endsWith('.' + ext));
 
 const buildUrl = (repoId, ref, query) =>
     `/api/v1/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?${query}`;

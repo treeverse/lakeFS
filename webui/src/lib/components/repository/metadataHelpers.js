@@ -1,4 +1,4 @@
-const isEmptyKey = (key) => !key || key.trim() === "";
+const isEmptyKey = (key) => !key || key.trim() === '';
 
 const isInvalidKey = (key) => {
     // TODO: Add more validation checks, e.g. duplicate keys, invalid characters
@@ -64,7 +64,7 @@ export const getFieldError = (field) => {
     if (!field.touched) return null;
 
     if (isEmptyKey(field.key)) {
-        return "Key is required";
+        return 'Key is required';
     }
 
     return null;

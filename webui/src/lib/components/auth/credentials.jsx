@@ -1,20 +1,20 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState } from 'react';
 
-import Modal from "react-bootstrap/Modal";
-import Table from "react-bootstrap/Table";
-import Alert from "react-bootstrap/Alert";
-import { DownloadIcon } from "@primer/octicons-react";
+import Modal from 'react-bootstrap/Modal';
+import Table from 'react-bootstrap/Table';
+import Alert from 'react-bootstrap/Alert';
+import { DownloadIcon } from '@primer/octicons-react';
 
-import { auth } from "../../api";
-import { useAPIWithPagination } from "../../hooks/api";
-import { ClipboardButton, DataTable, AlertError, FormattedDate, Loading } from "../controls";
-import { ConfirmationButton } from "../modals";
-import { Paginator } from "../pagination";
-import { AppContext } from "../../hooks/appContext";
+import { auth } from '../../api';
+import { useAPIWithPagination } from '../../hooks/api';
+import { ClipboardButton, DataTable, AlertError, FormattedDate, Loading } from '../controls';
+import { ConfirmationButton } from '../modals';
+import { Paginator } from '../pagination';
+import { AppContext } from '../../hooks/appContext';
 
-export const DownloadCredentialsButton = ({ accessKeyId, secretAccessKey, apiEndpoint = "/api/v1" }) => {
+export const DownloadCredentialsButton = ({ accessKeyId, secretAccessKey, apiEndpoint = '/api/v1' }) => {
     const downloadContent =
-        "data:application/octet-stream," +
+        'data:application/octet-stream,' +
         encodeURIComponent(`# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
 credentials:
     access_key_id: ${accessKeyId}
@@ -26,7 +26,7 @@ server:
     return (
         <a
             className="btn p-2 pl-3 pr-3"
-            style={{ backgroundColor: "#808080", color: "white" }}
+            style={{ backgroundColor: '#808080', color: 'white' }}
             href={downloadContent}
             target="_blank"
             rel="noreferrer"
@@ -53,9 +53,9 @@ export const CredentialsTable = ({ userId, currentAccessKey, refresh, after, onP
         <>
             <DataTable
                 keyFn={(row) => row.access_key_id}
-                emptyState={"No credentials found"}
+                emptyState={'No credentials found'}
                 results={results}
-                headers={["Access Key ID", "Creation Date", ""]}
+                headers={['Access Key ID', 'Creation Date', '']}
                 rowFn={(row) => [
                     <>
                         <code>{row.access_key_id}</code>
@@ -69,7 +69,7 @@ export const CredentialsTable = ({ userId, currentAccessKey, refresh, after, onP
                                 size="sm"
                                 msg={
                                     <span>
-                                        Are you sure you{"'"}d like to delete access key{" "}
+                                        Are you sure you{"'"}d like to delete access key{' '}
                                         <code>{row.access_key_id}</code>?
                                     </span>
                                 }
@@ -94,7 +94,7 @@ export const CredentialsShowModal = ({ credentials, show, onHide }) => {
     if (!credentials) return <></>;
 
     const { state } = useContext(AppContext);
-    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+    const buttonVariant = state.settings.darkMode ? 'outline-light' : 'outline-dark';
 
     return (
         <Modal show={show} onHide={onHide} size="lg">

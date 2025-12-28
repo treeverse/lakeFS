@@ -1,15 +1,15 @@
-import React, { FC, FormEvent, useCallback, useEffect, useState } from "react";
-import { runDuckDBQuery } from "./duckdb";
-import * as arrow from "apache-arrow";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import { ChevronRightIcon } from "@primer/octicons-react";
-import dayjs from "dayjs";
-import Table from "react-bootstrap/Table";
+import React, { FC, FormEvent, useCallback, useEffect, useState } from 'react';
+import { runDuckDBQuery } from './duckdb';
+import * as arrow from 'apache-arrow';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import { ChevronRightIcon } from '@primer/octicons-react';
+import dayjs from 'dayjs';
+import Table from 'react-bootstrap/Table';
 
-import { SQLEditor } from "./editor";
-import { RendererComponent } from "./types";
-import { AlertError, Loading } from "../../../../lib/components/controls";
+import { SQLEditor } from './editor';
+import { RendererComponent } from './types';
+import { AlertError, Loading } from '../../../../lib/components/controls';
 
 const MAX_RESULTS_RETURNED = 1000;
 
@@ -19,9 +19,9 @@ export const DataLoader: FC = () => {
 
 export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fileExtension }) => {
     let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${path}', hive_partitioning=false) LIMIT 20`;
-    if (fileExtension === "csv") {
+    if (fileExtension === 'csv') {
         initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${path}', AUTO_DETECT = TRUE) LIMIT 20`;
-    } else if (fileExtension === "tsv") {
+    } else if (fileExtension === 'tsv') {
         initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${path}', DELIM='\t', AUTO_DETECT=TRUE) LIMIT 20`;
     }
     const [shouldSubmit, setShouldSubmit] = useState<boolean>(true);
@@ -73,7 +73,7 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
     let content;
     const button = (
         <Button type="submit" variant="success" disabled={loading}>
-            <ChevronRightIcon /> {loading ? "Executing..." : "Execute"}
+            <ChevronRightIcon /> {loading ? 'Executing...' : 'Execute'}
         </Button>
     );
 
@@ -139,7 +139,7 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
                     <div className="d-flex justify-content-end">
                         <p className="text-muted text-end powered-by">
                             <small>
-                                Powered by{" "}
+                                Powered by{' '}
                                 <a
                                     href="https://duckdb.org/2021/10/29/duckdb-wasm.html"
                                     target="_blank"
@@ -147,7 +147,7 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
                                 >
                                     DuckDB-WASM
                                 </a>
-                                . For a full SQL reference, see the{" "}
+                                . For a full SQL reference, see the{' '}
                                 <a
                                     href="https://duckdb.org/docs/sql/statements/select"
                                     target="_blank"
@@ -167,26 +167,26 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const DataRow: FC<{ value: any }> = ({ value }) => {
-    let dataType = "regular";
-    if (typeof value === "string") {
-        dataType = "string";
+    let dataType = 'regular';
+    if (typeof value === 'string') {
+        dataType = 'string';
     } else if (value instanceof Date) {
-        dataType = "date";
-    } else if (typeof value === "number") {
-        dataType = "number";
+        dataType = 'date';
+    } else if (typeof value === 'number') {
+        dataType = 'number';
     }
 
-    if (dataType === "string") {
+    if (dataType === 'string') {
         return <td className="string-cell">{value}</td>;
     }
 
-    if (dataType === "date") {
+    if (dataType === 'date') {
         return <td className="date-cell">{dayjs(value).format()}</td>;
     }
 
-    if (dataType === "number") {
-        return <td className="number-cell">{value.toLocaleString("en-US")}</td>;
+    if (dataType === 'number') {
+        return <td className="number-cell">{value.toLocaleString('en-US')}</td>;
     }
 
-    return <td>{"" + value}</td>;
+    return <td>{'' + value}</td>;
 };

@@ -1,10 +1,10 @@
-import React, { useCallback } from "react";
-import { useRouter } from "../../hooks/router";
-import RefDropdown from "./refDropdown";
-import { ArrowLeftIcon, ArrowSwitchIcon } from "@primer/octicons-react";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
-import Button from "react-bootstrap/Button";
+import React, { useCallback } from 'react';
+import { useRouter } from '../../hooks/router';
+import RefDropdown from './refDropdown';
+import { ArrowLeftIcon, ArrowSwitchIcon } from '@primer/octicons-react';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
+import Button from 'react-bootstrap/Button';
 
 const CompareBranchesSelection = ({
     repo,
@@ -41,7 +41,7 @@ const CompareBranchesSelection = ({
     return (
         <>
             <RefDropdown
-                prefix={"Base "}
+                prefix={'Base '}
                 repo={repo}
                 selected={reference ? reference : null}
                 withCommits={withCommits}
@@ -53,8 +53,8 @@ const CompareBranchesSelection = ({
             <ArrowLeftIcon className="me-2 mt-2" size="small" verticalAlign="middle" />
 
             <RefDropdown
-                prefix={"Compared to "}
-                emptyText={"Compare with..."}
+                prefix={'Compared to '}
+                emptyText={'Compare with...'}
                 repo={repo}
                 selected={compareReference ? compareReference : null}
                 withCommits={withCommits}
@@ -65,7 +65,7 @@ const CompareBranchesSelection = ({
 
             <OverlayTrigger placement="bottom" overlay={<Tooltip>Switch directions</Tooltip>}>
                 <span>
-                    <Button variant={"link"} onClick={handleSwitchRefs}>
+                    <Button variant={'link'} onClick={handleSwitchRefs}>
                         <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle" />
                     </Button>
                 </span>

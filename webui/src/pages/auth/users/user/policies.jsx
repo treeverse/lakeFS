@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
-import { UserHeaderWithContext } from "./userHeaderWithContext";
+import React, { useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { UserHeaderWithContext } from './userHeaderWithContext';
 import {
     ActionGroup,
     ActionsBar,
@@ -9,17 +9,17 @@ import {
     Loading,
     AlertError,
     RefreshButton,
-} from "../../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import { useAPIWithPagination } from "../../../../lib/hooks/api";
-import { auth } from "../../../../lib/api";
-import { Paginator } from "../../../../lib/components/pagination";
-import { useState } from "react";
-import { AttachModal } from "../../../../lib/components/auth/forms";
-import { ConfirmationButton } from "../../../../lib/components/modals";
-import { Link } from "../../../../lib/components/nav";
-import { useRouter } from "../../../../lib/hooks/router";
-import { PageSize } from "../../../../constants";
+} from '../../../../lib/components/controls';
+import Button from 'react-bootstrap/Button';
+import { useAPIWithPagination } from '../../../../lib/hooks/api';
+import { auth } from '../../../../lib/api';
+import { Paginator } from '../../../../lib/components/pagination';
+import { useState } from 'react';
+import { AttachModal } from '../../../../lib/components/auth/forms';
+import { ConfirmationButton } from '../../../../lib/components/modals';
+import { Link } from '../../../../lib/components/nav';
+import { useRouter } from '../../../../lib/hooks/router';
+import { PageSize } from '../../../../constants';
 
 const UserPoliciesList = ({ userId, after, onPaginate }) => {
     const [refresh, setRefresh] = useState(false);
@@ -42,7 +42,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                     rowFn={(policy) => [
                         <Link
                             href={{
-                                pathname: "/auth/policies/:policyId",
+                                pathname: '/auth/policies/:policyId',
                                 params: { policyId: policy.id },
                             }}
                         >
@@ -50,10 +50,10 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                         </Link>,
                         <FormattedDate dateValue={policy.creation_date} />,
                     ]}
-                    headers={["Policy ID", "Created At"]}
+                    headers={['Policy ID', 'Created At']}
                     actions={[
                         {
-                            key: "Detach",
+                            key: 'Detach',
                             buttonFn: (policy) => (
                                 <ConfirmationButton
                                     size="sm"
@@ -78,7 +78,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                         },
                     ]}
                     results={results}
-                    emptyState={"No policies found"}
+                    emptyState={'No policies found'}
                 />
 
                 <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage} />
@@ -86,10 +86,10 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                 {showAddModal && (
                     <AttachModal
                         show={showAddModal}
-                        emptyState={"No policies found"}
-                        filterPlaceholder={"Find Policy..."}
-                        modalTitle={"Attach Policies"}
-                        addText={"Attach Policies"}
+                        emptyState={'No policies found'}
+                        filterPlaceholder={'Find Policy...'}
+                        modalTitle={'Attach Policies'}
+                        addText={'Attach Policies'}
                         searchFn={(prefix, after) => auth.listPolicies(prefix, after, PageSize)}
                         onHide={() => setShowAddModal(false)}
                         onAttach={(selected) => {
@@ -112,7 +112,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeaderWithContext userId={userId} page={"policies"} />
+            <UserHeaderWithContext userId={userId} page={'policies'} />
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -140,10 +140,10 @@ const UserPoliciesContainer = () => {
     ) : (
         <UserPoliciesList
             userId={userId}
-            after={after ? after : ""}
+            after={after ? after : ''}
             onPaginate={(after) =>
                 router.push({
-                    pathname: "/auth/users/:userId/policies",
+                    pathname: '/auth/users/:userId/policies',
                     params: { userId },
                     query: { after },
                 })
@@ -154,7 +154,7 @@ const UserPoliciesContainer = () => {
 
 const UserPoliciesPage = () => {
     const { setActiveTab } = useOutletContext();
-    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    useEffect(() => setActiveTab('users'), [setActiveTab]);
     return <UserPoliciesContainer />;
 };
 

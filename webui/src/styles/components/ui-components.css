@@ -57,13 +57,13 @@
 }
 
 /* Dark mode alert fixes */
-[data-bs-theme="dark"] .alert-info {
+[data-bs-theme='dark'] .alert-info {
     background-color: #1e3a8a;
     color: #bfdbfe;
     border-color: #3b82f6;
 }
 
-[data-bs-theme="dark"] .alert-warning {
+[data-bs-theme='dark'] .alert-warning {
     background-color: #fbbf24;
     color: #1f2937;
     border-color: #f59e0b;
@@ -114,13 +114,13 @@
 }
 
 /* Upload and Import buttons spacing */
-.action-group [class*="Upload"] + [class*="Import"],
+.action-group [class*='Upload'] + [class*='Import'],
 .action-group button + button,
-button[class*="Upload"] + button[class*="Import"],
-[class*="Upload"] ~ [class*="Import"],
-[data-testid*="upload"] + [data-testid*="import"],
-button[title*="Upload"] + button[title*="Import"],
-a[title*="Upload"] + a[title*="Import"] {
+button[class*='Upload'] + button[class*='Import'],
+[class*='Upload'] ~ [class*='Import'],
+[data-testid*='upload'] + [data-testid*='import'],
+button[title*='Upload'] + button[title*='Import'],
+a[title*='Upload'] + a[title*='Import'] {
     margin-left: var(--spacing-xl) !important;
     margin-right: var(--spacing-md) !important;
 }
@@ -156,7 +156,7 @@ a[title*="Upload"] + a[title*="Import"] {
     margin: 0 5px;
 }
 
-[data-bs-theme="dark"] .lakefs-uri {
+[data-bs-theme='dark'] .lakefs-uri {
     background-color: #2d3748;
     color: #f9fafb;
 }
@@ -324,11 +324,11 @@ a[title*="Upload"] + a[title*="Import"] {
 }
 
 /* Dark mode adjustments */
-[data-bs-theme="dark"] .get-started-container {
+[data-bs-theme='dark'] .get-started-container {
     background-color: var(--surface);
 }
 
-[data-bs-theme="dark"] .get-started-icon-container {
+[data-bs-theme='dark'] .get-started-icon-container {
     background-color: rgba(59, 130, 246, 0.1);
 }
 

@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import dayjs from "dayjs";
-import { useOutletContext } from "react-router-dom";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import dayjs from 'dayjs';
+import { useOutletContext } from 'react-router-dom';
 import {
     CheckboxIcon,
     UploadIcon,
@@ -10,8 +10,8 @@ import {
     GitCommitIcon,
     HistoryIcon,
     NorthStarIcon,
-} from "@primer/octicons-react";
-import RefDropdown from "../../../lib/components/repository/refDropdown";
+} from '@primer/octicons-react';
+import RefDropdown from '../../../lib/components/repository/refDropdown';
 import {
     ActionGroup,
     ActionsBar,
@@ -20,16 +20,16 @@ import {
     PrefixSearchWidget,
     RefreshButton,
     Warnings,
-} from "../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import Alert from "react-bootstrap/Alert";
-import Dropdown from "react-bootstrap/Dropdown";
-import { BsCloudArrowUp } from "react-icons/bs";
+} from '../../../lib/components/controls';
+import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert';
+import Dropdown from 'react-bootstrap/Dropdown';
+import { BsCloudArrowUp } from 'react-icons/bs';
 
-import { humanSize, Tree, URINavigator } from "../../../lib/components/repository/tree";
+import { humanSize, Tree, URINavigator } from '../../../lib/components/repository/tree';
 import {
     objects,
     staging,
@@ -42,11 +42,11 @@ import {
     branches,
     commits,
     refs,
-} from "../../../lib/api";
-import { useAPI, useAPIWithPagination } from "../../../lib/hooks/api";
-import { useRefs } from "../../../lib/hooks/repo";
-import { useRouter } from "../../../lib/hooks/router";
-import { RefTypeBranch } from "../../../constants";
+} from '../../../lib/api';
+import { useAPI, useAPIWithPagination } from '../../../lib/hooks/api';
+import { useRefs } from '../../../lib/hooks/repo';
+import { useRouter } from '../../../lib/hooks/router';
+import { RefTypeBranch } from '../../../constants';
 import {
     ExecuteImportButton,
     ImportDone,
@@ -54,25 +54,25 @@ import {
     ImportPhase,
     ImportProgress,
     startImport,
-} from "../services/import_data";
-import { Box } from "@mui/material";
-import { RepoError } from "./error";
-import { getContentType, getFileExtension, FileContents } from "./objectViewer";
-import { ProgressBar } from "react-bootstrap";
-import { useSearchParams } from "react-router-dom";
-import { useConfigContext } from "../../../lib/hooks/configProvider";
-import { getRepoStorageConfig } from "./utils";
-import { useDropzone } from "react-dropzone";
-import pMap from "p-map";
-import { formatAlertText } from "../../../lib/components/repository/errors";
-import { ChangesTreeContainer } from "../../../lib/components/repository/changes";
-import { MetadataFields } from "../../../lib/components/repository/metadata";
-import { getMetadataIfValid, touchInvalidFields } from "../../../lib/components/repository/metadataHelpers";
-import { ConfirmationModal } from "../../../lib/components/modals";
-import { Link } from "../../../lib/components/nav";
-import Card from "react-bootstrap/Card";
+} from '../services/import_data';
+import { Box } from '@mui/material';
+import { RepoError } from './error';
+import { getContentType, getFileExtension, FileContents } from './objectViewer';
+import { ProgressBar } from 'react-bootstrap';
+import { useSearchParams } from 'react-router-dom';
+import { useConfigContext } from '../../../lib/hooks/configProvider';
+import { getRepoStorageConfig } from './utils';
+import { useDropzone } from 'react-dropzone';
+import pMap from 'p-map';
+import { formatAlertText } from '../../../lib/components/repository/errors';
+import { ChangesTreeContainer } from '../../../lib/components/repository/changes';
+import { MetadataFields } from '../../../lib/components/repository/metadata';
+import { getMetadataIfValid, touchInvalidFields } from '../../../lib/components/repository/metadataHelpers';
+import { ConfirmationModal } from '../../../lib/components/modals';
+import { Link } from '../../../lib/components/nav';
+import Card from 'react-bootstrap/Card';
 
-const README_FILE_NAME = "README.md";
+const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
@@ -80,7 +80,7 @@ export async function appendMoreResults(resultsState, prefix, lastSeenPath, setL
     let resultsFiltered = resultsState.results;
     if (resultsState.prefix !== prefix) {
         // prefix changed, need to delete previous results
-        setLastSeenPath("");
+        setLastSeenPath('');
         resultsFiltered = [];
     }
 
@@ -97,7 +97,7 @@ export async function appendMoreResults(resultsState, prefix, lastSeenPath, setL
 }
 
 const isAbortedError = (error, controller) => {
-    return (error instanceof DOMException && error.name === "AbortError") || controller?.signal?.aborted;
+    return (error instanceof DOMException && error.name === 'AbortError') || controller?.signal?.aborted;
 };
 
 const CommitButton = ({ repo, onCommit, enabled = false }) => {
@@ -184,20 +184,20 @@ export const useInterval = (callback, delay) => {
     }, [delay]);
 };
 
-const ImportModal = ({ config, repoId, referenceId, referenceType, path = "", onDone, onHide, show = false }) => {
+const ImportModal = ({ config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false }) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [importError, setImportError] = useState(null);
     const [metadataFields, setMetadataFields] = useState([]);
-    const [importID, setImportID] = useState("");
+    const [importID, setImportID] = useState('');
 
     const sourceRef = useRef(null);
     const destRef = useRef(null);
     const commitMsgRef = useRef(null);
 
     useInterval(() => {
-        if (importID !== "" && importPhase === ImportPhase.InProgress) {
+        if (importID !== '' && importPhase === ImportPhase.InProgress) {
             const getState = async () => {
                 try {
                     const importState = await imports.get(repoId, referenceId, importID);
@@ -229,7 +229,7 @@ const ImportModal = ({ config, repoId, referenceId, referenceType, path = "", on
         setIsImportEnabled(false);
         setNumberOfImportedObjects(0);
         setMetadataFields([]);
-        setImportID("");
+        setImportID('');
     };
 
     const hide = () => {
@@ -263,7 +263,7 @@ const ImportModal = ({ config, repoId, referenceId, referenceType, path = "", on
             setIsImportEnabled(false);
         }
     };
-    const pathStyle = { minWidth: "25%" };
+    const pathStyle = { minWidth: '25%' };
 
     return (
         <>
@@ -288,8 +288,8 @@ const ImportModal = ({ config, repoId, referenceId, referenceType, path = "", on
                             err={importError}
                             className={
                                 importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed
-                                    ? ""
-                                    : "d-none"
+                                    ? ''
+                                    : 'd-none'
                             }
                         />
                     }
@@ -325,14 +325,14 @@ const ImportModal = ({ config, repoId, referenceId, referenceType, path = "", on
 };
 
 function extractChecksumFromResponse(parsedHeaders) {
-    if (parsedHeaders["content-md5"]) {
+    if (parsedHeaders['content-md5']) {
         // drop any quote and space
-        return parsedHeaders["content-md5"];
+        return parsedHeaders['content-md5'];
     }
     // fallback to ETag
-    if (parsedHeaders["etag"]) {
+    if (parsedHeaders['etag']) {
         // drop any quote and space
-        return parsedHeaders["etag"].replace(/[" ]+/g, "");
+        return parsedHeaders['etag'].replace(/[" ]+/g, '');
     }
     return null;
 }
@@ -340,15 +340,15 @@ function extractChecksumFromResponse(parsedHeaders) {
 const uploadFile = async (config, repo, reference, destinationPath, file, onProgress) => {
     if (config.pre_sign_support_ui) {
         let additionalHeaders;
-        if (config.blockstore_type === "azure") {
-            additionalHeaders = { "x-ms-blob-type": "BlockBlob" };
+        if (config.blockstore_type === 'azure') {
+            additionalHeaders = { 'x-ms-blob-type': 'BlockBlob' };
         }
         const getResp = await staging.get(repo.id, reference.id, destinationPath, config.pre_sign_support_ui);
         try {
             const uploadResponse = await uploadWithProgress(
                 getResp.presigned_url,
                 file,
-                "PUT",
+                'PUT',
                 onProgress,
                 additionalHeaders,
             );
@@ -356,7 +356,7 @@ const uploadFile = async (config, repo, reference, destinationPath, file, onProg
             const checksum = extractChecksumFromResponse(parsedHeaders);
             await staging.link(repo.id, reference.id, destinationPath, getResp, checksum, file.size, file.type);
         } catch (error) {
-            throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ""}`);
+            throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ''}`);
         }
     } else {
         await objects.upload(repo.id, reference.id, destinationPath, file, onProgress);
@@ -365,23 +365,23 @@ const uploadFile = async (config, repo, reference, destinationPath, file, onProg
 
 const joinPath = (basePath, filePath) => {
     // 1. Normalize the file path first: remove leading slash
-    const normalizedFilePath = filePath.replace(/^\//, "");
+    const normalizedFilePath = filePath.replace(/^\//, '');
 
     // 2. Handle the base path
     // If basePath is empty or just '/', the result is just the normalized file path
-    if (!basePath || basePath === "/") {
+    if (!basePath || basePath === '/') {
         return normalizedFilePath;
     }
 
     // 3. If basePath is non-empty, ensure it ends with '/'
-    const normalizedBasePath = basePath.endsWith("/") ? basePath : basePath + "/";
+    const normalizedBasePath = basePath.endsWith('/') ? basePath : basePath + '/';
 
     // 4. Combine
     return normalizedBasePath + normalizedFilePath;
 };
 
 const generateInitialDestination = (filePath, currentOverallPath) => {
-    const relativePathFromDrop = filePath.replace(/\\/g, "/");
+    const relativePathFromDrop = filePath.replace(/\\/g, '/');
     return joinPath(currentOverallPath, relativePathFromDrop);
 };
 
@@ -405,7 +405,7 @@ const UploadCandidate = ({
         }
     }, [isEditing]);
 
-    if (state && state.status === "uploading") {
+    if (state && state.status === 'uploading') {
         statusIndicator = (
             <ProgressBar
                 animated
@@ -413,22 +413,22 @@ const UploadCandidate = ({
                 now={state.percent}
                 className="upload-progress"
                 title={`${state.percent}% uploaded`}
-                style={{ height: "8px" }}
+                style={{ height: '8px' }}
             />
         );
-    } else if (state && state.status === "done") {
+    } else if (state && state.status === 'done') {
         statusIndicator = (
             <span className="text-success" title="Completed">
                 <CheckboxIcon />
             </span>
         );
-    } else if (state && state.status === "error") {
+    } else if (state && state.status === 'error') {
         statusIndicator = (
             <span className="text-danger" title="Error">
                 <AlertIcon />
             </span>
         );
-    } else if (onRemove !== null && !isUploading && state?.status !== "uploading") {
+    } else if (onRemove !== null && !isUploading && state?.status !== 'uploading') {
         statusIndicator = (
             <button
                 className="remove-button"
@@ -449,14 +449,14 @@ const UploadCandidate = ({
     };
 
     const handleKeyDown = (e) => {
-        if (e.key === "Enter" || e.key === "Escape") {
+        if (e.key === 'Enter' || e.key === 'Escape') {
             onEditToggle(false);
             e.preventDefault(); // Prevent form submission on Enter
         }
     };
 
     return (
-        <div className={`upload-item upload-item-${state ? state.status : "pending"}`}>
+        <div className={`upload-item upload-item-${state ? state.status : 'pending'}`}>
             <div className="file-destination-column">
                 {isEditing ? (
                     <Form.Control
@@ -480,9 +480,9 @@ const UploadCandidate = ({
                             {destination || <span>&nbsp;</span>}
                         </span>
                         {!isUploading &&
-                            state?.status !== "uploading" &&
-                            state?.status !== "done" &&
-                            state?.status !== "error" && (
+                            state?.status !== 'uploading' &&
+                            state?.status !== 'done' &&
+                            state?.status !== 'error' && (
                                 <button
                                     className="edit-destination-button"
                                     onClick={(e) => {
@@ -511,15 +511,15 @@ const UploadButtonText = ({ inProgress, uploadingCount, filesLength, averageProg
         return (
             <>
                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Uploading {uploadingCount > 0 ? `${uploadingCount} / ${filesLength}` : averageProgress + "%"}
+                Uploading {uploadingCount > 0 ? `${uploadingCount} / ${filesLength}` : averageProgress + '%'}
                 ...
             </>
         );
     }
     return (
         <>
-            <UploadIcon className="me-2" /> Upload {filesLength || ""} File
-            {filesLength !== 1 ? "s" : ""}
+            <UploadIcon className="me-2" /> Upload {filesLength || ''} File
+            {filesLength !== 1 ? 's' : ''}
         </>
     );
 };
@@ -530,7 +530,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
         error: null,
         done: false,
     };
-    const [overallPath, setOverallPath] = useState(path || "");
+    const [overallPath, setOverallPath] = useState(path || '');
     const [uploadState, setUploadState] = useState(initialState);
     const [files, setFiles] = useState([]);
     const [fileStates, setFileStates] = useState({});
@@ -555,7 +555,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
             newFiles.forEach((file) => {
                 const initialDest = generateInitialDestination(file.path, overallPath);
                 nextDestinations[file.path] = initialDest;
-                nextStates[file.path] = { status: "pending", percent: 0 };
+                nextStates[file.path] = { status: 'pending', percent: 0 };
                 nextEditing[file.path] = false;
                 nextManualEditFlags[file.path] = false;
             });
@@ -615,13 +615,13 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
         setFileDestinations({});
         setEditingDestinations({});
         setManuallyEditedDestinations({});
-        setOverallPath(path || "");
+        setOverallPath(path || '');
         setAbortController(null);
         onHide();
     };
 
     useEffect(() => {
-        setOverallPath(path || "");
+        setOverallPath(path || '');
     }, [path]);
 
     const upload = async () => {
@@ -641,23 +641,23 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                 console.error(`No destination path found for file: ${file.path}`);
                 setFileStates((next) => ({
                     ...next,
-                    [file.path]: { status: "error", percent: 0 },
+                    [file.path]: { status: 'error', percent: 0 },
                 }));
                 throw new Error(`Missing destination for ${file.path}`);
             }
             try {
                 setFileStates((next) => ({
                     ...next,
-                    [file.path]: { status: "uploading", percent: 0 },
+                    [file.path]: { status: 'uploading', percent: 0 },
                 }));
 
                 const handleProgress = (progress) => {
                     if (controller.signal.aborted) return;
                     setFileStates((next) => {
-                        if (next[file.path]?.status === "uploading") {
+                        if (next[file.path]?.status === 'uploading') {
                             return {
                                 ...next,
-                                [file.path]: { status: "uploading", percent: progress },
+                                [file.path]: { status: 'uploading', percent: progress },
                             };
                         }
                         return next;
@@ -669,14 +669,14 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                 if (controller.signal.aborted) return;
                 setFileStates((next) => ({
                     ...next,
-                    [file.path]: { status: "done", percent: 100 },
+                    [file.path]: { status: 'done', percent: 100 },
                 }));
             } catch (error) {
                 if (controller.signal.aborted) return;
-                console.error("Upload error for:", file.path, error);
+                console.error('Upload error for:', file.path, error);
                 setFileStates((next) => ({
                     ...next,
-                    [file.path]: { status: "error", percent: 0 },
+                    [file.path]: { status: 'error', percent: 0 },
                 }));
                 if (!isAbortedError(error, controller)) {
                     setUploadState((prev) => ({ ...prev, error: error }));
@@ -698,14 +698,14 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
             }
         } catch (error) {
             if (!isAbortedError(error, controller)) {
-                console.error("pMap upload error:", error);
+                console.error('pMap upload error:', error);
                 setUploadState((prev) => ({
                     ...prev,
                     inProgress: false,
                     error: prev.error || error,
                 }));
             } else {
-                console.log("Upload process aborted.");
+                console.log('Upload process aborted.');
                 setUploadState((prev) => ({ ...prev, inProgress: false }));
             }
         } finally {
@@ -756,7 +756,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
 
     const totalProgress = files.reduce((sum, file) => sum + (fileStates[file.path]?.percent || 0), 0);
     const averageProgress = files.length > 0 ? Math.round(totalProgress / files.length) : 0;
-    const uploadingCount = files.filter((f) => fileStates[f.path]?.status === "uploading").length;
+    const uploadingCount = files.filter((f) => fileStates[f.path]?.status === 'uploading').length;
 
     return (
         <>
@@ -783,17 +783,17 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                         <Form.Group controlId="dropzone" className="mb-3">
                             <div
                                 {...getRootProps({
-                                    className: "dropzone",
-                                    "aria-disabled": uploadState.inProgress,
+                                    className: 'dropzone',
+                                    'aria-disabled': uploadState.inProgress,
                                 })}
                             >
-                                <input {...getInputProps({ "aria-disabled": uploadState.inProgress })} />
+                                <input {...getInputProps({ 'aria-disabled': uploadState.inProgress })} />
                                 <div
-                                    className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}
+                                    className={isDragAccept ? 'file-drop-zone file-drop-zone-focus' : 'file-drop-zone'}
                                 >
                                     <UploadIcon size={24} className="file-drop-zone-icon" />
                                     <div className="file-drop-zone-text">
-                                        {isDragAccept ? "Drop files here" : "Drag & drop files or folders here"}
+                                        {isDragAccept ? 'Drop files here' : 'Drag & drop files or folders here'}
                                     </div>
                                     <div className="file-drop-zone-hint">or click to browse</div>
                                 </div>
@@ -828,12 +828,12 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                                 <div className="upload-items-list">
                                     {files.map((file) => {
                                         const fileState = fileStates[file.path];
-                                        const isUploading = uploadState.inProgress || fileState?.status === "uploading";
+                                        const isUploading = uploadState.inProgress || fileState?.status === 'uploading';
                                         return (
                                             <UploadCandidate
                                                 key={file.path}
                                                 file={file}
-                                                destination={fileDestinations[file.path] || ""}
+                                                destination={fileDestinations[file.path] || ''}
                                                 state={fileState}
                                                 onDestinationChange={(newDest) =>
                                                     handleIndividualDestinationChange(file.path, newDest)
@@ -859,7 +859,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={hide} disabled={uploadState.inProgress}>
-                        {uploadState.inProgress ? "Cancel Upload" : "Close"}
+                        {uploadState.inProgress ? 'Cancel Upload' : 'Close'}
                     </Button>
                     <Button variant="success" disabled={!canUpload} onClick={upload}>
                         <UploadButtonText
@@ -873,10 +873,10 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
             </Modal>
 
             <Button
-                variant={!config.import_support ? "success" : "light"}
+                variant={!config.import_support ? 'success' : 'light'}
                 disabled={disabled || !reference || reference.type !== RefTypeBranch}
                 onClick={onClick}
-                title={!reference || reference.type !== RefTypeBranch ? "Select a branch to upload" : "Upload objects"}
+                title={!reference || reference.type !== RefTypeBranch ? 'Select a branch to upload' : 'Upload objects'}
             >
                 <UploadIcon /> Upload Object
             </Button>
@@ -896,7 +896,7 @@ export const EmptyChangesState = ({ repo, reference, toggleShowChanges }) => {
                     <p className="text-muted mb-4">Upload or modify files to see them appear here.</p>
                     <Link
                         href={{
-                            pathname: "/repositories/:repoId/objects",
+                            pathname: '/repositories/:repoId/objects',
                             params: { repoId: repo.id },
                             query: { ref: reference.id, upload: true },
                         }}
@@ -929,22 +929,22 @@ const TreeContainer = ({
 }) => {
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
-    const [lastSeenPath, setLastSeenPath] = useState("");
+    const [lastSeenPath, setLastSeenPath] = useState('');
     const [resultsState, setResultsState] = useState({ prefix: path, results: [], pagination: {} });
 
-    const delimiter = "/";
+    const delimiter = '/';
 
     // Reset results when switching between modes or changing path
     React.useEffect(() => {
         setResultsState({ prefix: path, results: [], pagination: {} });
-        setLastSeenPath("");
+        setLastSeenPath('');
     }, [showChangesOnly, path]);
 
     // Fetch changes to highlight them in regular view
     const { response: changesData } = useAPI(async () => {
         if (!showChangesOnly && reference && reference.type === RefTypeBranch) {
             try {
-                return await refs.changes(repo.id, reference.id, "", path, delimiter);
+                return await refs.changes(repo.id, reference.id, '', path, delimiter);
             } catch (error) {
                 return { results: [] };
             }
@@ -978,21 +978,21 @@ const TreeContainer = ({
         // Map direct changes and identify affected directories
         changesData.results.forEach((change) => {
             // Map change type to what EntryRow expects
-            const mappedType = change.type === "removed" ? "removed" : change.type === "added" ? "added" : "changed";
+            const mappedType = change.type === 'removed' ? 'removed' : change.type === 'added' ? 'added' : 'changed';
 
             changesMap.set(change.path, mappedType);
 
             // If this is a prefix entry from changes, mark it directly with its type
-            if (change.path_type === "common_prefix") {
+            if (change.path_type === 'common_prefix') {
                 directoryChanges.set(change.path, mappedType);
             } else {
                 // For file changes, mark parent directories as changed
-                const pathParts = change.path.split("/");
+                const pathParts = change.path.split('/');
                 for (let i = 1; i < pathParts.length; i++) {
-                    const dirPath = pathParts.slice(0, i).join("/") + "/";
+                    const dirPath = pathParts.slice(0, i).join('/') + '/';
                     // Only mark as changed if not already marked with a more specific type
                     if (!directoryChanges.has(dirPath)) {
-                        directoryChanges.set(dirPath, "changed");
+                        directoryChanges.set(dirPath, 'changed');
                     }
                 }
             }
@@ -1013,7 +1013,7 @@ const TreeContainer = ({
 
             // Check if this directory contains changes (either directly or has changed children)
             const directoryChangeType = directoryChanges.get(entry.path);
-            if (entry.path_type === "common_prefix" && directoryChangeType) {
+            if (entry.path_type === 'common_prefix' && directoryChangeType) {
                 return { ...entry, diff_type: directoryChangeType };
             }
 
@@ -1024,7 +1024,7 @@ const TreeContainer = ({
         const allResults = [
             ...enhancedResults,
             ...missingItems.map((item) => {
-                const mappedType = item.type === "removed" ? "removed" : item.type === "added" ? "added" : "changed";
+                const mappedType = item.type === 'removed' ? 'removed' : item.type === 'added' ? 'added' : 'changed';
                 return {
                     ...item,
                     diff_type: mappedType,
@@ -1055,7 +1055,7 @@ const TreeContainer = ({
             reference.id,
             lastSeenPath,
             changesPath,
-            useDelimiter ? delimiter : "",
+            useDelimiter ? delimiter : '',
             amount > 0 ? amount : undefined,
         );
     };
@@ -1082,21 +1082,21 @@ const TreeContainer = ({
             return <EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />;
         }
 
-        const committedRef = reference.id + "@";
+        const committedRef = reference.id + '@';
         const uncommittedRef = reference.id;
 
         // Create URI navigator that preserves "show changes" mode
         const changesUriNavigator = (
             <URINavigator
-                path={path || ""}
+                path={path || ''}
                 repo={repo}
                 reference={reference}
                 hasCopyButton={true}
                 pathURLBuilder={(params, query) => {
                     return {
-                        pathname: "/repositories/:repoId/objects",
+                        pathname: '/repositories/:repoId/objects',
                         params: params,
-                        query: { ...query, ref: reference.id, showChanges: "true" },
+                        query: { ...query, ref: reference.id, showChanges: 'true' },
                     };
                 }}
             />
@@ -1126,7 +1126,7 @@ const TreeContainer = ({
                             query: {
                                 ref: reference.id,
                                 path: entry.path,
-                                showChanges: "true",
+                                showChanges: 'true',
                             },
                         };
                     }}
@@ -1134,7 +1134,7 @@ const TreeContainer = ({
                     changesTreeMessage={
                         <p>
                             Showing {changesResults.length} change
-                            {changesResults.length !== 1 ? "s" : ""} for branch <strong>{reference.id}</strong>
+                            {changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong>
                         </p>
                     }
                     noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
@@ -1161,7 +1161,7 @@ const TreeContainer = ({
                 config={{ config }}
                 repo={repo}
                 reference={reference}
-                path={path ? path : ""}
+                path={path ? path : ''}
                 showActions={true}
                 results={mergedResults}
                 after={after}
@@ -1183,11 +1183,11 @@ const TreeContainer = ({
     );
 };
 
-const ReadmeContainer = ({ config, repo, reference, path = "", refreshDep = "" }) => {
-    let readmePath = "";
+const ReadmeContainer = ({ config, repo, reference, path = '', refreshDep = '' }) => {
+    let readmePath = '';
 
     if (path) {
-        readmePath = path.endsWith("/") ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
+        readmePath = path.endsWith('/') ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
     } else {
         readmePath = README_FILE_NAME;
     }
@@ -1220,18 +1220,18 @@ const ReadmeContainer = ({ config, repo, reference, path = "", refreshDep = "" }
 
 const NoGCRulesWarning = ({ repoId }) => {
     const storageKey = `show_gc_warning_${repoId}`;
-    const [show, setShow] = useState(window.localStorage.getItem(storageKey) !== "false");
+    const [show, setShow] = useState(window.localStorage.getItem(storageKey) !== 'false');
     const closeAndRemember = useCallback(() => {
-        window.localStorage.setItem(storageKey, "false");
+        window.localStorage.setItem(storageKey, 'false');
         setShow(false);
     }, [repoId]);
 
     const { response } = useAPI(async () => {
         const repo = await repositories.get(repoId);
-        if (!repo.storage_namespace.startsWith("s3:") && !repo.storage_namespace.startsWith("http")) {
+        if (!repo.storage_namespace.startsWith('s3:') && !repo.storage_namespace.startsWith('http')) {
             return false;
         }
-        const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), "days");
+        const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), 'days');
         if (createdAgo > REPOSITORY_AGE_BEFORE_GC) {
             try {
                 await retention.getGCPolicy(repoId);
@@ -1247,7 +1247,7 @@ const NoGCRulesWarning = ({ repoId }) => {
     if (show && response) {
         return (
             <Alert variant="warning" onClose={closeAndRemember} dismissible>
-                <strong>Warning</strong>: No garbage collection rules configured for this repository.{" "}
+                <strong>Warning</strong>: No garbage collection rules configured for this repository.{' '}
                 <a href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank" rel="noreferrer">
                     Learn More
                 </a>
@@ -1266,7 +1266,7 @@ const ObjectsBrowser = ({ config }) => {
     const [showUpload, setShowUpload] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
-    const [showChangesOnly, setShowChangesOnly] = useState(showChanges === "true");
+    const [showChangesOnly, setShowChangesOnly] = useState(showChanges === 'true');
     const [actionError, setActionError] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [showRevertModal, setShowRevertModal] = useState(false);
@@ -1275,7 +1275,7 @@ const ObjectsBrowser = ({ config }) => {
         setRefreshToken(!refreshToken);
         // Also refresh changes status
         if (reference && reference.type === RefTypeBranch) {
-            refs.changes(repo.id, reference.id, "", "", "/")
+            refs.changes(repo.id, reference.id, '', '', '/')
                 .then((result) => {
                     setHasChanges(result.results && result.results.length > 0);
                 })
@@ -1284,15 +1284,15 @@ const ObjectsBrowser = ({ config }) => {
                 });
         }
     };
-    const parts = (path && path.split("/")) || [];
+    const parts = (path && path.split('/')) || [];
     const searchSuffix = parts.pop();
-    let searchPrefix = parts.join("/");
-    searchPrefix = searchPrefix && searchPrefix + "/";
+    let searchPrefix = parts.join('/');
+    searchPrefix = searchPrefix && searchPrefix + '/';
 
     useEffect(() => {
         if (importDialog) {
             setShowImport(true);
-            searchParams.delete("importDialog");
+            searchParams.delete('importDialog');
             setSearchParams(searchParams);
         }
     }, [router.route, importDialog, searchParams, setSearchParams]);
@@ -1300,7 +1300,7 @@ const ObjectsBrowser = ({ config }) => {
     useEffect(() => {
         if (upload) {
             setShowUpload(true);
-            searchParams.delete("upload");
+            searchParams.delete('upload');
             setSearchParams(searchParams);
         }
     }, [router.route, upload, searchParams, setSearchParams]);
@@ -1308,7 +1308,7 @@ const ObjectsBrowser = ({ config }) => {
     // Check for changes when component loads or reference changes
     useEffect(() => {
         if (reference && reference.type === RefTypeBranch) {
-            refs.changes(repo.id, reference.id, "", "", "/")
+            refs.changes(repo.id, reference.id, '', '', '/')
                 .then((result) => {
                     setHasChanges(result.results && result.results.length > 0);
                 })
@@ -1325,9 +1325,9 @@ const ObjectsBrowser = ({ config }) => {
         const newShowChanges = !showChangesOnly;
         setShowChangesOnly(newShowChanges);
 
-        const query = { path: path || "" };
+        const query = { path: path || '' };
         if (reference) query.ref = reference.id;
-        if (newShowChanges) query.showChanges = "true";
+        if (newShowChanges) query.showChanges = 'true';
 
         router.push({
             pathname: `/repositories/:repoId/objects`,
@@ -1344,7 +1344,7 @@ const ObjectsBrowser = ({ config }) => {
             <ActionsBar>
                 <ActionGroup orientation="left">
                     <RefDropdown
-                        emptyText={"Select Branch"}
+                        emptyText={'Select Branch'}
                         repo={repo}
                         selected={reference}
                         withCommits={true}
@@ -1354,9 +1354,9 @@ const ObjectsBrowser = ({ config }) => {
                                 pathname: `/repositories/:repoId/objects`,
                                 params: {
                                     repoId: repo.id,
-                                    path: path === undefined ? "" : path,
+                                    path: path === undefined ? '' : path,
                                 },
-                                query: { ref: ref.id, path: path === undefined ? "" : path },
+                                query: { ref: ref.id, path: path === undefined ? '' : path },
                             })
                         }
                     />
@@ -1366,7 +1366,7 @@ const ObjectsBrowser = ({ config }) => {
                         <Dropdown as={ButtonGroup} className="me-2">
                             {/* Toggle Switch */}
                             <Button
-                                variant={showChangesOnly ? "secondary" : "outline-secondary"}
+                                variant={showChangesOnly ? 'secondary' : 'outline-secondary'}
                                 size="sm"
                                 onClick={handleToggleChanges}
                                 className="d-flex align-items-center"
@@ -1389,7 +1389,7 @@ const ObjectsBrowser = ({ config }) => {
                                         size="sm"
                                         onClick={() => {
                                             // Trigger the commit modal by finding the actual button and clicking it
-                                            const commitBtn = document.querySelector("[data-commit-btn] button");
+                                            const commitBtn = document.querySelector('[data-commit-btn] button');
                                             if (commitBtn) {
                                                 commitBtn.click();
                                             }
@@ -1424,7 +1424,7 @@ const ObjectsBrowser = ({ config }) => {
                             key={path}
                             defaultValue={searchSuffix}
                             onFilter={(prefix) => {
-                                const query = { path: "" };
+                                const query = { path: '' };
                                 if (searchPrefix !== undefined) query.path = searchPrefix;
                                 if (prefix) query.path += prefix;
                                 if (reference) query.ref = reference.id;
@@ -1445,7 +1445,7 @@ const ObjectsBrowser = ({ config }) => {
                     </Button>
 
                     <Button
-                        variant={!config.import_support ? "success" : "light"}
+                        variant={!config.import_support ? 'success' : 'light'}
                         disabled={!config.import_support}
                         onClick={() => setShowImport(true)}
                     >
@@ -1453,7 +1453,7 @@ const ObjectsBrowser = ({ config }) => {
                     </Button>
 
                     {/* Hidden components for modals */}
-                    <div style={{ display: "none" }}>
+                    <div style={{ display: 'none' }}>
                         <div data-commit-btn>
                             <CommitButton
                                 repo={repo}
@@ -1470,7 +1470,7 @@ const ObjectsBrowser = ({ config }) => {
 
                                         // Reset to normal view after commit
                                         setShowChangesOnly(false);
-                                        const query = { path: path || "" };
+                                        const query = { path: path || '' };
                                         if (reference) query.ref = reference.id;
                                         // Don't include showChanges parameter to go back to normal mode
                                         router.push({
@@ -1522,11 +1522,11 @@ const ObjectsBrowser = ({ config }) => {
                         msg="Are you sure you want to revert all uncommitted changes?"
                         onConfirm={() => {
                             branches
-                                .reset(repo.id, reference.id, { type: "reset" })
+                                .reset(repo.id, reference.id, { type: 'reset' })
                                 .then(() => {
                                     // Reset to normal view after revert
                                     setShowChangesOnly(false);
-                                    const query = { path: path || "" };
+                                    const query = { path: path || '' };
                                     if (reference) query.ref = reference.id;
                                     // Don't include showChanges parameter to go back to normal mode
                                     router.push({
@@ -1550,23 +1550,23 @@ const ObjectsBrowser = ({ config }) => {
 
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                    mb: "30px",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    mb: '30px',
                 }}
             >
                 <TreeContainer
                     config={config}
                     reference={reference}
                     repo={repo}
-                    path={path ? path : ""}
-                    after={after ? after : ""}
+                    path={path ? path : ''}
+                    after={after ? after : ''}
                     onPaginate={(after) => {
                         const query = { after };
                         if (path) query.path = path;
                         if (reference) query.ref = reference.id;
-                        if (showChangesOnly) query.showChanges = "true";
+                        if (showChangesOnly) query.showChanges = 'true';
                         const url = {
                             pathname: `/repositories/:repoId/objects`,
                             query,
@@ -1603,7 +1603,7 @@ const RepositoryObjectsPage = () => {
     const { config, loading: configsLoading, error: configsError } = useConfigContext();
 
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("objects"), [setActivePage]);
+    useEffect(() => setActivePage('objects'), [setActivePage]);
 
     if (repoLoading || configsLoading) return <Loading />;
     if (repoError || configsError) return <RepoError error={repoError || configsError} />;

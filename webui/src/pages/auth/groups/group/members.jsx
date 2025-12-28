@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import Button from "react-bootstrap/Button";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
 
-import { GroupHeader } from "../../../../lib/components/auth/nav";
-import { useAPIWithPagination } from "../../../../lib/hooks/api";
-import { auth } from "../../../../lib/api";
-import { Paginator } from "../../../../lib/components/pagination";
-import { AttachModal } from "../../../../lib/components/auth/forms";
-import { ConfirmationButton } from "../../../../lib/components/modals";
+import { GroupHeader } from '../../../../lib/components/auth/nav';
+import { useAPIWithPagination } from '../../../../lib/hooks/api';
+import { auth } from '../../../../lib/api';
+import { Paginator } from '../../../../lib/components/pagination';
+import { AttachModal } from '../../../../lib/components/auth/forms';
+import { ConfirmationButton } from '../../../../lib/components/modals';
 import {
     ActionGroup,
     ActionsBar,
@@ -16,12 +16,12 @@ import {
     Loading,
     AlertError,
     RefreshButton,
-} from "../../../../lib/components/controls";
-import { useRouter } from "../../../../lib/hooks/router";
-import { Link } from "../../../../lib/components/nav";
-import { resolveUserDisplayName } from "../../../../lib/utils";
-import { allUsersFromLakeFS } from "../../../../lib/components/auth/users";
-import { PageSize } from "../../../../constants";
+} from '../../../../lib/components/controls';
+import { useRouter } from '../../../../lib/hooks/router';
+import { Link } from '../../../../lib/components/nav';
+import { resolveUserDisplayName } from '../../../../lib/utils';
+import { allUsersFromLakeFS } from '../../../../lib/components/auth/users';
+import { PageSize } from '../../../../constants';
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
     const [refresh, setRefresh] = useState(false);
@@ -70,23 +70,23 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 <DataTable
                     keyFn={(user) => user.id}
                     rowFn={(user) => [
-                        <Link href={{ pathname: "/auth/users/:userId", params: { userId: user.id } }}>
+                        <Link href={{ pathname: '/auth/users/:userId', params: { userId: user.id } }}>
                             {resolveUserDisplayName(user)}
                         </Link>,
                         <FormattedDate dateValue={user.creation_date} />,
                     ]}
-                    headers={["User ID", "Created At"]}
+                    headers={['User ID', 'Created At']}
                     actions={[
                         {
-                            key: "Remove",
+                            key: 'Remove',
                             buttonFn: (user) => (
                                 <ConfirmationButton
                                     size="sm"
                                     variant="outline-danger"
                                     msg={
                                         <span>
-                                            Are you sure you{"'"}d like to remove user{" "}
-                                            <strong>{resolveUserDisplayName(user)}</strong> from group{" "}
+                                            Are you sure you{"'"}d like to remove user{' '}
+                                            <strong>{resolveUserDisplayName(user)}</strong> from group{' '}
                                             <strong>{groupId}</strong>?
                                         </span>
                                     }
@@ -104,7 +104,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                         },
                     ]}
                     results={results}
-                    emptyState={"No users found"}
+                    emptyState={'No users found'}
                 />
 
                 <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage} />
@@ -112,10 +112,10 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 {showAddModal && (
                     <AttachModal
                         show={showAddModal}
-                        emptyState={"No users found"}
-                        filterPlaceholder={"Find User..."}
-                        modalTitle={"Add to Group"}
-                        addText={"Add to Group"}
+                        emptyState={'No users found'}
+                        filterPlaceholder={'Find User...'}
+                        modalTitle={'Add to Group'}
+                        addText={'Add to Group'}
                         resolveEntityFn={resolveUserDisplayName}
                         searchFn={(prefix, after) => searchUsers(prefix, after, resolveUserDisplayName)}
                         onHide={() => setShowAddModal(false)}
@@ -139,7 +139,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
 
     return (
         <>
-            <GroupHeader groupId={groupId} page={"members"} />
+            <GroupHeader groupId={groupId} page={'members'} />
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -166,10 +166,10 @@ const GroupMembersContainer = () => {
         groupId && (
             <GroupMemberList
                 groupId={groupId}
-                after={after ? after : ""}
+                after={after ? after : ''}
                 onPaginate={(after) =>
                     router.push({
-                        pathname: "/auth/groups/:groupId/members",
+                        pathname: '/auth/groups/:groupId/members',
                         params: { groupId },
                         query: { after },
                     })
@@ -181,7 +181,7 @@ const GroupMembersContainer = () => {
 
 const GroupMembersPage = () => {
     const [setActiveTab] = useOutletContext();
-    useEffect(() => setActiveTab("groups"), [setActiveTab]);
+    useEffect(() => setActiveTab('groups'), [setActiveTab]);
     return <GroupMembersContainer />;
 };
 

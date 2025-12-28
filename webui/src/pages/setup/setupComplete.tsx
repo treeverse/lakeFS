@@ -1,14 +1,14 @@
-import React, { FC, useCallback, useContext } from "react";
-import Alert from "react-bootstrap/Alert";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import Col from "react-bootstrap/Col";
-import Row from "react-bootstrap/Row";
-import { ClipboardButton } from "../../lib/components/controls";
-import { useRouter } from "../../lib/hooks/router";
-import noop from "lodash/noop";
-import { AppContext } from "../../lib/hooks/appContext";
-import { DownloadCredentialsButton } from "../../lib/components/auth/credentials";
+import React, { FC, useCallback, useContext } from 'react';
+import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import Col from 'react-bootstrap/Col';
+import Row from 'react-bootstrap/Row';
+import { ClipboardButton } from '../../lib/components/controls';
+import { useRouter } from '../../lib/hooks/router';
+import noop from 'lodash/noop';
+import { AppContext } from '../../lib/hooks/appContext';
+import { DownloadCredentialsButton } from '../../lib/components/auth/credentials';
 
 interface SetupCompleteProps {
     accessKeyId: string;
@@ -19,10 +19,10 @@ interface SetupCompleteProps {
 export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAccessKey, apiEndpoint }) => {
     const router = useRouter();
     const { state } = useContext(AppContext);
-    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+    const buttonVariant = state.settings.darkMode ? 'outline-light' : 'outline-dark';
 
     const goToLoginHandler = useCallback(() => {
-        let nextUrl = "/auth/login";
+        let nextUrl = '/auth/login';
         // Need to refactor and convert the useRouter and useQuery hooks to TS in order to get rid of this any
         // If we weren't planning a TS conversion anyway, we could use Map in place of {}
         // or use the native URLSearchParams directly (which is more or less the same refactor from the call site perspective)
@@ -31,7 +31,7 @@ export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAcces
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             nextUrl = `/auth/login?next=${(router.query as any).next}`;
         }
-        window.open(nextUrl, "_blank");
+        window.open(nextUrl, '_blank');
     }, [router.query]);
 
     return (
@@ -52,7 +52,7 @@ export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAcces
                                     <ClipboardButton
                                         onSuccess={noop}
                                         onError={noop}
-                                        className={"copy-button"}
+                                        className={'copy-button'}
                                         variant={buttonVariant}
                                         text={accessKeyId}
                                         tooltip="Copy"
@@ -66,7 +66,7 @@ export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAcces
                                     <ClipboardButton
                                         onSuccess={noop}
                                         onError={noop}
-                                        className={"copy-button"}
+                                        className={'copy-button'}
                                         variant={buttonVariant}
                                         text={secretAccessKey}
                                         tooltip="Copy"
@@ -88,17 +88,17 @@ export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAcces
                             <div className="ms-2 mt-2">
                                 <a target="_blank" rel="noreferrer" href="https://docs.lakefs.io/reference/cli.html">
                                     lakectl
-                                </a>{" "}
+                                </a>{' '}
                                 is a CLI tool for working with lakeFS.
                                 <p className="mt-2">
-                                    Download lakectl as part of the{" "}
+                                    Download lakectl as part of the{' '}
                                     <a
                                         target="_blank"
                                         rel="noreferrer"
                                         href="https://github.com/treeverse/lakeFS/releases"
                                     >
                                         lakeFS release package
-                                    </a>{" "}
+                                    </a>{' '}
                                     and save the above credentials file as <code>~/.lakectl.yaml</code>.
                                 </p>
                             </div>

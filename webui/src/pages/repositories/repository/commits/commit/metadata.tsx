@@ -1,6 +1,6 @@
-import React, { useCallback } from "react";
-import Button from "react-bootstrap/Button";
-import { statistics } from "../../../../../lib/api";
+import React, { useCallback } from 'react';
+import Button from 'react-bootstrap/Button';
+import { statistics } from '../../../../../lib/api';
 
 const keyIsClickableUrl = /::lakefs::(.*)::url\[ur[il]:ui\]$/;
 
@@ -19,8 +19,8 @@ export const MetadataRow = ({ metadata_key, metadata_value }) => {
 
 export const gotoMetadata = async (typ, url) => {
     const event = {
-        class: "integration",
-        name: "link",
+        class: 'integration',
+        name: 'link',
         type: typ,
         count: 1,
     };

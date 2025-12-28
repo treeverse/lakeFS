@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { auth } from "../api";
-import { getCurrentRelativeUrl, isPublicAuthRoute, ROUTES } from "../utils";
+import React, { createContext, useContext, useMemo, useState, ReactNode, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { auth } from '../api';
+import { getCurrentRelativeUrl, isPublicAuthRoute, ROUTES } from '../utils';
 
-export const LAKEFS_POST_LOGIN_NEXT = "lakefs_post_login_next";
+export const LAKEFS_POST_LOGIN_NEXT = 'lakefs_post_login_next';
 export const AUTH_STATUS = {
-    AUTHENTICATED: "authenticated",
-    UNAUTHENTICATED: "unauthenticated",
-    PENDING: "pending",
+    AUTHENTICATED: 'authenticated',
+    UNAUTHENTICATED: 'unauthenticated',
+    PENDING: 'pending',
 } as const;
 
 export type AuthStatus = (typeof AUTH_STATUS)[keyof typeof AUTH_STATUS];
@@ -69,14 +69,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 void refreshUser({ useCache: false });
             }
         };
-        window.addEventListener("pageshow", onPageShow);
-        return () => window.removeEventListener("pageshow", onPageShow);
+        window.addEventListener('pageshow', onPageShow);
+        return () => window.removeEventListener('pageshow', onPageShow);
     }, [refreshUser]);
 
     useEffect(() => {
         if (status === AUTH_STATUS.AUTHENTICATED) {
             const postLoginNext = window.sessionStorage.getItem(LAKEFS_POST_LOGIN_NEXT);
-            if (postLoginNext && postLoginNext.startsWith("/")) {
+            if (postLoginNext && postLoginNext.startsWith('/')) {
                 window.sessionStorage.removeItem(LAKEFS_POST_LOGIN_NEXT);
                 const next = getCurrentRelativeUrl();
                 if (next !== postLoginNext) {
@@ -96,6 +96,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useAuth = (): AuthContextType => {
     const ctx = useContext(AuthContext);
-    if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
+    if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
     return ctx;
 };

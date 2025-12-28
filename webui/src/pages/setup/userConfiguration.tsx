@@ -1,11 +1,11 @@
-import React, { ChangeEvent, FC, FormEvent, useCallback, useState } from "react";
-import Button from "react-bootstrap/Button";
-import Spinner from "react-bootstrap/Spinner";
-import Card from "react-bootstrap/Card";
-import Col from "react-bootstrap/Col";
-import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
-import { AlertError } from "../../lib/components/controls";
+import React, { ChangeEvent, FC, FormEvent, useCallback, useState } from 'react';
+import Button from 'react-bootstrap/Button';
+import Spinner from 'react-bootstrap/Spinner';
+import Card from 'react-bootstrap/Card';
+import Col from 'react-bootstrap/Col';
+import Form from 'react-bootstrap/Form';
+import Row from 'react-bootstrap/Row';
+import { AlertError } from '../../lib/components/controls';
 
 interface UserConfigurationProps {
     onSubmit: (email: string, admin: string, checks: boolean) => Promise<void>;
@@ -22,8 +22,8 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
     requireAdmin,
     requireCommPrefs,
 }) => {
-    const [userEmail, setUserEmail] = useState<string>("");
-    const [adminUser, setAdminUser] = useState<string>("admin");
+    const [userEmail, setUserEmail] = useState<string>('');
+    const [adminUser, setAdminUser] = useState<string>('admin');
     const [checks, setChecks] = useState<boolean>(false);
 
     const submitHandler = useCallback(
@@ -111,7 +111,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                 {disabled ? (
                                     <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
                                 ) : (
-                                    "Setup"
+                                    'Setup'
                                 )}
                             </Button>
                         </Form>

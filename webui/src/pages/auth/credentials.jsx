@@ -1,13 +1,13 @@
-import React, { useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
-import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../../lib/components/controls";
-import { ConfirmationButton } from "../../lib/components/modals";
-import { auth } from "../../lib/api";
-import { useState } from "react";
-import { CredentialsShowModal, CredentialsTable } from "../../lib/components/auth/credentials";
-import { useRouter } from "../../lib/hooks/router";
-import { resolveUserDisplayName } from "../../lib/utils";
-import { useAuth } from "../../lib/auth/authContext";
+import React, { useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { ActionGroup, ActionsBar, AlertError, RefreshButton } from '../../lib/components/controls';
+import { ConfirmationButton } from '../../lib/components/modals';
+import { auth } from '../../lib/api';
+import { useState } from 'react';
+import { CredentialsShowModal, CredentialsTable } from '../../lib/components/auth/credentials';
+import { useRouter } from '../../lib/hooks/router';
+import { resolveUserDisplayName } from '../../lib/utils';
+import { useAuth } from '../../lib/auth/authContext';
 
 const CredentialsContainer = () => {
     const router = useRouter();
@@ -58,7 +58,7 @@ const CredentialsContainer = () => {
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                An access key-pair is the set of credentials used to access lakeFS.{" "}
+                An access key-pair is the set of credentials used to access lakeFS.{' '}
                 <a
                     href="https://docs.lakefs.io/reference/authorization.html#authentication"
                     target="_blank"
@@ -83,10 +83,10 @@ const CredentialsContainer = () => {
                     userId={user.id}
                     currentAccessKey={user.accessKeyId}
                     refresh={refreshToken}
-                    after={after ? after : ""}
+                    after={after ? after : ''}
                     onPaginate={(after) =>
                         router.push({
-                            pathname: "/auth/credentials",
+                            pathname: '/auth/credentials',
                             query: { after },
                         })
                     }
@@ -98,7 +98,7 @@ const CredentialsContainer = () => {
 
 const CredentialsPage = () => {
     const [setActiveTab] = useOutletContext();
-    useEffect(() => setActiveTab("credentials"), [setActiveTab]);
+    useEffect(() => setActiveTab('credentials'), [setActiveTab]);
     return <CredentialsContainer />;
 };
 

@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import Form from "react-bootstrap/Form";
-import ListGroup from "react-bootstrap/ListGroup";
-import Spinner from "react-bootstrap/Spinner";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import ListGroup from 'react-bootstrap/ListGroup';
+import Spinner from 'react-bootstrap/Spinner';
 
-import { commits as commitsAPI, branches as branchesAPI } from "../../../../lib/api";
-import { AlertError, Loading } from "../../../../lib/components/controls";
-import { ConfirmationModal } from "../../../../lib/components/modals";
-import { MetadataFields } from "../../../../lib/components/repository/metadata";
-import { getMetadataIfValid, touchInvalidFields } from "../../../../lib/components/repository/metadataHelpers";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { useRouter } from "../../../../lib/hooks/router";
-import { RepoError } from "../error";
+import { commits as commitsAPI, branches as branchesAPI } from '../../../../lib/api';
+import { AlertError, Loading } from '../../../../lib/components/controls';
+import { ConfirmationModal } from '../../../../lib/components/modals';
+import { MetadataFields } from '../../../../lib/components/repository/metadata';
+import { getMetadataIfValid, touchInvalidFields } from '../../../../lib/components/repository/metadataHelpers';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { useRouter } from '../../../../lib/hooks/router';
+import { RepoError } from '../error';
 
 const RevertPreviewPage = () => {
     const router = useRouter();
@@ -24,7 +24,7 @@ const RevertPreviewPage = () => {
     const [commitDetails, setCommitDetails] = useState([]);
     const [commitsLoading, setCommitsLoading] = useState(true);
     const [commitsError, setCommitsError] = useState(null);
-    const [commitMessage, setCommitMessage] = useState("");
+    const [commitMessage, setCommitMessage] = useState('');
     const [allowEmpty, setAllowEmpty] = useState(false);
     const [metadataFields, setMetadataFields] = useState([]);
     const [reverting, setReverting] = useState(false);
@@ -38,7 +38,7 @@ const RevertPreviewPage = () => {
         const fetchCommits = async () => {
             try {
                 setCommitsLoading(true);
-                const commitIds = commitsParam.split(",");
+                const commitIds = commitsParam.split(',');
                 const details = await Promise.all(commitIds.map((id) => commitsAPI.get(repo.id, id)));
                 setCommitDetails(details);
 
@@ -47,7 +47,7 @@ const RevertPreviewPage = () => {
                 if (commitIds.length === 1) {
                     setCommitMessage(`Revert commit ${commitIds[0].substr(0, 12)}`);
                 } else {
-                    setCommitMessage("");
+                    setCommitMessage('');
                 }
 
                 setCommitsLoading(false);
@@ -61,7 +61,7 @@ const RevertPreviewPage = () => {
     }, [repo, commitsParam]);
 
     const handleApplyClick = () => {
-        const commitIds = commitsParam.split(",");
+        const commitIds = commitsParam.split(',');
         const isSingleCommit = commitIds.length === 1;
 
         // Only validate metadata for single commit (multiple commits don't use custom metadata)
@@ -83,13 +83,13 @@ const RevertPreviewPage = () => {
         setShowConfirmModal(false);
 
         try {
-            const commitIds = commitsParam.split(",");
+            const commitIds = commitsParam.split(',');
             const isSingleCommit = commitIds.length === 1;
 
             // For single commit, use custom message/metadata
             // For multiple commits, use backend defaults (empty message, no metadata)
             // allowEmpty is always used from the checkbox regardless of single or multiple commits
-            const message = isSingleCommit ? commitMessage : "";
+            const message = isSingleCommit ? commitMessage : '';
             const metadata = isSingleCommit ? getMetadataIfValid(metadataFields) : {};
 
             // Sequential revert calls - same as lakectl branch_revert.go
@@ -107,7 +107,7 @@ const RevertPreviewPage = () => {
 
             // Success - redirect to commits page
             router.push({
-                pathname: "/repositories/:repoId/commits",
+                pathname: '/repositories/:repoId/commits',
                 params: { repoId: repo.id },
                 query: { ref: branchId },
             });
@@ -119,7 +119,7 @@ const RevertPreviewPage = () => {
 
     const handleCancel = () => {
         router.push({
-            pathname: "/repositories/:repoId/commits",
+            pathname: '/repositories/:repoId/commits',
             params: { repoId: repo.id },
             query: { ref: branchId },
         });
@@ -129,16 +129,16 @@ const RevertPreviewPage = () => {
     if (refsError) return <RepoError error={refsError} />;
     if (commitsError) return <AlertError error={commitsError} />;
 
-    const commitIds = commitsParam.split(",");
+    const commitIds = commitsParam.split(',');
     const confirmationMessage = (
         <>
             <p>
                 Are you sure you want to revert <strong>{commitIds.length}</strong> commit
-                {commitIds.length > 1 ? "s" : ""}?
+                {commitIds.length > 1 ? 's' : ''}?
             </p>
             <p>
                 This will create <strong>{commitIds.length}</strong> new revert commit
-                {commitIds.length > 1 ? "s" : ""} on branch <strong>{branchId}</strong>, reversing the changes from the
+                {commitIds.length > 1 ? 's' : ''} on branch <strong>{branchId}</strong>, reversing the changes from the
                 selected commits in order.
             </p>
             {commitIds.length > 1 && (
@@ -244,7 +244,7 @@ const RevertPreviewPage = () => {
                             Reverting...
                         </>
                     ) : (
-                        "Apply"
+                        'Apply'
                     )}
                 </Button>
             </div>
@@ -263,7 +263,7 @@ const RevertPreviewPage = () => {
 
 const RepositoryRevertPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("commits"), [setActivePage]);
+    useEffect(() => setActivePage('commits'), [setActivePage]);
     return <RevertPreviewPage />;
 };
 

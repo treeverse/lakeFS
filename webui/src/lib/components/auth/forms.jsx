@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import Modal from "react-bootstrap/Modal";
-import Badge from "react-bootstrap/Badge";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import { FormControl, InputGroup } from "react-bootstrap";
-import { SearchIcon } from "@primer/octicons-react";
+import React, { useEffect, useRef, useState } from 'react';
+import Modal from 'react-bootstrap/Modal';
+import Badge from 'react-bootstrap/Badge';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import { FormControl, InputGroup } from 'react-bootstrap';
+import { SearchIcon } from '@primer/octicons-react';
 
-import { useAPI } from "../../hooks/api";
-import { Checkbox, DataTable, DebouncedFormControl, AlertError, Loading } from "../controls";
-import { Paginator } from "../pagination";
+import { useAPI } from '../../hooks/api';
+import { Checkbox, DataTable, DebouncedFormControl, AlertError, Loading } from '../controls';
+import { Paginator } from '../pagination';
 
 export const AttachModal = ({
     show,
@@ -16,14 +16,14 @@ export const AttachModal = ({
     resolveEntityFn = (ent) => ent.id,
     onAttach,
     onHide,
-    addText = "Add",
-    emptyState = "No matches",
-    modalTitle = "Add",
-    headers = ["", "ID"],
-    filterPlaceholder = "Filter...",
+    addText = 'Add',
+    emptyState = 'No matches',
+    modalTitle = 'Add',
+    headers = ['', 'ID'],
+    filterPlaceholder = 'Filter...',
 }) => {
     const search = useRef(null);
-    const [paginationParams, setPaginationParams] = useState({ prefix: "", after: "" });
+    const [paginationParams, setPaginationParams] = useState({ prefix: '', after: '' });
     const [selected, setSelected] = useState([]);
 
     const { response, error, loading } = useAPI(() => {
@@ -31,7 +31,7 @@ export const AttachModal = ({
     }, [paginationParams]);
 
     useEffect(() => {
-        if (!!search.current && search.current.value === "") search.current.focus();
+        if (!!search.current && search.current.value === '') search.current.focus();
     });
 
     const nextPage = response?.pagination?.has_more ? response.pagination.next_offset : null;
@@ -52,7 +52,7 @@ export const AttachModal = ({
                             defaultChecked={selected.some((selectedEnt) => selectedEnt.id === ent.id)}
                             onAdd={() => setSelected([...selected, ent])}
                             onRemove={() => setSelected(selected.filter((selectedEnt) => selectedEnt.id !== ent.id))}
-                            name={"selected"}
+                            name={'selected'}
                         />,
                         <strong>{resolveEntityFn(ent)}</strong>,
                     ]}
@@ -101,7 +101,7 @@ export const AttachModal = ({
         setPaginationParams((prev) => ({
             ...prev,
             prefix: search.current.value,
-            after: "",
+            after: '',
         }));
     };
 
@@ -156,7 +156,7 @@ export const EntityActionModal = ({
     actionName,
     validationFunction = null,
     showExtraField = false,
-    extraPlaceholder = "",
+    extraPlaceholder = '',
     extraValidationFunction = null,
 }) => {
     const [error, setError] = useState(null);
@@ -164,7 +164,7 @@ export const EntityActionModal = ({
     const extraField = useRef(null);
 
     useEffect(() => {
-        if (!!idField.current && idField.current.value === "") {
+        if (!!idField.current && idField.current.value === '') {
             idField.current.focus();
         }
     });

@@ -71,8 +71,8 @@
     --radius-full: 9999px;
 
     /* Typography */
-    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
     /* Transitions */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -80,7 +80,7 @@
     --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
     --primary: #60a5fa;
     --primary-light: #93c5fd;
     --primary-dark: #3b82f6;
@@ -121,14 +121,14 @@
 }
 
 /* Fix code elements in dark mode */
-[data-bs-theme="dark"] code {
+[data-bs-theme='dark'] code {
     background-color: #374151;
     color: #e5e7eb;
     border: 1px solid #4b5563;
 }
 
 /* Fix dropdown menus in dark mode */
-[data-bs-theme="dark"] .dropdown-menu {
+[data-bs-theme='dark'] .dropdown-menu {
     background-color: #1f2937;
     border: 1px solid #374151;
     box-shadow:
@@ -136,30 +136,30 @@
         0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
-[data-bs-theme="dark"] .dropdown-item {
+[data-bs-theme='dark'] .dropdown-item {
     color: #f9fafb;
 }
 
-[data-bs-theme="dark"] .dropdown-item:hover {
+[data-bs-theme='dark'] .dropdown-item:hover {
     background-color: #374151;
     color: #f9fafb;
 }
 
-[data-bs-theme="dark"] .dropdown-item:focus {
+[data-bs-theme='dark'] .dropdown-item:focus {
     background-color: #374151;
     color: #f9fafb;
 }
 
-[data-bs-theme="dark"] .dropdown-item:active {
+[data-bs-theme='dark'] .dropdown-item:active {
     background-color: #4b5563;
     color: #f9fafb;
 }
 
-[data-bs-theme="dark"] .dropdown-divider {
+[data-bs-theme='dark'] .dropdown-divider {
     border-color: #374151;
 }
 
-[data-bs-theme="dark"] .bg-light {
+[data-bs-theme='dark'] .bg-light {
     background-color: #2d3748 !important;
 }
 
@@ -204,7 +204,7 @@ pre {
 }
 
 /* Fix for btn-light in dark mode */
-[data-bs-theme="dark"] .btn-light {
+[data-bs-theme='dark'] .btn-light {
     background-color: #374151;
     color: #f9fafb;
     border-color: #4b5563;
@@ -265,9 +265,9 @@ pre {
 }
 
 /* Dark mode badge fix for ReadOnlyBadge */
-[data-bs-theme="dark"] .badge.bg-light,
-[data-bs-theme="dark"] .badge.bg-light.text-dark,
-[data-bs-theme="dark"] .badge.text-dark {
+[data-bs-theme='dark'] .badge.bg-light,
+[data-bs-theme='dark'] .badge.bg-light.text-dark,
+[data-bs-theme='dark'] .badge.text-dark {
     background-color: #374151 !important;
     color: #f9fafb !important;
     border: 1px solid #6b7280 !important;

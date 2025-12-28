@@ -1,11 +1,11 @@
-import React, { FC, useMemo, useState, ReactNode, MouseEventHandler, useContext } from "react";
+import React, { FC, useMemo, useState, ReactNode, MouseEventHandler, useContext } from 'react';
 
-import Modal from "react-bootstrap/Modal";
-import Button from "react-bootstrap/Button";
-import Tooltip from "react-bootstrap/Tooltip";
-import { OverlayTrigger } from "react-bootstrap";
-import { ButtonVariant } from "react-bootstrap/esm/types";
-import { GetUserDisplayNameByIdContext } from "../../pages/auth/users";
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import Tooltip from 'react-bootstrap/Tooltip';
+import { OverlayTrigger } from 'react-bootstrap';
+import { ButtonVariant } from 'react-bootstrap/esm/types';
+import { GetUserDisplayNameByIdContext } from '../../pages/auth/users';
 
 interface ConfirmationModalProps {
     show: boolean;
@@ -20,7 +20,7 @@ interface ConfirmationButtonProps {
     onConfirm: (hide: () => void) => void;
     variant: ButtonVariant;
     modalVariant?: ButtonVariant;
-    size?: "sm" | "lg";
+    size?: 'sm' | 'lg';
     disabled?: boolean;
     tooltip?: ReactNode;
     children: ReactNode;
@@ -28,11 +28,11 @@ interface ConfirmationButtonProps {
 
 // Extend the ConfirmationButtonProps, but omit the msg property,
 // so we can extend it for this use case
-interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProps, "msg"> {
+interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProps, 'msg'> {
     msg: ReactNode | ((userDisplayName: string) => ReactNode);
     userId: string;
 }
-export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = "danger" }) => {
+export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = 'danger' }) => {
     return (
         <Modal show={show} onHide={onHide}>
             <Modal.Header>
@@ -66,7 +66,7 @@ export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProp
     const userDisplayName = useMemo(() => getUserDisplayNameById(userId), [userId, getUserDisplayNameById]);
 
     let msgNode: ReactNode;
-    if (typeof msg === "function") {
+    if (typeof msg === 'function') {
         msgNode = msg(userDisplayName);
     } else {
         msgNode = msg;
@@ -91,7 +91,7 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({
     msg,
     onConfirm,
     variant,
-    modalVariant = "danger",
+    modalVariant = 'danger',
     size,
     disabled = false,
     tooltip = null,

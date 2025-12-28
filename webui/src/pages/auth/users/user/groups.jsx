@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
-import { UserHeaderWithContext } from "./userHeaderWithContext";
+import { UserHeaderWithContext } from './userHeaderWithContext';
 import {
     ActionGroup,
     ActionsBar,
@@ -10,20 +10,20 @@ import {
     Loading,
     AlertError,
     RefreshButton,
-} from "../../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import { useAPIWithPagination } from "../../../../lib/hooks/api";
-import { auth } from "../../../../lib/api";
-import { Paginator } from "../../../../lib/components/pagination";
-import { useState } from "react";
-import { AttachModal } from "../../../../lib/components/auth/forms";
-import { ConfirmationButton } from "../../../../lib/components/modals";
-import { useRouter } from "../../../../lib/hooks/router";
-import { Link } from "../../../../lib/components/nav";
-import { PageSize } from "../../../../constants";
+} from '../../../../lib/components/controls';
+import Button from 'react-bootstrap/Button';
+import { useAPIWithPagination } from '../../../../lib/hooks/api';
+import { auth } from '../../../../lib/api';
+import { Paginator } from '../../../../lib/components/pagination';
+import { useState } from 'react';
+import { AttachModal } from '../../../../lib/components/auth/forms';
+import { ConfirmationButton } from '../../../../lib/components/modals';
+import { useRouter } from '../../../../lib/hooks/router';
+import { Link } from '../../../../lib/components/nav';
+import { PageSize } from '../../../../constants';
 
 const resolveGroupDisplayName = (group) => {
-    if (!group) return "";
+    if (!group) return '';
     if (group?.name?.length) return group.name;
     return group.id;
 };
@@ -50,7 +50,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                     rowFn={(group) => [
                         <Link
                             href={{
-                                pathname: "/auth/groups/:groupId",
+                                pathname: '/auth/groups/:groupId',
                                 params: { groupId: group.id },
                             }}
                         >
@@ -58,10 +58,10 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                         </Link>,
                         <FormattedDate dateValue={group.creation_date} />,
                     ]}
-                    headers={["Group Name", "Created At"]}
+                    headers={['Group Name', 'Created At']}
                     actions={[
                         {
-                            key: "Remove",
+                            key: 'Remove',
                             buttonFn: (group) => (
                                 <ConfirmationButton
                                     size="sm"
@@ -86,7 +86,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                         },
                     ]}
                     results={results}
-                    emptyState={"No groups found"}
+                    emptyState={'No groups found'}
                 />
 
                 <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage} />
@@ -94,11 +94,11 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                 {showAddModal && (
                     <AttachModal
                         show={showAddModal}
-                        emptyState={"No groups found"}
-                        filterPlaceholder={"Find Group..."}
-                        modalTitle={"Add to Groups"}
-                        addText={"Add to Groups"}
-                        headers={["", "Group Name"]}
+                        emptyState={'No groups found'}
+                        filterPlaceholder={'Find Group...'}
+                        modalTitle={'Add to Groups'}
+                        addText={'Add to Groups'}
+                        headers={['', 'Group Name']}
                         searchFn={(prefix, after) => auth.listGroups(prefix, after, PageSize)}
                         resolveEntityFn={resolveGroupDisplayName}
                         onHide={() => setShowAddModal(false)}
@@ -122,7 +122,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeaderWithContext userId={userId} page={"groups"} />
+            <UserHeaderWithContext userId={userId} page={'groups'} />
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -150,10 +150,10 @@ const UserGroupsContainer = () => {
     ) : (
         <UserGroupsList
             userId={userId}
-            after={after ? after : ""}
+            after={after ? after : ''}
             onPaginate={(after) =>
                 router.push({
-                    pathname: "/auth/users/:userId/groups",
+                    pathname: '/auth/users/:userId/groups',
                     params: { userId },
                     query: { after },
                 })
@@ -164,7 +164,7 @@ const UserGroupsContainer = () => {
 
 const UserGroupsPage = () => {
     const { setActiveTab } = useOutletContext();
-    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    useEffect(() => setActiveTab('users'), [setActiveTab]);
     return <UserGroupsContainer />;
 };
 

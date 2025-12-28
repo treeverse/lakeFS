@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
-import Form from "react-bootstrap/Form";
-import Alert from "react-bootstrap/Alert";
-import { Warnings } from "./controls";
-import { FloatingLabel } from "react-bootstrap";
-import Accordion from "react-bootstrap/Accordion";
+import React, { useEffect, useRef, useState } from 'react';
+import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert';
+import { Warnings } from './controls';
+import { FloatingLabel } from 'react-bootstrap';
+import Accordion from 'react-bootstrap/Accordion';
 
-const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
+const DEFAULT_BLOCKSTORE_EXAMPLE = 'e.g. s3://example-bucket/';
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
 export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setFormValid, error = null }) => {
@@ -75,7 +75,7 @@ export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setF
         <>
             <Form.Group className="mb-3">
                 <Form.Text>
-                    A repository contains all of your objects, including the revision history.{" "}
+                    A repository contains all of your objects, including the revision history.{' '}
                     <a
                         href="https://docs.lakefs.io/understand/model.html#repository"
                         target="_blank"
@@ -112,7 +112,7 @@ export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setF
                     <Form.Control
                         type="text"
                         ref={defaultBranchField}
-                        defaultValue={"main"}
+                        defaultValue={'main'}
                         placeholder="main"
                         onChange={checkDefaultBranchValidity}
                     />
@@ -135,7 +135,7 @@ export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setF
                 {storageNamespaceValid === false && (
                     <p>
                         <Form.Text className="text-danger">
-                            {"Can only create repository with storage type: " + storageType}
+                            {'Can only create repository with storage type: ' + storageType}
                         </Form.Text>
                     </p>
                 )}
@@ -148,7 +148,7 @@ export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setF
         <>
             <section className="repository-creation-expanded">{basicSettings}</section>
             <Accordion className="repository-creation-accordion">
-                <Accordion.Item eventKey={"1"}>
+                <Accordion.Item eventKey={'1'}>
                     <Accordion.Header>Advanced Settings</Accordion.Header>
                     <Accordion.Body>{advancedSettings}</Accordion.Body>
                 </Accordion.Item>
@@ -185,7 +185,7 @@ export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setF
 
             {error && (
                 <div className="mb-3">
-                    <Alert variant={"danger"}>{error.message}</Alert>
+                    <Alert variant={'danger'}>{error.message}</Alert>
                 </div>
             )}
         </Form>

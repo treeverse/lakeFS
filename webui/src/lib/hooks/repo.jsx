@@ -1,9 +1,9 @@
-import React, { useContext, createContext } from "react";
+import React, { useContext, createContext } from 'react';
 
-import { repositories, branches, commits, NotFoundError, tags, BadRequestError, BareRepositoryError } from "../api";
-import { useRouter } from "./router";
-import { useAPI } from "./api";
-import { RefTypeBranch, RefTypeCommit, RefTypeTag } from "../../constants";
+import { repositories, branches, commits, NotFoundError, tags, BadRequestError, BareRepositoryError } from '../api';
+import { useRouter } from './router';
+import { useAPI } from './api';
+import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../constants';
 
 export const resolveRef = async (repoId, refId) => {
     // try branch
@@ -13,10 +13,10 @@ export const resolveRef = async (repoId, refId) => {
     } catch (error) {
         if (error instanceof NotFoundError) {
             // check if the repository is bare (has no branches)
-            const branchList = await branches.list(repoId, true, "", "", 1);
+            const branchList = await branches.list(repoId, true, '', '', 1);
             const isBareRepo = branchList?.results?.length === 0;
             if (isBareRepo) {
-                throw new BareRepositoryError("Repository has no branches");
+                throw new BareRepositoryError('Repository has no branches');
             }
         } else if (!(error instanceof BadRequestError)) {
             throw error;
@@ -41,7 +41,7 @@ export const resolveRef = async (repoId, refId) => {
         }
     }
 
-    throw new NotFoundError("ref not found");
+    throw new NotFoundError('ref not found');
 };
 
 const RefContext = createContext(null);

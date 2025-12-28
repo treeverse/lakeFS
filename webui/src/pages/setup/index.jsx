@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect } from "react";
-import { useState } from "react";
-import { API_ENDPOINT, setup, SETUP_STATE_INITIALIZED } from "../../lib/api";
-import { useRouter } from "../../lib/hooks/router";
-import { useAPI } from "../../lib/hooks/api";
-import { SetupComplete } from "./setupComplete";
-import { UserConfiguration } from "./userConfiguration";
+import React, { useCallback, useEffect } from 'react';
+import { useState } from 'react';
+import { API_ENDPOINT, setup, SETUP_STATE_INITIALIZED } from '../../lib/api';
+import { useRouter } from '../../lib/hooks/router';
+import { useAPI } from '../../lib/hooks/api';
+import { SetupComplete } from './setupComplete';
+import { UserConfiguration } from './userConfiguration';
 
 const SetupContents = () => {
     const [setupError, setSetupError] = useState(null);
@@ -28,11 +28,11 @@ const SetupContents = () => {
     const onSubmitUserConfiguration = useCallback(
         async (adminUser, userEmail, checked) => {
             if (!adminUser) {
-                setSetupError("Please enter your admin username.");
+                setSetupError('Please enter your admin username.');
                 return;
             }
             if (commPrefsMissing && !userEmail) {
-                setSetupError("Please enter your email address.");
+                setSetupError('Please enter your email address.');
                 return;
             }
 
@@ -83,7 +83,7 @@ const SetupContents = () => {
         );
     }
 
-    return router.push({ pathname: "/", query: router.query });
+    return router.push({ pathname: '/', query: router.query });
 };
 
 const SetupPage = () => <SetupContents />;

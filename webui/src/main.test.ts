@@ -1,6 +1,6 @@
-import { test, expect } from "vitest";
+import { test, expect } from 'vitest';
 
-test("test placeholder", () => {
+test('test placeholder', () => {
     expect(1).toEqual(1);
 });
 

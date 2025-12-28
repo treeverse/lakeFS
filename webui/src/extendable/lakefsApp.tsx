@@ -1,7 +1,7 @@
-import React from "react";
-import { PluginManager } from "./plugins/pluginManager";
-import { IndexPage } from "../pages";
-import { PluginManagerProvider } from "./plugins/pluginsContext";
+import React from 'react';
+import { PluginManager } from './plugins/pluginManager';
+import { IndexPage } from '../pages';
+import { PluginManagerProvider } from './plugins/pluginsContext';
 
 interface AppProps {
     pluginManager: PluginManager;

@@ -1,9 +1,9 @@
-export const API_ENDPOINT = "/api/v1";
+export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
 export const MAX_LISTING_AMOUNT = 1000;
 
-export const SETUP_STATE_INITIALIZED = "initialized";
-export const SETUP_STATE_NOT_INITIALIZED = "not_initialized";
+export const SETUP_STATE_INITIALIZED = 'initialized';
+export const SETUP_STATE_NOT_INITIALIZED = 'not_initialized';
 
 class LocalCache {
     get(key) {
@@ -40,7 +40,7 @@ export const linkToPath = (repoId, branchId, path, presign = false) => {
 
 export const extractError = async (response) => {
     let body;
-    if (response.headers.get("Content-Type") === "application/json") {
+    if (response.headers.get('Content-Type') === 'application/json') {
         const jsonBody = await response.json();
         body = jsonBody.message;
     } else {
@@ -50,19 +50,19 @@ export const extractError = async (response) => {
 };
 
 export const defaultAPIHeaders = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    "X-Lakefs-Client": "lakefs-webui/__buildVersion",
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'X-Lakefs-Client': 'lakefs-webui/__buildVersion',
 };
 
 export const parseRawHeaders = (rawHeaders) => {
-    const headersString = typeof rawHeaders === "string" ? rawHeaders : rawHeaders.toString();
+    const headersString = typeof rawHeaders === 'string' ? rawHeaders : rawHeaders.toString();
     const cleanedHeadersString = headersString.trim();
-    const headerLines = cleanedHeadersString.split("\n");
+    const headerLines = cleanedHeadersString.split('\n');
     const parsedHeaders = headerLines.reduce((acc, line) => {
-        let [key, ...value] = line.split(":"); // split into key and the rest of the value
+        let [key, ...value] = line.split(':'); // split into key and the rest of the value
         key = key.trim();
-        value = value.join(":").trim();
+        value = value.join(':').trim();
         if (key && value) {
             acc[key.toLowerCase()] = value;
         }
@@ -71,7 +71,7 @@ export const parseRawHeaders = (rawHeaders) => {
     return parsedHeaders;
 };
 
-const authenticationError = "error authenticating request";
+const authenticationError = 'error authenticating request';
 
 const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
     const headers = new Headers({
@@ -84,10 +84,10 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
     if (response.status === 401) {
         const errorMessage = await extractError(response);
         if (errorMessage === authenticationError) {
-            cache.delete("user");
-            throw new AuthenticationError("Authentication Error", response.status);
+            cache.delete('user');
+            throw new AuthenticationError('Authentication Error', response.status);
         }
-        throw new AuthorizationError(errorMessage || "Unauthorized", response.status);
+        throw new AuthorizationError(errorMessage || 'Unauthorized', response.status);
     }
 
     return response;
@@ -165,21 +165,21 @@ export class BareRepositoryError extends Error {
 // actual actions:
 class Auth {
     async getAuthCapabilities() {
-        const response = await apiRequest("/auth/capabilities", {
-            method: "GET",
+        const response = await apiRequest('/auth/capabilities', {
+            method: 'GET',
         });
         switch (response.status) {
             case 200:
                 return await response.json();
             default:
-                throw new Error("Unknown");
+                throw new Error('Unknown');
         }
     }
 
     async login(accessKeyId, secretAccessKey) {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {
             headers: new Headers(defaultAPIHeaders),
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify({
                 access_key_id: accessKeyId,
                 secret_access_key: secretAccessKey,
@@ -187,45 +187,45 @@ class Auth {
         });
 
         if (response.status === 401) {
-            throw new AuthenticationError("invalid credentials", response.status);
+            throw new AuthenticationError('invalid credentials', response.status);
         }
         if (response.status >= 500) {
-            throw new ServerError("server error during authentication", response.status);
+            throw new ServerError('server error during authentication', response.status);
         }
         if (response.status >= 400) {
-            throw new ClientError("client error during authentication", response.status);
+            throw new ClientError('client error during authentication', response.status);
         }
         if (response.status !== 200) {
-            throw new Error("Unknown error during authentication");
+            throw new Error('Unknown error during authentication');
         }
 
         this.clearCurrentUser();
         const user = await this.getCurrentUser();
 
-        cache.set("user", user);
+        cache.set('user', user);
         return user;
     }
 
     clearCurrentUser() {
-        cache.delete("user");
+        cache.delete('user');
     }
 
     async getCurrentUserWithCache() {
-        let user = cache.get("user");
+        let user = cache.get('user');
         if (!user) {
             user = await this.getCurrentUser();
-            cache.set("user", user);
+            cache.set('user', user);
         }
         return user;
     }
 
     async getCurrentUser() {
-        const userResponse = await apiRequest("/user");
+        const userResponse = await apiRequest('/user');
         const body = await userResponse.json();
         return body.user;
     }
 
-    async listUsers(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async listUsers(prefix = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/auth/users?${query}`);
         if (response.status !== 200) {
@@ -236,7 +236,7 @@ class Auth {
 
     async createUser(userId, inviteUser = false) {
         const response = await apiRequest(`/auth/users`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify({ id: userId, invite_user: inviteUser }),
         });
         if (response.status !== 201) {
@@ -245,7 +245,7 @@ class Auth {
         return response.json();
     }
 
-    async listGroups(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async listGroups(prefix = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/auth/groups?${query}`);
         if (response.status !== 200) {
@@ -277,7 +277,7 @@ class Auth {
 
     async putACL(groupId, acl) {
         const response = await apiRequest(`/auth/groups/${groupId}/acl`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(acl),
         });
         if (response.status !== 201) {
@@ -288,7 +288,7 @@ class Auth {
     async addUserToGroup(userId, groupId) {
         const response = await apiRequest(
             `/auth/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
-            { method: "PUT" },
+            { method: 'PUT' },
         );
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -298,7 +298,7 @@ class Auth {
     async removeUserFromGroup(userId, groupId) {
         const response = await apiRequest(
             `/auth/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
-            { method: "DELETE" },
+            { method: 'DELETE' },
         );
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -308,7 +308,7 @@ class Auth {
     async attachPolicyToUser(userId, policyId) {
         const response = await apiRequest(
             `/auth/users/${encodeURIComponent(userId)}/policies/${encodeURIComponent(policyId)}`,
-            { method: "PUT" },
+            { method: 'PUT' },
         );
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -318,7 +318,7 @@ class Auth {
     async detachPolicyFromUser(userId, policyId) {
         const response = await apiRequest(
             `/auth/users/${encodeURIComponent(userId)}/policies/${encodeURIComponent(policyId)}`,
-            { method: "DELETE" },
+            { method: 'DELETE' },
         );
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -328,7 +328,7 @@ class Auth {
     async attachPolicyToGroup(groupId, policyId) {
         const response = await apiRequest(
             `/auth/groups/${encodeURIComponent(groupId)}/policies/${encodeURIComponent(policyId)}`,
-            { method: "PUT" },
+            { method: 'PUT' },
         );
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -338,7 +338,7 @@ class Auth {
     async detachPolicyFromGroup(groupId, policyId) {
         const response = await apiRequest(
             `/auth/groups/${encodeURIComponent(groupId)}/policies/${encodeURIComponent(policyId)}`,
-            { method: "DELETE" },
+            { method: 'DELETE' },
         );
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -348,7 +348,7 @@ class Auth {
     async deleteCredentials(userId, accessKeyId) {
         const response = await apiRequest(
             `/auth/users/${encodeURIComponent(userId)}/credentials/${encodeURIComponent(accessKeyId)}`,
-            { method: "DELETE" },
+            { method: 'DELETE' },
         );
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -357,7 +357,7 @@ class Auth {
 
     async createGroup(groupName, groupDescription) {
         const response = await apiRequest(`/auth/groups`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify({
                 id: groupName,
                 description: groupDescription,
@@ -377,7 +377,7 @@ class Auth {
         return response.json();
     }
 
-    async listPolicies(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async listPolicies(prefix = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/auth/policies?${query}`);
         if (response.status !== 200) {
@@ -390,7 +390,7 @@ class Auth {
         // keep id after policy document to override the id the user entered
         const policy = { ...JSON.parse(policyDocument), id: policyId };
         const response = await apiRequest(`/auth/policies`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(policy),
         });
         if (response.status !== 201) {
@@ -402,7 +402,7 @@ class Auth {
     async editPolicy(policyId, policyDocument) {
         const policy = { ...JSON.parse(policyDocument), id: policyId };
         const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, {
-            method: "PUT",
+            method: 'PUT',
             body: JSON.stringify(policy),
         });
         if (response.status !== 200) {
@@ -422,7 +422,7 @@ class Auth {
 
     async createCredentials(userId) {
         const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials`, {
-            method: "POST",
+            method: 'POST',
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -439,10 +439,10 @@ class Auth {
         return response.json();
     }
 
-    async listUserPolicies(userId, effective = false, after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async listUserPolicies(userId, effective = false, after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const params = { after, amount };
         if (effective) {
-            params.effective = "true";
+            params.effective = 'true';
         }
         const query = qs(params);
         const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies?` + query);
@@ -471,7 +471,7 @@ class Auth {
 
     async deleteUser(userId) {
         const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}`, {
-            method: "DELETE",
+            method: 'DELETE',
         });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -487,7 +487,7 @@ class Auth {
 
     async deleteGroup(groupId) {
         const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}`, {
-            method: "DELETE",
+            method: 'DELETE',
         });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -503,7 +503,7 @@ class Auth {
 
     async deletePolicy(policyId) {
         const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, {
-            method: "DELETE",
+            method: 'DELETE',
         });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -531,7 +531,7 @@ class Repositories {
         return response.json();
     }
 
-    async list(search = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async list(search = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ search, after, amount });
         const response = await apiRequest(`/repositories?${query}`);
         if (response.status !== 200) {
@@ -541,8 +541,8 @@ class Repositories {
     }
 
     async create(repo) {
-        const response = await apiRequest("/repositories", {
-            method: "POST",
+        const response = await apiRequest('/repositories', {
+            method: 'POST',
             body: JSON.stringify(repo),
         });
         if (response.status !== 201) {
@@ -553,7 +553,7 @@ class Repositories {
 
     async delete(repoId) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`, {
-            method: "DELETE",
+            method: 'DELETE',
         });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
@@ -567,7 +567,7 @@ class Branches {
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}`,
         );
         if (response.status === 400) {
-            throw new BadRequestError("invalid get branch request");
+            throw new BadRequestError('invalid get branch request');
         } else if (response.status === 404) {
             throw new NotFoundError(`could not find branch ${branchId}`);
         } else if (response.status !== 200) {
@@ -578,7 +578,7 @@ class Branches {
 
     async create(repoId, name, source) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify({ name, source }),
         });
         if (response.status !== 201) {
@@ -591,7 +591,7 @@ class Branches {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(name)}`,
             {
-                method: "DELETE",
+                method: 'DELETE',
             },
         );
         if (response.status !== 204) {
@@ -603,7 +603,7 @@ class Branches {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}`,
             {
-                method: "PUT",
+                method: 'PUT',
                 body: JSON.stringify(options),
             },
         );
@@ -612,7 +612,7 @@ class Branches {
         }
     }
 
-    async list(repoId, showHidden, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async list(repoId, showHidden, prefix = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ prefix, after, amount, show_hidden: showHidden });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?` + query);
         if (response.status !== 200) {
@@ -621,7 +621,7 @@ class Branches {
         return response.json();
     }
 
-    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = "", metadata = {}) {
+    async revert(repoId, branchId, commitRef, parentNumber = 0, allowEmpty = false, message = '', metadata = {}) {
         const body = {
             ref: commitRef,
             parent_number: parentNumber,
@@ -629,7 +629,7 @@ class Branches {
         };
 
         // Add commit_overrides only if we have a non-empty message or metadata
-        const hasMessage = message && message.trim() !== "";
+        const hasMessage = message && message.trim() !== '';
         const hasMetadata = Object.keys(metadata).length > 0;
 
         if (hasMessage || hasMetadata) {
@@ -645,7 +645,7 @@ class Branches {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/revert`,
             {
-                method: "POST",
+                method: 'POST',
                 body: JSON.stringify(body),
             },
         );
@@ -668,7 +668,7 @@ class Tags {
         return response.json();
     }
 
-    async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async list(repoId, prefix = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags?` + query);
         if (response.status !== 200) {
@@ -679,7 +679,7 @@ class Tags {
 
     async create(repoId, id, ref) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify({ id, ref }),
         });
         if (response.status !== 201) {
@@ -692,7 +692,7 @@ class Tags {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/tags/${encodeURIComponent(name)}`,
             {
-                method: "DELETE",
+                method: 'DELETE',
             },
         );
         if (response.status !== 204) {
@@ -714,11 +714,11 @@ class Pulls {
         return response.json();
     }
 
-    async list(repoId, status = "open", prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async list(repoId, status = 'open', prefix = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ status, prefix, after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
         if (response.status !== 200) {
-            const baseMessage = "Could not list pull requests";
+            const baseMessage = 'Could not list pull requests';
             switch (response.status) {
                 case 400:
                 case 401:
@@ -733,11 +733,11 @@ class Pulls {
 
     async create(repoId, pullDetails) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(pullDetails),
         });
         if (response.status !== 201) {
-            const baseMessage = "Could not create pull request";
+            const baseMessage = 'Could not create pull request';
             switch (response.status) {
                 case 400:
                 case 401:
@@ -756,11 +756,11 @@ class Pulls {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}/merge`,
             {
-                method: "PUT",
+                method: 'PUT',
             },
         );
         if (response.status !== 200) {
-            const baseMessage = "Could not merge pull request";
+            const baseMessage = 'Could not merge pull request';
             switch (response.status) {
                 case 400:
                 case 401:
@@ -779,12 +779,12 @@ class Pulls {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`,
             {
-                method: "PATCH",
+                method: 'PATCH',
                 body: JSON.stringify(pullDetails),
             },
         );
         if (response.status !== 204) {
-            const baseMessage = "Could not update pull request";
+            const baseMessage = 'Could not update pull request';
             switch (response.status) {
                 case 400:
                 case 401:
@@ -800,40 +800,40 @@ class Pulls {
 
 // uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
 //  still not well supported across browsers (see https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch).
-export const uploadWithProgress = (url, file, method = "POST", onProgress = null, additionalHeaders = null) => {
+export const uploadWithProgress = (url, file, method = 'POST', onProgress = null, additionalHeaders = null) => {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.upload.addEventListener("progress", (event) => {
+        xhr.upload.addEventListener('progress', (event) => {
             if (onProgress) {
                 onProgress((event.loaded / event.total) * 100);
             }
         });
-        xhr.addEventListener("load", () => {
+        xhr.addEventListener('load', () => {
             resolve({
                 status: xhr.status,
                 body: xhr.responseText,
                 rawHeaders: xhr.getAllResponseHeaders(), // add raw headers
             });
         });
-        xhr.addEventListener("error", () =>
+        xhr.addEventListener('error', () =>
             reject({
-                message: "Upload Failed",
+                message: 'Upload Failed',
                 status: xhr.status,
                 body: xhr.responseText,
                 rawHeaders: xhr.getAllResponseHeaders(),
             }),
         );
-        xhr.addEventListener("abort", () => reject(new Error("Upload Aborted")));
+        xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
         xhr.open(method, url, true);
-        xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("X-Lakefs-Client", "lakefs-webui/__buildVersion");
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion');
         if (additionalHeaders) {
             Object.keys(additionalHeaders).map((key) => xhr.setRequestHeader(key, additionalHeaders[key]));
         }
         if (url.startsWith(API_ENDPOINT)) {
             // swagger API requires a form with a "content" field
             const data = new FormData();
-            data.append("content", file);
+            data.append('content', file);
             xhr.send(data);
         } else {
             xhr.send(file);
@@ -842,14 +842,14 @@ export const uploadWithProgress = (url, file, method = "POST", onProgress = null
 };
 
 class Objects {
-    async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
+    async list(repoId, ref, tree, after = '', presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = '/') {
         const query = qs({ prefix: tree, amount, after, delimiter, presign });
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query,
         );
 
         if (response.status === 404) {
-            throw new NotFoundError(response.message ?? "ref not found");
+            throw new NotFoundError(response.message ?? 'ref not found');
         }
 
         if (response.status !== 200) {
@@ -859,7 +859,7 @@ class Objects {
     }
 
     listAll(repoId, ref, prefix, presign = false) {
-        let after = "";
+        let after = '';
         return {
             next: async () => {
                 const query = qs({ prefix, presign, after, amount: MAX_LISTING_AMOUNT });
@@ -867,7 +867,7 @@ class Objects {
                     `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query,
                 );
                 if (response.status === 404) {
-                    throw new NotFoundError(response.message ?? "ref not found");
+                    throw new NotFoundError(response.message ?? 'ref not found');
                 }
                 if (response.status !== 200) {
                     throw new Error(await extractError(response));
@@ -903,10 +903,10 @@ class Objects {
         const uploadUrl =
             `${API_ENDPOINT}/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` +
             query;
-        const { status, body, rawHeaders } = await uploadWithProgress(uploadUrl, fileObject, "POST", onProgressFn);
+        const { status, body, rawHeaders } = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn);
         if (status !== 201) {
-            const contentType = rawHeaders ? parseRawHeaders(rawHeaders)["content-type"] : undefined;
-            if (contentType === "application/json" && body) {
+            const contentType = rawHeaders ? parseRawHeaders(rawHeaders)['content-type'] : undefined;
+            if (contentType === 'application/json' && body) {
                 const responseData = JSON.parse(body);
                 throw new Error(responseData.message);
             }
@@ -919,7 +919,7 @@ class Objects {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query,
             {
-                method: "DELETE",
+                method: 'DELETE',
             },
         );
         if (response.status !== 204) {
@@ -932,7 +932,7 @@ class Objects {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query,
             {
-                method: "GET",
+                method: 'GET',
             },
         );
         if (response.status !== 200 && response.status !== 206) {
@@ -946,7 +946,7 @@ class Objects {
         const query = qs({ path, presign });
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query,
-            { method: "GET" },
+            { method: 'GET' },
             { Range: `bytes=${start}-${end}` },
         );
         if (response.status !== 200 && response.status !== 206) {
@@ -960,7 +960,7 @@ class Objects {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query,
             {
-                method: "HEAD",
+                method: 'HEAD',
             },
         );
 
@@ -986,7 +986,7 @@ class Objects {
 }
 
 class Commits {
-    async log(repoId, refId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async log(repoId, refId, after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ after, amount });
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/commits?` + query,
@@ -999,7 +999,7 @@ class Commits {
 
     async blame(repoId, refId, path, type) {
         const params = { amount: 1 };
-        if (type === "object") {
+        if (type === 'object') {
             params.objects = path;
         } else {
             params.prefixes = path;
@@ -1033,7 +1033,7 @@ class Commits {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits`,
             {
-                method: "POST",
+                method: 'POST',
                 body: JSON.stringify({ message, metadata }),
             },
         );
@@ -1056,7 +1056,7 @@ class Refs {
         return response.json();
     }
 
-    async diff(repoId, leftRef, rightRef, after, prefix = "", delimiter = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async diff(repoId, leftRef, rightRef, after, prefix = '', delimiter = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ after, amount, delimiter, prefix });
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` +
@@ -1068,11 +1068,11 @@ class Refs {
         return response.json();
     }
 
-    async merge(repoId, sourceBranch, destinationBranch, strategy = "", message = "", metadata = {}) {
+    async merge(repoId, sourceBranch, destinationBranch, strategy = '', message = '', metadata = {}) {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`,
             {
-                method: "POST",
+                method: 'POST',
                 body: JSON.stringify({ strategy, message, metadata }),
             },
         );
@@ -1083,7 +1083,7 @@ class Refs {
                 return response.json();
             case 409:
                 resp = await response.json();
-                throw new MergeError("Conflict", resp);
+                throw new MergeError('Conflict', resp);
             case 412:
             default:
                 throw new Error(await extractError(response));
@@ -1092,7 +1092,7 @@ class Refs {
 }
 
 class Actions {
-    async listRuns(repoId, branch = "", commit = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async listRuns(repoId, branch = '', commit = '', after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ branch, commit, after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs?` + query);
         if (response.status !== 200) {
@@ -1111,7 +1111,7 @@ class Actions {
         return response.json();
     }
 
-    async listRunHooks(repoId, runId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
+    async listRunHooks(repoId, runId, after = '', amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({ after, amount });
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/actions/runs/${encodeURIComponent(runId)}/hooks?` + query,
@@ -1126,7 +1126,7 @@ class Actions {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/actions/runs/${encodeURIComponent(runId)}/hooks/${encodeURIComponent(hookRunId)}/output`,
             {
-                headers: { "Content-Type": "application/octet-stream" },
+                headers: { 'Content-Type': 'application/octet-stream' },
             },
         );
         if (response.status !== 200) {
@@ -1140,7 +1140,7 @@ class Retention {
     async getGCPolicy(repoID) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`);
         if (response.status === 404) {
-            throw new NotFoundError("policy not found");
+            throw new NotFoundError('policy not found');
         }
         if (response.status !== 200) {
             throw new Error(`could not get gc policy: ${await extractError(response)}`);
@@ -1158,7 +1158,7 @@ class Retention {
 
     async setGCPolicy(repoID, policy) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
-            method: "PUT",
+            method: 'PUT',
             body: policy,
         });
         if (response.status !== 204) {
@@ -1169,7 +1169,7 @@ class Retention {
 
     async deleteGCPolicy(repoID) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
-            method: "DELETE",
+            method: 'DELETE',
         });
         if (response.status !== 204) {
             throw new Error(`could not delete gc policy: ${await extractError(response)}`);
@@ -1180,8 +1180,8 @@ class Retention {
 
 class Setup {
     async getState() {
-        const response = await apiRequest("/setup_lakefs", {
-            method: "GET",
+        const response = await apiRequest('/setup_lakefs', {
+            method: 'GET',
         });
         switch (response.status) {
             case 200:
@@ -1192,11 +1192,11 @@ class Setup {
     }
 
     async lakeFS(username) {
-        const response = await apiRequest("/setup_lakefs", {
-            method: "POST",
+        const response = await apiRequest('/setup_lakefs', {
+            method: 'POST',
             headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({ username: username }),
         });
@@ -1204,18 +1204,18 @@ class Setup {
             case 200:
                 return response.json();
             case 409:
-                throw new Error("Setup is already complete.");
+                throw new Error('Setup is already complete.');
             default:
-                throw new Error("Unknown");
+                throw new Error('Unknown');
         }
     }
 
     async commPrefs(email, updates, security) {
-        const response = await apiRequest("/setup_comm_prefs", {
-            method: "POST",
+        const response = await apiRequest('/setup_comm_prefs', {
+            method: 'POST',
             headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 email,
@@ -1228,33 +1228,33 @@ class Setup {
             case 200:
                 return;
             case 409:
-                throw new Error("Setup is already complete.");
+                throw new Error('Setup is already complete.');
             default:
-                throw new Error("Unknown");
+                throw new Error('Unknown');
         }
     }
 }
 
 class Config {
     async getConfig() {
-        const response = await apiRequest("/config", {
-            method: "GET",
+        const response = await apiRequest('/config', {
+            method: 'GET',
         });
 
         const parseBlockstoreConfig = (storageCfg) => {
             storageCfg.warnings = [];
-            if (storageCfg.blockstore_type === "mem") {
+            if (storageCfg.blockstore_type === 'mem') {
                 storageCfg.warnings.push(`Block adapter ${storageCfg.blockstore_type} not usable in production`);
             }
             return storageCfg;
         };
 
         const buildStoragesConfigs = (cfg) => {
-            const storageCfgList = cfg["storage_config_list"];
+            const storageCfgList = cfg['storage_config_list'];
             if (storageCfgList?.length > 1) {
                 return storageCfgList.map((storageCfg) => parseBlockstoreConfig(storageCfg));
             } else {
-                const storageCfg = cfg["storage_config"];
+                const storageCfg = cfg['storage_config'];
                 return [parseBlockstoreConfig(storageCfg)];
             }
         };
@@ -1263,14 +1263,14 @@ class Config {
             case 200: {
                 const cfg = await response.json();
                 const storages = buildStoragesConfigs(cfg);
-                const uiConfig = cfg["ui_config"];
-                const versionConfig = cfg["version_config"];
+                const uiConfig = cfg['ui_config'];
+                const versionConfig = cfg['version_config'];
                 return { storages, uiConfig, versionConfig };
             }
             case 409:
-                throw new Error("Conflict");
+                throw new Error('Conflict');
             default:
-                throw new Error("Unknown");
+                throw new Error('Unknown');
         }
     }
 }
@@ -1279,13 +1279,13 @@ class BranchProtectionRules {
     async getRules(repoID) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`);
         if (response.status === 404) {
-            throw new NotFoundError("branch protection rules not found");
+            throw new NotFoundError('branch protection rules not found');
         }
         if (response.status !== 200) {
             throw new Error(`could not get branch protection rules: ${await extractError(response)}`);
         }
         return {
-            checksum: response.headers.get("ETag"),
+            checksum: response.headers.get('ETag'),
             rules: await response.json(),
         };
     }
@@ -1298,12 +1298,12 @@ class BranchProtectionRules {
     async setRules(repoID, rules, lastKnownChecksum) {
         const additionalHeaders = {};
         if (lastKnownChecksum) {
-            additionalHeaders["If-Match"] = lastKnownChecksum;
+            additionalHeaders['If-Match'] = lastKnownChecksum;
         }
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`,
             {
-                method: "PUT",
+                method: 'PUT',
                 body: JSON.stringify(rules),
             },
             additionalHeaders,
@@ -1320,7 +1320,7 @@ class Statistics {
             events: statsEvents,
         };
         const response = await apiRequest(`/statistics`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(request),
         });
         if (response.status !== 204) {
@@ -1336,7 +1336,7 @@ class Staging {
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` +
                 query,
             {
-                method: "GET",
+                method: 'GET',
             },
         );
         if (response.status !== 200) {
@@ -1345,13 +1345,13 @@ class Staging {
         return response.json();
     }
 
-    async link(repoId, branchId, path, staging, checksum, sizeBytes, contentType = "application/octet-stream") {
+    async link(repoId, branchId, path, staging, checksum, sizeBytes, contentType = 'application/octet-stream') {
         const query = qs({ path });
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` +
                 query,
             {
-                method: "PUT",
+                method: 'PUT',
                 body: JSON.stringify({
                     staging: staging,
                     checksum: checksum,
@@ -1387,7 +1387,7 @@ class Import {
                 {
                     path: source,
                     destination: prepend,
-                    type: "common_prefix",
+                    type: 'common_prefix',
                 },
             ],
             commit: {
@@ -1395,13 +1395,13 @@ class Import {
             },
         };
         if (Object.keys(commitMetadata).length > 0) {
-            body.commit["metadata"] = commitMetadata;
+            body.commit['metadata'] = commitMetadata;
         }
 
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import`,
             {
-                method: "POST",
+                method: 'POST',
                 body: JSON.stringify(body),
             },
         );
@@ -1416,7 +1416,7 @@ class Import {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import?` + query,
             {
-                method: "DELETE",
+                method: 'DELETE',
             },
         );
         if (response.status !== 204) {

@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import dayjs from "dayjs";
-import { BrowserIcon, LinkIcon, PlayIcon } from "@primer/octicons-react";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import dayjs from 'dayjs';
+import { BrowserIcon, LinkIcon, PlayIcon } from '@primer/octicons-react';
 
-import { commits } from "../../../../lib/api";
-import Button from "react-bootstrap/Button";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Card from "react-bootstrap/Card";
-import Form from "react-bootstrap/Form";
-import ListGroup from "react-bootstrap/ListGroup";
+import { commits } from '../../../../lib/api';
+import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import ListGroup from 'react-bootstrap/ListGroup';
 
 import {
     ActionGroup,
@@ -18,19 +18,19 @@ import {
     LinkButton,
     Loading,
     RefreshButton,
-} from "../../../../lib/components/controls";
-import { CommitMessage } from "../../../../lib/components/repository/commits";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { useAPIWithPagination } from "../../../../lib/hooks/api";
-import { Paginator } from "../../../../lib/components/pagination";
-import RefDropdown from "../../../../lib/components/repository/refDropdown";
-import { Link } from "../../../../lib/components/nav";
-import { useRouter } from "../../../../lib/hooks/router";
-import { RepoError } from "../error";
-import { RefTypeBranch } from "../../../../constants";
+} from '../../../../lib/components/controls';
+import { CommitMessage } from '../../../../lib/components/repository/commits';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { useAPIWithPagination } from '../../../../lib/hooks/api';
+import { Paginator } from '../../../../lib/components/pagination';
+import RefDropdown from '../../../../lib/components/repository/refDropdown';
+import { Link } from '../../../../lib/components/nav';
+import { useRouter } from '../../../../lib/hooks/router';
+import { RepoError } from '../error';
+import { RefTypeBranch } from '../../../../constants';
 
 const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, onToggleSelect = null }) => {
-    const buttonVariant = "light";
+    const buttonVariant = 'light';
 
     return (
         <ListGroup.Item>
@@ -45,11 +45,11 @@ const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, on
                             inline
                         />
                     )}
-                    <div className={revertMode ? "d-inline-block" : ""}>
+                    <div className={revertMode ? 'd-inline-block' : ''}>
                         <h6>
                             <Link
                                 href={{
-                                    pathname: "/repositories/:repoId/commits/:commitId",
+                                    pathname: '/repositories/:repoId/commits/:commitId',
                                     params: { repoId: repo.id, commitId: commit.id },
                                 }}
                             >
@@ -58,8 +58,8 @@ const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, on
                         </h6>
                         <p>
                             <small>
-                                <strong>{commit.committer}</strong> committed at{" "}
-                                <strong>{dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> (
+                                <strong>{commit.committer}</strong> committed at{' '}
+                                <strong>{dayjs.unix(commit.creation_date).format('MM/DD/YYYY HH:mm:ss')}</strong> (
                                 {dayjs.unix(commit.creation_date).fromNow()})
                             </small>
                         </p>
@@ -70,7 +70,7 @@ const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, on
                         <LinkButton
                             buttonVariant={buttonVariant}
                             href={{
-                                pathname: "/repositories/:repoId/commits/:commitId",
+                                pathname: '/repositories/:repoId/commits/:commitId',
                                 params: { repoId: repo.id, commitId: commit.id },
                             }}
                         >
@@ -79,7 +79,7 @@ const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, on
                         <LinkButton
                             buttonVariant={buttonVariant}
                             href={{
-                                pathname: "/repositories/:repoId/actions",
+                                pathname: '/repositories/:repoId/actions',
                                 query: { commit: commit.id },
                                 params: { repoId: repo.id },
                             }}
@@ -96,7 +96,7 @@ const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, on
                         <LinkButton
                             buttonVariant={buttonVariant}
                             href={{
-                                pathname: "/repositories/:repoId/objects",
+                                pathname: '/repositories/:repoId/objects',
                                 params: { repoId: repo.id },
                                 query: { ref: commit.id },
                             }}
@@ -141,9 +141,9 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
         const commitIds = results
             .filter((commit) => selectedCommits.has(commit.id))
             .map((commit) => commit.id)
-            .join(",");
+            .join(',');
         router.push({
-            pathname: "/repositories/:repoId/branches/:branchId/revert",
+            pathname: '/repositories/:repoId/branches/:branchId/revert',
             params: { repoId: repo.id, branchId: reference.id },
             query: { commits: commitIds },
         });
@@ -174,8 +174,8 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                         </Button>
                     )}
                     {isBranch && (
-                        <Button variant={revertMode ? "secondary" : "light"} onClick={handleRevertClick}>
-                            {revertMode ? "Cancel" : "Revert"}
+                        <Button variant={revertMode ? 'secondary' : 'light'} onClick={handleRevertClick}>
+                            {revertMode ? 'Cancel' : 'Revert'}
                         </Button>
                     )}
                     <RefreshButton
@@ -226,7 +226,7 @@ const CommitsContainer = () => {
                     params,
                 })
             }
-            after={after ? after : ""}
+            after={after ? after : ''}
             onPaginate={(after) =>
                 router.push({
                     pathname: `/repositories/:repoId/commits`,
@@ -240,7 +240,7 @@ const CommitsContainer = () => {
 
 const RepositoryCommitsPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("commits"), [setActivePage]);
+    useEffect(() => setActivePage('commits'), [setActivePage]);
     return <CommitsContainer />;
 };
 

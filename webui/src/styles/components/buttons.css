@@ -67,20 +67,20 @@
 }
 
 /* Fix for btn-light in dark mode */
-[data-bs-theme="dark"] .btn-light {
+[data-bs-theme='dark'] .btn-light {
     background-color: #374151;
     color: #f9fafb;
     border-color: #4b5563;
 }
 
-[data-bs-theme="dark"] .btn-light:hover {
+[data-bs-theme='dark'] .btn-light:hover {
     background-color: #4b5563;
     color: #f9fafb;
     border-color: #6b7280;
 }
 
-[data-bs-theme="dark"] .btn-light:focus,
-[data-bs-theme="dark"] .btn-light:active {
+[data-bs-theme='dark'] .btn-light:focus,
+[data-bs-theme='dark'] .btn-light:active {
     background-color: #4b5563;
     color: #f9fafb;
     border-color: #6b7280;
@@ -88,27 +88,27 @@
 }
 
 /* Fix for btn-light dropdown toggle in dark mode */
-[data-bs-theme="dark"] .btn-light.dropdown-toggle {
+[data-bs-theme='dark'] .btn-light.dropdown-toggle {
     background-color: #374151;
     color: #f9fafb;
     border-color: #4b5563;
 }
 
-[data-bs-theme="dark"] .btn-light.dropdown-toggle:hover,
-[data-bs-theme="dark"] .btn-light.dropdown-toggle:focus,
-[data-bs-theme="dark"] .btn-light.dropdown-toggle:active {
+[data-bs-theme='dark'] .btn-light.dropdown-toggle:hover,
+[data-bs-theme='dark'] .btn-light.dropdown-toggle:focus,
+[data-bs-theme='dark'] .btn-light.dropdown-toggle:active {
     background-color: #4b5563;
     color: #f9fafb;
     border-color: #6b7280;
 }
 
 /* Dark mode fix for btn-outline-secondary */
-[data-bs-theme="dark"] .btn-outline-secondary {
+[data-bs-theme='dark'] .btn-outline-secondary {
     color: #f9fafb;
     border-color: #6b7280;
 }
 
-[data-bs-theme="dark"] .btn-outline-secondary:hover {
+[data-bs-theme='dark'] .btn-outline-secondary:hover {
     background-color: #4b5563;
     color: #f9fafb;
 }

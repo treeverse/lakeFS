@@ -1,4 +1,4 @@
-import { PluginCustomObjectRenderers } from "../pluginCustomObjectRenderers";
+import { PluginCustomObjectRenderers } from '../pluginCustomObjectRenderers';
 
 const DefaultCustomObjectRenderersPlugin: PluginCustomObjectRenderers = {
     init: () => {},

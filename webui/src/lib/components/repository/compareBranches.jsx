@@ -1,24 +1,24 @@
-import React, { useContext, useEffect, useState } from "react";
-import { refs as refsAPI } from "../../../lib/api";
-import Alert from "react-bootstrap/Alert";
-import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import { useAPIWithPagination } from "../../hooks/api";
-import { appendMoreResults } from "../../../pages/repositories/repository/objects";
-import { AlertError, Loading } from "../controls";
-import { ChangesTreeContainer, defaultGetMoreChanges } from "./changes";
-import { URINavigator } from "./tree";
-import CompareBranchesActionsBar from "./compareBranchesActionBar";
-import { DiffActionType, DiffContext } from "../../hooks/diffContext";
+import React, { useContext, useEffect, useState } from 'react';
+import { refs as refsAPI } from '../../../lib/api';
+import Alert from 'react-bootstrap/Alert';
+import { RefTypeBranch, RefTypeCommit } from '../../../constants';
+import { useAPIWithPagination } from '../../hooks/api';
+import { appendMoreResults } from '../../../pages/repositories/repository/objects';
+import { AlertError, Loading } from '../controls';
+import { ChangesTreeContainer, defaultGetMoreChanges } from './changes';
+import { URINavigator } from './tree';
+import CompareBranchesActionsBar from './compareBranchesActionBar';
+import { DiffActionType, DiffContext } from '../../hooks/diffContext';
 
-const CompareBranches = ({ repo, reference, compareReference, showActionsBar, prefix = "", baseSelectURL }) => {
+const CompareBranches = ({ repo, reference, compareReference, showActionsBar, prefix = '', baseSelectURL }) => {
     const { dispatch } = useContext(DiffContext);
 
     const [internalRefresh, setInternalRefresh] = useState(true);
 
-    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
+    const [afterUpdated, setAfterUpdated] = useState(''); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({ prefix, results: [], pagination: {} }); // current retrieved children of the item
 
-    const delimiter = "/";
+    const delimiter = '/';
 
     const { nextPage, loading, error } = useAPIWithPagination(async () => {
         if (!repo) return;
@@ -100,7 +100,7 @@ const BranchChangesList = ({
 
     const changesTreeMessage = (
         <p>
-            Showing changes between <strong>{reference.id}</strong> {""}
+            Showing changes between <strong>{reference.id}</strong> {''}
             and <strong>{compareReference.id}</strong>
         </p>
     );
@@ -154,7 +154,7 @@ const CompareURINavigator = (prefix, reference, compareReference, repo) => (
         repo={repo}
         pathURLBuilder={(params, query) => {
             const q = {
-                delimiter: "/",
+                delimiter: '/',
                 prefix: query.path,
             };
             if (compareReference) {
@@ -164,7 +164,7 @@ const CompareURINavigator = (prefix, reference, compareReference, repo) => (
                 q.ref = reference.id;
             }
             return {
-                pathname: "/repositories/:repoId/compare",
+                pathname: '/repositories/:repoId/compare',
                 params: { repoId: repo.id },
                 query: q,
             };
@@ -185,7 +185,7 @@ const getNavigatorToComparePage = (repo, ref, compareRef) => (entry) => ({
 function getRefID(reference) {
     let refID = reference.id;
     if (reference.type === RefTypeBranch) {
-        refID += "@";
+        refID += '@';
     }
     return refID;
 }

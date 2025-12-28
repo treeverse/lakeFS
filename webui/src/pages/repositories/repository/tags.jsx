@@ -1,12 +1,12 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import { TagIcon, LinkIcon, PackageIcon, TrashIcon } from "@primer/octicons-react";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import ListGroup from "react-bootstrap/ListGroup";
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { TagIcon, LinkIcon, PackageIcon, TrashIcon } from '@primer/octicons-react';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import ListGroup from 'react-bootstrap/ListGroup';
 
-import { tags } from "../../../lib/api";
+import { tags } from '../../../lib/api';
 
 import {
     ActionGroup,
@@ -17,22 +17,22 @@ import {
     Loading,
     PrefixSearchWidget,
     RefreshButton,
-} from "../../../lib/components/controls";
-import { useRefs } from "../../../lib/hooks/repo";
-import { useAPIWithPagination } from "../../../lib/hooks/api";
-import { Paginator } from "../../../lib/components/pagination";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import RefDropdown from "../../../lib/components/repository/refDropdown";
-import { Link } from "../../../lib/components/nav";
-import { useRouter } from "../../../lib/hooks/router";
-import { ConfirmationButton } from "../../../lib/components/modals";
-import { RepoError } from "./error";
-import { AppContext } from "../../../lib/hooks/appContext";
+} from '../../../lib/components/controls';
+import { useRefs } from '../../../lib/hooks/repo';
+import { useAPIWithPagination } from '../../../lib/hooks/api';
+import { Paginator } from '../../../lib/components/pagination';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import RefDropdown from '../../../lib/components/repository/refDropdown';
+import { Link } from '../../../lib/components/nav';
+import { useRouter } from '../../../lib/hooks/router';
+import { ConfirmationButton } from '../../../lib/components/modals';
+import { RepoError } from './error';
+import { AppContext } from '../../../lib/hooks/appContext';
 
 const TagWidget = ({ repo, tag, onDelete }) => {
     const { state } = useContext(AppContext);
-    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+    const buttonVariant = state.settings.darkMode ? 'outline-light' : 'outline-dark';
 
     return (
         <ListGroup.Item>
@@ -41,7 +41,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                     <h6 className="mb-0">
                         <Link
                             href={{
-                                pathname: "/repositories/:repoId/objects",
+                                pathname: '/repositories/:repoId/objects',
                                 params: { repoId: repo.id },
                                 query: { ref: tag.id },
                             }}
@@ -69,7 +69,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                     <ButtonGroup className="branch-actions ms-2">
                         <LinkButton
                             href={{
-                                pathname: "/repositories/:repoId/commits/:commitId",
+                                pathname: '/repositories/:repoId/commits/:commitId',
                                 params: { repoId: repo.id, commitId: tag.commit_id },
                             }}
                             buttonVariant={buttonVariant}
@@ -97,12 +97,12 @@ const TagWidget = ({ repo, tag, onDelete }) => {
     );
 };
 
-const CreateTagButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
+const CreateTagButton = ({ repo, variant = 'success', onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(true);
     const [error, setError] = useState(null);
     const textRef = useRef(null);
-    const defaultRef = useMemo(() => ({ id: repo.default_branch, type: "branch" }), [repo.default_branch]);
+    const defaultRef = useMemo(() => ({ id: repo.default_branch, type: 'branch' }), [repo.default_branch]);
     const [selectedRef, setSelectedRef] = useState(defaultRef);
 
     const hide = () => {
@@ -158,8 +158,8 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, readOnly 
                             <span className="ms-2 me-2">@</span>
                             <RefDropdown
                                 repo={repo}
-                                prefix={"From "}
-                                emptyText={"Select Source"}
+                                prefix={'From '}
+                                emptyText={'Select Source'}
                                 selected={selectedRef}
                                 selectRef={(refId) => {
                                     setSelectedRef(refId);
@@ -201,7 +201,7 @@ const EmptyTagsState = ({ repo, onCreateTag }) => {
                         Tags help you mark important points in your data&apos;s history, like releases, experiments, or
                         versions.
                         <br />
-                        They&apos;re perfect for{" "}
+                        They&apos;re perfect for{' '}
                         <a
                             href="https://docs.lakefs.io/latest/understand/use_cases/reproducibility/"
                             target="_blank"
@@ -209,11 +209,11 @@ const EmptyTagsState = ({ repo, onCreateTag }) => {
                             className="text-decoration-none"
                         >
                             reproducibility
-                        </a>{" "}
+                        </a>{' '}
                         and making your data workflows more reliable.
                     </p>
                     <p>
-                        Learn more about{" "}
+                        Learn more about{' '}
                         <a
                             href="https://docs.lakefs.io/latest/understand/model/#tags"
                             target="_blank"
@@ -221,7 +221,7 @@ const EmptyTagsState = ({ repo, onCreateTag }) => {
                             className="text-decoration-none"
                         >
                             what tags are
-                        </a>{" "}
+                        </a>{' '}
                         and how to use them effectively.
                     </p>
                 </div>
@@ -265,8 +265,8 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                     </ListGroup>
                 </Card>
                 <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
-                <div className={"mt-2"}>
-                    A tag is an immutable pointer to a single commit.{" "}
+                <div className={'mt-2'}>
+                    A tag is an immutable pointer to a single commit.{' '}
                     <a
                         href="https://docs.lakefs.io/understand/model.html#tags"
                         target="_blank"
@@ -291,7 +291,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                             text="Find Tag"
                             onFilter={(prefix) =>
                                 router.push({
-                                    pathname: "/repositories/:repoId/tags",
+                                    pathname: '/repositories/:repoId/tags',
                                     params: { repoId: repo.id },
                                     query: { prefix },
                                 })
@@ -315,7 +315,7 @@ const TagsContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
     const { after } = router.query;
-    const routerPfx = router.query.prefix ? router.query.prefix : "";
+    const routerPfx = router.query.prefix ? router.query.prefix : '';
 
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
@@ -323,13 +323,13 @@ const TagsContainer = () => {
     return (
         <TagList
             repo={repo}
-            after={after ? after : ""}
+            after={after ? after : ''}
             prefix={routerPfx}
             onPaginate={(after) => {
                 const query = { after };
                 if (router.query.prefix) query.prefix = router.query.prefix;
                 router.push({
-                    pathname: "/repositories/:repoId/tags",
+                    pathname: '/repositories/:repoId/tags',
                     params: { repoId: repo.id },
                     query,
                 });
@@ -340,7 +340,7 @@ const TagsContainer = () => {
 
 const RepositoryTagsPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("tags"), [setActivePage]);
+    useEffect(() => setActivePage('tags'), [setActivePage]);
     return <TagsContainer />;
 };
 

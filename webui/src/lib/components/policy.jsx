@@ -1,28 +1,28 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 
-import Table from "react-bootstrap/Table";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import { FormControl } from "react-bootstrap";
-import Button from "react-bootstrap/Button";
-import { AlertError, FormattedDate } from "./controls";
+import Table from 'react-bootstrap/Table';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import { FormControl } from 'react-bootstrap';
+import Button from 'react-bootstrap/Button';
+import { AlertError, FormattedDate } from './controls';
 
 // Helper function to format condition for display
 // Example: { "IpAddress": { "SourceIp": ["10.0.0.0/8", "127.0.0.1/32"] } }
 const formatCondition = (condition) => {
     if (!condition || Object.keys(condition).length === 0) {
-        return "";
+        return '';
     }
 
     return Object.entries(condition)
         .map(([operator, contextObj]) => {
             const parts = Object.entries(contextObj).map(([contextKey, values]) => {
                 const arr = Array.isArray(values) ? values : [values];
-                return `${contextKey}: [${arr.join(", ")}]`;
+                return `${contextKey}: [${arr.join(', ')}]`;
             });
-            return `${operator}: { ${parts.join(", ")} }`;
+            return `${operator}: { ${parts.join(', ')} }`;
         })
-        .join(" | ");
+        .join(' | ');
 };
 
 export const PolicyEditor = ({
@@ -40,10 +40,10 @@ export const PolicyEditor = ({
     const bodyField = useRef(null);
 
     useEffect(() => {
-        if (policy === null && !!idField.current && idField.current.value === "") idField.current.focus();
+        if (policy === null && !!idField.current && idField.current.value === '') idField.current.focus();
     });
 
-    const [body, setBody] = useState("");
+    const [body, setBody] = useState('');
     useEffect(() => {
         if (policy !== null) {
             const newBody = JSON.stringify(policy, null, 4);
@@ -89,7 +89,7 @@ export const PolicyEditor = ({
         }
         onHide();
     };
-    const actionName = policy === null || isCreate ? "Create" : "Edit";
+    const actionName = policy === null || isCreate ? 'Create' : 'Edit';
     return (
         <Modal show={show} onHide={hide}>
             <Modal.Header closeButton>
@@ -147,7 +147,7 @@ export const PolicyDisplay = ({ policy, asJSON }) => {
     let childComponent;
     if (asJSON) {
         childComponent = (
-            <pre className={"policy-body"}>{JSON.stringify({ statement: policy.statement }, null, 4)}</pre>
+            <pre className={'policy-body'}>{JSON.stringify({ statement: policy.statement }, null, 4)}</pre>
         );
     } else {
         childComponent = (
@@ -165,7 +165,7 @@ export const PolicyDisplay = ({ policy, asJSON }) => {
                         return (
                             <tr key={`statement-${i}`}>
                                 <td>
-                                    <code>{statement.action.join(", ")}</code>
+                                    <code>{statement.action.join(', ')}</code>
                                 </td>
                                 <td>
                                     <code>{statement.resource}</code>
@@ -173,7 +173,7 @@ export const PolicyDisplay = ({ policy, asJSON }) => {
                                 <td>
                                     <strong
                                         style={{
-                                            color: statement.effect === "allow" ? "green" : "red",
+                                            color: statement.effect === 'allow' ? 'green' : 'red',
                                         }}
                                     >
                                         {statement.effect}

@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
-import { UserHeaderWithContext } from "./userHeaderWithContext";
-import { useAPIWithPagination } from "../../../../lib/hooks/api";
-import { auth } from "../../../../lib/api";
-import { Paginator } from "../../../../lib/components/pagination";
+import { UserHeaderWithContext } from './userHeaderWithContext';
+import { useAPIWithPagination } from '../../../../lib/hooks/api';
+import { auth } from '../../../../lib/api';
+import { Paginator } from '../../../../lib/components/pagination';
 import {
     ActionGroup,
     ActionsBar,
@@ -13,9 +13,9 @@ import {
     Loading,
     AlertError,
     RefreshButton,
-} from "../../../../lib/components/controls";
-import { Link } from "../../../../lib/components/nav";
-import { useRouter } from "../../../../lib/hooks/router";
+} from '../../../../lib/components/controls';
+import { Link } from '../../../../lib/components/nav';
+import { useRouter } from '../../../../lib/hooks/router';
 
 const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
     const [refresh, setRefresh] = useState(false);
@@ -35,7 +35,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
                     rowFn={(policy) => [
                         <Link
                             href={{
-                                pathname: "/auth/policies/:policyId",
+                                pathname: '/auth/policies/:policyId',
                                 params: { policyId: policy.id },
                             }}
                         >
@@ -43,9 +43,9 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
                         </Link>,
                         <FormattedDate dateValue={policy.creation_date} />,
                     ]}
-                    headers={["Policy ID", "Created At"]}
+                    headers={['Policy ID', 'Created At']}
                     results={results}
-                    emptyState={"No policies found"}
+                    emptyState={'No policies found'}
                 />
 
                 <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage} />
@@ -54,7 +54,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
     return (
         <>
-            <UserHeaderWithContext userId={userId} page={"effectivePolicies"} />
+            <UserHeaderWithContext userId={userId} page={'effectivePolicies'} />
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -86,10 +86,10 @@ const UserEffectivePoliciesContainer = () => {
     ) : (
         <UserEffectivePoliciesList
             userId={userId}
-            after={after ? after : ""}
+            after={after ? after : ''}
             onPaginate={(after) =>
                 router.push({
-                    pathname: "/auth/users/:userId/policies/effective",
+                    pathname: '/auth/users/:userId/policies/effective',
                     params: { userId },
                     query: { after },
                 })
@@ -100,7 +100,7 @@ const UserEffectivePoliciesContainer = () => {
 
 const UserEffectivePoliciesPage = () => {
     const { setActiveTab } = useOutletContext();
-    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    useEffect(() => setActiveTab('users'), [setActiveTab]);
     return <UserEffectivePoliciesContainer />;
 };
 

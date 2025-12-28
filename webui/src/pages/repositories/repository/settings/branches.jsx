@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import { AlertError, Loading, RefreshButton } from "../../../../lib/components/controls";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { Button, ListGroup, Row } from "react-bootstrap";
-import Col from "react-bootstrap/Col";
-import { useAPI } from "../../../../lib/hooks/api";
-import { branchProtectionRules } from "../../../../lib/api";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import Alert from "react-bootstrap/Alert";
+import React, { useEffect, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { AlertError, Loading, RefreshButton } from '../../../../lib/components/controls';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { Button, ListGroup, Row } from 'react-bootstrap';
+import Col from 'react-bootstrap/Col';
+import { useAPI } from '../../../../lib/hooks/api';
+import { branchProtectionRules } from '../../../../lib/api';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert';
 
 const BranchProtectionRulesList = ({ rulesResponse, deleteButtonDisabled, onDeleteRule }) => {
     if (!rulesResponse) return null;
@@ -16,8 +16,8 @@ const BranchProtectionRulesList = ({ rulesResponse, deleteButtonDisabled, onDele
     return (
         <div className="row mt-3 ms-1 pr-5">
             <ListGroup>
-                {rulesResponse["rules"].length > 0 ? (
-                    rulesResponse["rules"].map((r) => {
+                {rulesResponse['rules'].length > 0 ? (
+                    rulesResponse['rules'].map((r) => {
                         return (
                             <ListGroup.Item key={r.pattern}>
                                 <div className="d-flex">
@@ -58,8 +58,8 @@ const SettingsContainer = () => {
         return branchProtectionRules.getRules(repo.id);
     }, [repo, refresh]);
     const deleteRule = (pattern) => {
-        let updatedRules = [...rulesResponse["rules"]];
-        let lastKnownChecksum = rulesResponse["checksum"];
+        let updatedRules = [...rulesResponse['rules']];
+        let lastKnownChecksum = rulesResponse['checksum'];
         updatedRules = updatedRules.filter((r) => r.pattern !== pattern);
         branchProtectionRules
             .setRules(repo.id, updatedRules, lastKnownChecksum)
@@ -138,8 +138,8 @@ const CreateRuleModal = ({ show, hideFn, onSuccess, repoID, currentRulesResponse
         }
         setError(null);
         setCreateButtonDisabled(true);
-        let updatedRules = [...currentRulesResponse["rules"]];
-        let lastKnownChecksum = currentRulesResponse["checksum"];
+        let updatedRules = [...currentRulesResponse['rules']];
+        let lastKnownChecksum = currentRulesResponse['checksum'];
         updatedRules.push({ pattern });
         branchProtectionRules
             .setRules(repoID, updatedRules, lastKnownChecksum)
@@ -213,7 +213,7 @@ const CreateRuleModal = ({ show, hideFn, onSuccess, repoID, currentRulesResponse
 
 const RepositorySettingsBranchesPage = () => {
     const [setActiveTab] = useOutletContext();
-    useEffect(() => setActiveTab("branches"), [setActiveTab]);
+    useEffect(() => setActiveTab('branches'), [setActiveTab]);
     return <SettingsContainer />;
 };
 

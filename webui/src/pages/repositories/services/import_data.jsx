@@ -1,13 +1,13 @@
-import { imports } from "../../../lib/api";
-import Row from "react-bootstrap/Row";
-import InputGroup from "react-bootstrap/InputGroup";
-import Col from "react-bootstrap/Col";
-import { LinearProgress } from "@mui/material";
-import React, { useState } from "react";
-import Button from "react-bootstrap/Button";
-import Alert from "react-bootstrap/Alert";
-import Form from "react-bootstrap/Form";
-import { MetadataFields } from "../../../lib/components/repository/metadata";
+import { imports } from '../../../lib/api';
+import Row from 'react-bootstrap/Row';
+import InputGroup from 'react-bootstrap/InputGroup';
+import Col from 'react-bootstrap/Col';
+import { LinearProgress } from '@mui/material';
+import React, { useState } from 'react';
+import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
+import Form from 'react-bootstrap/Form';
+import { MetadataFields } from '../../../lib/components/repository/metadata';
 
 const ImportPhase = {
     NotStarted: 0,
@@ -46,11 +46,11 @@ const ImportProgress = ({ numObjects }) => {
     );
 };
 
-const ImportDone = ({ numObjects, branch = "" }) => {
+const ImportDone = ({ numObjects, branch = '' }) => {
     return (
         <Row>
             <Col>
-                <div className={"mt-10 mb-2 me-2 row mt-4 import-success"}>
+                <div className={'mt-10 mb-2 me-2 row mt-4 import-success'}>
                     <p>
                         <strong>Success!</strong>
                     </p>
@@ -58,7 +58,7 @@ const ImportDone = ({ numObjects, branch = "" }) => {
                 <div className="import-text">
                     <strong>
                         <span className="import-num-objects"> {numObjects} </span>
-                    </strong>{" "}
+                    </strong>{' '}
                     objects imported and committed into branch
                     <strong>
                         <span className="import-num-objects"> {branch} </span>
@@ -121,7 +121,7 @@ const ImportForm = ({
         updateSrcValidity(isValid);
         setIsSourceValid(isValid);
     };
-    const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
+    const sourceURIExample = config ? config.blockstore_namespace_example : 's3://my-bucket/path/';
     return (
         <div {...rest}>
             <Alert variant="info">
@@ -150,7 +150,7 @@ const ImportForm = ({
                         </Form.Text>
                     )}
                     {isSourceValid && (
-                        <Form.Text style={{ color: "grey", justifyContent: "space-between" }}>
+                        <Form.Text style={{ color: 'grey', justifyContent: 'space-between' }}>
                             A URI on the object store to import from.
                             <br />
                         </Form.Text>
@@ -159,14 +159,14 @@ const ImportForm = ({
                 <Form.Group className="mt-4 form-group">
                     <Form.Label>Destination</Form.Label>
                     <InputGroup>
-                        <div className={"input-group-prepend"}>
-                            <InputGroup.Text className={"text-muted"}>
+                        <div className={'input-group-prepend'}>
+                            <InputGroup.Text className={'text-muted'}>
                                 lakefs://{repo}/{branch}/
                             </InputGroup.Text>
                         </div>
                         <Form.Control type="text" name="destination" ref={destRef} defaultValue={path} />
                     </InputGroup>
-                    <Form.Text style={{ color: "grey" }} md={{ offset: 2, span: 10000 }}>
+                    <Form.Text style={{ color: 'grey' }} md={{ offset: 2, span: 10000 }}>
                         Leave empty to import to the repository&apos;s root.
                     </Form.Text>
                 </Form.Group>
@@ -176,12 +176,12 @@ const ImportForm = ({
                     <Form.Control type="text" ref={commitMsgRef} name="commit-message" />
                 </Form.Group>
                 <MetadataFields
-                    className={"mt-4"}
+                    className={'mt-4'}
                     metadataFields={metadataFields}
                     setMetadataFields={setMetadataFields}
                 />
                 {err && (
-                    <Alert className="mt-4 small" variant={"danger"}>
+                    <Alert className="mt-4 small" variant={'danger'}>
                         {err.message}
                     </Alert>
                 )}

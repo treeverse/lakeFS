@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     ActionGroup,
     ActionsBar,
@@ -7,16 +7,16 @@ import {
     Loading,
     RefreshButton,
     ToggleSwitch,
-} from "../../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import { NotFoundError, retention } from "../../../../lib/api";
-import { useAPI } from "../../../../lib/hooks/api";
-import { useRefs } from "../../../../lib/hooks/repo";
-import Card from "react-bootstrap/Card";
-import Table from "react-bootstrap/Table";
-import { PolicyEditor } from "../../../../lib/components/policy";
-import Alert from "react-bootstrap/Alert";
-import { LightBulbIcon } from "@primer/octicons-react";
+} from '../../../../lib/components/controls';
+import Button from 'react-bootstrap/Button';
+import { NotFoundError, retention } from '../../../../lib/api';
+import { useAPI } from '../../../../lib/hooks/api';
+import { useRefs } from '../../../../lib/hooks/repo';
+import Card from 'react-bootstrap/Card';
+import Table from 'react-bootstrap/Table';
+import { PolicyEditor } from '../../../../lib/components/policy';
+import Alert from 'react-bootstrap/Alert';
+import { LightBulbIcon } from '@primer/octicons-react';
 
 const exampleJson = (defaultBranch) => {
     return {
@@ -65,8 +65,8 @@ const GCPolicy = ({ repo }) => {
         <ActionsBar>
             <ActionGroup orientation="right">
                 <ToggleSwitch
-                    label={"JSON view"}
-                    id={"policy-json-switch"}
+                    label={'JSON view'}
+                    id={'policy-json-switch'}
                     onChange={setJsonView}
                     defaultChecked={jsonView}
                 />
@@ -80,7 +80,7 @@ const GCPolicy = ({ repo }) => {
         content = <Loading />;
     } else if (error) {
         content = isPolicyNotSet ? (
-            <Alert variant="info" className={"mt-3"}>
+            <Alert variant="info" className={'mt-3'}>
                 A garbage collection policy is not set yet.
             </Alert>
         ) : (
@@ -89,7 +89,7 @@ const GCPolicy = ({ repo }) => {
     } else if (jsonView) {
         content = (
             <>
-                <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
+                <pre className={'policy-body'}>{JSON.stringify(policy, null, 4)}</pre>
                 {jsonToggleBar}
             </>
         );
@@ -100,12 +100,12 @@ const GCPolicy = ({ repo }) => {
                     <LightBulbIcon size={16} className="me-2" />
                     Default retention days: {policy.default_retention_days}
                 </Alert>
-                <Card className={"mb-3"}>
+                <Card className={'mb-3'}>
                     {policy.branches && (
                         <Table>
                             <thead>
                                 <tr>
-                                    <th width={"80%"}>Branch</th>
+                                    <th width={'80%'}>Branch</th>
                                     <th>Retention Days</th>
                                 </tr>
                             </thead>
@@ -142,29 +142,29 @@ const GCPolicy = ({ repo }) => {
     }
     return (
         <div className="mt-3 mb-5">
-            <div className={"section-title"}>
-                <h4 className={"mb-0"}>
-                    <div className={"ms-1 me-1 pl-0 d-flex"}>
+            <div className={'section-title'}>
+                <h4 className={'mb-0'}>
+                    <div className={'ms-1 me-1 pl-0 d-flex'}>
                         <div className="flex-grow-1">Garbage collection policy</div>
-                        <RefreshButton className={"ms-1"} onClick={doRefresh} />
+                        <RefreshButton className={'ms-1'} onClick={doRefresh} />
                         {!error && !loading && !isPolicyNotSet && (
-                            <Button className={"ms-2 btn-secondary"} disabled={isActionsDisabled} onClick={onDelete}>
+                            <Button className={'ms-2 btn-secondary'} disabled={isActionsDisabled} onClick={onDelete}>
                                 Delete Policy
                             </Button>
                         )}
-                        <Button className={"ms-2"} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>
+                        <Button className={'ms-2'} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>
                             Edit Policy
                         </Button>
                     </div>
                 </h4>
             </div>
             <p className="mt-3">
-                This policy determines for how long objects are kept in the storage after they are deleted in lakeFS.{" "}
+                This policy determines for how long objects are kept in the storage after they are deleted in lakeFS.{' '}
                 <a href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank" rel="noreferrer">
                     Learn more.
                 </a>
             </p>
-            <div className={"mt-3"}>{content}</div>
+            <div className={'mt-3'}>{content}</div>
             <PolicyEditor onSubmit={onSubmit} onHide={() => setShowCreate(false)} show={showCreate} {...editorProps} />
         </div>
     );
@@ -180,7 +180,7 @@ const RetentionContainer = () => {
 
 const RepositoryRetentionPage = () => {
     const [setActiveTab] = useOutletContext();
-    useEffect(() => setActiveTab("retention"), [setActiveTab]);
+    useEffect(() => setActiveTab('retention'), [setActiveTab]);
     return <RetentionContainer />;
 };
 

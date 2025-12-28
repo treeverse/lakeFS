@@ -1,11 +1,11 @@
-import React from "react";
+import React from 'react';
 
-import { PlusIcon, XIcon } from "@primer/octicons-react";
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import { getFieldError } from "./metadataHelpers";
+import { PlusIcon, XIcon } from '@primer/octicons-react';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import { getFieldError } from './metadataHelpers';
 
 /**
  * MetadataFields is a component that allows the user to add/remove key-value pairs of metadata.
@@ -37,7 +37,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
     };
 
     const onAddKeyValue = () => {
-        setMetadataFields((prev) => [...prev, { key: "", value: "", touched: false }]);
+        setMetadataFields((prev) => [...prev, { key: '', value: '', touched: false }]);
     };
 
     return (

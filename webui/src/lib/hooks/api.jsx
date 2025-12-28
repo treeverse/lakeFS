@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { AuthenticationError } from "../api";
-import { useAuth } from "../auth/authContext";
+import { useEffect, useState } from 'react';
+import { AuthenticationError } from '../api';
+import { useAuth } from '../auth/authContext';
 
 const initialPaginationState = {
     loading: true,

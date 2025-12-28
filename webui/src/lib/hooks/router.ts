@@ -1,4 +1,4 @@
-import { useNavigate, useLocation, useParams, generatePath } from "react-router-dom";
+import { useNavigate, useLocation, useParams, generatePath } from 'react-router-dom';
 
 export const useQuery = <T>(): Partial<T> => {
     const location = useLocation();
@@ -19,7 +19,7 @@ type URLBuilderInput = URLDetails | string;
 
 // TODO(elad): Return URL
 export const buildURL = (url: URLBuilderInput): string => {
-    if (typeof url === "string") return url;
+    if (typeof url === 'string') return url;
     // otherwise, assume query, params and pathname
     const path = generatePath(url.pathname, url.params ? url.params : {});
     if (!url.query) return path;

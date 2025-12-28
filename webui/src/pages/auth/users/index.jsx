@@ -1,14 +1,14 @@
-import React, { createContext, useCallback, useEffect, useState } from "react";
-import { Outlet, useOutletContext } from "react-router-dom";
+import React, { createContext, useCallback, useEffect, useState } from 'react';
+import { Outlet, useOutletContext } from 'react-router-dom';
 
-import Button from "react-bootstrap/Button";
+import Button from 'react-bootstrap/Button';
 
-import { useAPI } from "../../../lib/hooks/api";
-import { auth } from "../../../lib/api";
-import { ConfirmationButton } from "../../../lib/components/modals";
-import { EntityActionModal } from "../../../lib/components/auth/forms";
-import { Paginator } from "../../../lib/components/pagination";
-import { Link } from "../../../lib/components/nav";
+import { useAPI } from '../../../lib/hooks/api';
+import { auth } from '../../../lib/api';
+import { ConfirmationButton } from '../../../lib/components/modals';
+import { EntityActionModal } from '../../../lib/components/auth/forms';
+import { Paginator } from '../../../lib/components/pagination';
+import { Link } from '../../../lib/components/nav';
 import {
     ActionGroup,
     ActionsBar,
@@ -20,17 +20,17 @@ import {
     RefreshButton,
     SearchInput,
     useDebouncedState,
-} from "../../../lib/components/controls";
-import validator from "validator/es";
-import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
-import { resolveUserDisplayName } from "../../../lib/utils";
-import { allUsersFromLakeFS } from "../../../lib/components/auth/users";
-import { useRouter } from "../../../lib/hooks/router";
-import { useAuth } from "../../../lib/auth/authContext";
+} from '../../../lib/components/controls';
+import validator from 'validator/es';
+import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from '../validation';
+import { resolveUserDisplayName } from '../../../lib/utils';
+import { allUsersFromLakeFS } from '../../../lib/components/auth/users';
+import { useRouter } from '../../../lib/hooks/router';
+import { useAuth } from '../../../lib/auth/authContext';
 
 const DEFAULT_LISTING_AMOUNT = 100;
 const DECIMAL_RADIX = 10;
-const USER_NOT_FOUND = "unknown";
+const USER_NOT_FOUND = 'unknown';
 export const GetUserDisplayNameByIdContext = createContext();
 
 const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
@@ -38,7 +38,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     const currentUser = user;
 
     const router = useRouter();
-    const prefix = router.query.prefix ? router.query.prefix : "";
+    const prefix = router.query.prefix ? router.query.prefix : '';
     const afterParsedToInt = parseInt(router.query.after, DECIMAL_RADIX);
     const after = isNaN(afterParsedToInt) ? 0 : afterParsedToInt;
 
@@ -71,11 +71,11 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
         }
     }, [allUsers, prefix, after]);
 
-    const afterForPagination = after === 0 ? "" : String(after);
+    const afterForPagination = after === 0 ? '' : String(after);
     const nextPage = paginationData.hasMorePages ? String(after + DEFAULT_LISTING_AMOUNT) : null;
 
     function navigateToUsersPage(prefix, after) {
-        return router.push({ pathname: "/auth/users", query: { prefix, after } });
+        return router.push({ pathname: '/auth/users', query: { prefix, after } });
     }
 
     if (error) return <AlertError error={error} />;
@@ -112,7 +112,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                Users are entities that access and use lakeFS.{" "}
+                Users are entities that access and use lakeFS.{' '}
                 <a
                     href="https://docs.lakefs.io/reference/authentication.html"
                     target="_blank"
@@ -134,9 +134,9 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                         setRefresh(!refresh);
                     });
                 }}
-                title={canInviteUsers ? "Create API User" : "Create User"}
-                placeholder={canInviteUsers ? "Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
-                actionName={"Create"}
+                title={canInviteUsers ? 'Create API User' : 'Create User'}
+                placeholder={canInviteUsers ? 'Name (e.g. Spark)' : "Username (e.g. 'jane.doe')"}
+                actionName={'Create'}
                 validationFunction={disallowPercentSign(INVALID_USER_NAME_ERROR_MESSAGE)}
             />
 
@@ -145,21 +145,21 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                 onHide={() => setShowInvite(false)}
                 onAction={async (userEmail) => {
                     if (!validator.isEmail(userEmail)) {
-                        throw new Error("Invalid email address");
+                        throw new Error('Invalid email address');
                     }
                     await auth.createUser(userEmail, true);
                     setSelected([]);
                     setShowInvite(false);
                     setRefresh(!refresh);
                 }}
-                title={"Invite User"}
-                placeholder={"Email"}
-                actionName={"Invite"}
+                title={'Invite User'}
+                placeholder={'Email'}
+                actionName={'Invite'}
             />
 
             <DataTable
                 results={paginationData.paginatedFilteredUsers}
-                headers={["", "User ID", "Created At"]}
+                headers={['', 'User ID', 'Created At']}
                 keyFn={(user) => user.id}
                 rowFn={(user) => [
                     <Checkbox
@@ -168,7 +168,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                         onAdd={() => setSelected([...selected, user])}
                         onRemove={() => setSelected(selected.filter((u) => u !== user))}
                     />,
-                    <Link href={{ pathname: "/auth/users/:userId", params: { userId: user.id } }}>
+                    <Link href={{ pathname: '/auth/users/:userId', params: { userId: user.id } }}>
                         {resolveUserDisplayName(user)}
                     </Link>,
                     <FormattedDate dateValue={user.creation_date} />,
@@ -195,7 +195,7 @@ const UserActionsActionGroup = ({ canInviteUsers, selected, onClickInvite, onCli
             </Button>
 
             <Button variant="success" onClick={onClickCreate}>
-                {canInviteUsers ? "Create API User" : "Create User"}
+                {canInviteUsers ? 'Create API User' : 'Create User'}
             </Button>
             <ConfirmationButton
                 onConfirm={onConfirmDelete}
@@ -211,7 +211,7 @@ const UserActionsActionGroup = ({ canInviteUsers, selected, onClickInvite, onCli
 
 export const UsersPage = () => {
     const { setActiveTab, refresh, setRefresh, allUsers, loading, error } = useOutletContext();
-    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    useEffect(() => setActiveTab('users'), [setActiveTab]);
     return (
         <UsersContainer refresh={refresh} setRefresh={setRefresh} allUsers={allUsers} loading={loading} error={error} />
     );

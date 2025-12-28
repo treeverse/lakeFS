@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { Outlet, useOutletContext } from "react-router-dom";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Nav from "react-bootstrap/Nav";
-import Card from "react-bootstrap/Card";
-import { Link } from "../../../../lib/components/nav";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { Loading } from "../../../../lib/components/controls";
-import { RepoError } from "../error";
+import React, { useEffect, useState } from 'react';
+import { Outlet, useOutletContext } from 'react-router-dom';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Nav from 'react-bootstrap/Nav';
+import Card from 'react-bootstrap/Card';
+import { Link } from '../../../../lib/components/nav';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { Loading } from '../../../../lib/components/controls';
+import { RepoError } from '../error';
 
 export const SettingsLayout = () => {
-    const [activeTab, setActiveTab] = useState("general");
+    const [activeTab, setActiveTab] = useState('general');
     const { repo, loading, error } = useRefs();
     const [setActivePage] = useOutletContext();
     useEffect(() => {
-        setActivePage("settings");
+        setActivePage('settings');
     }, [setActivePage]);
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
@@ -33,10 +33,10 @@ export const SettingsLayout = () => {
                                 <Link
                                     component={Nav.Link}
                                     href={{
-                                        pathname: "/repositories/:repoId/settings/general",
+                                        pathname: '/repositories/:repoId/settings/general',
                                         params: { repoId },
                                     }}
-                                    active={activeTab === "general"}
+                                    active={activeTab === 'general'}
                                 >
                                     General
                                 </Link>
@@ -45,10 +45,10 @@ export const SettingsLayout = () => {
                                 <Link
                                     component={Nav.Link}
                                     href={{
-                                        pathname: "/repositories/:repoId/settings/retention",
+                                        pathname: '/repositories/:repoId/settings/retention',
                                         params: { repoId },
                                     }}
-                                    active={activeTab === "retention"}
+                                    active={activeTab === 'retention'}
                                 >
                                     Garbage Collection
                                 </Link>
@@ -57,10 +57,10 @@ export const SettingsLayout = () => {
                                 <Link
                                     component={Nav.Link}
                                     href={{
-                                        pathname: "/repositories/:repoId/settings/branches",
+                                        pathname: '/repositories/:repoId/settings/branches',
                                         params: { repoId },
                                     }}
-                                    active={activeTab === "branches"}
+                                    active={activeTab === 'branches'}
                                 >
                                     Branch Protection
                                 </Link>

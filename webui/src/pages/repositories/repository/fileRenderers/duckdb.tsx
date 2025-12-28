@@ -1,10 +1,10 @@
-import * as duckdb from "@duckdb/duckdb-wasm";
-import * as arrow from "apache-arrow";
-import { AsyncDuckDB, AsyncDuckDBConnection, DuckDBDataProtocol } from "@duckdb/duckdb-wasm";
-import duckdb_wasm from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
-import mvp_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
-import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
-import eh_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
+import * as duckdb from '@duckdb/duckdb-wasm';
+import * as arrow from 'apache-arrow';
+import { AsyncDuckDB, AsyncDuckDBConnection, DuckDBDataProtocol } from '@duckdb/duckdb-wasm';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
+import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
+import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
+import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
@@ -25,7 +25,7 @@ async function getDuckDB(): Promise<duckdb.AsyncDuckDB> {
     }
     const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
     if (!bundle.mainWorker) {
-        throw Error("could not initialize DuckDB");
+        throw Error('could not initialize DuckDB');
     }
     const worker = new Worker(bundle.mainWorker);
     const logger = new duckdb.VoidLogger();

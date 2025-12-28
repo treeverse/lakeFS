@@ -1,9 +1,9 @@
-import React, { createContext, FC, useContext, useEffect, useMemo } from "react";
+import React, { createContext, FC, useContext, useEffect, useMemo } from 'react';
 
-import { config } from "../api";
-import { usePluginManager } from "../../extendable/plugins/pluginsContext";
-import { useAPI } from "./api";
-import { useAuth } from "../auth/authContext";
+import { config } from '../api';
+import { usePluginManager } from '../../extendable/plugins/pluginsContext';
+import { useAPI } from './api';
+import { useAuth } from '../auth/authContext';
 
 type ConfigContextType = {
     error: Error | null;

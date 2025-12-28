@@ -85,7 +85,7 @@
 }
 
 .nav-tabs .nav-link.active::before {
-    content: "";
+    content: '';
     position: absolute;
     bottom: -2px;
     left: 0;
@@ -110,7 +110,7 @@
 
 /* Repository tabs specific styling */
 .repository-tabs .nav-tabs,
-.nav-tabs[role="tablist"] {
+.nav-tabs[role='tablist'] {
     background-color: var(--background-alt);
     padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm);
     border-top-left-radius: var(--radius-md);
@@ -144,7 +144,7 @@
 }
 
 .full-width-tabs-border::after {
-    content: "";
+    content: '';
     position: absolute;
     bottom: 0;
     left: -100vw;
@@ -194,9 +194,9 @@
 }
 
 /* Branch selector specific styles */
-[class*="branch"] .dropdown-menu,
-.dropdown-menu[aria-labelledby*="branch"],
-div[class*="branch-selector"] .dropdown-menu {
+[class*='branch'] .dropdown-menu,
+.dropdown-menu[aria-labelledby*='branch'],
+div[class*='branch-selector'] .dropdown-menu {
     min-width: 500px !important;
     width: auto !important;
 }

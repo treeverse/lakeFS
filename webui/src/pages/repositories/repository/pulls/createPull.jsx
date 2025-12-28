@@ -1,17 +1,17 @@
-import React, { useContext, useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useContext, useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
-import { ActionGroup, ActionsBar, AlertError, Loading } from "../../../../lib/components/controls";
-import { useRefs } from "../../../../lib/hooks/repo";
-import { RepoError } from "../error";
-import { useRouter } from "../../../../lib/hooks/router";
-import Button from "react-bootstrap/Button";
-import CompareBranches from "../../../../lib/components/repository/compareBranches";
-import { RefTypeBranch } from "../../../../constants";
-import Form from "react-bootstrap/Form";
-import { pulls as pullsAPI } from "../../../../lib/api";
-import CompareBranchesSelection from "../../../../lib/components/repository/compareBranchesSelection";
-import { DiffContext, WithDiffContext } from "../../../../lib/hooks/diffContext";
+import { ActionGroup, ActionsBar, AlertError, Loading } from '../../../../lib/components/controls';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { RepoError } from '../error';
+import { useRouter } from '../../../../lib/hooks/router';
+import Button from 'react-bootstrap/Button';
+import CompareBranches from '../../../../lib/components/repository/compareBranches';
+import { RefTypeBranch } from '../../../../constants';
+import Form from 'react-bootstrap/Form';
+import { pulls as pullsAPI } from '../../../../lib/api';
+import CompareBranchesSelection from '../../../../lib/components/repository/compareBranchesSelection';
+import { DiffContext, WithDiffContext } from '../../../../lib/hooks/diffContext';
 
 const CreatePullForm = ({ repo, reference, compare, title, setTitle, description, setDescription }) => {
     const router = useRouter();
@@ -76,7 +76,7 @@ const CreatePullForm = ({ repo, reference, compare, title, setTitle, description
                 <Button variant="success" disabled={!title || loading || isEmptyDiff} onClick={submitForm}>
                     {loading && (
                         <>
-                            <span className="spinner-border spinner-border-sm text-light" role="status" /> {""}
+                            <span className="spinner-border spinner-border-sm text-light" role="status" /> {''}
                         </>
                     )}
                     Create Pull Request
@@ -94,8 +94,8 @@ const CreatePullForm = ({ repo, reference, compare, title, setTitle, description
 const CreatePull = () => {
     const { repo, loading, error, reference, compare } = useRefs();
 
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
 
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
@@ -108,7 +108,7 @@ const CreatePull = () => {
                         repo={repo}
                         reference={reference}
                         compareReference={compare}
-                        baseSelectURL={"/repositories/:repoId/pulls/create"}
+                        baseSelectURL={'/repositories/:repoId/pulls/create'}
                     />
                 </ActionGroup>
             </ActionsBar>
@@ -136,7 +136,7 @@ const CreatePull = () => {
 
 const RepositoryCreatePullPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("pulls"), [setActivePage]);
+    useEffect(() => setActivePage('pulls'), [setActivePage]);
     return (
         <WithDiffContext>
             <CreatePull />

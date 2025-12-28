@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState } from 'react';
 
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 import {
     AlertIcon,
     PasteIcon,
@@ -15,33 +15,33 @@ import {
     TrashIcon,
     LogIcon,
     BeakerIcon,
-} from "@primer/octicons-react";
-import Tooltip from "react-bootstrap/Tooltip";
-import Table from "react-bootstrap/Table";
-import Card from "react-bootstrap/Card";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Button from "react-bootstrap/Button";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Dropdown from "react-bootstrap/Dropdown";
-import Modal from "react-bootstrap/Modal";
-import { FaDownload } from "react-icons/fa";
+} from '@primer/octicons-react';
+import Tooltip from 'react-bootstrap/Tooltip';
+import Table from 'react-bootstrap/Table';
+import Card from 'react-bootstrap/Card';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Button from 'react-bootstrap/Button';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Dropdown from 'react-bootstrap/Dropdown';
+import Modal from 'react-bootstrap/Modal';
+import { FaDownload } from 'react-icons/fa';
 
-import { commits, linkToPath, objects } from "../../api";
-import { ConfirmationModal } from "../modals";
-import { Paginator } from "../pagination";
-import { Link } from "../nav";
-import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import { ClipboardButton, copyTextToClipboard, AlertError, Loading } from "../controls";
-import { useAPI } from "../../hooks/api";
-import noop from "lodash/noop";
-import { CommitInfoCard } from "./commits";
+import { commits, linkToPath, objects } from '../../api';
+import { ConfirmationModal } from '../modals';
+import { Paginator } from '../pagination';
+import { Link } from '../nav';
+import { RefTypeBranch, RefTypeCommit } from '../../../constants';
+import { ClipboardButton, copyTextToClipboard, AlertError, Loading } from '../controls';
+import { useAPI } from '../../hooks/api';
+import noop from 'lodash/noop';
+import { CommitInfoCard } from './commits';
 
 export const humanSize = (bytes) => {
-    if (!bytes) return "0.0 B";
+    if (!bytes) return '0.0 B';
     const e = Math.floor(Math.log(bytes) / Math.log(1024));
-    return (bytes / Math.pow(1024, e)).toFixed(1) + " " + " KMGTP".charAt(e) + "B";
+    return (bytes / Math.pow(1024, e)).toFixed(1) + ' ' + ' KMGTP'.charAt(e) + 'B';
 };
 
 const Na = () => <span>&mdash;</span>;
@@ -79,24 +79,24 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
     return (
         <>
             <Dropdown align="end" drop="down">
-                <Dropdown.Toggle variant="light" size="sm" className={"row-hover"}>
+                <Dropdown.Toggle variant="light" size="sm" className={'row-hover'}>
                     <GearIcon />
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu
                     popperConfig={{
-                        strategy: "fixed",
+                        strategy: 'fixed',
                         modifiers: [
                             {
-                                name: "preventOverflow",
+                                name: 'preventOverflow',
                                 options: {
-                                    boundary: "viewport",
+                                    boundary: 'viewport',
                                 },
                             },
                         ],
                     }}
                 >
-                    {entry.path_type === "object" && presign && (
+                    {entry.path_type === 'object' && presign && (
                         <Dropdown.Item
                             onClick={async (e) => {
                                 try {
@@ -111,7 +111,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
                             <LinkIcon /> Copy Presigned URL
                         </Dropdown.Item>
                     )}
-                    {entry.path_type === "object" && (
+                    {entry.path_type === 'object' && (
                         <PathLink
                             path={entry.path}
                             reference={reference}
@@ -122,7 +122,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
                             <DownloadIcon /> Download
                         </PathLink>
                     )}
-                    {entry.path_type === "object" && (
+                    {entry.path_type === 'object' && (
                         <Dropdown.Item
                             onClick={(e) => {
                                 e.preventDefault();
@@ -146,7 +146,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
                         <PasteIcon /> Copy URI
                     </Dropdown.Item>
 
-                    {entry.path_type === "object" && reference.type === RefTypeBranch && (
+                    {entry.path_type === 'object' && reference.type === RefTypeBranch && (
                         <>
                             <Dropdown.Divider />
                             <Dropdown.Item
@@ -160,7 +160,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
                         </>
                     )}
 
-                    {entry.path_type === "common_prefix" && (
+                    {entry.path_type === 'common_prefix' && (
                         <Dropdown.Item onClick={handleShowPrefixSize}>
                             <BeakerIcon /> Calculate Size
                         </Dropdown.Item>
@@ -198,7 +198,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
 
 const StatModal = ({ show, onHide, entry }) => {
     return (
-        <Modal show={show} onHide={onHide} size={"xl"}>
+        <Modal show={show} onHide={onHide} size={'xl'}>
             <Modal.Header closeButton>
                 <Modal.Title>Object Information</Modal.Title>
             </Modal.Header>
@@ -241,7 +241,7 @@ const StatModal = ({ show, onHide, entry }) => {
                             </td>
                             <td>{`${dayjs.unix(entry.mtime).fromNow()} (${dayjs
                                 .unix(entry.mtime)
-                                .format("MM/DD/YYYY HH:mm:ss")})`}</td>
+                                .format('MM/DD/YYYY HH:mm:ss')})`}</td>
                         </tr>
                         {entry.content_type && (
                             <tr>
@@ -375,7 +375,7 @@ const PrefixSizeModal = ({ show, onHide, entry, repo, reference }) => {
     }
 
     return (
-        <Modal show={show} onHide={onHide} size={"lg"}>
+        <Modal show={show} onHide={onHide} size={'lg'}>
             <Modal.Header closeButton>
                 <Modal.Title>Total Objects in Path</Modal.Title>
             </Modal.Header>
@@ -396,7 +396,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
         return null;
     }, [show, repo.id, reference.id, entry.path]);
 
-    const pathType = entry.path_type === "object" ? "object" : "prefix";
+    const pathType = entry.path_type === 'object' ? 'object' : 'prefix';
 
     let content = <Loading />;
 
@@ -412,13 +412,13 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
             <>
                 <h5>
                     <small>
-                        No commit found, perhaps this is an{" "}
+                        No commit found, perhaps this is an{' '}
                         <Link
                             className="me-2"
                             href={{
-                                pathname: "/repositories/:repoId/objects",
+                                pathname: '/repositories/:repoId/objects',
                                 params: { repoId: repo.id },
-                                query: { ref: reference.id, showChanges: "true" },
+                                query: { ref: reference.id, showChanges: 'true' },
                             }}
                         >
                             uncommitted change
@@ -431,7 +431,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
     }
 
     return (
-        <Modal show={show} onHide={onHide} size={"lg"}>
+        <Modal show={show} onHide={onHide} size={'lg'}>
             <Modal.Header closeButton>
                 <Modal.Title>
                     Last commit to modify <>{pathType}</>
@@ -443,7 +443,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
 };
 
 const PathLink = ({ repoId, reference, path, children, presign = false, as = null }) => {
-    const name = path.split("/").pop();
+    const name = path.split('/').pop();
     const link = linkToPath(repoId, reference.id, path, presign);
     if (as === null)
         return (
@@ -455,31 +455,31 @@ const PathLink = ({ repoId, reference, path, children, presign = false, as = nul
 };
 
 const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
-    let rowClass = "change-entry-row ";
+    let rowClass = 'change-entry-row ';
     switch (entry.diff_type) {
-        case "changed":
-            rowClass += "diff-changed";
+        case 'changed':
+            rowClass += 'diff-changed';
             break;
-        case "added":
-            rowClass += "diff-added";
+        case 'added':
+            rowClass += 'diff-added';
             break;
-        case "removed":
-            rowClass += "diff-removed";
+        case 'removed':
+            rowClass += 'diff-removed';
             break;
         default:
             break;
     }
 
-    const subPath = path.lastIndexOf("/") !== -1 ? path.substr(0, path.lastIndexOf("/")) : "";
+    const subPath = path.lastIndexOf('/') !== -1 ? path.substr(0, path.lastIndexOf('/')) : '';
     const buttonText = subPath.length > 0 ? entry.path.substr(subPath.length + 1) : entry.path;
 
     const params = { repoId: repo.id };
     const query = { ref: reference.id, path: entry.path };
 
     let button;
-    if (entry.path_type === "common_prefix") {
-        button = <Link href={{ pathname: "/repositories/:repoId/objects", query, params }}>{buttonText}</Link>;
-    } else if (entry.diff_type === "removed") {
+    if (entry.path_type === 'common_prefix') {
+        button = <Link href={{ pathname: '/repositories/:repoId/objects', query, params }}>{buttonText}</Link>;
+    } else if (entry.diff_type === 'removed') {
         button = <span>{buttonText}</span>;
     } else {
         const filePathQuery = {
@@ -489,7 +489,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
         button = (
             <Link
                 href={{
-                    pathname: "/repositories/:repoId/object",
+                    pathname: '/repositories/:repoId/object',
                     query: filePathQuery,
                     params: params,
                 }}
@@ -500,7 +500,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
     }
 
     let size;
-    if (entry.diff_type === "removed" || entry.path_type === "common_prefix") {
+    if (entry.diff_type === 'removed' || entry.path_type === 'common_prefix') {
         size = <Na />;
     } else {
         size = (
@@ -511,13 +511,13 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
     }
 
     let modified;
-    if (entry.diff_type === "removed" || entry.path_type === "common_prefix") {
+    if (entry.diff_type === 'removed' || entry.path_type === 'common_prefix') {
         modified = <Na />;
     } else {
         modified = (
             <OverlayTrigger
                 placement="bottom"
-                overlay={<Tooltip>{dayjs.unix(entry.mtime).format("MM/DD/YYYY HH:mm:ss")}</Tooltip>}
+                overlay={<Tooltip>{dayjs.unix(entry.mtime).format('MM/DD/YYYY HH:mm:ss')}</Tooltip>}
             >
                 <span>{dayjs.unix(entry.mtime).fromNow()}</span>
             </OverlayTrigger>
@@ -526,7 +526,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
 
     let diffIndicator;
     switch (entry.diff_type) {
-        case "removed":
+        case 'removed':
             diffIndicator = (
                 <OverlayTrigger placement="bottom" overlay={<Tooltip>removed</Tooltip>}>
                     <span>
@@ -535,7 +535,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
                 </OverlayTrigger>
             );
             break;
-        case "added":
+        case 'added':
             diffIndicator = (
                 <OverlayTrigger placement="bottom" overlay={<Tooltip>added</Tooltip>}>
                     <span>
@@ -544,7 +544,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
                 </OverlayTrigger>
             );
             break;
-        case "changed":
+        case 'changed':
             diffIndicator = (
                 <OverlayTrigger placement="bottom" overlay={<Tooltip>changed</Tooltip>}>
                     <span>
@@ -558,7 +558,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
     }
 
     let entryActions;
-    if (showActions && entry.diff_type !== "removed") {
+    if (showActions && entry.diff_type !== 'removed') {
         entryActions = (
             <EntryRowActions
                 repo={repo}
@@ -574,13 +574,13 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
     return (
         <>
             <tr className={rowClass}>
-                <td className="diff-indicator">{diffIndicator || ""}</td>
+                <td className="diff-indicator">{diffIndicator || ''}</td>
                 <td className="tree-path">
-                    {entry.path_type === "common_prefix" ? <FileDirectoryIcon /> : <FileIcon />} {button}
+                    {entry.path_type === 'common_prefix' ? <FileDirectoryIcon /> : <FileIcon />} {button}
                 </td>
                 <td className="tree-size">{size}</td>
                 <td className="tree-modified">{modified}</td>
-                <td className={"change-entry-row-actions"}>{entryActions}</td>
+                <td className={'change-entry-row-actions'}>{entryActions}</td>
             </tr>
         </>
     );
@@ -593,13 +593,13 @@ function pathParts(path, isPathToFile) {
         return resolved;
     }
 
-    if (parts[parts.length - 1] === "" || !isPathToFile) {
+    if (parts[parts.length - 1] === '' || !isPathToFile) {
         parts = parts.slice(0, parts.length - 1);
     }
 
     // else
     for (let i = 0; i < parts.length; i++) {
-        let currentPath = parts.slice(0, i + 1).join("/");
+        let currentPath = parts.slice(0, i + 1).join('/');
         if (currentPath.length > 0) {
             currentPath = `${currentPath}/`;
         }
@@ -613,7 +613,7 @@ function pathParts(path, isPathToFile) {
 }
 
 const buildPathURL = (params, query) => {
-    return { pathname: "/repositories/:repoId/objects", params, query };
+    return { pathname: '/repositories/:repoId/objects', params, query };
 };
 
 export const URINavigator = ({
@@ -621,7 +621,7 @@ export const URINavigator = ({
     reference,
     path,
     downloadUrl,
-    relativeTo = "",
+    relativeTo = '',
     pathURLBuilder = buildPathURL,
     isPathToFile = false,
     hasCopyButton = false,
@@ -634,12 +634,12 @@ export const URINavigator = ({
         <div className="d-flex">
             <div className="lakefs-uri flex-grow-1">
                 <div title={displayedReference} className="w-100 text-nowrap overflow-hidden text-truncate">
-                    {relativeTo === "" ? (
+                    {relativeTo === '' ? (
                         <>
                             <strong>lakefs://</strong>
                             <Link
                                 href={{
-                                    pathname: "/repositories/:repoId/objects",
+                                    pathname: '/repositories/:repoId/objects',
                                     params,
                                     query: { ref: reference.id },
                                 }}
@@ -649,7 +649,7 @@ export const URINavigator = ({
                             <strong>/</strong>
                             <Link
                                 href={{
-                                    pathname: "/repositories/:repoId/objects",
+                                    pathname: '/repositories/:repoId/objects',
                                     params,
                                     query: { ref: reference.id },
                                 }}
@@ -660,7 +660,7 @@ export const URINavigator = ({
                         </>
                     ) : (
                         <>
-                            <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+                            <Link href={pathURLBuilder(params, { path: '' })}>{relativeTo}</Link>
                             <strong>/</strong>
                         </>
                     )}
@@ -670,7 +670,7 @@ export const URINavigator = ({
                             parts
                                 .slice(0, i + 1)
                                 .map((p) => p.name)
-                                .join("/") + "/";
+                                .join('/') + '/';
                         const query = { path, ref: reference.id };
                         const edgeElement =
                             isPathToFile && i === parts.length - 1 ? (
@@ -678,7 +678,7 @@ export const URINavigator = ({
                             ) : (
                                 <>
                                     <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                                    <strong>{"/"}</strong>
+                                    <strong>{'/'}</strong>
                                 </>
                             );
                         return <span key={part.name}>{edgeElement}</span>;
@@ -693,14 +693,14 @@ export const URINavigator = ({
                         size="sm"
                         onSuccess={noop}
                         onError={noop}
-                        className={"me-1"}
-                        tooltip={"copy URI to clipboard"}
+                        className={'me-1'}
+                        tooltip={'copy URI to clipboard'}
                     />
                 )}
                 {downloadUrl && (
                     <a
                         href={downloadUrl}
-                        download={path.split("/").pop()}
+                        download={path.split('/').pop()}
                         className="btn btn-link btn-sm download-button me-1"
                     >
                         <FaDownload />
@@ -790,10 +790,10 @@ export const Tree = ({
     onImport,
     onDelete,
     showActions = false,
-    path = "",
+    path = '',
 }) => {
     let body;
-    if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
+    if (results.length === 0 && path === '' && reference.type === RefTypeBranch) {
         // empty state!
         body = <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />;
     } else if (results.length === 0) {

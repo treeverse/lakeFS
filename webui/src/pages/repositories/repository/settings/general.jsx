@@ -1,17 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
-import { useRefs } from "../../../../lib/hooks/repo";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
-import { TrashIcon } from "@primer/octicons-react";
-import Col from "react-bootstrap/Col";
-import { AlertError, Loading } from "../../../../lib/components/controls";
-import Modal from "react-bootstrap/Modal";
-import { repositories } from "../../../../lib/api";
-import { useRouter } from "../../../../lib/hooks/router";
-import { ReadOnlyBadge } from "../../../../lib/components/badges";
+import React, { useEffect, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { useRefs } from '../../../../lib/hooks/repo';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import { TrashIcon } from '@primer/octicons-react';
+import Col from 'react-bootstrap/Col';
+import { AlertError, Loading } from '../../../../lib/components/controls';
+import Modal from 'react-bootstrap/Modal';
+import { repositories } from '../../../../lib/api';
+import { useRouter } from '../../../../lib/hooks/router';
+import { ReadOnlyBadge } from '../../../../lib/components/badges';
 
 const DeleteRepositoryModal = ({ repo, show, onSubmit, onCancel }) => {
     const [isDisabled, setIsDisabled] = useState(true);
@@ -141,7 +141,7 @@ const SettingsContainer = () => {
                     repositories
                         .delete(repo.id)
                         .then(() => {
-                            return router.push("/repositories");
+                            return router.push('/repositories');
                         })
                         .catch((err) => {
                             setDeletionError(err);
@@ -156,7 +156,7 @@ const SettingsContainer = () => {
 
 const RepositoryGeneralSettingsPage = () => {
     const [setActiveTab] = useOutletContext();
-    useEffect(() => setActiveTab("general"), [setActiveTab]);
+    useEffect(() => setActiveTab('general'), [setActiveTab]);
     return <SettingsContainer />;
 };
 

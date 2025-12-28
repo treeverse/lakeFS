@@ -1,4 +1,4 @@
-import React, { createContext, useReducer } from "react";
+import React, { createContext, useReducer } from 'react';
 
 type AppContextType = {
     settings: AppContext;
@@ -9,11 +9,11 @@ type AppContext = {
 };
 
 const localStorageKeys = {
-    darkMode: "darkMode",
+    darkMode: 'darkMode',
 };
 
 enum AppActionType {
-    setDarkMode = "setDarkMode",
+    setDarkMode = 'setDarkMode',
 }
 
 interface Action {

@@ -1,15 +1,15 @@
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import { ClipboardButton, LinkButton } from "../controls";
-import { BrowserIcon, LinkIcon, PackageIcon, PlayIcon } from "@primer/octicons-react";
-import Table from "react-bootstrap/Table";
-import { MetadataRow, MetadataUIButton } from "../../../pages/repositories/repository/commits/commit/metadata";
-import { Link } from "../nav";
-import dayjs from "dayjs";
-import Card from "react-bootstrap/Card";
-import React from "react";
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import { ClipboardButton, LinkButton } from '../controls';
+import { BrowserIcon, LinkIcon, PackageIcon, PlayIcon } from '@primer/octicons-react';
+import Table from 'react-bootstrap/Table';
+import { MetadataRow, MetadataUIButton } from '../../../pages/repositories/repository/commits/commit/metadata';
+import { Link } from '../nav';
+import dayjs from 'dayjs';
+import Card from 'react-bootstrap/Card';
+import React from 'react';
 
 const CommitActions = ({ repo, commit }) => {
-    const buttonVariant = "light";
+    const buttonVariant = 'light';
 
     return (
         <div>
@@ -17,7 +17,7 @@ const CommitActions = ({ repo, commit }) => {
                 <LinkButton
                     buttonVariant={buttonVariant}
                     href={{
-                        pathname: "/repositories/:repoId/objects",
+                        pathname: '/repositories/:repoId/objects',
                         params: { repoId: repo.id },
                         query: { ref: commit.id },
                     }}
@@ -28,7 +28,7 @@ const CommitActions = ({ repo, commit }) => {
                 <LinkButton
                     buttonVariant={buttonVariant}
                     href={{
-                        pathname: "/repositories/:repoId/actions",
+                        pathname: '/repositories/:repoId/actions',
                         params: { repoId: repo.id },
                         query: { commit: commit.id },
                     }}
@@ -102,7 +102,7 @@ const CommitLink = ({ repoId, commitId }) => {
         <>
             <Link
                 href={{
-                    pathname: "/repositories/:repoId/commits/:commitId",
+                    pathname: '/repositories/:repoId/commits/:commitId',
                     params: { repoId, commitId },
                 }}
             >
@@ -136,7 +136,7 @@ const CommitInfo = ({ repo, commit }) => {
                         <strong>Creation Date</strong>
                     </td>
                     <td>
-                        {dayjs.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")} (
+                        {dayjs.unix(commit.creation_date).format('MM/DD/YYYY HH:mm:ss')} (
                         {dayjs.unix(commit.creation_date).fromNow()})
                     </td>
                 </tr>

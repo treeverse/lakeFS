@@ -1,21 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 
-import Form from "react-bootstrap/Form";
-import Alert from "react-bootstrap/Alert";
-import Button from "react-bootstrap/Button";
-import Badge from "react-bootstrap/Badge";
-import Overlay from "react-bootstrap/Overlay";
-import { Col, Nav, Row } from "react-bootstrap";
-import Popover from "react-bootstrap/Popover";
-import ListGroup from "react-bootstrap/ListGroup";
-import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from "@primer/octicons-react";
+import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
+import Badge from 'react-bootstrap/Badge';
+import Overlay from 'react-bootstrap/Overlay';
+import { Col, Nav, Row } from 'react-bootstrap';
+import Popover from 'react-bootstrap/Popover';
+import ListGroup from 'react-bootstrap/ListGroup';
+import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from '@primer/octicons-react';
 
-import { tags, branches, commits } from "../../api";
-import { RefTypeBranch, RefTypeCommit, RefTypeTag } from "../../../constants";
+import { tags, branches, commits } from '../../api';
+import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
-    const [pagination, setPagination] = useState({ after: "", prefix: "", amount });
+    const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
     const [refType, setRefType] = useState((selected && selected.type) || RefTypeBranch);
     useEffect(() => {
@@ -55,11 +55,11 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             >
                 <Form.Control
                     type="text"
-                    placeholder={refType === RefTypeTag ? "Filter tags" : "Filter branches"}
+                    placeholder={refType === RefTypeTag ? 'Filter tags' : 'Filter branches'}
                     onChange={(e) => {
                         setPagination({
                             amount,
-                            after: "",
+                            after: '',
                             prefix: e.target.value,
                         });
                     }}
@@ -70,10 +70,10 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
     const refTypeNav = withTags && (
         <Nav variant="tabs" onSelect={setRefType} activeKey={refType} className="mt-2">
             <Nav.Item>
-                <Nav.Link eventKey={"branch"}>Branches</Nav.Link>
+                <Nav.Link eventKey={'branch'}>Branches</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link eventKey={"tag"}>Tags</Nav.Link>
+                <Nav.Link eventKey={'tag'}>Tags</Nav.Link>
             </Nav.Item>
         </Nav>
     );
@@ -164,11 +164,11 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
 const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     const getMessage = (commit) => {
         if (!commit.message) {
-            return "repository epoch";
+            return 'repository epoch';
         }
 
         if (commit.message.length > 60) {
-            return commit.message.substr(0, 40) + "...";
+            return commit.message.substr(0, 40) + '...';
         }
 
         return commit.message;
@@ -204,7 +204,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
                                     selectRef({ id: commit.id, type: RefTypeCommit });
                                 }}
                             >
-                                {getMessage(commit)}{" "}
+                                {getMessage(commit)}{' '}
                             </Button>
                             <div className="actions">
                                 <Badge variant="light">{commit.id.substr(0, 12)}</Badge>
@@ -253,28 +253,28 @@ const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, wi
 };
 
 const Paginator = ({ pagination, onPaginate, results, from }) => {
-    const next = results.length ? results[results.length - 1].id : "";
+    const next = results.length ? results[results.length - 1].id : '';
 
-    if (!pagination.has_more && from === "") return <span />;
+    if (!pagination.has_more && from === '') return <span />;
 
     return (
         <p className="ref-paginator">
-            {from !== "" ? (
+            {from !== '' ? (
                 <Button
-                    size={"sm"}
+                    size={'sm'}
                     variant="link"
                     onClick={() => {
-                        onPaginate("");
+                        onPaginate('');
                     }}
                 >
                     Reset
                 </Button>
             ) : (
                 <span />
-            )}{" "}
+            )}{' '}
             {pagination.has_more ? (
                 <Button
-                    size={"sm"}
+                    size={'sm'}
                     variant="link"
                     onClick={() => {
                         onPaginate(next);
@@ -294,9 +294,9 @@ const RefDropdown = ({
     selected,
     selectRef,
     onCancel,
-    variant = "light",
-    prefix = "",
-    emptyText = "",
+    variant = 'light',
+    prefix = '',
+    emptyText = '',
     withCommits = true,
     withWorkspace = true,
     withTags = true,
@@ -358,19 +358,19 @@ const RefDropdown = ({
     }
 
     const showId = (ref) => {
-        if (!ref) return "";
+        if (!ref) return '';
         if (ref.type === RefTypeCommit) return ref.id.substr(0, 12);
         return ref.id;
     };
 
-    const title = prefix + !!selected ? `${prefix} ${selected.type}: ` : "";
+    const title = prefix + !!selected ? `${prefix} ${selected.type}: ` : '';
     return (
         <>
             <Button
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: "250px" }}
+                style={{ maxWidth: '250px' }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >

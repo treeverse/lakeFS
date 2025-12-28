@@ -1,39 +1,39 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from 'react';
 
-import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
-import InputGroup from "react-bootstrap/InputGroup";
-import ButtonToolbar from "react-bootstrap/ButtonToolbar";
-import Modal from "react-bootstrap/Modal";
-import Spinner from "react-bootstrap/Spinner";
+import Form from 'react-bootstrap/Form';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Card from 'react-bootstrap/Card';
+import InputGroup from 'react-bootstrap/InputGroup';
+import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
+import Modal from 'react-bootstrap/Modal';
+import Spinner from 'react-bootstrap/Spinner';
 
-import { RepoIcon, SearchIcon } from "@primer/octicons-react";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
+import { RepoIcon, SearchIcon } from '@primer/octicons-react';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 
-import { ActionsBar, AlertError, Loading, useDebouncedState } from "../../lib/components/controls";
-import { repositories } from "../../lib/api";
-import { useAPIWithPagination } from "../../lib/hooks/api";
-import { Paginator } from "../../lib/components/pagination";
-import Container from "react-bootstrap/Container";
-import { Link } from "../../lib/components/nav";
-import { useRouter } from "../../lib/hooks/router";
-import { useConfigContext } from "../../lib/hooks/configProvider";
-import { ReadOnlyBadge } from "../../lib/components/badges";
+import { ActionsBar, AlertError, Loading, useDebouncedState } from '../../lib/components/controls';
+import { repositories } from '../../lib/api';
+import { useAPIWithPagination } from '../../lib/hooks/api';
+import { Paginator } from '../../lib/components/pagination';
+import Container from 'react-bootstrap/Container';
+import { Link } from '../../lib/components/nav';
+import { useRouter } from '../../lib/hooks/router';
+import { useConfigContext } from '../../lib/hooks/configProvider';
+import { ReadOnlyBadge } from '../../lib/components/badges';
 
-import Button from "react-bootstrap/Button";
-import Alert from "react-bootstrap/Alert";
-import { usePluginManager } from "../../extendable/plugins/pluginsContext";
+import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
+import { usePluginManager } from '../../extendable/plugins/pluginsContext';
 
 dayjs.extend(relativeTime);
 
-const LOCAL_BLOCKSTORE_TYPE = "local";
-const LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME = "quickstart";
-const LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH = "main";
+const LOCAL_BLOCKSTORE_TYPE = 'local';
+const LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME = 'quickstart';
+const LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH = 'main';
 
-const CreateRepositoryButton = ({ variant = "success", enabled = false, onClick }) => {
+const CreateRepositoryButton = ({ variant = 'success', enabled = false, onClick }) => {
     return (
         <Button variant={variant} disabled={!enabled} onClick={onClick} className="d-flex align-items-center">
             <RepoIcon className="me-2" /> Create Repository
@@ -43,11 +43,11 @@ const CreateRepositoryButton = ({ variant = "success", enabled = false, onClick 
 
 const GettingStartedCreateRepoButton = ({
     text,
-    variant = "success",
+    variant = 'success',
     enabled = false,
     onClick,
     creatingRepo,
-    className = "",
+    className = '',
 }) => {
     return (
         <Button
@@ -81,7 +81,7 @@ const CreateRepositoryModal = ({ show, error, onSubmit, onCancel, inProgress }) 
             Creating...
         </>
     ) : (
-        "Create Repository"
+        'Create Repository'
     );
 
     const showError = error ? error : err;
@@ -99,7 +99,7 @@ const CreateRepositoryModal = ({ show, error, onSubmit, onCancel, inProgress }) 
         <Modal show={show} onHide={onCancel} size="lg">
             <Modal.Body>
                 {repoCreationFormPlugin.build({
-                    formID: "repository-create-form",
+                    formID: 'repository-create-form',
                     configs: config?.storages,
                     error: showError,
                     formValid,
@@ -153,7 +153,7 @@ const GetStarted = ({
                             <GettingStartedCreateRepoButton
                                 text={<span>Create Sample Repository</span>}
                                 creatingRepo={creatingRepo}
-                                variant={"success"}
+                                variant={'success'}
                                 enabled={true}
                                 onClick={onCreateSampleRepo}
                             />
@@ -161,7 +161,7 @@ const GetStarted = ({
                     )}
 
                     {createRepoError && (
-                        <Alert className="mb-3" variant={"danger"}>
+                        <Alert className="mb-3" variant={'danger'}>
                             {createRepoError.message}
                         </Alert>
                     )}
@@ -171,7 +171,7 @@ const GetStarted = ({
                         <GettingStartedCreateRepoButton
                             className="inline-link-button"
                             text="Create an empty repository"
-                            variant={"link"}
+                            variant={'link'}
                             enabled={true}
                             onClick={onCreateEmptyRepo}
                         />
@@ -220,7 +220,7 @@ const RepositoryList = ({
         <div>
             {results.map((repo) => (
                 <Row key={repo.id} className="repository-item">
-                    <Col className={"mb-3 mt-1"}>
+                    <Col className={'mb-3 mt-1'}>
                         <Card className="h-100 repository-card">
                             <Card.Body className="d-flex flex-column p-3">
                                 <div className="d-flex justify-content-between align-items-start">
@@ -297,7 +297,7 @@ const RepositoriesPage = () => {
     const [creatingRepo, setCreatingRepo] = useState(false);
     const [showActionsBar, setShowActionsBar] = useState(false);
 
-    const routerPfx = router.query.search ? router.query.search : "";
+    const routerPfx = router.query.search ? router.query.search : '';
     const [search, setSearch] = useDebouncedState(routerPfx, (search) =>
         router.push({ pathname: `/repositories`, query: { search } }),
     );
@@ -385,7 +385,7 @@ const RepositoriesPage = () => {
                     </Form>
                     <ButtonToolbar className="ms-auto">
                         <CreateRepositoryButton
-                            variant={"success"}
+                            variant={'success'}
                             enabled={true}
                             onClick={createRepositoryButtonCallback}
                         />
@@ -396,7 +396,7 @@ const RepositoriesPage = () => {
             <RepositoryList
                 search={routerPfx}
                 refresh={refresh}
-                after={router.query.after ? router.query.after : ""}
+                after={router.query.after ? router.query.after : ''}
                 onPaginate={(after) => {
                     const query = { after };
                     if (router.query.search) query.search = router.query.search;

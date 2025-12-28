@@ -123,14 +123,14 @@ tr:hover .row-hover .btn-outline-danger {
     font-weight: 600;
 }
 
-[data-bs-theme="dark"] tr.diff-changed > td,
-[data-bs-theme="dark"] tr.diff-changed > td a,
-[data-bs-theme="dark"] tr.diff-added > td,
-[data-bs-theme="dark"] tr.diff-added > td a,
-[data-bs-theme="dark"] tr.diff-removed > td,
-[data-bs-theme="dark"] tr.diff-removed > td a,
-[data-bs-theme="dark"] tr.diff-conflict > td,
-[data-bs-theme="dark"] tr.diff-conflict > td a {
+[data-bs-theme='dark'] tr.diff-changed > td,
+[data-bs-theme='dark'] tr.diff-changed > td a,
+[data-bs-theme='dark'] tr.diff-added > td,
+[data-bs-theme='dark'] tr.diff-added > td a,
+[data-bs-theme='dark'] tr.diff-removed > td,
+[data-bs-theme='dark'] tr.diff-removed > td a,
+[data-bs-theme='dark'] tr.diff-conflict > td,
+[data-bs-theme='dark'] tr.diff-conflict > td a {
     color: var(--surface);
 }
 
@@ -155,23 +155,23 @@ tr:hover .row-hover .btn-outline-danger {
     color: #660066;
 }
 
-[data-bs-theme="dark"] .diff-changed a:hover,
-[data-bs-theme="dark"] .diff-changed .btn-link:hover {
+[data-bs-theme='dark'] .diff-changed a:hover,
+[data-bs-theme='dark'] .diff-changed .btn-link:hover {
     color: #dddddd;
 }
 
-[data-bs-theme="dark"] .diff-added a:hover,
-[data-bs-theme="dark"] .diff-added .btn-link:hover {
+[data-bs-theme='dark'] .diff-added a:hover,
+[data-bs-theme='dark'] .diff-added .btn-link:hover {
     color: #88ff88;
 }
 
-[data-bs-theme="dark"] .diff-removed a:hover,
-[data-bs-theme="dark"] .diff-removed .btn-link:hover {
+[data-bs-theme='dark'] .diff-removed a:hover,
+[data-bs-theme='dark'] .diff-removed .btn-link:hover {
     color: #ff8888;
 }
 
-[data-bs-theme="dark"] .diff-conflict a:hover,
-[data-bs-theme="dark"] .diff-conflict .btn-link:hover {
+[data-bs-theme='dark'] .diff-conflict a:hover,
+[data-bs-theme='dark'] .diff-conflict .btn-link:hover {
     color: #ff88ff;
 }
 
@@ -211,8 +211,8 @@ tr:hover .row-hover .btn-outline-danger {
 
 /* Make images in object viewer scale to fit their container */
 .object-viewer img,
-[class*="object-viewer"] img,
-[class*="fileViewer"] img,
+[class*='object-viewer'] img,
+[class*='fileViewer'] img,
 .file-content-body img {
     max-width: 100%;
     height: auto;
@@ -357,7 +357,7 @@ tr:hover .row-hover .btn-outline-danger {
 }
 
 /* Dark mode adjustments for data tables */
-[data-bs-theme="dark"] .object-viewer-sql-results .table-dark th {
+[data-bs-theme='dark'] .object-viewer-sql-results .table-dark th {
     background-color: var(--background-alt);
     color: var(--text-light);
     border: none;
@@ -367,17 +367,17 @@ tr:hover .row-hover .btn-outline-danger {
     z-index: 10;
 }
 
-[data-bs-theme="dark"] .object-viewer-sql-results .table th,
-[data-bs-theme="dark"] .object-viewer-sql-results .table td {
+[data-bs-theme='dark'] .object-viewer-sql-results .table th,
+[data-bs-theme='dark'] .object-viewer-sql-results .table td {
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
 }
 
-[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:nth-child(odd) {
+[data-bs-theme='dark'] .object-viewer-sql-results tbody tr:nth-child(odd) {
     background-color: rgba(31, 41, 55, 0.5);
 }
 
-[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:hover {
+[data-bs-theme='dark'] .object-viewer-sql-results tbody tr:hover {
     background-color: rgba(59, 130, 246, 0.1);
 }
 
@@ -395,7 +395,7 @@ tr:hover .row-hover .btn-outline-danger {
 }
 
 /* Dark mode styles for changes dropdown menu */
-[data-bs-theme="dark"] .changes-dropdown-menu {
+[data-bs-theme='dark'] .changes-dropdown-menu {
     background-color: #1f2937;
     border: 1px solid #374151;
     box-shadow:
@@ -403,16 +403,16 @@ tr:hover .row-hover .btn-outline-danger {
         0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
-[data-bs-theme="dark"] .changes-dropdown-menu .btn {
+[data-bs-theme='dark'] .changes-dropdown-menu .btn {
     color: #f9fafb;
 }
 
-[data-bs-theme="dark"] .changes-dropdown-menu .btn-outline-secondary {
+[data-bs-theme='dark'] .changes-dropdown-menu .btn-outline-secondary {
     color: #f9fafb;
     border-color: #6b7280;
 }
 
-[data-bs-theme="dark"] .changes-dropdown-menu .btn-outline-secondary:hover {
+[data-bs-theme='dark'] .changes-dropdown-menu .btn-outline-secondary:hover {
     background-color: #4b5563;
     color: #f9fafb;
 }

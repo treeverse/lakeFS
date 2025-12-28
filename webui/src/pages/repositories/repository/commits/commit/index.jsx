@@ -1,25 +1,25 @@
-import React, { useEffect, useState } from "react";
-import { AlertError, Loading } from "../../../../../lib/components/controls";
-import { useRefs } from "../../../../../lib/hooks/repo";
-import { useAPI, useAPIWithPagination } from "../../../../../lib/hooks/api";
-import { commits, refs } from "../../../../../lib/api";
-import { ChangesTreeContainer, defaultGetMoreChanges } from "../../../../../lib/components/repository/changes";
-import { useRouter } from "../../../../../lib/hooks/router";
-import { URINavigator } from "../../../../../lib/components/repository/tree";
-import { appendMoreResults } from "../../objects";
-import { CommitInfoCard } from "../../../../../lib/components/repository/commits";
-import { useOutletContext } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { AlertError, Loading } from '../../../../../lib/components/controls';
+import { useRefs } from '../../../../../lib/hooks/repo';
+import { useAPI, useAPIWithPagination } from '../../../../../lib/hooks/api';
+import { commits, refs } from '../../../../../lib/api';
+import { ChangesTreeContainer, defaultGetMoreChanges } from '../../../../../lib/components/repository/changes';
+import { useRouter } from '../../../../../lib/hooks/router';
+import { URINavigator } from '../../../../../lib/components/repository/tree';
+import { appendMoreResults } from '../../objects';
+import { CommitInfoCard } from '../../../../../lib/components/repository/commits';
+import { useOutletContext } from 'react-router-dom';
 
 const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const [actionError, setActionError] = useState(null);
-    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
+    const [afterUpdated, setAfterUpdated] = useState(''); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({
         prefix: prefix,
         results: [],
         pagination: {},
     }); // current retrieved children of the item
 
-    const delimiter = "/";
+    const delimiter = '/';
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!repo) return;
@@ -50,7 +50,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
             relativeTo={`${commitSha}`}
             pathURLBuilder={(params, query) => {
                 return {
-                    pathname: "/repositories/:repoId/commits/:commitId",
+                    pathname: '/repositories/:repoId/commits/:commitId',
                     params: { repoId: repo.id, commitId: commit.id },
                     query: { prefix: query.path },
                 };
@@ -102,7 +102,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
             <div className="mt-4">
                 <ChangeList
                     prefix={prefix}
-                    view={view ? view : ""}
+                    view={view ? view : ''}
                     repo={repo}
                     commit={commit}
                     onNavigate={onNavigate}
@@ -124,11 +124,11 @@ const CommitContainer = () => {
     return (
         <CommitView
             repo={repo}
-            prefix={prefix ? prefix : ""}
+            prefix={prefix ? prefix : ''}
             commitId={commitId}
             onNavigate={(entry) => {
                 return {
-                    pathname: "/repositories/:repoId/commits/:commitId",
+                    pathname: '/repositories/:repoId/commits/:commitId',
                     params: { repoId: repo.id, commitId: commitId },
                     query: {
                         prefix: entry.path,
@@ -141,7 +141,7 @@ const CommitContainer = () => {
 
 const RepositoryCommitPage = () => {
     const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("commits"), [setActivePage]);
+    useEffect(() => setActivePage('commits'), [setActivePage]);
 
     return <CommitContainer />;
 };
