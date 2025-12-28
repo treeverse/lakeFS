@@ -23,6 +23,9 @@ from typing import List, Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictStr, conlist
 except ImportError:
+    try:
+    from pydantic.v1 import BaseModel, Field, StrictStr, conlist
+except ImportError:
     from pydantic import BaseModel, Field, StrictStr, conlist
 
 class PresignMultipartUpload(BaseModel):

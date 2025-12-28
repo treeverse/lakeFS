@@ -23,6 +23,9 @@ from typing import Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
 except ImportError:
+    try:
+    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
+except ImportError:
     from pydantic import BaseModel, Field, StrictBool, StrictStr
 
 class CommPrefsInput(BaseModel):
@@ -71,9 +74,4 @@ class CommPrefsInput(BaseModel):
 
         _obj = CommPrefsInput.parse_obj({
             "email": obj.get("email"),
-            "feature_updates": obj.get("featureUpdates"),
-            "security_updates": obj.get("securityUpdates")
-        })
-        return _obj
-
-
+            "feature_updates": obj.get("featureUpdate

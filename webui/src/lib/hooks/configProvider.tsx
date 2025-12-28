@@ -15,6 +15,11 @@ type ConfigType = {
     storages?: StorageConfig[];
     uiConfig?: UIConfig;
     versionConfig?: VersionConfig;
+    capabilitiesConfig?: CapabilitiesConfig;
+};
+
+type CapabilitiesConfig = {
+    asyncOps?: boolean;
 };
 
 type StorageConfig = {
@@ -80,6 +85,6 @@ const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     );
 };
 
-export type { ConfigType, CustomViewer };
+export type { ConfigType, CustomViewer, CapabilitiesConfig };
 
 export { ConfigProvider, useConfigContext };

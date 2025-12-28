@@ -23,6 +23,9 @@ from typing import Optional
 try:
     from pydantic.v1 import BaseModel, StrictBool
 except ImportError:
+    try:
+    from pydantic.v1 import BaseModel, StrictBool
+except ImportError:
     from pydantic import BaseModel, StrictBool
 
 class AuthCapabilities(BaseModel):
@@ -70,8 +73,4 @@ class AuthCapabilities(BaseModel):
 
         _obj = AuthCapabilities.parse_obj({
             "invite_user": obj.get("invite_user"),
-            "forgot_password": obj.get("forgot_password")
-        })
-        return _obj
-
-
+            

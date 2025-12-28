@@ -1,3 +1,5 @@
+import { CapabilitiesConfig } from "../../lib/hooks/configProvider";
+
 export interface CommitResult {
     id: string;
     parents: string[];
@@ -15,6 +17,7 @@ export interface PluginCommitOperation {
         repoId: string,
         branchId: string,
         message: string,
-        metadata?: { [key: string]: string }
+        metadata?: { [key: string]: string },
+        capabilitiesConfig?: CapabilitiesConfig
     ): Promise<CommitResult>;
 }

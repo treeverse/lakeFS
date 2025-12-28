@@ -23,6 +23,9 @@ from typing import Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictStr
 except ImportError:
+    try:
+    from pydantic.v1 import BaseModel, Field, StrictStr
+except ImportError:
     from pydantic import BaseModel, Field, StrictStr
 
 class MetaRangeCreationResponse(BaseModel):

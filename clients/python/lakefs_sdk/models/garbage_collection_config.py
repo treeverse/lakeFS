@@ -23,6 +23,9 @@ from typing import Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictInt
 except ImportError:
+    try:
+    from pydantic.v1 import BaseModel, Field, StrictInt
+except ImportError:
     from pydantic import BaseModel, Field, StrictInt
 
 class GarbageCollectionConfig(BaseModel):
@@ -68,8 +71,3 @@ class GarbageCollectionConfig(BaseModel):
             return GarbageCollectionConfig.parse_obj(obj)
 
         _obj = GarbageCollectionConfig.parse_obj({
-            "grace_period": obj.get("grace_period")
-        })
-        return _obj
-
-

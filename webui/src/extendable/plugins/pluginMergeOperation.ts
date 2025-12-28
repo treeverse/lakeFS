@@ -1,3 +1,5 @@
+import { CapabilitiesConfig } from "../../lib/hooks/configProvider";
+
 export interface MergeResult {
     reference: string;
 }
@@ -9,6 +11,7 @@ export interface PluginMergeOperation {
         destinationBranch: string,
         strategy?: string,
         message?: string,
-        metadata?: { [key: string]: string }
+        metadata?: { [key: string]: string },
+        capabilitiesConfig?: CapabilitiesConfig
     ): Promise<MergeResult>;
 }

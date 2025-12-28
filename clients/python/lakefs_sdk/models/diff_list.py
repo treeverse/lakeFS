@@ -23,6 +23,9 @@ from typing import List
 try:
     from pydantic.v1 import BaseModel, Field, conlist
 except ImportError:
+    try:
+    from pydantic.v1 import BaseModel, Field, conlist
+except ImportError:
     from pydantic import BaseModel, Field, conlist
 from lakefs_sdk.models.diff import Diff
 from lakefs_sdk.models.pagination import Pagination
@@ -82,8 +85,4 @@ class DiffList(BaseModel):
 
         _obj = DiffList.parse_obj({
             "pagination": Pagination.from_dict(obj.get("pagination")) if obj.get("pagination") is not None else None,
-            "results": [Diff.from_dict(_item) for _item in obj.get("results")] if obj.get("results") is not None else None
-        })
-        return _obj
-
-
+            "results": [Diff.from_dict(_item) for _item in obj.get("resul
