@@ -38,7 +38,7 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
     1. [Go](https://golang.org/doc/install)
     1. [Node.js & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
     1. Java 8
-        * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
+        * Apple Silicon Mac users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?version=java-17-lts&package=jdk#zulu) (up to version 17). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
     1. [Maven](https://maven.apache.org/) 
         *  Required for building and testing Spark client code, as well as the hadoopfs client.
     1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)

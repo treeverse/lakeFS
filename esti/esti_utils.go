@@ -189,8 +189,7 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 		}
 		for _, user := range resp.JSON200.Results {
 			if !slices.Contains(usersToKeep, user.Id) {
-				usersToKeep = usersToDelete
-				usersToKeep = append(usersToKeep, user.Id)
+				usersToDelete = append(usersToDelete, user.Id)
 			}
 		}
 		if !resp.JSON200.Pagination.HasMore {
