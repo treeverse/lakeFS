@@ -154,7 +154,7 @@ func TestCallHomeCollector_ExtendedHashValues(t *testing.T) {
 	sender, ticker, collector := setupTest(ctx, 0, stats.WithExtended(true))
 
 	const events = 2
-	for i := 0; i < events; i++ {
+	for range events {
 		collector.CollectEvent(stats.Event{
 			Class:      "foo",
 			Name:       "bar",
@@ -202,7 +202,7 @@ func TestCallHomeCollector_NoExtendedValues(t *testing.T) {
 	collector.Start(ctx)
 
 	const events = 2
-	for i := 0; i < events; i++ {
+	for range events {
 		collector.CollectEvent(stats.Event{
 			Class:      "foo",
 			Name:       "bar",

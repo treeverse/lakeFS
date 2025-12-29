@@ -140,7 +140,7 @@ func runSuccessScenario(t *testing.T, numWriters, numClosers int) *committed.Bat
 	t.Helper()
 
 	writers := make([]*FakeRangeWriter, numWriters)
-	for i := 0; i < numWriters; i++ {
+	for i := range numWriters {
 		writers[i] = NewFakeRangeWriter(&committed.WriteResult{
 			RangeID: committed.ID(strconv.Itoa(i)),
 			First:   committed.Key(fmt.Sprintf("row_%d_1", i)),
@@ -151,7 +151,7 @@ func runSuccessScenario(t *testing.T, numWriters, numClosers int) *committed.Bat
 
 	sut := committed.NewBatchCloser(numClosers)
 
-	for i := 0; i < numWriters; i++ {
+	for i := range numWriters {
 		assert.NoError(t, sut.CloseWriterAsync(writers[i]))
 	}
 

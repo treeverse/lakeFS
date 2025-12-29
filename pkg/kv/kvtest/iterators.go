@@ -88,7 +88,7 @@ func testPartitionIteratorSeekGEWithPagination(ctx context.Context, store kv.Sto
 		}
 
 		itr.SeekGE([]byte("b"))
-		for i := 0; i < MaxPageSize+1; i++ {
+		for range MaxPageSize + 1 {
 			// force pagination
 			if !itr.Next() {
 				t.Fatal("expected Next to be true")
@@ -358,7 +358,7 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 		{Name: []byte("d"), JustAString: "four"},
 		{Name: []byte("e"), JustAString: "five"},
 	}
-	for i := 0; i < len(m); i++ {
+	for i := range m {
 		primaryKey := append([]byte("name/"), m[i].Name...)
 		err := kv.SetMsg(ctx, store, firstPartitionKey, primaryKey, &m[i])
 		if err != nil {
