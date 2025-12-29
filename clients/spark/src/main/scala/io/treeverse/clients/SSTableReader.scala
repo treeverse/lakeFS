@@ -82,7 +82,9 @@ object SSTableReader {
       own: Boolean = true
   ): SSTableReader[RangeData] = {
     val localFile: File = copyToLocal(configuration, metaRangeURL)
-    logger.info(s"local ${localFile.getAbsolutePath} (metarange ${metaRangeURL}) copied, ${localFile.length()} bytes")
+    logger.info(
+      s"local ${localFile.getAbsolutePath} (metarange ${metaRangeURL}) copied, ${localFile.length()} bytes"
+    )
     val ret = new SSTableReader(localFile, RangeData.messageCompanion, own)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
@@ -94,7 +96,9 @@ object SSTableReader {
       own: Boolean = true
   ): SSTableReader[Entry] = {
     val localFile: File = copyToLocal(configuration, rangeURL)
-    logger.info(s"local ${localFile.getAbsolutePath} (range ${rangeURL}) copied, ${localFile.length()} bytes")
+    logger.info(
+      s"local ${localFile.getAbsolutePath} (range ${rangeURL}) copied, ${localFile.length()} bytes"
+    )
     val ret = new SSTableReader(localFile, Entry.messageCompanion, own)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
