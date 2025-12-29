@@ -21,7 +21,7 @@ func TestCache(t *testing.T) {
 	c := cache.NewCache(cacheSize, time.Hour*12, cache.NewJitterFn(time.Millisecond))
 
 	numCalls := 0
-	for i := 0; i < n; i++ {
+	for i := range n {
 		var k int
 		if i%2 == 0 {
 			k = worldSize - 1
@@ -60,11 +60,11 @@ func TestCacheRace(t *testing.T) {
 	start := make(chan struct{})
 	wg := sync.WaitGroup{}
 
-	for i := 0; i < parallelism; i++ {
+	for i := range parallelism {
 		wg.Add(1)
 		go func(i int) {
 			<-start
-			for j := 0; j < n; j++ {
+			for j := range n {
 				k := j % worldSize
 				kk, err := c.GetOrSet(k, func() (any, error) {
 					return k * k, nil

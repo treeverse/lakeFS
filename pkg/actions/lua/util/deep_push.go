@@ -105,7 +105,7 @@ func forwardOnReflect(l *lua.State, val any) {
 func recurseOnFuncSlice(l *lua.State, input func(int) any, n int) {
 	l.CreateTable(n, 0)
 	luaArray(l)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		forwardOnType(l, input(i))
 		l.RawSetInt(-2, i+1)
 	}

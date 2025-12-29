@@ -24,7 +24,7 @@ type ObjectStoreEntry struct {
 	// but depends on the underlying object store
 	ETag string `json:"etag,omitempty"`
 	// Mtime is the last-modified datetime of the entry
-	Mtime time.Time `json:"mtime,omitempty"`
+	Mtime time.Time `json:"mtime"`
 	// Size in bytes
 	Size int64 `json:"size"`
 }

@@ -147,12 +147,12 @@ func testSetIfMsg(t testing.TB, ctx context.Context, store kv.Store) {
 }
 
 func makeKey(i int32) []byte {
-	return []byte(fmt.Sprintf("key=%08d", i))
+	return fmt.Appendf(nil, "key=%08d", i)
 }
 
 func makeGetModel(i int32) *kvtest.TestModel {
 	return &kvtest.TestModel{
-		Name:        []byte(fmt.Sprintf("model-%08d", i)),
+		Name:        fmt.Appendf(nil, "model-%08d", i),
 		JustAString: "This is just a string",
 		// Use an int, as these have an exact FP representation.
 		ADouble:  271828,

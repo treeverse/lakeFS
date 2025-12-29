@@ -209,7 +209,7 @@ func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
 
 // SetDBSchemaVersion sets KV DB schema version
 func SetDBSchemaVersion(ctx context.Context, store Store, version uint) error {
-	return store.Set(ctx, []byte(MetadataPartitionKey), dbSchemaPath(), []byte(fmt.Sprintf("%d", version)))
+	return store.Set(ctx, []byte(MetadataPartitionKey), dbSchemaPath(), fmt.Appendf(nil, "%d", version))
 }
 
 func dbSchemaPath() []byte {

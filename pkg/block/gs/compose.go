@@ -16,10 +16,7 @@ func ComposeAll(target string, parts []string, composeFunc ComposeFunc) (*storag
 		group := errgroup.Group{}
 		var nextParts []string
 		for i := 0; i < len(parts); i += MaxPartsInCompose {
-			chunkSize := len(parts) - i
-			if chunkSize > MaxPartsInCompose {
-				chunkSize = MaxPartsInCompose
-			}
+			chunkSize := min(len(parts)-i, MaxPartsInCompose)
 			chunk := parts[i : i+chunkSize]
 			if chunkSize == 1 || (chunkSize < MaxPartsInCompose && len(nextParts)+chunkSize <= MaxPartsInCompose) {
 				nextParts = append(nextParts, chunk...)

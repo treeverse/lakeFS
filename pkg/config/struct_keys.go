@@ -127,7 +127,7 @@ func appendStructKeysIfZero(value reflect.Value, tag, squashValue, validateTag, 
 
 		// Perform any needed validations.
 		if validationsString, ok := fieldType.Tag.Lookup(validateTag); ok {
-			for _, validation := range strings.Split(validationsString, ",") {
+			for validation := range strings.SplitSeq(validationsString, ",") {
 				// Validate "required" field.
 				if validation == requiredValue && fieldValue.IsZero() {
 					keys = append(keys, strings.Join(append(prefix, fieldName), sep))
