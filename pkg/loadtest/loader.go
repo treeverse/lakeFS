@@ -180,7 +180,7 @@ func progressBar(duration time.Duration) {
 	durationInSec := int(duration.Seconds())
 	progress := progressbar.NewOptions(durationInSec, progressbar.OptionSetPredictTime(false), progressbar.OptionFullWidth())
 	go func() {
-		for i := 0; i < durationInSec; i++ {
+		for range durationInSec {
 			_ = progress.Add(1)
 			time.Sleep(time.Second)
 		}

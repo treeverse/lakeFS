@@ -33,7 +33,7 @@ func uniqueKey(k string) []byte {
 func setupSampleData(t *testing.T, ctx context.Context, store kv.Store, partition, prefix string, items int) []kv.Entry {
 	t.Helper()
 	entries := make([]kv.Entry, 0, items)
-	for i := 0; i < items; i++ {
+	for i := range items {
 		entry := sampleEntry(prefix, i)
 		err := store.Set(ctx, []byte(partition), entry.Key, entry.Value)
 		if err != nil {
@@ -394,7 +394,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 
 	t.Run("part", func(t *testing.T) {
 		const fromIndex = 5
-		fromKey := []byte(fmt.Sprint(string(samplePrefix), fmt.Sprintf("-key-%04d", fromIndex)))
+		fromKey := fmt.Append(nil, string(samplePrefix), fmt.Sprintf("-key-%04d", fromIndex))
 		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: fromKey})
 		if err != nil {
 			t.Fatal("failed to scan", err)
@@ -661,7 +661,7 @@ func testScanPrefix(t *testing.T, ms MakeStore) {
 	const sampleItems = 100
 	const numberOfSets = 3
 
-	for i := 0; i < numberOfSets; i++ {
+	for range numberOfSets {
 		samplePrefix = uniqueKey("scan-prefix")
 		sampleData = setupSampleData(t, ctx, store, testPartitionKey, string(samplePrefix), sampleItems)
 

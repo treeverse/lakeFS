@@ -127,7 +127,7 @@ func genCSVData(t *testing.T, columns []string, n int) string {
 	err := writer.Write(headerRow)
 	require.NoError(t, err, "failed writing CSV headers to buffer")
 
-	for rowNum := 0; rowNum < n; rowNum++ {
+	for rowNum := range n {
 		dataRow := []string{}
 		for colNum := range columns {
 			dataRow = append(dataRow, fmt.Sprintf("%d", rowNum+colNum))
@@ -218,7 +218,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 		require.NoError(t, err, "fail reading object data")
 		require.NoError(t, objRes.Body.Close())
 
-		for _, addr := range strings.Split(string(body), "\n") {
+		for addr := range strings.SplitSeq(string(body), "\n") {
 			if addr != "" { // split returns last \n as empty string
 				storagePhysicalAddrs[addr] = true
 			}
