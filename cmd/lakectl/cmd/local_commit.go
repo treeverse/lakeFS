@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"path/filepath"
 	"slices"
@@ -192,9 +193,7 @@ var localCommitCmd = &cobra.Command{
 			if err == nil {
 				md, err := git.MetadataFor(idx.LocalPath(), gitRef)
 				if err == nil {
-					for k, v := range md {
-						kvPairs[k] = v
-					}
+					maps.Copy(kvPairs, md)
 				}
 			}
 		}
