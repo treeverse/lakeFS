@@ -242,7 +242,17 @@ const UsersIndexPage = () => {
 
     return (
         <GetUserDisplayNameByIdContext.Provider value={getUserDisplayNameById}>
-            <Outlet context={{ setActiveTab, refresh, setRefresh, allUsers, loading, error, getUserDisplayNameById }} />
+            <Outlet
+                context={{
+                    setActiveTab,
+                    refresh,
+                    setRefresh,
+                    allUsers,
+                    loading,
+                    error,
+                    getUserDisplayNameById,
+                }}
+            />
         </GetUserDisplayNameByIdContext.Provider>
     );
 };
