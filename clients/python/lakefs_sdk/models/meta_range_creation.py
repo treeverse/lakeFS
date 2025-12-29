@@ -23,9 +23,6 @@ from typing import List
 try:
     from pydantic.v1 import BaseModel, Field, conlist
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, conlist
-except ImportError:
     from pydantic import BaseModel, Field, conlist
 from lakefs_sdk.models.range_metadata import RangeMetadata
 

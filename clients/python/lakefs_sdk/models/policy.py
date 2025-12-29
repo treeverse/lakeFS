@@ -23,9 +23,6 @@ from typing import List, Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, conlist
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, conlist
-except ImportError:
     from pydantic import BaseModel, Field, StrictInt, StrictStr, conlist
 from lakefs_sdk.models.statement import Statement
 

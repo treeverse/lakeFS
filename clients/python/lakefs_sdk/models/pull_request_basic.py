@@ -23,9 +23,6 @@ from typing import Optional
 try:
     from pydantic.v1 import BaseModel, StrictStr, validator
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, StrictStr, validator
-except ImportError:
     from pydantic import BaseModel, StrictStr, validator
 
 class PullRequestBasic(BaseModel):

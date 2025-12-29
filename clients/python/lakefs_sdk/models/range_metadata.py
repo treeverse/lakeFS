@@ -23,9 +23,6 @@ import json
 try:
     from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr
-except ImportError:
     from pydantic import BaseModel, Field, StrictInt, StrictStr
 
 class RangeMetadata(BaseModel):

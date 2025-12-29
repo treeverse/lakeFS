@@ -20,16 +20,10 @@ import warnings
 try:
     from pydantic.v1 import validate_arguments, ValidationError
 except ImportError:
-    try:
-    from pydantic.v1 import validate_arguments, ValidationError
-except ImportError:
     from pydantic import validate_arguments, ValidationError
 
 from typing_extensions import Annotated
 try:
-    from pydantic.v1 import Field, StrictStr
-except ImportError:
-    try:
     from pydantic.v1 import Field, StrictStr
 except ImportError:
     from pydantic import Field, StrictStr
@@ -531,4 +525,5 @@ class ImportApi:
             _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
             _preload_content=_params.get('_preload_content', True),
             _request_timeout=_params.get('_request_timeout'),
-            col
+            collection_formats=_collection_formats,
+            _request_auth=_params.get('_request_auth'))

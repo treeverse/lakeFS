@@ -25,9 +25,6 @@ except ImportError:
 try:
     from pydantic.v1 import StrictStr
 except ImportError:
-    try:
-    from pydantic.v1 import StrictStr
-except ImportError:
     from pydantic import StrictStr
 
 from typing import Optional

@@ -23,9 +23,6 @@ import json
 try:
     from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr, conint
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr, conint
-except ImportError:
     from pydantic import BaseModel, Field, StrictBool, StrictStr, conint
 
 class Pagination(BaseModel):

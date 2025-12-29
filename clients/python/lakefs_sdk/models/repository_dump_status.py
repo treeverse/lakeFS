@@ -23,9 +23,6 @@ from typing import Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
-except ImportError:
     from pydantic import BaseModel, Field, StrictBool, StrictStr
 from lakefs_sdk.models.refs_dump import RefsDump
 

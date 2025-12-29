@@ -23,9 +23,6 @@ from typing import Dict, List, Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictStr, conlist, validator
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, StrictStr, conlist, validator
-except ImportError:
     from pydantic import BaseModel, Field, StrictStr, conlist, validator
 
 class Statement(BaseModel):

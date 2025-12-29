@@ -23,9 +23,6 @@ from typing import Dict, Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictStr
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, StrictStr
-except ImportError:
     from pydantic import BaseModel, Field, StrictStr
 
 class CommitOverrides(BaseModel):
@@ -72,4 +69,9 @@ class CommitOverrides(BaseModel):
             return CommitOverrides.parse_obj(obj)
 
         _obj = CommitOverrides.parse_obj({
-            "message": obj.get("mes
+            "message": obj.get("message"),
+            "metadata": obj.get("metadata")
+        })
+        return _obj
+
+

@@ -23,9 +23,6 @@ from typing import Dict, Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, validator
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, validator
-except ImportError:
     from pydantic import BaseModel, Field, StrictInt, StrictStr, validator
 
 class ObjectStats(BaseModel):

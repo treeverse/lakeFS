@@ -20,9 +20,6 @@ import warnings
 try:
     from pydantic.v1 import validate_arguments, ValidationError
 except ImportError:
-    try:
-    from pydantic.v1 import validate_arguments, ValidationError
-except ImportError:
     from pydantic import validate_arguments, ValidationError
 
 

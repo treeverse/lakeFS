@@ -23,9 +23,6 @@ from typing import List
 try:
     from pydantic.v1 import BaseModel, Field, conlist
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, Field, conlist
-except ImportError:
     from pydantic import BaseModel, Field, conlist
 from lakefs_sdk.models.pagination import Pagination
 from lakefs_sdk.models.ref import Ref

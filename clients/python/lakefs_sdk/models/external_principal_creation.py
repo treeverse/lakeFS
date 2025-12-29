@@ -23,9 +23,6 @@ from typing import Dict, List, Optional
 try:
     from pydantic.v1 import BaseModel, StrictStr, conlist
 except ImportError:
-    try:
-    from pydantic.v1 import BaseModel, StrictStr, conlist
-except ImportError:
     from pydantic import BaseModel, StrictStr, conlist
 
 class ExternalPrincipalCreation(BaseModel):
