@@ -1,6 +1,6 @@
-import React from "react";
-import { LoginConfig } from "../../pages/auth/login";
-import { useRouter } from "../../lib/hooks/router";
+import React from 'react';
+import { LoginConfig } from '../../pages/auth/login';
+import { useRouter } from '../../lib/hooks/router';
 
 export type LoginStrategyResult = {
     element?: React.ReactElement | null;

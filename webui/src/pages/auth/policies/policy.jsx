@@ -1,64 +1,54 @@
-import React, {useEffect, useState} from "react";
-import { useOutletContext } from "react-router-dom";
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
-import {PencilIcon} from "@primer/octicons-react";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import { PencilIcon } from '@primer/octicons-react';
 
-import {PolicyHeader} from "../../../lib/components/auth/nav";
-import {useAPI} from "../../../lib/hooks/api";
-import {auth} from "../../../lib/api";
-import {PolicyDisplay, PolicyEditor} from "../../../lib/components/policy";
-import {
-    ActionGroup,
-    ActionsBar,
-    Loading,
-    AlertError,
-} from "../../../lib/components/controls";
-import {useRouter} from "../../../lib/hooks/router";
-
+import { PolicyHeader } from '../../../lib/components/auth/nav';
+import { useAPI } from '../../../lib/hooks/api';
+import { auth } from '../../../lib/api';
+import { PolicyDisplay, PolicyEditor } from '../../../lib/components/policy';
+import { ActionGroup, ActionsBar, Loading, AlertError } from '../../../lib/components/controls';
+import { useRouter } from '../../../lib/hooks/router';
 
 const PolicyView = ({ policyId }) => {
     const [jsonView, setJsonView] = useState(false);
     const [showEditor, setShowEditor] = useState(false);
     const [refresh, setRefresh] = useState(false);
 
-    const {response, loading, error} = useAPI(() => {
+    const { response, loading, error } = useAPI(() => {
         return auth.getPolicy(policyId);
     }, [policyId, refresh]);
 
     const policy = response;
 
     let content;
-    if (loading) content = <Loading/>;
-    else if (error) content=  <AlertError error={error}/>;
-    else content = (
-        <PolicyDisplay policy={policy} asJSON={jsonView}/>
-    );
+    if (loading) content = <Loading />;
+    else if (error) content = <AlertError error={error} />;
+    else content = <PolicyDisplay policy={policy} asJSON={jsonView} />;
 
     return (
         <>
-            <PolicyHeader policyId={policyId}/>
+            <PolicyHeader policyId={policyId} />
 
             <ActionsBar>
                 <ActionGroup orientation="left">
                     <Button variant="primary" onClick={() => setShowEditor(true)}>
-                        <PencilIcon/> Edit
+                        <PencilIcon /> Edit
                     </Button>
                 </ActionGroup>
                 <ActionGroup orientation="right">
                     <Form>
-                    <Form.Switch
-                        label="JSON View"
-                        id="policy-json-switch"
-                        onChange={e => setJsonView(e.target.checked)}
-                    />
+                        <Form.Switch
+                            label="JSON View"
+                            id="policy-json-switch"
+                            onChange={(e) => setJsonView(e.target.checked)}
+                        />
                     </Form>
                 </ActionGroup>
             </ActionsBar>
 
-            <div className="mt-2">
-                {content}
-            </div>
+            <div className="mt-2">{content}</div>
 
             <PolicyEditor
                 policy={policy}
@@ -69,23 +59,24 @@ const PolicyView = ({ policyId }) => {
                         setRefresh(!refresh);
                     });
                 }}
-                onHide={() => { setShowEditor(false) }}
+                onHide={() => {
+                    setShowEditor(false);
+                }}
             />
         </>
     );
-}
-
+};
 
 const PolicyContainer = () => {
     const router = useRouter();
     const { policyId } = router.params;
-    return (!policyId) ? <></> : <PolicyView policyId={policyId}/>;
-}
+    return !policyId ? <></> : <PolicyView policyId={policyId} />;
+};
 
 const PolicyPage = () => {
     const [setActiveTab] = useOutletContext();
-    useEffect(() => setActiveTab("policies"), [setActiveTab]);
-    return <PolicyContainer/>;
-}
+    useEffect(() => setActiveTab('policies'), [setActiveTab]);
+    return <PolicyContainer />;
+};
 
 export default PolicyPage;
