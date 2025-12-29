@@ -11,9 +11,9 @@ import (
 )
 
 type Record struct {
-	Partition string      `json:"partition"`
-	Key       string      `json:"key"`
-	Value     any `json:"value"`
+	Partition string `json:"partition"`
+	Key       string `json:"key"`
+	Value     any    `json:"value"`
 }
 
 type MatchRecord struct {
