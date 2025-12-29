@@ -195,15 +195,16 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            {configsLoading ? (
-                <Loading />
-            ) : configsError ? (
-                <AlertError error={configsError} />
-            ) : (
-                <Button variant="success" disabled={disabled} onClick={() => onClickMerge()}>
+            <>
+                {configsLoading ? <Loading /> : configsError ? <AlertError error={configsError} /> : null}
+                <Button
+                    variant="success"
+                    disabled={disabled || configsLoading || !!configsError}
+                    onClick={() => onClickMerge()}
+                >
                     <GitMergeIcon /> {'Merge'}
                 </Button>
-            )}
+            </>
         </>
     );
 };

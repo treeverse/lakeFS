@@ -511,13 +511,15 @@ const UploadButtonText = ({ inProgress, uploadingCount, filesLength, averageProg
         return (
             <>
                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Uploading {uploadingCount > 0 ? `${uploadingCount} / ${filesLength}` : averageProgress + '%'}...
+                Uploading {uploadingCount > 0 ? `${uploadingCount} / ${filesLength}` : averageProgress + '%'}
+                ...
             </>
         );
     }
     return (
         <>
-            <UploadIcon className="me-2" /> Upload {filesLength || ''} File{filesLength !== 1 ? 's' : ''}
+            <UploadIcon className="me-2" /> Upload {filesLength || ''} File
+            {filesLength !== 1 ? 's' : ''}
         </>
     );
 };
@@ -637,17 +639,26 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
             const currentDestination = fileDestinations[file.path];
             if (!currentDestination) {
                 console.error(`No destination path found for file: ${file.path}`);
-                setFileStates((next) => ({ ...next, [file.path]: { status: 'error', percent: 0 } }));
+                setFileStates((next) => ({
+                    ...next,
+                    [file.path]: { status: 'error', percent: 0 },
+                }));
                 throw new Error(`Missing destination for ${file.path}`);
             }
             try {
-                setFileStates((next) => ({ ...next, [file.path]: { status: 'uploading', percent: 0 } }));
+                setFileStates((next) => ({
+                    ...next,
+                    [file.path]: { status: 'uploading', percent: 0 },
+                }));
 
                 const handleProgress = (progress) => {
                     if (controller.signal.aborted) return;
                     setFileStates((next) => {
                         if (next[file.path]?.status === 'uploading') {
-                            return { ...next, [file.path]: { status: 'uploading', percent: progress } };
+                            return {
+                                ...next,
+                                [file.path]: { status: 'uploading', percent: progress },
+                            };
                         }
                         return next;
                     });
@@ -656,11 +667,17 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                 await uploadFile(config, repo, reference, currentDestination, file, handleProgress);
 
                 if (controller.signal.aborted) return;
-                setFileStates((next) => ({ ...next, [file.path]: { status: 'done', percent: 100 } }));
+                setFileStates((next) => ({
+                    ...next,
+                    [file.path]: { status: 'done', percent: 100 },
+                }));
             } catch (error) {
                 if (controller.signal.aborted) return;
                 console.error('Upload error for:', file.path, error);
-                setFileStates((next) => ({ ...next, [file.path]: { status: 'error', percent: 0 } }));
+                setFileStates((next) => ({
+                    ...next,
+                    [file.path]: { status: 'error', percent: 0 },
+                }));
                 if (!isAbortedError(error, controller)) {
                     setUploadState((prev) => ({ ...prev, error: error }));
                 }
@@ -682,7 +699,11 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
         } catch (error) {
             if (!isAbortedError(error, controller)) {
                 console.error('pMap upload error:', error);
-                setUploadState((prev) => ({ ...prev, inProgress: false, error: prev.error || error }));
+                setUploadState((prev) => ({
+                    ...prev,
+                    inProgress: false,
+                    error: prev.error || error,
+                }));
             } else {
                 console.log('Upload process aborted.');
                 setUploadState((prev) => ({ ...prev, inProgress: false }));
@@ -760,7 +781,12 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                         )}
 
                         <Form.Group controlId="dropzone" className="mb-3">
-                            <div {...getRootProps({ className: 'dropzone', 'aria-disabled': uploadState.inProgress })}>
+                            <div
+                                {...getRootProps({
+                                    className: 'dropzone',
+                                    'aria-disabled': uploadState.inProgress,
+                                })}
+                            >
                                 <input {...getInputProps({ 'aria-disabled': uploadState.inProgress })} />
                                 <div
                                     className={isDragAccept ? 'file-drop-zone file-drop-zone-focus' : 'file-drop-zone'}
@@ -1107,8 +1133,8 @@ const TreeContainer = ({
                     onRevert={onReset}
                     changesTreeMessage={
                         <p>
-                            Showing {changesResults.length} change{changesResults.length !== 1 ? 's' : ''} for branch{' '}
-                            <strong>{reference.id}</strong>
+                            Showing {changesResults.length} change
+                            {changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong>
                         </p>
                     }
                     noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
