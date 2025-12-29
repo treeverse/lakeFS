@@ -1,5 +1,4 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { refs as refsAPI } from '../../../lib/api';
 import { RefTypeBranch } from '../../../constants';
 import { ActionGroup, ActionsBar, AlertError, RefreshButton } from '../controls';
 import { MetadataFields } from './metadata';
@@ -11,6 +10,7 @@ import Form from 'react-bootstrap/Form';
 import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
 import CompareBranchesSelection from './compareBranchesSelection';
 import { useRouter } from '../../../lib/hooks/router';
+import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
 
 const CompareBranchesActionsBar = ({ repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff }) => {
     return (
@@ -51,6 +51,7 @@ const CompareBranchesActionsBar = ({ repo, reference, compareReference, baseSele
 };
 
 const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
+    const pluginManager = usePluginManager();
     const textRef = useRef(null);
     const [metadataFields, setMetadataFields] = useState([]);
     const initialMerge = {
@@ -104,7 +105,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
             strategy: mergeState.strategy,
         });
         try {
-            await refsAPI.merge(repo.id, source, dest, strategy, message, metadata);
+            await pluginManager.mergeOperation.merge(repo.id, source, dest, strategy, message, metadata);
             setMergeState({
                 merging: mergeState.merging,
                 show: mergeState.show,
