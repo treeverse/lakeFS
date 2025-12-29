@@ -19,11 +19,7 @@ import (
 // updates the task's UpdatedAt timestamp periodically
 func TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-
-	c := createMinimalCatalog(t, ctx, kvStore)
-	repository := createRepository(t)
+	ctx, kvStore, c, repository := setupTest(t)
 
 	taskID := NewTaskID("TEST")
 	taskStatus := &CommitAsyncStatusData{}
@@ -49,6 +45,7 @@ func TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, status.Task)
 	require.False(t, status.Task.Done)
+	require.NotNil(t, status.Task.UpdatedAt, "first UpdatedAt should not be nil")
 	firstUpdate := status.Task.UpdatedAt.AsTime()
 
 	time.Sleep(TaskHeartbeatInterval)
@@ -57,6 +54,7 @@ func TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, status.Task)
 	require.False(t, status.Task.Done)
+	require.NotNil(t, status.Task.UpdatedAt, "second UpdatedAt should not be nil")
 	secondUpdate := status.Task.UpdatedAt.AsTime()
 
 	require.True(t, secondUpdate.After(firstUpdate),
@@ -78,11 +76,7 @@ func TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp(t *testing.T) {
 // the full status, causing "proto: cannot parse invalid wire-format data" errors.
 func TestRunBackgroundTaskSteps_HeartbeatWritesFullStatus(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-
-	c := createMinimalCatalog(t, ctx, kvStore)
-	repository := createRepository(t)
+	ctx, kvStore, c, repository := setupTest(t)
 
 	taskID := NewTaskID("TEST")
 	taskStatus := &CommitAsyncStatusData{}
@@ -118,11 +112,7 @@ func TestRunBackgroundTaskSteps_HeartbeatWritesFullStatus(t *testing.T) {
 // status can be read correctly at any time during heartbeat updates
 func TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-
-	c := createMinimalCatalog(t, ctx, kvStore)
-	repository := createRepository(t)
+	ctx, kvStore, c, repository := setupTest(t)
 
 	taskID := NewTaskID("TEST")
 	taskStatus := &CommitAsyncStatusData{}
@@ -157,15 +147,76 @@ func TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat(t *testing.T) {
 	}
 }
 
+// TestRunBackgroundTaskSteps_HeartbeatLifecycle verifies the complete heartbeat lifecycle:
+// - Timestamp IS updated during task execution
+// - Timestamp stops updating after task completion
+func TestRunBackgroundTaskSteps_HeartbeatLifecycle(t *testing.T) {
+	t.Parallel()
+	ctx, kvStore, c, repository := setupTest(t)
+
+	taskID := NewTaskID("TEST")
+	taskStatus := &CommitAsyncStatusData{}
+
+	taskDuration := 5 * time.Second
+	steps := []TaskStep{
+		{
+			Name: "long task",
+			Func: func(ctx context.Context) error {
+				time.Sleep(taskDuration)
+				return nil
+			},
+		},
+	}
+
+	err := c.RunBackgroundTaskSteps(repository, taskID, steps, taskStatus)
+	require.NoError(t, err)
+
+	// After 2 seconds, task should still be running and timestamp should be updated
+	time.Sleep(2 * time.Second)
+
+	var statusDuring CommitAsyncStatusData
+	_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &statusDuring)
+	require.NoError(t, err)
+	require.NotNil(t, statusDuring.Task)
+	require.False(t, statusDuring.Task.Done, "task should still be running after 2 seconds")
+	require.NotNil(t, statusDuring.Task.UpdatedAt)
+	timestampDuringExecution := statusDuring.Task.UpdatedAt.AsTime()
+
+	// Wait for task to complete (3 more seconds + buffer)
+	time.Sleep(4 * time.Second)
+
+	var statusAfterCompletion CommitAsyncStatusData
+	_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &statusAfterCompletion)
+	require.NoError(t, err)
+	require.True(t, statusAfterCompletion.Task.Done, "task should be done")
+	require.NotNil(t, statusAfterCompletion.Task.UpdatedAt)
+	completionTime := statusAfterCompletion.Task.UpdatedAt.AsTime()
+
+	// Verify timestamp was updated during execution
+	require.True(t, completionTime.After(timestampDuringExecution) || completionTime.Equal(timestampDuringExecution),
+		"completion timestamp (%v) should be after or equal to timestamp during execution (%v)",
+		completionTime, timestampDuringExecution)
+
+	// Wait 2 more seconds and verify timestamp is NOT updated anymore
+	time.Sleep(2 * time.Second)
+
+	var statusAfterWait CommitAsyncStatusData
+	_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &statusAfterWait)
+	require.NoError(t, err)
+	require.True(t, statusAfterWait.Task.Done)
+	require.NotNil(t, statusAfterWait.Task.UpdatedAt)
+	finalTimestamp := statusAfterWait.Task.UpdatedAt.AsTime()
+
+	require.Equal(t, completionTime.UnixNano(), finalTimestamp.UnixNano(),
+		"timestamp should NOT change after task completion (completion: %v, after 2s wait: %v)",
+		completionTime, finalTimestamp)
+}
+
 // TestRunBackgroundTaskSteps_HeartbeatStopsWhenDone verifies that
 // the heartbeat stops updating once the task is marked as done
 func TestRunBackgroundTaskSteps_HeartbeatStopsWhenDone(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-
-	c := createMinimalCatalog(t, ctx, kvStore)
-	repository := createRepository(t)
+	ctx, kvStore, c, repository := setupTest(t)
 
 	taskID := NewTaskID("TEST")
 	taskStatus := &CommitAsyncStatusData{}
@@ -204,11 +255,7 @@ func TestRunBackgroundTaskSteps_HeartbeatStopsWhenDone(t *testing.T) {
 // captured in the task status
 func TestRunBackgroundTaskSteps_TaskFailure(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-
-	c := createMinimalCatalog(t, ctx, kvStore)
-	repository := createRepository(t)
+	ctx, kvStore, c, repository := setupTest(t)
 
 	taskID := NewTaskID("TEST")
 	taskStatus := &CommitAsyncStatusData{}
@@ -239,11 +286,7 @@ func TestRunBackgroundTaskSteps_TaskFailure(t *testing.T) {
 // status data is preserved through task completion
 func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	kvStore := kvtest.GetStore(ctx, t)
-
-	c := createMinimalCatalog(t, ctx, kvStore)
-	repository := createRepository(t)
+	ctx, kvStore, c, repository := setupTest(t)
 
 	taskID := NewTaskID("TEST")
 	taskStatus := &CommitAsyncStatusData{}
@@ -283,6 +326,16 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 	require.True(t, statusAfter.Task.Done)
 	require.NotNil(t, statusAfter.Info)
 	require.Equal(t, expectedCommitID, statusAfter.Info.Id)
+}
+
+// setupTest creates the common test setup used by all task tests
+func setupTest(t *testing.T) (context.Context, kv.Store, *Catalog, *graveler.RepositoryRecord) {
+	t.Helper()
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+	c := createMinimalCatalog(t, ctx, kvStore)
+	repository := createRepository(t)
+	return ctx, kvStore, c, repository
 }
 
 // createMinimalCatalog creates a minimal catalog instance for testing
