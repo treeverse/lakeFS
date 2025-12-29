@@ -78,6 +78,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 		o.Log(req).WithError(err).Error("could not get repository")
 		if errors.Is(err, kv.ErrNotFound) {
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+			return
 		}
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
@@ -117,6 +118,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		o.Log(req).WithError(err).Error("could not get repository")
 		if errors.Is(err, kv.ErrNotFound) {
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+			return
 		}
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return

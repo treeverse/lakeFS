@@ -1,7 +1,6 @@
 package multipart_test
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"testing"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestTrackerList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	now := time.Now()
 	const testPartition = "test-repo-instance-123"
 	store, err := kv.Open(ctx, kvparams.Config{Type: mem.DriverName})
@@ -67,17 +66,17 @@ func TestTrackerList(t *testing.T) {
 	}
 
 	// List all uploads using iterator
-	iter, err = tracker.List(ctx, testPartition)
+	iter2, err := tracker.List(ctx, testPartition)
 	require.NoError(t, err)
-	defer iter.Close()
+	defer iter2.Close()
 
 	// Collect uploads from iterator
 	var uploads []*multipart.Upload
-	for iter.Next() {
-		upload := iter.Value()
+	for iter2.Next() {
+		upload := iter2.Value()
 		uploads = append(uploads, upload)
 	}
-	require.NoError(t, iter.Err())
+	require.NoError(t, iter2.Err())
 	require.Len(t, uploads, len(testUploads))
 
 	// Verify all uploads are present
@@ -99,20 +98,20 @@ func TestTrackerList(t *testing.T) {
 	})
 
 	// List again to verify we can iterate multiple times
-	iter2, err := tracker.List(ctx, testPartition)
+	iter3, err := tracker.List(ctx, testPartition)
 	require.NoError(t, err)
-	defer iter2.Close()
+	defer iter3.Close()
 
 	count := 0
-	for iter2.Next() {
+	for iter3.Next() {
 		count++
 	}
-	require.NoError(t, iter2.Err())
+	require.NoError(t, iter3.Err())
 	require.Equal(t, len(testUploads), count)
 }
 
 func TestTrackerListAfterDelete(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	const testPartition = "test-repo-instance-123"
 	store, err := kv.Open(ctx, kvparams.Config{Type: mem.DriverName})
 	require.NoError(t, err)
@@ -134,12 +133,12 @@ func TestTrackerListAfterDelete(t *testing.T) {
 	// List before delete
 	iter, err := tracker.List(ctx, testPartition)
 	require.NoError(t, err)
+	defer iter.Close()
 
 	count := 0
 	for iter.Next() {
 		count++
 	}
-	iter.Close()
 	require.NoError(t, iter.Err())
 	require.Equal(t, uploadsNum, count)
 
@@ -148,25 +147,23 @@ func TestTrackerListAfterDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	// List after delete
-	iter, err = tracker.List(ctx, testPartition)
+	iter2, err := tracker.List(ctx, testPartition)
 	require.NoError(t, err)
-	defer iter.Close()
+	defer iter2.Close()
 
-	var uploads []*multipart.Upload
-	for iter.Next() {
-		uploads = append(uploads, iter.Value())
+	var uploads []string
+	for iter2.Next() {
+		uploads = append(uploads, iter2.Value().UploadID)
 	}
-	require.NoError(t, iter.Err())
+	require.NoError(t, iter2.Err())
 	require.Len(t, uploads, uploadsNum-1)
 
 	// Verify deleted upload is not in the list
-	for _, upload := range uploads {
-		require.NotEqual(t, "upload-2", upload.UploadID)
-	}
+	require.NotContains(t, uploads, "upload-2")
 }
 
 func TestTrackerListSeekGE(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	now := time.Now()
 	const testPartition = "test-repo-instance-123"
 	store, err := kv.Open(ctx, kvparams.Config{Type: mem.DriverName})

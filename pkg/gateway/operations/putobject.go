@@ -165,6 +165,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		o.Log(req).WithError(err).Error("could not get repository")
 		if errors.Is(err, kv.ErrNotFound) {
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+			return
 		}
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return

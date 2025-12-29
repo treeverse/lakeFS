@@ -457,17 +457,11 @@ func TestMultipartListUploadsOrdering(t *testing.T) {
 	require.Len(t, outputExact.Uploads, 4, "should return all 4 uploads")
 
 	// IsTruncated should be nil or false when not truncated
-	if outputExact.IsTruncated != nil {
-		require.False(t, *outputExact.IsTruncated, "should not be truncated when request is completely fulfilled")
-	}
+	require.False(t, apiutil.Value(outputExact.IsTruncated), "should not be truncated when request is completely fulfilled")
 
 	// Per AWS spec: NextKeyMarker should be empty when IsTruncated is false
-	if outputExact.NextKeyMarker != nil {
-		require.Empty(t, *outputExact.NextKeyMarker, "NextKeyMarker should be empty when not truncated")
-	}
-	if outputExact.NextUploadIdMarker != nil {
-		require.Empty(t, *outputExact.NextUploadIdMarker, "NextUploadIdMarker should be empty when not truncated")
-	}
+	require.Empty(t, apiutil.Value(outputExact.NextKeyMarker), "NextKeyMarker should be empty when not truncated")
+	require.Empty(t, apiutil.Value(outputExact.NextUploadIdMarker), "NextUploadIdMarker should be empty when not truncated")
 
 	// Test with MaxUploads to ensure ordering is maintained with pagination
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{
@@ -507,17 +501,11 @@ func TestMultipartListUploadsOrdering(t *testing.T) {
 	require.Equal(t, expectedOrder[3], *output2.Uploads[1].Key, "fourth upload should be fourth in order")
 
 	// IsTruncated should be nil or false when not truncated
-	if output2.IsTruncated != nil {
-		require.False(t, *output2.IsTruncated, "should not be truncated on last page")
-	}
+	require.False(t, apiutil.Value(output2.IsTruncated), "should not be truncated on last page")
 
 	// Per AWS spec: NextKeyMarker should be empty when IsTruncated is false
-	if output2.NextKeyMarker != nil {
-		require.Empty(t, *output2.NextKeyMarker, "NextKeyMarker should be empty when not truncated")
-	}
-	if output2.NextUploadIdMarker != nil {
-		require.Empty(t, *output2.NextUploadIdMarker, "NextUploadIdMarker should be empty when not truncated")
-	}
+	require.Empty(t, apiutil.Value(output2.NextKeyMarker), "NextKeyMarker should be empty when not truncated")
+	require.Empty(t, apiutil.Value(output2.NextUploadIdMarker), "NextUploadIdMarker should be empty when not truncated")
 }
 
 func TestMultipartListUploadsSameKey(t *testing.T) {
@@ -587,25 +575,19 @@ func TestMultipartListUploadsSameKey(t *testing.T) {
 	require.Len(t, output2.Uploads, 1, "should return remaining 1 upload")
 
 	// IsTruncated should be nil or false when not truncated
-	if output2.IsTruncated != nil {
-		require.False(t, *output2.IsTruncated, "should not be truncated on last page")
-	}
+	require.False(t, apiutil.Value(output2.IsTruncated), "should not be truncated on last page")
 
 	// IMPORTANT: Verify the marker upload ID is NOT included in the next page
 	// When paginating with same keys, the upload ID acts as the tie-breaker
-	markerUploadID := *output.NextUploadIdMarker
+	markerUploadID := apiutil.Value(output.NextUploadIdMarker)
 	require.NotEqual(t, markerUploadID, *output2.Uploads[0].UploadId, "second page should NOT contain the marker upload ID")
 
 	// The third upload should come after the first two in sorted order
 	require.Equal(t, sortedUploadIDs[2], *output2.Uploads[0].UploadId, "third upload should be last in sorted order")
 
 	// Per AWS spec: NextKeyMarker should be empty when IsTruncated is false
-	if output2.NextKeyMarker != nil {
-		require.Empty(t, *output2.NextKeyMarker, "NextKeyMarker should be empty when not truncated")
-	}
-	if output2.NextUploadIdMarker != nil {
-		require.Empty(t, *output2.NextUploadIdMarker, "NextUploadIdMarker should be empty when not truncated")
-	}
+	require.Empty(t, apiutil.Value(output2.NextKeyMarker), "NextKeyMarker should be empty when not truncated")
+	require.Empty(t, apiutil.Value(output2.NextUploadIdMarker), "NextUploadIdMarker should be empty when not truncated")
 }
 
 func TestMultipartListUploadsUnsupported(t *testing.T) {

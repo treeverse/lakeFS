@@ -425,10 +425,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidMaxUploads))
 			return
 		}
-		maxUploads = int32(maxUploadsInt)
-		if maxUploads > maxUploadsListMPU {
-			maxUploads = maxUploadsListMPU
-		}
+		maxUploads = int32(min(maxUploadsListMPU, maxUploadsInt))
 	}
 
 	// Get repository record to compute the proper partition
@@ -437,6 +434,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		o.Log(req).WithError(err).Error("could not get repository")
 		if errors.Is(err, kv.ErrNotFound) {
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+			return
 		}
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
@@ -485,10 +483,14 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 
 	// Set pagination markers for next page
 	var nextKeyMarker, nextUploadIDMarker string
-	if isTruncated && len(uploads) > 0 {
-		last := uploads[len(uploads)-1]
-		nextKeyMarker = last.Key
-		nextUploadIDMarker = last.UploadID
+	if isTruncated {
+		if len(uploads) > 0 {
+			last := uploads[len(uploads)-1]
+			nextKeyMarker = last.Key
+			nextUploadIDMarker = last.UploadID
+		} else {
+			isTruncated = false
+		}
 	}
 
 	resp := &serde.ListMultipartUploadsOutput{
