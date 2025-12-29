@@ -46,32 +46,9 @@ func (m *MockDriver) Open(ctx context.Context, params kvparams.Config) (kv.Store
 }
 
 // Open indicates an expected call of Open.
-func (mr *MockDriverMockRecorder) Open(ctx, params any) *gomock.Call {
+func (mr *MockDriverMockRecorder) Open(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockDriver)(nil).Open), ctx, params)
-}
-
-// MockPredicate is a mock of Predicate interface.
-type MockPredicate struct {
-	ctrl     *gomock.Controller
-	recorder *MockPredicateMockRecorder
-}
-
-// MockPredicateMockRecorder is the mock recorder for MockPredicate.
-type MockPredicateMockRecorder struct {
-	mock *MockPredicate
-}
-
-// NewMockPredicate creates a new mock instance.
-func NewMockPredicate(ctrl *gomock.Controller) *MockPredicate {
-	mock := &MockPredicate{ctrl: ctrl}
-	mock.recorder = &MockPredicateMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPredicate) EXPECT() *MockPredicateMockRecorder {
-	return m.recorder
 }
 
 // MockStore is a mock of Store interface.
@@ -118,7 +95,7 @@ func (m *MockStore) Delete(ctx context.Context, partitionKey, key []byte) error 
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockStoreMockRecorder) Delete(ctx, partitionKey, key any) *gomock.Call {
+func (mr *MockStoreMockRecorder) Delete(ctx, partitionKey, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockStore)(nil).Delete), ctx, partitionKey, key)
 }
@@ -133,7 +110,7 @@ func (m *MockStore) Get(ctx context.Context, partitionKey, key []byte) (*kv.Valu
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockStoreMockRecorder) Get(ctx, partitionKey, key any) *gomock.Call {
+func (mr *MockStoreMockRecorder) Get(ctx, partitionKey, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStore)(nil).Get), ctx, partitionKey, key)
 }
@@ -148,7 +125,7 @@ func (m *MockStore) Scan(ctx context.Context, partitionKey []byte, options kv.Sc
 }
 
 // Scan indicates an expected call of Scan.
-func (mr *MockStoreMockRecorder) Scan(ctx, partitionKey, options any) *gomock.Call {
+func (mr *MockStoreMockRecorder) Scan(ctx, partitionKey, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Scan", reflect.TypeOf((*MockStore)(nil).Scan), ctx, partitionKey, options)
 }
@@ -162,7 +139,7 @@ func (m *MockStore) Set(ctx context.Context, partitionKey, key, value []byte) er
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockStoreMockRecorder) Set(ctx, partitionKey, key, value any) *gomock.Call {
+func (mr *MockStoreMockRecorder) Set(ctx, partitionKey, key, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStore)(nil).Set), ctx, partitionKey, key, value)
 }
@@ -176,7 +153,7 @@ func (m *MockStore) SetIf(ctx context.Context, partitionKey, key, value []byte, 
 }
 
 // SetIf indicates an expected call of SetIf.
-func (mr *MockStoreMockRecorder) SetIf(ctx, partitionKey, key, value, valuePredicate any) *gomock.Call {
+func (mr *MockStoreMockRecorder) SetIf(ctx, partitionKey, key, value, valuePredicate interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetIf", reflect.TypeOf((*MockStore)(nil).SetIf), ctx, partitionKey, key, value, valuePredicate)
 }
@@ -265,7 +242,7 @@ func (m *MockEntriesIterator) SeekGE(key []byte) {
 }
 
 // SeekGE indicates an expected call of SeekGE.
-func (mr *MockEntriesIteratorMockRecorder) SeekGE(key any) *gomock.Call {
+func (mr *MockEntriesIteratorMockRecorder) SeekGE(key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockEntriesIterator)(nil).SeekGE), key)
 }
