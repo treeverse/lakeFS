@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -463,12 +464,7 @@ func (cp CommitParents) Identity() []byte {
 }
 
 func (cp CommitParents) Contains(commitID CommitID) bool {
-	for _, c := range cp {
-		if c == commitID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(cp, commitID)
 }
 
 func (cp CommitParents) AsStringSlice() []string {
@@ -3130,9 +3126,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 
 	// Ensure a copy of metadata: it will be modified to add the strategy key.
 	metadata := make(map[string]string, len(commitParams.Metadata)+1)
-	for k, v := range commitParams.Metadata {
-		metadata[k] = v
-	}
+	maps.Copy(metadata, commitParams.Metadata)
 
 	lg := g.log(ctx).WithFields(logging.Fields{
 		"repository":  repository.RepositoryID,

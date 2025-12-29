@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -40,9 +41,7 @@ func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRe
 		parents[i] = string(record.Commit.Parents[i])
 	}
 	metadata := make(map[string]string, len(record.Commit.Metadata))
-	for k, v := range record.Commit.Metadata {
-		metadata[k] = v
-	}
+	maps.Copy(metadata, record.Commit.Metadata)
 	luautil.DeepPush(l, map[string]any{
 		"action_name":       actionName,
 		"hook_id":           hookID,
@@ -234,9 +233,7 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 	if hasArgs {
 		switch typedArgs := argsVal.(type) {
 		case Properties:
-			for k, v := range typedArgs {
-				args[k] = v
-			}
+			maps.Copy(args, typedArgs)
 		case map[string]any:
 			args = typedArgs
 		default:

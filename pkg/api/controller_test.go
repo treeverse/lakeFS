@@ -362,7 +362,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	commits := 100
 	const prefix = "foo/bar"
 	commitsToLook := map[string]*catalog.CommitLog{}
-	for i := 0; i < commits; i++ {
+	for i := range commits {
 		n := strconv.Itoa(i + 1)
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
@@ -409,7 +409,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 	const prefix = "foo/bar"
 	const totalCommits = 10
 	commits := make([]*catalog.CommitLog, totalCommits)
-	for i := 0; i < totalCommits; i++ {
+	for i := range totalCommits {
 		n := strconv.Itoa(i + 1)
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
@@ -1146,7 +1146,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		const times = 3 // try to create the same repo multiple times
-		for i := 0; i < times; i++ {
+		for range times {
 			resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 				DefaultBranch:    apiutil.Ptr("main"),
 				Name:             repo,
@@ -1571,7 +1571,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false)
 		testutil.Must(t, err)
 
-		for i := 0; i < 7; i++ {
+		for i := range 7 {
 			branchName := "main" + strconv.Itoa(i+1)
 			_, err := deps.catalog.CreateBranch(ctx, repo, branchName, "main", graveler.WithHidden(i%2 != 0))
 			testutil.MustDo(t, "create branch "+branchName, err)
@@ -1640,7 +1640,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	testutil.Must(t, err)
 	const createTagLen = 7
 	var createdTags []apigen.Ref
-	for i := 0; i < createTagLen; i++ {
+	for i := range createTagLen {
 		tagID := "tag" + strconv.Itoa(i)
 		commitID := commitLog.Reference
 		_, err := clt.CreateTagWithResponse(ctx, repo, apigen.CreateTagJSONRequestBody{
@@ -3386,7 +3386,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		const namePrefix = "foo2/bar"
 		const numOfObjs = 3
 		var paths []string
-		for i := 0; i < numOfObjs; i++ {
+		for i := range numOfObjs {
 			objPath := namePrefix + strconv.Itoa(i)
 			paths = append(paths, objPath)
 			resp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, branch)
@@ -3432,7 +3432,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		const namePrefix = "foo3/bar"
 		const numOfObjs = api.DefaultMaxDeleteObjects + 1
 		var paths []string
-		for i := 0; i < numOfObjs; i++ {
+		for i := range numOfObjs {
 			paths = append(paths, namePrefix+strconv.Itoa(i))
 		}
 
@@ -3975,7 +3975,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	// upload and commit content on branch
 	commitIDs := []string{respCommit.JSON201.Id}
 	const contentCount = 5
-	for i := 0; i < contentCount; i++ {
+	for i := range contentCount {
 		content := fmt.Sprintf("content-%d", i)
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, content, strings.NewReader(content), repo, "work")
 		verifyResponseOK(t, uploadResp, err)
@@ -4809,7 +4809,7 @@ func TestController_GetPhysicalAddress(t *testing.T) {
 
 		var prevPartitionTime time.Time
 		const links = 5
-		for i := 0; i < links; i++ {
+		for i := range links {
 			params := &apigen.GetPhysicalAddressParams{
 				Path: "get-path/obj" + strconv.Itoa(i),
 			}
@@ -4916,7 +4916,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
-		for i := 0; i < items; i++ {
+		for i := range items {
 			objPath := fmt.Sprintf("uncommitted/obj%d", i)
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
@@ -4929,7 +4929,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
-		for i := 0; i < items; i++ {
+		for i := range items {
 			objPath := fmt.Sprintf("committed/obj%d", i)
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
@@ -4945,7 +4945,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
-		for i := 0; i < items; i++ {
+		for i := range items {
 			objPath := fmt.Sprintf("uncommitted/obj%d", i)
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
@@ -5053,7 +5053,7 @@ func TestController_ClientDisconnect(t *testing.T) {
 		}
 
 		// process relevant metrics
-		for _, line := range strings.Split(string(body), "\n") {
+		for line := range strings.SplitSeq(string(body), "\n") {
 			if strings.HasPrefix(line, apiReqTotalMetricLabel) {
 				if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
 					clientRequestClosedCount += count
@@ -5620,7 +5620,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 	testutil.Must(t, err)
 
 	const commits = 3
-	for i := 0; i < commits; i++ {
+	for i := range commits {
 		n := strconv.Itoa(i + 1)
 		p := "foo/bar" + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})

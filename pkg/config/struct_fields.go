@@ -99,7 +99,7 @@ func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string
 	}
 
 	if value.Kind() != reflect.Struct {
-		if value.Type() == reflect.TypeOf((*SecureString)(nil)).Elem() {
+		if value.Type() == reflect.TypeFor[SecureString]() {
 			key := strings.Join(prefix, separator)
 			cb(key)
 		}
@@ -129,8 +129,8 @@ func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string
 
 func parseTag(field reflect.StructField, tag, squashValue string) (string, bool) {
 	if tagValue, ok := field.Tag.Lookup(tag); ok {
-		if strings.HasSuffix(tagValue, squashValue) {
-			return strings.TrimSuffix(tagValue, squashValue), true
+		if before, found := strings.CutSuffix(tagValue, squashValue); found {
+			return before, true
 		}
 		return tagValue, false
 	}

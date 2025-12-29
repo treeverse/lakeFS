@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"io"
+	"maps"
 	"net/http"
 	"time"
 
@@ -123,9 +124,7 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			}
 			if isAdvancedAuth {
 				requestFields[logging.RequestIDFieldKey] = reqID
-				for k, v := range fields {
-					requestFields[k] = v
-				}
+				maps.Copy(requestFields, fields)
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			responseWriter.Header().Set(requestIDHeaderName, reqID)

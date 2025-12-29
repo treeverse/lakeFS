@@ -480,7 +480,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 
 	t.Run("branch token changed max retries", func(t *testing.T) {
 		// Test safeBranchWrite retries when token changed after update, reach the maximal number of retries and then succeed
-		for i := 0; i < graveler.BranchWriteMaxTries-1; i++ {
+		for i := range graveler.BranchWriteMaxTries - 1 {
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
 			}, nil)
@@ -503,7 +503,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 
 	t.Run("branch token changed retry exhausted", func(t *testing.T) {
 		// Test safeBranchWrite retries when token changed after update, exceed the maximal number of retries and expect fail
-		for i := 0; i < graveler.BranchWriteMaxTries; i++ {
+		for i := range graveler.BranchWriteMaxTries {
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
 			}, nil)

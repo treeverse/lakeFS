@@ -136,7 +136,7 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 
 	// fake parts used for the above tests
 	var fakeParts []apigen.UploadPart
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		fakeParts = append(fakeParts, apigen.UploadPart{
 			Etag:       "etag" + strconv.Itoa(i),
 			PartNumber: i + 1,
@@ -233,7 +233,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 				totalSize int64 = 0
 				parts     []apigen.UploadPart
 			)
-			for i := 0; i < numberOfParts; i++ {
+			for i := range numberOfParts {
 				startTime := time.Now()
 				// random data - all parts except the last one should be at least >= MinUploadPartSize
 				var (

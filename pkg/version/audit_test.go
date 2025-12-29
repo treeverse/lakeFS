@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,9 +42,7 @@ func (m *MemLogger) WithFields(fields logging.Fields) logging.Logger {
 	if m.fields == nil {
 		m.fields = make(logging.Fields)
 	}
-	for k, v := range fields {
-		m.fields[k] = v
-	}
+	maps.Copy(m.fields, fields)
 	return m
 }
 

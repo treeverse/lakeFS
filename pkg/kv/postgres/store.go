@@ -191,7 +191,7 @@ func setupKeyValueDatabase(ctx context.Context, conn *pgxpool.Conn, table string
 
 	// partitions
 	partitions := getTablePartitions(table, partitionsAmount)
-	for i := 0; i < len(partitions); i++ {
+	for i := range partitions {
 		_, err = conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS`+
 			pgx.Identifier{partitions[i]}.Sanitize()+` PARTITION OF `+
 			tableSanitize+` FOR VALUES WITH (MODULUS `+strconv.Itoa(partitionsAmount)+
@@ -217,7 +217,7 @@ func generateAdvisoryLockID(name string) (string, error) {
 
 func getTablePartitions(tableName string, partitionsAmount int) []string {
 	res := make([]string, 0, partitionsAmount)
-	for i := 0; i < partitionsAmount; i++ {
+	for i := range partitionsAmount {
 		res = append(res, fmt.Sprintf("%s_%d", tableName, i))
 	}
 	return res

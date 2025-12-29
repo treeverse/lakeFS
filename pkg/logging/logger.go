@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"reflect"
 	"runtime"
@@ -250,7 +251,7 @@ func (l *logrusEntryWrapper) WithContext(ctx context.Context) Logger {
 	)
 }
 
-var durationType = reflect.TypeOf(time.Duration(0))
+var durationType = reflect.TypeFor[time.Duration]()
 
 // splitDurationFields modifies fields to split every field of type
 // time.Duration into 2 fields, one "_nsecs" and one "_str".
@@ -421,8 +422,6 @@ func AddFields(ctx context.Context, fields Fields) context.Context {
 	if ctxFields != nil {
 		loggerFields = ctxFields.(Fields)
 	}
-	for k, v := range fields {
-		loggerFields[k] = v
-	}
+	maps.Copy(loggerFields, fields)
 	return context.WithValue(ctx, LogFieldsContextKey, loggerFields)
 }

@@ -3,6 +3,7 @@ package branch
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -60,10 +61,8 @@ func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.
 		if !matcher.(glob.Glob).Match(string(branchID)) {
 			continue
 		}
-		for _, c := range blockedActions.GetValue() {
-			if c == action {
-				return true, nil
-			}
+		if slices.Contains(blockedActions.GetValue(), action) {
+			return true, nil
 		}
 	}
 	return false, nil

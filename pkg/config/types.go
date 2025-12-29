@@ -15,9 +15,9 @@ import (
 type Strings []string
 
 var (
-	ourStringsType  = reflect.TypeOf(Strings{})
-	stringType      = reflect.TypeOf("")
-	stringSliceType = reflect.TypeOf([]string{})
+	ourStringsType  = reflect.TypeFor[Strings]()
+	stringType      = reflect.TypeFor[string]()
+	stringSliceType = reflect.TypeFor[[]string]()
 
 	ErrInvalidKeyValuePair = errors.New("invalid key-value pair")
 )
@@ -63,7 +63,7 @@ func (s SecureString) MarshalText() ([]byte, error) {
 type OnlyString string
 
 var (
-	onlyStringType  = reflect.TypeOf(OnlyString(""))
+	onlyStringType  = reflect.TypeFor[OnlyString]()
 	ErrMustBeString = errors.New("must be a string")
 )
 
@@ -96,7 +96,7 @@ func DecodeStringToMap() mapstructure.DecodeHookFunc {
 			return data, nil
 		}
 		// check if target is map[string]string
-		if t != reflect.TypeOf(map[string]string{}).Kind() {
+		if t != reflect.TypeFor[map[string]string]().Kind() {
 			return data, nil
 		}
 
