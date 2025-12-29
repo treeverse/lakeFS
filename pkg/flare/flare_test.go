@@ -199,14 +199,14 @@ func TestDefaultReplacerFunc(t *testing.T) {
 			flr, err := NewFlare(WithEnv(tc.EnvVars))
 			assert.NoError(t, err)
 
-			expected := ""
+			var expected strings.Builder
 			b := new(bytes.Buffer)
 			bw := bufio.NewWriter(b)
 			for _, kv := range tc.EnvVars {
 				hasher := sha512.New()
 				v := strings.SplitN(kv, "=", 2)
 				hasher.Write([]byte(v[1]))
-				expected += fmt.Sprintf("%s=%x\n", v[0], hasher.Sum(nil))
+				expected.WriteString(fmt.Sprintf("%s=%x\n", v[0], hasher.Sum(nil)))
 			}
 			if err := flr.processEnvVars(bw); err != nil {
 				t.Errorf("failed to process env vars: %s", err)
@@ -214,7 +214,7 @@ func TestDefaultReplacerFunc(t *testing.T) {
 			if err := bw.Flush(); err != nil {
 				t.Errorf("failed to flush buffer: %s", err)
 			}
-			assert.Equal(t, expected, b.String())
+			assert.Equal(t, expected.String(), b.String())
 		})
 	}
 }

@@ -171,7 +171,11 @@ export const PolicyDisplay = ({ policy, asJSON }) => {
                                     <code>{statement.resource}</code>
                                 </td>
                                 <td>
-                                    <strong style={{ color: statement.effect === 'allow' ? 'green' : 'red' }}>
+                                    <strong
+                                        style={{
+                                            color: statement.effect === 'allow' ? 'green' : 'red',
+                                        }}
+                                    >
                                         {statement.effect}
                                     </strong>
                                 </td>

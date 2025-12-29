@@ -6,7 +6,10 @@ function getRepoStorageConfig(configs, repo) {
     if (configs.length > 1) {
         const storageID = repo?.storage_id;
         if (!storageID) {
-            return { storageConfig: null, error: new Error('Repo with no StorageID, cannot match storage config') };
+            return {
+                storageConfig: null,
+                error: new Error('Repo with no StorageID, cannot match storage config'),
+            };
         }
 
         // find the storage config that matches the repo

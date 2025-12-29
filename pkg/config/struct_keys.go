@@ -61,7 +61,7 @@ func appendStructKeys(typ reflect.Type, tag, squashValue string, prefix []string
 
 // ValidateMissingRequiredKeys returns all keys of value in GetStructKeys format that have an
 // additional required tag set but are unset.
-func ValidateMissingRequiredKeys(value interface{}, tag, squashValue string) []string {
+func ValidateMissingRequiredKeys(value any, tag, squashValue string) []string {
 	return appendStructKeysIfZero(reflect.ValueOf(value), tag, ","+squashValue, "validate", "required", nil, nil)
 }
 
@@ -127,7 +127,7 @@ func appendStructKeysIfZero(value reflect.Value, tag, squashValue, validateTag, 
 
 		// Perform any needed validations.
 		if validationsString, ok := fieldType.Tag.Lookup(validateTag); ok {
-			for _, validation := range strings.Split(validationsString, ",") {
+			for validation := range strings.SplitSeq(validationsString, ",") {
 				// Validate "required" field.
 				if validation == requiredValue && fieldValue.IsZero() {
 					keys = append(keys, strings.Join(append(prefix, fieldName), sep))

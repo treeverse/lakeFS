@@ -19,11 +19,11 @@ var (
 	ErrInvalidValue  = fmt.Errorf("invalid value: %w", ErrInvalid)
 )
 
-type ValidateFunc func(v interface{}) error
+type ValidateFunc func(v any) error
 
 type ValidateArg struct {
 	Name  string
-	Value interface{}
+	Value any
 	Fn    ValidateFunc
 }
 
@@ -42,7 +42,7 @@ func Validate(args []ValidateArg) error {
 }
 
 func MakeValidateOptional(fn ValidateFunc) ValidateFunc {
-	return func(v interface{}) error {
+	return func(v any) error {
 		switch s := v.(type) {
 		case string:
 			if len(s) == 0 {
@@ -63,7 +63,7 @@ func MakeValidateOptional(fn ValidateFunc) ValidateFunc {
 	}
 }
 
-func ValidateRequiredString(v interface{}) error {
+func ValidateRequiredString(v any) error {
 	s, ok := v.(string)
 	if !ok {
 		panic(ErrInvalidType)
@@ -74,7 +74,7 @@ func ValidateRequiredString(v interface{}) error {
 	return nil
 }
 
-func ValidateNonNegativeInt(v interface{}) error {
+func ValidateNonNegativeInt(v any) error {
 	i, ok := v.(int)
 	if !ok {
 		panic(ErrInvalidType)
@@ -85,7 +85,7 @@ func ValidateNonNegativeInt(v interface{}) error {
 	return nil
 }
 
-func ValidateNilOrPositiveInt(v interface{}) error {
+func ValidateNilOrPositiveInt(v any) error {
 	i, ok := v.(*int)
 	if !ok {
 		panic(ErrInvalidType)

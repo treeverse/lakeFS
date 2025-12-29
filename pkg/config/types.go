@@ -15,16 +15,16 @@ import (
 type Strings []string
 
 var (
-	ourStringsType  = reflect.TypeOf(Strings{})
-	stringType      = reflect.TypeOf("")
-	stringSliceType = reflect.TypeOf([]string{})
+	ourStringsType  = reflect.TypeFor[Strings]()
+	stringType      = reflect.TypeFor[string]()
+	stringSliceType = reflect.TypeFor[[]string]()
 
 	ErrInvalidKeyValuePair = errors.New("invalid key-value pair")
 )
 
 // DecodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
 // of strings into Strings.
-func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (interface{}, error) {
+func DecodeStrings(fromValue reflect.Value, toValue reflect.Value) (any, error) {
 	if toValue.Type() != ourStringsType {
 		return fromValue.Interface(), nil
 	}
@@ -63,7 +63,7 @@ func (s SecureString) MarshalText() ([]byte, error) {
 type OnlyString string
 
 var (
-	onlyStringType  = reflect.TypeOf(OnlyString(""))
+	onlyStringType  = reflect.TypeFor[OnlyString]()
 	ErrMustBeString = errors.New("must be a string")
 )
 
@@ -75,7 +75,7 @@ func (o OnlyString) String() string {
 // value as an OnlyString, but fails on all other values.  It is useful to
 // force parsing of a field that can contain just digits as a string, when
 // the leading digit might be 0.
-func DecodeOnlyString(fromValue reflect.Value, toValue reflect.Value) (interface{}, error) {
+func DecodeOnlyString(fromValue reflect.Value, toValue reflect.Value) (any, error) {
 	if toValue.Type() != onlyStringType {
 		// Not trying to translate to OnlyString
 		return fromValue.Interface(), nil
@@ -90,13 +90,13 @@ func DecodeOnlyString(fromValue reflect.Value, toValue reflect.Value) (interface
 // The string is expected to be a comma-separated list of key-value pairs, where the key and value
 // are separated by an equal sign.
 func DecodeStringToMap() mapstructure.DecodeHookFunc {
-	return func(f reflect.Kind, t reflect.Kind, data interface{}) (interface{}, error) {
+	return func(f reflect.Kind, t reflect.Kind, data any) (any, error) {
 		// check if field is a string and target is a map
 		if f != reflect.String || t != reflect.Map {
 			return data, nil
 		}
 		// check if target is map[string]string
-		if t != reflect.TypeOf(map[string]string{}).Kind() {
+		if t != reflect.TypeFor[map[string]string]().Kind() {
 			return data, nil
 		}
 
@@ -127,7 +127,7 @@ func DecodeStringToMap() mapstructure.DecodeHookFunc {
 // If the string is empty, an empty slice is returned.
 // If the string cannot be parsed as a JSON array, the original data is returned unchanged.
 func StringToSliceWithBracketHookFunc() mapstructure.DecodeHookFunc {
-	return func(f reflect.Kind, t reflect.Kind, data interface{}) (interface{}, error) {
+	return func(f reflect.Kind, t reflect.Kind, data any) (any, error) {
 		if f != reflect.String || t != reflect.Slice {
 			return data, nil
 		}
@@ -156,7 +156,7 @@ func StringToSliceWithBracketHookFunc() mapstructure.DecodeHookFunc {
 // If the string is empty, a new instance of the target struct is returned.
 // If the string cannot be parsed as a JSON object, the original data is returned unchanged.
 func StringToStructHookFunc() mapstructure.DecodeHookFunc {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	return func(f reflect.Type, t reflect.Type, data any) (any, error) {
 		if f.Kind() != reflect.String ||
 			(t.Kind() != reflect.Struct && !(t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct)) {
 			return data, nil
@@ -173,7 +173,7 @@ func StringToStructHookFunc() mapstructure.DecodeHookFunc {
 		if raw == "" {
 			return val, nil
 		}
-		var m map[string]interface{}
+		var m map[string]any
 		err := json.Unmarshal([]byte(raw), &m)
 		if err != nil {
 			return data, nil

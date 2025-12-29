@@ -25,7 +25,7 @@ func (te *trackableExecuter) WasExecuted() bool {
 	return !chanOpen
 }
 
-func (te *trackableExecuter) Execute() (interface{}, error) {
+func (te *trackableExecuter) Execute() (any, error) {
 	close(te.execTracker)
 	return nil, nil
 }
@@ -43,7 +43,7 @@ func (d *db) Insert(key string, val string) {
 	d.kvStore.Store(key, val)
 }
 
-func (d *db) Get(key string) (interface{}, bool) {
+func (d *db) Get(key string) (any, bool) {
 	atomic.AddInt32(&d.accessCount, 1)
 	return d.kvStore.Load(key)
 }
@@ -94,7 +94,7 @@ func testReadAfterWrite(t *testing.T) {
 
 	// reader1 starts
 	go func() {
-		r1, _ := exec.BatchFor(t.Context(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (interface{}, error) {
+		r1, _ := exec.BatchFor(t.Context(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (any, error) {
 			version, _ := db.Get("v")
 			return version, nil
 		}))
@@ -157,7 +157,7 @@ func testBatchExpiration(t *testing.T) {
 
 	// reader1 starts
 	go func() {
-		r1, _ := exec.BatchFor(t.Context(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (interface{}, error) {
+		r1, _ := exec.BatchFor(t.Context(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (any, error) {
 			return "v1", nil
 		}))
 		if r1 != "v1" {
@@ -168,7 +168,7 @@ func testBatchExpiration(t *testing.T) {
 
 	go func() {
 		<-read1Done // ensure r2 starts after r1 has returned
-		r2, _ := exec.BatchFor(t.Context(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (interface{}, error) {
+		r2, _ := exec.BatchFor(t.Context(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (any, error) {
 			return "v2", nil
 		}))
 		if r2 != "v2" {
@@ -239,7 +239,7 @@ func testBatchByKey(t *testing.T) {
 func TestExecutor_BatchFor(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(50)
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		go func() {
 			defer wg.Done()
 			testReadAfterWrite(t)

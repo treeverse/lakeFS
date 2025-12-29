@@ -105,16 +105,14 @@ func TestCopyObject(t *testing.T) {
 			copyErr  error
 		)
 		// Run copy object async and cancel context after 5 seconds
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			copyResp, copyErr = client.CopyObjectWithResponse(cancelCtx, repo, "main", &apigen.CopyObjectParams{
 				DestPath: destPath,
 			}, apigen.CopyObjectJSONRequestBody{
 				SrcPath: largeObject,
 				SrcRef:  &srcBranch,
 			})
-		}()
+		})
 
 		time.Sleep(5 * time.Second)
 		cancel()

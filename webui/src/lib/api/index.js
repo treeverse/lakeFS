@@ -180,7 +180,10 @@ class Auth {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: JSON.stringify({ access_key_id: accessKeyId, secret_access_key: secretAccessKey }),
+            body: JSON.stringify({
+                access_key_id: accessKeyId,
+                secret_access_key: secretAccessKey,
+            }),
         });
 
         if (response.status === 401) {
@@ -467,7 +470,9 @@ class Auth {
     }
 
     async deleteUser(userId) {
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}`, {
+            method: 'DELETE',
+        });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
@@ -481,7 +486,9 @@ class Auth {
     }
 
     async deleteGroup(groupId) {
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}`, { method: 'DELETE' });
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}`, {
+            method: 'DELETE',
+        });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
@@ -495,7 +502,9 @@ class Auth {
     }
 
     async deletePolicy(policyId) {
-        const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, { method: 'DELETE' });
+        const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, {
+            method: 'DELETE',
+        });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
@@ -543,7 +552,9 @@ class Repositories {
     }
 
     async delete(repoId) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`, { method: 'DELETE' });
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`, {
+            method: 'DELETE',
+        });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
@@ -1317,8 +1328,7 @@ class Config {
                 const storages = buildStoragesConfigs(cfg);
                 const uiConfig = cfg['ui_config'];
                 const versionConfig = cfg['version_config'];
-                const capabilitiesConfig = cfg['capabilities_config'];
-                return { storages, uiConfig, versionConfig, capabilitiesConfig };
+                return { storages, uiConfig, versionConfig };
             }
             case 409:
                 throw new Error('Conflict');

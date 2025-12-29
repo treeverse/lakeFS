@@ -112,7 +112,11 @@ const UserCredentialsContainer = () => {
             userId={userId}
             after={after ? after : ''}
             onPaginate={(after) =>
-                router.push({ pathname: '/auth/users/:userId/credentials', query: { after }, params: { userId } })
+                router.push({
+                    pathname: '/auth/users/:userId/credentials',
+                    query: { after },
+                    params: { userId },
+                })
             }
         />
     );

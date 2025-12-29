@@ -46,7 +46,10 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     const [deleteError, setDeleteError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
-    const [paginationData, setPaginationData] = useState({ hasMorePages: false, paginatedFilteredUsers: [] });
+    const [paginationData, setPaginationData] = useState({
+        hasMorePages: false,
+        paginatedFilteredUsers: [],
+    });
     const [searchPrefix, setSearchPrefix] = useDebouncedState(prefix, (search) => {
         return navigateToUsersPage(search, 0);
     });
@@ -242,7 +245,17 @@ const UsersIndexPage = () => {
 
     return (
         <GetUserDisplayNameByIdContext.Provider value={getUserDisplayNameById}>
-            <Outlet context={{ setActiveTab, refresh, setRefresh, allUsers, loading, error, getUserDisplayNameById }} />
+            <Outlet
+                context={{
+                    setActiveTab,
+                    refresh,
+                    setRefresh,
+                    allUsers,
+                    loading,
+                    error,
+                    getUserDisplayNameById,
+                }}
+            />
         </GetUserDisplayNameByIdContext.Provider>
     );
 };

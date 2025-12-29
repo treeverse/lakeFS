@@ -180,7 +180,7 @@ func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamesp
 func createMultipartContents(lastPartPartial bool) ([][]byte, []byte) {
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
-	for i := 0; i < multipartNumberOfParts; i++ {
+	for i := range multipartNumberOfParts {
 		if lastPartPartial && (i == multipartNumberOfParts-1) {
 			parts[i] = randstr.Bytes(multipartPartSize/2 + i)
 		} else {
@@ -245,7 +245,7 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 	t.Helper()
 	multiParts := make([]block.MultipartPart, multipartNumberOfParts)
 	var startPosition int64 = 0
-	for i := 0; i < multipartNumberOfParts; i++ {
+	for i := range multipartNumberOfParts {
 		partNumber := i + 1
 		endPosition := startPosition + multipartPartSize
 		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)

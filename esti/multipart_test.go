@@ -47,7 +47,7 @@ func TestMultipartUpload(t *testing.T) {
 
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
-	for i := 0; i < multipartNumberOfParts; i++ {
+	for i := range multipartNumberOfParts {
 		parts[i] = randstr.Bytes(multipartPartSize + i)
 		partsConcat = append(partsConcat, parts[i]...)
 	}
@@ -172,7 +172,7 @@ func uploadMultipartParts(t *testing.T, ctx context.Context, client *s3.Client, 
 	errs := make([]error, count)
 	var wg sync.WaitGroup
 	wg.Add(count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		go func(i int) {
 			defer wg.Done()
 			partNumber := firstIndex + i + 1

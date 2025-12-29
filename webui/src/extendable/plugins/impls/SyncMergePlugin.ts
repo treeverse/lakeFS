@@ -13,7 +13,7 @@ class SyncMergePlugin implements PluginMergeOperation {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         capabilitiesConfig?: CapabilitiesConfig,
     ): Promise<MergeResult> {
-        return await refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
+        return refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
     }
 }
 

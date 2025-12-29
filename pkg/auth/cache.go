@@ -46,7 +46,7 @@ func NewLRUCache(size int, expiry, jitter time.Duration) *LRUCache {
 }
 
 func (c *LRUCache) GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error) {
-	v, err := c.credentialsCache.GetOrSet(accessKeyID, func() (interface{}, error) { return setFn() })
+	v, err := c.credentialsCache.GetOrSet(accessKeyID, func() (any, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (c *LRUCache) GetCredential(accessKeyID string, setFn CredentialSetFn) (*mo
 }
 
 func (c *LRUCache) GetUser(key UserKey, setFn UserSetFn) (*model.User, error) {
-	v, err := c.userCache.GetOrSet(key, func() (interface{}, error) { return setFn() })
+	v, err := c.userCache.GetOrSet(key, func() (any, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *LRUCache) GetUser(key UserKey, setFn UserSetFn) (*model.User, error) {
 }
 
 func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
-	v, err := c.policyCache.GetOrSet(userID, func() (interface{}, error) { return setFn() })
+	v, err := c.policyCache.GetOrSet(userID, func() (any, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*m
 }
 
 func (c *LRUCache) GetExternalPrincipal(key string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error) {
-	v, err := c.externalPrincipalCache.GetOrSet(key, func() (interface{}, error) { return setFn() })
+	v, err := c.externalPrincipalCache.GetOrSet(key, func() (any, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,7 @@ class SyncCommitPlugin implements PluginCommitOperation {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         capabilitiesConfig?: CapabilitiesConfig,
     ): Promise<CommitResult> {
-        return await commits.commit(repoId, branchId, message, metadata);
+        return commits.commit(repoId, branchId, message, metadata);
     }
 }
 

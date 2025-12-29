@@ -215,15 +215,15 @@ func (c *S3Client) ListObjects(l *lua.State) int {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
-	results := make([]map[string]interface{}, 0)
+	results := make([]map[string]any, 0)
 	for _, prefix := range resp.CommonPrefixes {
-		results = append(results, map[string]interface{}{
+		results = append(results, map[string]any{
 			"key":  *prefix.Prefix,
 			"type": "prefix",
 		})
 	}
 	for _, obj := range resp.Contents {
-		results = append(results, map[string]interface{}{
+		results = append(results, map[string]any{
 			"key":           *obj.Key,
 			"type":          "object",
 			"etag":          *obj.ETag,
@@ -237,7 +237,7 @@ func (c *S3Client) ListObjects(l *lua.State) int {
 		return results[i]["key"].(string) > results[j]["key"].(string)
 	})
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"is_truncated":            resp.IsTruncated,
 		"next_continuation_token": aws.ToString(resp.NextContinuationToken),
 		"results":                 results,

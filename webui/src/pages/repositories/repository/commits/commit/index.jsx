@@ -13,7 +13,11 @@ import { useOutletContext } from 'react-router-dom';
 const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const [actionError, setActionError] = useState(null);
     const [afterUpdated, setAfterUpdated] = useState(''); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({ prefix: prefix, results: [], pagination: {} }); // current retrieved children of the item
+    const [resultsState, setResultsState] = useState({
+        prefix: prefix,
+        results: [],
+        pagination: {},
+    }); // current retrieved children of the item
 
     const delimiter = '/';
 

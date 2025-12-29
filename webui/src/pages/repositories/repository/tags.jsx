@@ -328,7 +328,11 @@ const TagsContainer = () => {
             onPaginate={(after) => {
                 const query = { after };
                 if (router.query.prefix) query.prefix = router.query.prefix;
-                router.push({ pathname: '/repositories/:repoId/tags', params: { repoId: repo.id }, query });
+                router.push({
+                    pathname: '/repositories/:repoId/tags',
+                    params: { repoId: repo.id },
+                    query,
+                });
             }}
         />
     );

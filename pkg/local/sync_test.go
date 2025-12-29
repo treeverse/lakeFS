@@ -132,7 +132,7 @@ func TestSyncManager_download(t *testing.T) {
 			var downloadAttempts int
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("X-Content-Type-Options", "nosniff")
-				var res interface{}
+				var res any
 				switch {
 				case strings.Contains(r.RequestURI, "/stat"):
 					w.Header().Set("Content-Type", "application/json")

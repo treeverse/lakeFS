@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"maps"
 	"strconv"
 
 	"github.com/cockroachdb/pebble/sstable"
@@ -42,9 +43,7 @@ func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, storageID committed.S
 	}
 
 	props := make(map[string]string)
-	for k, v := range metadata {
-		props[k] = v
-	}
+	maps.Copy(props, metadata)
 
 	writer := sstable.NewWriter(fh, sstable.WriterOptions{
 		Compression:             sstable.SnappyCompression,

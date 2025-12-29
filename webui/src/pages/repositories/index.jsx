@@ -312,7 +312,10 @@ const RepositoriesPage = () => {
             await repositories.create(repo);
             setRefresh(!refresh);
             if (presentRepo) {
-                router.push({ pathname: `/repositories/:repoId/objects`, params: { repoId: repo.name } });
+                router.push({
+                    pathname: `/repositories/:repoId/objects`,
+                    params: { repoId: repo.name },
+                });
             }
             return true;
         } catch (error) {
