@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { RefTypeBranch } from '../../../constants';
-import { ActionGroup, ActionsBar, AlertError, RefreshButton } from '../controls';
+import { ActionGroup, ActionsBar, AlertError, Loading, RefreshButton } from '../controls';
 import { MetadataFields } from './metadata';
 import { getMetadataIfValid, touchInvalidFields } from './metadataHelpers';
 import { GitMergeIcon, GitPullRequestIcon } from '@primer/octicons-react';
