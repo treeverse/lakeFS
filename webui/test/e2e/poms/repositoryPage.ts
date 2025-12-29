@@ -43,6 +43,18 @@ export class RepositoryPage {
     await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
   }
 
+  async selectComparedToBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Compared to branch: " }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
+    // Wait for URL to update after branch switch
+    await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
+  }
+
+  async switchBaseBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Base branch: " }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
+  }
+
   // file manipulation operations
 
   async deleteFirstObjectInDirectory(dirName: string): Promise<void> {
@@ -108,11 +120,6 @@ export class RepositoryPage {
       .getByRole("dialog")
       .getByRole("button", { name: "Merge" })
       .click();
-  }
-
-  async switchBaseBranch(name: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Base branch: " }).click();
-    await this.page.getByRole("button", { name }).click();
   }
 
   // navigation

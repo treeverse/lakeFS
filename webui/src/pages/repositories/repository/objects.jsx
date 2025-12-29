@@ -40,12 +40,12 @@ import {
     uploadWithProgress,
     parseRawHeaders,
     branches,
-    commits,
     refs,
 } from '../../../lib/api';
 import { useAPI, useAPIWithPagination } from '../../../lib/hooks/api';
 import { useRefs } from '../../../lib/hooks/repo';
 import { useRouter } from '../../../lib/hooks/router';
+import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
 import { RefTypeBranch } from '../../../constants';
 import {
     ExecuteImportButton,
@@ -1263,6 +1263,7 @@ const ObjectsBrowser = ({ config }) => {
     const { path, after, importDialog, upload, showChanges } = router.query;
     const [searchParams, setSearchParams] = useSearchParams();
     const { repo, reference, loading, error } = useRefs();
+    const pluginManager = usePluginManager();
     const [showUpload, setShowUpload] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
@@ -1460,7 +1461,7 @@ const ObjectsBrowser = ({ config }) => {
                                 enabled={hasChanges && !repo?.read_only}
                                 onCommit={async (commitDetails, done) => {
                                     try {
-                                        await commits.commit(
+                                        await pluginManager.commitOperation.commit(
                                             repo.id,
                                             reference.id,
                                             commitDetails.message,

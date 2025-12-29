@@ -1042,6 +1042,37 @@ class Commits {
         }
         return response.json();
     }
+
+    async commitAsync(repoId, branchId, message, metadata = {}) {
+        const body = {
+            message,
+            metadata,
+        };
+
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async`,
+            {
+                method: 'POST',
+                body: JSON.stringify(body),
+            },
+        );
+
+        if (response.status !== 202) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async commitAsyncStatus(repoId, branchId, taskId) {
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits/async/${taskId}/status`,
+        );
+
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
 }
 
 class Refs {
@@ -1088,6 +1119,38 @@ class Refs {
             default:
                 throw new Error(await extractError(response));
         }
+    }
+
+    async mergeAsync(repoId, sourceRef, destinationBranch, strategy = '', message = '', metadata = {}) {
+        const body = {
+            strategy,
+            message,
+            metadata,
+        };
+
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/async`,
+            {
+                method: 'POST',
+                body: JSON.stringify(body),
+            },
+        );
+
+        if (response.status !== 202) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async mergeAsyncStatus(repoId, sourceRef, destinationBranch, taskId) {
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceRef)}/merge/${encodeURIComponent(destinationBranch)}/async/${taskId}/status`,
+        );
+
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
     }
 }
 
