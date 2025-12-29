@@ -2,6 +2,7 @@ package stress
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -51,9 +52,7 @@ func (h *Histogram) Clone() *Histogram {
 	copy(buckets, h.buckets)
 
 	counters := make(map[int64]int64)
-	for k, v := range h.counters {
-		counters[k] = v
-	}
+	maps.Copy(counters, h.counters)
 
 	return &Histogram{
 		buckets:  buckets,
