@@ -2259,7 +2259,8 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 		return err
 	}
 
-	// start heartbeat: a background goroutine to update the task status in the kv store every 5 seconds, until the task is done
+	// start heartbeat: a background goroutine to update the task status in the kv store
+	// every TaskHeartbeatInterval seconds, until the task is done
 	cancelCtx, cancel := context.WithCancel(ctx)
 	currTaskStatus := proto.Clone(taskStatus) // deep copy of the task status, to avoid race conditions
 	go func() {
