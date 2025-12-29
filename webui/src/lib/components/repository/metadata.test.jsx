@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -16,7 +16,7 @@ import { MetadataFields } from './metadata';
 const MetadataFieldsWrapper = ({ initialFields }) => {
     const [fields, setFields] = React.useState(initialFields);
 
-    return (<MetadataFields metadataFields={fields} setMetadataFields={setFields}/>);
+    return <MetadataFields metadataFields={fields} setMetadataFields={setFields} />;
 };
 
 describe('MetadataFields validation flow', () => {
@@ -82,10 +82,14 @@ describe('MetadataFields validation flow', () => {
     it('removes the correct metadata row', async () => {
         const user = userEvent.setup();
 
-        render(<MetadataFieldsWrapper initialFields={[
-            { key: 'a', value: '1', touched: false },
-            { key: 'b', value: '2', touched: false }
-        ]} />);
+        render(
+            <MetadataFieldsWrapper
+                initialFields={[
+                    { key: 'a', value: '1', touched: false },
+                    { key: 'b', value: '2', touched: false },
+                ]}
+            />,
+        );
 
         const firstDeleteButton = screen.getByRole('button', { name: 'Remove metadata field 1' });
 
@@ -97,4 +101,3 @@ describe('MetadataFields validation flow', () => {
         expect(screen.queryByDisplayValue('a')).not.toBeInTheDocument();
     });
 });
-

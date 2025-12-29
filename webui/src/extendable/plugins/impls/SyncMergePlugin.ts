@@ -1,9 +1,6 @@
-import { refs } from "../../../lib/api";
-import {
-    MergeResult,
-    PluginMergeOperation
-} from "../pluginMergeOperation";
-import { CapabilitiesConfig } from "../../../lib/hooks/configProvider";
+import { refs } from '../../../lib/api';
+import { MergeResult, PluginMergeOperation } from '../pluginMergeOperation';
+import { CapabilitiesConfig } from '../../../lib/hooks/configProvider';
 
 class SyncMergePlugin implements PluginMergeOperation {
     async merge(
@@ -14,16 +11,9 @@ class SyncMergePlugin implements PluginMergeOperation {
         message?: string,
         metadata?: { [key: string]: string },
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        capabilitiesConfig?: CapabilitiesConfig
+        capabilitiesConfig?: CapabilitiesConfig,
     ): Promise<MergeResult> {
-        return await refs.merge(
-            repoId,
-            sourceRef,
-            destinationBranch,
-            strategy,
-            message,
-            metadata
-        );
+        return await refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
     }
 }
 

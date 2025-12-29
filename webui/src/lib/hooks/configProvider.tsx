@@ -1,9 +1,9 @@
-import React, {createContext, FC, useContext, useEffect, useMemo} from "react";
+import React, { createContext, FC, useContext, useEffect, useMemo } from 'react';
 
-import { config } from "../api";
-import { usePluginManager } from "../../extendable/plugins/pluginsContext";
-import {useAPI} from "./api";
-import {useAuth} from "../auth/authContext";
+import { config } from '../api';
+import { usePluginManager } from '../../extendable/plugins/pluginsContext';
+import { useAPI } from './api';
+import { useAuth } from '../auth/authContext';
 
 type ConfigContextType = {
     error: Error | null;
@@ -61,9 +61,9 @@ const configContext = createContext<ConfigContextType>(configInitialState);
 
 const useConfigContext = () => useContext(configContext);
 
-const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
+const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     const pluginManager = usePluginManager();
-    const {user} = useAuth();
+    const { user } = useAuth();
     const { response, loading, error } = useAPI(() => config.getConfig(), [user]);
 
     useEffect(() => {
@@ -73,16 +73,11 @@ const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     }, [response, pluginManager]);
 
     const value = useMemo(
-        () => (
-            { config: response ?? null, loading, error } satisfies ConfigContextType
-        ),
-        [response, loading, error]);
-
-    return (
-        <configContext.Provider value={value}>
-            {children}
-        </configContext.Provider>
+        () => ({ config: response ?? null, loading, error }) satisfies ConfigContextType,
+        [response, loading, error],
     );
+
+    return <configContext.Provider value={value}>{children}</configContext.Provider>;
 };
 
 export type { ConfigType, CustomViewer, CapabilitiesConfig };

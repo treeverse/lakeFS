@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 type RepoCreationFormParams = {
     formID: string;
@@ -7,7 +7,7 @@ type RepoCreationFormParams = {
     setFormValid: unknown;
     onSubmit: unknown;
     error: null | undefined;
-}
+};
 
 export interface PluginRepoCreationForm {
     build: (params: RepoCreationFormParams) => React.ReactElement;

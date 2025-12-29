@@ -1,19 +1,19 @@
-import Layout from "../../../lib/components/layout";
-import React, {useRef, useState} from "react";
-import {Navigate} from "react-router-dom";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
-import Form from "react-bootstrap/Form";
-import {auth} from "../../../lib/api";
-import {ActionGroup, ActionsBar, AlertError} from "../../../lib/components/controls";
-import Button from "react-bootstrap/Button";
-import {useRouter} from "../../../lib/hooks/router";
+import Layout from '../../../lib/components/layout';
+import React, { useRef, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import { auth } from '../../../lib/api';
+import { ActionGroup, ActionsBar, AlertError } from '../../../lib/components/controls';
+import Button from 'react-bootstrap/Button';
+import { useRouter } from '../../../lib/hooks/router';
 
-const TOKEN_PARAM_NAME = "token";
-const EMAIL_PARAM_NAME = "email";
+const TOKEN_PARAM_NAME = 'token';
+const EMAIL_PARAM_NAME = 'email';
 
-const CreateUserWithPasswordForm = ({token, email}) => {
+const CreateUserWithPasswordForm = ({ token, email }) => {
     const router = useRouter();
 
     const onPasswordChange = () => {
@@ -36,63 +36,79 @@ const CreateUserWithPasswordForm = ({token, email}) => {
 
     return (
         <Row>
-            <Col md={{offset: 4, span: 4}}>
+            <Col md={{ offset: 4, span: 4 }}>
                 <div className="invited-welcome-msg">
-                    <div className="title">
-                        Welcome to the lake!
-                    </div>
-                    <div className="body">
-                        You were invited to use lakeFS Cloud!
-                    </div>
+                    <div className="title">Welcome to the lake!</div>
+                    <div className="body">You were invited to use lakeFS Cloud!</div>
                 </div>
                 <Card className="create-invited-user-widget">
                     <Card.Header>Activate User</Card.Header>
                     <Card.Body>
-                        <Form id='activate-user' onSubmit={async (e) => {
-                            e.preventDefault();
-                            try {
-                                await auth.updatePasswordByToken(token, e.target.password.value, email);
-                                setReqActivateUserError(null);
-                                router.push("/auth/login");
-                            } catch (err) {
-                                setReqActivateUserError(err);
-                            }
-                        }}>
+                        <Form
+                            id="activate-user"
+                            onSubmit={async (e) => {
+                                e.preventDefault();
+                                try {
+                                    await auth.updatePasswordByToken(token, e.target.password.value, email);
+                                    setReqActivateUserError(null);
+                                    router.push('/auth/login');
+                                } catch (err) {
+                                    setReqActivateUserError(err);
+                                }
+                            }}
+                        >
                             <Form.Group controlId="email">
-                                <Form.Control type="text" placeholder={email} disabled={true}/>
+                                <Form.Control type="text" placeholder={email} disabled={true} />
                             </Form.Group>
 
                             <Form.Group controlId="password">
-                                <Form.Control type="password" placeholder="Password" ref={newPwdField} onChange={onPasswordChange}/>
+                                <Form.Control
+                                    type="password"
+                                    placeholder="Password"
+                                    ref={newPwdField}
+                                    onChange={onPasswordChange}
+                                />
                             </Form.Group>
 
                             <Form.Group controlId="confirmPassword">
-                                <Form.Control type="password" placeholder="Confirm Password" ref={confirmPasswordField} onChange={onPasswordChange}/>
-                                {pwdConfirmValid === false &&
-                                <Form.Text className="text-danger">
-                                    Your password and confirmation password do not match.
-                                </Form.Text>
-                                }
+                                <Form.Control
+                                    type="password"
+                                    placeholder="Confirm Password"
+                                    ref={confirmPasswordField}
+                                    onChange={onPasswordChange}
+                                />
+                                {pwdConfirmValid === false && (
+                                    <Form.Text className="text-danger">
+                                        Your password and confirmation password do not match.
+                                    </Form.Text>
+                                )}
                             </Form.Group>
 
-                            {(!!reqActivateUserError) && <AlertError error={reqActivateUserError}/>}
+                            {!!reqActivateUserError && <AlertError error={reqActivateUserError} />}
                         </Form>
                     </Card.Body>
                 </Card>
                 <ActionsBar>
                     <ActionGroup orientation="right">
-                        <Button form='activate-user' type="submit" className="create-user" disabled={!formValid}>Create</Button>
-                        <Button className="cancel-create-user" onClick={() => {router.push("/");}}>Cancel</Button>
+                        <Button form="activate-user" type="submit" className="create-user" disabled={!formValid}>
+                            Create
+                        </Button>
+                        <Button
+                            className="cancel-create-user"
+                            onClick={() => {
+                                router.push('/');
+                            }}
+                        >
+                            Cancel
+                        </Button>
                     </ActionGroup>
                 </ActionsBar>
             </Col>
         </Row>
     );
-}
-
+};
 
 export const ActivateInvitedUserPage = () => {
-
     const queryString = window.location.search;
     const params = new URLSearchParams(queryString);
     const token = params.get(TOKEN_PARAM_NAME);
@@ -100,11 +116,11 @@ export const ActivateInvitedUserPage = () => {
 
     return (
         <Layout>
-            {
-                token ?
-                    <CreateUserWithPasswordForm token={token} email={invitedUserEmail}/> :
-                    <Navigate to="/auth/login"/>
-            }
+            {token ? (
+                <CreateUserWithPasswordForm token={token} email={invitedUserEmail} />
+            ) : (
+                <Navigate to="/auth/login" />
+            )}
         </Layout>
     );
 };

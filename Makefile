@@ -258,8 +258,11 @@ validate-python-wrapper:
 	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq
 	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
 
+validate-ui-format: ## Validate UI code formatting with prettier
+	cd $(UI_DIR) && $(NPM) run format:check
+
 # Run all validation/linting steps
-checks-validator: lint validate-proto \
+checks-validator: lint validate-proto validate-ui-format \
 	validate-client-python validate-client-java validate-client-rust validate-reference \
 	validate-mockgen \
 	validate-permissions-gen \

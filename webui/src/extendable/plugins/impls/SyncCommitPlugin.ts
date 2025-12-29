@@ -1,9 +1,6 @@
-import { commits } from "../../../lib/api";
-import {
-    CommitResult,
-    PluginCommitOperation
-} from "../pluginCommitOperation";
-import { CapabilitiesConfig } from "../../../lib/hooks/configProvider";
+import { commits } from '../../../lib/api';
+import { CommitResult, PluginCommitOperation } from '../pluginCommitOperation';
+import { CapabilitiesConfig } from '../../../lib/hooks/configProvider';
 
 class SyncCommitPlugin implements PluginCommitOperation {
     async commit(
@@ -12,14 +9,9 @@ class SyncCommitPlugin implements PluginCommitOperation {
         message: string,
         metadata?: { [key: string]: string },
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        capabilitiesConfig?: CapabilitiesConfig
+        capabilitiesConfig?: CapabilitiesConfig,
     ): Promise<CommitResult> {
-        return await commits.commit(
-            repoId,
-            branchId,
-            message,
-            metadata
-        );
+        return await commits.commit(repoId, branchId, message, metadata);
     }
 }
 

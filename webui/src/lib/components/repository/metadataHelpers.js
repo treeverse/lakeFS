@@ -1,4 +1,4 @@
-const isEmptyKey = (key) => !key || key.trim() === "";
+const isEmptyKey = (key) => !key || key.trim() === '';
 
 const isInvalidKey = (key) => {
     // TODO: Add more validation checks, e.g. duplicate keys, invalid characters
@@ -11,7 +11,7 @@ const isInvalidKey = (key) => {
  * @returns {boolean} True if there are any invalid keys
  */
 export const hasInvalidKeys = (metadataFields) => {
-    return metadataFields.some(f => isInvalidKey(f.key));
+    return metadataFields.some((f) => isInvalidKey(f.key));
 };
 
 /**
@@ -21,7 +21,7 @@ export const hasInvalidKeys = (metadataFields) => {
  */
 export const fieldsToMetadata = (metadataFields) => {
     const metadata = {};
-    metadataFields.forEach(pair => metadata[pair.key] = pair.value);
+    metadataFields.forEach((pair) => (metadata[pair.key] = pair.value));
     return metadata;
 };
 
@@ -32,9 +32,7 @@ export const fieldsToMetadata = (metadataFields) => {
  * @returns {Array<{key: string, value: string, touched: boolean}>} New array with invalid fields touched
  */
 export const touchInvalidFields = (metadataFields) => {
-    return metadataFields.map(field =>
-        isInvalidKey(field.key) ? { ...field, touched: true } : field
-    );
+    return metadataFields.map((field) => (isInvalidKey(field.key) ? { ...field, touched: true } : field));
 };
 
 /**
@@ -66,7 +64,7 @@ export const getFieldError = (field) => {
     if (!field.touched) return null;
 
     if (isEmptyKey(field.key)) {
-        return "Key is required";
+        return 'Key is required';
     }
 
     return null;

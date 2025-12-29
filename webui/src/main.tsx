@@ -24,13 +24,13 @@ import './styles/quickstart.css';
 import './styles/ghsyntax.css';
 
 // app and plugins system
-import LakeFSApp from "./extendable/lakefsApp";
-import { PluginManager } from "./extendable/plugins/pluginManager";
+import LakeFSApp from './extendable/lakefsApp';
+import { PluginManager } from './extendable/plugins/pluginManager';
 
 const pluginManager = new PluginManager();
 
 const container = document.getElementById('root');
-if (!container) throw new Error("Failed to find root element!");
+if (!container) throw new Error('Failed to find root element!');
 
 const root = createRoot(container);
 root.render(<LakeFSApp pluginManager={pluginManager} />);
