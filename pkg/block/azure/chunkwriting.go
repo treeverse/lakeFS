@@ -327,7 +327,7 @@ func (pool *mmbPool) Release(buffer mmb) {
 }
 
 func (pool *mmbPool) Free() {
-	for i := 0; i < pool.count; i++ {
+	for range pool.count {
 		buffer := <-pool.buffers
 		buffer.delete()
 	}

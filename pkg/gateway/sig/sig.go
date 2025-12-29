@@ -52,12 +52,12 @@ func EncodePath(pathName string) string {
 	var encodedPathname strings.Builder
 	for _, s := range pathName {
 		if 'A' <= s && s <= 'Z' || 'a' <= s && s <= 'z' || '0' <= s && s <= '9' { // §2.3 Unreserved characters (mark)
-			encodedPathname.WriteString(string(s))
+			encodedPathname.WriteRune(s)
 			continue
 		}
 		switch s {
 		case '-', '_', '.', '~', '/': // §2.3 Unreserved characters (mark)
-			encodedPathname.WriteString(string(s))
+			encodedPathname.WriteRune(s)
 			continue
 		default:
 			runeLen := utf8.RuneLen(s)

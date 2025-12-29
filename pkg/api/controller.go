@@ -263,7 +263,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// prepare presigned URL, for each part
 	var presignedURLs []string
-	for i := 0; i < swag.IntValue(params.Parts); i++ {
+	for i := range swag.IntValue(params.Parts) {
 		// generate a pre-signed PUT url for the given request
 		preSignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, block.ObjectPointer{
 			StorageID:        repo.StorageID,

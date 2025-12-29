@@ -17,8 +17,11 @@ linters:
     - gosec
     - govet
     - ineffassign
+    - intrange
     - misspell
+    - mirror
     - mnd
+    - modernize
     - nakedret
     - staticcheck
     - unconvert
@@ -26,8 +29,6 @@ linters:
     - unused
     - whitespace
   settings:
-    gofmt:
-      simplify: true
     mnd:
       ignored-files:
         - pkg/actions/lua/.*

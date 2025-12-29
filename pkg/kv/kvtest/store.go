@@ -813,7 +813,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 	}()
 
 	// iterating over the input sequence and triggering the read/delete routines accordingly
-	for i := 0; i < len(sequence); i++ {
+	for i := range len(sequence) {
 		chMap[sequence[i]] <- true
 		err := <-chErr
 		if err != nil {
@@ -980,7 +980,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 	// 2. Otherwise, if it is under readPref, it was accessed
 	// 3. Otherwise, it is untouched
 	for _, kve := range initialStore {
-		if strings.Index(string(kve.Key), string(delPref)) == 0 {
+		if bytes.Index(kve.Key, delPref) == 0 {
 			if !deleteDone[string(kve.Key)] {
 				t.Fatal("entry missing from deleted list", string(kve.Key))
 			}
@@ -993,7 +993,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 			}
 			continue
 		}
-		if strings.Index(string(kve.Key), string(readPref)) == 0 {
+		if bytes.Index(kve.Key, readPref) == 0 {
 			if !readDone[string(kve.Key)] {
 				t.Fatal("entry missing from read list", string(kve.Key))
 			}
@@ -1025,7 +1025,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 		e := verifyIter.Entry()
 		if e == nil {
 			t.Fatal("unexpected nil entry in KV store")
-		} else if strings.Index(string(e.Key), string(delPref)) == 0 {
+		} else if bytes.Index(e.Key, delPref) == 0 {
 			t.Fatal("unexpected entry found after delete", string(e.Key), string(delPref))
 		}
 	}
