@@ -26,7 +26,8 @@
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended",
       "plugin:react/recommended",
-      "plugin:compat/recommended"
+      "plugin:compat/recommended",
+      "plugin:prettier/recommended"
     ],
     "globals": {
       "process": true

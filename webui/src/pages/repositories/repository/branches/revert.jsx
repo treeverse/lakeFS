@@ -1,20 +1,19 @@
-import React, {useEffect, useState} from "react";
-import { useOutletContext } from "react-router-dom";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import Form from "react-bootstrap/Form";
-import ListGroup from "react-bootstrap/ListGroup";
-import Spinner from "react-bootstrap/Spinner";
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import ListGroup from 'react-bootstrap/ListGroup';
+import Spinner from 'react-bootstrap/Spinner';
 
-import {commits as commitsAPI, branches as branchesAPI} from "../../../../lib/api";
-import {AlertError, Loading} from "../../../../lib/components/controls";
-import {ConfirmationModal} from "../../../../lib/components/modals";
-import {MetadataFields} from "../../../../lib/components/repository/metadata";
-import {getMetadataIfValid, touchInvalidFields} from "../../../../lib/components/repository/metadataHelpers";
-import {useRefs} from "../../../../lib/hooks/repo";
-import {useRouter} from "../../../../lib/hooks/router";
-import {RepoError} from "../error";
-
+import { commits as commitsAPI, branches as branchesAPI } from '../../../../lib/api';
+import { AlertError, Loading } from '../../../../lib/components/controls';
+import { ConfirmationModal } from '../../../../lib/components/modals';
+import { MetadataFields } from '../../../../lib/components/repository/metadata';
+import { getMetadataIfValid, touchInvalidFields } from '../../../../lib/components/repository/metadataHelpers';
+import { useRefs } from '../../../../lib/hooks/repo';
+import { useRouter } from '../../../../lib/hooks/router';
+import { RepoError } from '../error';
 
 const RevertPreviewPage = () => {
     const router = useRouter();
@@ -40,9 +39,7 @@ const RevertPreviewPage = () => {
             try {
                 setCommitsLoading(true);
                 const commitIds = commitsParam.split(',');
-                const details = await Promise.all(
-                    commitIds.map(id => commitsAPI.get(repo.id, id))
-                );
+                const details = await Promise.all(commitIds.map((id) => commitsAPI.get(repo.id, id)));
                 setCommitDetails(details);
 
                 // Generate default commit message for single commit only
@@ -92,7 +89,7 @@ const RevertPreviewPage = () => {
             // For single commit, use custom message/metadata
             // For multiple commits, use backend defaults (empty message, no metadata)
             // allowEmpty is always used from the checkbox regardless of single or multiple commits
-            const message = isSingleCommit ? commitMessage : "";
+            const message = isSingleCommit ? commitMessage : '';
             const metadata = isSingleCommit ? getMetadataIfValid(metadataFields) : {};
 
             // Sequential revert calls - same as lakectl branch_revert.go
@@ -101,10 +98,10 @@ const RevertPreviewPage = () => {
                     repo.id,
                     branchId,
                     commitId,
-                    0,          // parentNumber
+                    0, // parentNumber
                     allowEmpty, // allowEmpty - use checkbox value for both single and multiple commits
-                    message,    // message
-                    metadata    // metadata
+                    message, // message
+                    metadata, // metadata
                 );
             }
 
@@ -112,7 +109,7 @@ const RevertPreviewPage = () => {
             router.push({
                 pathname: '/repositories/:repoId/commits',
                 params: { repoId: repo.id },
-                query: { ref: branchId }
+                query: { ref: branchId },
             });
         } catch (error) {
             setRevertError(error);
@@ -124,19 +121,26 @@ const RevertPreviewPage = () => {
         router.push({
             pathname: '/repositories/:repoId/commits',
             params: { repoId: repo.id },
-            query: { ref: branchId }
+            query: { ref: branchId },
         });
     };
 
-    if (refsLoading || commitsLoading) return <Loading/>;
-    if (refsError) return <RepoError error={refsError}/>;
-    if (commitsError) return <AlertError error={commitsError}/>;
+    if (refsLoading || commitsLoading) return <Loading />;
+    if (refsError) return <RepoError error={refsError} />;
+    if (commitsError) return <AlertError error={commitsError} />;
 
     const commitIds = commitsParam.split(',');
     const confirmationMessage = (
         <>
-            <p>Are you sure you want to revert <strong>{commitIds.length}</strong> commit{commitIds.length > 1 ? 's' : ''}?</p>
-            <p>This will create <strong>{commitIds.length}</strong> new revert commit{commitIds.length > 1 ? 's' : ''} on branch <strong>{branchId}</strong>, reversing the changes from the selected commits in order.</p>
+            <p>
+                Are you sure you want to revert <strong>{commitIds.length}</strong> commit
+                {commitIds.length > 1 ? 's' : ''}?
+            </p>
+            <p>
+                This will create <strong>{commitIds.length}</strong> new revert commit
+                {commitIds.length > 1 ? 's' : ''} on branch <strong>{branchId}</strong>, reversing the changes from the
+                selected commits in order.
+            </p>
             {commitIds.length > 1 && (
                 <p className="text-muted mb-0">
                     <small>Each revert commit will have a default message: &quot;Revert &lt;commit-id&gt;&quot;</small>
@@ -162,10 +166,8 @@ const RevertPreviewPage = () => {
                                 <div>
                                     <code>{commit.id.substr(0, 12)}</code>
                                     <span className="ms-2">{commit.message}</span>
-                                    <br/>
-                                    <small className="text-muted">
-                                        by {commit.committer}
-                                    </small>
+                                    <br />
+                                    <small className="text-muted">by {commit.committer}</small>
                                 </div>
                             </div>
                         </ListGroup.Item>
@@ -194,10 +196,7 @@ const RevertPreviewPage = () => {
                             </Form.Text>
                         </Form.Group>
 
-                        <MetadataFields
-                            metadataFields={metadataFields}
-                            setMetadataFields={setMetadataFields}
-                        />
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
                     </Card.Body>
                 </Card>
             )}
@@ -224,22 +223,14 @@ const RevertPreviewPage = () => {
             </Card>
 
             {/* Error Display */}
-            {revertError && (
-                <AlertError error={revertError} className="mb-3"/>
-            )}
+            {revertError && <AlertError error={revertError} className="mb-3" />}
 
             {/* Action Buttons */}
             <div className="d-flex justify-content-end gap-2">
-                <Button
-                    variant="secondary"
-                    onClick={handleCancel}
-                    disabled={reverting}>
+                <Button variant="secondary" onClick={handleCancel} disabled={reverting}>
                     Cancel
                 </Button>
-                <Button
-                    variant="danger"
-                    onClick={handleApplyClick}
-                    disabled={reverting}>
+                <Button variant="danger" onClick={handleApplyClick} disabled={reverting}>
                     {reverting ? (
                         <>
                             <Spinner
