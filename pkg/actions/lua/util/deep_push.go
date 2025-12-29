@@ -100,7 +100,7 @@ func forwardOnReflect(l *lua.State, val any) {
 	}
 }
 
-// the hack of using a func(int)interface{} makes it that it is valid for any
+// the hack of using a func(int)any makes it that it is valid for any
 // type of slice
 func recurseOnFuncSlice(l *lua.State, input func(int) any, n int) {
 	l.CreateTable(n, 0)

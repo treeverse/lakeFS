@@ -1,12 +1,12 @@
-import {useEffect, useState} from 'react';
-import {AuthenticationError} from "../api";
-import {useAuth} from "../auth/authContext";
+import { useEffect, useState } from 'react';
+import { AuthenticationError } from '../api';
+import { useAuth } from '../auth/authContext';
 
 const initialPaginationState = {
     loading: true,
     error: null,
     nextPage: null,
-    results: []
+    results: [],
 };
 
 export const useAPIWithPagination = (promise, deps = []) => {
@@ -14,33 +14,33 @@ export const useAPIWithPagination = (promise, deps = []) => {
 
     // do the actual API request
     // we do this if pagination changed, or if we reset to an initial state
-    const {response, error, loading} = useAPI(() => {
-        setPagination({...initialPaginationState});
+    const { response, error, loading } = useAPI(() => {
+        setPagination({ ...initialPaginationState });
         return promise();
     }, [...deps, initialPaginationState]);
 
     useEffect(() => {
         if (loading) {
-            setPagination({results: [], loading: true});
+            setPagination({ results: [], loading: true });
             return;
         }
 
         if (!!error || !response) {
-            setPagination({error, loading: false});
+            setPagination({ error, loading: false });
             return;
         }
 
         // calculate current state on API response
         setPagination({
             error: null,
-            nextPage: (!!response.pagination && response.pagination.has_more) ? response.pagination.next_offset : null,
+            nextPage: !!response.pagination && response.pagination.has_more ? response.pagination.next_offset : null,
             loading: false,
-            results: response.results
+            results: response.results,
         });
     }, [response, loading, error]);
 
     return pagination;
-}
+};
 
 const initialAPIState = {
     loading: true,
@@ -76,7 +76,7 @@ export const useAPI = (promise, deps = []) => {
             }
         };
         execute();
-        return () => isMounted = false;
+        return () => (isMounted = false);
     }, deps);
-    return {...request};
-}
+    return { ...request };
+};

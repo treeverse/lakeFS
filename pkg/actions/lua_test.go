@@ -353,11 +353,11 @@ func TestDescendArgs(t *testing.T) {
 		}
 		outParsed, ok := out.(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", outParsed)
+			t.Fatalf("expected map[string]any, got a %T", outParsed)
 		}
 		m, ok := outParsed["map_of_things"].(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", m)
+			t.Fatalf("expected map[string]any, got a %T", m)
 		}
 		secureString, ok := m["secure_d"].(string)
 		if !ok {
@@ -407,7 +407,7 @@ func TestDescendArgs(t *testing.T) {
 		}
 		argsMap, ok := args.(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+			t.Fatalf("expected map[string]any, got a %T", argsMap)
 		}
 		secureString, ok := argsMap["secure_key"].(string)
 		if !ok {
@@ -432,7 +432,7 @@ func TestDescendArgs(t *testing.T) {
 		}
 		argsMap, ok := args.(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+			t.Fatalf("expected map[string]any, got a %T", argsMap)
 		}
 
 		// verify that we have value access to keys with the prefix
