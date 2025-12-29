@@ -137,8 +137,9 @@ const RevertPreviewPage = () => {
                 {commitIds.length > 1 ? 's' : ''}?
             </p>
             <p>
-                This will create <strong>{commitIds.length}</strong> new revert commit{commitIds.length > 1 ? 's' : ''}{' '}
-                on branch <strong>{branchId}</strong>, reversing the changes from the selected commits in order.
+                This will create <strong>{commitIds.length}</strong> new revert commit
+                {commitIds.length > 1 ? 's' : ''} on branch <strong>{branchId}</strong>, reversing the changes from the
+                selected commits in order.
             </p>
             {commitIds.length > 1 && (
                 <p className="text-muted mb-0">

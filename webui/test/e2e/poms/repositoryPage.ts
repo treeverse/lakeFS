@@ -34,28 +34,13 @@ export class RepositoryPage {
     await this.page
       .getByRole("button", { name: "Create", exact: true })
       .click();
-    // Wait for the modal dialog to close
-    await this.page.getByRole("dialog").waitFor({ state: "hidden", timeout: 10000 });
   }
 
   async switchBranch(name: string): Promise<void> {
     await this.page.getByRole("button", { name: "branch: " }).click();
-    // Wait for the dropdown popover to appear and branch list to load
-    await this.page.locator('.ref-popover').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ref-list').waitFor({ state: 'visible', timeout: 5000 });
-
-    await this.page.getByRole("button", { name, exact: true }).first().click();
+    await this.page.getByRole("button", { name }).click();
     // Wait for URL to update after branch switch
     await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
-  }
-
-  async selectComparedToBranch(name: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Compared to branch: " }).click();
-    // Wait for the dropdown popover to appear and branch list to load
-    await this.page.locator('.ref-popover').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ref-list').waitFor({ state: 'visible', timeout: 5000 });
-
-    await this.page.getByRole("button", { name, exact: true }).first().click();
   }
 
   // file manipulation operations
@@ -69,15 +54,11 @@ export class RepositoryPage {
     const firstRow = this.page.locator('table tbody tr').first();
     const actionButton = firstRow.locator('button').last();
 
-    // Scroll the row into the viewport center to avoid navbar overlap
-    await firstRow.scrollIntoViewIfNeeded();
-
     // Hover and wait for the action button to actually become visible
     await firstRow.hover();
     await actionButton.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Click with force since navbar sometimes intercepts even though button is visible
-    await actionButton.click({ force: true });
+    await actionButton.click();
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
   }
@@ -127,11 +108,7 @@ export class RepositoryPage {
 
   async switchBaseBranch(name: string): Promise<void> {
     await this.page.getByRole("button", { name: "Base branch: " }).click();
-    // Wait for the dropdown popover to appear and branch list to load
-    await this.page.locator('.ref-popover').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ref-list').waitFor({ state: 'visible', timeout: 5000 });
-
-    await this.page.getByRole("button", { name, exact: true }).first().click();
+    await this.page.getByRole("button", { name }).click();
   }
 
   // navigation

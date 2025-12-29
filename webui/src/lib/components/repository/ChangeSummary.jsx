@@ -56,7 +56,10 @@ export default ({ prefix, getMore }) => {
             if (!pagination.has_more) {
                 setLoading(false);
             }
-            setResultsState({ results: resultsState.results.concat(results), pagination: pagination });
+            setResultsState({
+                results: resultsState.results.concat(results),
+                pagination: pagination,
+            });
         };
 
         calculateChanges().catch((e) => {

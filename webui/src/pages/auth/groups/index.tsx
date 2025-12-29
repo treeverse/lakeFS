@@ -127,7 +127,10 @@ const GroupsContainer = () => {
     const { results, loading, error, nextPage } = useAPIWithPagination(async () => {
         const groups = await auth.listGroups(prefix, after);
         const enrichedResults = await Promise.all(
-            groups?.results.map(async (group) => ({ ...group, acl: simplified && (await getACLMaybe(group.id)) })),
+            groups?.results.map(async (group) => ({
+                ...group,
+                acl: simplified && (await getACLMaybe(group.id)),
+            })),
         );
         return { ...groups, results: enrichedResults };
     }, [lc.RBAC, refresh, prefix, after]);
@@ -217,7 +220,12 @@ const GroupsContainer = () => {
                             onAdd={() => setSelected([...selected, group])}
                             onRemove={() => setSelected(selected.filter((g) => g !== group))}
                         />,
-                        <Link href={{ pathname: '/auth/groups/:groupId', params: { groupId: group.id } }}>
+                        <Link
+                            href={{
+                                pathname: '/auth/groups/:groupId',
+                                params: { groupId: group.id },
+                            }}
+                        >
                             {group.name}
                         </Link>,
                     ];

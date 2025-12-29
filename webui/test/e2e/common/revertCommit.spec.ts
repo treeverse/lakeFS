@@ -48,8 +48,8 @@ test.describe("Revert Commit", () => {
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoCommitsTab();
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
 
         // Wait for commits to load
         await page.waitForSelector(".list-group-item", { timeout: 10000 });
@@ -101,11 +101,10 @@ test.describe("Revert Commit", () => {
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        // Navigate to objects tab first to establish a known starting point
-        await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
 
         // Make two more changes and commit them
+        await repositoryPage.gotoObjectsTab();
         await repositoryPage.deleteFirstObjectInDirectory("images/");
         await repositoryPage.showOnlyChanges();
         await repositoryPage.commitChanges("Second deletion");
@@ -161,8 +160,8 @@ test.describe("Revert Commit", () => {
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoCommitsTab();
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
 
         // Wait for commits to load
         await page.waitForSelector(".list-group-item", { timeout: 10000 });
@@ -192,8 +191,8 @@ test.describe("Revert Commit", () => {
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoCommitsTab();
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
 
         // Enter revert mode and select a commit
         await repositoryPage.clickRevertButton();
@@ -219,8 +218,8 @@ test.describe("Revert Commit", () => {
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoCommitsTab();
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
 
         // Enter revert mode
         await repositoryPage.clickRevertButton();
@@ -246,8 +245,8 @@ test.describe("Revert Commit", () => {
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoCommitsTab();
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
 
         // Enter revert mode and select a commit
         await repositoryPage.clickRevertButton();
@@ -287,8 +286,8 @@ test.describe("Revert Commit", () => {
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoCommitsTab();
         await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.gotoCommitsTab();
 
         // Enter revert mode and select a commit
         await repositoryPage.clickRevertButton();

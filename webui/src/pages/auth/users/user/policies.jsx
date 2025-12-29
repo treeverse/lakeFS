@@ -40,7 +40,12 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                 <DataTable
                     keyFn={(policy) => policy.id}
                     rowFn={(policy) => [
-                        <Link href={{ pathname: '/auth/policies/:policyId', params: { policyId: policy.id } }}>
+                        <Link
+                            href={{
+                                pathname: '/auth/policies/:policyId',
+                                params: { policyId: policy.id },
+                            }}
+                        >
                             {policy.id}
                         </Link>,
                         <FormattedDate dateValue={policy.creation_date} />,
@@ -137,7 +142,11 @@ const UserPoliciesContainer = () => {
             userId={userId}
             after={after ? after : ''}
             onPaginate={(after) =>
-                router.push({ pathname: '/auth/users/:userId/policies', params: { userId }, query: { after } })
+                router.push({
+                    pathname: '/auth/users/:userId/policies',
+                    params: { userId },
+                    query: { after },
+                })
             }
         />
     );

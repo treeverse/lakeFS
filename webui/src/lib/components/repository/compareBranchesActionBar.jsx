@@ -63,7 +63,12 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     const [mergeState, setMergeState] = useState(initialMerge);
 
     const onClickMerge = useCallback(() => {
-        setMergeState({ merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy });
+        setMergeState({
+            merging: mergeState.merging,
+            err: mergeState.err,
+            show: true,
+            strategy: mergeState.strategy,
+        });
     });
 
     const onStrategyChange = (event) => {
@@ -93,7 +98,12 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
         if (strategy === 'none') {
             strategy = '';
         }
-        setMergeState({ merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy });
+        setMergeState({
+            merging: true,
+            show: mergeState.show,
+            err: mergeState.err,
+            strategy: mergeState.strategy,
+        });
         try {
             await pluginManager.mergeOperation.merge(repo.id, source, dest, strategy, message, metadata);
             setMergeState({

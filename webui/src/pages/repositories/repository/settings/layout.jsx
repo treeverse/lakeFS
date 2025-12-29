@@ -32,7 +32,10 @@ export const SettingsLayout = () => {
                             <Nav variant="pills" className="flex-column">
                                 <Link
                                     component={Nav.Link}
-                                    href={{ pathname: '/repositories/:repoId/settings/general', params: { repoId } }}
+                                    href={{
+                                        pathname: '/repositories/:repoId/settings/general',
+                                        params: { repoId },
+                                    }}
                                     active={activeTab === 'general'}
                                 >
                                     General
@@ -41,7 +44,10 @@ export const SettingsLayout = () => {
                             <Nav variant="pills" className="flex-column">
                                 <Link
                                     component={Nav.Link}
-                                    href={{ pathname: '/repositories/:repoId/settings/retention', params: { repoId } }}
+                                    href={{
+                                        pathname: '/repositories/:repoId/settings/retention',
+                                        params: { repoId },
+                                    }}
                                     active={activeTab === 'retention'}
                                 >
                                     Garbage Collection
@@ -50,7 +56,10 @@ export const SettingsLayout = () => {
                             <Nav variant="pills" className="flex-column">
                                 <Link
                                     component={Nav.Link}
-                                    href={{ pathname: '/repositories/:repoId/settings/branches', params: { repoId } }}
+                                    href={{
+                                        pathname: '/repositories/:repoId/settings/branches',
+                                        params: { repoId },
+                                    }}
                                     active={activeTab === 'branches'}
                                 >
                                     Branch Protection

@@ -12,7 +12,12 @@ import imageUriReplacer from '../../../../lib/remark-plugins/imageUriReplacer';
 import { CustomMarkdownCodeComponent } from './CustomMarkdownRenderer';
 
 // @ts-expect-error: the react types are missing.
-const options: Options = { Fragment: prod.Fragment, jsx: prod.jsx, jsxs: prod.jsxs, passNode: true };
+const options: Options = {
+    Fragment: prod.Fragment,
+    jsx: prod.jsx,
+    jsxs: prod.jsxs,
+    passNode: true,
+};
 options.components = {
     code: CustomMarkdownCodeComponent,
 };

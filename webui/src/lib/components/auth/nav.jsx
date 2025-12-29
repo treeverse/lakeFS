@@ -34,7 +34,10 @@ export const UserNav = ({ userId, page = 'groups' }) => {
                     <Link
                         component={NavItem}
                         active={page === 'effectivePolicies'}
-                        href={{ pathname: '/auth/users/:userId/policies/effective', params: { userId } }}
+                        href={{
+                            pathname: '/auth/users/:userId/policies/effective',
+                            params: { userId },
+                        }}
                     >
                         Effective Attached Policies
                     </Link>
@@ -84,14 +87,20 @@ export const GroupNav = ({ groupId, page = 'groups' }) => {
                         <Link
                             component={NavItem}
                             active={page === 'members'}
-                            href={{ pathname: '/auth/groups/:groupId/members', params: { groupId } }}
+                            href={{
+                                pathname: '/auth/groups/:groupId/members',
+                                params: { groupId },
+                            }}
                         >
                             Group Memberships
                         </Link>
                         <Link
                             component={NavItem}
                             active={page === 'policies'}
-                            href={{ pathname: '/auth/groups/:groupId/policies', params: { groupId } }}
+                            href={{
+                                pathname: '/auth/groups/:groupId/policies',
+                                params: { groupId },
+                            }}
                         >
                             Attached Policies
                         </Link>

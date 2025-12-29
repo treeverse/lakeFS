@@ -381,7 +381,13 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
                     <Alert variant="danger" dismissible onClose={() => setDeleteError(null)} className="mb-3">
                         <Alert.Heading>{deleteError.message || 'Failed to delete branches'}</Alert.Heading>
                         {deleteError.errors && deleteError.errors.length > 0 && (
-                            <div style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '0.5rem' }}>
+                            <div
+                                style={{
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    marginTop: '0.5rem',
+                                }}
+                            >
                                 <ul className="mb-0">
                                     {deleteError.errors.map((errorMsg, index) => (
                                         <li key={index}>{errorMsg}</li>

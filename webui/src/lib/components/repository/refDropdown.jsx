@@ -133,7 +133,11 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     withCommits={refType !== RefTypeTag && withCommits}
                                     logCommits={async () => {
                                         const data = await commits.log(repo.id, namedRef.id);
-                                        setCommitList({ ...commitList, branch: namedRef.id, commits: data.results });
+                                        setCommitList({
+                                            ...commitList,
+                                            branch: namedRef.id,
+                                            commits: data.results,
+                                        });
                                     }}
                                 />
                             ))}

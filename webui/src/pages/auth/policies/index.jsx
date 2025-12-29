@@ -140,7 +140,12 @@ const PoliciesContainer = () => {
                         onAdd={() => setSelected([...selected, policy])}
                         onRemove={() => setSelected(selected.filter((p) => p !== policy))}
                     />,
-                    <Link href={{ pathname: '/auth/policies/:policyId', params: { policyId: policy.id } }}>
+                    <Link
+                        href={{
+                            pathname: '/auth/policies/:policyId',
+                            params: { policyId: policy.id },
+                        }}
+                    >
                         {policy.id}
                     </Link>,
                     <FormattedDate dateValue={policy.creation_date} />,
