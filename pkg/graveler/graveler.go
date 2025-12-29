@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -463,12 +464,7 @@ func (cp CommitParents) Identity() []byte {
 }
 
 func (cp CommitParents) Contains(commitID CommitID) bool {
-	for _, c := range cp {
-		if c == commitID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(cp, commitID)
 }
 
 func (cp CommitParents) AsStringSlice() []string {
@@ -949,9 +945,28 @@ type PullsIterator interface {
 
 // These are the more complex internal components that compose the functionality of the Graveler
 
+type GCRefManager interface {
+	// GCBranchIterator TODO (niro): Remove when DB implementation is deleted
+	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator, which iterates over branches by order of commit ID
+	GCBranchIterator(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
+	// GCCommitIterator TODO (niro): Remove when DB implementation is deleted
+	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
+	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
+}
+
+type CommitReader interface {
+	// ListCommits returns an iterator over all known commits, ordered by their commit ID
+	ListCommits(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
+	// GetCommit returns the Commit metadata object for the given CommitID.
+	GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error)
+}
+
 // RefManager handles references: branches, commits, probably tags in the future
 // it also handles the structure of the commit graph and its traversal (notably, merge-base and log)
 type RefManager interface {
+	GCRefManager
+	CommitReader
+
 	// GetRepository returns the Repository metadata object for the given RepositoryID
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
@@ -997,10 +1012,6 @@ type RefManager interface {
 	// ListBranches lists branches
 	ListBranches(ctx context.Context, repository *RepositoryRecord, opts ListOptions) (BranchIterator, error)
 
-	// GCBranchIterator TODO (niro): Remove when DB implementation is deleted
-	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator, which iterates over branches by order of commit ID
-	GCBranchIterator(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
-
 	// GetTag returns the Tag metadata object for the given TagID
 	GetTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) (*CommitID, error)
 
@@ -1012,9 +1023,6 @@ type RefManager interface {
 
 	// ListTags lists tags
 	ListTags(ctx context.Context, repository *RepositoryRecord) (TagIterator, error)
-
-	// GetCommit returns the Commit metadata object for the given CommitID.
-	GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error)
 
 	// GetCommitByPrefix returns the Commit metadata object for the given prefix CommitID.
 	// if more than 1 commit starts with the ID prefix returns error
@@ -1036,13 +1044,6 @@ type RefManager interface {
 
 	// Log returns an iterator starting at commit ID up to repository root
 	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID, firstParent bool, since *time.Time) (CommitIterator, error)
-
-	// ListCommits returns an iterator over all known commits, ordered by their commit ID
-	ListCommits(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
-
-	// GCCommitIterator TODO (niro): Remove when DB implementation is deleted
-	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
-	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
 
 	// DeleteExpiredImports deletes expired imports on a given repository
 	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
@@ -1143,11 +1144,11 @@ type StagingManager interface {
 }
 
 // BranchLockerFunc callback function when branch is locked for operation (ex: writer or metadata updater)
-type BranchLockerFunc func() (interface{}, error)
+type BranchLockerFunc func() (any, error)
 
 type BranchLocker interface {
-	Writer(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockedFn BranchLockerFunc) (interface{}, error)
-	MetadataUpdater(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockeFn BranchLockerFunc) (interface{}, error)
+	Writer(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockedFn BranchLockerFunc) (any, error)
+	MetadataUpdater(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockeFn BranchLockerFunc) (any, error)
 }
 
 func (id RepositoryID) String() string {
@@ -3125,9 +3126,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 
 	// Ensure a copy of metadata: it will be modified to add the strategy key.
 	metadata := make(map[string]string, len(commitParams.Metadata)+1)
-	for k, v := range commitParams.Metadata {
-		metadata[k] = v
-	}
+	maps.Copy(metadata, commitParams.Metadata)
 
 	lg := g.log(ctx).WithFields(logging.Fields{
 		"repository":  repository.RepositoryID,

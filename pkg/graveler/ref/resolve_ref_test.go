@@ -16,7 +16,7 @@ import (
 func TestResolveRawRef(t *testing.T) {
 	r, _ := testRefManager(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageID:        "sid",
 		StorageNamespace: "s3://",
@@ -32,7 +32,7 @@ func TestResolveRawRef(t *testing.T) {
 
 	ts, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
 	var previous graveler.CommitID
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		c := graveler.Commit{
 			Committer:    "user1",
 			Message:      "message1",
@@ -278,7 +278,7 @@ func TestResolveRawRef(t *testing.T) {
 
 func TestResolveRef_SameDate(t *testing.T) {
 	r, _ := testRefManager(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageID:        "sid",
 		StorageNamespace: "s3://",
@@ -351,7 +351,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 		           J = F^2  = B^3^2   = A^^3^2
 	*/
 	r, _ := testRefManager(t)
-	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	repository, err := r.CreateRepository(t.Context(), "repo1", graveler.Repository{
 		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
@@ -367,7 +367,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 		for _, p := range parents {
 			commit.Parents = append(commit.Parents, p)
 		}
-		cid, err := r.AddCommit(context.Background(), repository, commit)
+		cid, err := r.AddCommit(t.Context(), repository, commit)
 		testutil.MustDo(t, "add commit", err)
 		ts = ts.Add(time.Second)
 		return cid
@@ -387,7 +387,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	resolve := func(base graveler.CommitID, mod string, expected graveler.CommitID) {
 		t.Helper()
 		reference := string(base) + mod
-		resolved, err := resolveRef(context.Background(), r, ident.NewHexAddressProvider(), repository, graveler.Ref(reference))
+		resolved, err := resolveRef(t.Context(), r, ident.NewHexAddressProvider(), repository, graveler.Ref(reference))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-8-cores
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,9 +26,9 @@ jobs:
           node-version: "22.17.x"
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: 'go.mod'
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4

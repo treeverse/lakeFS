@@ -88,8 +88,8 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 		contents        = "test_file"
 	)
 
-	for i := 0; i < filesAndFolders; i++ {
-		for j := 0; j < filesAndFolders; j++ {
+	for i := range filesAndFolders {
+		for j := range filesAndFolders {
 			_, err := adapter.Put(ctx, block.ObjectPointer{
 				StorageID:        "",
 				StorageNamespace: storageNamespace,
@@ -151,8 +151,8 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 					prefix = testPrefix
 				}
 				expectedResults = append(expectedResults, path.Join(prefix, "folder_0.txt"))
-				for i := 0; i < filesAndFolders; i++ {
-					for j := 0; j < filesAndFolders; j++ {
+				for i := range filesAndFolders {
+					for j := range filesAndFolders {
 						expectedResults = append(expectedResults, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)))
 					}
 				}
@@ -160,7 +160,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = tt.prefix
 				}
-				for j := 0; j < filesAndFolders; j++ {
+				for j := range filesAndFolders {
 					expectedResults = append(expectedResults, path.Join(prefix, fmt.Sprintf("test_file_%d", j)))
 				}
 			}

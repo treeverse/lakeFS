@@ -40,12 +40,12 @@ func (a *memAdapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadC
 	return a.Adapter.Get(ctx, obj)
 }
 
-func createFSWithEviction(ev params.Eviction) (FS, string) {
+func createFSWithEviction(ctx context.Context, ev params.Eviction) (FS, string) {
 	fsName := uuid.New().String()
 	baseDir := path.Join(os.TempDir(), fsName)
 
 	// starting adapter with closed channel so all Gets pass
-	adapter = &memAdapter{Adapter: mem.New(context.Background()), wait: make(chan struct{})}
+	adapter = &memAdapter{Adapter: mem.New(ctx), wait: make(chan struct{})}
 	close(adapter.wait)
 
 	var err error
@@ -72,7 +72,7 @@ func createFSWithEviction(ev params.Eviction) (FS, string) {
 
 func TestMain(m *testing.M) {
 	var baseDir string
-	fs, baseDir = createFSWithEviction(nil)
+	fs, baseDir = createFSWithEviction(context.Background(), nil)
 
 	code := m.Run()
 

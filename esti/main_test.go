@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"context"
 	"flag"
 	"os"
 	"testing"
@@ -48,7 +49,7 @@ func TestMain(m *testing.M) {
 			"users":        usersToKeep,
 			"policies":     policiesToKeep,
 		}).Info("Deleting repositories, groups, users and policies before Esti run")
-		err := EnvCleanup(client, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
+		err := EnvCleanup(context.Background(), client, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
 		if err != nil {
 			logger.WithError(err).Fatal("env cleanup")
 		}

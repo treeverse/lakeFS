@@ -17,7 +17,7 @@ import (
 )
 
 type mockCache struct {
-	c map[interface{}]interface{}
+	c map[any]any
 }
 
 var repository = &graveler.RepositoryRecord{
@@ -28,7 +28,7 @@ var repository = &graveler.RepositoryRecord{
 	},
 }
 
-func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, err error) {
+func (m *mockCache) GetOrSet(k any, setFn cache.SetFn) (v any, err error) {
 	if val, ok := m.c[k]; ok {
 		return val, nil
 	}
@@ -40,13 +40,13 @@ func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, e
 	return val, nil
 }
 
-func (m *mockCache) GetOrSetWithExpiry(k interface{}, setFn cache.SetFnWithExpiry) (v interface{}, err error) {
+func (m *mockCache) GetOrSetWithExpiry(k any, setFn cache.SetFnWithExpiry) (v any, err error) {
 	// Settings does not use expiry.
 	panic("Not implemented.")
 }
 
 func TestNonExistent(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := prepareTest(t, ctx, nil, nil)
 	setting := &settings.ExampleSettings{}
 	err := m.Get(ctx, repository, "settingKey", setting)
@@ -59,9 +59,9 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestSaveAndGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mc := &mockCache{
-		c: make(map[interface{}]interface{}),
+		c: make(map[any]any),
 	}
 	m := prepareTest(t, ctx, mc, nil)
 	firstSettings := newSetting(5, 6, "hello")
@@ -84,7 +84,7 @@ func TestSaveAndGet(t *testing.T) {
 		t.Fatal("got unexpected settings:", diff)
 	}
 	// after clearing the mc, we should get the new settings:
-	mc.c = make(map[interface{}]interface{})
+	mc.c = make(map[any]any)
 	gotSettings = &settings.ExampleSettings{}
 	err = m.Get(ctx, repository, "settingKey", gotSettings)
 	testutil.Must(t, err)
@@ -94,7 +94,7 @@ func TestSaveAndGet(t *testing.T) {
 }
 
 func TestGetLatest(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := prepareTest(t, ctx, nil, nil)
 	err := m.Save(ctx, repository, "settingKey", newSetting(5, 6, "hello"), nil)
 	testutil.Must(t, err)
@@ -110,9 +110,9 @@ func TestGetLatest(t *testing.T) {
 }
 
 func TestConditionalUpdate(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mc := &mockCache{
-		c: make(map[interface{}]interface{}),
+		c: make(map[any]any),
 	}
 	m := prepareTest(t, ctx, mc, nil)
 	firstSettings := newSetting(5, 6, "hello")
@@ -133,12 +133,12 @@ func TestConditionalUpdate(t *testing.T) {
 	require.ErrorIs(t, err, graveler.ErrPreconditionFailed)
 }
 
-func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) *settings.Manager {
+func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (any, error)) (any, error)) *settings.Manager {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 
 	branchLock := mock.NewMockBranchLocker(ctrl)
-	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
+	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (any, error)) (any, error) {
 		return f()
 	}
 	if branchLockCallback != nil {

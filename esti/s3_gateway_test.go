@@ -77,7 +77,7 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3uploadobjectdestreadonly")
-	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+	defer tearDownTest(readOnlyRepo)
 
 	minioClient := newMinioClient(t, credentials.NewStaticV4)
 	const tenMibi = 10 * 1024 * 1024
@@ -97,7 +97,7 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3deleteobjectdestreadonly")
-	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+	defer tearDownTest(readOnlyRepo)
 
 	minioClient := newMinioClient(t, credentials.NewStaticV4)
 	content := "some random data"
@@ -184,7 +184,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 				}()
 			}
 
-			for i := 0; i < numUploads; i++ {
+			for range numUploads {
 				objects <- Object{
 					Content: testutil.RandomString(r, randomDataContentLength),
 					Path:    gatewayTestPrefix + testutil.RandomS3Path(randomDataPathLength-len(gatewayTestPrefix)),
@@ -277,9 +277,9 @@ func TestListBuckets(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	firstRepo := createRepositoryByName(ctx, t, "list-buckets-repo-first")
-	defer DeleteRepositoryIfAskedTo(ctx, firstRepo)
+	defer tearDownTest(firstRepo)
 	secondRepo := createRepositoryByName(ctx, t, "list-buckets-repo-second")
-	defer DeleteRepositoryIfAskedTo(ctx, secondRepo)
+	defer tearDownTest(secondRepo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
@@ -344,7 +344,7 @@ func TestMultipartListUploads(t *testing.T) {
 	// create first mpu
 	resp1 := createMultipartHelper(ctx, t, s3Client, repo, key1)
 	parts := make([][]byte, numOfParts)
-	for i := 0; i < numOfParts; i++ {
+	for i := range numOfParts {
 		parts[i] = randstr.Bytes(multipartPartSize + i)
 	}
 
@@ -644,6 +644,7 @@ func TestMultipartListUploadsUnsupported(t *testing.T) {
 }
 
 func TestMultipartUploadIfNoneMatch(t *testing.T) {
+	t.Parallel()
 	ctx, log, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -673,9 +674,16 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			resp := createMultipartHelper(ctx, t, s3Client, repo, tt.Path)
+			input := &s3.CreateMultipartUploadInput{
+				Bucket: aws.String(repo),
+				Key:    aws.String(tt.Path),
+			}
+
+			resp, err := s3Client.CreateMultipartUpload(ctx, input)
+			require.NoError(t, err, "failed to create multipart upload")
+
 			parts := make([][]byte, multipartNumberOfParts)
-			for i := 0; i < multipartNumberOfParts; i++ {
+			for i := range multipartNumberOfParts {
 				parts[i] = randstr.Bytes(multipartPartSize + i)
 			}
 
@@ -688,7 +696,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 					Parts: completedParts,
 				},
 			}
-			_, err := s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setIfNonMatchHeader(tt.IfNoneMatch)))
+			_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setIfNonMatchHeader(tt.IfNoneMatch)))
 			if tt.ExpectedError != "" {
 				require.ErrorContains(t, err, tt.ExpectedError)
 			} else {
@@ -705,7 +713,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 
 	// additional repository for copy between repos
 	destRepo := createRepositoryUnique(ctx, t)
-	defer DeleteRepositoryIfAskedTo(ctx, destRepo)
+	defer tearDownTest(destRepo)
 
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
 	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, mainBranch)
@@ -1044,7 +1052,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	// additional repository for copy between repos
 	destRepo := createRepositoryUnique(ctx, t)
-	defer DeleteRepositoryIfAskedTo(ctx, destRepo)
+	defer tearDownTest(destRepo)
 
 	// content
 	r := rand.New(rand.NewSource(17))
@@ -1266,7 +1274,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3copyobjectdestreadonly")
-	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+	defer tearDownTest(readOnlyRepo)
 
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	destPath := gatewayTestPrefix + "dest-file"

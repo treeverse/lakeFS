@@ -616,7 +616,9 @@ func (a *Adapter) BlockstoreType() string {
 }
 
 func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
-	return nil, block.ErrOperationNotSupported
+	return &block.BlockstoreMetadata{
+		IsProductionSafe: true,
+	}, nil
 }
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {

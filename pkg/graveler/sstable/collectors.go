@@ -1,6 +1,8 @@
 package sstable
 
 import (
+	"maps"
+
 	"github.com/cockroachdb/pebble/sstable"
 )
 
@@ -19,9 +21,7 @@ func (*staticCollector) Name() string {
 }
 
 func (s *staticCollector) Finish(userProps map[string]string) error {
-	for k, v := range s.m {
-		userProps[k] = v
-	}
+	maps.Copy(userProps, s.m)
 	return nil
 }
 

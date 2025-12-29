@@ -65,7 +65,7 @@ func TestAuthenticator_RequestIDPropagation(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	ctx := context.WithValue(context.Background(), httputil.RequestIDContextKey, requestID)
+	ctx := context.WithValue(t.Context(), httputil.RequestIDContextKey, requestID)
 	_, err = authenticator.AuthenticateUser(ctx, "testuser", "testpass")
 	require.NoError(t, err)
 	require.True(t, called, "Expected server to be called")

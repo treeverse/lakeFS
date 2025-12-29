@@ -1,7 +1,6 @@
 package committed_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -24,7 +23,7 @@ func mustMarshalRange(rng committed.Range) []byte {
 
 func makeValueBytesForRangeKey(key graveler.Key, idx int) []byte {
 	return committed.MustMarshalValue(&graveler.Value{
-		Identity: []byte(fmt.Sprintf("%s:%d", key, idx)),
+		Identity: fmt.Appendf(nil, "%s:%d", key, idx),
 		Data:     mustMarshalRange(committed.Range{ID: ""}),
 	})
 }
@@ -159,7 +158,7 @@ func TestIterator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Iteration<%s>", tt.Name), func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			manager := mock.NewMockRangeManager(ctrl)
@@ -183,7 +182,7 @@ func TestIterator(t *testing.T) {
 			assert.False(t, pvi.Next())
 		})
 		t.Run(fmt.Sprintf("SeekGE<%s>", tt.Name), func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			manager := mock.NewMockRangeManager(ctrl)

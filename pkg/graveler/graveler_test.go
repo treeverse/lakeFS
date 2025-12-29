@@ -201,7 +201,7 @@ func newGraveler(t *testing.T, committedManager graveler.CommittedManager, stagi
 }
 
 func TestGraveler_List(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tests := []struct {
 		name        string
 		r           catalog.Store
@@ -371,7 +371,7 @@ func TestGraveler_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Value, err := tt.r.Get(context.Background(), repository, "", []byte("key"))
+			Value, err := tt.r.Get(t.Context(), repository, "", []byte("key"))
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
@@ -410,7 +410,7 @@ func TestGraveler_Set(t *testing.T) {
 			expectedValueResult: newSetVal,
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newGraveler(t, tt.committedMgr, tt.stagingMgr, tt.refMgr, nil, testutil.NewProtectedBranchesManagerFake())
@@ -430,7 +430,7 @@ func TestGraveler_Set(t *testing.T) {
 
 func TestGravelerSet_Advanced(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	committedMgr := &testutil.CommittedFake{}
 	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	// RefManager mock base setup
@@ -480,7 +480,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 
 	t.Run("branch token changed max retries", func(t *testing.T) {
 		// Test safeBranchWrite retries when token changed after update, reach the maximal number of retries and then succeed
-		for i := 0; i < graveler.BranchWriteMaxTries-1; i++ {
+		for i := range graveler.BranchWriteMaxTries - 1 {
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
 			}, nil)
@@ -503,7 +503,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 
 	t.Run("branch token changed retry exhausted", func(t *testing.T) {
 		// Test safeBranchWrite retries when token changed after update, exceed the maximal number of retries and expect fail
-		for i := 0; i < graveler.BranchWriteMaxTries; i++ {
+		for i := range graveler.BranchWriteMaxTries {
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
 			}, nil)
@@ -520,7 +520,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 }
 
 func TestGraveler_SetWithCondition(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	existingVal := &graveler.Value{Identity: []byte("existingIdentity"), Data: []byte("existingValue")}
 
@@ -793,7 +793,7 @@ func TestGravelerGet_Advanced(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Value, err := tt.r.Get(context.Background(), repository, "", []byte("staged"))
+			Value, err := tt.r.Get(t.Context(), repository, "", []byte("staged"))
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
@@ -1151,7 +1151,7 @@ func TestGraveler_Diff(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			diff, err := tt.r.Diff(ctx, repository, "ref1", "b1")
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
@@ -1377,7 +1377,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			diff, err := tt.r.DiffUncommitted(ctx, repository, "branch")
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
@@ -1496,7 +1496,7 @@ func TestGravelerDiffUncommitted_Advanced(t *testing.T) {
 		},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diff, err := r.DiffUncommitted(ctx, repository, "branch")
 	require.NoError(t, err)
 	// compare iterators
@@ -1517,13 +1517,13 @@ func TestGravelerDiffUncommitted_Advanced(t *testing.T) {
 
 func TestGraveler_CreateBranch(t *testing.T) {
 	gravel := newGraveler(t, nil, nil, &testutil.RefsFake{Err: graveler.ErrBranchNotFound, CommitID: "8888888798e3aeface8e62d1c7072a965314b4"}, nil, nil)
-	_, err := gravel.CreateBranch(context.Background(), repository, "", "")
+	_, err := gravel.CreateBranch(t.Context(), repository, "", "")
 	if err != nil {
 		t.Fatal("unexpected error on create branch", err)
 	}
 	// test create branch when branch exists
 	gravel = newGraveler(t, nil, nil, &testutil.RefsFake{Branch: &graveler.Branch{}}, nil, nil)
-	_, err = gravel.CreateBranch(context.Background(), repository, "", "")
+	_, err = gravel.CreateBranch(t.Context(), repository, "", "")
 	if !errors.Is(err, graveler.ErrBranchExists) {
 		t.Fatal("did not get expected error, expected ErrBranchExists")
 	}
@@ -1533,12 +1533,12 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 	gravel := newGraveler(t, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
 	testutil.ShortenBranchUpdateBackOff(gravel.(*graveler.Graveler))
-	_, err := gravel.UpdateBranch(context.Background(), repository, "", "")
+	_, err := gravel.UpdateBranch(t.Context(), repository, "", "")
 	require.ErrorIs(t, err, graveler.ErrTooManyTries)
 
 	gravel = newGraveler(t, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})}, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{})},
 		&testutil.RefsFake{Branch: &graveler.Branch{StagingToken: "st1", CommitID: "commit1"}, Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}}}, nil, nil)
-	_, err = gravel.UpdateBranch(context.Background(), repository, "", "")
+	_, err = gravel.UpdateBranch(t.Context(), repository, "", "")
 	require.NoError(t, err)
 }
 
@@ -1786,7 +1786,7 @@ func TestGravelerCommit(t *testing.T) {
 			}
 			g := newGraveler(t, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, tt.fields.ProtectedBranchesManager)
 
-			got, err := g.Commit(context.Background(), repository, tt.args.branchID, graveler.CommitParams{
+			got, err := g.Commit(t.Context(), repository, tt.args.branchID, graveler.CommitParams{
 				Committer:       tt.args.committer,
 				Message:         tt.args.message,
 				Metadata:        tt.args.metadata,
@@ -1858,7 +1858,7 @@ func TestGraveler_MergeInvalidRef(t *testing.T) {
 	g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 
 	// test merge invalid ref
-	ctx := context.Background()
+	ctx := t.Context()
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
 	_, err := g.Merge(ctx, repository, mergeDestination, "unexpectedRef", graveler.CommitParams{
@@ -1973,7 +1973,7 @@ func TestGraveler_AddCommit(t *testing.T) {
 			if !tt.args.missingParents {
 				commit.Parents = graveler.CommitParents{expectedParentCommitID}
 			}
-			got, err := g.AddCommit(context.Background(), repository, commit)
+			got, err := g.AddCommit(t.Context(), repository, commit)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}
@@ -2280,7 +2280,7 @@ func TestGravelerDelete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, tt.fields.CommittedManager, tt.fields.StagingManager, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
 			if err := g.Delete(ctx, repository, tt.args.branchID, tt.args.key); !errors.Is(err, tt.expectedErr) {
 				t.Errorf("Delete() returned unexpected error. got = %v, expected %v", err, tt.expectedErr)
@@ -2347,7 +2347,7 @@ func TestGraveler_PrepareCommitHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
 				"PreCommitHook": tt.err,
@@ -2448,7 +2448,7 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
 				"PreCommitHook": tt.err,
@@ -2569,7 +2569,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
 				"PreMergeHook": tt.err,
@@ -2666,7 +2666,7 @@ func TestGraveler_CreateTag(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 
 			if tt.err != nil {
 				refManager.Err = tt.err
@@ -2730,7 +2730,7 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
 				"PreCreateTagHook": tt.err,
@@ -2822,7 +2822,7 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			expected := expectedCommitID
 			refManager.TagCommitID = &expected
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
@@ -2917,7 +2917,7 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
 				"PreCreateBranchHook": tt.err,
@@ -3023,7 +3023,7 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
 				"PreDeleteBranchHook": tt.err,
@@ -3065,7 +3065,7 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 }
 
 func TestGravelerCreateCommitRecord(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	t.Run("create commit record", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		commit := graveler.Commit{
@@ -3350,7 +3350,7 @@ func TestGraveler_Revert(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := newGraveler(t, tt.deps.CommittedManager, tt.deps.StagingManager, tt.deps.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
 
-			got, err := g.Revert(context.Background(), repository, tt.revertArgs.branchID, tt.revertArgs.ref, tt.revertArgs.parentNumber, graveler.CommitParams{
+			got, err := g.Revert(t.Context(), repository, tt.revertArgs.branchID, tt.revertArgs.ref, tt.revertArgs.parentNumber, graveler.CommitParams{
 				AllowEmpty: tt.revertArgs.allowEmpty,
 			}, nil)
 			if !errors.Is(err, tt.expectedErr) {
@@ -3412,7 +3412,7 @@ func TestGraveler_CherryPickHooks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup
-			ctx := context.Background()
+			ctx := t.Context()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
 				"PreCherryPickHook":  tt.err,

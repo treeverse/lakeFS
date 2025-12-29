@@ -3,6 +3,7 @@ package httputil
 import (
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ func HostOnly(hostname string) string {
 
 func HostsOnly(hostname []string) []string {
 	ret := make([]string, len(hostname))
-	for i := 0; i < len(hostname); i++ {
+	for i := range hostname {
 		ret[i] = HostOnly(hostname[i])
 	}
 	return ret
@@ -25,18 +26,13 @@ func HostsOnly(hostname []string) []string {
 func HostMatches(r *http.Request, hosts []string) bool {
 	host := HostOnly(r.Host)
 	vHost := HostsOnly(hosts)
-	for _, v := range vHost {
-		if v == host {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(vHost, host)
 }
 
 func HostSubdomainOf(r *http.Request, hosts []string) bool {
 	host := HostOnly(r.Host)
 	subVHost := HostsOnly(hosts)
-	for i := 0; i < len(subVHost); i++ {
+	for i := range subVHost {
 		subVHost[i] = "." + subVHost[i]
 	}
 	for _, subV := range subVHost {

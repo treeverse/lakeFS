@@ -81,7 +81,7 @@ var (
 )
 
 func TestGravelerGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	setupGetFromBranch := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefBranch, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefBranch).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeBranch, BranchRecord: graveler.BranchRecord{BranchID: branch1ID, Branch: &branch1}}, nil)
@@ -322,7 +322,7 @@ func TestGravelerGet(t *testing.T) {
 }
 
 func TestGravelerMerge(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
@@ -506,7 +506,7 @@ func TestGravelerMerge(t *testing.T) {
 }
 
 func TestGravelerRevert(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
@@ -707,7 +707,7 @@ func TestGravelerRevert(t *testing.T) {
 }
 
 func TestGravelerCherryPick(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
@@ -851,7 +851,7 @@ func TestGravelerCherryPick(t *testing.T) {
 }
 
 func TestGravelerCommit_v2(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("commit with sealed tokens", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -1009,7 +1009,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 }
 
 func TestGravelerCreateCommitRecord_v2(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	t.Run("create commit record", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		commit := graveler.Commit{
@@ -1029,7 +1029,7 @@ func TestGravelerCreateCommitRecord_v2(t *testing.T) {
 }
 
 func TestGravelerImport(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
@@ -1099,7 +1099,7 @@ func TestGravelerImport(t *testing.T) {
 }
 
 func TestGraveler_UpdatePullRequest(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	pullID := graveler.PullRequestID(xid.New().String())
 	ref := "ref"
 	pr := graveler.PullRequest{

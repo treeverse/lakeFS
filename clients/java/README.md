@@ -39,7 +39,7 @@ Add this dependency to your project's POM:
 <dependency>
   <groupId>io.lakefs</groupId>
   <artifactId>sdk</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.0.0</version>
   <scope>compile</scope>
 </dependency>
 ```
@@ -55,7 +55,7 @@ Add this dependency to your project's build file:
   }
 
   dependencies {
-     implementation "io.lakefs:sdk:0.1.0-SNAPSHOT"
+     implementation "io.lakefs:sdk:0.0.0"
   }
 ```
 
@@ -69,7 +69,7 @@ mvn clean package
 
 Then manually install the following JARs:
 
-* `target/sdk-0.1.0-SNAPSHOT.jar`
+* `target/sdk-0.0.0.jar`
 * `target/lib/*.jar`
 
 ## Getting Started
@@ -321,6 +321,7 @@ Class | Method | HTTP request | Description
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
  - [BranchProtectionRule](docs/BranchProtectionRule.md)
+ - [CapabilitiesConfig](docs/CapabilitiesConfig.md)
  - [CherryPickCreation](docs/CherryPickCreation.md)
  - [CommPrefsInput](docs/CommPrefsInput.md)
  - [Commit](docs/Commit.md)

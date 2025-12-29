@@ -63,7 +63,7 @@ func setupTest(ctx context.Context, buffer int, opts ...stats.BufferedCollectorO
 }
 
 func TestCallHomeCollector_QuickNoTick(t *testing.T) {
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(t.Context())
 	sender, _, collector := setupTest(ctx, 10)
 
 	// Forcing collector to run last so that we make sure a race between context and collector
@@ -83,7 +83,7 @@ func TestCallHomeCollector_QuickNoTick(t *testing.T) {
 }
 
 func TestCallHomeCollector_Collect(t *testing.T) {
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(t.Context())
 	sender, ticker, collector := setupTest(ctx, 0)
 
 	// add metrics
@@ -150,11 +150,11 @@ func TestCallHomeCollector_Collect(t *testing.T) {
 }
 
 func TestCallHomeCollector_ExtendedHashValues(t *testing.T) {
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(t.Context())
 	sender, ticker, collector := setupTest(ctx, 0, stats.WithExtended(true))
 
 	const events = 2
-	for i := 0; i < events; i++ {
+	for range events {
 		collector.CollectEvent(stats.Event{
 			Class:      "foo",
 			Name:       "bar",
@@ -197,12 +197,12 @@ func TestCallHomeCollector_ExtendedHashValues(t *testing.T) {
 }
 
 func TestCallHomeCollector_NoExtendedValues(t *testing.T) {
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(t.Context())
 	sender, ticker, collector := setupTest(ctx, 0, stats.WithExtended(false))
 	collector.Start(ctx)
 
 	const events = 2
-	for i := 0; i < events; i++ {
+	for range events {
 		collector.CollectEvent(stats.Event{
 			Class:      "foo",
 			Name:       "bar",

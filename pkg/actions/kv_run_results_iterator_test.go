@@ -28,7 +28,7 @@ const (
 )
 
 func TestRunResultsIterator(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 
 	keyMap, keyList := createTestData(t, ctx, kvStore)
@@ -168,7 +168,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.Store) (map[st
 		key := actions.RunPath(iteratorTestRepoID, runID)
 		run.RunId = runID
 		require.NoError(t, kv.SetMsg(ctx, kvStore, actions.PartitionKey, key, &run))
-		for j := 0; j < 100; j++ {
+		for j := range 100 {
 			HookRunId := actions.NewHookRunID(msgIdx, j)
 			taskKey := kv.FormatPath(actions.TasksPath(iteratorTestRepoID, runID), HookRunId)
 			task.HookRunId = HookRunId

@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -189,7 +188,7 @@ func TestLakectlCommit(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --amount 1", false, "lakectl_log_with_commit_custom_date", vars)
 
 	// verify the latest commit using 'show commit'
-	ctx := context.Background()
+	ctx := t.Context()
 	getBranchResp, err := client.GetBranchWithResponse(ctx, repoName, mainBranch)
 	if err != nil {
 		t.Fatal("Failed to get branch information", err)
@@ -585,7 +584,7 @@ func TestLakectlAnnotate(t *testing.T) {
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	userName := "test_user"
 	vars := map[string]string{
 		"ID": userName,
@@ -631,7 +630,7 @@ func TestLakectlFsDownload(t *testing.T) {
 
 	// upload some data
 	const totalObjects = 5
-	for i := 0; i < totalObjects; i++ {
+	for i := range totalObjects {
 		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
@@ -765,7 +764,7 @@ func TestLakectlFsUpload(t *testing.T) {
 }
 
 func getStorageConfig(t *testing.T) *apigen.StorageConfig {
-	storageResp, err := client.GetStorageConfigWithResponse(context.Background())
+	storageResp, err := client.GetStorageConfigWithResponse(t.Context())
 	if err != nil {
 		t.Fatalf("GetStorageConfig failed: %s", err)
 	}
@@ -828,7 +827,7 @@ func TestLakectlFsPresign(t *testing.T) {
 
 	// upload some data
 	const totalObjects = 2
-	for i := 0; i < totalObjects; i++ {
+	for i := range totalObjects {
 		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
@@ -855,7 +854,7 @@ func TestLakectlFsStat(t *testing.T) {
 
 	// upload some data
 	const totalObjects = 2
-	for i := 0; i < totalObjects; i++ {
+	for i := range totalObjects {
 		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
@@ -1015,7 +1014,7 @@ func TestLakectlBisect(t *testing.T) {
 	runCmd(t, Lakectl()+" bisect reset", false, false, nil)
 
 	// generate to test data
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		obj := fmt.Sprintf("file%d", i)
 		runCmd(t, r.Replace("{lakectl} fs upload -s files/ro_1k lakefs://{repo}/{branch}/")+obj, false, false, nil)
 		commit := fmt.Sprintf("commit%d", i)
@@ -1087,7 +1086,7 @@ func TestLakectlAbuse(t *testing.T) {
 
 	fromFile := ""
 	const totalObjects = 5
-	for i := 0; i < totalObjects; i++ {
+	for i := range totalObjects {
 		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
 		fromFile = fromFile + vars["FILE_PATH"] + "\n"
 		runCmd(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)

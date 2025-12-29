@@ -32,6 +32,7 @@ const (
 	LoggerServiceName = "rest_api"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
+	sessionMaxAge                  = 30 * 24 * 60 * 60 // 30 days in seconds, the gorilla/sessions v1.4.0 default (for backward compatibility)
 )
 
 func Serve(
@@ -62,6 +63,15 @@ func Serve(
 		panic(err)
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	// Configure cookie options to allow HTTP (for testing).
+	// gorilla/sessions v1.4.0 changed defaults to "Secure:true" and "SameSite:None" -which breaks OAuth callbacks over HTTP
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   sessionMaxAge,
+		HttpOnly: true,
+		Secure:   cfg.GetBaseConfig().TLS.Enabled, // Only set Secure flag when TLS is enabled
+		SameSite: http.SameSiteLaxMode,            // Lax allows OAuth callback redirects
+	}
 	oidcConfig := OIDCConfig(cfg.AuthConfig().GetBaseAuthConfig().OIDC)
 	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().GetBaseAuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
@@ -209,5 +219,5 @@ func validateRequest(r *http.Request, route *routers.Route, pathParams map[strin
 // that routes under the pattern it is used with in chi.Router.Mount (i.e. /api/v1) are
 // not accessible.
 func InvalidAPIEndpointHandler(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
+	writeError(w, r, http.StatusNotFound, ErrInvalidAPIEndpoint)
 }

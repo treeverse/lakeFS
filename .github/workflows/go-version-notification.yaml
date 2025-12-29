@@ -1,0 +1,64 @@
+name: Go Version Change Notification
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'go.mod'
+
+jobs:
+  check-go-version:
+    name: Check Go version change and notify
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Extract Go versions
+        id: versions
+        run: |
+          CURRENT=$(awk '/^go [0-9]/ { print $2; exit }' go.mod)
+          PREVIOUS=$(git show HEAD~1:go.mod | awk '/^go [0-9]/ { print $2; exit }')
+
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate notification message
+        if: steps.versions.outputs.changed == 'true'
+        id: random_message
+        env:
+          COMMIT_URL: "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          OLD: ${{ steps.versions.outputs.previous }}
+          NEW: ${{ steps.versions.outputs.current }}
+        run: |
+          MESSAGES=(
+            "🚀 Go version upgraded! From $OLD to $NEW. Time to go-go-go with the new features! $COMMIT_URL"
+            "🐹 The Go gopher just got an upgrade! $OLD → $NEW. Hope it doesn't break anything, or we'll have a panic! $COMMIT_URL"
+            "Go version change detected! $OLD is out, $NEW is in. Don't worry, it's just a minor version... said every developer ever. $COMMIT_URL"
+            "Breaking news: Go version evolved! $OLD → $NEW. Darwin would be proud. $COMMIT_URL"
+            "Go version upgrade: $OLD → $NEW. Fingers crossed this doesn't introduce any goroutine leaks! $COMMIT_URL"
+            "Alert! Go version changed to $NEW from $OLD. The build might take longer, but at least the code will run faster! $COMMIT_URL"
+            "Go version bump: $OLD → $NEW. Because why fix what ain't broke? Oh wait, we just did. $COMMIT_URL"
+          )
+          RANDOM_INDEX=$((RANDOM % ${#MESSAGES[@]}))
+          echo "message=${MESSAGES[$RANDOM_INDEX]}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack on Go version change
+        if: steps.versions.outputs.changed == 'true'
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ steps.random_message.outputs.message }}"
+            }

@@ -33,7 +33,7 @@ const randomGetSeed int64 = 3_141_593
 var testTime = time.Now().UTC()
 
 func TestMsgFuncs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 
 	t.Run("set-get", func(t *testing.T) {
@@ -147,12 +147,12 @@ func testSetIfMsg(t testing.TB, ctx context.Context, store kv.Store) {
 }
 
 func makeKey(i int32) []byte {
-	return []byte(fmt.Sprintf("key=%08d", i))
+	return fmt.Appendf(nil, "key=%08d", i)
 }
 
 func makeGetModel(i int32) *kvtest.TestModel {
 	return &kvtest.TestModel{
-		Name:        []byte(fmt.Sprintf("model-%08d", i)),
+		Name:        fmt.Appendf(nil, "model-%08d", i),
 		JustAString: "This is just a string",
 		// Use an int, as these have an exact FP representation.
 		ADouble:  271828,
@@ -204,7 +204,7 @@ func testGetMsgs(t testing.TB, ctx context.Context, store kv.Store, n int, size 
 }
 
 func BenchmarkDrivers(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 
 	makeMemStore := func(ctx context.Context, t testing.TB) kv.Store {
 		store, err := kv.Open(ctx, kvparams.Config{Type: mem.DriverName})

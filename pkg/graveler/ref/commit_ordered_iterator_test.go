@@ -1,7 +1,6 @@
 package ref_test
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
 	"sort"
@@ -32,7 +31,7 @@ type testCommit struct {
 }
 
 func TestOrderedCommitIterator(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	cases := []struct {
 		Name                   string
 		Commits                []*testCommit
@@ -227,9 +226,9 @@ func TestOrderedCommitIteratorGrid(t *testing.T) {
 	commits := make([]*graveler.Commit, 0, 100)
 	expectedCommitIDS := make([]string, 0, 100)
 	expectedAncestryLeaves := make([]string, 0, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		grid[i] = make([]*graveler.Commit, 10)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			parents := make([]graveler.CommitID, 0, 2)
 			if i > 0 {
 				parents = append(parents, graveler.CommitID(fmt.Sprintf("%d-%d", i-1, j)))
@@ -249,7 +248,7 @@ func TestOrderedCommitIteratorGrid(t *testing.T) {
 	}
 	sort.Strings(expectedCommitIDS)
 	r, store := testRefManagerWithAddressProvider(t, newFakeAddressProvider(commits))
-	ctx := context.Background()
+	ctx := t.Context()
 	repo := graveler.RepositoryRecord{
 		RepositoryID: graveler.RepositoryID("repo"),
 		Repository: &graveler.Repository{
@@ -302,7 +301,7 @@ func TestOrderedCommitIteratorGrid(t *testing.T) {
 
 func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
@@ -328,7 +327,7 @@ func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 
 func TestOrderedCommitIterator_NextAfterClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)

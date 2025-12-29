@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"io"
+	"maps"
 	"net/http"
 	"time"
 
@@ -114,7 +115,6 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
 			r, reqID := RequestID(r)
 			client := GetRequestLakeFSClient(r)
-			sourceIP := SourceIP(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
@@ -124,9 +124,7 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			}
 			if isAdvancedAuth {
 				requestFields[logging.RequestIDFieldKey] = reqID
-				for k, v := range fields {
-					requestFields[k] = v
-				}
+				maps.Copy(requestFields, fields)
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			responseWriter.Header().Set(requestIDHeaderName, reqID)
@@ -140,7 +138,7 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			traceFields := logging.Fields{
 				"took":        time.Since(startTime),
 				"status_code": responseWriter.StatusCode,
-				"source_ip":   sourceIP,
+				"source_ip":   r.RemoteAddr,
 			}
 			if isAdvancedAuth {
 				traceFields["sent_bytes"] = responseWriter.ResponseSize

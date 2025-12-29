@@ -2,7 +2,7 @@ package httputil
 
 import (
 	"context"
-	"net"
+	"maps"
 	"net/http"
 	"strings"
 	"time"
@@ -63,15 +63,6 @@ func RequestIDFromContext(ctx context.Context) *string {
 	return &ret
 }
 
-func SourceIP(r *http.Request) string {
-	sourceIP, sourcePort, err := net.SplitHostPort(r.RemoteAddr)
-
-	if err != nil {
-		return err.Error()
-	}
-	return sourceIP + ":" + sourcePort
-}
-
 func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string, isAdvancedAuth bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +70,6 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
 			client := GetRequestLakeFSClient(r)
-			sourceIP := SourceIP(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
@@ -89,9 +79,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			}
 			if isAdvancedAuth {
 				requestFields[logging.RequestIDFieldKey] = reqID
-				for k, v := range fields {
-					requestFields[k] = v
-				}
+				maps.Copy(requestFields, fields)
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			writer.Header().Set(requestIDHeaderName, reqID)
@@ -100,7 +88,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			loggingFields := logging.Fields{
 				"took":        time.Since(startTime),
 				"status_code": writer.StatusCode,
-				"source_ip":   sourceIP,
+				"source_ip":   r.RemoteAddr,
 			}
 			if isAdvancedAuth {
 				loggingFields["sent_bytes"] = writer.ResponseSize

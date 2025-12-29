@@ -143,9 +143,7 @@ func (a *AuditChecker) LastCheck() (*AuditResponse, error) {
 // Return false if periodic check already ran
 func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Duration, log logging.Logger) bool {
 	ctx, a.cancel = context.WithCancel(ctx)
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
+	a.wg.Go(func() {
 		// check first and loop for checking every interval
 		a.CheckAndLog(ctx, log)
 		for {
@@ -156,7 +154,7 @@ func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Dur
 				return
 			}
 		}
-	}()
+	})
 	return true
 }
 

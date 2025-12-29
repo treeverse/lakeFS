@@ -1,11 +1,11 @@
-import React, {FC, useMemo, useState, ReactNode, MouseEventHandler, useContext} from "react";
+import React, { FC, useMemo, useState, ReactNode, MouseEventHandler, useContext } from 'react';
 
-import Modal from "react-bootstrap/Modal";
-import Button from "react-bootstrap/Button";
-import Tooltip from "react-bootstrap/Tooltip";
-import {OverlayTrigger} from "react-bootstrap";
-import { ButtonVariant } from "react-bootstrap/esm/types";
-import { GetUserEmailByIdContext } from "../../pages/auth/users";
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import Tooltip from 'react-bootstrap/Tooltip';
+import { OverlayTrigger } from 'react-bootstrap';
+import { ButtonVariant } from 'react-bootstrap/esm/types';
+import { GetUserDisplayNameByIdContext } from '../../pages/auth/users';
 
 interface ConfirmationModalProps {
     show: boolean;
@@ -28,34 +28,46 @@ interface ConfirmationButtonProps {
 
 // Extend the ConfirmationButtonProps, but omit the msg property,
 // so we can extend it for this use case
-interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProps, "msg"> {
-    msg: ReactNode | ((email: string) => ReactNode);
+interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProps, 'msg'> {
+    msg: ReactNode | ((userDisplayName: string) => ReactNode);
     userId: string;
 }
-export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = "danger" }) => {
+export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = 'danger' }) => {
     return (
         <Modal show={show} onHide={onHide}>
             <Modal.Header>
                 <Modal.Title>Confirmation</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-                {msg}
-            </Modal.Body>
+            <Modal.Body>{msg}</Modal.Body>
             <Modal.Footer>
-                <Button variant={variant} onClick={onConfirm}>Yes</Button>
-                <Button variant="secondary" onClick={onHide}>Cancel</Button>
+                <Button variant={variant} onClick={onConfirm}>
+                    Yes
+                </Button>
+                <Button variant="secondary" onClick={onHide}>
+                    Cancel
+                </Button>
             </Modal.Footer>
         </Modal>
     );
 };
 
-export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProps> = ({ userId, msg, onConfirm, variant, modalVariant, size, disabled = false, tooltip = null, children }) => {
-    const getUserEmailById = useContext(GetUserEmailByIdContext);
-    const email = useMemo(() => getUserEmailById(userId), [userId, getUserEmailById]);
+export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProps> = ({
+    userId,
+    msg,
+    onConfirm,
+    variant,
+    modalVariant,
+    size,
+    disabled = false,
+    tooltip = null,
+    children,
+}) => {
+    const getUserDisplayNameById = useContext(GetUserDisplayNameByIdContext);
+    const userDisplayName = useMemo(() => getUserDisplayNameById(userId), [userId, getUserDisplayNameById]);
 
     let msgNode: ReactNode;
-    if (typeof msg === "function") {
-        msgNode = msg(email);
+    if (typeof msg === 'function') {
+        msgNode = msg(userDisplayName);
     } else {
         msgNode = msg;
     }
@@ -69,14 +81,28 @@ export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProp
             size={size}
             disabled={disabled}
             tooltip={tooltip}
-        >{children}</ConfirmationButton>
+        >
+            {children}
+        </ConfirmationButton>
     );
-}
+};
 
-
-export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm, variant, modalVariant = "danger", size, disabled = false, tooltip = null, children }) => {
+export const ConfirmationButton: FC<ConfirmationButtonProps> = ({
+    msg,
+    onConfirm,
+    variant,
+    modalVariant = 'danger',
+    size,
+    disabled = false,
+    tooltip = null,
+    children,
+}) => {
     const [show, setShow] = useState(false);
-    let btn = <Button variant={variant} size={size} disabled={disabled} onClick={() => setShow(true)}>{children}</Button>;
+    let btn = (
+        <Button variant={variant} size={size} disabled={disabled} onClick={() => setShow(true)}>
+            {children}
+        </Button>
+    );
     if (tooltip !== null) {
         btn = (
             <OverlayTrigger placement="bottom" overlay={<Tooltip id="confirmation-tooltip">{tooltip}</Tooltip>}>
@@ -93,7 +119,7 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm
                 show={show}
                 variant={modalVariant}
                 onConfirm={() => {
-                    onConfirm(hide)
+                    onConfirm(hide);
                 }}
                 onHide={hide}
                 msg={msg}

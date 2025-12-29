@@ -3,6 +3,7 @@ package ref_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -322,7 +323,7 @@ func TestFindMergeBase(t *testing.T) {
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			getter := cas.Getter()
-			base, err := ref.FindMergeBase(context.Background(), getter, repository, cas.Left, cas.Right)
+			base, err := ref.FindMergeBase(t.Context(), getter, repository, cas.Left, cas.Right)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -331,7 +332,7 @@ func TestFindMergeBase(t *testing.T) {
 			// flip right and left and expect the same result, reset visited to keep track of the second round visits
 			getter.visited = map[graveler.CommitID]int{}
 			base, err = ref.FindMergeBase(
-				context.Background(), getter, repository, cas.Right, cas.Left)
+				t.Context(), getter, repository, cas.Right, cas.Left)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -357,9 +358,9 @@ func TestGrid(t *testing.T) {
 	//              (1,1)
 	grid := make([][]*graveler.Commit, 10)
 	kv := make(map[graveler.CommitID]*graveler.Commit)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		grid[i] = make([]*graveler.Commit, 10)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			parents := make([]graveler.CommitID, 0, 2)
 			if i > 0 {
 				parents = append(parents, graveler.CommitID(fmt.Sprintf("%d-%d", i-1, j)))
@@ -373,22 +374,22 @@ func TestGrid(t *testing.T) {
 	}
 	repository := &graveler.RepositoryRecord{RepositoryID: "ref-test-repo"}
 	getter := newReader(kv)
-	c, err := ref.FindMergeBase(context.Background(), getter, repository, "7-4", "5-6")
+	c, err := ref.FindMergeBase(t.Context(), getter, repository, "7-4", "5-6")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"5-4"}, getter.visited)
 
 	getter.visited = map[graveler.CommitID]int{}
-	c, err = ref.FindMergeBase(context.Background(), getter, repository, "1-2", "2-1")
+	c, err = ref.FindMergeBase(t.Context(), getter, repository, "1-2", "2-1")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"1-1"}, getter.visited)
 
 	getter.visited = map[graveler.CommitID]int{}
-	c, err = ref.FindMergeBase(context.Background(), getter, repository, "0-9", "9-0")
+	c, err = ref.FindMergeBase(t.Context(), getter, repository, "0-9", "9-0")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"0-0"}, getter.visited)
 
 	getter.visited = map[graveler.CommitID]int{}
-	c, err = ref.FindMergeBase(context.Background(), getter, repository, "6-9", "9-6")
+	c, err = ref.FindMergeBase(t.Context(), getter, repository, "6-9", "9-6")
 	testutil.Must(t, err)
 	verifyResult(t, c, []string{"6-6"}, getter.visited)
 }
@@ -407,10 +408,8 @@ func verifyResult(t *testing.T, base *graveler.Commit, expected []string, visite
 			t.Fatalf("visited non-base commit %d, expected max 1 visit", numVisits)
 		}
 	}
-	for _, expectedKey := range expected {
-		if base.Message == expectedKey {
-			return
-		}
+	if slices.Contains(expected, base.Message) {
+		return
 	}
 	t.Fatalf("expected one of (%v) got (%v)", expected, base.Message)
 }

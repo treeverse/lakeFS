@@ -24,7 +24,7 @@ func TestAuthMiddleware(t *testing.T) {
 	cred := createDefaultAdminUser(t, clt)
 
 	t.Run("valid basic auth", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		authClient := setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
@@ -36,7 +36,7 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("invalid basic auth", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		authClient := setupClientByEndpoint(t, server.URL, "foo", "bar")
 		resp, err := authClient.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 		if err != nil {
@@ -51,7 +51,7 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("valid jwt header", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		apiToken := testGenerateApiToken(ctx, t, clt, cred)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
@@ -71,7 +71,7 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("invalid jwt header", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		apiToken := testGenerateBadAPIToken(t, deps.authService)
 		authProvider, err := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 		if err != nil {
@@ -94,9 +94,9 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("valid gorilla session", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		apiToken := testGenerateApiToken(ctx, t, clt, cred)
-		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		values := map[any]any{api.TokenSessionKeyName: apiToken}
 		store := sessions.NewCookieStore([]byte("some secret"))
 		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {
@@ -120,9 +120,9 @@ func TestAuthMiddleware(t *testing.T) {
 	})
 
 	t.Run("invalid gorilla cookie", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		apiToken := testGenerateBadAPIToken(t, deps.authService)
-		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		values := map[any]any{api.TokenSessionKeyName: apiToken}
 		store := sessions.NewCookieStore([]byte("some secret"))
 		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {

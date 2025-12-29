@@ -1,7 +1,6 @@
 package ref_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -51,7 +50,7 @@ func TestStorageIDForRepositoryIterator(t *testing.T) {
 			repos := tc.repoNames
 			// prepare data
 			for i, repoId := range repos {
-				_, err := r.CreateRepository(context.Background(), graveler.RepositoryID(repoId), graveler.Repository{
+				_, err := r.CreateRepository(t.Context(), graveler.RepositoryID(repoId), graveler.Repository{
 					StorageID:        graveler.StorageID(tc.storageIDs[i]),
 					StorageNamespace: "s3://foo",
 					CreationDate:     time.Now(),
@@ -59,7 +58,7 @@ func TestStorageIDForRepositoryIterator(t *testing.T) {
 				})
 				testutil.Must(t, err)
 			}
-			iterator, err := ref.NewRepositoryIterator(context.Background(), store, &storeMock{bcID: tc.bcStorageID, t: t})
+			iterator, err := ref.NewRepositoryIterator(t.Context(), store, &storeMock{bcID: tc.bcStorageID, t: t})
 			require.NoError(t, err)
 			for expected := range tc.expectedStorageIDs {
 				if !iterator.Next() {
@@ -80,7 +79,7 @@ func TestRepositoryIterator(t *testing.T) {
 
 	// prepare data
 	for _, repoId := range repos {
-		_, err := r.CreateRepository(context.Background(), repoId, graveler.Repository{
+		_, err := r.CreateRepository(t.Context(), repoId, graveler.Repository{
 			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
@@ -90,7 +89,7 @@ func TestRepositoryIterator(t *testing.T) {
 	}
 
 	t.Run("listing all repos", func(t *testing.T) {
-		iter, err := ref.NewRepositoryIterator(context.Background(), store, NewStorageConfigMock(config.SingleBlockstoreID))
+		iter, err := ref.NewRepositoryIterator(t.Context(), store, NewStorageConfigMock(config.SingleBlockstoreID))
 		require.NoError(t, err)
 		repoIds := make([]graveler.RepositoryID, 0)
 		for iter.Next() {
@@ -108,7 +107,7 @@ func TestRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos from prefix", func(t *testing.T) {
-		iter, err := ref.NewRepositoryIterator(context.Background(), store, NewStorageConfigMock(config.SingleBlockstoreID))
+		iter, err := ref.NewRepositoryIterator(t.Context(), store, NewStorageConfigMock(config.SingleBlockstoreID))
 		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
@@ -127,7 +126,7 @@ func TestRepositoryIterator(t *testing.T) {
 	})
 
 	t.Run("listing repos SeekGE", func(t *testing.T) {
-		iter, err := ref.NewRepositoryIterator(context.Background(), store, NewStorageConfigMock(config.SingleBlockstoreID))
+		iter, err := ref.NewRepositoryIterator(t.Context(), store, NewStorageConfigMock(config.SingleBlockstoreID))
 		require.NoError(t, err)
 		iter.SeekGE("b")
 		repoIds := make([]graveler.RepositoryID, 0)
@@ -163,7 +162,7 @@ func TestRepositoryIterator(t *testing.T) {
 }
 
 func TestRepositoryIterator_CloseTwice(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
@@ -179,7 +178,7 @@ func TestRepositoryIterator_CloseTwice(t *testing.T) {
 }
 
 func TestRepositoryIterator_NextClosed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)

@@ -75,14 +75,12 @@ func TestCommitInMixedOrder(t *testing.T) {
 	names1 := genNames(size, "run2/foo")
 	uploads := make(chan Upload, size)
 	wg := sync.WaitGroup{}
-	for i := 0; i < parallelism; i++ {
-		wg.Add(1)
-		go func() {
+	for range parallelism {
+		wg.Go(func() {
 			if err := uploadRandomData(ctx, uploads); err != nil {
 				t.Error(err)
 			}
-			wg.Done()
-		}()
+		})
 	}
 	for _, name := range names1 {
 		uploads <- Upload{Repo: repo, Branch: mainBranch, Path: name}
@@ -104,14 +102,12 @@ func TestCommitInMixedOrder(t *testing.T) {
 	names2 := genNames(size, "run1/foo")
 	uploads = make(chan Upload, size)
 	wg = sync.WaitGroup{}
-	for i := 0; i < parallelism; i++ {
-		wg.Add(1)
-		go func() {
+	for range parallelism {
+		wg.Go(func() {
 			if err := uploadRandomData(ctx, uploads); err != nil {
 				t.Error(err)
 			}
-			wg.Done()
-		}()
+		})
 	}
 	for _, name := range names2 {
 		uploads <- Upload{Repo: repo, Branch: mainBranch, Path: name}
@@ -165,7 +161,7 @@ func TestCommitWithTombstone(t *testing.T) {
 }
 
 func TestCommitReadOnlyRepo(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	name := strings.ToLower(t.Name())
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	repoName := MakeRepositoryName(name)

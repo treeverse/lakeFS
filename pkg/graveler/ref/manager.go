@@ -44,7 +44,7 @@ type Manager struct {
 	storageConfig   config.StorageConfig
 }
 
-func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
+func BranchFromProto(pb *graveler.BranchData) *graveler.Branch {
 	var sealedTokens []graveler.StagingToken
 	for _, st := range pb.SealedTokens {
 		sealedTokens = append(sealedTokens, graveler.StagingToken(st))
@@ -153,7 +153,7 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 
 func (m *Manager) getRepositoryBatch(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	key := fmt.Sprintf("GetRepository:%s", repositoryID)
-	repository, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	repository, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (any, error) {
 		return m.getRepository(context.Background(), repositoryID)
 	}))
 	if err != nil {
@@ -163,7 +163,7 @@ func (m *Manager) getRepositoryBatch(ctx context.Context, repositoryID graveler.
 }
 
 func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
-	rec, err := m.repoCache.GetOrSet(repositoryID, func() (interface{}, error) {
+	rec, err := m.repoCache.GetOrSet(repositoryID, func() (any, error) {
 		repo, err := m.getRepositoryBatch(ctx, repositoryID)
 		if err != nil {
 			return nil, err
@@ -405,14 +405,14 @@ func (m *Manager) getBranchWithPredicate(ctx context.Context, repository *gravel
 		*graveler.Branch
 		kv.Predicate
 	}
-	result, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	result, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (any, error) {
 		key := graveler.BranchPath(branchID)
 		data := graveler.BranchData{}
 		pred, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(key), &data)
 		if err != nil {
 			return nil, err
 		}
-		return &branchPred{Branch: branchFromProto(&data), Predicate: pred}, nil
+		return &branchPred{Branch: BranchFromProto(&data), Predicate: pred}, nil
 	}))
 	if errors.Is(err, kv.ErrNotFound) {
 		err = graveler.ErrBranchNotFound
@@ -496,7 +496,7 @@ func (m *Manager) GCBranchIterator(ctx context.Context, repository *graveler.Rep
 
 func (m *Manager) GetTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) (*graveler.CommitID, error) {
 	key := fmt.Sprintf("GetTag:%s:%s", repository.RepositoryID, tagID)
-	commitID, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	commitID, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (any, error) {
 		tagKey := graveler.TagPath(tagID)
 		t := graveler.TagData{}
 		_, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(tagKey), &t)
@@ -547,7 +547,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repository *graveler.Re
 		return m.GetCommit(ctx, repository, prefix)
 	}
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
-	commit, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	commit, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (any, error) {
 		it, err := NewOrderedCommitIterator(context.Background(), m.kvStore, repository, false)
 		if err != nil {
 			return nil, err
@@ -582,7 +582,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repository *graveler.Re
 
 func (m *Manager) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("%s:%s", repository.RepositoryID, commitID)
-	v, err := m.commitCache.GetOrSet(key, func() (v interface{}, err error) {
+	v, err := m.commitCache.GetOrSet(key, func() (v any, err error) {
 		return m.getCommitBatch(ctx, repository, commitID)
 	})
 	if err != nil {
@@ -593,7 +593,7 @@ func (m *Manager) GetCommit(ctx context.Context, repository *graveler.Repository
 
 func (m *Manager) getCommitBatch(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommit:%s:%s", repository.RepositoryID, commitID)
-	commit, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	commit, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (any, error) {
 		return m.getCommit(context.Background(), commitID, repository)
 	}))
 	if err != nil {
@@ -602,7 +602,7 @@ func (m *Manager) getCommitBatch(ctx context.Context, repository *graveler.Repos
 	return commit.(*graveler.Commit), nil
 }
 
-func (m *Manager) getCommit(ctx context.Context, commitID graveler.CommitID, repository *graveler.RepositoryRecord) (interface{}, error) {
+func (m *Manager) getCommit(ctx context.Context, commitID graveler.CommitID, repository *graveler.RepositoryRecord) (any, error) {
 	commitKey := graveler.CommitPath(commitID)
 	c := graveler.CommitData{}
 	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(commitKey), &c)
@@ -746,7 +746,7 @@ func (m *Manager) getPullWithPredicate(ctx context.Context, repository *graveler
 		kv.Predicate
 	}
 	key := fmt.Sprintf("GetPullRequest:%s:%s", repository.RepositoryID, pullID)
-	result, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	result, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (any, error) {
 		pullKey := PullRequestPath(pullID)
 		data := graveler.PullRequestData{}
 		pred, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(pullKey), &data)

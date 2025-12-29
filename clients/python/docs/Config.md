@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **storage_config** | [**StorageConfig**](StorageConfig.md) |  | [optional] 
 **storage_config_list** | [**List[StorageConfig]**](StorageConfig.md) |  | [optional] 
 **ui_config** | [**UIConfig**](UIConfig.md) |  | [optional] 
+**capabilities_config** | [**CapabilitiesConfig**](CapabilitiesConfig.md) |  | [optional] 
 
 ## Example
 

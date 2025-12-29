@@ -29,7 +29,7 @@ func TestLakectlRetryPolicy(t *testing.T) {
 		{
 			name: "Context Error - Context Deadline Exceeded",
 			getTestContext: func() context.Context {
-				ctx := context.Background()
+				ctx := t.Context()
 				ctx, c := context.WithDeadline(ctx, time.Now().Add(-7*time.Hour))
 				c()
 				return ctx
@@ -42,7 +42,7 @@ func TestLakectlRetryPolicy(t *testing.T) {
 		{
 			name: "Context Error - Context Cancelation",
 			getTestContext: func() context.Context {
-				ctx := context.Background()
+				ctx := t.Context()
 				ctx, c := context.WithCancel(ctx)
 				c()
 				return ctx

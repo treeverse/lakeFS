@@ -2072,6 +2072,112 @@ func (mr *MockPullsIteratorMockRecorder) Value() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockPullsIterator)(nil).Value))
 }
 
+// MockGCRefManager is a mock of GCRefManager interface.
+type MockGCRefManager struct {
+	ctrl     *gomock.Controller
+	recorder *MockGCRefManagerMockRecorder
+}
+
+// MockGCRefManagerMockRecorder is the mock recorder for MockGCRefManager.
+type MockGCRefManagerMockRecorder struct {
+	mock *MockGCRefManager
+}
+
+// NewMockGCRefManager creates a new mock instance.
+func NewMockGCRefManager(ctrl *gomock.Controller) *MockGCRefManager {
+	mock := &MockGCRefManager{ctrl: ctrl}
+	mock.recorder = &MockGCRefManagerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGCRefManager) EXPECT() *MockGCRefManagerMockRecorder {
+	return m.recorder
+}
+
+// GCBranchIterator mocks base method.
+func (m *MockGCRefManager) GCBranchIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GCBranchIterator", ctx, repository)
+	ret0, _ := ret[0].(graveler.BranchIterator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GCBranchIterator indicates an expected call of GCBranchIterator.
+func (mr *MockGCRefManagerMockRecorder) GCBranchIterator(ctx, repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GCBranchIterator", reflect.TypeOf((*MockGCRefManager)(nil).GCBranchIterator), ctx, repository)
+}
+
+// GCCommitIterator mocks base method.
+func (m *MockGCRefManager) GCCommitIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GCCommitIterator", ctx, repository)
+	ret0, _ := ret[0].(graveler.CommitIterator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GCCommitIterator indicates an expected call of GCCommitIterator.
+func (mr *MockGCRefManagerMockRecorder) GCCommitIterator(ctx, repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GCCommitIterator", reflect.TypeOf((*MockGCRefManager)(nil).GCCommitIterator), ctx, repository)
+}
+
+// MockCommitReader is a mock of CommitReader interface.
+type MockCommitReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockCommitReaderMockRecorder
+}
+
+// MockCommitReaderMockRecorder is the mock recorder for MockCommitReader.
+type MockCommitReaderMockRecorder struct {
+	mock *MockCommitReader
+}
+
+// NewMockCommitReader creates a new mock instance.
+func NewMockCommitReader(ctrl *gomock.Controller) *MockCommitReader {
+	mock := &MockCommitReader{ctrl: ctrl}
+	mock.recorder = &MockCommitReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCommitReader) EXPECT() *MockCommitReaderMockRecorder {
+	return m.recorder
+}
+
+// GetCommit mocks base method.
+func (m *MockCommitReader) GetCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCommit", ctx, repository, commitID)
+	ret0, _ := ret[0].(*graveler.Commit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommit indicates an expected call of GetCommit.
+func (mr *MockCommitReaderMockRecorder) GetCommit(ctx, repository, commitID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockCommitReader)(nil).GetCommit), ctx, repository, commitID)
+}
+
+// ListCommits mocks base method.
+func (m *MockCommitReader) ListCommits(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListCommits", ctx, repository)
+	ret0, _ := ret[0].(graveler.CommitIterator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListCommits indicates an expected call of ListCommits.
+func (mr *MockCommitReaderMockRecorder) ListCommits(ctx, repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockCommitReader)(nil).ListCommits), ctx, repository)
+}
+
 // MockRefManager is a mock of RefManager interface.
 type MockRefManager struct {
 	ctrl     *gomock.Controller
@@ -3025,10 +3131,10 @@ func (m *MockBranchLocker) EXPECT() *MockBranchLockerMockRecorder {
 }
 
 // MetadataUpdater mocks base method.
-func (m *MockBranchLocker) MetadataUpdater(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockeFn graveler.BranchLockerFunc) (interface{}, error) {
+func (m *MockBranchLocker) MetadataUpdater(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockeFn graveler.BranchLockerFunc) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MetadataUpdater", ctx, repository, branchID, lockeFn)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -3040,10 +3146,10 @@ func (mr *MockBranchLockerMockRecorder) MetadataUpdater(ctx, repository, branchI
 }
 
 // Writer mocks base method.
-func (m *MockBranchLocker) Writer(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
+func (m *MockBranchLocker) Writer(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Writer", ctx, repository, branchID, lockedFn)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

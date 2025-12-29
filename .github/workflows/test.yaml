@@ -12,9 +12,9 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: 'go.mod'
       - uses: actions/setup-node@v4
         with:
           node-version: "22.17.x"
@@ -41,27 +41,32 @@ jobs:
   test-go:
     name: Run Go tests
     runs-on: ubuntu-22.04
-    env:
-      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
-      - name: Install Bencher
-        uses: bencherdev/bencher@61e6a2c2e0b4c8f61c87bef598ba9dbafa51c689 # Stable digest for v0.5.8
-        continue-on-error: true
+          go-version-file: 'go.mod'
       - name: Run Go tests
         run: |
           mkdir ./webui/dist
           touch ./webui/dist/index.html
-          ref=${{ github.ref_name }}
-          release_slug=$(uname -s -m | tr '[:upper:]' '[:lower:]' | sed 's/[ _]/-/g')
-          bencher run --build-time \
-                     --adapter json \
-                      --project lakefs \
-                      --branch "$ref" \
-                      --testbed "github-${release_slug}" \
-                      make test-go
+          make test-go
+
+  test-webui:
+    name: Run webui unit tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: webui/package.json
+          cache: npm
+          cache-dependency-path: webui/package-lock.json
+      - run: npm ci
+        working-directory: webui
+      - run: npm test
+        working-directory: webui

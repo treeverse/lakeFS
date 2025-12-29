@@ -30,8 +30,13 @@ const (
 
 type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
-	refManager                  graveler.RefManager
+	refManager                  GCRefManager
 	committedBlockStoragePrefix string
+}
+
+type GCRefManager interface {
+	graveler.GCRefManager
+	graveler.CommitReader
 }
 
 func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
@@ -94,20 +99,20 @@ type RepositoryCommitGetter interface {
 	Get(ctx context.Context, id graveler.CommitID) (*graveler.Commit, error)
 }
 
-type repositoryCommitGetter struct {
-	refManager graveler.RefManager
-	repository *graveler.RepositoryRecord
+type RepositoryCommitGetterAdapter struct {
+	RefManager GCRefManager
+	Repository *graveler.RepositoryRecord
 }
 
-func (r *repositoryCommitGetter) List(ctx context.Context) (graveler.CommitIterator, error) {
-	return r.refManager.ListCommits(ctx, r.repository)
+func (r *RepositoryCommitGetterAdapter) List(ctx context.Context) (graveler.CommitIterator, error) {
+	return r.RefManager.ListCommits(ctx, r.Repository)
 }
 
-func (r *repositoryCommitGetter) Get(ctx context.Context, id graveler.CommitID) (*graveler.Commit, error) {
-	return r.refManager.GetCommit(ctx, r.repository, id)
+func (r *RepositoryCommitGetterAdapter) Get(ctx context.Context, id graveler.CommitID) (*graveler.Commit, error) {
+	return r.RefManager.GetCommit(ctx, r.Repository, id)
 }
 
-func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
+func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager GCRefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
 	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,
 		refManager:                  refManager,
@@ -163,9 +168,9 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageID grav
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
-	commitGetter := &repositoryCommitGetter{
-		refManager: m.refManager,
-		repository: repository,
+	commitGetter := &RepositoryCommitGetterAdapter{
+		RefManager: m.refManager,
+		Repository: repository,
 	}
 	branchIterator, err := m.refManager.GCBranchIterator(ctx, repository)
 	if err != nil {
@@ -175,7 +180,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	// get all commits that are not the first parent of any commit:
 	commitIterator, err := m.refManager.GCCommitIterator(ctx, repository)
 	if err != nil {
-		return "", fmt.Errorf("create kv orderd commit iterator commits: %w", err)
+		return "", fmt.Errorf("create kv ordered commit iterator commits: %w", err)
 	}
 	defer commitIterator.Close()
 	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)

@@ -1,7 +1,6 @@
 package graveler_test
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -98,7 +97,7 @@ func TestDeletedSensor(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			triggredBranches := make(map[string]int)
@@ -144,7 +143,7 @@ func TestDeletedSensor_CountAfterClose(t *testing.T) {
 	}
 	sensor := graveler.NewDeleteSensor(10, cb)
 	sensor.Close()
-	ctx := context.Background()
+	ctx := t.Context()
 	sensor.CountDelete(ctx, "repo1", "branch1", "uuid")
 }
 
@@ -162,8 +161,8 @@ func TestDeletedSensor_CheckNonBlocking(t *testing.T) {
 		})
 	}
 	sensor := graveler.NewDeleteSensor(1, cb, graveler.WithCBBufferSize(1))
-	ctx := context.Background()
-	for i := 0; i < 11; i++ {
+	ctx := t.Context()
+	for range 11 {
 		select {
 		case <-closerCh:
 			t.Fatal("should not block")

@@ -1,7 +1,6 @@
 package kv_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -30,7 +29,7 @@ func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
 }
 
 func TestPartitionIterator_CloseAfterSeekGEFailed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)
 	entIt := mock.NewMockEntriesIterator(ctrl)

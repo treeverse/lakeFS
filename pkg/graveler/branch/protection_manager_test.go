@@ -27,7 +27,7 @@ var repository = &graveler.RepositoryRecord{
 }
 
 func TestSetAndGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	bpm := prepareTest(t, ctx)
 	_, eTag, err := bpm.GetRules(ctx, repository)
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestSetAndGet(t *testing.T) {
 }
 
 func TestSetWrongETag(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	bpm := prepareTest(t, ctx)
 	err := bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
@@ -75,7 +75,7 @@ func TestSetWrongETag(t *testing.T) {
 }
 
 func TestIsBlocked(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var (
 		action1 = graveler.BranchProtectionBlockedAction_STAGING_WRITE
 		action2 = graveler.BranchProtectionBlockedAction_COMMIT
@@ -139,7 +139,7 @@ func prepareTest(t *testing.T, ctx context.Context) *branch.ProtectionManager {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 	branchLock := mock.NewMockBranchLocker(ctrl)
-	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
+	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (any, error)) (any, error) {
 		return f()
 	}
 	branchLock.EXPECT().MetadataUpdater(ctx, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(cb).AnyTimes()

@@ -23,7 +23,7 @@ type ErrorResponse struct {
 }
 
 // WriteAPIError writes an error for a lakeFS API request
-func WriteAPIError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+func WriteAPIError(w http.ResponseWriter, r *http.Request, code int, v any) {
 	apiErr := ErrorResponse{
 		Message: fmt.Sprint(v),
 	}
@@ -31,7 +31,7 @@ func WriteAPIError(w http.ResponseWriter, r *http.Request, code int, v interface
 }
 
 // WriteAPIResponse writes a response for lakeFS API request
-func WriteAPIResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
+func WriteAPIResponse(w http.ResponseWriter, r *http.Request, code int, response any) {
 	// check first if the client canceled the request
 	if IsRequestCanceled(r) {
 		w.WriteHeader(HttpStatusClientClosedRequest) // Client closed request
