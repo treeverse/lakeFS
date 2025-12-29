@@ -31,6 +31,7 @@ test.describe("Commit and Merge Operations", () => {
         await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.gotoObjectsTab();
         await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${SOURCE_BRANCH}`);
+        await expect(page.getByRole('button', { name: 'Upload' })).toBeVisible({ timeout: 10000 });
 
         const fileName = "commit-test.txt";
         const filePath = path.join(__dirname, fileName);
