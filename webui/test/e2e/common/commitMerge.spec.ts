@@ -19,9 +19,6 @@ test.describe("Commit and Merge Operations", () => {
         const repositoriesPage = new RepositoriesPage(page);
         await repositoriesPage.goto();
         await repositoriesPage.createRepository(TEST_REPO_NAME, true);
-
-        const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.createBranch(SOURCE_BRANCH);
         setupComplete = true;
     });
 
@@ -29,8 +26,9 @@ test.describe("Commit and Merge Operations", () => {
         expect(setupComplete).toBeTruthy();
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.goto(TEST_REPO_NAME);
+        await repositoryPage.createBranch(SOURCE_BRANCH);
         await repositoryPage.gotoObjectsTab();
-        await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${SOURCE_BRANCH}`);
+        await repositoryPage.switchBranch(SOURCE_BRANCH);
         await expect(page.getByRole('button', { name: 'Upload' })).toBeVisible({ timeout: 10000 });
 
         const fileName = "commit-test.txt";

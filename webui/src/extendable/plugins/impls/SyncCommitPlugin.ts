@@ -8,7 +8,7 @@ class SyncCommitPlugin implements PluginCommitOperation {
         message: string,
         metadata?: { [key: string]: string },
     ): Promise<CommitResult> {
-        return await commits.commit(repoId, branchId, message, metadata);
+        return commits.commit(repoId, branchId, message, metadata);
     }
 }
 

@@ -10,7 +10,7 @@ class SyncMergePlugin implements PluginMergeOperation {
         message?: string,
         metadata?: { [key: string]: string },
     ): Promise<MergeResult> {
-        return await refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
+        return refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
     }
 }
 
