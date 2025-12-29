@@ -29,15 +29,15 @@ var authUsersList = &cobra.Command{
 		}
 
 		users := resp.JSON200.Results
-		rows := make([][]interface{}, len(users))
+		rows := make([][]any, len(users))
 		for i, user := range users {
 			ts := time.Unix(user.CreationDate, 0).String()
 			username := cmdutils.Coalesce(user.FriendlyName, user.Email, user.Id)
-			rows[i] = []interface{}{user.Id, username, ts}
+			rows[i] = []any{user.Id, username, ts}
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"ID", "User", "Creation Date"}, &pagination, amount)
+		PrintTable(rows, []any{"ID", "User", "Creation Date"}, &pagination, amount)
 	},
 }
 

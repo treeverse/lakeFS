@@ -88,7 +88,7 @@ func getIterFromFile(filePath string) (committed.ValueIterator, map[string]strin
 }
 
 func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
-	rows := make([][]interface{}, 0)
+	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
 			break
@@ -102,7 +102,7 @@ func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, 
 		if err != nil {
 			return nil, err
 		}
-		rows = append(rows, []interface{}{
+		rows = append(rows, []any{
 			string(v.Key),
 			fmt.Sprintf("%x", gv.Identity),
 			fmt.Sprint(ent.GetSize()),
@@ -116,13 +116,13 @@ func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, 
 		return nil, err
 	}
 	return &Table{
-		Headers: []interface{}{"path", "identity", "size", "etag", "last_modified", "address", "metadata"},
+		Headers: []any{"path", "identity", "size", "etag", "last_modified", "address", "metadata"},
 		Rows:    rows,
 	}, nil
 }
 
 func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
-	rows := make([][]interface{}, 0)
+	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
 			break
@@ -137,19 +137,19 @@ func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 		if err != nil {
 			return nil, err
 		}
-		rows = append(rows, []interface{}{b.Id, b.CommitId})
+		rows = append(rows, []any{b.Id, b.CommitId})
 	}
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
 	return &Table{
-		Headers: []interface{}{"branch ID", "commit ID"},
+		Headers: []any{"branch ID", "commit ID"},
 		Rows:    rows,
 	}, nil
 }
 
 func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
-	rows := make([][]interface{}, 0)
+	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
 			break
@@ -164,19 +164,19 @@ func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 		if err != nil {
 			return nil, err
 		}
-		rows = append(rows, []interface{}{t.Id, t.CommitId})
+		rows = append(rows, []any{t.Id, t.CommitId})
 	}
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
 	return &Table{
-		Headers: []interface{}{"tag ID", "commit ID"},
+		Headers: []any{"tag ID", "commit ID"},
 		Rows:    rows,
 	}, nil
 }
 
 func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
-	rows := make([][]interface{}, 0)
+	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
 			break
@@ -208,7 +208,7 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 		if err != nil {
 			return nil, err
 		}
-		rows = append(rows, []interface{}{
+		rows = append(rows, []any{
 			string(v.Key),
 			c.Committer,
 			c.Message,
@@ -224,7 +224,7 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 		return nil, err
 	}
 	return &Table{
-		Headers: []interface{}{"commit ID", "committer", "message", "creation date", "metadata", "parents", "metarange ID", "version", "generation"},
+		Headers: []any{"commit ID", "committer", "message", "creation date", "metadata", "parents", "metarange ID", "version", "generation"},
 		Rows:    rows,
 	}, nil
 }
@@ -243,7 +243,7 @@ func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType str
 }
 
 func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
-	rows := make([][]interface{}, 0)
+	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
 			break
@@ -257,7 +257,7 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 		if err != nil {
 			panic(err)
 		}
-		rows = append(rows, []interface{}{
+		rows = append(rows, []any{
 			committed.ID(gv.Identity),
 			string(r.MinKey),
 			string(r.MaxKey),
@@ -269,7 +269,7 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 		return nil, err
 	}
 	return &Table{
-		Headers: []interface{}{"range_id", "min_key", "max_key", "count", "estimated_size"},
+		Headers: []any{"range_id", "min_key", "max_key", "count", "estimated_size"},
 		Rows:    rows,
 	}, nil
 }

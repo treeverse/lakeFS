@@ -18,7 +18,7 @@ import (
 
 type Service interface {
 	IsExternalPrincipalsEnabled() bool
-	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error)
+	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]any) (*apiclient.ExternalPrincipal, error)
 	// ValidateSTS validates the STS parameters and returns the external user ID
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
 	RegisterAdditionalRoutes(r *chi.Mux, sessionStore sessions.Store)
@@ -35,7 +35,7 @@ func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state 
 	return "", ErrNotImplemented
 }
 
-func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
+func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]any) (*apiclient.ExternalPrincipal, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -126,7 +126,7 @@ func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state s
 	return subject, nil
 }
 
-func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
+func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]any) (*apiclient.ExternalPrincipal, error) {
 	if !s.IsExternalPrincipalsEnabled() {
 		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
