@@ -60,6 +60,8 @@ class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 }
 
 object SSTableReader {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
   private def copyToLocal(configuration: Configuration, url: String) = {
     val p = new Path(url)
     val fs = p.getFileSystem(configuration)
@@ -80,6 +82,7 @@ object SSTableReader {
       own: Boolean = true
   ): SSTableReader[RangeData] = {
     val localFile: File = copyToLocal(configuration, metaRangeURL)
+    logger.info(s"local ${localFile.getAbsolutePath} (metarange ${metaRangeURL}) copied, ${localFile.length()} bytes")
     val ret = new SSTableReader(localFile, RangeData.messageCompanion, own)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
@@ -91,6 +94,7 @@ object SSTableReader {
       own: Boolean = true
   ): SSTableReader[Entry] = {
     val localFile: File = copyToLocal(configuration, rangeURL)
+    logger.info(s"local ${localFile.getAbsolutePath} (range ${rangeURL}) copied, ${localFile.length()} bytes")
     val ret = new SSTableReader(localFile, Entry.messageCompanion, own)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
@@ -115,11 +119,14 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
     if (own) {
       try {
         file.delete()
+        logger.info(s"deleted owned file ${file.getName()}")
       } catch {
         case e: Exception => {
           logger.warn(s"delete owned file ${file.getName()} (keep going): $e")
         }
       }
+    } else {
+      logger.info(s"not deleting ${file.getName()}: not owned")
     }
   }
 
