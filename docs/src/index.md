@@ -26,7 +26,7 @@ With lakeFS, you can apply concepts to your data lake such as **branching** to c
 These include [branching](./quickstart/branch.md), [merging](./quickstart/commit-and-merge.md), and [rolling back changes](./quickstart/rollback.md) to data.
 
 !!! tip
-    You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything.
+    You can use the [30-day free trial of lakeFS Cloud](https://lakefs.io/cloud-registration) if you want to try out lakeFS without installing anything.
 
 ## Key lakeFS Features
 
