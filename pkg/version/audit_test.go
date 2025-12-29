@@ -29,7 +29,7 @@ func (m *MemLogger) WithContext(context.Context) logging.Logger {
 	return m
 }
 
-func (m *MemLogger) WithField(key string, value interface{}) logging.Logger {
+func (m *MemLogger) WithField(key string, value any) logging.Logger {
 	if m.fields == nil {
 		m.fields = make(logging.Fields)
 	}
@@ -51,75 +51,75 @@ func (m *MemLogger) WithError(err error) logging.Logger {
 	return m.WithField("err", err)
 }
 
-func (m *MemLogger) Trace(args ...interface{}) {
+func (m *MemLogger) Trace(args ...any) {
 	m.logLine("TRACE", args...)
 }
 
-func (m *MemLogger) Debug(args ...interface{}) {
+func (m *MemLogger) Debug(args ...any) {
 	m.logLine("DEBUG", args...)
 }
 
-func (m *MemLogger) Info(args ...interface{}) {
+func (m *MemLogger) Info(args ...any) {
 	m.logLine("INFO", args...)
 }
 
-func (m *MemLogger) Warn(args ...interface{}) {
+func (m *MemLogger) Warn(args ...any) {
 	m.logLine("WARN", args...)
 }
 
-func (m *MemLogger) Warning(args ...interface{}) {
+func (m *MemLogger) Warning(args ...any) {
 	m.logLine("WARN", args...)
 }
 
-func (m *MemLogger) Error(args ...interface{}) {
+func (m *MemLogger) Error(args ...any) {
 	m.logLine("ERROR", args...)
 }
 
-func (m *MemLogger) Fatal(args ...interface{}) {
+func (m *MemLogger) Fatal(args ...any) {
 	m.logLine("FATAL", args...)
 }
 
-func (m *MemLogger) Panic(args ...interface{}) {
+func (m *MemLogger) Panic(args ...any) {
 	m.logLine("PANIC", args...)
 }
 
-func (m *MemLogger) Log(level logrus.Level, args ...interface{}) {
+func (m *MemLogger) Log(level logrus.Level, args ...any) {
 	m.logLine(level.String(), args...)
 }
 
-func (m *MemLogger) Tracef(format string, args ...interface{}) {
+func (m *MemLogger) Tracef(format string, args ...any) {
 	m.logLine("TRACE", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Debugf(format string, args ...interface{}) {
+func (m *MemLogger) Debugf(format string, args ...any) {
 	m.logLine("DEBUG", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Infof(format string, args ...interface{}) {
+func (m *MemLogger) Infof(format string, args ...any) {
 	m.logLine("INFO", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Warnf(format string, args ...interface{}) {
+func (m *MemLogger) Warnf(format string, args ...any) {
 	m.logLine("WARN", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Warningf(format string, args ...interface{}) {
+func (m *MemLogger) Warningf(format string, args ...any) {
 	m.logLine("WARN", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Errorf(format string, args ...interface{}) {
+func (m *MemLogger) Errorf(format string, args ...any) {
 	m.logLine("ERROR", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Fatalf(format string, args ...interface{}) {
+func (m *MemLogger) Fatalf(format string, args ...any) {
 	m.logLine("FATAL", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Panicf(format string, args ...interface{}) {
+func (m *MemLogger) Panicf(format string, args ...any) {
 	m.logLine("PANIC", fmt.Sprintf(format, args...))
 }
 
-func (m *MemLogger) Logf(level logrus.Level, format string, args ...interface{}) {
+func (m *MemLogger) Logf(level logrus.Level, format string, args ...any) {
 	m.logLine(level.String(), fmt.Sprintf(format, args...))
 }
 
@@ -143,7 +143,7 @@ func (m *MemLogger) IsWarn() bool {
 	return true
 }
 
-func (m *MemLogger) logLine(level string, args ...interface{}) {
+func (m *MemLogger) logLine(level string, args ...any) {
 	m.log = append(m.log, &LogLine{
 		Fields: m.fields,
 		Level:  level,

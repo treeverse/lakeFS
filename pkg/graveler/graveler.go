@@ -1148,11 +1148,11 @@ type StagingManager interface {
 }
 
 // BranchLockerFunc callback function when branch is locked for operation (ex: writer or metadata updater)
-type BranchLockerFunc func() (interface{}, error)
+type BranchLockerFunc func() (any, error)
 
 type BranchLocker interface {
-	Writer(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockedFn BranchLockerFunc) (interface{}, error)
-	MetadataUpdater(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockeFn BranchLockerFunc) (interface{}, error)
+	Writer(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockedFn BranchLockerFunc) (any, error)
+	MetadataUpdater(ctx context.Context, repository *RepositoryRecord, branchID BranchID, lockeFn BranchLockerFunc) (any, error)
 }
 
 func (id RepositoryID) String() string {

@@ -96,7 +96,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("valid gorilla session", func(t *testing.T) {
 		ctx := t.Context()
 		apiToken := testGenerateApiToken(ctx, t, clt, cred)
-		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		values := map[any]any{api.TokenSessionKeyName: apiToken}
 		store := sessions.NewCookieStore([]byte("some secret"))
 		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {
@@ -122,7 +122,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("invalid gorilla cookie", func(t *testing.T) {
 		ctx := t.Context()
 		apiToken := testGenerateBadAPIToken(t, deps.authService)
-		values := map[interface{}]interface{}{api.TokenSessionKeyName: apiToken}
+		values := map[any]any{api.TokenSessionKeyName: apiToken}
 		store := sessions.NewCookieStore([]byte("some secret"))
 		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {

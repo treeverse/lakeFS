@@ -1715,12 +1715,12 @@ func (h commitLogJobHeap) Less(i, j int) bool { return h[i].order < h[j].order }
 func (h commitLogJobHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 
 //goland:noinspection GoMixedReceiverTypes
-func (h *commitLogJobHeap) Push(x interface{}) {
+func (h *commitLogJobHeap) Push(x any) {
 	*h = append(*h, x.(*commitLogJob))
 }
 
 //goland:noinspection GoMixedReceiverTypes
-func (h *commitLogJobHeap) Pop() interface{} {
+func (h *commitLogJobHeap) Pop() any {
 	old := *h
 	n := len(old)
 	x := old[n-1]

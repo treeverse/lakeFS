@@ -29,7 +29,7 @@ type LuaHook struct {
 	HookBase
 	Script        string
 	ScriptPath    string
-	Args          map[string]interface{}
+	Args          map[string]any
 	collector     stats.Collector
 	serverAddress string
 }
@@ -43,7 +43,7 @@ func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRe
 	for k, v := range record.Commit.Metadata {
 		metadata[k] = v
 	}
-	luautil.DeepPush(l, map[string]interface{}{
+	luautil.DeepPush(l, map[string]any{
 		"action_name":       actionName,
 		"hook_id":           hookID,
 		"run_id":            record.RunID,
@@ -56,7 +56,7 @@ func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRe
 		"merge_source":      record.MergeSource.String(),
 		"repository_id":     record.Repository.RepositoryID.String(),
 		"storage_namespace": record.Repository.StorageNamespace.String(),
-		"commit": map[string]interface{}{
+		"commit": map[string]any{
 			"message":       record.Commit.Message,
 			"meta_range_id": record.Commit.MetaRangeID.String(),
 			"creation_date": record.Commit.CreationDate.Format(time.RFC3339),
@@ -68,7 +68,7 @@ func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRe
 	l.SetGlobal("action")
 }
 
-func injectHookContext(l *lua.State, ctx context.Context, user *model.User, endpoint *http.Server, args map[string]interface{}) {
+func injectHookContext(l *lua.State, ctx context.Context, user *model.User, endpoint *http.Server, args map[string]any) {
 	l.PushString(user.Username)
 	l.SetGlobal("username")
 	luautil.DeepPush(l, args)
@@ -185,7 +185,7 @@ func (h *LuaHook) collectMetrics(l *lua.State) {
 	l.Pop(1) // Pop the _LOADED table from the stack
 }
 
-func DescendArgs(args interface{}, getter EnvGetter) (interface{}, error) {
+func DescendArgs(args any, getter EnvGetter) (any, error) {
 	var err error
 	switch t := args.(type) {
 	case Properties:
@@ -196,7 +196,7 @@ func DescendArgs(args interface{}, getter EnvGetter) (interface{}, error) {
 			}
 		}
 		return t, nil
-	case map[string]interface{}:
+	case map[string]any:
 		for k, v := range t {
 			t[k], err = DescendArgs(v, getter)
 			if err != nil {
@@ -211,13 +211,13 @@ func DescendArgs(args interface{}, getter EnvGetter) (interface{}, error) {
 		}
 		return secure.val, nil
 	case []string:
-		stuff := make([]interface{}, len(t))
+		stuff := make([]any, len(t))
 		for i, e := range t {
 			stuff[i], err = DescendArgs(e, getter)
 		}
 		return stuff, err
-	case []interface{}:
-		stuff := make([]interface{}, len(t))
+	case []any:
+		stuff := make([]any, len(t))
 		for i, e := range t {
 			stuff[i], err = DescendArgs(e, getter)
 		}
@@ -229,7 +229,7 @@ func DescendArgs(args interface{}, getter EnvGetter) (interface{}, error) {
 
 func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {
 	// optional args
-	args := make(map[string]interface{})
+	args := make(map[string]any)
 	argsVal, hasArgs := h.Properties["args"]
 	if hasArgs {
 		switch typedArgs := argsVal.(type) {
@@ -237,7 +237,7 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 			for k, v := range typedArgs {
 				args[k] = v
 			}
-		case map[string]interface{}:
+		case map[string]any:
 			args = typedArgs
 		default:
 			return nil, fmt.Errorf("'args' should be a map: %w", errWrongValueType)
@@ -250,7 +250,7 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 	if err != nil {
 		return &LuaHook{}, fmt.Errorf("error parsing args: %w", err)
 	}
-	args, ok := parsedArgs.(map[string]interface{})
+	args, ok := parsedArgs.(map[string]any)
 	if !ok {
 		return &LuaHook{}, fmt.Errorf("error parsing args, got wrong type: %T: %w", parsedArgs, ErrInvalidAction)
 	}

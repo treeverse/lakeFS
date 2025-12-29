@@ -28,7 +28,7 @@ func TestCache(t *testing.T) {
 		} else {
 			k = (i / 2) % (worldSize - 1)
 		}
-		actual, err := c.GetOrSet(k, func() (interface{}, error) {
+		actual, err := c.GetOrSet(k, func() (any, error) {
 			numCalls++
 			return k * k, nil
 		})
@@ -66,7 +66,7 @@ func TestCacheRace(t *testing.T) {
 			<-start
 			for j := 0; j < n; j++ {
 				k := j % worldSize
-				kk, err := c.GetOrSet(k, func() (interface{}, error) {
+				kk, err := c.GetOrSet(k, func() (any, error) {
 					return k * k, nil
 				})
 				if err != nil {
@@ -87,12 +87,12 @@ func TestCacheRace(t *testing.T) {
 // Spy manages a setFn that always returns a constant and spies on whether
 // it was called.
 type Spy struct {
-	value  interface{}
+	value  any
 	expiry time.Duration
 	called bool
 }
 
-func NewSpy(value interface{}, expiry time.Duration) *Spy {
+func NewSpy(value any, expiry time.Duration) *Spy {
 	return &Spy{
 		value:  value,
 		expiry: expiry,
@@ -103,7 +103,7 @@ func NewSpy(value interface{}, expiry time.Duration) *Spy {
 // MakeSetFn returns a SetFn that remembers it was called and returns the
 // configured value.
 func (s *Spy) MakeSetFn() cache.SetFnWithExpiry {
-	return cache.SetFnWithExpiry(func() (interface{}, time.Duration, error) {
+	return cache.SetFnWithExpiry(func() (any, time.Duration, error) {
 		s.called = true
 		return s.value, s.expiry, nil
 	})

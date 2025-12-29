@@ -8,18 +8,18 @@ import (
 )
 
 type JitterFn func() time.Duration
-type SetFn func() (v interface{}, err error)
+type SetFn func() (v any, err error)
 
-type EvictionCallback func(k interface{}, v interface{})
+type EvictionCallback func(k any, v any)
 
 // SetWithExpiry is a function called to set a value in the cache.  It
 // returns the desired value and when to expire it from the cache.  The
 // cache default expiration value is used if it returns a zero expiration.
-type SetFnWithExpiry func() (v interface{}, expiry time.Duration, err error)
+type SetFnWithExpiry func() (v any, expiry time.Duration, err error)
 
 type Cache interface {
-	GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error)
-	GetOrSetWithExpiry(k interface{}, setFn SetFnWithExpiry) (v interface{}, err error)
+	GetOrSet(k any, setFn SetFn) (v any, err error)
+	GetOrSetWithExpiry(k any, setFn SetFnWithExpiry) (v any, err error)
 }
 
 type GetSetCache struct {
@@ -43,19 +43,19 @@ func NewCacheWithEviction(size int, expiry time.Duration, jitterFn JitterFn, evi
 	}
 }
 
-func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error) {
-	setFnWithDefaultExpiry := SetFnWithExpiry(func() (interface{}, time.Duration, error) {
+func (c *GetSetCache) GetOrSet(k any, setFn SetFn) (v any, err error) {
+	setFnWithDefaultExpiry := SetFnWithExpiry(func() (any, time.Duration, error) {
 		v, err := setFn()
 		return v, 0, err
 	})
 	return c.GetOrSetWithExpiry(k, setFnWithDefaultExpiry)
 }
 
-func (c *GetSetCache) GetOrSetWithExpiry(k interface{}, setFn SetFnWithExpiry) (v interface{}, err error) {
+func (c *GetSetCache) GetOrSetWithExpiry(k any, setFn SetFnWithExpiry) (v any, err error) {
 	if v, ok := c.lru.Get(k); ok {
 		return v, nil
 	}
-	return c.computations.Compute(k, func() (interface{}, error) {
+	return c.computations.Compute(k, func() (any, error) {
 		v, expiry, err := setFn()
 		if err != nil { // Don't cache errors
 			return nil, err

@@ -14,15 +14,15 @@ const (
 
 // MapLoggingFields returns all logging.Fields formatted based on our configuration keys 'dot.name.key' with
 // associated values. Supports squash, and secret to skip printing out secrets.
-func MapLoggingFields(value interface{}) logging.Fields {
+func MapLoggingFields(value any) logging.Fields {
 	fields := make(logging.Fields)
-	structFieldsFunc(reflect.ValueOf(value), "mapstructure", ",squash", nil, func(key string, value interface{}) {
+	structFieldsFunc(reflect.ValueOf(value), "mapstructure", ",squash", nil, func(key string, value any) {
 		fields[key] = value
 	})
 	return fields
 }
 
-func structFieldsFunc(value reflect.Value, tag, squashValue string, prefix []string, cb func(key string, value interface{})) {
+func structFieldsFunc(value reflect.Value, tag, squashValue string, prefix []string, cb func(key string, value any)) {
 	// finite loop: Go types are well-founded.
 	for value.Kind() == reflect.Ptr {
 		if value.IsZero() {
@@ -82,7 +82,7 @@ func structFieldsFunc(value reflect.Value, tag, squashValue string, prefix []str
 	}
 }
 
-func GetSecureStringKeyPaths(value interface{}) []string {
+func GetSecureStringKeyPaths(value any) []string {
 	keys := []string{}
 	getSecureStringKeys(reflect.ValueOf(value), "_", "mapstructure", ",squash", nil, func(key string) {
 		keys = append(keys, strings.ToUpper(key))
