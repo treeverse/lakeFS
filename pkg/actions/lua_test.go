@@ -44,7 +44,7 @@ func newLuaActionHook(t *testing.T, server *http.Server, address string, netHTTP
 			ID:          "hook-" + t.Name(),
 			Type:        actions.HookTypeLua,
 			Description: t.Name() + " hook description",
-			Properties: map[string]interface{}{
+			Properties: map[string]any{
 				"script": script,
 			},
 		},
@@ -334,16 +334,16 @@ func TestLuaRunTable(t *testing.T) {
 func TestDescendArgs(t *testing.T) {
 	t.Run("valid secrets", func(t *testing.T) {
 		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
-		v := map[string]interface{}{
+		v := map[string]any{
 			"key":              "value",
 			"secure_key":       "value with {{ ENV.magic_environ123123 }}",
 			"slice_of_strings": []string{"a", "{{ENV.magic_environ123123}}", "c"},
-			"map_of_things": map[string]interface{}{
+			"map_of_things": map[string]any{
 				"a":        1,
 				"b":        false,
 				"c":        "hello",
 				"secure_d": "{{ ENV.magic_environ123123 }}",
-				"e":        []interface{}{"a", 1, false, "{{ ENV.magic_environ123123 }}"},
+				"e":        []any{"a", 1, false, "{{ ENV.magic_environ123123 }}"},
 			},
 		}
 		envGetter := actions.NewEnvironmentVariableGetter(true, "")
@@ -351,13 +351,13 @@ func TestDescendArgs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected err: %s", err)
 		}
-		outParsed, ok := out.(map[string]interface{})
+		outParsed, ok := out.(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", outParsed)
+			t.Fatalf("expected map[string]any, got a %T", outParsed)
 		}
-		m, ok := outParsed["map_of_things"].(map[string]interface{})
+		m, ok := outParsed["map_of_things"].(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", m)
+			t.Fatalf("expected map[string]any, got a %T", m)
 		}
 		secureString, ok := m["secure_d"].(string)
 		if !ok {
@@ -374,16 +374,16 @@ func TestDescendArgs(t *testing.T) {
 
 	t.Run("invalid param", func(t *testing.T) {
 		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
-		v := map[string]interface{}{
+		v := map[string]any{
 			"key":              "value",
 			"secure_key":       "value with {{ ENV.magic_environ123123 }}",
 			"slice_of_strings": []string{"a", "{{ENV.magic_environ123123}}", "c"},
-			"map_of_things": map[string]interface{}{
+			"map_of_things": map[string]any{
 				"a":        1,
 				"b":        false,
 				"c":        "hello",
 				"secure_d": "{{ ENV.magic_environ123123 }}",
-				"e":        []interface{}{"a", 1, false, "{{ ENV.magic_environ123123456 }}"}, // <- shouldn't exist?
+				"e":        []any{"a", 1, false, "{{ ENV.magic_environ123123456 }}"}, // <- shouldn't exist?
 			},
 		}
 
@@ -396,7 +396,7 @@ func TestDescendArgs(t *testing.T) {
 
 	t.Run("env_disabled", func(t *testing.T) {
 		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
-		v := map[string]interface{}{
+		v := map[string]any{
 			"key":        "value",
 			"secure_key": "value with {{ ENV.magic_environ123123 }}",
 		}
@@ -405,9 +405,9 @@ func TestDescendArgs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("DescendArgs failed: %s", err)
 		}
-		argsMap, ok := args.(map[string]interface{})
+		argsMap, ok := args.(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+			t.Fatalf("expected map[string]any, got a %T", argsMap)
 		}
 		secureString, ok := argsMap["secure_key"].(string)
 		if !ok {
@@ -421,7 +421,7 @@ func TestDescendArgs(t *testing.T) {
 
 	t.Run("env_prefix", func(t *testing.T) {
 		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
-		v := map[string]interface{}{
+		v := map[string]any{
 			"key":        "value{{ ENV.no_magic_environ123123 }}",
 			"secure_key": "value with {{ ENV.magic_environ123123 }}",
 		}
@@ -430,9 +430,9 @@ func TestDescendArgs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("DescendArgs failed: %s", err)
 		}
-		argsMap, ok := args.(map[string]interface{})
+		argsMap, ok := args.(map[string]any)
 		if !ok {
-			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+			t.Fatalf("expected map[string]any, got a %T", argsMap)
 		}
 
 		// verify that we have value access to keys with the prefix
@@ -916,7 +916,7 @@ func TestLuaRemoteAddr(t *testing.T) {
 				ID:          "test-remote-addr",
 				Type:        actions.HookTypeLua,
 				Description: "Test RemoteAddr is set",
-				Properties: map[string]interface{}{
+				Properties: map[string]any{
 					"script": script,
 				},
 			},

@@ -42,7 +42,7 @@ func newRecordMatcher(key string, identity string) recordMatcher {
 	}
 }
 
-func (m recordMatcher) Matches(x interface{}) bool {
+func (m recordMatcher) Matches(x any) bool {
 	record := x.(graveler.ValueRecord)
 	return bytes.Equal(m.key, record.Key) && bytes.Equal(m.identity, record.Identity)
 }

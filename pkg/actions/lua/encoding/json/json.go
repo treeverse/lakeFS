@@ -31,8 +31,8 @@ func check(l *lua.State, err error) {
 }
 
 func jsonMarshal(l *lua.State) int {
-	var t interface{}
-	var ot interface{}
+	var t any
+	var ot any
 	var err error
 	if !l.IsNil(1) {
 		t, err = util.PullTable(l, 1)
@@ -73,7 +73,7 @@ func fetchIndentProps(rot map[string]any) (string, string) {
 
 func jsonUnmarshal(l *lua.State) int {
 	payload := lua.CheckString(l, 1)
-	var output interface{}
+	var output any
 	check(l, json.Unmarshal([]byte(payload), &output))
 	return util.DeepPush(l, output)
 }

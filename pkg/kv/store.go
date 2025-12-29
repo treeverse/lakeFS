@@ -66,7 +66,7 @@ type Driver interface {
 //
 //	Store's Get used to pull the key's value with the associated predicate.
 //	Store's SetIf used to set the key's value based on the predicate.
-type Predicate interface{}
+type Predicate any
 
 // ValueWithPredicate value with predicate - Value holds the data and Predicate a value used for conditional set.
 //

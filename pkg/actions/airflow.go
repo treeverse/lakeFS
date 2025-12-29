@@ -22,7 +22,7 @@ type Airflow struct {
 	DagID      string
 	Username   string
 	Password   SecureString
-	DAGConf    map[string]interface{}
+	DAGConf    map[string]any
 	Timeout    time.Duration
 	WaitForDAG bool
 }
@@ -64,7 +64,7 @@ func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Ser
 			Config:     cfg,
 			Endpoint:   endpoint,
 		},
-		DAGConf: map[string]interface{}{},
+		DAGConf: map[string]any{},
 		Timeout: airflowDefaultTimeout,
 	}
 
@@ -119,7 +119,7 @@ type DagRunReq struct {
 	// DagRunID Run ID. This together with DAG_ID are a unique key.
 	DagRunID string `json:"dag_run_id,omitempty"`
 	// Conf JSON object describing additional configuration parameters.
-	Conf map[string]interface{} `json:"conf,omitempty"`
+	Conf map[string]any `json:"conf,omitempty"`
 }
 
 func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, buf *bytes.Buffer) error {
