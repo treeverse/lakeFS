@@ -1,13 +1,13 @@
-import { PluginRepoCreationForm } from "./pluginRepoCreationForm";
-import DefaultRepoCreationFormPlugin from "./impls/DefaultRepoCreationFormPlugin";
-import { PluginCustomObjectRenderers } from "./pluginCustomObjectRenderers";
-import DefaultCustomObjectRenderersPlugin from "./impls/DefaultCustomObjectRenderers";
-import { PluginLoginStrategy } from "./pluginLoginStrategy";
-import RedirectToSSOStrategyPlugin from "./impls/RedirectToSSOStrategyPlugin";
-import { PluginCommitOperation } from "./pluginCommitOperation";
-import { PluginMergeOperation } from "./pluginMergeOperation";
-import SyncCommitPlugin from "./impls/SyncCommitPlugin";
-import SyncMergePlugin from "./impls/SyncMergePlugin";
+import { PluginRepoCreationForm } from './pluginRepoCreationForm';
+import DefaultRepoCreationFormPlugin from './impls/DefaultRepoCreationFormPlugin';
+import { PluginCustomObjectRenderers } from './pluginCustomObjectRenderers';
+import DefaultCustomObjectRenderersPlugin from './impls/DefaultCustomObjectRenderers';
+import { PluginLoginStrategy } from './pluginLoginStrategy';
+import RedirectToSSOStrategyPlugin from './impls/RedirectToSSOStrategyPlugin';
+import { PluginCommitOperation } from './pluginCommitOperation';
+import { PluginMergeOperation } from './pluginMergeOperation';
+import SyncCommitPlugin from './impls/SyncCommitPlugin';
+import SyncMergePlugin from './impls/SyncMergePlugin';
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;

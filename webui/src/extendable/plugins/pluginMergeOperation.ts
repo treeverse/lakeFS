@@ -9,6 +9,6 @@ export interface PluginMergeOperation {
         destinationBranch: string,
         strategy?: string,
         message?: string,
-        metadata?: { [key: string]: string }
+        metadata?: { [key: string]: string },
     ): Promise<MergeResult>;
 }

@@ -15,6 +15,6 @@ export interface PluginCommitOperation {
         repoId: string,
         branchId: string,
         message: string,
-        metadata?: { [key: string]: string }
+        metadata?: { [key: string]: string },
     ): Promise<CommitResult>;
 }
