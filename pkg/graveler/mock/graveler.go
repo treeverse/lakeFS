@@ -3131,10 +3131,10 @@ func (m *MockBranchLocker) EXPECT() *MockBranchLockerMockRecorder {
 }
 
 // MetadataUpdater mocks base method.
-func (m *MockBranchLocker) MetadataUpdater(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockeFn graveler.BranchLockerFunc) (interface{}, error) {
+func (m *MockBranchLocker) MetadataUpdater(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockeFn graveler.BranchLockerFunc) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MetadataUpdater", ctx, repository, branchID, lockeFn)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -3146,10 +3146,10 @@ func (mr *MockBranchLockerMockRecorder) MetadataUpdater(ctx, repository, branchI
 }
 
 // Writer mocks base method.
-func (m *MockBranchLocker) Writer(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (interface{}, error) {
+func (m *MockBranchLocker) Writer(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, lockedFn graveler.BranchLockerFunc) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Writer", ctx, repository, branchID, lockedFn)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
