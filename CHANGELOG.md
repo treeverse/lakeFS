@@ -2,6 +2,29 @@
 
 ## next
 
+## v1.74.4
+
+:bug: Bugs Fixed
+- UI: Branch not found error on tag selection (#9903)
+- Improve file handling and concurrency in local metadata cache (#9879)
+
+## v1.74.3
+
+🏢 Includes only changes for Enterprise.
+
+## v1.74.2
+
+:bug: Bugs Fixed
+- Fix lakectl commit/merge panic (#9888)
+
+## v1.74.1
+
+:new: What's new:
+- Add Capabilities Property In Config (#9876)
+
+:bug: Bugs Fixed
+- Fix: lakectl async Commit and Merge flow (#9878)
+
 ## v1.74.0
 
 :new: What's new:
@@ -32,9 +55,6 @@
 - Operations: Added prefix to ListBuckets operation (#9798)
 - Error Handling: Use correct error for mismatched Sig V4 credential date (#9813)
 
-### Infrastructure
-- Async Workflows: New Async Commit/Merge Infrastructure (#9732) with timeout handling (#9757)
-
 ### Garbage Collection (GC)
 - Feature: Added a CLI runner for prepare gc commits (#9768)
 
@@ -50,9 +70,6 @@
 - Display Fixes: Fixed name display on the Pull Request page (#9821) and in the path view (#9818)
 - Login: Fixed missing error message in UI after a failed login attempt (#9775)
 
-### lakectl
-- OIDC: Fixed `lakectl login` redirects when using OIDC authentication (#9717)
-
 ### Core Logic & API
 - Headers: Now returns Content-Range header on `ErrUnsatisfiableRange` (#9743)
 - Stability: Fixed 500 error on preconditions (#9804)
@@ -63,7 +80,6 @@
 - Handle s3 context cancellation error in s3gw (#9856)
 
 ### Backend
-- Resource Leaks: Fixed file handle and goroutine leaks in Pyramid with proper cleanup (#9787)
 - Race Conditions: Fixed import start race condition (#9808)
 - Storage: Fixed local adapter error when no space is left on device (#9827)
 

@@ -80,7 +80,9 @@ class TestConfig(unittest.TestCase):
                             content_types = [
                                 ''
                                 ], )
-                        ], )
+                        ], ),
+                capabilities_config = lakefs_sdk.models.capabilities_config.CapabilitiesConfig(
+                    async_ops = True, )
             )
         else:
             return Config(

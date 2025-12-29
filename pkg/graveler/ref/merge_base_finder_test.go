@@ -3,6 +3,7 @@ package ref_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -357,9 +358,9 @@ func TestGrid(t *testing.T) {
 	//              (1,1)
 	grid := make([][]*graveler.Commit, 10)
 	kv := make(map[graveler.CommitID]*graveler.Commit)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		grid[i] = make([]*graveler.Commit, 10)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			parents := make([]graveler.CommitID, 0, 2)
 			if i > 0 {
 				parents = append(parents, graveler.CommitID(fmt.Sprintf("%d-%d", i-1, j)))
@@ -407,10 +408,8 @@ func verifyResult(t *testing.T, base *graveler.Commit, expected []string, visite
 			t.Fatalf("visited non-base commit %d, expected max 1 visit", numVisits)
 		}
 	}
-	for _, expectedKey := range expected {
-		if base.Message == expectedKey {
-			return
-		}
+	if slices.Contains(expected, base.Message) {
+		return
 	}
 	t.Fatalf("expected one of (%v) got (%v)", expected, base.Message)
 }

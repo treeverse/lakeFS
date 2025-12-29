@@ -18,6 +18,8 @@ pub mod branch_creation;
 pub use self::branch_creation::BranchCreation;
 pub mod branch_protection_rule;
 pub use self::branch_protection_rule::BranchProtectionRule;
+pub mod capabilities_config;
+pub use self::capabilities_config::CapabilitiesConfig;
 pub mod cherry_pick_creation;
 pub use self::cherry_pick_creation::CherryPickCreation;
 pub mod comm_prefs_input;

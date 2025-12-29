@@ -13,8 +13,8 @@ func TestEtag(t *testing.T) {
 	var base [16]byte
 	b := base[:]
 	parts := make([]block.MultipartPart, PartsNo)
-	for i := 0; i < PartsNo; i++ {
-		for j := 0; j < len(b); j++ {
+	for i := range PartsNo {
+		for j := range b {
 			b[j] = byte(32 + i + j)
 		}
 		parts[i].PartNumber = i + 1

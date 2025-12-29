@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -652,9 +653,7 @@ func (c *Catalog) UpdateRepositoryMetadata(ctx context.Context, repository strin
 		if md == nil {
 			return metadata, nil
 		}
-		for k, v := range metadata {
-			md[k] = v
-		}
+		maps.Copy(md, metadata)
 		return md, nil
 	})
 }
@@ -693,10 +692,7 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searc
 	// seek for first item
 	afterRepositoryID := graveler.RepositoryID(after)
 	prefixRepositoryID := graveler.RepositoryID(prefix)
-	startPos := prefixRepositoryID
-	if afterRepositoryID > startPos {
-		startPos = afterRepositoryID
-	}
+	startPos := max(afterRepositoryID, prefixRepositoryID)
 	if startPos != "" {
 		it.SeekGE(startPos)
 	}
@@ -1717,12 +1713,12 @@ func (h commitLogJobHeap) Less(i, j int) bool { return h[i].order < h[j].order }
 func (h commitLogJobHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 
 //goland:noinspection GoMixedReceiverTypes
-func (h *commitLogJobHeap) Push(x interface{}) {
+func (h *commitLogJobHeap) Push(x any) {
 	*h = append(*h, x.(*commitLogJob))
 }
 
 //goland:noinspection GoMixedReceiverTypes
-func (h *commitLogJobHeap) Pop() interface{} {
+func (h *commitLogJobHeap) Pop() any {
 	old := *h
 	n := len(old)
 	x := old[n-1]

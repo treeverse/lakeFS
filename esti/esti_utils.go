@@ -189,8 +189,7 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 		}
 		for _, user := range resp.JSON200.Results {
 			if !slices.Contains(usersToKeep, user.Id) {
-				usersToKeep = usersToDelete
-				usersToKeep = append(usersToKeep, user.Id)
+				usersToDelete = append(usersToDelete, user.Id)
 			}
 		}
 		if !resp.JSON200.Pagination.HasMore {
@@ -330,7 +329,10 @@ func createRepositoryUnique(ctx context.Context, t testing.TB) string {
 }
 
 func GenerateUniqueRepositoryName() string {
-	return "repo-" + xid.New().String()
+	id := xid.New().String()
+	// format: repo-<first two chars>-<rest>
+	// in order to avoid matching format with short commit id
+	return "repo-" + id[:2] + "-" + id[2:]
 }
 
 func GenerateUniqueStorageNamespace(repoName string) string {

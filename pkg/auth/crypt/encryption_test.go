@@ -48,8 +48,8 @@ func BenchmarkSecretStore_Encrypt(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, _ = aes.Decrypt(encrypted)
 	}
 }

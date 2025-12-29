@@ -21,18 +21,17 @@ func TestStructKeys_Simple(t *testing.T) {
 		D []rune
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
+	keys := config.GetStructKeys(reflect.TypeFor[s](), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
 
-	keys = config.GetStructKeys(reflect.TypeOf(&s{}), tagName, squashTagValue)
+	keys = config.GetStructKeys(reflect.TypeFor[*s](), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for pointer to struct: ", diffs)
 	}
 
-	ps := &s{}
-	keys = config.GetStructKeys(reflect.TypeOf(&ps), tagName, squashTagValue)
+	keys = config.GetStructKeys(reflect.TypeFor[**s](), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for pointer to pointer to struct: ", diffs)
 	}
@@ -50,7 +49,7 @@ func TestStructKeys_Nested(t *testing.T) {
 		}
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
+	keys := config.GetStructKeys(reflect.TypeFor[s](), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a.x", "a.y", "b.z", "b.w"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
@@ -65,7 +64,7 @@ func TestStructKeys_SimpleTagged(t *testing.T) {
 	// make sure we use the struct as it holds private members
 	_ = s{A: 1, B: 2, c: 3}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
+	keys := config.GetStructKeys(reflect.TypeFor[s](), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"Aaa", "b", "ccc"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
@@ -83,7 +82,7 @@ func TestStructKeys_NestedTagged(t *testing.T) {
 		}
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
+	keys := config.GetStructKeys(reflect.TypeFor[s](), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"aaa.eks", "aaa.be", "b.gamma", "b.dee"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}
@@ -103,7 +102,7 @@ func TestStructKeys_Squash(t *testing.T) {
 		J `test:"ignore,squash"`
 	}
 
-	keys := config.GetStructKeys(reflect.TypeOf(s{}), tagName, squashTagValue)
+	keys := config.GetStructKeys(reflect.TypeFor[s](), tagName, squashTagValue)
 	if diffs := deep.Equal(keys, []string{"a", "b", "c", "d"}); diffs != nil {
 		t.Error("wrong keys for struct: ", diffs)
 	}

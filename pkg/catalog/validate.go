@@ -11,7 +11,7 @@ const (
 	MaxPathLength = 1024
 )
 
-func ValidatePath(v interface{}) error {
+func ValidatePath(v any) error {
 	s, ok := v.(Path)
 	if !ok {
 		panic(graveler.ErrInvalidType)

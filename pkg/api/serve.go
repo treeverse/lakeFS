@@ -219,5 +219,5 @@ func validateRequest(r *http.Request, route *routers.Route, pathParams map[strin
 // that routes under the pattern it is used with in chi.Router.Mount (i.e. /api/v1) are
 // not accessible.
 func InvalidAPIEndpointHandler(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
+	writeError(w, r, http.StatusNotFound, ErrInvalidAPIEndpoint)
 }

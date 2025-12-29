@@ -15,7 +15,7 @@
 """  # noqa: E501
 
 
-__version__ = "0.1.0-SNAPSHOT"
+__version__ = "0.0.0"
 
 # import apis into sdk package
 from lakefs_sdk.api.actions_api import ActionsApi
@@ -60,6 +60,7 @@ from lakefs_sdk.models.auth_capabilities import AuthCapabilities
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.branch_creation import BranchCreation
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
+from lakefs_sdk.models.capabilities_config import CapabilitiesConfig
 from lakefs_sdk.models.cherry_pick_creation import CherryPickCreation
 from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.models.commit import Commit

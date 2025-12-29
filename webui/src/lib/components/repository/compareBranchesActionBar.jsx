@@ -1,69 +1,74 @@
-import React, { useCallback, useRef, useState } from "react";
-import { refs as refsAPI } from "../../../lib/api";
-import { RefTypeBranch } from "../../../constants";
-import { ActionGroup, ActionsBar, AlertError, RefreshButton } from "../controls";
-import { MetadataFields } from "./metadata";
-import { getMetadataIfValid, touchInvalidFields } from "./metadataHelpers";
-import { GitMergeIcon, GitPullRequestIcon } from "@primer/octicons-react";
-import Button from "react-bootstrap/Button";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
-import CompareBranchesSelection from "./compareBranchesSelection";
-import { useRouter } from "../../../lib/hooks/router";
+import React, { useCallback, useRef, useState } from 'react';
+import { RefTypeBranch } from '../../../constants';
+import { ActionGroup, ActionsBar, AlertError, RefreshButton } from '../controls';
+import { MetadataFields } from './metadata';
+import { getMetadataIfValid, touchInvalidFields } from './metadataHelpers';
+import { GitMergeIcon, GitPullRequestIcon } from '@primer/octicons-react';
+import Button from 'react-bootstrap/Button';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
+import CompareBranchesSelection from './compareBranchesSelection';
+import { useRouter } from '../../../lib/hooks/router';
+import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
 
-const CompareBranchesActionsBar = (
-    { repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff }
-) => {
-    return <ActionsBar>
-        <ActionGroup orientation="left">
-            <CompareBranchesSelection
-                repo={repo}
-                reference={reference}
-                compareReference={compareReference}
-                baseSelectURL={baseSelectURL}
-                withCommits={true}
-            />
-        </ActionGroup>
+const CompareBranchesActionsBar = ({ repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff }) => {
+    return (
+        <ActionsBar>
+            <ActionGroup orientation="left">
+                <CompareBranchesSelection
+                    repo={repo}
+                    reference={reference}
+                    compareReference={compareReference}
+                    baseSelectURL={baseSelectURL}
+                    withCommits={true}
+                />
+            </ActionGroup>
 
-        <ActionGroup orientation="right">
+            <ActionGroup orientation="right">
+                <RefreshButton onClick={doRefresh} />
 
-            <RefreshButton onClick={doRefresh} />
-
-            {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
-                <div>
-                    <PullRequestButton
-                        repo={repo}
-                        disabled={((compareReference.id === reference.id) || isEmptyDiff || repo?.read_only)}
-                        source={compareReference.id}
-                        dest={reference.id}
-                    />
-                    <MergeButton
-                        repo={repo}
-                        disabled={((compareReference.id === reference.id) || isEmptyDiff || repo?.read_only)}
-                        source={compareReference.id}
-                        dest={reference.id}
-                        onDone={doRefresh}
-                    />
-                </div>
-            }
-        </ActionGroup>
-    </ActionsBar>;
+                {compareReference.type === RefTypeBranch && reference.type === RefTypeBranch && (
+                    <div>
+                        <PullRequestButton
+                            repo={repo}
+                            disabled={compareReference.id === reference.id || isEmptyDiff || repo?.read_only}
+                            source={compareReference.id}
+                            dest={reference.id}
+                        />
+                        <MergeButton
+                            repo={repo}
+                            disabled={compareReference.id === reference.id || isEmptyDiff || repo?.read_only}
+                            source={compareReference.id}
+                            dest={reference.id}
+                            onDone={doRefresh}
+                        />
+                    </div>
+                )}
+            </ActionGroup>
+        </ActionsBar>
+    );
 };
 
 const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
+    const pluginManager = usePluginManager();
     const textRef = useRef(null);
-    const [metadataFields, setMetadataFields] = useState([])
+    const [metadataFields, setMetadataFields] = useState([]);
     const initialMerge = {
         merging: false,
         show: false,
         err: null,
-        strategy: "none",
-    }
+        strategy: 'none',
+    };
     const [mergeState, setMergeState] = useState(initialMerge);
 
     const onClickMerge = useCallback(() => {
-        setMergeState({ merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy })
+        setMergeState({
+            merging: mergeState.merging,
+            err: mergeState.err,
+            show: true,
+            strategy: mergeState.strategy,
+        });
     });
 
     const onStrategyChange = (event) => {
@@ -71,14 +76,14 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
             merging: mergeState.merging,
             err: mergeState.err,
             show: mergeState.show,
-            strategy: event.target.value
+            strategy: event.target.value,
         });
-    }
+    };
     const hide = () => {
         if (mergeState.merging) return;
         setMergeState(initialMerge);
-        setMetadataFields([])
-    }
+        setMetadataFields([]);
+    };
 
     const onSubmit = async () => {
         const metadata = getMetadataIfValid(metadataFields);
@@ -90,30 +95,42 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
         const message = textRef.current.value;
 
         let strategy = mergeState.strategy;
-        if (strategy === "none") {
-            strategy = "";
+        if (strategy === 'none') {
+            strategy = '';
         }
-        setMergeState({ merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy })
+        setMergeState({
+            merging: true,
+            show: mergeState.show,
+            err: mergeState.err,
+            strategy: mergeState.strategy,
+        });
         try {
-            await refsAPI.merge(repo.id, source, dest, strategy, message, metadata);
+            await pluginManager.mergeOperation.merge(repo.id, source, dest, strategy, message, metadata);
             setMergeState({
                 merging: mergeState.merging,
                 show: mergeState.show,
                 err: null,
-                strategy: mergeState.strategy
-            })
+                strategy: mergeState.strategy,
+            });
             onDone();
             hide();
         } catch (err) {
-            setMergeState({ merging: mergeState.merging, show: mergeState.show, err: err, strategy: mergeState.strategy })
+            setMergeState({
+                merging: mergeState.merging,
+                show: mergeState.show,
+                err: err,
+                strategy: mergeState.strategy,
+            });
         }
-    }
+    };
 
     return (
         <>
             <Modal show={mergeState.show} onHide={hide} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>Merge branch {source} into {dest}</Modal.Title>
+                    <Modal.Title>
+                        Merge branch {source} into {dest}
+                    </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form className="mb-2">
@@ -134,7 +151,9 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                         <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
                     </Form>
                     <FormControl sx={{ m: 1, minWidth: 120 }}>
-                        <InputLabel id="demo-select-small" className="text-secondary">Strategy</InputLabel>
+                        <InputLabel id="demo-select-small" className="text-secondary">
+                            Strategy
+                        </InputLabel>
                         <Select
                             labelId="demo-select-small"
                             id="demo-simple-select-helper"
@@ -143,34 +162,34 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                             className="text-secondary"
                             onChange={onStrategyChange}
                         >
-                            <MenuItem value={"none"}>Default</MenuItem>
-                            <MenuItem value={"source-wins"}>source-wins</MenuItem>
-                            <MenuItem value={"dest-wins"}>dest-wins</MenuItem>
+                            <MenuItem value={'none'}>Default</MenuItem>
+                            <MenuItem value={'source-wins'}>source-wins</MenuItem>
+                            <MenuItem value={'dest-wins'}>dest-wins</MenuItem>
                         </Select>
                     </FormControl>
                     <FormHelperText className="text-secondary">
-                        In case of a merge conflict, this option will force the merge process
-                        to automatically favor changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or
-                        from <b>{source}</b> (&rdquo;source-wins&rdquo;). In case no selection is made,
-                        the merge process will fail in case of a conflict.
+                        In case of a merge conflict, this option will force the merge process to automatically favor
+                        changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or from <b>{source}</b>{' '}
+                        (&rdquo;source-wins&rdquo;). In case no selection is made, the merge process will fail in case
+                        of a conflict.
                     </FormHelperText>
-                    {(mergeState.err) ? (<AlertError error={mergeState.err} />) : (<></>)}
+                    {mergeState.err ? <AlertError error={mergeState.err} /> : <></>}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={mergeState.merging} onClick={hide}>
                         Cancel
                     </Button>
                     <Button variant="success" disabled={mergeState.merging} onClick={onSubmit}>
-                        {(mergeState.merging) ? 'Merging...' : 'Merge'}
+                        {mergeState.merging ? 'Merging...' : 'Merge'}
                     </Button>
                 </Modal.Footer>
             </Modal>
             <Button variant="success" disabled={disabled} onClick={() => onClickMerge()}>
-                <GitMergeIcon /> {"Merge"}
+                <GitMergeIcon /> {'Merge'}
             </Button>
         </>
     );
-}
+};
 
 const PullRequestButton = ({ repo, source, dest, disabled = false }) => {
     const router = useRouter();
@@ -179,15 +198,15 @@ const PullRequestButton = ({ repo, source, dest, disabled = false }) => {
         router.push({
             pathname: '/repositories/:repoId/pulls/create',
             params: { repoId: repo.id },
-            query: { ref: dest, compare: source }
+            query: { ref: dest, compare: source },
         });
-    }
+    };
 
     return (
         <Button variant="primary" disabled={disabled} onClick={onClick}>
-            <GitPullRequestIcon /> {"Create Pull Request"}
+            <GitPullRequestIcon /> {'Create Pull Request'}
         </Button>
     );
-}
+};
 
 export default CompareBranchesActionsBar;

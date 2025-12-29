@@ -12,12 +12,12 @@ import (
 const RequestBufferSize = 1 << 17
 
 type Executer interface {
-	Execute() (interface{}, error)
+	Execute() (any, error)
 }
 
-type ExecuterFunc func() (interface{}, error)
+type ExecuterFunc func() (any, error)
 
-func (b ExecuterFunc) Execute() (interface{}, error) {
+func (b ExecuterFunc) Execute() (any, error) {
 	return b()
 }
 
@@ -29,7 +29,7 @@ type Tracker interface {
 type DelayFn func(dur time.Duration)
 
 type Batcher interface {
-	BatchFor(ctx context.Context, key string, dur time.Duration, exec Executer) (interface{}, error)
+	BatchFor(ctx context.Context, key string, dur time.Duration, exec Executer) (any, error)
 }
 
 type NoOpBatchingExecutor struct{}
@@ -40,7 +40,7 @@ type contextKey string
 // SkipBatchContextKey existence on a context will eliminate the request batching
 const SkipBatchContextKey contextKey = "skip_batch"
 
-func (n *NoOpBatchingExecutor) BatchFor(_ context.Context, _ string, _ time.Duration, exec Executer) (interface{}, error) {
+func (n *NoOpBatchingExecutor) BatchFor(_ context.Context, _ string, _ time.Duration, exec Executer) (any, error) {
 	return exec.Execute()
 }
 
@@ -58,7 +58,7 @@ func (c *ConditionalExecutor) Run(ctx context.Context) {
 	c.executor.Run(ctx)
 }
 
-func (c *ConditionalExecutor) BatchFor(ctx context.Context, key string, timeout time.Duration, exec Executer) (interface{}, error) {
+func (c *ConditionalExecutor) BatchFor(ctx context.Context, key string, timeout time.Duration, exec Executer) (any, error) {
 	if ctx.Value(SkipBatchContextKey) != nil {
 		return exec.Execute()
 	}
@@ -66,7 +66,7 @@ func (c *ConditionalExecutor) BatchFor(ctx context.Context, key string, timeout 
 }
 
 type response struct {
-	v   interface{}
+	v   any
 	err error
 }
 
@@ -116,7 +116,7 @@ func NewExecutor(logger logging.Logger) *Executor {
 	}
 }
 
-func (e *Executor) BatchFor(ctx context.Context, key string, timeout time.Duration, exec Executer) (interface{}, error) {
+func (e *Executor) BatchFor(ctx context.Context, key string, timeout time.Duration, exec Executer) (any, error) {
 	cb := make(chan *response)
 	e.requests <- &WaitFor{
 		ctx: ctx,

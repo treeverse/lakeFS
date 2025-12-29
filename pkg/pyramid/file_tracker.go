@@ -6,7 +6,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 )
 
-// fileTracker tracks file open requests in TierFS to avoid race conditions with cache rejection/eviction
+// fileTracker tracks file open requests in TierFS to avoid race conditions with cache rejection/eviction.
+// It ensures files won't be deleted while they're being used (ref > 0).
+// The delete callback is expected to handle "file not found" errors gracefully,
+// as duplicate delete attempts can occur from async ristretto callbacks.
 type fileTracker struct {
 	refMap map[string]*tracked
 	mu     sync.Mutex
@@ -60,8 +63,11 @@ func (t *fileTracker) Delete(path params.RelativePath) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if val, ok := t.refMap[string(path)]; ok {
+		// File is currently open - mark for deletion when all references are closed
 		val.deleted = true
-	} else {
-		t.delete(path)
+		return
 	}
+	// File not tracked - delete immediately.
+	// The callback handles "file not found" gracefully for duplicate delete attempts.
+	t.delete(path)
 }

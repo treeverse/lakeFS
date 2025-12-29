@@ -66,7 +66,7 @@ type Driver interface {
 //
 //	Store's Get used to pull the key's value with the associated predicate.
 //	Store's SetIf used to set the key's value based on the predicate.
-type Predicate interface{}
+type Predicate any
 
 // ValueWithPredicate value with predicate - Value holds the data and Predicate a value used for conditional set.
 //
@@ -209,7 +209,7 @@ func GetDBSchemaVersion(ctx context.Context, store Store) (int, error) {
 
 // SetDBSchemaVersion sets KV DB schema version
 func SetDBSchemaVersion(ctx context.Context, store Store, version uint) error {
-	return store.Set(ctx, []byte(MetadataPartitionKey), dbSchemaPath(), []byte(fmt.Sprintf("%d", version)))
+	return store.Set(ctx, []byte(MetadataPartitionKey), dbSchemaPath(), fmt.Appendf(nil, "%d", version))
 }
 
 func dbSchemaPath() []byte {

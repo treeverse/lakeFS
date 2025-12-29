@@ -1,5 +1,5 @@
-import {LoginStrategyResult, PluginLoginStrategy} from "../pluginLoginStrategy";
-import { LoginConfig } from "../../pages/auth/login";
+import { LoginStrategyResult, PluginLoginStrategy } from '../pluginLoginStrategy';
+import { LoginConfig } from '../../pages/auth/login';
 
 class RedirectToSSOStrategyPlugin implements PluginLoginStrategy {
     // Auto-redirect to the configured SSO login_url when available.

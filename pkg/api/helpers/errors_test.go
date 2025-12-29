@@ -22,7 +22,7 @@ func TestResponseAsError(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		response interface{}
+		response any
 		message  string // non-empty to match return error; empty to signal no error
 	}{
 		{"no_HTTPResponse_field", &struct{ A int }{17}, "[no HTTPResponse]: request failed"},

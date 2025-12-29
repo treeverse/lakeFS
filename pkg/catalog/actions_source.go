@@ -39,7 +39,7 @@ func NewActionsSource(catalog *Catalog) *ActionsSource {
 
 func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([]string, error) {
 	key := fmt.Sprintf("%s:%s", record.Repository.RepositoryID.String(), record.SourceRef.String())
-	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
+	names, err := s.cache.GetOrSet(key, func() (any, error) {
 		return s.list(ctx, record)
 	})
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([
 
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
 	key := fmt.Sprintf("%s:%s:%s", record.Repository.RepositoryID.String(), record.SourceRef.String(), name)
-	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
+	names, err := s.cache.GetOrSet(key, func() (any, error) {
 		return s.load(ctx, record, name)
 	})
 	if err != nil {

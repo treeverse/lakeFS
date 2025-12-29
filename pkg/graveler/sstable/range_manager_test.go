@@ -154,7 +154,7 @@ func TestGetWriterRangeID(t *testing.T) {
 
 	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(nil, &NoCache{}, mockFS, crypto.SHA256, config.SingleBlockstoreID)
 
-	for times := 0; times < 2; times++ {
+	for range 2 {
 		const ns = "some-ns"
 		mockFile := fsMock.NewMockStoredFile(ctrl)
 		mockFile.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) {

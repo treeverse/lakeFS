@@ -94,7 +94,7 @@ func TestAbortPresignMultipartUpload(t *testing.T) {
 		{name: "unknown_repo", repo: "unknown", branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "addr", statusCode: http.StatusNotFound},
 		{name: "empty_physical_address", repo: "", branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "", statusCode: http.StatusBadRequest},
 		{name: "empty_physical_address", repo: repo, branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "", statusCode: http.StatusBadRequest},
-		{name: "empty_upload_id", repo: repo, branch: mainBranch, objName: "obj", uploadID: "", physicalAddress: "addr", statusCode: http.StatusInternalServerError}, // produces invalid endpoint
+		{name: "empty_upload_id", repo: repo, branch: mainBranch, objName: "obj", uploadID: "", physicalAddress: "addr", statusCode: http.StatusNotFound}, // produces invalid endpoint
 	}
 
 	for _, tt := range tests {
@@ -136,7 +136,7 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 
 	// fake parts used for the above tests
 	var fakeParts []apigen.UploadPart
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		fakeParts = append(fakeParts, apigen.UploadPart{
 			Etag:       "etag" + strconv.Itoa(i),
 			PartNumber: i + 1,
@@ -158,8 +158,8 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 		{name: "unknown_repo", repo: "unknown", branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "addr", parts: fakeParts, statusCode: http.StatusNotFound},
 		{name: "empty_physical_address", repo: "", branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "", parts: fakeParts, statusCode: http.StatusBadRequest},
 		{name: "empty_physical_address", repo: repo, branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "", parts: fakeParts, statusCode: http.StatusBadRequest},
-		{name: "empty_upload_id", repo: repo, branch: mainBranch, objName: "obj", uploadID: "", physicalAddress: "addr", parts: fakeParts, statusCode: http.StatusInternalServerError}, // produces invalid endpoint
-		{name: "no_parts", repo: repo, branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "addr", parts: nil, statusCode: http.StatusBadRequest},              // produces invalid endpoint
+		{name: "empty_upload_id", repo: repo, branch: mainBranch, objName: "obj", uploadID: "", physicalAddress: "addr", parts: fakeParts, statusCode: http.StatusNotFound}, // produces invalid endpoint
+		{name: "no_parts", repo: repo, branch: mainBranch, objName: "obj", uploadID: "upload_id", physicalAddress: "addr", parts: nil, statusCode: http.StatusBadRequest},
 	}
 
 	for _, tt := range tests {
@@ -233,7 +233,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 				totalSize int64 = 0
 				parts     []apigen.UploadPart
 			)
-			for i := 0; i < numberOfParts; i++ {
+			for i := range numberOfParts {
 				startTime := time.Now()
 				// random data - all parts except the last one should be at least >= MinUploadPartSize
 				var (

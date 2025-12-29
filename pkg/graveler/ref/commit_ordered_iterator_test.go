@@ -226,9 +226,9 @@ func TestOrderedCommitIteratorGrid(t *testing.T) {
 	commits := make([]*graveler.Commit, 0, 100)
 	expectedCommitIDS := make([]string, 0, 100)
 	expectedAncestryLeaves := make([]string, 0, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		grid[i] = make([]*graveler.Commit, 10)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			parents := make([]graveler.CommitID, 0, 2)
 			if i > 0 {
 				parents = append(parents, graveler.CommitID(fmt.Sprintf("%d-%d", i-1, j)))

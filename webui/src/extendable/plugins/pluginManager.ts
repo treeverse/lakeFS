@@ -1,14 +1,20 @@
-import { PluginRepoCreationForm } from "./pluginRepoCreationForm";
-import DefaultRepoCreationFormPlugin from "./impls/DefaultRepoCreationFormPlugin";
-import { PluginCustomObjectRenderers } from "./pluginCustomObjectRenderers";
-import DefaultCustomObjectRenderersPlugin from "./impls/DefaultCustomObjectRenderers";
-import { PluginLoginStrategy } from "./pluginLoginStrategy";
-import RedirectToSSOStrategyPlugin from "./impls/RedirectToSSOStrategyPlugin";
+import { PluginRepoCreationForm } from './pluginRepoCreationForm';
+import DefaultRepoCreationFormPlugin from './impls/DefaultRepoCreationFormPlugin';
+import { PluginCustomObjectRenderers } from './pluginCustomObjectRenderers';
+import DefaultCustomObjectRenderersPlugin from './impls/DefaultCustomObjectRenderers';
+import { PluginLoginStrategy } from './pluginLoginStrategy';
+import RedirectToSSOStrategyPlugin from './impls/RedirectToSSOStrategyPlugin';
+import { PluginCommitOperation } from './pluginCommitOperation';
+import { PluginMergeOperation } from './pluginMergeOperation';
+import SyncCommitPlugin from './impls/SyncCommitPlugin';
+import SyncMergePlugin from './impls/SyncMergePlugin';
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
     private _customObjectRenderers: PluginCustomObjectRenderers = DefaultCustomObjectRenderersPlugin;
     private _loginStrategy: PluginLoginStrategy = RedirectToSSOStrategyPlugin;
+    private _commitOperation: PluginCommitOperation = SyncCommitPlugin;
+    private _mergeOperation: PluginMergeOperation = SyncMergePlugin;
 
     overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
         this._repoCreationForm = pluginRepoCreationForm;
@@ -32,5 +38,21 @@ export class PluginManager {
 
     get loginStrategy(): PluginLoginStrategy {
         return this._loginStrategy;
+    }
+
+    overridePluginCommitOperation(pluginCommitOperation: PluginCommitOperation): void {
+        this._commitOperation = pluginCommitOperation;
+    }
+
+    get commitOperation(): PluginCommitOperation {
+        return this._commitOperation;
+    }
+
+    overridePluginMergeOperation(pluginMergeOperation: PluginMergeOperation): void {
+        this._mergeOperation = pluginMergeOperation;
+    }
+
+    get mergeOperation(): PluginMergeOperation {
+        return this._mergeOperation;
     }
 }

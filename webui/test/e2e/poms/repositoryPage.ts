@@ -43,6 +43,18 @@ export class RepositoryPage {
     await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
   }
 
+  async selectComparedToBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Compared to branch: " }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
+    // Wait for URL to update after branch switch
+    await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
+  }
+
+  async switchBaseBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Base branch: " }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
+  }
+
   // file manipulation operations
 
   async deleteFirstObjectInDirectory(dirName: string): Promise<void> {
@@ -52,12 +64,17 @@ export class RepositoryPage {
     await this.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 10000 });
 
     const firstRow = this.page.locator('table tbody tr').first();
+    const actionButton = firstRow.locator('button').last();
+
+    // Scroll the row into the viewport center to avoid navbar overlap
+    await firstRow.scrollIntoViewIfNeeded();
+
+    // Hover and wait for the action button to actually become visible
     await firstRow.hover();
+    await actionButton.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Wait a bit for the button to be stable after hover
-    await this.page.waitForTimeout(500);
-
-    await firstRow.locator('button').last().click();
+    // Click with force since navbar sometimes intercepts even though button is visible
+    await actionButton.click({ force: true });
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
   }
@@ -103,11 +120,6 @@ export class RepositoryPage {
       .getByRole("dialog")
       .getByRole("button", { name: "Merge" })
       .click();
-  }
-
-  async switchBaseBranch(name: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Base branch: " }).click();
-    await this.page.getByRole("button", { name }).click();
   }
 
   // navigation

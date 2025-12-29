@@ -22,7 +22,7 @@ func TestNewUsageCounter(t *testing.T) {
 		}
 	}()
 
-	for i := 0; i < totalCounters; i++ {
+	for range totalCounters {
 		c := stats.NewUsageCounter()
 		counters = append(counters, c)
 	}
@@ -94,7 +94,7 @@ func TestUsageReporter(t *testing.T) {
 	total := c1.Load() + c2.Load()
 
 	const rounds = 3 // test multiple rounds, each time incrementing the counters
-	for i := 0; i < rounds; i++ {
+	for range rounds {
 		flushTime, err := report.Flush(ctx)
 		if err != nil {
 			t.Fatal("Flush() expected no error")

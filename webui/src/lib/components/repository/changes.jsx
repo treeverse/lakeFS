@@ -1,18 +1,16 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from 'react';
 
-import {
-    ClockIcon, FileDirectoryFillIcon, FoldDownIcon, FoldUpIcon,
-} from "@primer/octicons-react";
+import { ClockIcon, FileDirectoryFillIcon, FoldDownIcon, FoldUpIcon } from '@primer/octicons-react';
 
-import {useAPIWithPagination} from "../../hooks/api";
-import {useExpandCollapseDirs} from "../../hooks/useExpandCollapseDirs";
-import {AlertError, TooltipButton} from "../controls";
-import {ObjectsDiff} from "./ObjectsDiff";
-import {ObjectTreeEntryRow, PrefixTreeEntryRow} from "./treeRows";
-import Card from "react-bootstrap/Card";
-import Table from "react-bootstrap/Table";
-import Alert from "react-bootstrap/Alert";
-import {refs} from "../../api";
+import { useAPIWithPagination } from '../../hooks/api';
+import { useExpandCollapseDirs } from '../../hooks/useExpandCollapseDirs';
+import { AlertError, TooltipButton } from '../controls';
+import { ObjectsDiff } from './ObjectsDiff';
+import { ObjectTreeEntryRow, PrefixTreeEntryRow } from './treeRows';
+import Card from 'react-bootstrap/Card';
+import Table from 'react-bootstrap/Table';
+import Alert from 'react-bootstrap/Alert';
+import { refs } from '../../api';
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -30,28 +28,44 @@ import {refs} from "../../api";
  * @param relativeTo prefix of the parent item ('' for root elements)
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
-export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0, isAllExpanded, markDirAsManuallyToggled, wasDirManuallyToggled }) => {
+export const TreeItemRow = ({
+    entry,
+    repo,
+    reference,
+    leftDiffRefID,
+    rightDiffRefID,
+    internalRefresh,
+    onRevert,
+    onNavigate,
+    delimiter,
+    relativeTo,
+    getMore,
+    depth = 0,
+    isAllExpanded,
+    markDirAsManuallyToggled,
+    wasDirManuallyToggled,
+}) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
-    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
+    const [afterUpdated, setAfterUpdated] = useState(''); // state of pagination of the item's children
+    const [resultsState, setResultsState] = useState({ results: [], pagination: {} }); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
-        if (!dirExpanded) return
-        if (!repo) return
+        if (!dirExpanded) return;
+        if (!repo) return;
 
         if (resultsState.results.length > 0 && resultsState.results.at(-1).path > afterUpdated) {
             // results already cached
-            return {results:resultsState.results, pagination: resultsState.pagination}
+            return { results: resultsState.results, pagination: resultsState.pagination };
         }
 
-        const { results, pagination } =  await getMore(afterUpdated, entry.path)
-        setResultsState({results: resultsState.results.concat(results), pagination: pagination})
-        return {results:resultsState.results, pagination: pagination}
-    }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
+        const { results, pagination } = await getMore(afterUpdated, entry.path);
+        setResultsState({ results: resultsState.results.concat(results), pagination: pagination });
+        return { results: resultsState.results, pagination: pagination };
+    }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded]);
 
     useEffect(() => {
-        if (entry.path_type !== "object") {
+        if (entry.path_type !== 'object') {
             if (isAllExpanded === true && !wasDirManuallyToggled(entry.path)) {
                 setDirExpanded(true);
             } else if (isAllExpanded === false) {
@@ -61,100 +75,134 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     }, [isAllExpanded, wasDirManuallyToggled, entry]);
 
     const handleToggleDir = () => {
-        setDirExpanded(prev => {
+        setDirExpanded((prev) => {
             const next = !prev;
             if (!next) markDirAsManuallyToggled(entry.path);
             return next;
         });
     };
 
-    const results = resultsState.results
+    const results = resultsState.results;
     if (error)
-        return <tr><td><AlertError error={error}/></td></tr>
+        return (
+            <tr>
+                <td>
+                    <AlertError error={error} />
+                </td>
+            </tr>
+        );
 
     if (loading && results.length === 0) {
-        return <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} loading={true} relativeTo={relativeTo}
-                                   depth={depth} onRevert={onRevert} repo={repo} reference={reference}
-                                   getMore={getMore}/>
-    }
-    if (entry.path_type === "object") {
-        return <>
-            <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
-                                depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
-                                diffExpanded={diffExpanded} onClickExpandDiff={() => setDiffExpanded(!diffExpanded)}/>
-            {diffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
-                <td className="objects-diff" colSpan={4}>
-                    <ObjectsDiff
-                        diffType={entry.type}
-                        repoId={repo.id}
-                        leftRef={leftDiffRefID}
-                        rightRef={rightDiffRefID}
-                        path={entry.path}
-                    />
-                    {loading && <ClockIcon/>}
-                </td>
-                </tr>
-            }
-            </>
-    }
-    // entry is a common prefix
-    return <>
-        <PrefixTreeEntryRow
-            key={entry.path + "entry-row"}
-            entry={entry}
-            dirExpanded={dirExpanded}
-            relativeTo={relativeTo}
-            depth={depth}
-            onClick={handleToggleDir}
-            onRevert={onRevert}
-            onNavigate={onNavigate}
-            getMore={getMore}
-            repo={repo}
-            reference={reference}
-        />
-        {dirExpanded && results &&
-        results.map(child =>
-            (<TreeItemRow
-                key={child.path + "-item"}
-                entry={child}
+        return (
+            <ObjectTreeEntryRow
+                key={entry.path + 'entry-row'}
+                entry={entry}
+                loading={true}
+                relativeTo={relativeTo}
+                depth={depth}
+                onRevert={onRevert}
                 repo={repo}
                 reference={reference}
-                leftDiffRefID={leftDiffRefID}
-                rightDiffRefID={rightDiffRefID}
+                getMore={getMore}
+            />
+        );
+    }
+    if (entry.path_type === 'object') {
+        return (
+            <>
+                <ObjectTreeEntryRow
+                    key={entry.path + 'entry-row'}
+                    entry={entry}
+                    relativeTo={relativeTo}
+                    depth={depth === 0 ? 0 : depth + 1}
+                    onRevert={onRevert}
+                    repo={repo}
+                    diffExpanded={diffExpanded}
+                    onClickExpandDiff={() => setDiffExpanded(!diffExpanded)}
+                />
+                {diffExpanded && (
+                    <tr key={'row-' + entry.path} className={'leaf-entry-row'}>
+                        <td className="objects-diff" colSpan={4}>
+                            <ObjectsDiff
+                                diffType={entry.type}
+                                repoId={repo.id}
+                                leftRef={leftDiffRefID}
+                                rightRef={rightDiffRefID}
+                                path={entry.path}
+                            />
+                            {loading && <ClockIcon />}
+                        </td>
+                    </tr>
+                )}
+            </>
+        );
+    }
+    // entry is a common prefix
+    return (
+        <>
+            <PrefixTreeEntryRow
+                key={entry.path + 'entry-row'}
+                entry={entry}
+                dirExpanded={dirExpanded}
+                relativeTo={relativeTo}
+                depth={depth}
+                onClick={handleToggleDir}
                 onRevert={onRevert}
                 onNavigate={onNavigate}
-                internalReferesh={internalRefresh}
-                delimiter={delimiter} depth={depth + 1}
-                relativeTo={entry.path} getMore={getMore}
-                isAllExpanded={!wasDirManuallyToggled(entry.path) ? isAllExpanded : null}
-                markDirAsManuallyToggled={markDirAsManuallyToggled}
-                wasDirManuallyToggled={wasDirManuallyToggled}
-            />))}
-        {(!!nextPage || loading) &&
-        <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
-                            setAfterUpdated={setAfterUpdated}/>
-    }
-    </>
-}
+                getMore={getMore}
+                repo={repo}
+                reference={reference}
+            />
+            {dirExpanded &&
+                results &&
+                results.map((child) => (
+                    <TreeItemRow
+                        key={child.path + '-item'}
+                        entry={child}
+                        repo={repo}
+                        reference={reference}
+                        leftDiffRefID={leftDiffRefID}
+                        rightDiffRefID={rightDiffRefID}
+                        onRevert={onRevert}
+                        onNavigate={onNavigate}
+                        internalReferesh={internalRefresh}
+                        delimiter={delimiter}
+                        depth={depth + 1}
+                        relativeTo={entry.path}
+                        getMore={getMore}
+                        isAllExpanded={!wasDirManuallyToggled(entry.path) ? isAllExpanded : null}
+                        markDirAsManuallyToggled={markDirAsManuallyToggled}
+                        wasDirManuallyToggled={wasDirManuallyToggled}
+                    />
+                ))}
+            {(!!nextPage || loading) && (
+                <TreeEntryPaginator
+                    path={entry.path}
+                    depth={depth}
+                    loading={loading}
+                    nextPage={nextPage}
+                    setAfterUpdated={setAfterUpdated}
+                />
+            )}
+        </>
+    );
+};
 
-export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
-    let pathSectionText = "Load more results ...";
-    if (path !== ""){
-        pathSectionText = `Load more results for prefix ${path} ....`
+export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth = 0, loading = false }) => {
+    let pathSectionText = 'Load more results ...';
+    if (path !== '') {
+        pathSectionText = `Load more results for prefix ${path} ....`;
     }
     return (
-        <tr key={"row-" + path}
-            className={"tree-entry-row diff-more"}
-            onClick={() => setAfterUpdated(nextPage)}
-        >
-            <td className="diff-indicator"/>
+        <tr key={'row-' + path} className={'tree-entry-row diff-more'} onClick={() => setAfterUpdated(nextPage)}>
+            <td className="diff-indicator" />
             <td className="tree-path tree-path-action">
-                <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
-                    {loading && <ClockIcon/>}
+                <span style={{ marginLeft: depth * 20 + 'px', color: '#007bff' }}>
+                    {loading && <ClockIcon />}
                     {pathSectionText}
                 </span>
             </td>
-            <td/>
+            <td />
         </tr>
     );
 };
@@ -180,35 +228,57 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
  * @param onRevert to be called when an object/prefix is requested to be reverted
  * @param changesTreeMessage
  */
-export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
-                                         leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
-                                         changesTreeMessage, noChangesText = 'No changes', emptyStateComponent}) => {
+export const ChangesTreeContainer = ({
+    results,
+    delimiter,
+    uriNavigator,
+    leftDiffRefID,
+    rightDiffRefID,
+    repo,
+    reference,
+    internalRefresh,
+    prefix,
+    getMore,
+    loading,
+    nextPage,
+    setAfterUpdated,
+    onNavigate,
+    onRevert,
+    changesTreeMessage,
+    noChangesText = 'No changes',
+    emptyStateComponent,
+}) => {
     // Manages expand/collapse state for all directories in the tree.
-    const { isAllExpanded, expandAll, collapseAll, markDirAsManuallyToggled, wasDirManuallyToggled } = useExpandCollapseDirs();
-    
+    const { isAllExpanded, expandAll, collapseAll, markDirAsManuallyToggled, wasDirManuallyToggled } =
+        useExpandCollapseDirs();
+
     if (results.length === 0) {
         if (emptyStateComponent) {
             return emptyStateComponent;
-        } 
+        }
         return (
             <div className="tree-container">
                 <Alert variant="info">{noChangesText}</Alert>
             </div>
         );
-    } 
+    }
     return (
         <div className="tree-container">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
             <Card>
                 <Card.Header className="d-flex justify-content-between align-items-center">
-                    {(delimiter !== "") && uriNavigator}
+                    {delimiter !== '' && uriNavigator}
                     <div className="d-flex gap-2">
                         <TooltipButton tooltip="Expand All" size="sm" variant="outline-secondary" onClick={expandAll}>
                             <FileDirectoryFillIcon className="me-1" />
                             <FoldDownIcon />
                         </TooltipButton>
-                        <TooltipButton tooltip="Collapse All" size="sm" variant="outline-secondary" onClick={collapseAll}>
+                        <TooltipButton
+                            tooltip="Collapse All"
+                            size="sm"
+                            variant="outline-secondary"
+                            onClick={collapseAll}
+                        >
                             <FileDirectoryFillIcon className="me-1" />
                             <FoldUpIcon />
                         </TooltipButton>
@@ -218,32 +288,53 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                 <Card.Body>
                     <Table borderless size="sm">
                         <tbody>
-                        {results.map(entry => {
-                            return (
-                                <TreeItemRow key={entry.path + "-item"} entry={entry} repo={repo}
-                                            reference={reference}
-                                            internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
-                                            rightDiffRefID={rightDiffRefID} delimiter={delimiter}
-                                            relativeTo={prefix}
-                                            onNavigate={onNavigate}
-                                            getMore={getMore}
-                                            onRevert={onRevert}
-                                            isAllExpanded={isAllExpanded}
-                                            markDirAsManuallyToggled={markDirAsManuallyToggled}
-                                            wasDirManuallyToggled={wasDirManuallyToggled}
-                                />);
-                        })}
-                        {!!nextPage &&
-                        <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
-                                            setAfterUpdated={setAfterUpdated}/>}
+                            {results.map((entry) => {
+                                return (
+                                    <TreeItemRow
+                                        key={entry.path + '-item'}
+                                        entry={entry}
+                                        repo={repo}
+                                        reference={reference}
+                                        internalReferesh={internalRefresh}
+                                        leftDiffRefID={leftDiffRefID}
+                                        rightDiffRefID={rightDiffRefID}
+                                        delimiter={delimiter}
+                                        relativeTo={prefix}
+                                        onNavigate={onNavigate}
+                                        getMore={getMore}
+                                        onRevert={onRevert}
+                                        isAllExpanded={isAllExpanded}
+                                        markDirAsManuallyToggled={markDirAsManuallyToggled}
+                                        wasDirManuallyToggled={wasDirManuallyToggled}
+                                    />
+                                );
+                            })}
+                            {!!nextPage && (
+                                <TreeEntryPaginator
+                                    path={''}
+                                    loading={loading}
+                                    nextPage={nextPage}
+                                    setAfterUpdated={setAfterUpdated}
+                                />
+                            )}
                         </tbody>
                     </Table>
                 </Card.Body>
             </Card>
         </div>
     );
-}
-
-export const defaultGetMoreChanges = (repo, leftRefId, rightRefId, delimiter) => (afterUpdated, path, useDelimiter= true, amount = -1) => {
-    return refs.diff(repo.id, leftRefId, rightRefId, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
 };
+
+export const defaultGetMoreChanges =
+    (repo, leftRefId, rightRefId, delimiter) =>
+    (afterUpdated, path, useDelimiter = true, amount = -1) => {
+        return refs.diff(
+            repo.id,
+            leftRefId,
+            rightRefId,
+            afterUpdated,
+            path,
+            useDelimiter ? delimiter : '',
+            amount > 0 ? amount : undefined,
+        );
+    };

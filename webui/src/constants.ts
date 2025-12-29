@@ -6,12 +6,11 @@ export const PageSize = 5;
 export enum TreeRowType {
     Object,
     Prefix,
-    Table
+    Table,
 }
 
 export enum PullStatus {
-    open = "open",
-    closed = "closed",
-    merged = "merged",
+    open = 'open',
+    closed = 'closed',
+    merged = 'merged',
 }
-

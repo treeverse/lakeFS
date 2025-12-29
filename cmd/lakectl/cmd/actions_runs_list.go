@@ -53,9 +53,9 @@ var actionsRunsListCmd = &cobra.Command{
 		}
 
 		results := resp.JSON200.Results
-		rows := make([][]interface{}, len(results))
+		rows := make([][]any, len(results))
 		for i, row := range results {
-			rows[i] = []interface{}{
+			rows[i] = []any{
 				row.RunId,
 				row.EventType,
 				row.StartTime,
@@ -72,7 +72,7 @@ var actionsRunsListCmd = &cobra.Command{
 			Pagination       *Pagination
 		}{
 			ActionsRunsTable: &Table{
-				Headers: []interface{}{
+				Headers: []any{
 					"Run ID",
 					"Event",
 					"Start Time",
