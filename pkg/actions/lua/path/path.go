@@ -86,19 +86,19 @@ func join(l *lua.State) int {
 // Join joins the parts with the separator.
 // Will keep the first part prefix separator (if found) and the last part suffix separator optional.
 func Join(sep string, parts ...string) string {
-	var s string
+	var s strings.Builder
 	for i, part := range parts {
 		// remove prefix sep if not first
 		if i != 0 {
 			part = strings.TrimPrefix(part, sep)
 		}
-		s += part
+		s.WriteString(part)
 		// if not last part, make sure we have a suffix sep
 		if i != len(parts)-1 && !strings.HasSuffix(part, sep) {
-			s += sep
+			s.WriteString(sep)
 		}
 	}
-	return s
+	return s.String()
 }
 
 func IsHidden(pth, sep, prefix string) bool {

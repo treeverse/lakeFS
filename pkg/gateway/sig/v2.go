@@ -131,21 +131,21 @@ func headerValueToString(val []string) string {
 }
 
 func canonicalStandardHeaders(headers http.Header) string {
-	var returnStr string
+	var returnStr strings.Builder
 	for _, hoi := range interestingHeaders {
 		foundHoi := false
 		for key, val := range headers {
 			if len(val) > 0 && strings.ToLower(key) == hoi {
-				returnStr += headerValueToString(val) + "\n"
+				returnStr.WriteString(headerValueToString(val) + "\n")
 				foundHoi = true
 				break
 			}
 		}
 		if !foundHoi {
-			returnStr += "\n"
+			returnStr.WriteString("\n")
 		}
 	}
-	return returnStr
+	return returnStr.String()
 }
 
 func canonicalCustomHeaders(headers http.Header) string {
@@ -213,8 +213,8 @@ func buildPath(host string, bareDomain string, path string) string {
 		return path
 	}
 	bareSuffix := "." + b
-	if strings.HasSuffix(h, bareSuffix) {
-		prePath := strings.TrimSuffix(h, bareSuffix)
+	if before, ok := strings.CutSuffix(h, bareSuffix); ok {
+		prePath := before
 		return "/" + prePath + path
 	}
 	// bareDomain is not suffix of the path probably a bug

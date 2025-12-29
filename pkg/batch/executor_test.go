@@ -239,7 +239,7 @@ func testBatchByKey(t *testing.T) {
 func TestExecutor_BatchFor(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(50)
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		go func() {
 			defer wg.Done()
 			testReadAfterWrite(t)

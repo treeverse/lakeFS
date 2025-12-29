@@ -239,9 +239,7 @@ func (s *StoreService) SetEndpoint(h *http.Server) {
 }
 
 func (s *StoreService) asyncRun(ctx context.Context, record graveler.HookRecord) {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		// load the user from the original context
 		user, err := auth.GetUser(ctx)
 		if err != nil {
@@ -260,7 +258,7 @@ func (s *StoreService) asyncRun(ctx context.Context, record graveler.HookRecord)
 			logging.FromContext(s.ctx).WithError(err).WithField("record", record).
 				Info("Async run of hook failed")
 		}
-	}()
+	})
 }
 
 // Run load and run actions based on the event information
