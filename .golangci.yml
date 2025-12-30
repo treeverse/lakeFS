@@ -28,7 +28,18 @@ linters:
     - unparam
     - unused
     - whitespace
+    - errname
+    - perfsprint
+    - testifylint
+    - revive
   settings:
+    revive:
+      rules:
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: use-any
+        - name: use-errors-new
+        - name: use-waitgroup-go
     mnd:
       ignored-files:
         - pkg/actions/lua/.*

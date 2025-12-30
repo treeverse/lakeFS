@@ -108,7 +108,7 @@ var importCmd = &cobra.Command{
 					_ = bar.Set64(*status.IngestedObjects)
 				}
 				if updatedAt.Equal(status.UpdateTime) {
-					updateFailures += 1
+					updateFailures++
 				}
 				if updateFailures >= maxUpdateFailures {
 					DieFmt("Import status did not update for %s - abandon", maxUpdateFailures*statusPollInterval)
@@ -166,7 +166,7 @@ func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.Clie
 	// Adds backwards compatibility for ADLS Gen2 storage import `hint`
 	if strings.Contains(source, "adls.core.windows.net") {
 		source = strings.Replace(source, "adls.core.windows.net", "blob.core.windows.net", 1)
-		Warning(fmt.Sprintf("'adls' hint is deprecated\n Using %s", source))
+		Warning("'adls' hint is deprecated\n Using " + source)
 	}
 
 	storageConfig := getStorageConfigOrDie(ctx, client, repositoryID)

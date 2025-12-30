@@ -195,7 +195,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		}
 		isRetry = true
 
-		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
+		b := s.progressBar.AddReader("download "+path, sizeBytes)
 		defer func() {
 			if err != nil {
 				b.Error()

@@ -757,12 +757,9 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 	readDone := make(map[string]bool)
 	deleteDone := make(map[string]bool)
 
-	const numRoutines = 2
 	var wg sync.WaitGroup
-	wg.Add(numRoutines)
-
 	// Scan and read
-	go func() {
+	wg.Go(func() {
 		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: readPref})
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (read): %w", err)
@@ -781,11 +778,10 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 			readDone[string(e.Key)] = true
 			chErr <- nil
 		}
-		wg.Done()
-	}()
+	})
 
 	// Scan and delete
-	go func() {
+	wg.Go(func() {
 		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: toDelPref})
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
@@ -809,8 +805,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 			deleteDone[string(e.Key)] = true
 			chErr <- nil
 		}
-		wg.Done()
-	}()
+	})
 
 	// iterating over the input sequence and triggering the read/delete routines accordingly
 	for i := range len(sequence) {

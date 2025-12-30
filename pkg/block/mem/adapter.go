@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/md5" //nolint:gosec
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,7 +22,7 @@ import (
 
 var (
 	ErrNoDataForKey      = fmt.Errorf("no data for key: %w", block.ErrDataNotFound)
-	ErrMultiPartNotFound = fmt.Errorf("multipart ID not found")
+	ErrMultiPartNotFound = errors.New("multipart ID not found")
 )
 
 type partInfo struct {

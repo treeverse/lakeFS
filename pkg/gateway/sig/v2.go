@@ -160,9 +160,11 @@ func canonicalCustomHeaders(headers http.Header) string {
 		return returnStr
 	}
 	sort.Strings(foundKeys)
+	var returnStrSb163 strings.Builder
 	for _, key := range foundKeys {
-		returnStr += fmt.Sprint(strings.ToLower(key), ":", headerValueToString(headers[key]), "\n")
+		returnStrSb163.WriteString(fmt.Sprint(strings.ToLower(key), ":", headerValueToString(headers[key]), "\n"))
 	}
+	returnStr += returnStrSb163.String()
 	return returnStr
 }
 

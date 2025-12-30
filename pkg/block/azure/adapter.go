@@ -639,8 +639,8 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
 
-	info.ImportValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
-	info.ValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
+	info.ImportValidityRegex = "^https?://[a-z0-9_-]+\\." + a.clientCache.params.Domain
+	info.ValidityRegex = "^https?://[a-z0-9_-]+\\." + a.clientCache.params.Domain
 
 	info.Example = fmt.Sprintf("https://mystorageaccount.%s/mycontainer/", a.clientCache.params.Domain)
 	if a.disablePreSigned {

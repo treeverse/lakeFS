@@ -8,11 +8,11 @@ import (
 
 // helpers for writing lua actions
 
-// ErrHookFailure indicates an explicit failure from a hook
+// HookFailureError indicates an explicit failure from a hook
 // (as opposed to a generic error that occurred during execution)
-type ErrHookFailure string
+type HookFailureError string
 
-func (e ErrHookFailure) Error() string {
+func (e HookFailureError) Error() string {
 	return string(e)
 }
 
@@ -42,7 +42,7 @@ func Unwrap(err error) error {
 		_, after, found := strings.Cut(str, "<HookFailure>")
 		if found {
 			before, _, _ := strings.Cut(after, "</HookFailure>")
-			return ErrHookFailure(before)
+			return HookFailureError(before)
 		}
 	}
 	return err

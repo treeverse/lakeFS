@@ -1218,10 +1218,10 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, isAdvanced
 
 func (n *MissingPermissions) String() string {
 	if len(n.Denied) != 0 {
-		return fmt.Sprintf("denied permission to %s", strings.Join(n.Denied, ","))
+		return "denied permission to " + strings.Join(n.Denied, ",")
 	}
 	if len(n.Unauthorized) != 0 {
-		return fmt.Sprintf("not allowed to %s", strings.Join(n.Unauthorized, ","))
+		return "not allowed to " + strings.Join(n.Unauthorized, ",")
 	}
 	return UserNotAllowed
 }

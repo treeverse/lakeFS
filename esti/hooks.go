@@ -465,7 +465,7 @@ func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooks
 	require.NoError(t, err)
 	require.NotNil(t, logResp.JSON200)
 	commits := logResp.JSON200.Results
-	require.Equal(t, int(logAmount), len(commits))
+	require.Len(t, commits, int(logAmount))
 
 	revertCommitID := commits[len(commits)-1].Id
 	revertResp, err := lakefsClient.RevertBranchWithResponse(ctx, repo, branch, apigen.RevertBranchJSONRequestBody{

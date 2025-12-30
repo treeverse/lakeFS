@@ -138,7 +138,7 @@ func mergeSomething(ctx context.Context, client *apigen.ClientWithResponses, bas
 
 	u := base.WithRef(name)
 	// Use a different name on each branch, to avoid conflicts.
-	path := fmt.Sprintf("object-%s", name)
+	path := "object-" + name
 	u.Path = &path
 
 	getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &apigen.GetPhysicalAddressParams{Path: *u.Path})
@@ -169,7 +169,7 @@ func mergeSomething(ctx context.Context, client *apigen.ClientWithResponses, bas
 		return fmt.Errorf("link physical address for %s: %w", name, err)
 	}
 
-	commitResponse, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: fmt.Sprintf("commit %s", name)})
+	commitResponse, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "commit " + name})
 	if err != nil || commitResponse.JSON201 == nil {
 		if err == nil {
 			err = helpers.ResponseAsError(commitResponse)

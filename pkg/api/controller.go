@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -3338,7 +3339,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 	}
 	storageInfo := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID)
 	if storageInfo == nil {
-		writeError(w, r, http.StatusNotFound, fmt.Sprintf("no storage namespace info for storage id: %s", repo.StorageID))
+		writeError(w, r, http.StatusNotFound, "no storage namespace info for storage id: "+repo.StorageID)
 		return
 	}
 	if !storageInfo.ImportSupport {
@@ -3885,16 +3886,12 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 	// see what storage type this is and whether it fits our configuration
 	info := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID)
 	if info == nil {
-		writeError(w, r, http.StatusNotFound, fmt.Sprintf("no storage namespace info for storage id: %s",
-			repo.StorageID,
-		))
+		writeError(w, r, http.StatusNotFound, "no storage namespace info for storage id: "+repo.StorageID)
 		return
 	}
 	uriRegex := info.ValidityRegex
 	if match, err := regexp.MatchString(uriRegex, body.PhysicalAddress); err != nil || !match {
-		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("physical address is not valid for block adapter: %s",
-			c.Config.StorageConfig().GetStorageByID(repo.StorageID).BlockstoreType(),
-		))
+		writeError(w, r, http.StatusBadRequest, "physical address is not valid for block adapter: "+c.Config.StorageConfig().GetStorageByID(repo.StorageID).BlockstoreType())
 		return
 	}
 
@@ -4503,7 +4500,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
-		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.GetBaseConfig().Committed.BlockStoragePrefix),
+		Identifier:       c.Config.GetBaseConfig().Committed.BlockStoragePrefix + "/refs_manifest.json",
 	}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -5005,10 +5002,10 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 			return
 		}
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+		w.Header().Set("Content-Length", strconv.FormatInt(rng.EndOffset-rng.StartOffset+1, 10))
 		writeResponse(w, r, http.StatusPartialContent, nil)
 	} else {
-		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
+		w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
 	}
 }
 
@@ -5185,7 +5182,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 			_ = reader.Close()
 		}()
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+		w.Header().Set("Content-Length", strconv.FormatInt(rng.EndOffset-rng.StartOffset+1, 10))
 		w.WriteHeader(http.StatusPartialContent)
 	} else {
 		reader, err = c.BlockAdapter.Get(ctx, pointer)
@@ -5195,7 +5192,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		defer func() {
 			_ = reader.Close()
 		}()
-		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
+		w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
 	}
 
 	// time to first byte - include out part of the processing without the actual data transfer
@@ -6431,7 +6428,7 @@ func (c *Controller) isNameValid(name, nameType string) (bool, string) {
 	// limit the ability to use these entity names in the URL for both
 	// client-side routing and API fetch requests
 	if strings.Contains(name, "%") {
-		return false, fmt.Sprintf("%s name cannot contain '%%'", nameType)
+		return false, nameType + " name cannot contain '%'"
 	}
 	return true, ""
 }

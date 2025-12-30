@@ -62,7 +62,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.ErrorIs(t, err, block.ErrOperationNotSupported)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, len(parts), len(listResp.Parts))
+				require.Len(t, listResp.Parts, len(parts))
 				for i, part := range listResp.Parts {
 					require.Equal(t, multiParts[i].PartNumber, part.PartNumber)
 					require.Equal(t, int64(len(parts[i])), part.Size)
@@ -79,7 +79,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.ErrorIs(t, err, block.ErrOperationNotSupported)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, int(maxParts), len(listResp.Parts))
+				require.Len(t, listResp.Parts, int(maxParts))
 				require.True(t, listResp.IsTruncated)
 				require.NotNil(t, listResp.NextPartNumberMarker)
 				// check pagination with marker
@@ -87,7 +87,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 					PartNumberMarker: listResp.NextPartNumberMarker,
 				})
 				require.NoError(t, err)
-				require.Equal(t, len(parts)-maxPartsConst, len(listResp.Parts))
+				require.Len(t, listResp.Parts, len(parts)-maxPartsConst)
 				require.False(t, listResp.IsTruncated)
 			}
 
@@ -118,7 +118,7 @@ func testAdapterAbortMultipartUpload(t *testing.T, adapter block.Adapter, storag
 
 	listResp, err := adapter.ListParts(ctx, obj, uploadID, block.ListPartsOpts{})
 	if err == nil {
-		require.Equal(t, multipartNumberOfParts, len(listResp.Parts))
+		require.Len(t, listResp.Parts, multipartNumberOfParts)
 	}
 
 	// Test abort
@@ -212,7 +212,7 @@ func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter,
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 	} else {
 		// currently each adapter returns a different error, so we just check that it is not nil
-		require.NotNil(t, err, "ListParts should fail with invalid uploadID")
+		require.Error(t, err, "ListParts should fail with invalid uploadID")
 	}
 }
 

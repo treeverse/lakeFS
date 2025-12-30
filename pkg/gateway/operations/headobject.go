@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -66,10 +67,10 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 
 	amzMetaWriteHeaders(w, entry.Metadata)
 	if rangeSpec != "" && rngErr == nil {
-		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", rng.Size()))
+		o.SetHeader(w, "Content-Length", strconv.FormatInt(rng.Size(), 10))
 		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 		w.WriteHeader(http.StatusPartialContent)
 	} else {
-		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", entry.Size))
+		o.SetHeader(w, "Content-Length", strconv.FormatInt(entry.Size, 10))
 	}
 }

@@ -127,7 +127,7 @@ type versionInfo struct {
 
 var (
 	cfgFile string
-	cfgErr  error
+	errCfg  error
 	cfg     *Configuration
 
 	// baseURI default value is set by the environment variable LAKECTL_BASE_URI and
@@ -200,7 +200,7 @@ var (
 	tokenLoadOnce       sync.Once
 	tokenCache          *awsiam.JWTCache
 	tokenCacheOnce      sync.Once
-	ErrTokenUnavailable = fmt.Errorf("token is not available")
+	ErrTokenUnavailable = errors.New("token is not available")
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -330,7 +330,7 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 	idx := 0
 	if requireRemote {
 		remote = MustParsePathURI("path URI", args[0])
-		idx += 1
+		idx++
 	}
 
 	if len(args) > idx {
@@ -507,8 +507,8 @@ func preRunCmd(cmd *cobra.Command) {
 		return
 	}
 
-	if cfgFile != "" && cfgErr != nil {
-		DieFmt("error reading configuration file: %v", cfgErr)
+	if cfgFile != "" && errCfg != nil {
+		DieFmt("error reading configuration file: %v", errCfg)
 	}
 
 	logging.ContextUnavailable().
@@ -934,5 +934,5 @@ func initConfig() {
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
 	viper.SetDefault("local.symlink_support", false)
-	cfgErr = viper.ReadInConfig()
+	errCfg = viper.ReadInConfig()
 }

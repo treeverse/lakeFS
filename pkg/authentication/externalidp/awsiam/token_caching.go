@@ -2,15 +2,15 @@ package awsiam
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
-var ErrFailedToCreateCacheDir = fmt.Errorf("failed to create cache dir")
-var ErrInvalidTokenFormat = fmt.Errorf("token format is invalid")
+var ErrFailedToCreateCacheDir = errors.New("failed to create cache dir")
+var ErrInvalidTokenFormat = errors.New("token format is invalid")
 
 const (
 	ReadWriteExecuteOwnerOnly = 0700

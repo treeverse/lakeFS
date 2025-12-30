@@ -79,7 +79,7 @@ func NewHandlerWithDefault(fileSystem http.FileSystem, handler http.Handler, gat
 
 func handleGatewayRequest(w http.ResponseWriter, r *http.Request, gatewayDomains []string) {
 	// s3 signed request reaching the ui handler, return an error response instead of the default path
-	err := gwerrors.Codes[gwerrors.ERRLakeFSWrongEndpoint]
+	err := gwerrors.Codes[gwerrors.ErrLakeFSWrongEndpoint]
 	err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
 	o := operations.Operation{}
 	o.EncodeError(w, r, nil, err)

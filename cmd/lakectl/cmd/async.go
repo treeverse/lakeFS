@@ -45,7 +45,7 @@ func pollAsyncOperationStatus(ctx context.Context, taskID string, operation stri
 	var bo backoff.BackOff = backoff.NewExponentialBackOff(
 		backoff.WithInitialInterval(initialInterval), backoff.WithMaxInterval(maxInterval)) // No timeout
 	bo = backoff.WithContext(bo, ctx)
-	logging.FromContext(ctx).WithFields(logging.Fields{"task_id": taskID}).Debug(fmt.Sprintf("Checking status of %s", operation))
+	logging.FromContext(ctx).WithFields(logging.Fields{"task_id": taskID}).Debug("Checking status of " + operation)
 	return backoff.Retry(func() error {
 		resp, err := cb()
 		if err != nil {

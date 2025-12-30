@@ -154,9 +154,9 @@ func (awsI AWSInfo) GetAccessProperties() (any, error) {
 func newDelta(ctx context.Context, lakeFSAddr string) lua.Function {
 	if regexp.MustCompile(`^:\d+`).MatchString(lakeFSAddr) {
 		// workaround in case we listen on all interfaces without specifying ip
-		lakeFSAddr = fmt.Sprintf("localhost%s", lakeFSAddr)
+		lakeFSAddr = "localhost" + lakeFSAddr
 	}
-	lakeFSAddr = fmt.Sprintf("http://%s", lakeFSAddr)
+	lakeFSAddr = "http://" + lakeFSAddr
 	return func(l *lua.State) int {
 		client := newS3DeltaClient(l, ctx, lakeFSAddr)
 		l.NewTable()

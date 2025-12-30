@@ -1827,7 +1827,7 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	reference := graveler.Ref(params.Reference)
 	commitParams := graveler.CommitParams{
 		Committer:  params.Committer,
-		Message:    fmt.Sprintf("Revert %s", params.Reference),
+		Message:    "Revert " + params.Reference,
 		AllowEmpty: params.AllowEmpty,
 	}
 

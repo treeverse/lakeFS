@@ -2,7 +2,7 @@ package md5
 
 import (
 	"crypto/md5" //#nosec
-	"fmt"
+	"encoding/hex"
 
 	"github.com/Shopify/go-lua"
 )
@@ -23,6 +23,6 @@ var md5Library = []lua.RegistryFunction{
 func digest(l *lua.State) int {
 	data := lua.CheckString(l, 1)
 	sum := md5.Sum([]byte(data)) //#nosec
-	l.PushString(fmt.Sprintf("%x", sum))
+	l.PushString(hex.EncodeToString(sum[:]))
 	return 1
 }

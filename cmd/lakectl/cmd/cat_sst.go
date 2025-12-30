@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
@@ -104,9 +106,9 @@ func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, 
 		}
 		rows = append(rows, []any{
 			string(v.Key),
-			fmt.Sprintf("%x", gv.Identity),
-			fmt.Sprint(ent.GetSize()),
-			fmt.Sprint(ent.GetETag()),
+			hex.EncodeToString(gv.Identity),
+			strconv.FormatInt(ent.GetSize(), 10),
+			ent.GetETag(),
 			ent.GetLastModified().AsTime().String(),
 			ent.GetAddress(),
 			fmt.Sprint(ent.GetMetadata()),
@@ -261,8 +263,8 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 			committed.ID(gv.Identity),
 			string(r.MinKey),
 			string(r.MaxKey),
-			fmt.Sprint(r.Count),
-			fmt.Sprint(r.EstimatedSize),
+			strconv.FormatInt(r.Count, 10),
+			strconv.FormatUint(r.EstimatedSize, 10),
 		})
 	}
 	if err := iter.Err(); err != nil {

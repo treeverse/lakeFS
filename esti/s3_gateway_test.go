@@ -1049,7 +1049,7 @@ func TestS3PutObjectTagging(t *testing.T) {
 	require.Error(t, err)
 
 	errResponse := minio.ToErrorResponse(err)
-	require.Equal(t, "ERRLakeFSNotSupported", errResponse.Code)
+	require.Equal(t, "ErrLakeFSNotSupported", errResponse.Code)
 	require.Equal(t, "This operation is not supported in LakeFS", errResponse.Message)
 }
 

@@ -146,13 +146,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	operationHandler.ServeHTTP(w, req)
 }
 
-func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gatewayerrors.APIError {
-	apiError, ok := err.(gatewayerrors.APIErrorCode)
+func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.S3ErrorCode) gatewayerrors.APIError {
+	apiError, ok := err.(gatewayerrors.S3ErrorCode)
 	if ok {
 		return apiError.ToAPIErr()
-	} else {
-		return defaultAPIErr.ToAPIErr()
 	}
+	return defaultAPIErr.ToAPIErr()
 }
 
 func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
@@ -327,6 +326,6 @@ func setDefaultContentType(w http.ResponseWriter, req *http.Request) {
 func unsupportedOperationHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := &operations.Operation{}
-		_ = o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+		_ = o.EncodeError(w, req, nil, gatewayerrors.ErrLakeFSNotSupported.ToAPIErr())
 	})
 }
