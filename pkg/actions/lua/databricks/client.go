@@ -153,7 +153,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	if metadata != nil {
 		metadataMap = metadata.(map[string]any)
 	}
-
+	// try and delete the table first if exists, to prevent "table already exists" errors in databricks
 	if client.checkTableExists(catalogName, schemaName, tableName) {
 		err := client.deleteTableIfExists(catalogName, schemaName, tableName)
 		if err != nil {
@@ -162,7 +162,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 		}
 	}
 
-	status, err := client.createWithRetryExternalTable(l, warehouseID, catalogName, schemaName, tableName, location, metadataMap)
+	status, err := client.createExternalTableWithRetry(l, warehouseID, catalogName, schemaName, tableName, location, metadataMap)
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
@@ -172,7 +172,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	return 1
 }
 
-func (client *Client) createWithRetryExternalTable(l *lua.State, warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
+func (client *Client) createExternalTableWithRetry(l *lua.State, warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
 	sleepTime := 100 * time.Millisecond
 	var lastErr error
 	for i := range 5 {
