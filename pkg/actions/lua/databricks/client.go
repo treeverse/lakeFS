@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Shopify/go-lua"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -162,7 +163,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 		}
 	}
 
-	status, err := client.createExternalTableWithRetry(l, warehouseID, catalogName, schemaName, tableName, location, metadataMap)
+	status, err := client.createExternalTableWithBackoff(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
@@ -172,27 +173,27 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	return 1
 }
 
-func (client *Client) createExternalTableWithRetry(l *lua.State, warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
-	sleepTime := 100 * time.Millisecond
-	var lastErr error
-	for i := range 5 {
+func (client *Client) createExternalTableWithBackoff(warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = 100 * time.Millisecond
+	bo.MaxInterval = 3 * time.Second
+	bo.MaxElapsedTime = 10 * time.Second
+
+	deleteAndCreate := func() (string, error) {
 		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadata)
 		if err == nil {
 			return status, nil
 		}
-		lastErr = err
 		if alreadyExists(err) {
-			err = client.deleteTableIfExists(catalogName, schemaName, tableName)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
+			deletionErr := client.deleteTableIfExists(catalogName, schemaName, tableName)
+			if deletionErr != nil {
+				return "", backoff.Permanent(deletionErr)
 			}
-			time.Sleep(time.Duration(i) * sleepTime)
-			continue
+			return "", err
 		}
-		return "", err
+		return "", backoff.Permanent(err)
 	}
-	return "", fmt.Errorf("failed creating table \"%s\": %w", tableName, lastErr)
+	return backoff.RetryWithData(deleteAndCreate, bo)
 }
 
 func (client *Client) CreateSchema(l *lua.State) int {
