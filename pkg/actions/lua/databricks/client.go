@@ -187,7 +187,7 @@ func (client *Client) createExternalTableWithBackoff(warehouseID, catalogName, s
 	bo.MaxInterval = 3 * time.Second
 	bo.MaxElapsedTime = 10 * time.Second
 
-	deleteAndCreate := func() (string, error) {
+	createOrDelete := func() (string, error) {
 		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadata)
 		if err == nil {
 			return status, nil
@@ -201,7 +201,7 @@ func (client *Client) createExternalTableWithBackoff(warehouseID, catalogName, s
 		}
 		return "", backoff.Permanent(err)
 	}
-	return backoff.RetryWithData(deleteAndCreate, bo)
+	return backoff.RetryWithData(createOrDelete, bo)
 }
 
 func (client *Client) CreateSchema(l *lua.State) int {
