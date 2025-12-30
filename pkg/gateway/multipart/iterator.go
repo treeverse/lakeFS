@@ -32,7 +32,6 @@ type kvUploadIterator struct {
 	repoPartition string
 	err           error
 	value         *Upload
-	closed        bool
 }
 
 // newUploadIterator creates an iterator that streams from KV store
@@ -51,7 +50,7 @@ func newUploadIterator(ctx context.Context, store kv.Store, partitionKey string)
 }
 
 func (it *kvUploadIterator) Next() bool {
-	if it.Err() != nil || it.closed {
+	if it.Err() != nil {
 		return false
 	}
 	if !it.kvIter.Next() {
@@ -83,18 +82,11 @@ func (it *kvUploadIterator) Err() error {
 	if it.err != nil {
 		return it.err
 	}
-	if !it.closed {
-		return it.kvIter.Err()
-	}
-	return nil
+	return it.kvIter.Err()
 }
 
 func (it *kvUploadIterator) Close() {
-	if it.closed {
-		return
-	}
 	it.kvIter.Close()
-	it.closed = true
 }
 
 func (it *kvUploadIterator) SeekGE(key, uploadID string) {
@@ -108,5 +100,4 @@ func (it *kvUploadIterator) SeekGE(key, uploadID string) {
 	it.kvIter = itr
 	it.err = err
 	it.value = nil
-	it.closed = err != nil
 }

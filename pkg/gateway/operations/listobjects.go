@@ -425,7 +425,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidMaxUploads))
 			return
 		}
-		maxUploads = int32(min(maxUploadsListMPU, maxUploadsInt))
+		maxUploads = int32(min(maxUploadsListMPU, maxUploadsInt)) //nolint:gosec
 	}
 
 	// Get repository record to compute the proper partition

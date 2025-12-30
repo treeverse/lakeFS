@@ -2,7 +2,6 @@ package multipart_test
 
 import (
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
@@ -92,10 +91,13 @@ func TestTrackerList(t *testing.T) {
 		require.Equal(t, expected.PhysicalAddress, actual.PhysicalAddress)
 	}
 
-	// Test that List returns independent iterators
-	sort.Slice(uploads, func(i, j int) bool {
-		return uploads[i].Path < uploads[j].Path
-	})
+	// Verify list is sorted
+	for i := range len(uploads) - 1 {
+		require.LessOrEqual(t, uploads[i].Path, uploads[i+1].Path)
+		if uploads[i].Path == uploads[i+1].Path {
+			require.Less(t, uploads[i].UploadID, uploads[i+1].UploadID)
+		}
+	}
 
 	// List again to verify we can iterate multiple times
 	iter3, err := tracker.List(ctx, testPartition)
