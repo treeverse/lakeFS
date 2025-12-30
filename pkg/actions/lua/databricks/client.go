@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Shopify/go-lua"
 	"github.com/databricks/databricks-sdk-go"
@@ -89,12 +90,23 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
 
-func (client *Client) deleteTable(catalogName, schemaName, tableName string) error {
+func (client *Client) deleteTableIfExists(catalogName, schemaName, tableName string) error {
 	err := client.workspaceClient.Tables.DeleteByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	if errors.Is(err, databricks.ErrResourceDoesNotExist) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("failed deleting an existing table \"%s\": %w", tableName, err)
 	}
 	return nil
+}
+
+func (client *Client) checkTableExists(catalogName, schemaName, tableName string) bool {
+	table, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	if err == nil && table != nil {
+		return true
+	}
+	return false
 }
 
 func (client *Client) createSchema(catalogName, schemaName string, getIfExists bool) (*catalog.SchemaInfo, error) {
@@ -141,26 +153,46 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	if metadata != nil {
 		metadataMap = metadata.(map[string]any)
 	}
-	status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
-	if err != nil {
-		if alreadyExists(err) {
-			err = client.deleteTable(catalogName, schemaName, tableName)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
-			}
-			status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
-			}
-		} else {
+
+	if client.checkTableExists(catalogName, schemaName, tableName) {
+		err := client.deleteTableIfExists(catalogName, schemaName, tableName)
+		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 	}
+
+	status, err := client.createWithRetryExternalTable(l, warehouseID, catalogName, schemaName, tableName, location, metadataMap)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+
 	l.PushString(status)
 	return 1
+}
+
+func (client *Client) createWithRetryExternalTable(l *lua.State, warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
+	sleepTime := 100 * time.Millisecond
+	var lastErr error
+	for i := range 5 {
+		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadata)
+		if err == nil {
+			return status, nil
+		}
+		lastErr = err
+		if alreadyExists(err) {
+			err = client.deleteTableIfExists(catalogName, schemaName, tableName)
+			if err != nil {
+				lua.Errorf(l, "%s", err.Error())
+				panic("unreachable")
+			}
+			time.Sleep(time.Duration(i) * sleepTime)
+			continue
+		}
+		return "", err
+	}
+	return "", fmt.Errorf("failed creating table \"%s\": %w", tableName, lastErr)
 }
 
 func (client *Client) CreateSchema(l *lua.State) int {
