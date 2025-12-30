@@ -180,7 +180,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                         Cancel
                     </Button>
                     <Button variant="success" disabled={mergeState.merging} onClick={onSubmit}>
-                        {mergeState.merging ? 'Merging..' : 'Merge'}
+                        {mergeState.merging ? 'Merging...' : 'Merge'}
                     </Button>
                 </Modal.Footer>
             </Modal>
