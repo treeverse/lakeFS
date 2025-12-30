@@ -66,6 +66,35 @@ func TestCreateDumpWithPartitions(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, dump)
 		require.Len(t, dump.Entries, 3)
+
+		// Verify returned values
+		entryMap := make(map[string]kv.RawEntry)
+		for _, entry := range dump.Entries {
+			entryMap[entry.Partition+"/"+entry.Key] = entry
+		}
+
+		// Check partition1 entries
+		entry1, ok := entryMap["partition1/key1"]
+		require.True(t, ok, "partition1/key1 should exist")
+		require.Equal(t, "partition1", entry1.Partition)
+		decodedValue1, err := base64.StdEncoding.DecodeString(entry1.Value)
+		require.NoError(t, err)
+		require.Equal(t, []byte("value1"), decodedValue1)
+
+		entry2, ok := entryMap["partition1/key2"]
+		require.True(t, ok, "partition1/key2 should exist")
+		require.Equal(t, "partition1", entry2.Partition)
+		decodedValue2, err := base64.StdEncoding.DecodeString(entry2.Value)
+		require.NoError(t, err)
+		require.Equal(t, []byte("value2"), decodedValue2)
+
+		// Check partition2 entry
+		entry3, ok := entryMap["partition2/key3"]
+		require.True(t, ok, "partition2/key3 should exist")
+		require.Equal(t, "partition2", entry3.Partition)
+		decodedValue3, err := base64.StdEncoding.DecodeString(entry3.Value)
+		require.NoError(t, err)
+		require.Equal(t, []byte("value3"), decodedValue3)
 	})
 
 	t.Run("empty partition", func(t *testing.T) {
