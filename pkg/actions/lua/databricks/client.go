@@ -99,23 +99,9 @@ func (client *Client) deleteTable(catalogName, schemaName, tableName string) err
 	return nil
 }
 
-func (client *Client) deleteTableIfExists(catalogName, schemaName, tableName string) error {
-	err := client.deleteTable(catalogName, schemaName, tableName)
-	if errors.Is(err, databricks.ErrResourceDoesNotExist) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (client *Client) checkTableExists(catalogName, schemaName, tableName string) bool {
-	table, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
-	if err == nil && table != nil {
-		return true
-	}
-	return false
+	_, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	return err == nil
 }
 
 func (client *Client) createSchema(catalogName, schemaName string, getIfExists bool) (*catalog.SchemaInfo, error) {
@@ -162,16 +148,34 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	if metadata != nil {
 		metadataMap = metadata.(map[string]any)
 	}
-	// try and delete the table first if exists, to prevent "table already exists" errors in databricks
+
+	// delete the table first if exists, to prevent "table already exists" errors in databricks
 	if client.checkTableExists(catalogName, schemaName, tableName) {
-		err := client.deleteTableIfExists(catalogName, schemaName, tableName)
+		err := client.deleteTable(catalogName, schemaName, tableName)
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 	}
 
-	status, err := client.createExternalTableWithBackoff(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = 100 * time.Millisecond
+	bo.MaxInterval = 3 * time.Second
+	bo.MaxElapsedTime = 10 * time.Second
+
+	createTableBO := func() (string, error) {
+		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
+		if err == nil {
+			return status, nil
+		}
+		if alreadyExists(err) {
+			return "", err
+		}
+		return "", backoff.Permanent(err)
+	}
+
+	status, err := backoff.RetryWithData(createTableBO, bo)
+
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
@@ -179,29 +183,6 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 
 	l.PushString(status)
 	return 1
-}
-
-func (client *Client) createExternalTableWithBackoff(warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
-	bo := backoff.NewExponentialBackOff()
-	bo.InitialInterval = 100 * time.Millisecond
-	bo.MaxInterval = 3 * time.Second
-	bo.MaxElapsedTime = 10 * time.Second
-
-	createOrDelete := func() (string, error) {
-		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadata)
-		if err == nil {
-			return status, nil
-		}
-		if alreadyExists(err) {
-			deletionErr := client.deleteTableIfExists(catalogName, schemaName, tableName)
-			if deletionErr != nil {
-				return "", backoff.Permanent(deletionErr)
-			}
-			return "", err
-		}
-		return "", backoff.Permanent(err)
-	}
-	return backoff.RetryWithData(createOrDelete, bo)
 }
 
 func (client *Client) CreateSchema(l *lua.State) int {
