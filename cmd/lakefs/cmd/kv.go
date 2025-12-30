@@ -24,11 +24,11 @@ const (
 )
 
 var (
-	errInvalidParamValue       = errors.New("invalid parameter value")
-	errNoInputFile             = errors.New("no input file provided")
-	errInvalidStrategy         = errors.New("invalid strategy")
-	errMutuallyExclusiveFlags  = errors.New("--all, --repo, and --sections flags are mutually exclusive")
-	errRepoNotFound            = errors.New("repository not found")
+	errInvalidParamValue      = errors.New("invalid parameter value")
+	errNoInputFile            = errors.New("no input file provided")
+	errInvalidStrategy        = errors.New("invalid strategy")
+	errMutuallyExclusiveFlags = errors.New("--all, --repo, and --sections flags are mutually exclusive")
+	errRepoNotFound           = errors.New("repository not found")
 )
 
 var kvCmd = &cobra.Command{
@@ -259,9 +259,8 @@ Note: --all, --repo, and --sections flags are mutually exclusive`,
 		// Handle different dump modes
 		switch {
 		case allFlag:
-			// Dump all known partitions
-			partitions := kv.GetAllKnownPartitions()
-			dump, err = kv.CreateDumpWithPartitions(ctx, kvStore, partitions)
+			// Dump all known partitions (empty sections = all)
+			dump, err = kv.CreateDump(ctx, kvStore, []string{})
 			if err != nil {
 				return fmt.Errorf("failed to create dump: %w", err)
 			}

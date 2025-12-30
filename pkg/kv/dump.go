@@ -141,17 +141,6 @@ var SectionMapping = map[string][]string{
 	"kv":    {"kv-internal-metadata"},         // kv internal metadata
 }
 
-// GetAllKnownPartitions returns all partitions defined in SectionMapping
-func GetAllKnownPartitions() []string {
-	partitionSet := make(map[string]struct{})
-	for _, partitions := range SectionMapping {
-		for _, partition := range partitions {
-			partitionSet[partition] = struct{}{}
-		}
-	}
-	return slices.Collect(maps.Keys(partitionSet))
-}
-
 // CreateDump creates a complete dump with the specified sections
 func CreateDump(ctx context.Context, store Store, sections []string) (*DumpFormat, error) {
 	// If no sections specified, dump all partitions

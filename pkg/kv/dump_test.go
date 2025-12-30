@@ -9,25 +9,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 )
 
-func TestGetAllKnownPartitions(t *testing.T) {
-	partitions := kv.GetAllKnownPartitions()
-
-	// Verify we get all expected partitions
-	expectedPartitions := map[string]bool{
-		"auth":                 true,
-		"basicAuth":            true,
-		"aclauth":              true,
-		"pulls":                true,
-		"kv-internal-metadata": true,
-	}
-
-	require.Equal(t, len(expectedPartitions), len(partitions), "should return all unique partitions")
-
-	for _, partition := range partitions {
-		require.True(t, expectedPartitions[partition], "partition %s should be in expected list", partition)
-	}
-}
-
 func TestCreateDumpWithPartitions(t *testing.T) {
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
