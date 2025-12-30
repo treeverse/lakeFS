@@ -91,13 +91,21 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
 
-func (client *Client) deleteTableIfExists(catalogName, schemaName, tableName string) error {
+func (client *Client) deleteTable(catalogName, schemaName, tableName string) error {
 	err := client.workspaceClient.Tables.DeleteByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	if err != nil {
+		return fmt.Errorf("failed deleting an existing table \"%s\": %w", tableName, err)
+	}
+	return nil
+}
+
+func (client *Client) deleteTableIfExists(catalogName, schemaName, tableName string) error {
+	err := client.deleteTable(catalogName, schemaName, tableName)
 	if errors.Is(err, databricks.ErrResourceDoesNotExist) {
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed deleting an existing table \"%s\": %w", tableName, err)
+		return err
 	}
 	return nil
 }
