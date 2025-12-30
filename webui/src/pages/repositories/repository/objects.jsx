@@ -998,11 +998,12 @@ const TreeContainer = ({
             }
         });
 
-        // Add missing items from changes that aren't in the regular results
-        // This includes deleted files and deleted/changed prefixes
-        const missingItems = changesData.results.filter(
-            (change) => !results.find((result) => result.path === change.path),
-        );
+        // Add missing items only for removed entries or deleted prefixes
+        const missingItems = changesData.results.filter((change) => {
+            const isRemoved = change.type === 'removed' || change.path_type === 'common_prefix';
+            if (!isRemoved) return false;
+            return !results.find((result) => result.path === change.path);
+        });
 
         // Merge regular results with change info
         const enhancedResults = results.map((entry) => {
