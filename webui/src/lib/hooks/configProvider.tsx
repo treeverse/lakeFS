@@ -19,7 +19,7 @@ type ConfigType = {
 };
 
 type CapabilitiesConfig = {
-    asyncOps?: boolean;
+    async_ops?: boolean;
 };
 
 type StorageConfig = {
