@@ -7,8 +7,10 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Shopify/go-lua"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -89,12 +91,23 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
 
-func (client *Client) deleteTable(catalogName, schemaName, tableName string) error {
+func (client *Client) deleteTableIfExists(catalogName, schemaName, tableName string) error {
 	err := client.workspaceClient.Tables.DeleteByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	if errors.Is(err, databricks.ErrResourceDoesNotExist) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("failed deleting an existing table \"%s\": %w", tableName, err)
 	}
 	return nil
+}
+
+func (client *Client) checkTableExists(catalogName, schemaName, tableName string) bool {
+	table, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	if err == nil && table != nil {
+		return true
+	}
+	return false
 }
 
 func (client *Client) createSchema(catalogName, schemaName string, getIfExists bool) (*catalog.SchemaInfo, error) {
@@ -141,26 +154,46 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	if metadata != nil {
 		metadataMap = metadata.(map[string]any)
 	}
-	status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
-	if err != nil {
-		if alreadyExists(err) {
-			err = client.deleteTable(catalogName, schemaName, tableName)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
-			}
-			status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
-			}
-		} else {
+	// try and delete the table first if exists, to prevent "table already exists" errors in databricks
+	if client.checkTableExists(catalogName, schemaName, tableName) {
+		err := client.deleteTableIfExists(catalogName, schemaName, tableName)
+		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 	}
+
+	status, err := client.createExternalTableWithBackoff(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+
 	l.PushString(status)
 	return 1
+}
+
+func (client *Client) createExternalTableWithBackoff(warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = 100 * time.Millisecond
+	bo.MaxInterval = 3 * time.Second
+	bo.MaxElapsedTime = 10 * time.Second
+
+	deleteAndCreate := func() (string, error) {
+		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadata)
+		if err == nil {
+			return status, nil
+		}
+		if alreadyExists(err) {
+			deletionErr := client.deleteTableIfExists(catalogName, schemaName, tableName)
+			if deletionErr != nil {
+				return "", backoff.Permanent(deletionErr)
+			}
+			return "", err
+		}
+		return "", backoff.Permanent(err)
+	}
+	return backoff.RetryWithData(deleteAndCreate, bo)
 }
 
 func (client *Client) CreateSchema(l *lua.State) int {
