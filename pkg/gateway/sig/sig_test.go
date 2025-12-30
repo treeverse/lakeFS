@@ -201,7 +201,7 @@ func TestAWSSigVerify(t *testing.T) {
 				err := s.Verifier(signedReq)
 				if err != nil {
 					errText := err.Error()
-					var apiErr gwErrors.APIErrorCode
+					var apiErr gwErrors.S3ErrorCode
 					if errors.As(err, &apiErr) {
 						errText = apiErr.ToAPIErr().Description
 					}
