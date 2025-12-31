@@ -1258,13 +1258,12 @@ const NoGCRulesWarning = ({ repoId }) => {
     return <></>;
 };
 
-const ObjectsBrowser = ({ config }) => {
+const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const router = useRouter();
     const { path, after, importDialog, upload, showChanges } = router.query;
     const [searchParams, setSearchParams] = useSearchParams();
     const { repo, reference, loading, error } = useRefs();
     const pluginManager = usePluginManager();
-    const { storageConfig, capabilitiesConfig } = config;
     const [showUpload, setShowUpload] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
@@ -1615,12 +1614,7 @@ const RepositoryObjectsPage = () => {
     if (configLoading) return <Loading />;
     if (configError) return <RepoError error={configError} />;
 
-    const combinedConfig = {
-        storageConfig,
-        capabilitiesConfig: config?.capabilitiesConfig,
-    };
-
-    return <ObjectsBrowser config={combinedConfig} />;
+    return <ObjectsBrowser storageConfig={storageConfig} capabilitiesConfig={config?.capabilitiesConfig} />;
 };
 
 export default RepositoryObjectsPage;

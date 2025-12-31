@@ -8,8 +8,7 @@ class SyncCommitPlugin implements PluginCommitOperation {
         branchId: string,
         message: string,
         metadata?: { [key: string]: string },
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        capabilitiesConfig?: CapabilitiesConfig,
+        _capabilitiesConfig?: CapabilitiesConfig,
     ): Promise<CommitResult> {
         return commits.commit(repoId, branchId, message, metadata);
     }

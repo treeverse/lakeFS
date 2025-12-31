@@ -10,8 +10,7 @@ class SyncMergePlugin implements PluginMergeOperation {
         strategy?: string,
         message?: string,
         metadata?: { [key: string]: string },
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        capabilitiesConfig?: CapabilitiesConfig,
+        _capabilitiesConfig?: CapabilitiesConfig,
     ): Promise<MergeResult> {
         return refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
     }
