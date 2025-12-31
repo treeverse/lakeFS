@@ -99,11 +99,6 @@ func (client *Client) deleteTable(catalogName, schemaName, tableName string) err
 	return nil
 }
 
-func (client *Client) checkTableExists(catalogName, schemaName, tableName string) bool {
-	_, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
-	return err == nil
-}
-
 func (client *Client) createSchema(catalogName, schemaName string, getIfExists bool) (*catalog.SchemaInfo, error) {
 	schemaInfo, err := client.workspaceClient.Schemas.Create(client.ctx, catalog.CreateSchema{
 		Name:        schemaName,
@@ -150,32 +145,35 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	}
 
 	// delete the table first if exists, to prevent "table already exists" errors in databricks
-	if client.checkTableExists(catalogName, schemaName, tableName) {
-		err := client.deleteTable(catalogName, schemaName, tableName)
+	_, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	if err != nil && !errors.Is(err, databricks.ErrResourceDoesNotExist) {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	if err == nil {
+		err = client.deleteTable(catalogName, schemaName, tableName)
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 	}
 
-	bo := backoff.NewExponentialBackOff()
-	bo.InitialInterval = 100 * time.Millisecond
-	bo.MaxInterval = 3 * time.Second
-	bo.MaxElapsedTime = 10 * time.Second
+	var bo backoff.BackOff = backoff.NewExponentialBackOff(
+		backoff.WithInitialInterval(100*time.Millisecond), backoff.WithMaxInterval(3*time.Second), backoff.WithMaxElapsedTime(10*time.Second))
+	bo = backoff.WithContext(bo, client.ctx)
 
 	createTableBO := func() (string, error) {
 		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
-		if err == nil {
-			return status, nil
+		if err != nil {
+			if alreadyExists(err) {
+				return "", err
+			}
+			return "", backoff.Permanent(err)
 		}
-		if alreadyExists(err) {
-			return "", err
-		}
-		return "", backoff.Permanent(err)
+		return status, nil
 	}
 
 	status, err := backoff.RetryWithData(createTableBO, bo)
-
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
