@@ -192,7 +192,7 @@ const TableRow = ({
             <td className={'change-summary'}>
                 {showSummary && <ChangeSummary prefix={entry.path} getMore={getMore} />}
             </td>
-            <td className={'change-entry-row-actions'}>
+            <td className={'change-entry-row-actions'} style={{ display: 'flex', gap: 8 }}>
                 <ChangeRowActions actions={rowActions} />
                 <ConfirmationModal
                     show={showRevertConfirm}
