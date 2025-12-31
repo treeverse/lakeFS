@@ -150,13 +150,6 @@ export class RepositoryPage {
     await fileInput.setInputFiles(filePath);
   }
 
-  async uploadMultipleObjects(filePaths: string[]): Promise<void> {
-    await this.page.getByRole("button", { name: "Upload", exact: true }).click();
-    await this.page.getByText("Drag & drop files or folders here").click();
-    const fileInput = await this.page.locator('input[type="file"]');
-    await fileInput.setInputFiles(filePaths);
-  }
-
   // revert operations
 
   async clickRevertButton(): Promise<void> {
