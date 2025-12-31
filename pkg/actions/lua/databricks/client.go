@@ -159,11 +159,12 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 		}
 	}
 
-	var bo backoff.BackOff = backoff.NewExponentialBackOff(
-		backoff.WithInitialInterval(100*time.Millisecond), backoff.WithMaxInterval(3*time.Second), backoff.WithMaxElapsedTime(10*time.Second))
-	bo = backoff.WithContext(bo, client.ctx)
-
-	createTableBO := func() (string, error) {
+	bo := backoff.NewExponentialBackOff(
+		backoff.WithInitialInterval(100*time.Millisecond),
+		backoff.WithMaxInterval(3*time.Second),
+		backoff.WithMaxElapsedTime(10*time.Second),
+	)
+	status, err := backoff.RetryWithData(func() (string, error) {
 		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
 		if err != nil {
 			if alreadyExists(err) {
@@ -172,9 +173,8 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 			return "", backoff.Permanent(err)
 		}
 		return status, nil
-	}
+	}, backoff.WithContext(bo, client.ctx))
 
-	status, err := backoff.RetryWithData(createTableBO, bo)
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
