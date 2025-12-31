@@ -2,7 +2,8 @@
     "parser": "@typescript-eslint/parser",
     "plugins": [
         "@typescript-eslint",
-        "compat"
+        "compat",
+        "react-hooks"
     ],
     "env": {
       "browser": true,
@@ -19,7 +20,10 @@
       "strict": "error",
       "react/prop-types": 0,
       "react/jsx-key": 0,
-      "react/display-name": 0
+      "react/display-name": 0,
+      "react-hooks/exhaustive-deps": ["warn", {
+        "additionalHooks": "(useAPI|useAPIWithPagination)"
+      }]
     },
     "extends": [
       "eslint:recommended",
