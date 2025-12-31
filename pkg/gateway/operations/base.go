@@ -108,7 +108,7 @@ func EncodeResponse(w http.ResponseWriter, entity any, statusCode int) error {
 	return EncodeXMLBytes(w, payload, statusCode)
 }
 
-func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, entity interface{}, statusCode int) {
+func (o *Operation) EncodeResponse(w http.ResponseWriter, req *http.Request, entity any, statusCode int) {
 	err := EncodeResponse(w, entity, statusCode)
 	if err != nil {
 		o.Log(req).WithError(err).Error("encoding response failed")
