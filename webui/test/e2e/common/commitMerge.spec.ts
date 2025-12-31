@@ -19,7 +19,7 @@ test.describe("Commit and Merge Operations", () => {
         const repositoriesPage = new RepositoriesPage(page);
         await repositoriesPage.goto();
         await repositoriesPage.createRepository(TEST_REPO_NAME, true);
-
+        setupComplete = true;
     });
 
     test("Commit: Upload file and commit changes", async ({ page }) => {
