@@ -2254,10 +2254,10 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 
 	// Create a background context that won't be canceled when the HTTP request completes,
 	taskCtx := context.Background()
-	taskCtx = httputil.CopyRequestID(ctx, taskCtx)
-	taskCtx = auth.CopyUser(ctx, taskCtx)
+	taskCtx = httputil.CopyRequestIDFromContext(ctx, taskCtx)
+	taskCtx = auth.CopyUserFromContext(ctx, taskCtx)
 
-	log := c.log(taskCtx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
+	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
 		for stepIdx, step := range steps {
 			// call the step function

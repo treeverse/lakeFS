@@ -63,7 +63,7 @@ func RequestIDFromContext(ctx context.Context) *string {
 	return &ret
 }
 
-func CopyRequestID(srcCtx, dstCtx context.Context) context.Context {
+func CopyRequestIDFromContext(srcCtx, dstCtx context.Context) context.Context {
 	if val := srcCtx.Value(RequestIDContextKey); val != nil {
 		return context.WithValue(dstCtx, RequestIDContextKey, val)
 	}
