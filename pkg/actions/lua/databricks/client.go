@@ -144,12 +144,13 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 		metadataMap = metadata.(map[string]any)
 	}
 
-	// delete the table first if exists, to prevent "table already exists" errors in databricks
+	// check whether the the table already exists
 	_, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
 	if err != nil && !errors.Is(err, databricks.ErrResourceDoesNotExist) {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
+	// in case there is no error, table exists and we will delete it before creating a new one
 	if err == nil {
 		err = client.deleteTable(catalogName, schemaName, tableName)
 		if err != nil {
