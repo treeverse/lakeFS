@@ -4,11 +4,8 @@ import { Entry, ChangesData, EntryWithDiff } from './types';
 
 describe('mergeResults', () => {
     describe('basic behavior', () => {
-        it('returns null when results is null', () => {
+        it('returns empty array when results is null or undefined', () => {
             expect(mergeResults(null, { results: [] }, false)).toEqual([]);
-        });
-
-        it('returns undefined when results is undefined', () => {
             expect(mergeResults(undefined, { results: [] }, false)).toEqual([]);
         });
 
@@ -40,7 +37,7 @@ describe('mergeResults', () => {
             ]);
         });
 
-        it('returns sorted results when showChangesOnly is true', () => {
+        it('returns sorted results with correct diff markers based on showChangesOnly', () => {
             const results: Entry[] = [
                 { path: 'file2.txt', path_type: 'object' },
                 { path: 'file1.txt', path_type: 'object' },
@@ -49,10 +46,17 @@ describe('mergeResults', () => {
                 results: [{ path: 'file1.txt', type: 'changed', path_type: 'object' }],
             };
 
-            const merged = mergeResults(results, changesData, true);
-
-            expect(merged).toEqual([
+            // When showChangesOnly is true, no diff_type markers
+            const mergedShowChangesOnly = mergeResults(results, changesData, true);
+            expect(mergedShowChangesOnly).toEqual([
                 { path: 'file1.txt', path_type: 'object' },
+                { path: 'file2.txt', path_type: 'object' },
+            ]);
+
+            // When showChangesOnly is false, diff_type markers are added
+            const mergedWithDiff = mergeResults(results, changesData, false);
+            expect(mergedWithDiff).toEqual([
+                { path: 'file1.txt', path_type: 'object', diff_type: 'changed' },
                 { path: 'file2.txt', path_type: 'object' },
             ]);
         });
@@ -328,6 +332,142 @@ describe('mergeResults', () => {
             const merged = mergeResults(results, changesData, false);
 
             expect(merged.map((r) => r.path)).toEqual(['a-dir/', 'm-file.txt', 'z-file.txt']);
+        });
+    });
+
+    describe('mixed-type scenarios (file <-> directory)', () => {
+        it('handles file replaced by directory with subpaths', () => {
+            // Before: a/b/c (file/object)
+            // After:  a/b/c/ (directory)
+            //         a/b/c/d (file)
+            //         a/b/c/e (file)
+            const results: Entry[] = [
+                { path: 'a/b/c/', path_type: 'common_prefix' },
+                { path: 'a/b/c/d', path_type: 'object' },
+                { path: 'a/b/c/e', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: 'a/b/c', type: 'removed', path_type: 'object' }, // Old file removed
+                    { path: 'a/b/c/', type: 'added', path_type: 'common_prefix' }, // New directory added
+                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
+                    { path: 'a/b/c/e', type: 'added', path_type: 'object' },
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false);
+
+            expect(merged).toEqual([
+                { path: 'a/b/c', path_type: 'object', type: 'removed', diff_type: 'removed' },
+                { path: 'a/b/c/', path_type: 'common_prefix', diff_type: 'added' },
+                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
+                { path: 'a/b/c/e', path_type: 'object', diff_type: 'added' },
+            ]);
+        });
+
+        it('handles file with subpaths added below it', () => {
+            // Before: a/b/c (file/object)
+            // After:  a/b/c (file/object - still exists)
+            //         a/b/c/d (file)
+            //         a/b/c/e (file)
+            const results: Entry[] = [
+                { path: 'a/b/c', path_type: 'object' },
+                { path: 'a/b/c/d', path_type: 'object' },
+                { path: 'a/b/c/e', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
+                    { path: 'a/b/c/e', type: 'added', path_type: 'object' },
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false);
+
+            expect(merged).toEqual([
+                { path: 'a/b/c', path_type: 'object' },
+                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
+                { path: 'a/b/c/e', path_type: 'object', diff_type: 'added' },
+            ]);
+        });
+
+        it('handles directory replaced by file', () => {
+            // Before: a/b/c/ (directory)
+            //         a/b/c/d (file)
+            //         a/b/c/e (file)
+            // After:  a/b/c (file/object)
+            //         a/b/d (some other file to establish the range)
+            const results: Entry[] = [
+                { path: 'a/b/c', path_type: 'object' },
+                { path: 'a/b/d', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: 'a/b/c/', type: 'removed', path_type: 'common_prefix' }, // Directory removed
+                    { path: 'a/b/c/d', type: 'removed', path_type: 'object' },
+                    { path: 'a/b/c/e', type: 'removed', path_type: 'object' },
+                    { path: 'a/b/c', type: 'added', path_type: 'object' }, // File added in its place
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false);
+
+            expect(merged).toEqual([
+                { path: 'a/b/c', path_type: 'object', diff_type: 'added' },
+                { path: 'a/b/c/', path_type: 'common_prefix', type: 'removed', diff_type: 'removed' },
+                { path: 'a/b/c/d', path_type: 'object', type: 'removed', diff_type: 'removed' },
+                { path: 'a/b/c/e', path_type: 'object', type: 'removed', diff_type: 'removed' },
+                { path: 'a/b/d', path_type: 'object' },
+            ]);
+        });
+
+        it('handles file and directory with same prefix coexisting', () => {
+            // Both a/b/c (file) and a/b/c/d (implying a/b/c/ directory) exist
+            const results: Entry[] = [
+                { path: 'a/b/c', path_type: 'object' },
+                { path: 'a/b/c/', path_type: 'common_prefix' },
+                { path: 'a/b/c/d', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: 'a/b/c', type: 'changed', path_type: 'object' },
+                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false);
+
+            expect(merged).toEqual([
+                { path: 'a/b/c', path_type: 'object', diff_type: 'changed' },
+                { path: 'a/b/c/', path_type: 'common_prefix', diff_type: 'changed' },
+                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
+            ]);
+        });
+
+        it('sorts correctly when file and directory with same prefix have mixed changes', () => {
+            const results: Entry[] = [
+                { path: 'a/b/c', path_type: 'object' },
+                { path: 'a/b/c/', path_type: 'common_prefix' },
+                { path: 'a/b/c/d', path_type: 'object' },
+                { path: 'a/b/c/e', path_type: 'object' },
+                { path: 'a/b/d', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: 'a/b/c', type: 'removed', path_type: 'object' },
+                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false);
+
+            expect(merged).toEqual([
+                { path: 'a/b/c', path_type: 'object', diff_type: 'removed' },
+                { path: 'a/b/c/', path_type: 'common_prefix', diff_type: 'changed' },
+                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
+                { path: 'a/b/c/e', path_type: 'object' },
+                { path: 'a/b/d', path_type: 'object' },
+            ]);
         });
     });
 

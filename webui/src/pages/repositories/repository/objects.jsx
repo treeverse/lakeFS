@@ -967,9 +967,10 @@ const TreeContainer = ({
     }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, lastSeenPath, delimiter]);
 
     // Merge changes with objects for highlighting
-    const mergedResults = React.useMemo(() => {
-        return mergeResults(results, changesData, showChangesOnly);
-    }, [results, changesData, showChangesOnly]);
+    const mergedResults = React.useMemo(
+        () => mergeResults(results, changesData, showChangesOnly),
+        [results, changesData, showChangesOnly],
+    );
 
     const initialState = {
         inProgress: false,
