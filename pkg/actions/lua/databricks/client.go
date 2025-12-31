@@ -146,7 +146,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 
 	// check whether the the table already exists
 	_, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
-	if err != nil && !errors.Is(err, databricks.ErrResourceDoesNotExist) {
+	if err != nil && !errors.Is(err, databricks.ErrResourceDoesNotExist) && !strings.Contains(err.Error(), "does not exist") {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
