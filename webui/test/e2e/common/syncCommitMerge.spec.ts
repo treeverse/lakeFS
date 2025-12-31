@@ -51,7 +51,7 @@ test.describe('Commit and Merge Operations', () => {
         });
     });
 
-    test('Setup: Create repository and branches', async ({ page }) => {
+    test('Setup: Create repository', async ({ page }) => {
         const repositoriesPage = new RepositoriesPage(page);
         await repositoriesPage.goto();
         await repositoriesPage.createRepository(TEST_REPO_NAME, true);
