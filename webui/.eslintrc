@@ -1,39 +1,32 @@
 {
     "parser": "@typescript-eslint/parser",
-    "plugins": [
-        "@typescript-eslint",
-        "compat",
-        "react-hooks"
-    ],
+    "plugins": ["@typescript-eslint", "compat"],
     "env": {
-      "browser": true,
-      "jest": true,
-      "es6": true
+        "browser": true,
+        "jest": true,
+        "es6": true,
     },
     "settings": {
-      "react": {
-        "version": "17.0"
-      }
+        "react": {
+            "version": "17.0",
+        },
     },
     "rules": {
-      "eqeqeq": "warn",
-      "strict": "error",
-      "react/prop-types": 0,
-      "react/jsx-key": 0,
-      "react/display-name": 0,
-      "react-hooks/exhaustive-deps": ["warn", {
-        "additionalHooks": "(useAPI|useAPIWithPagination)"
-      }]
+        "eqeqeq": "warn",
+        "strict": "error",
+        "react/prop-types": 0,
+        "react/jsx-key": 0,
+        "react/display-name": 0,
     },
     "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/eslint-recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:react/recommended",
-      "plugin:compat/recommended",
-      "plugin:prettier/recommended"
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:react/recommended",
+        "plugin:compat/recommended",
+        "plugin:prettier/recommended",
     ],
     "globals": {
-      "process": true
-    }
+        "process": true,
+    },
 }
