@@ -18,22 +18,22 @@ export class RepositoryPage {
 
   async clickObject(objectName: string): Promise<void> {
     await this.page
-      .getByRole("cell", { name: objectName })
-      .getByRole("link")
-      .click();
+        .getByRole("cell", { name: objectName })
+        .getByRole("link")
+        .click();
   }
 
   // branch operations
 
   async createBranch(name: string): Promise<void> {
     await this.page
-      .getByRole("link", { name: "Branches", exact: false })
-      .click();
+        .getByRole("link", { name: "Branches", exact: false })
+        .click();
     await this.page.getByRole("button", { name: "Create Branch" }).click();
     await this.page.getByPlaceholder("Branch Name").fill(name);
     await this.page
-      .getByRole("button", { name: "Create", exact: true })
-      .click();
+        .getByRole("button", { name: "Create", exact: true })
+        .click();
   }
 
   async switchBranch(name: string): Promise<void> {
@@ -86,10 +86,10 @@ export class RepositoryPage {
   async getUncommittedCount(): Promise<number> {
     await this.page.locator(".tree-container div.card").isVisible();
     return this.page
-      .locator("table.table")
-      .locator("tbody")
-      .locator("tr")
-      .count();
+        .locator("table.table")
+        .locator("tbody")
+        .locator("tr")
+        .count();
   }
 
   async commitChanges(commitMsg: string): Promise<void> {
@@ -100,9 +100,9 @@ export class RepositoryPage {
       await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
     }
     await this.page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Commit Changes" })
-      .click();
+        .getByRole("dialog")
+        .getByRole("button", { name: "Commit Changes" })
+        .click();
   }
 
   // merge operations
@@ -111,13 +111,13 @@ export class RepositoryPage {
     await this.page.getByRole("button", { name: "Merge" }).click();
     if (commitMsg?.length) {
       await this.page
-        .getByPlaceholder("Commit Message (Optional)")
-        .fill(commitMsg);
+          .getByPlaceholder("Commit Message (Optional)")
+          .fill(commitMsg);
     }
     await this.page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Merge" })
-      .click();
+        .getByRole("dialog")
+        .getByRole("button", { name: "Merge" })
+        .click();
   }
 
   // navigation
@@ -148,6 +148,13 @@ export class RepositoryPage {
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
     await fileInput.setInputFiles(filePath);
+  }
+
+  async uploadMultipleObjects(filePaths: string[]): Promise<void> {
+    await this.page.getByRole("button", { name: "Upload", exact: true }).click();
+    await this.page.getByText("Drag & drop files or folders here").click();
+    const fileInput = await this.page.locator('input[type="file"]');
+    await fileInput.setInputFiles(filePaths);
   }
 
   // revert operations
