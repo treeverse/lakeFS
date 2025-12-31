@@ -1,5 +1,6 @@
 import { refs } from '../../../lib/api';
 import { MergeResult, PluginMergeOperation } from '../pluginMergeOperation';
+import { CapabilitiesConfig } from '../../../lib/hooks/configProvider';
 
 class SyncMergePlugin implements PluginMergeOperation {
     async merge(
@@ -9,6 +10,7 @@ class SyncMergePlugin implements PluginMergeOperation {
         strategy?: string,
         message?: string,
         metadata?: { [key: string]: string },
+        _capabilitiesConfig?: CapabilitiesConfig,
     ): Promise<MergeResult> {
         return refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
     }

@@ -1258,7 +1258,7 @@ const NoGCRulesWarning = ({ repoId }) => {
     return <></>;
 };
 
-const ObjectsBrowser = ({ config }) => {
+const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const router = useRouter();
     const { path, after, importDialog, upload, showChanges } = router.query;
     const [searchParams, setSearchParams] = useSearchParams();
@@ -1446,8 +1446,8 @@ const ObjectsBrowser = ({ config }) => {
                     </Button>
 
                     <Button
-                        variant={!config.import_support ? 'success' : 'light'}
-                        disabled={!config.import_support}
+                        variant={!storageConfig.import_support ? 'success' : 'light'}
+                        disabled={!storageConfig.import_support}
                         onClick={() => setShowImport(true)}
                     >
                         <BsCloudArrowUp /> Import
@@ -1466,6 +1466,7 @@ const ObjectsBrowser = ({ config }) => {
                                             reference.id,
                                             commitDetails.message,
                                             commitDetails.metadata,
+                                            capabilitiesConfig,
                                         );
                                         setActionError(null);
 
@@ -1490,7 +1491,7 @@ const ObjectsBrowser = ({ config }) => {
                         </div>
 
                         <UploadButton
-                            config={config}
+                            config={storageConfig}
                             path={path}
                             repo={repo}
                             reference={reference}
@@ -1505,7 +1506,7 @@ const ObjectsBrowser = ({ config }) => {
                     </div>
 
                     <ImportModal
-                        config={config}
+                        config={storageConfig}
                         path={path}
                         repoId={repo.id}
                         referenceId={reference.id}
@@ -1558,7 +1559,7 @@ const ObjectsBrowser = ({ config }) => {
                 }}
             >
                 <TreeContainer
-                    config={config}
+                    config={storageConfig}
                     reference={reference}
                     repo={repo}
                     path={path ? path : ''}
@@ -1588,7 +1589,7 @@ const ObjectsBrowser = ({ config }) => {
                 />
 
                 <ReadmeContainer
-                    config={config}
+                    config={storageConfig}
                     reference={reference}
                     repo={repo}
                     path={path}
@@ -1613,7 +1614,7 @@ const RepositoryObjectsPage = () => {
     if (configLoading) return <Loading />;
     if (configError) return <RepoError error={configError} />;
 
-    return <ObjectsBrowser config={storageConfig} />;
+    return <ObjectsBrowser storageConfig={storageConfig} capabilitiesConfig={config?.capabilitiesConfig} />;
 };
 
 export default RepositoryObjectsPage;

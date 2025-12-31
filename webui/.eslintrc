@@ -19,7 +19,13 @@
       "strict": "error",
       "react/prop-types": 0,
       "react/jsx-key": 0,
-      "react/display-name": 0
+      "react/display-name": 0,
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_"
+        }
+      ]
     },
     "extends": [
       "eslint:recommended",
