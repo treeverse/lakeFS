@@ -944,13 +944,13 @@ const TreeContainer = ({
     const { response: changesData } = useAPI(async () => {
         if (!showChangesOnly && reference && reference.type === RefTypeBranch) {
             try {
-                return await refs.changes(repo.id, reference.id, '', path, delimiter);
+                return await refs.changes(repo.id, reference.id, after, path, delimiter);
             } catch (error) {
                 return { results: [] };
             }
         }
         return { results: [] };
-    }, [repo.id, reference.id, path, refreshToken, showChangesOnly]);
+    }, [repo.id, reference.id, path, refreshToken, showChangesOnly, after]);
 
     // Use different API calls based on whether we're showing changes only or all objects
     const { results, error, loading, nextPage } = useAPIWithPagination(() => {
@@ -999,11 +999,9 @@ const TreeContainer = ({
         });
 
         // Add missing items only for removed entries or deleted prefixes
-        const missingItems = changesData.results.filter((change) => {
-            const isRemoved = change.type === 'removed' || change.path_type === 'common_prefix';
-            if (!isRemoved) return false;
-            return !results.find((result) => result.path === change.path);
-        });
+        const missingItems = changesData.results
+            .filter((change) => change.type === 'removed' || change.path_type === 'common_prefix')
+            .filter((change) => !results.find((result) => result.path === change.path));
 
         // Merge regular results with change info
         const enhancedResults = results.map((entry) => {
