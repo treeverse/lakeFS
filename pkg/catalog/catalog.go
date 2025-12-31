@@ -2950,18 +2950,22 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry 
 
 	// entry information can be cloned over and over,
 	// so we also need to verify the grace period against the actual object last-modified time
-	srcObject := block.ObjectPointer{
-		StorageID:        srcRepo.StorageID,
-		StorageNamespace: srcRepo.StorageNamespace,
-		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
-		Identifier:       srcEntry.PhysicalAddress,
-	}
-	props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
-	if err != nil {
-		return nil, err
-	}
-	if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
-		return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+	// Skip this check for absolute path objects (imported objects) as they may have been
+	// created long ago in external storage but should still be cloneable within lakeFS
+	if srcEntry.AddressType != AddressTypeFull {
+		srcObject := block.ObjectPointer{
+			StorageID:        srcRepo.StorageID,
+			StorageNamespace: srcRepo.StorageNamespace,
+			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+			Identifier:       srcEntry.PhysicalAddress,
+		}
+		props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
+		if err != nil {
+			return nil, err
+		}
+		if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
+			return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+		}
 	}
 
 	// copy the metadata into a new entry
