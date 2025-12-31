@@ -1328,7 +1328,8 @@ class Config {
                 const storages = buildStoragesConfigs(cfg);
                 const uiConfig = cfg['ui_config'];
                 const versionConfig = cfg['version_config'];
-                return { storages, uiConfig, versionConfig };
+                const capabilitiesConfig = cfg['capabilities_config'];
+                return { storages, uiConfig, versionConfig, capabilitiesConfig };
             }
             case 409:
                 throw new Error('Conflict');
