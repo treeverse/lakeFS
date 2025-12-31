@@ -26,6 +26,7 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -37,6 +38,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -2163,7 +2165,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 
 	// create refs dump task and update initial status.
 	taskID := NewTaskID(DumpRefsTaskIDPrefix)
-	err = c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
@@ -2217,7 +2219,7 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 		},
 	}
 	taskID := NewTaskID(RestoreRefsTaskIDPrefix)
-	if err := c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus); err != nil {
+	if err := c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus); err != nil {
 		return "", err
 	}
 	return taskID, nil
@@ -2235,7 +2237,7 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 // RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
 // the task status is updated after each step, and the task is marked as completed if the step is the last one.
 // initial update if the task is done before running the steps.
-func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
+func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
 	// Allocate Task and set if on the taskStatus's 'Task' field.
 	// We continue to update this field while running each step.
 	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
@@ -2245,19 +2247,21 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 	}
 	reflect.ValueOf(taskStatus).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
 
-	// make sure we use background context as soon as we submit the task the request is done
-	ctx := context.Background()
-
 	// initial task update done before we run each step in the background task
 	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return err
 	}
 
+	// Create a background context that won't be canceled when the HTTP request completes,
+	taskCtx := context.Background()
+	taskCtx = httputil.CopyRequestIDFromContext(ctx, taskCtx)
+	taskCtx = auth.CopyUserFromContext(ctx, taskCtx)
+
 	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
 		for stepIdx, step := range steps {
 			// call the step function
-			err := step.Func(ctx)
+			err := step.Func(taskCtx)
 			// update task part
 			task.UpdatedAt = timestamppb.Now()
 			if err != nil {
@@ -2275,7 +2279,7 @@ func (c *Catalog) RunBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			}
 
 			// update task status
-			if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
+			if err := UpdateTaskStatus(taskCtx, c.KVStore, repository, taskID, taskStatus); err != nil {
 				log.WithError(err).WithField("step", step.Name).Error("Catalog failed to update task status")
 			}
 
@@ -2763,7 +2767,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	}
 
 	taskID := NewTaskID(GarbageCollectionPrepareCommitsPrefix)
-	err = c.RunBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}

@@ -23,3 +23,10 @@ func GetUser(ctx context.Context) (*model.User, error) {
 func WithUser(ctx context.Context, user *model.User) context.Context {
 	return context.WithValue(ctx, userContextKey, user)
 }
+
+func CopyUserFromContext(srcCtx, dstCtx context.Context) context.Context {
+	if user, _ := GetUser(srcCtx); user != nil {
+		return WithUser(dstCtx, user)
+	}
+	return dstCtx
+}
