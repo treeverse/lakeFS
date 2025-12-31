@@ -2237,7 +2237,7 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 // RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
 // the task status is updated after each step, and the task is marked as completed if the step is the last one.
 // initial update if the task is done before running the steps.
-func (c *Catalog) RunBackgroundTaskSteps(requestCtx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
+func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
 	// Allocate Task and set if on the taskStatus's 'Task' field.
 	// We continue to update this field while running each step.
 	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
@@ -2247,30 +2247,21 @@ func (c *Catalog) RunBackgroundTaskSteps(requestCtx context.Context, repository 
 	}
 	reflect.ValueOf(taskStatus).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
 
-	// Create a background context that won't be canceled when the HTTP request completes,
-	ctx := context.Background()
-
-	// Copy values from request context to background context to preserve them for the background task
-	if val := requestCtx.Value(httputil.RequestIDContextKey); val != nil {
-		ctx = context.WithValue(ctx, httputil.RequestIDContextKey, val)
-	}
-	if val := requestCtx.Value(logging.LogFieldsContextKey); val != nil {
-		ctx = context.WithValue(ctx, logging.LogFieldsContextKey, val)
-	}
-	if user, err := auth.GetUser(requestCtx); err == nil && user != nil {
-		ctx = auth.WithUser(ctx, user)
-	}
-
 	// initial task update done before we run each step in the background task
 	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return err
 	}
 
-	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
+	// Create a background context that won't be canceled when the HTTP request completes,
+	taskCtx := context.Background()
+	taskCtx = httputil.CopyRequestID(ctx, taskCtx)
+	taskCtx = auth.CopyUser(ctx, taskCtx)
+
+	log := c.log(taskCtx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
 		for stepIdx, step := range steps {
 			// call the step function
-			err := step.Func(ctx)
+			err := step.Func(taskCtx)
 			// update task part
 			task.UpdatedAt = timestamppb.Now()
 			if err != nil {
@@ -2288,7 +2279,7 @@ func (c *Catalog) RunBackgroundTaskSteps(requestCtx context.Context, repository 
 			}
 
 			// update task status
-			if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
+			if err := UpdateTaskStatus(taskCtx, c.KVStore, repository, taskID, taskStatus); err != nil {
 				log.WithError(err).WithField("step", step.Name).Error("Catalog failed to update task status")
 			}
 
