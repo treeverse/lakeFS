@@ -5514,7 +5514,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
 			Checksum:  "abc123def456",
 			SizeBytes: 1024,
-			Mtime:     swag.Int64(time.Now().Unix()),
+			Mtime:     swag.Int64(time.Now().Add(-24 * time.Hour).Unix()),
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: apiutil.Ptr(absolutePhysicalAddress),
 			},
