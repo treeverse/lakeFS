@@ -218,6 +218,13 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 				return
 			}
 
+			// PutBucket (CreateBucket) is not supported in lakeFS
+			// Return NotImplemented instead of NoSuchBucket for clarity
+			if o.OperationID == operations.OperationIDPutBucket {
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrNotImplemented.ToAPIErr())
+				return
+			}
+
 			_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
