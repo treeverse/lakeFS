@@ -2420,7 +2420,7 @@ func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *Repository
 	}()
 	err := backoff.Retry(func() error {
 		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
-		tries += 1
+		tries++
 		err := g.RefManager.BranchUpdate(ctx, repository, branchID, f)
 		if errors.Is(err, kv.ErrPredicateFailed) && tries < BranchUpdateMaxTries {
 			g.log(ctx).WithField("try", tries).
@@ -3263,7 +3263,7 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			logger.WithField("try", try).
 				Info("Retrying update repo metadata")
-			try += 1
+			try++
 			return err
 		}
 		if err != nil {

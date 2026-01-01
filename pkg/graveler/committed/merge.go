@@ -355,9 +355,9 @@ func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *gr
 				m.haveSource = m.source.Next()
 				m.haveDest = m.dest.Next()
 				return nil
-			} else { // both added the same key with different identity
-				return m.handleConflict(sourceValue, destValue)
 			}
+			// both added the same key with different identity
+			return m.handleConflict(sourceValue, destValue)
 		}
 		// record hasn't changed or both added the same record
 		err = m.writeRecord(sourceValue)

@@ -154,7 +154,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	if contentRange != "" {
 		o.SetHeader(w, "Content-Range", contentRange)
 	}
-	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", contentLength))
+	o.SetHeader(w, "Content-Length", strconv.FormatInt(contentLength, 10))
 	o.SetHeader(w, "X-Content-Type-Options", "nosniff")
 	o.SetHeader(w, "X-Frame-Options", "SAMEORIGIN")
 	o.SetHeader(w, "Content-Security-Policy", "default-src 'none'")

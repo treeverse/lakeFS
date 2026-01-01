@@ -418,16 +418,14 @@ func (c *committedManager) getRangeManager(id graveler.StorageID) (RangeManager,
 	rm, exists := c.RangeManagers[id]
 	if exists {
 		return rm, nil
-	} else {
-		return nil, fmt.Errorf("RangeManager not found for storage ID %s: %w", id, graveler.ErrInvalidStorageID)
 	}
+	return nil, fmt.Errorf("RangeManager not found for storage ID %s: %w", id, graveler.ErrInvalidStorageID)
 }
 
 func (c *committedManager) getMetaRangeManager(id graveler.StorageID) (MetaRangeManager, error) {
 	rm, exists := c.metaRangeManagers[id]
 	if exists {
 		return rm, nil
-	} else {
-		return nil, fmt.Errorf("MetaRangeManager not found for storage ID %s: %w", id, graveler.ErrInvalidStorageID)
 	}
+	return nil, fmt.Errorf("MetaRangeManager not found for storage ID %s: %w", id, graveler.ErrInvalidStorageID)
 }

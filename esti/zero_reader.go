@@ -23,9 +23,7 @@ func (zr *ZeroReader) Read(p []byte) (n int, err error) {
 	if zr.NumBytesRead+n > zr.Amount {
 		n = zr.Amount - zr.NumBytesRead
 	}
-	for i := 0; i < n; i++ {
-		p[i] = 0
-	}
+	clear(p[:n])
 	zr.NumBytesRead += n
 	return n, nil
 }

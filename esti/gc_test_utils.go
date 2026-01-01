@@ -26,8 +26,8 @@ func getSparkSubmitArgs(entryPoint string) []string {
 func getDockerArgs(workingDirectory string, localJar string) []string {
 	return []string{
 		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
-		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", localJar),
+		"-v", workingDirectory + "/ivy:/opt/bitnami/spark/.ivy2",
+		"-v", localJar + ":/opt/metaclient/client.jar",
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID",
 		"-e", "AWS_SECRET_ACCESS_KEY",
@@ -111,7 +111,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/treeverse/bitnami-spark:%s", config.SparkVersion), "spark-submit")
+	dockerArgs = append(dockerArgs, "docker.io/treeverse/bitnami-spark:"+config.SparkVersion, "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
 	args := dockerArgs

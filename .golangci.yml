@@ -17,17 +17,29 @@ linters:
     - gosec
     - govet
     - ineffassign
+    - intrange
     - misspell
+    - mirror
     - mnd
+    - modernize
     - nakedret
     - staticcheck
     - unconvert
     - unparam
     - unused
     - whitespace
+    - errname
+    - perfsprint
+    - testifylint
+    - revive
   settings:
-    gofmt:
-      simplify: true
+    revive:
+      rules:
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: use-any
+        - name: use-errors-new
+        - name: use-waitgroup-go
     mnd:
       ignored-files:
         - pkg/actions/lua/.*

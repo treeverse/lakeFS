@@ -140,7 +140,7 @@ func WriteTo(tpl string, data any, w io.Writer) {
 		"json": func(v any) string {
 			encoded, err := json.MarshalIndent(v, "", "  ")
 			if err != nil {
-				panic(fmt.Sprintf("failed to encode JSON: %s", err.Error()))
+				panic("failed to encode JSON: " + err.Error())
 			}
 			return string(encoded)
 		},

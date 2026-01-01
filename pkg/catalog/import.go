@@ -95,7 +95,7 @@ func (i *Import) Ingest(it *walkEntryIterator) error {
 			return err
 		}
 		i.mu.Lock()
-		i.status.Progress += 1
+		i.status.Progress++
 		i.mu.Unlock()
 	}
 	i.logger.WithField("itr", it).Debug("Ingest finished")

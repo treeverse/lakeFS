@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -177,7 +178,7 @@ func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuth
 						req.Header.Add(header, value)
 					}
 					queryParams := req.URL.Query()
-					queryParams.Set(AuthExpiresKey, fmt.Sprintf("%d", int(ttl.Seconds())))
+					queryParams.Set(AuthExpiresKey, strconv.Itoa(int(ttl.Seconds())))
 					req.URL.RawQuery = queryParams.Encode()
 				}
 				return next.HandleBuild(ctx, in)

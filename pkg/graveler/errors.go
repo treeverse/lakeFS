@@ -34,7 +34,7 @@ var (
 	ErrInvalidRepositoryID          = fmt.Errorf("repository id: %w", ErrInvalidValue)
 	ErrRequiredValue                = fmt.Errorf("required value: %w", ErrInvalid)
 	ErrCommitNotFound               = fmt.Errorf("commit %w", ErrNotFound)
-	ErrCreateBranchNoCommit         = fmt.Errorf("can't create a branch without commit")
+	ErrCreateBranchNoCommit         = errors.New("can't create a branch without commit")
 	ErrRepositoryNotFound           = fmt.Errorf("repository %w", ErrNotFound)
 	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)

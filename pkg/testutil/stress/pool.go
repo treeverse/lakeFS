@@ -46,7 +46,7 @@ func (p *WorkerPool) Start(workFn WorkFn) {
 	startWG.Add(p.parallelism)
 	startCh := make(chan struct{})
 
-	for i := 0; i < p.parallelism; i++ {
+	for range p.parallelism {
 		go func() {
 			defer p.wg.Done()
 			startWG.Done()

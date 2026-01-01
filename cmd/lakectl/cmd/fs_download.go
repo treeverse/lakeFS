@@ -115,7 +115,7 @@ var fsDownloadCmd = &cobra.Command{
 		var wg sync.WaitGroup
 		wg.Add(syncFlags.Parallelism)
 		var downloaded int64
-		for i := 0; i < syncFlags.Parallelism; i++ {
+		for range syncFlags.Parallelism {
 			go func() {
 				defer wg.Done()
 				for objInfo := range ch {

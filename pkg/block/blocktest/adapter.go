@@ -103,7 +103,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 	_, err := adapter.Put(ctx, block.ObjectPointer{
 		StorageID:        "",
 		StorageNamespace: storageNamespace,
-		Identifier:       fmt.Sprintf("%s/folder_0.txt", testPrefix),
+		Identifier:       testPrefix + "/folder_0.txt",
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
 	require.NoError(t, err)
@@ -242,9 +242,8 @@ func expectedURLExp(adapter block.Adapter) time.Time {
 	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
 		// we didn't implement expiry for Azure yet
 		return time.Time{}
-	} else {
-		return NowMockDefault().Add(block.DefaultPreSignExpiryDuration)
 	}
+	return NowMockDefault().Add(block.DefaultPreSignExpiryDuration)
 }
 
 // tests the GetProperties method of the adapter, verifying ETag population and consistency with Walker
