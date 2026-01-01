@@ -5501,6 +5501,47 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		verifyResponseOK(t, statResp, err)
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
+
+	t.Run("imported_object", func(t *testing.T) {
+		const (
+			srcPath  = "foo/imported-object"
+			destPath = "foo/copied-imported-object"
+		)
+		// Stage an object with absolute physical address (simulating an imported object)
+		absolutePhysicalAddress := onBlock(deps, "external-bucket/imported/data")
+		stageResp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: srcPath,
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "abc123def456",
+			SizeBytes: 1024,
+			Mtime:     swag.Int64(time.Now().Unix()),
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: apiutil.Ptr(absolutePhysicalAddress),
+			},
+		})
+		verifyResponseOK(t, stageResp, err)
+		require.NotNil(t, stageResp.JSON200)
+
+		// Copy the object with absolute path
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		// Verify the object was cloned (same physical address) not copied
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.Equal(t, absolutePhysicalAddress, copyStat.PhysicalAddress, "physical address should be the same (cloned)")
+		require.Equal(t, destPath, copyStat.Path)
+		require.Equal(t, stageResp.JSON200.Checksum, copyStat.Checksum)
+
+		// Verify we can stat the copied object
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.Equal(t, absolutePhysicalAddress, statResp.JSON200.PhysicalAddress)
+	})
 }
 
 func TestController_LocalAdapter_StageObject(t *testing.T) {

@@ -2948,10 +2948,10 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry 
 		return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
 	}
 
-	// entry information can be cloned over and over,
-	// so we also need to verify the grace period against the actual object last-modified time
+	// Entry information can be cloned over and over,
+	// so we also need to verify the grace period against the actual object last-modified time.
 	// Skip this check for absolute path objects (imported objects) as they may have been
-	// created long ago in external storage but should still be cloneable within lakeFS
+	// created long ago in external storage but should still be cloneable.
 	if srcEntry.AddressType != AddressTypeFull {
 		srcObject := block.ObjectPointer{
 			StorageID:        srcRepo.StorageID,
