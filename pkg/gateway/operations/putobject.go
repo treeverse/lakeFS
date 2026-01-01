@@ -115,6 +115,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	metadata, err := amzMetaAsMetadata(req)
 	if err != nil {
 		if errors.Is(err, gatewayErrors.ErrMetadataTooLarge) {
+			o.Log(req).WithError(err).Warn("user-defined metadata too large")
 			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrMetadataTooLarge))
 			return
 		}
@@ -372,6 +373,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	metadata, err := amzMetaAsMetadata(req)
 	if err != nil {
 		if errors.Is(err, gatewayErrors.ErrMetadataTooLarge) {
+			o.Log(req).WithError(err).Warn("user-defined metadata too large")
 			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrMetadataTooLarge))
 			return
 		}
