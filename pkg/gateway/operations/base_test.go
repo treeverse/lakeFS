@@ -186,8 +186,9 @@ func TestAmzMetaAsMetadata_ExceedingLimit(t *testing.T) {
 	valueSize := maxUserMetadataSize - len("Key") + 1
 	req.Header.Set("X-Amz-Meta-Key", strings.Repeat("a", valueSize))
 
-	_, err := amzMetaAsMetadata(req)
+	metadata, err := amzMetaAsMetadata(req)
 
+	assert.Nil(t, metadata)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, gwerrors.ErrMetadataTooLarge)
 }
@@ -199,8 +200,9 @@ func TestAmzMetaAsMetadata_MultipleHeadersExceedingLimit(t *testing.T) {
 	req.Header.Set("X-Amz-Meta-Key2", value)
 	req.Header.Set("X-Amz-Meta-Key3", value)
 
-	_, err := amzMetaAsMetadata(req)
+	metadata, err := amzMetaAsMetadata(req)
 
+	assert.Nil(t, metadata)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, gwerrors.ErrMetadataTooLarge)
 }
