@@ -1,8 +1,29 @@
 const isEmptyKey = (key) => !key || key.trim() === '';
 
-const isInvalidKey = (key) => {
-    // TODO: Add more validation checks, e.g. duplicate keys, invalid characters
-    return isEmptyKey(key);
+/**
+ * Checks if a key is a duplicate in the metadata fields array.
+ * @param {string} key - The key to check
+ * @param {number} index - The index of the current field
+ * @param {Array<{key: string, value: string, touched: boolean}>} metadataFields - All fields
+ * @returns {boolean} True if the key is a duplicate (exists earlier in the array with a non-empty value)
+ */
+const isDuplicateKey = (key, index, metadataFields) => {
+    if (isEmptyKey(key)) return false;
+    const trimmedKey = key.trim();
+    return metadataFields.some((f, i) => i < index && f.key.trim() === trimmedKey);
+};
+
+/**
+ * Checks if a key is invalid (empty or duplicate).
+ * @param {string} key - The key to check
+ * @param {number} index - The index of the current field (for duplicate checking)
+ * @param {Array<{key: string, value: string, touched: boolean}>} metadataFields - All fields (for duplicate checking)
+ * @returns {boolean} True if the key is invalid
+ */
+const isInvalidKey = (key, index = -1, metadataFields = []) => {
+    if (isEmptyKey(key)) return true;
+    if (index >= 0 && isDuplicateKey(key, index, metadataFields)) return true;
+    return false;
 };
 
 /**
@@ -11,7 +32,7 @@ const isInvalidKey = (key) => {
  * @returns {boolean} True if there are any invalid keys
  */
 export const hasInvalidKeys = (metadataFields) => {
-    return metadataFields.some((f) => isInvalidKey(f.key));
+    return metadataFields.some((f, i) => isInvalidKey(f.key, i, metadataFields));
 };
 
 /**
@@ -32,7 +53,9 @@ export const fieldsToMetadata = (metadataFields) => {
  * @returns {Array<{key: string, value: string, touched: boolean}>} New array with invalid fields touched
  */
 export const touchInvalidFields = (metadataFields) => {
-    return metadataFields.map((field) => (isInvalidKey(field.key) ? { ...field, touched: true } : field));
+    return metadataFields.map((field, index) =>
+        isInvalidKey(field.key, index, metadataFields) ? { ...field, touched: true } : field,
+    );
 };
 
 /**
@@ -58,13 +81,19 @@ export const getMetadataIfValid = (metadataFields) => {
  * Use this function in the MetadataFields component to display field-level errors.
  *
  * @param {Object} field - Metadata field object with key, value, and touched properties
+ * @param {number} index - The index of the current field (for duplicate checking)
+ * @param {Array<{key: string, value: string, touched: boolean}>} metadataFields - All fields (for duplicate checking)
  * @returns {string|null} Error message if field is invalid and touched, null otherwise
  */
-export const getFieldError = (field) => {
+export const getFieldError = (field, index = -1, metadataFields = []) => {
     if (!field.touched) return null;
 
     if (isEmptyKey(field.key)) {
         return 'Key is required';
+    }
+
+    if (index >= 0 && isDuplicateKey(field.key, index, metadataFields)) {
+        return 'Key already exists';
     }
 
     return null;
