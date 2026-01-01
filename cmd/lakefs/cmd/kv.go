@@ -1,18 +1,18 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
 	_ "github.com/treeverse/lakefs/pkg/actions"
 	_ "github.com/treeverse/lakefs/pkg/auth"
 	_ "github.com/treeverse/lakefs/pkg/auth/model"
-	_ "github.com/treeverse/lakefs/pkg/graveler"
-
-	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
@@ -24,9 +24,11 @@ const (
 )
 
 var (
-	errInvalidParamValue = errors.New("invalid parameter value")
-	errNoInputFile       = errors.New("no input file provided")
-	errInvalidStrategy   = errors.New("invalid strategy")
+	errInvalidParamValue      = errors.New("invalid parameter value")
+	errNoInputFile            = errors.New("no input file provided")
+	errInvalidStrategy        = errors.New("invalid strategy")
+	errMutuallyExclusiveFlags = errors.New("--all, --repo, and --sections flags are mutually exclusive")
+	errRepoNotFound           = errors.New("repository not found")
 )
 
 var kvCmd = &cobra.Command{
@@ -162,7 +164,7 @@ var kvScanCmd = &cobra.Command{
 }
 
 var kvDumpCmd = &cobra.Command{
-	Use:   "dump [--output FILE] [--sections SECTIONS] [--pretty]",
+	Use:   "dump [--output FILE] [--sections SECTIONS] [--all] [--repo NAME] [--pretty]",
 	Short: "Dump KV store data to JSON format",
 	Long: `Dump KV store data to JSON format.
 
@@ -170,13 +172,17 @@ Usage:
   lakefs kv dump                          # dump all sections to stdout
   lakefs kv dump --output dump.json       # dump to file
   lakefs kv dump --sections auth,pulls    # dump specific sections
+  lakefs kv dump --all                    # dump all partitions (not just known sections)
+  lakefs kv dump --repo my-repo           # dump partition for specific repository
 
 Sections:
   auth      - authentication data
   pulls     - pull request data
   kv        - kv internal metadata
 
-Default: all supported sections (auth, pulls, kv)`,
+Default: supported sections (auth, pulls, kv)
+
+Note: --all, --repo, and --sections flags are mutually exclusive`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := LoadConfig().GetBaseConfig()
 
@@ -190,20 +196,35 @@ Default: all supported sections (auth, pulls, kv)`,
 			return err
 		}
 
+		allFlag, err := cmd.Flags().GetBool("all")
+		if err != nil {
+			return err
+		}
+
+		repoFlag, err := cmd.Flags().GetString("repo")
+		if err != nil {
+			return err
+		}
+
 		pretty, err := cmd.Flags().GetBool("pretty")
 		if err != nil {
 			return err
 		}
 
-		// Parse sections (comma-separated)
-		var sections []string
+		// Validate mutually exclusive flags
+		flagsSet := 0
 		if sectionsFlag != "" {
-			sections = strings.Split(sectionsFlag, ",")
-			for i, s := range sections {
-				sections[i] = strings.TrimSpace(s)
-			}
+			flagsSet++
 		}
-		// Empty default means all supported sections
+		if allFlag {
+			flagsSet++
+		}
+		if repoFlag != "" {
+			flagsSet++
+		}
+		if flagsSet > 1 {
+			return errMutuallyExclusiveFlags
+		}
 
 		ctx := cmd.Context()
 		kvParams, err := kvparams.NewConfig(&cfg.Database)
@@ -233,10 +254,38 @@ Default: all supported sections (auth, pulls, kv)`,
 			}()
 		}
 
-		// Create dump
-		dump, err := kv.CreateDump(ctx, kvStore, sections)
-		if err != nil {
-			return fmt.Errorf("failed to create dump: %w", err)
+		var dump *kv.DumpFormat
+
+		// Handle different dump modes
+		switch {
+		case allFlag:
+			// Dump all known partitions (empty sections = all)
+			dump, err = kv.CreateDump(ctx, kvStore, []string{})
+			if err != nil {
+				return fmt.Errorf("failed to create dump: %w", err)
+			}
+		case repoFlag != "":
+			// Dump repository-specific partition
+			dump, err = createRepoPartitionDump(ctx, kvStore, repoFlag)
+			if err != nil {
+				return fmt.Errorf("failed to create repository dump: %w", err)
+			}
+		default:
+			// Parse sections (comma-separated)
+			var sections []string
+			if sectionsFlag != "" {
+				sections = strings.Split(sectionsFlag, ",")
+				for i, s := range sections {
+					sections[i] = strings.TrimSpace(s)
+				}
+			}
+			// Empty default means supported sections
+
+			// Create dump using sections
+			dump, err = kv.CreateDump(ctx, kvStore, sections)
+			if err != nil {
+				return fmt.Errorf("failed to create dump: %w", err)
+			}
 		}
 
 		// Encode to JSON
@@ -361,6 +410,29 @@ Strategies:
 	},
 }
 
+// createRepoPartitionDump creates a dump of a specific repository's partition
+func createRepoPartitionDump(ctx context.Context, kvStore kv.Store, repoName string) (*kv.DumpFormat, error) {
+	// Get repository record from graveler partition
+	repoID := graveler.RepositoryID(repoName)
+	repoPath := graveler.RepoPath(repoID)
+
+	var repoData graveler.RepositoryData
+	_, err := kv.GetMsg(ctx, kvStore, graveler.RepositoriesPartition(), []byte(repoPath), &repoData)
+	if errors.Is(err, kv.ErrNotFound) {
+		return nil, fmt.Errorf("%w: %s", errRepoNotFound, repoName)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Convert to RepositoryRecord to compute partition
+	repo := graveler.RepoFromProto(&repoData)
+	partition := graveler.RepoPartition(repo)
+
+	// Dump the repository partition
+	return kv.CreateDumpWithPartitions(ctx, kvStore, []string{partition})
+}
+
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(kvCmd)
@@ -376,6 +448,8 @@ func init() {
 	kvCmd.AddCommand(kvDumpCmd)
 	kvDumpCmd.Flags().String("output", "", "output file (default: stdout)")
 	kvDumpCmd.Flags().String("sections", "", "comma-separated list of sections to dump (empty dumps all)")
+	kvDumpCmd.Flags().Bool("all", false, "dump all known partitions (not just predefined sections)")
+	kvDumpCmd.Flags().String("repo", "", "dump partition for a specific repository")
 	kvDumpCmd.Flags().Bool("pretty", false, "print indented output")
 
 	kvCmd.AddCommand(kvLoadCmd)
