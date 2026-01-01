@@ -864,7 +864,7 @@ func TestLakectlFsStat(t *testing.T) {
 		goldenFile := "lakectl_stat_default"
 		if config.PreSignSupport {
 			goldenFile = "lakectl_stat_pre_sign"
-			if config.BlockstoreType == "s3" {
+			if config.BlockstoreType == "s3" || config.BlockstoreType == "gs" {
 				goldenFile = "lakectl_stat_pre_sign_with_expiry"
 			}
 		}
@@ -893,7 +893,7 @@ func TestLakectlFsStat(t *testing.T) {
 			t.Skip("No pre-sign support for this storage")
 		}
 		goldenFile := "lakectl_stat_pre_sign"
-		if config.BlockstoreType == "s3" {
+		if config.BlockstoreType == "s3" || config.BlockstoreType == "gs" {
 			goldenFile = "lakectl_stat_pre_sign_with_expiry"
 		}
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1", false, goldenFile, map[string]string{
