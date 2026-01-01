@@ -95,6 +95,7 @@
     "eslint-plugin-compat": "^4.2.0",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.33.2",
+    "fast-check": "^4.5.3",
     "happy-dom": "^20.0.10",
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
