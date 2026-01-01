@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { BrowserIcon, LinkIcon, PlayIcon } from '@primer/octicons-react';
+import { BrowserIcon, LinkIcon, PlayIcon, TagIcon } from '@primer/octicons-react';
 
-import { commits } from '../../../../lib/api';
+import { commits, tags } from '../../../../lib/api';
+import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Card from 'react-bootstrap/Card';
@@ -29,7 +30,48 @@ import { useRouter } from '../../../../lib/hooks/router';
 import { RepoError } from '../error';
 import { RefTypeBranch } from '../../../../constants';
 
-const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, onToggleSelect = null }) => {
+const MAX_TAG_PAGES = 3;
+
+// Fetch all tags up to MAX_TAG_PAGES pages, returns null if there are more tags
+const fetchAllTags = async (repoId) => {
+    const allTags = [];
+    const iterator = tags.listAll(repoId);
+
+    for (let page = 0; page < MAX_TAG_PAGES; page++) {
+        const { page: results, done } = await iterator.next();
+        allTags.push(...results);
+
+        if (done) {
+            // Got all tags successfully
+            return allTags;
+        }
+    }
+
+    // More than MAX_TAG_PAGES pages of tags, don't display any
+    return null;
+};
+
+// Build a map of commit ID to array of tag names
+const buildCommitTagsMap = (tagsList) => {
+    const map = new Map();
+    for (const tag of tagsList) {
+        const commitId = tag.commit_id;
+        if (!map.has(commitId)) {
+            map.set(commitId, []);
+        }
+        map.get(commitId).push(tag.id);
+    }
+    return map;
+};
+
+const CommitWidget = ({
+    repo,
+    commit,
+    commitTags = [],
+    revertMode = false,
+    isSelected = false,
+    onToggleSelect = null,
+}) => {
     const buttonVariant = 'light';
 
     return (
@@ -55,6 +97,21 @@ const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, on
                             >
                                 <CommitMessage commit={commit} />
                             </Link>
+                            {commitTags.map((tagName) => (
+                                <Link
+                                    key={tagName}
+                                    href={{
+                                        pathname: '/repositories/:repoId/objects',
+                                        params: { repoId: repo.id },
+                                        query: { ref: tagName },
+                                    }}
+                                >
+                                    <Badge bg="warning" text="dark" className="ms-2">
+                                        <TagIcon size={12} className="me-1" />
+                                        {tagName}
+                                    </Badge>
+                                </Link>
+                            ))}
                         </h6>
                         <p>
                             <small>
@@ -116,10 +173,32 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     const [refresh, setRefresh] = useState(true);
     const [revertMode, setRevertMode] = useState(false);
     const [selectedCommits, setSelectedCommits] = useState(new Set());
+    const [commitTagsMap, setCommitTagsMap] = useState(new Map());
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return commits.log(repo.id, reference.id, after);
     }, [repo.id, reference.id, refresh, after]);
+
+    // Load tags once when repo changes or on refresh
+    const loadTags = useCallback(async () => {
+        try {
+            const allTags = await fetchAllTags(repo.id);
+            if (allTags === null) {
+                // Too many tags, don't display them
+                setCommitTagsMap(new Map());
+            } else {
+                setCommitTagsMap(buildCommitTagsMap(allTags));
+            }
+        } catch (err) {
+            // On error, just don't show tags
+            console.error('Failed to load tags:', err);
+            setCommitTagsMap(new Map());
+        }
+    }, [repo.id]);
+
+    useEffect(() => {
+        loadTags();
+    }, [loadTags, refresh]);
 
     const toggleCommitSelection = (commitId) => {
         const newSelected = new Set(selectedCommits);
@@ -193,6 +272,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                             key={commit.id}
                             repo={repo}
                             commit={commit}
+                            commitTags={commitTagsMap.get(commit.id) || []}
                             revertMode={revertMode}
                             isSelected={selectedCommits.has(commit.id)}
                             onToggleSelect={toggleCommitSelection}
