@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
-	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -38,7 +38,7 @@ func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
 			}
 			userMetadataSize += len(name) + len(value)
 			if userMetadataSize > maxUserMetadataSize {
-				err = errors.Join(err, gatewayErrors.ErrMetadataTooLarge)
+				err = errors.Join(err, gatewayerrors.ErrMetadataTooLarge)
 				break
 			}
 			metadata[k] = value
