@@ -153,16 +153,16 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	// in case there is no error, table exists and we will delete it before creating a new one
 	if err == nil {
 		err = client.deleteTable(catalogName, schemaName, tableName)
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "does not exist") {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 	}
 
 	bo := backoff.NewExponentialBackOff(
-		backoff.WithInitialInterval(100*time.Millisecond),
+		backoff.WithInitialInterval(500*time.Millisecond),
 		backoff.WithMaxInterval(3*time.Second),
-		backoff.WithMaxElapsedTime(10*time.Second),
+		backoff.WithMaxElapsedTime(100*time.Second),
 	)
 	status, err := backoff.RetryWithData(func() (string, error) {
 		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
