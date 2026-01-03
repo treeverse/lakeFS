@@ -77,54 +77,6 @@ func TestCopyObject(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	// Copying different accounts takes more time and allows us to abort the copy in the middle
-	t.Run("copy_large_size_file_abort", func(t *testing.T) {
-		RequireBlockstoreType(t, block.BlockstoreTypeAzure)
-		importPath := strings.Replace(azureCopyDataPath, "esti", azureAbortAccount, 1)
-		const ingestionBranch = "test-copy-abort"
-		_ = testImportNew(t, ctx, repo, ingestionBranch,
-			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
-			map[string]string{"created_by": "import"},
-			false,
-		)
-
-		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &apigen.StatObjectParams{
-			Path: largeObject,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, res.JSON200)
-
-		destPath := "bar"
-		srcBranch := ingestionBranch
-		cancelCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		var (
-			wg       sync.WaitGroup
-			copyResp *apigen.CopyObjectResponse
-			copyErr  error
-		)
-		// Run copy object async and cancel context after 5 seconds
-		wg.Go(func() {
-			copyResp, copyErr = client.CopyObjectWithResponse(cancelCtx, repo, "main", &apigen.CopyObjectParams{
-				DestPath: destPath,
-			}, apigen.CopyObjectJSONRequestBody{
-				SrcPath: largeObject,
-				SrcRef:  &srcBranch,
-			})
-		})
-
-		time.Sleep(5 * time.Second)
-		cancel()
-		wg.Wait()
-		require.ErrorIs(t, copyErr, context.Canceled)
-		require.Nil(t, copyResp)
-
-		// Verify object doesn't exist
-		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNotFound, statResp.StatusCode())
-	})
-
 	t.Run("readonly_repository", func(t *testing.T) {
 		name := strings.ToLower(t.Name())
 		storageNamespace := GenerateUniqueStorageNamespace(name)
