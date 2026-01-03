@@ -2943,25 +2943,30 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry 
 		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
 	}
 
-	// we verify the metadata creation date is within the grace period
-	if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
-		return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
-	}
+	// Entry information can be cloned over and over,
+	// so we also need to verify the grace period of the entry and the actual object last-modified time (as done by GC).
+	// Skip this check for absolute path objects (imported objects) as they may have been
+	// created long ago in external storage but should still be cloneable.
+	if srcEntry.AddressType != AddressTypeFull {
+		// verify the metadata creation date is within the grace period
+		if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
+			return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
+		}
 
-	// entry information can be cloned over and over,
-	// so we also need to verify the grace period against the actual object last-modified time
-	srcObject := block.ObjectPointer{
-		StorageID:        srcRepo.StorageID,
-		StorageNamespace: srcRepo.StorageNamespace,
-		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
-		Identifier:       srcEntry.PhysicalAddress,
-	}
-	props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
-	if err != nil {
-		return nil, err
-	}
-	if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
-		return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+		// verify the actual object last-modified is within the grace period
+		srcObject := block.ObjectPointer{
+			StorageID:        srcRepo.StorageID,
+			StorageNamespace: srcRepo.StorageNamespace,
+			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+			Identifier:       srcEntry.PhysicalAddress,
+		}
+		props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
+		if err != nil {
+			return nil, err
+		}
+		if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
+			return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+		}
 	}
 
 	// copy the metadata into a new entry
