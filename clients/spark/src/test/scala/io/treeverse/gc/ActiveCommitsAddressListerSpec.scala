@@ -2,7 +2,7 @@ package io.treeverse.gc
 
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse
 import io.lakefs.clients.sdk.ApiException
-import io.treeverse.clients.{ApiClient, SparkSessionSetup}
+import io.treeverse.clients.{ApiClient, LakeFSContext, SparkSessionSetup}
 import org.apache.http.HttpStatus
 import org.scalatest.funspec._
 import org.scalatest.matchers._
@@ -51,7 +51,7 @@ class ActiveCommitsAddressListerSpec
             spark.sparkContext.hadoopConfiguration.set("lakefs.api.access_key", "test-access-key")
             spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret_key", "test-secret-key")
 
-            val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType)
+            val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES)
             val result = lister.listCommittedAddresses(
               spark,
               "s3://test-bucket/storage/",
@@ -91,7 +91,7 @@ class ActiveCommitsAddressListerSpec
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.access.key", "test-access-key")
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret.key", "test-secret-key")
 
-          val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType)
+          val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES)
           // Should not throw, but fallback to naive lister
           val result = lister.listCommittedAddresses(
             spark,
@@ -128,7 +128,7 @@ class ActiveCommitsAddressListerSpec
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.access_key", "test-access-key")
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret_key", "test-secret-key")
 
-          val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType)
+          val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES)
           val thrown = intercept[ApiException] {
             lister.listCommittedAddresses(
               spark,
