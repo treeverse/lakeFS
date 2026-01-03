@@ -85,13 +85,13 @@ class ActiveCommitsAddressListerSpec
             }
           })
           .when(mockClient)
-          .prepareGarbageCollectionCommits(any(), anyInt())
+          .prepareGarbageCollectionCommits(repo, anyInt())
 
-          withSparkSession(spark => {
-            // Set required Hadoop configuration for LakeFSContext
-            spark.sparkContext.hadoopConfiguration.set("lakefs.api.url", "http://localhost:8000/api/v1")
-            spark.sparkContext.hadoopConfiguration.set("lakefs.api.access.key", "test-access-key")
-            spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret.key", "test-secret-key")
+        withSparkSession(spark => {
+          // Set required Hadoop configuration for LakeFSContext
+          spark.sparkContext.hadoopConfiguration.set("lakefs.api.url", "http://localhost:8000/api/v1")
+          spark.sparkContext.hadoopConfiguration.set("lakefs.api.access_key", "test-access-key")
+          spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret_key", "test-secret-key")
 
             val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES)
             // Should not throw, but fallback to naive lister
@@ -101,8 +101,8 @@ class ActiveCommitsAddressListerSpec
               "s3://test-bucket/client/"
             )
 
-            // Verify the API was called (may be called multiple times due to retries)
-            Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(any(), anyInt())
+          // Verify the API was called (may be called multiple times due to retries)
+          Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(repo, anyInt())
 
           // Result should be a DataFrame from naive lister
           result should not be null
@@ -122,7 +122,7 @@ class ActiveCommitsAddressListerSpec
             }
           })
           .when(mockClient)
-          .prepareGarbageCollectionCommits(any(), anyInt())
+          .prepareGarbageCollectionCommits(repo, antInt())
 
         withSparkSession(spark => {
           // Set required Hadoop configuration for LakeFSContext (even though it will fail earlier)
@@ -141,7 +141,7 @@ class ActiveCommitsAddressListerSpec
 
           thrown.getCode should be(HttpStatus.SC_INTERNAL_SERVER_ERROR)
           // The method may be called multiple times due to retries, so we check at least once
-          Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(any(), anyInt())
+          Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(repo, anyInt())
         })
       }
     }
