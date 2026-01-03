@@ -85,6 +85,7 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_APPROX_NUM_RANGES_PER_PARTITION =
     "lakefs.gc.address.approx_num_ranges_to_spread_per_partition"
   val LAKEFS_CONF_GC_WRITE_EXPIRED_AS_TEXT = "lakefs.gc.address.write_as_text"
+  val LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES = "lakefs.gc.prepare_commits.timeout_minutes"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
   val LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY = "lakefs.debug.gc.reproduce_run_id"
@@ -115,6 +116,7 @@ object LakeFSContext {
   val DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS = 6 * 60 * 60
   val DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = 1
   val DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = 120
+  val DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES = 20
 
   val metarangeReaderGetter = SSTableReader.forMetaRange _
 
