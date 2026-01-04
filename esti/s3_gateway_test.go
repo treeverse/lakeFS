@@ -722,6 +722,33 @@ func TestS3HeadBucket(t *testing.T) {
 	})
 }
 
+func TestS3CreateBucket(t *testing.T) {
+	t.Parallel()
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	nonExistentRepo := "bucket-that-does-not-exist"
+	s3Client := createS3Client(viper.GetString("s3_endpoint"), t)
+
+	t.Run("create_bucket_not_exists", func(t *testing.T) {
+		t.Parallel()
+		_, err := s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(nonExistentRepo),
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, gtwerrors.ErrNotImplemented.Error())
+	})
+
+	t.Run("create_bucket_exists", func(t *testing.T) {
+		t.Parallel()
+		_, err := s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(repo),
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, gtwerrors.ErrBucketAlreadyExists.Error())
+	})
+}
+
 // getOrCreatePathToLargeObject returns a configured existing large
 // (largeDataContentLength, 6MiB) object, or creates a new one under
 // testPrefix.
