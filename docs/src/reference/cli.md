@@ -3067,6 +3067,56 @@ lakectl find-merge-base <source ref URI> <destination ref URI> [flags]
 
 
 
+### lakectl prepare-async
+
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+
+Runs (async) PrepareGarbageCollectionCommits on the repository
+
+```
+lakectl prepare-async <repository URI> [flags]
+```
+
+<h4>Examples</h4>
+
+```
+lakectl gc prepare-async lakefs://my-repo
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for prepare-async
+```
+
+
+
+### lakectl prepare-async
+
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+
+Runs (async) PrepareGarbageCollectionCommits on the repository
+
+```
+lakectl prepare-async <repository URI> [flags]
+```
+
+<h4>Examples</h4>
+
+```
+lakectl gc prepare-async lakefs://my-repo
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for prepare-async
+```
+
+
+
 ### lakectl refs-dump
 
 !!! warning
