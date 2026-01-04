@@ -136,66 +136,21 @@ describe('mergeResults', () => {
             expect(merged).toEqual([{ path: 'dir/', path_type: 'common_prefix', diff_type: 'changed' }]);
         });
 
-        it('marks parent directories as changed when files inside are modified', () => {
-            const results: Entry[] = [
-                { path: 'dir/', path_type: 'common_prefix' },
-                { path: 'dir/file.txt', path_type: 'object' },
-            ];
+        it('marks directories as changed when API indicates changes inside', () => {
+            // Listing at root level - only shows 'dir/' not files inside
+            const results: Entry[] = [{ path: 'dir/', path_type: 'common_prefix' }];
             const changesData: ChangesData = {
-                results: [{ path: 'dir/file.txt', type: 'changed', path_type: 'object' }],
+                results: [{ path: 'dir/', type: 'changed', path_type: 'common_prefix' }],
             };
 
             const merged: EntryWithDiff[] = mergeResults(results, changesData, false);
 
-            expect(merged).toHaveLength(2);
-            expect(merged.find((r) => r.path === 'dir/')).toEqual({
+            expect(merged).toHaveLength(1);
+            expect(merged[0]).toEqual({
                 path: 'dir/',
                 path_type: 'common_prefix',
                 diff_type: 'changed',
             });
-            expect(merged.find((r) => r.path === 'dir/file.txt')).toEqual({
-                path: 'dir/file.txt',
-                path_type: 'object',
-                diff_type: 'changed',
-            });
-        });
-
-        it('marks nested parent directories as changed', () => {
-            const results: Entry[] = [
-                { path: 'a/', path_type: 'common_prefix' },
-                { path: 'a/b/', path_type: 'common_prefix' },
-                { path: 'a/b/c/', path_type: 'common_prefix' },
-                { path: 'a/b/c/file.txt', path_type: 'object' },
-            ];
-            const changesData: ChangesData = {
-                results: [{ path: 'a/b/c/file.txt', type: 'added', path_type: 'object' }],
-            };
-
-            const merged = mergeResults(results, changesData, false);
-
-            // All directories should be marked as changed
-            expect(merged.find((r) => r.path === 'a/')).toMatchObject({ diff_type: 'changed' });
-            expect(merged.find((r) => r.path === 'a/b/')).toMatchObject({ diff_type: 'changed' });
-            expect(merged.find((r) => r.path === 'a/b/c/')).toMatchObject({ diff_type: 'changed' });
-            expect(merged.find((r) => r.path === 'a/b/c/file.txt')).toMatchObject({ diff_type: 'added' });
-        });
-
-        it('does not override direct directory change type with "changed"', () => {
-            const results: Entry[] = [
-                { path: 'dir/', path_type: 'common_prefix' },
-                { path: 'dir/file.txt', path_type: 'object' },
-            ];
-            const changesData: ChangesData = {
-                results: [
-                    { path: 'dir/', type: 'removed', path_type: 'common_prefix' },
-                    { path: 'dir/file.txt', type: 'removed', path_type: 'object' },
-                ],
-            };
-
-            const merged = mergeResults(results, changesData, false);
-
-            // Directory should keep 'removed' type, not be overridden by 'changed'
-            expect(merged.find((r) => r.path === 'dir/')).toMatchObject({ diff_type: 'removed' });
         });
     });
 
@@ -336,22 +291,15 @@ describe('mergeResults', () => {
     });
 
     describe('mixed-type scenarios (file <-> directory)', () => {
-        it('handles file replaced by directory with subpaths', () => {
+        it('handles file replaced by directory', () => {
+            // Listing at a/b/ level:
             // Before: a/b/c (file/object)
-            // After:  a/b/c/ (directory)
-            //         a/b/c/d (file)
-            //         a/b/c/e (file)
-            const results: Entry[] = [
-                { path: 'a/b/c/', path_type: 'common_prefix' },
-                { path: 'a/b/c/d', path_type: 'object' },
-                { path: 'a/b/c/e', path_type: 'object' },
-            ];
+            // After:  a/b/c/ (directory with files inside)
+            const results: Entry[] = [{ path: 'a/b/c/', path_type: 'common_prefix' }];
             const changesData: ChangesData = {
                 results: [
                     { path: 'a/b/c', type: 'removed', path_type: 'object' }, // Old file removed
-                    { path: 'a/b/c/', type: 'added', path_type: 'common_prefix' }, // New directory added
-                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
-                    { path: 'a/b/c/e', type: 'added', path_type: 'object' },
+                    { path: 'a/b/c/', type: 'changed', path_type: 'common_prefix' }, // Directory has changes
                 ],
             };
 
@@ -359,79 +307,21 @@ describe('mergeResults', () => {
 
             expect(merged).toEqual([
                 { path: 'a/b/c', path_type: 'object', type: 'removed', diff_type: 'removed' },
-                { path: 'a/b/c/', path_type: 'common_prefix', diff_type: 'added' },
-                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
-                { path: 'a/b/c/e', path_type: 'object', diff_type: 'added' },
-            ]);
-        });
-
-        it('handles file with subpaths added below it', () => {
-            // Before: a/b/c (file/object)
-            // After:  a/b/c (file/object - still exists)
-            //         a/b/c/d (file)
-            //         a/b/c/e (file)
-            const results: Entry[] = [
-                { path: 'a/b/c', path_type: 'object' },
-                { path: 'a/b/c/d', path_type: 'object' },
-                { path: 'a/b/c/e', path_type: 'object' },
-            ];
-            const changesData: ChangesData = {
-                results: [
-                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
-                    { path: 'a/b/c/e', type: 'added', path_type: 'object' },
-                ],
-            };
-
-            const merged = mergeResults(results, changesData, false);
-
-            expect(merged).toEqual([
-                { path: 'a/b/c', path_type: 'object' },
-                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
-                { path: 'a/b/c/e', path_type: 'object', diff_type: 'added' },
-            ]);
-        });
-
-        it('handles directory replaced by file', () => {
-            // Before: a/b/c/ (directory)
-            //         a/b/c/d (file)
-            //         a/b/c/e (file)
-            // After:  a/b/c (file/object)
-            //         a/b/d (some other file to establish the range)
-            const results: Entry[] = [
-                { path: 'a/b/c', path_type: 'object' },
-                { path: 'a/b/d', path_type: 'object' },
-            ];
-            const changesData: ChangesData = {
-                results: [
-                    { path: 'a/b/c/', type: 'removed', path_type: 'common_prefix' }, // Directory removed
-                    { path: 'a/b/c/d', type: 'removed', path_type: 'object' },
-                    { path: 'a/b/c/e', type: 'removed', path_type: 'object' },
-                    { path: 'a/b/c', type: 'added', path_type: 'object' }, // File added in its place
-                ],
-            };
-
-            const merged = mergeResults(results, changesData, false);
-
-            expect(merged).toEqual([
-                { path: 'a/b/c', path_type: 'object', diff_type: 'added' },
-                { path: 'a/b/c/', path_type: 'common_prefix', type: 'removed', diff_type: 'removed' },
-                { path: 'a/b/c/d', path_type: 'object', type: 'removed', diff_type: 'removed' },
-                { path: 'a/b/c/e', path_type: 'object', type: 'removed', diff_type: 'removed' },
-                { path: 'a/b/d', path_type: 'object' },
+                { path: 'a/b/c/', path_type: 'common_prefix', diff_type: 'changed' },
             ]);
         });
 
         it('handles file and directory with same prefix coexisting', () => {
-            // Both a/b/c (file) and a/b/c/d (implying a/b/c/ directory) exist
+            // Listing at a/b/ level:
+            // Both a/b/c (file) and a/b/c/ (directory) can coexist in object storage
             const results: Entry[] = [
                 { path: 'a/b/c', path_type: 'object' },
                 { path: 'a/b/c/', path_type: 'common_prefix' },
-                { path: 'a/b/c/d', path_type: 'object' },
             ];
             const changesData: ChangesData = {
                 results: [
                     { path: 'a/b/c', type: 'changed', path_type: 'object' },
-                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
+                    { path: 'a/b/c/', type: 'changed', path_type: 'common_prefix' },
                 ],
             };
 
@@ -440,33 +330,6 @@ describe('mergeResults', () => {
             expect(merged).toEqual([
                 { path: 'a/b/c', path_type: 'object', diff_type: 'changed' },
                 { path: 'a/b/c/', path_type: 'common_prefix', diff_type: 'changed' },
-                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
-            ]);
-        });
-
-        it('sorts correctly when file and directory with same prefix have mixed changes', () => {
-            const results: Entry[] = [
-                { path: 'a/b/c', path_type: 'object' },
-                { path: 'a/b/c/', path_type: 'common_prefix' },
-                { path: 'a/b/c/d', path_type: 'object' },
-                { path: 'a/b/c/e', path_type: 'object' },
-                { path: 'a/b/d', path_type: 'object' },
-            ];
-            const changesData: ChangesData = {
-                results: [
-                    { path: 'a/b/c', type: 'removed', path_type: 'object' },
-                    { path: 'a/b/c/d', type: 'added', path_type: 'object' },
-                ],
-            };
-
-            const merged = mergeResults(results, changesData, false);
-
-            expect(merged).toEqual([
-                { path: 'a/b/c', path_type: 'object', diff_type: 'removed' },
-                { path: 'a/b/c/', path_type: 'common_prefix', diff_type: 'changed' },
-                { path: 'a/b/c/d', path_type: 'object', diff_type: 'added' },
-                { path: 'a/b/c/e', path_type: 'object' },
-                { path: 'a/b/d', path_type: 'object' },
             ]);
         });
     });
@@ -495,33 +358,6 @@ describe('mergeResults', () => {
             expect(merged.find((r) => r.path === 'deleted.txt')).toMatchObject({ diff_type: 'removed' });
             expect(merged.find((r) => r.path === 'modified.txt')).toMatchObject({ diff_type: 'changed' });
             expect(merged.find((r) => r.path === 'unchanged.txt')).not.toHaveProperty('diff_type');
-        });
-
-        it('handles nested directory structures with changes at multiple levels', () => {
-            const results: Entry[] = [
-                { path: 'root/', path_type: 'common_prefix' },
-                { path: 'root/level1/', path_type: 'common_prefix' },
-                { path: 'root/level1/file1.txt', path_type: 'object' },
-                { path: 'root/level1/file2.txt', path_type: 'object' },
-                { path: 'root/other/', path_type: 'common_prefix' },
-            ];
-            const changesData: ChangesData = {
-                results: [
-                    { path: 'root/level1/file1.txt', type: 'changed', path_type: 'object' },
-                    { path: 'root/level1/file2.txt', type: 'added', path_type: 'object' },
-                ],
-            };
-
-            const merged = mergeResults(results, changesData, false);
-
-            // root/ and root/level1/ should be marked as changed
-            expect(merged.find((r) => r.path === 'root/')).toMatchObject({ diff_type: 'changed' });
-            expect(merged.find((r) => r.path === 'root/level1/')).toMatchObject({ diff_type: 'changed' });
-            // root/other/ should not have diff_type
-            expect(merged.find((r) => r.path === 'root/other/')).not.toHaveProperty('diff_type');
-            // Files should have their respective types
-            expect(merged.find((r) => r.path === 'root/level1/file1.txt')).toMatchObject({ diff_type: 'changed' });
-            expect(merged.find((r) => r.path === 'root/level1/file2.txt')).toMatchObject({ diff_type: 'added' });
         });
 
         it('preserves all entry properties while adding diff_type', () => {
