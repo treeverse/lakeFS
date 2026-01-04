@@ -205,12 +205,12 @@ class ApiClient private (conf: APIConfigurations) {
   def prepareGarbageCollectionCommits(
       repoName: String
   ): GarbageCollectionPrepareResponse = {
-    prepareGarbageCollectionCommits(repoName, timeoutMinutes = 20)
+    prepareGarbageCollectionCommits(repoName, timeoutSeconds = 1200)
   }
 
   def prepareGarbageCollectionCommits(
       repoName: String,
-      timeoutMinutes: Int
+      timeoutSeconds: Int
   ): GarbageCollectionPrepareResponse = {
     // Try async API first, fallback to blocking API on server internal error
     try {
@@ -225,7 +225,7 @@ class ApiClient private (conf: APIConfigurations) {
 
       // Poll for completion with exponential backoff
       val startTime = System.currentTimeMillis()
-      val timeoutMs = timeoutMinutes * 60 * 1000L
+      val timeoutMs = timeoutSeconds * 1000L
       var backoffMs = 500L
       val maxBackoffMs = 15000L
 
@@ -234,7 +234,7 @@ class ApiClient private (conf: APIConfigurations) {
         val elapsed = System.currentTimeMillis() - startTime
         if (elapsed >= timeoutMs) {
           throw new RuntimeException(
-            s"prepareGarbageCollectionCommits timed out after ${timeoutMinutes} minutes (task_id: $taskId)"
+            s"prepareGarbageCollectionCommits timed out after ${timeoutSeconds} seconds (task_id: $taskId)"
           )
         }
 

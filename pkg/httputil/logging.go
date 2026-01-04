@@ -63,6 +63,13 @@ func RequestIDFromContext(ctx context.Context) *string {
 	return &ret
 }
 
+func CopyRequestIDFromContext(srcCtx, dstCtx context.Context) context.Context {
+	if val := srcCtx.Value(RequestIDContextKey); val != nil {
+		return context.WithValue(dstCtx, RequestIDContextKey, val)
+	}
+	return dstCtx
+}
+
 func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string, isAdvancedAuth bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

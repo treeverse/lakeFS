@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { RefTypeBranch } from '../../../constants';
-import { ActionGroup, ActionsBar, AlertError, RefreshButton } from '../controls';
+import { ActionGroup, ActionsBar, AlertError, Loading, RefreshButton } from '../controls';
 import { MetadataFields } from './metadata';
 import { getMetadataIfValid, touchInvalidFields } from './metadataHelpers';
 import { GitMergeIcon, GitPullRequestIcon } from '@primer/octicons-react';
@@ -11,6 +11,7 @@ import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/
 import CompareBranchesSelection from './compareBranchesSelection';
 import { useRouter } from '../../../lib/hooks/router';
 import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
+import { useConfigContext } from '../../../lib/hooks/configProvider';
 
 const CompareBranchesActionsBar = ({ repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff }) => {
     return (
@@ -52,6 +53,8 @@ const CompareBranchesActionsBar = ({ repo, reference, compareReference, baseSele
 
 const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     const pluginManager = usePluginManager();
+    const { config, loading: configsLoading, error: configsError } = useConfigContext();
+    const capabilitiesConfig = config?.capabilitiesConfig;
     const textRef = useRef(null);
     const [metadataFields, setMetadataFields] = useState([]);
     const initialMerge = {
@@ -105,7 +108,15 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
             strategy: mergeState.strategy,
         });
         try {
-            await pluginManager.mergeOperation.merge(repo.id, source, dest, strategy, message, metadata);
+            await pluginManager.mergeOperation.merge(
+                repo.id,
+                source,
+                dest,
+                strategy,
+                message,
+                metadata,
+                capabilitiesConfig,
+            );
             setMergeState({
                 merging: mergeState.merging,
                 show: mergeState.show,
@@ -184,9 +195,16 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" disabled={disabled} onClick={() => onClickMerge()}>
-                <GitMergeIcon /> {'Merge'}
-            </Button>
+            <>
+                {configsLoading ? <Loading /> : configsError ? <AlertError error={configsError} /> : null}
+                <Button
+                    variant="success"
+                    disabled={disabled || configsLoading || !!configsError}
+                    onClick={() => onClickMerge()}
+                >
+                    <GitMergeIcon /> {'Merge'}
+                </Button>
+            </>
         </>
     );
 };
