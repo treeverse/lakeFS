@@ -51,7 +51,7 @@ class ActiveCommitsAddressListerSpec
             spark.sparkContext.hadoopConfiguration.set("lakefs.api.access_key", "test-access-key")
             spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret_key", "test-secret-key")
 
-            val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES)
+            val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS)
             val result = lister.listCommittedAddresses(
               spark,
               "s3://test-bucket/storage/",
@@ -91,7 +91,7 @@ class ActiveCommitsAddressListerSpec
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.access_key", "test-access-key")
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret_key", "test-secret-key")
 
-            val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES)
+            val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS)
             // Should not throw, but fallback to naive lister
             val result = lister.listCommittedAddresses(
               spark,
@@ -128,7 +128,7 @@ class ActiveCommitsAddressListerSpec
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.access_key", "test-access-key")
           spark.sparkContext.hadoopConfiguration.set("lakefs.api.secret_key", "test-secret-key")
 
-          val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_MINUTES)
+          val lister = new ActiveCommitsAddressLister(mockClient, repo, storageType, LakeFSContext.DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS)
           val thrown = intercept[ApiException] {
             lister.listCommittedAddresses(
               spark,

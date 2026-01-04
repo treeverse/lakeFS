@@ -14,7 +14,7 @@ class ActiveCommitsAddressLister(
     val apiClient: ApiClient,
     val repoName: String,
     val storageType: String,
-    val prepareCommitsTimeoutMinutes: Int
+    val prepareCommitsTimeoutSeconds: Int
 ) extends CommittedAddressLister {
 
   override def listCommittedAddresses(
@@ -24,7 +24,7 @@ class ActiveCommitsAddressLister(
   ): DataFrame = {
     val prepareResult =
       try {
-        apiClient.prepareGarbageCollectionCommits(repoName, prepareCommitsTimeoutMinutes)
+        apiClient.prepareGarbageCollectionCommits(repoName, prepareCommitsTimeoutSeconds)
       } catch {
         case e: ApiException =>
           if (e.getCode == HttpStatus.SC_NOT_FOUND) {
