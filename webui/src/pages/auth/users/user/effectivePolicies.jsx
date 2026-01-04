@@ -22,6 +22,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
     const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return auth.listUserPolicies(userId, true, after);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, after, refresh]);
 
     let content;

@@ -37,6 +37,7 @@ const CompareBranches = ({ repo, reference, compareReference, showActionsBar, pr
             setResultsState,
             getMoreResults,
         );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix]);
 
     const { results } = resultsState;
@@ -48,6 +49,7 @@ const CompareBranches = ({ repo, reference, compareReference, showActionsBar, pr
             type: DiffActionType.setResults,
             value: { results, loading, error, nextPage },
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [results, loading, error, nextPage]);
 
     const isEmptyDiff = !loading && !error && !!results && results.length === 0;

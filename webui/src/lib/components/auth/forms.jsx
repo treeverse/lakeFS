@@ -28,6 +28,7 @@ export const AttachModal = ({
 
     const { response, error, loading } = useAPI(() => {
         return searchFn(paginationParams.prefix, paginationParams.after);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [paginationParams]);
 
     useEffect(() => {

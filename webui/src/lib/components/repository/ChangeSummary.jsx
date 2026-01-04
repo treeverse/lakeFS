@@ -67,6 +67,7 @@ export default ({ prefix, getMore }) => {
             setResultsState({ results: [], pagination: {} });
             setLoading(false);
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [resultsState.results, loading, pullMore]);
 
     const onLoadAll = useCallback(

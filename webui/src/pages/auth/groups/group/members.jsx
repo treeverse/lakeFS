@@ -30,6 +30,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
     const [allUsers, setAllUsers] = useState([]);
     const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return auth.listGroupMembers(groupId, after);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [groupId, after, refresh]);
     useEffect(() => {
         setAttachError(null);

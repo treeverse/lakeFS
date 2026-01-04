@@ -68,6 +68,7 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
             }
         };
         runQuery(sql).catch(console.error);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repoId, refId, path, shouldSubmit]);
 
     let content;

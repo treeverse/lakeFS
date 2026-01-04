@@ -53,6 +53,7 @@ const SetupContents = () => {
                 setDisabled(false);
             }
         },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [setDisabled, setSetupError, setup, currentStep, commPrefsMissing],
     );
 

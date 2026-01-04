@@ -34,7 +34,11 @@ export const MetadataUIButton = ({ metadata_key, metadata_value }) => {
     if (!m) {
         return null;
     }
-    const click = useCallback(() => gotoMetadata(m[1], metadata_value), [m[1], metadata_value]);
+    const click = useCallback(
+        () => gotoMetadata(m[1], metadata_value),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [m[1], metadata_value],
+    );
     return (
         <tr key={metadata_key}>
             <td colSpan={2}>

@@ -42,6 +42,7 @@ const PoliciesContainer = () => {
 
     const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return auth.listPolicies(prefix, after);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, prefix, after]);
 
     useEffect(() => {

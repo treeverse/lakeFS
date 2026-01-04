@@ -28,6 +28,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
 
     const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return auth.listGroupPolicies(groupId, after);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [groupId, after, refresh]);
 
     useEffect(() => {

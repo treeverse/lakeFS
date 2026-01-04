@@ -56,6 +56,7 @@ const SettingsContainer = () => {
         loading: rulesLoading,
     } = useAPI(async () => {
         return branchProtectionRules.getRules(repo.id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo, refresh]);
     const deleteRule = (pattern) => {
         let updatedRules = [...rulesResponse['rules']];

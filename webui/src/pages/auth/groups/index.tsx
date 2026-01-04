@@ -133,6 +133,7 @@ const GroupsContainer = () => {
             })),
         );
         return { ...groups, results: enrichedResults };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [lc.RBAC, refresh, prefix, after]);
 
     useEffect(() => {

@@ -227,6 +227,7 @@ const UsersIndexPage = () => {
         error,
     } = useAPI(() => {
         return allUsersFromLakeFS(resolveUserDisplayName);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh]);
 
     const getUserDisplayNameById = useCallback(

@@ -24,6 +24,7 @@ const CompareBranchesSelection = ({
             params: { repoId: repo.id },
             query: { ref: compareReference.id, compare: reference.id },
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const route = (query) =>

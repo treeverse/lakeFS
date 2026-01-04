@@ -18,6 +18,7 @@ const PolicyView = ({ policyId }) => {
 
     const { response, loading, error } = useAPI(() => {
         return auth.getPolicy(policyId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [policyId, refresh]);
 
     const policy = response;

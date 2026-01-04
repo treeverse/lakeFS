@@ -104,6 +104,7 @@ const HookLog = ({ repo, run, execution }) => {
     const { response, loading, error } = useAPI(() => {
         if (!expanded) return '';
         return actions.getRunHookOutput(repo.id, run.run_id, execution.hook_run_id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, execution.hook_id, execution.hook_run_id, expanded]);
 
     let content = <></>;

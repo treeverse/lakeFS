@@ -394,6 +394,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
             return await commits.blame(repo.id, reference.id, entry.path, entry.path_type);
         }
         return null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [show, repo.id, reference.id, entry.path]);
 
     const pathType = entry.path_type === 'object' ? 'object' : 'prefix';

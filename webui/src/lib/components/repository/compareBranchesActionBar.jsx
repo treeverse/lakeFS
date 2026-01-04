@@ -65,6 +65,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     };
     const [mergeState, setMergeState] = useState(initialMerge);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const onClickMerge = useCallback(() => {
         setMergeState({
             merging: mergeState.merging,

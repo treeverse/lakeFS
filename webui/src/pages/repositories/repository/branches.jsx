@@ -268,6 +268,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
     const [pendingFailedBranches, setPendingFailedBranches] = useState(null);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return branches.list(repo.id, showHidden, prefix, after);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, refresh, prefix, after, showHidden]);
 
     const doRefresh = () => setRefresh(!refresh);

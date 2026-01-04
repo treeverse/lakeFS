@@ -33,6 +33,7 @@ export const WithLoginConfigContext = ({ children }: { children: ReactNode }) =>
             error || loading || !('login_config' in (response as Record<string, unknown>))
                 ? initValue
                 : ((response as Record<string, unknown>).login_config as LoginConfig) || {},
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [response],
     );
     return <LoginConfigContext.Provider value={lc}>{children}</LoginConfigContext.Provider>;

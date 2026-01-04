@@ -119,6 +119,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return commits.log(repo.id, reference.id, after);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, refresh, after]);
 
     const toggleCommitSelection = (commitId) => {

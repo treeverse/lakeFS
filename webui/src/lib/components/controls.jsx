@@ -319,6 +319,7 @@ export const PrefixSearchWidget = ({ onFilter, text = 'Search by Prefix', defaul
             e.preventDefault();
             onFilter(ref.current.value);
         },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [ref],
     );
 
