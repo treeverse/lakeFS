@@ -10,8 +10,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.mockito.Mockito
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.ArgumentMatchers.anyInt
-import org.mockito.ArgumentMatchers.eq
 
 import java.nio.file.Files
 import org.apache.commons.io.FileUtils
@@ -44,7 +42,7 @@ class ActiveCommitsAddressListerSpec
           prepareResponse.setGcCommitsLocation(localGcCommitsLocation)
 
           Mockito
-            .when(mockClient.prepareGarbageCollectionCommits(eq(repo), anyInt()))
+            .when(mockClient.prepareGarbageCollectionCommits(org.mockito.ArgumentMatchers.eq(repo), org.mockito.ArgumentMatchers.anyInt()))
             .thenReturn(prepareResponse)
 
           withSparkSession(spark => {
@@ -61,7 +59,7 @@ class ActiveCommitsAddressListerSpec
             )
 
             // Verify the API was called with correct timeout
-            Mockito.verify(mockClient, Mockito.times(1)).prepareGarbageCollectionCommits(eq(repo), anyInt())
+            Mockito.verify(mockClient, Mockito.times(1)).prepareGarbageCollectionCommits(org.mockito.ArgumentMatchers.eq(repo), org.mockito.ArgumentMatchers.anyInt())
 
             // The result should be a DataFrame (we can't easily verify its contents without
             // setting up the full LakeFS context, but we can verify it doesn't throw)
@@ -85,7 +83,7 @@ class ActiveCommitsAddressListerSpec
             }
           })
           .when(mockClient)
-          .prepareGarbageCollectionCommits(eq(repo), anyInt())
+          .prepareGarbageCollectionCommits(org.mockito.ArgumentMatchers.eq(repo), org.mockito.ArgumentMatchers.anyInt())
 
         withSparkSession(spark => {
           // Set required Hadoop configuration for LakeFSContext
@@ -102,7 +100,7 @@ class ActiveCommitsAddressListerSpec
             )
 
           // Verify the API was called (may be called multiple times due to retries)
-          Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(eq(repo), anyInt())
+          Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(org.mockito.ArgumentMatchers.eq(repo), org.mockito.ArgumentMatchers.anyInt())
 
           // Result should be a DataFrame from naive lister
           result should not be null
@@ -122,7 +120,7 @@ class ActiveCommitsAddressListerSpec
             }
           })
           .when(mockClient)
-          .prepareGarbageCollectionCommits(eq(repo), anyInt())
+          .prepareGarbageCollectionCommits(org.mockito.ArgumentMatchers.eq(repo), org.mockito.ArgumentMatchers.anyInt())
 
         withSparkSession(spark => {
           // Set required Hadoop configuration for LakeFSContext (even though it will fail earlier)
@@ -141,7 +139,7 @@ class ActiveCommitsAddressListerSpec
 
           thrown.getCode should be(HttpStatus.SC_INTERNAL_SERVER_ERROR)
           // The method may be called multiple times due to retries, so we check at least once
-          Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(eq(repo), anyInt())
+          Mockito.verify(mockClient, Mockito.atLeastOnce()).prepareGarbageCollectionCommits(org.mockito.ArgumentMatchers.eq(repo), org.mockito.ArgumentMatchers.anyInt())
         })
       }
     }
