@@ -11,7 +11,6 @@ import org.mockito.Mockito
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.ArgumentMatchers.anyInt
-import org.mockito.ArgumentMatchers.any
 
 import java.nio.file.Files
 import org.apache.commons.io.FileUtils
@@ -122,7 +121,7 @@ class ActiveCommitsAddressListerSpec
             }
           })
           .when(mockClient)
-          .prepareGarbageCollectionCommits(repo, antInt())
+          .prepareGarbageCollectionCommits(repo, anyInt())
 
         withSparkSession(spark => {
           // Set required Hadoop configuration for LakeFSContext (even though it will fail earlier)
