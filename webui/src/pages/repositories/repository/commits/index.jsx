@@ -3,8 +3,10 @@ import { useOutletContext } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { BrowserIcon, LinkIcon, PlayIcon, TagIcon } from '@primer/octicons-react';
 
-import { commits, tags } from '../../../../lib/api';
+import { commits, tags, MAX_LISTING_AMOUNT } from '../../../../lib/api';
 import Badge from 'react-bootstrap/Badge';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Card from 'react-bootstrap/Card';
@@ -31,8 +33,10 @@ import { RepoError } from '../error';
 import { RefTypeBranch } from '../../../../constants';
 
 const MAX_TAG_PAGES = 3;
+const MAX_TAGS_FOR_DISPLAY = MAX_TAG_PAGES * MAX_LISTING_AMOUNT;
 
-// Fetch all tags up to MAX_TAG_PAGES pages, returns null if there are more tags
+// Fetch all tags up to MAX_TAG_PAGES pages
+// Returns { tags: [...], limitExceeded: boolean }
 const fetchAllTags = async (repoId) => {
     const allTags = [];
     const iterator = tags.listAll(repoId);
@@ -40,15 +44,14 @@ const fetchAllTags = async (repoId) => {
     for (let page = 0; page < MAX_TAG_PAGES; page++) {
         const { page: results, done } = await iterator.next();
         allTags.push(...results);
-
         if (done) {
-            // Got all tags successfully
-            return allTags;
+            return { tags: allTags, limitExceeded: false };
         }
     }
 
     // More than MAX_TAG_PAGES pages of tags, don't display any
-    return null;
+    // and report limit exceeded
+    return { tags: [], limitExceeded: true };
 };
 
 // Build a map of commit ID to array of tag names
@@ -174,6 +177,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     const [revertMode, setRevertMode] = useState(false);
     const [selectedCommits, setSelectedCommits] = useState(new Set());
     const [commitTagsMap, setCommitTagsMap] = useState(new Map());
+    const [tagsLimitExceeded, setTagsLimitExceeded] = useState(false);
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return commits.log(repo.id, reference.id, after);
@@ -182,9 +186,9 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     // Load tags once when repo changes or on refresh
     const loadTags = useCallback(async () => {
         try {
-            const allTags = await fetchAllTags(repo.id);
-            if (allTags === null) {
-                // Too many tags, don't display them
+            const { tags: allTags, limitExceeded } = await fetchAllTags(repo.id);
+            setTagsLimitExceeded(limitExceeded);
+            if (limitExceeded) {
                 setCommitTagsMap(new Map());
             } else {
                 setCommitTagsMap(buildCommitTagsMap(allTags));
@@ -193,6 +197,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
             // On error, just don't show tags
             console.error('Failed to load tags:', err);
             setCommitTagsMap(new Map());
+            setTagsLimitExceeded(false);
         }
     }, [repo.id]);
 
@@ -264,6 +269,19 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                     />
                 </ActionGroup>
             </ActionsBar>
+
+            {tagsLimitExceeded && (
+                <OverlayTrigger
+                    placement="right"
+                    overlay={
+                        <Tooltip>Too many tags to display ({MAX_TAGS_FOR_DISPLAY.toLocaleString()}+ limit)</Tooltip>
+                    }
+                >
+                    <small className="text-muted d-inline-block mb-2" style={{ cursor: 'help' }}>
+                        <TagIcon /> Tag labels hidden
+                    </small>
+                </OverlayTrigger>
+            )}
 
             <Card>
                 <ListGroup variant="flush">
