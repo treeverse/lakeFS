@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
-var gcCheckCommitsTemplate = `GC commits task {{.TaskId|yellow}}: {{if .Completed -}} Completed {{- else -}} Running. {{- end}}
+var gcCheckCommitsTemplate = `GC commits task {{.TaskId|yellow}}: {{if .Completed -}} Completed {{- else -}} Running {{- end}}.
 
 {{- with .Error}}{{"Failed:" | red | bold}}{{. | bold}}{{end}}
 {{with .Result -}}
@@ -22,7 +22,7 @@ Last updated {{.UpdateTime}}.
 var gcCheckCommitsCmd = &cobra.Command{
 	Use:               "check-async <repository URI>",
 	Short:             "Check status of (async) PrepareGarbageCollectionCommits",
-	Example:           "lakectl gc prepare-async --id <ID>" + myRepoExample,
+	Example:           "lakectl gc check-async --id <ID> " + myRepoExample,
 	Args:              cobra.ExactArgs(1),
 	Hidden:            true,
 	ValidArgsFunction: ValidArgsRepository,
@@ -40,5 +40,6 @@ var gcCheckCommitsCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	gcCheckCommitsCmd.Flags().String("id", "", "ID returned from \"gc prepare-async\"")
+	_ = gcCheckCommitsCmd.MarkFlagRequired("id")
 	gcCmd.AddCommand(gcCheckCommitsCmd)
 }

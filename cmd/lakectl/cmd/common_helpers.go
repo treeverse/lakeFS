@@ -102,16 +102,12 @@ func (c ColoredText) Add(color text.Color) ColoredText {
 	}
 }
 
-type stringer interface {
-	String() string
-}
-
 // Colored returns text as ColoredText with no Color if it is not already ColoredText.
 func Colored(text any) ColoredText {
 	if c, ok := text.(ColoredText); ok {
 		return c
 	}
-	if t, ok := text.(stringer); ok {
+	if t, ok := text.(fmt.Stringer); ok {
 		text = t.String()
 	}
 	return ColoredText{Colors: nil, Text: text}
