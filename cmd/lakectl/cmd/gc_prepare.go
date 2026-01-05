@@ -9,7 +9,7 @@ import (
 var gcPrepareCommitsTemplate = `Started prepare GC commits task {{.ID|yellow}}.
 
 Check it using
-    lakectl gc check-async --id {{.ID}}
+    lakectl gc check-async {{.RepoURL}} --id {{.ID}}
 `
 
 var gcPrepareCommitsCmd = &cobra.Command{
@@ -25,7 +25,7 @@ var gcPrepareCommitsCmd = &cobra.Command{
 		resp, err := client.PrepareGarbageCollectionCommitsAsyncWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusAccepted)
 		id := resp.JSON202.Id
-		Write(gcPrepareCommitsTemplate, struct{ ID string }{id})
+		Write(gcPrepareCommitsTemplate, struct{ RepoURL, ID string }{u.String(), id})
 	},
 }
 

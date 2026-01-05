@@ -11,9 +11,9 @@ var gcCheckCommitsTemplate = `GC commits task {{.TaskId|yellow}}: {{if .Complete
 
 {{- with .Error}}{{"Failed:" | red | bold}}{{. | bold}}{{end}}
 {{with .Result -}}
-Commits location: {{.GcCommitsLocation}}
-{{with .GcCommitsPresignedUrl}}  Presigned URL:  {{.}}{{end}}
-Run ID:           {{.RunId}}
+Commits location: {{.GcCommitsLocation | blue}}
+{{with .GcCommitsPresignedUrl}}  Presigned URL:  {{ blue . }}{{end}}
+  Run ID:           {{.RunId}}
 {{end}}
 
 Last updated {{.UpdateTime}}.
