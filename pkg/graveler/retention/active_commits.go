@@ -2,22 +2,16 @@ package retention
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/arena"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
+	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
-
-type CommitNode struct {
-	// CreationUsecs is in microseconds-since-epoch.  It takes 3x less space than time.Time.
-	CreationUsecs int64
-	MainParent    graveler.CommitID
-	MetaRangeID   graveler.MetaRangeID
-}
 
 // CommitsMap is an immutable cache of commits.  Each commit can be set once, and will be read
 // if needed.  It is *not* thread-safe.
@@ -26,43 +20,26 @@ type CommitsMap struct {
 	Log          logging.Logger
 	NumMisses    int64
 	CommitGetter RepositoryCommitGetter
-	Map          arena.Map[BinaryCommitID, CommitNode]
+	Store        kv.Store
 }
 
-// BinaryCommitID holds the bytes of a commit ID as a string.  It has exactly
-// arena.KeySizeBound bytes.
-type BinaryCommitID string
+const (
+	commitsPartition = "gc:commits"
+)
 
 var (
 	ErrBadCommitID = errors.New("bad format commit ID")
 )
 
-func ToBinaryCommitID(hexID graveler.CommitID) (BinaryCommitID, error) {
-	b, err := hex.DecodeString(string(hexID))
-	if err != nil {
-		// This check should happen at compile time but the Go type system is far too
-		// weak for that.  It is safe here because **all commit IDs are hex** - if not,
-		// this code will always fail integration testing.  So "it cannot happen".
-		return "", fmt.Errorf("%w: decode hex %s: %s", ErrBadCommitID, hexID, err)
+func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter, store kv.Store) (CommitsMap, error) {
+	c := CommitsMap{
+		ctx:          ctx,
+		Log:          logging.FromContext(ctx),
+		NumMisses:    int64(0),
+		CommitGetter: commitGetter,
+		Store:        store,
 	}
-	if len(b) < arena.KeySizeBound {
-		return "", fmt.Errorf("%w: %d too short", ErrBadCommitID, len(b))
-	}
-	return BinaryCommitID(b[:arena.KeySizeBound]), nil
-}
 
-func MustToBinaryCommitID(hexID graveler.CommitID) BinaryCommitID {
-	ret, err := ToBinaryCommitID(hexID)
-	if err != nil {
-		// See ToBinaryCommitID - this cannot happen in the system, and is caught by
-		// testing.
-		panic(err)
-	}
-	return ret
-}
-
-func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (CommitsMap, error) {
-	initialMap := arena.NewBoundedKeyMap[BinaryCommitID, CommitNode]()
 	it, err := commitGetter.List(ctx)
 	if err != nil {
 		return CommitsMap{}, fmt.Errorf("list existing commits into map: %w", err)
@@ -70,36 +47,40 @@ func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (Co
 	defer it.Close()
 	for it.Next() {
 		commit := it.Value()
-		initialMap.Put(MustToBinaryCommitID(commit.CommitID), nodeFromCommit(commit.Commit))
+		err = c.Set(ctx, commit.CommitID, nodeFromCommit(commit.Commit))
+		if err != nil {
+			return CommitsMap{}, fmt.Errorf("set commit %s in local store: %w", commit.CommitID, err)
+		}
 	}
-	initialMap.Optimize()
-	return CommitsMap{
-		ctx:          ctx,
-		Log:          logging.FromContext(ctx),
-		NumMisses:    int64(0),
-		CommitGetter: commitGetter,
-		Map:          initialMap,
-	}, nil
+	return c, nil
 }
 
 // Set sets a commit.  It will not be looked up again in CommitGetter.
-func (c *CommitsMap) Set(id graveler.CommitID, node CommitNode) {
-	c.Map.Put(MustToBinaryCommitID(id), node)
+func (c *CommitsMap) Set(ctx context.Context, id graveler.CommitID, node *CommitNode) error {
+	return kv.SetMsg(ctx, c.Store, commitsPartition, []byte(id), node)
 }
 
 // Get gets a commit.  If the commit has not been Set it uses CommitGetter
 // to read it.
-func (c *CommitsMap) Get(id graveler.CommitID) (*CommitNode, error) {
-	ret := c.Map.Get(MustToBinaryCommitID(id))
-	if ret != nil {
-		return ret, nil
+func (c *CommitsMap) Get(ctx context.Context, id graveler.CommitID) (*CommitNode, error) {
+	{
+		var fastRet CommitNode
+		_, err := kv.GetMsg(ctx, c.Store, commitsPartition, []byte(id), &fastRet)
+		if err == nil {
+			return &fastRet, nil
+		}
 	}
-	// Unlikely: id raced with initial bunch of Sets.
+	// Unlikely: commit ID was created during a race with the initial bunch of Sets.
 	commit, err := c.CommitGetter.Get(c.ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get missing commit ID %s: %w", id, err)
 	}
-	ret = c.Map.Put(MustToBinaryCommitID(id), nodeFromCommit(commit))
+	ret := nodeFromCommit(commit)
+	err = c.Set(ctx, id, ret)
+	if err != nil {
+		// Doubly unlikely, so fail the entire operation.
+		return nil, fmt.Errorf("fill missing commit ID %s into local cache: %w", id, err)
+	}
 	c.NumMisses++
 	createdAt := time.UnixMicro(ret.CreationUsecs)
 	c.Log.WithFields(logging.Fields{
@@ -110,14 +91,12 @@ func (c *CommitsMap) Get(id graveler.CommitID) (*CommitNode, error) {
 	return ret, nil
 }
 
-// GetMap returns the entire map of commits.  It is probably incorrect to
-// modify it.
-func (c *CommitsMap) GetMap() arena.Map[BinaryCommitID, CommitNode] {
-	return c.Map
+func (c *CommitsMap) Close() {
+	c.Store.Close()
 }
 
 // nodeFromCommit returns a new CommitNode for a Commit.
-func nodeFromCommit(commit *graveler.Commit) CommitNode {
+func nodeFromCommit(commit *graveler.Commit) *CommitNode {
 	var mainParent graveler.CommitID
 	if len(commit.Parents) > 0 {
 		// every branch retains only its main ancestry, acquired by recursively taking the first parent:
@@ -126,10 +105,10 @@ func nodeFromCommit(commit *graveler.Commit) CommitNode {
 			mainParent = commit.Parents[len(commit.Parents)-1]
 		}
 	}
-	return CommitNode{
+	return &CommitNode{
 		CreationUsecs: commit.CreationDate.UnixMicro(),
-		MainParent:    mainParent,
-		MetaRangeID:   commit.MetaRangeID,
+		MainParent:    string(mainParent),
+		MetaRangeID:   string(commit.MetaRangeID),
 	}
 }
 
@@ -142,10 +121,20 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	processed := make(map[graveler.CommitID]time.Time)
 	activeMap := make(map[graveler.CommitID]struct{})
 
-	commitsMap, err := NewCommitsMap(ctx, commitGetter)
+	// TODO(ariels): Re-use configurable path.
+	store, err := kv.Open(ctx, kvparams.Config{
+		Type:  local.DriverName,
+		Local: &kvparams.Local{Path: "gc.db"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("open commits map temp KV: %w", err)
+	}
+
+	commitsMap, err := NewCommitsMap(ctx, commitGetter, store)
 	if err != nil {
 		return nil, fmt.Errorf("initial read commits: %w", err)
 	}
+	defer commitsMap.Close()
 	// Observe NumMisses.  This should not be a metric unless we see it happen a _lot_.
 	defer func() {
 		logging.FromContext(ctx).
@@ -158,7 +147,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	for startingPointIterator.Next() {
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
-		commitNode, err := commitsMap.Get(startingPoint.CommitID)
+		commitNode, err := commitsMap.Get(ctx, startingPoint.CommitID)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %s", err, startingPoint.CommitID)
 		}
@@ -166,7 +155,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			// If the current commit is NOT a branch HEAD (a dangling commit) - add a hypothetical HEAD as its child
 			commitNode = &CommitNode{
 				CreationUsecs: commitNode.CreationUsecs,
-				MainParent:    startingPoint.CommitID,
+				MainParent:    string(startingPoint.CommitID),
 			}
 		} else {
 			// If the current commit IS a branch HEAD - fetch and retention rules for this branch and...
@@ -184,7 +173,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		}
 		// Start traversing the commit's ancestors (path):
 		for commitNode.MainParent != "" {
-			nextCommitID := commitNode.MainParent
+			nextCommitID := graveler.CommitID(commitNode.MainParent)
 			if previousThreshold, ok := processed[nextCommitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
 				// If the parent commit was already processed and its threshold was longer than the current threshold,
 				// i.e. the current threshold doesn't hold for it, stop processing it because the other path decision
@@ -199,7 +188,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				activeMap[nextCommitID] = struct{}{}
 			}
 			// Continue down the rabbit hole.
-			commitNode, err = commitsMap.Get(nextCommitID)
+			commitNode, err = commitsMap.Get(ctx, nextCommitID)
 			if err != nil {
 				return nil, fmt.Errorf("%w: %s", err, nextCommitID)
 			}
@@ -211,13 +200,17 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
-	return makeCommitMap(commitsMap.GetMap(), activeMap), nil
+	return makeCleanupMap(ctx, &commitsMap, activeMap)
 }
 
-func makeCommitMap(commitNodes arena.Map[BinaryCommitID, CommitNode], commitSet map[graveler.CommitID]struct{}) map[graveler.CommitID]graveler.MetaRangeID {
+func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[graveler.CommitID]struct{}) (map[graveler.CommitID]graveler.MetaRangeID, error) {
 	res := make(map[graveler.CommitID]graveler.MetaRangeID)
 	for commitID := range commitSet {
-		res[commitID] = commitNodes.Get(MustToBinaryCommitID(commitID)).MetaRangeID
+		commit, err := commitsMap.Get(ctx, commitID)
+		if err != nil {
+			return nil, err
+		}
+		res[commitID] = graveler.MetaRangeID(commit.MetaRangeID)
 	}
-	return res
+	return res, nil
 }
