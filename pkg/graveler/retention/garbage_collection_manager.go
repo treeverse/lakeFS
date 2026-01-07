@@ -197,8 +197,10 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		return "", err
 	}
 	for commitID, metarangeID := range gcCommits {
-		err := csvWriter.Write([]string{string(commitID), "false", string(metarangeID)})
-		if err != nil {
+		if err := metarangeID.Err; err != nil {
+			return "", err
+		}
+		if err := csvWriter.Write([]string{string(commitID), "false", string(metarangeID.ID)}); err != nil {
 			return "", err
 		}
 	}

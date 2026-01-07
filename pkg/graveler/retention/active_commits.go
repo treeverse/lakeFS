@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -112,10 +113,15 @@ func nodeFromCommit(commit *graveler.Commit) *CommitNode {
 	}
 }
 
+type MetaRangeIDOrError struct {
+	ID  graveler.MetaRangeID
+	Err error
+}
+
 // GetGarbageCollectionCommits returns the sets of active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
 // Upon completion, the given startingPointIterator is closed.
-func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (map[graveler.CommitID]graveler.MetaRangeID, error) {
+func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (iter.Seq2[graveler.CommitID, MetaRangeIDOrError], error) {
 	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	processed := make(map[graveler.CommitID]time.Time)
@@ -134,7 +140,12 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if err != nil {
 		return nil, fmt.Errorf("initial read commits: %w", err)
 	}
-	defer commitsMap.Close()
+	commitsMapOwned := true
+	defer func() {
+		if commitsMapOwned {
+			commitsMap.Close()
+		}
+	}()
 	// Observe NumMisses.  This should not be a metric unless we see it happen a _lot_.
 	defer func() {
 		logging.FromContext(ctx).
@@ -200,17 +211,21 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
-	return makeCleanupMap(ctx, &commitsMap, activeMap)
+	commitsMapOwned = false
+	return makeCleanupMap(ctx, &commitsMap, activeMap), nil
 }
 
-func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[graveler.CommitID]struct{}) (map[graveler.CommitID]graveler.MetaRangeID, error) {
-	res := make(map[graveler.CommitID]graveler.MetaRangeID)
-	for commitID := range commitSet {
-		commit, err := commitsMap.Get(ctx, commitID)
-		if err != nil {
-			return nil, err
+func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[graveler.CommitID]struct{}) iter.Seq2[graveler.CommitID, MetaRangeIDOrError] {
+	return func(yield func(graveler.CommitID, MetaRangeIDOrError) bool) {
+		defer commitsMap.Close()
+		for commitID := range commitSet {
+			commit, err := commitsMap.Get(ctx, commitID)
+			if err != nil {
+				yield(commitID, MetaRangeIDOrError{Err: err})
+				break
+			} else {
+				yield(commitID, MetaRangeIDOrError{ID: graveler.MetaRangeID(commit.MetaRangeID)})
+			}
 		}
-		res[commitID] = graveler.MetaRangeID(commit.MetaRangeID)
 	}
-	return res, nil
 }

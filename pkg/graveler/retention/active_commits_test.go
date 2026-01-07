@@ -383,7 +383,7 @@ func TestActiveCommits(t *testing.T) {
 
 			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
 
-			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
+			gcCommitsSeq, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
 				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, commitsWithHashedKeys)),
 				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetterAdapter{
 				RefManager: refManagerMock,
@@ -391,6 +391,13 @@ func TestActiveCommits(t *testing.T) {
 			}, garbageCollectionRules)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
+			}
+			gcCommits := make(map[graveler.CommitID]graveler.MetaRangeID)
+			for k, v := range gcCommitsSeq {
+				if v.Err != nil {
+					t.Errorf("%s: %s", k, v.Err)
+				}
+				gcCommits[k] = v.ID
 			}
 			validateMetaRangeIDs(t, gcCommits)
 			activeCommitIDs := testMapToCommitIDs(gcCommits)
