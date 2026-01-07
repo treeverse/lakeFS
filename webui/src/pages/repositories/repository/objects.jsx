@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { compareLexicographically } from "../../../lib/utils";
 import dayjs from 'dayjs';
 import { useOutletContext } from 'react-router-dom';
 import {
@@ -92,7 +93,7 @@ export async function appendMoreResults(resultsState, prefix, lastSeenPath, setL
 
     const { results, pagination } = await getMore();
     // Ensure concatenated results maintain lexicographic order
-    const concatenatedResults = resultsFiltered.concat(results).sort((a, b) => a.path.localeCompare(b.path));
+    const concatenatedResults = resultsFiltered.concat(results).sort((a, b) => compareLexicographically(a.path, b.path));
     setResultsState({ prefix: prefix, results: concatenatedResults, pagination: pagination });
     return { results: resultsState.results, pagination: pagination };
 }
@@ -1012,7 +1013,7 @@ const TreeContainer = ({
     if (showChangesOnly) {
         const rawChangesResults = resultsState.results.length > 0 ? resultsState.results : results || [];
         // Always sort changes lexicographically to maintain consistent ordering
-        const changesResults = rawChangesResults.sort((a, b) => a.path.localeCompare(b.path));
+        const changesResults = rawChangesResults.sort((a, b) => compareLexicographically(a.path, b.path));
 
         if (changesResults.length === 0) {
             return <EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />;

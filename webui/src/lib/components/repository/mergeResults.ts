@@ -1,5 +1,6 @@
 import { last } from 'lodash';
 import { ChangesData, DiffType, Entry, EntryWithDiff } from './types';
+import { compareLexicographically } from "../../utils";
 
 /**
  * Merges object listing results with changes data to highlight modified/added/removed items.
@@ -16,7 +17,7 @@ export function mergeResults(
 ): EntryWithDiff[] {
     if (showChangesOnly || !results || !changesData?.results) {
         // Ensure regular results are also sorted lexicographically
-        return results?.sort((a, b) => a.path.localeCompare(b.path)) ?? [];
+        return results?.sort((a, b) => compareLexicographically(a.path, b.path)) ?? [];
     }
 
     const changesMap = new Map<string, DiffType>();
@@ -83,5 +84,5 @@ export function mergeResults(
     ];
 
     // Sort to maintain proper order
-    return allResults?.sort((a, b) => a.path.localeCompare(b.path)) ?? [];
+    return allResults?.sort((a, b) => compareLexicographically(a.path, b.path)) ?? [];
 }
