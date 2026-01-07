@@ -1929,6 +1929,59 @@ lakectl gc set-config lakefs://my-repo -f config.json
 
 
 
+
+---------
+### lakectl gc check-async
+
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+
+Check status of (async) PrepareGarbageCollectionCommits
+
+```
+lakectl gc check-async <repository URI> [flags]
+```
+
+<h4>Examples</h4>
+
+```
+lakectl gc check-async --id <ID> lakefs://my-repo
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help        help for check-async
+      --id string   ID returned from "gc prepare-async"
+```
+
+
+
+### lakectl gc prepare-async
+
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+
+Runs (async) PrepareGarbageCollectionCommits on the repository
+
+```
+lakectl gc prepare-async <repository URI> [flags]
+```
+
+<h4>Examples</h4>
+
+```
+lakectl gc prepare-async lakefs://my-repo
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for prepare-async
+```
+
+
+
 ### lakectl help
 
 Help about any command
