@@ -34,7 +34,7 @@ _Hooks_ can be either a [Lua](../howto/hooks/lua.md) script that lakeFS will exe
       - id: check_metadata
         type: lua
         properties:
-        script: |
+          script: |
             commit_message=action.commit.message
             if commit_message and #commit_message>0 then
                 print("✅ The commit message exists and is not empty: " .. commit_message)
