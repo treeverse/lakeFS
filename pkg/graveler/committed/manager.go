@@ -369,6 +369,12 @@ func (c *committedManager) Compare(ctx context.Context, storageID graveler.Stora
 	if err != nil {
 		return nil, fmt.Errorf("diff: %w", err)
 	}
+	// When source equals base (i.e., comparing with an ancestor), the three-way compare
+	// would filter out all changes that were "added on destination". In this case, we
+	// should return the raw diff to show all differences from the ancestor.
+	if source == base {
+		return diffIt, nil
+	}
 	metaRangeManager, err := c.getMetaRangeManager(storageID)
 	if err != nil {
 		return nil, err
