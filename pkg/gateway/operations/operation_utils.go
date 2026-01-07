@@ -4,19 +4,57 @@ import (
 	"errors"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const amzMetaHeaderPrefix = "X-Amz-Meta-"
+const (
+	amzMetaHeaderPrefix  = "X-Amz-Meta-"
+	amzMissingMetaHeader = "X-Amz-Missing-Meta"
+)
 
 var (
 	rfc2047Decoder = new(mime.WordDecoder)
 )
+
+// isValidMetadataKey checks if a metadata key can be sent as an HTTP header name
+// Valid characters match S3 behavior for HTTP headers:
+// - Letters: 'A'-'Z', 'a'-'z'
+// - Digits: '0'-'9'
+// - Special characters: '-', '_', '.', '#'
+func isValidMetadataKey(key string) bool {
+	// Empty keys are invalid
+	if len(key) == 0 {
+		return false
+	}
+
+	for _, r := range key {
+		// Only allow ASCII characters
+		if r > unicode.MaxASCII {
+			return false
+		}
+
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			continue
+		}
+
+		// Allow specific special characters that S3 accepts
+		if r == '-' || r == '_' || r == '.' || r == '#' {
+			continue
+		}
+
+		// Reject all other characters
+		return false
+	}
+
+	return true
+}
 
 // amzMetaAsMetadata prepare metadata based on amazon user metadata request headers
 func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
@@ -29,7 +67,14 @@ func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
 				err = errors.Join(err, decodeErr)
 				continue
 			}
-			metadata[k] = value
+			// Extract the metadata key part after the prefix and lowercase it
+			// to comply with S3 spec: "Amazon S3 stores user-defined metadata keys in lowercase"
+			keyPart := strings.TrimPrefix(k, amzMetaHeaderPrefix)
+			keyPart = strings.ToLower(keyPart)
+			// Validate the key part - only store valid metadata keys
+			if isValidMetadataKey(keyPart) {
+				metadata[amzMetaHeaderPrefix+keyPart] = value
+			}
 		}
 	}
 	return metadata, err
@@ -38,10 +83,21 @@ func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
 // amzMetaWriteHeaders set amazon user metadata on http response
 func amzMetaWriteHeaders(w http.ResponseWriter, metadata catalog.Metadata) {
 	h := w.Header()
+	missingCount := 0
+
 	for k, v := range metadata {
-		if strings.HasPrefix(k, amzMetaHeaderPrefix) {
-			h.Set(k, mime.QEncoding.Encode("utf-8", v))
+		if keyPart, ok := strings.CutPrefix(k, amzMetaHeaderPrefix); ok {
+			if isValidMetadataKey(keyPart) {
+				h.Set(k, mime.QEncoding.Encode("utf-8", v))
+			} else {
+				missingCount++
+			}
 		}
+	}
+
+	// Set the missing meta header if any keys were skipped
+	if missingCount > 0 {
+		h.Set(amzMissingMetaHeader, strconv.Itoa(missingCount))
 	}
 }
 
