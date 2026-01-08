@@ -1,12 +1,9 @@
 package esti
 
 import (
-	"context"
 	"net/http"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
