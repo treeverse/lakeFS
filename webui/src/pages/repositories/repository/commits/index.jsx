@@ -178,6 +178,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     const [selectedCommits, setSelectedCommits] = useState(new Set());
     const [commitTagsMap, setCommitTagsMap] = useState(new Map());
     const [tagsLimitExceeded, setTagsLimitExceeded] = useState(false);
+    const [tagsError, setTagsError] = useState(null);
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return commits.log(repo.id, reference.id, after);
@@ -188,6 +189,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
         try {
             const { tags: allTags, limitExceeded } = await fetchAllTags(repo.id);
             setTagsLimitExceeded(limitExceeded);
+            setTagsError(null);
             if (limitExceeded) {
                 setCommitTagsMap(new Map());
             } else {
@@ -198,6 +200,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
             console.error('Failed to load tags:', err);
             setCommitTagsMap(new Map());
             setTagsLimitExceeded(false);
+            setTagsError(err);
         }
     }, [repo.id]);
 
@@ -269,6 +272,8 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                     />
                 </ActionGroup>
             </ActionsBar>
+
+            {tagsError && <AlertError error={tagsError} onDismiss={() => setTagsError(null)} className="mt-3" />}
 
             {tagsLimitExceeded && (
                 <OverlayTrigger
