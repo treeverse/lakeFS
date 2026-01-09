@@ -1,0 +1,111 @@
+name: Test External PR
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'External PR number to test'
+        required: true
+        type: number
+
+jobs:
+  create-test-pr:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch and push PR to temp branch
+        run: |
+          # Fetch the PR
+          gh pr checkout ${{ inputs.pr_number }}
+
+          # Create temp branch name
+          BRANCH_NAME="ci-test/pr-${{ inputs.pr_number }}"
+
+          # Push to temp branch
+          git checkout -b "$BRANCH_NAME"
+          git push -f origin "$BRANCH_NAME"
+
+          echo "TEMP_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Create PR for CI testing
+        id: create-pr
+        run: |
+          # Get original PR details
+          PR_TITLE=$(gh pr view ${{ inputs.pr_number }} --json title -q .title)
+          PR_AUTHOR=$(gh pr view ${{ inputs.pr_number }} --json author -q .author.login)
+
+          # Create PR (which triggers all PR workflows)
+          TEST_PR_URL=$(gh pr create \
+            --base master \
+            --head "$BRANCH_NAME" \
+            --title "[CI Test] PR #${{ inputs.pr_number }}: $PR_TITLE" \
+            --body "🤖 Automated CI test for external PR #${{ inputs.pr_number }} from @$PR_AUTHOR
+
+            This PR will be automatically closed after CI completes.")
+
+          TEST_PR_NUMBER=$(echo "$TEST_PR_URL" | grep -oE '[0-9]+$')
+          echo "TEST_PR_NUMBER=$TEST_PR_NUMBER" >> $GITHUB_ENV
+          echo "test_pr_number=$TEST_PR_NUMBER" >> $GITHUB_OUTPUT
+
+          # Comment on original PR
+          gh pr comment ${{ inputs.pr_number }} \
+            --body "🤖 CI tests running at $TEST_PR_URL"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Wait for CI checks to complete
+        run: |
+          echo "Waiting for CI checks to complete on PR #$TEST_PR_NUMBER..."
+
+          # Poll every 30 seconds for up to 30 minutes
+          for i in {1..60}; do
+            # Get check status
+            STATUS=$(gh pr checks $TEST_PR_NUMBER --json state -q '.[].state' | sort -u)
+
+            # Check if all are completed
+            if ! echo "$STATUS" | grep -qE 'PENDING|QUEUED|IN_PROGRESS'; then
+              echo "All checks completed!"
+              break
+            fi
+
+            echo "Checks still running... (attempt $i/60)"
+            sleep 30
+          done
+
+          # Get final results
+          gh pr checks $TEST_PR_NUMBER
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Report results and cleanup
+        if: always()
+        run: |
+          # Get check results
+          CHECKS_PASSED=$(gh pr checks $TEST_PR_NUMBER --json state -q 'all(.[]; .state == "SUCCESS")')
+
+          if [ "$CHECKS_PASSED" = "true" ]; then
+            RESULT="✅ All CI checks passed!"
+            EMOJI="✅"
+          else
+            RESULT="❌ Some CI checks failed. Review the test PR for details."
+            EMOJI="❌"
+          fi
+
+          # Comment on original PR
+          gh pr comment ${{ inputs.pr_number }} \
+            --body "$RESULT
+
+            View full results: https://github.com/${{ github.repository }}/pull/$TEST_PR_NUMBER"
+
+          # Close the test PR
+          gh pr close $TEST_PR_NUMBER --comment "CI testing complete. Results posted to original PR #${{ inputs.pr_number }}."
+
+          # Delete the temp branch
+          git push origin --delete "$TEMP_BRANCH"
+
+          echo "$RESULT"
+        env:
+          GH_TOKEN: ${{ github.token }}
