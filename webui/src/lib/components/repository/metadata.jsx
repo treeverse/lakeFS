@@ -85,7 +85,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
                 );
             })}
             <Button onClick={onAddKeyValue} size="sm" variant="secondary">
-                <PlusIcon /> Add Metadata field
+                <PlusIcon /> Add a new Metadata field
             </Button>
         </div>
     );
