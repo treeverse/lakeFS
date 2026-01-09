@@ -6,7 +6,7 @@ import (
 	"io"
 	"maps"
 	"os"
-	"reflect"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -77,9 +77,10 @@ type Fields map[string]any
 
 // logCallerTrimmer is used to trim the caller paths to be relative to the project root
 func logCallerTrimmer(frame *runtime.Frame) (function string, file string) {
-	indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
-	if indexOfModule != -1 {
-		file = frame.File[indexOfModule+len(ProjectDirectoryName):]
+	r := regexp.MustCompile(fmt.Sprintf(`.*/([^/]*%s[^/]*)/.*`, ProjectDirectoryName))
+	matches := r.FindStringSubmatch(strings.ToLower(frame.File))
+	if len(matches) > 1 {
+		file = matches[1]
 	} else {
 		file = frame.File
 	}
