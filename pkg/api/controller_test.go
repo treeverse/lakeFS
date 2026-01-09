@@ -5542,6 +5542,80 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		verifyResponseOK(t, statResp, err)
 		require.Equal(t, absolutePhysicalAddress, statResp.JSON200.PhysicalAddress)
 	})
+
+	t.Run("old_object_beyond_grace_period", func(t *testing.T) {
+		const (
+			srcPath  = "foo/old-object"
+			destPath = "foo/copied-old-object"
+		)
+		// Test copying an object whose last-modified time is beyond the grace period (5 hours).
+		// In this case, CopyObject should perform a full copy to a new physical address
+		// instead of cloning (reusing the same physical address).
+
+		const content = "old content that needs to be copied not cloned"
+
+		// Upload content using get a physical address, upload data and link the physical address with an old mtime (24 hours ago)
+		getAddrResp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{
+			Path: srcPath,
+		})
+		verifyResponseOK(t, getAddrResp, err)
+		require.NotNil(t, getAddrResp.JSON200)
+		physicalAddress := apiutil.Value(getAddrResp.JSON200.PhysicalAddress)
+
+		repoInfo, err := deps.catalog.GetRepository(ctx, repo)
+		require.NoError(t, err)
+
+		uploadObj := block.ObjectPointer{
+			StorageID:        repoInfo.StorageID,
+			StorageNamespace: repoInfo.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       strings.TrimPrefix(physicalAddress, repoInfo.StorageNamespace+"/"),
+		}
+
+		_, err = deps.blocks.Put(ctx, uploadObj, int64(len(content)), strings.NewReader(content), block.PutOpts{})
+		require.NoError(t, err)
+
+		oldMtime := time.Now().Add(-24 * time.Hour)
+		stageResp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: srcPath,
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "test-checksum-old",
+			SizeBytes: int64(len(content)),
+			Mtime:     swag.Int64(oldMtime.Unix()),
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: &physicalAddress,
+			},
+		})
+		verifyResponseOK(t, stageResp, err)
+		require.NotNil(t, stageResp.JSON200)
+		srcPhysicalAddr := stageResp.JSON200.PhysicalAddress
+
+		// Copy the object
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		// Verify the object was copied to a new physical address (not cloned)
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.Equal(t, destPath, copyStat.Path)
+		require.NotEmpty(t, copyStat.PhysicalAddress, "copied object should have a physical address")
+		require.NotEqual(t, srcPhysicalAddr, copyStat.PhysicalAddress,
+			"copied object should have a different physical address than source when beyond grace period")
+
+		require.Equal(t, stageResp.JSON200.Checksum, copyStat.Checksum, "checksum should be preserved")
+		require.Equal(t, int64(len(content)), apiutil.Value(copyStat.SizeBytes), "size should be preserved")
+
+		// Verify stat object returns the copied object
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.NotNil(t, statResp.JSON200)
+		require.Equal(t, destPath, statResp.JSON200.Path)
+		require.Equal(t, copyStat.PhysicalAddress, statResp.JSON200.PhysicalAddress)
+	})
 }
 
 func TestController_LocalAdapter_StageObject(t *testing.T) {
