@@ -65,6 +65,7 @@ const (
 	DeleteUserExternalPrincipalAction         = "auth:DeleteUserExternalPrincipal"
 	ReadExternalPrincipalAction               = "auth:ReadExternalPrincipal"
 	ReadActionsAction                         = "ci:ReadAction"
+	TriggerActionsAction                      = "ci:TriggerAction"
 	PrepareGarbageCollectionCommitsAction     = "retention:PrepareGarbageCollectionCommits"
 	GetGarbageCollectionRulesAction           = "retention:GetGarbageCollectionRules"
 	SetGarbageCollectionRulesAction           = "retention:SetGarbageCollectionRules"
