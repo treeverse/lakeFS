@@ -32,7 +32,7 @@ import { useRouter } from '../../../../lib/hooks/router';
 import { RepoError } from '../error';
 import { RefTypeBranch } from '../../../../constants';
 
-const MAX_TAG_PAGES = 3;
+const MAX_TAG_PAGES = 3; // Limit number of calls to have responsive UI and not overload the server with calls
 const MAX_TAGS_FOR_DISPLAY = MAX_TAG_PAGES * MAX_LISTING_AMOUNT;
 
 // Fetch all tags up to MAX_TAG_PAGES pages
@@ -109,7 +109,7 @@ const CommitWidget = ({
                                         query: { ref: tagName },
                                     }}
                                 >
-                                    <Badge bg="warning" text="dark" className="ms-2">
+                                    <Badge bg="secondary" className="ms-2">
                                         <TagIcon size={12} className="me-1" />
                                         {tagName}
                                     </Badge>
@@ -190,23 +190,19 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
             const { tags: allTags, limitExceeded } = await fetchAllTags(repo.id);
             setTagsLimitExceeded(limitExceeded);
             setTagsError(null);
-            if (limitExceeded) {
-                setCommitTagsMap(new Map());
-            } else {
-                setCommitTagsMap(buildCommitTagsMap(allTags));
-            }
+            const tagsMap = limitExceeded ? new Map() : buildCommitTagsMap(allTags);
+            setCommitTagsMap(tagsMap);
         } catch (err) {
             // On error, just don't show tags
-            console.error('Failed to load tags:', err);
             setCommitTagsMap(new Map());
             setTagsLimitExceeded(false);
             setTagsError(err);
         }
-    }, [repo.id]);
+    }, [repo.id, refresh]);
 
     useEffect(() => {
         loadTags();
-    }, [loadTags, refresh]);
+    }, [loadTags]);
 
     const toggleCommitSelection = (commitId) => {
         const newSelected = new Set(selectedCommits);
