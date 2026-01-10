@@ -178,6 +178,23 @@ func CreateDump(ctx context.Context, store Store, sections []string) (*DumpForma
 	return dump, nil
 }
 
+// CreateDumpWithPartitions creates a dump with specific partitions
+func CreateDumpWithPartitions(ctx context.Context, store Store, partitions []string) (*DumpFormat, error) {
+	dumper := NewDumper(store)
+	entries, err := dumper.DumpPartitions(ctx, partitions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dump partitions: %w", err)
+	}
+
+	dump := &DumpFormat{
+		Version:   "1.0",
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Entries:   entries,
+	}
+
+	return dump, nil
+}
+
 // LoadDump loads data from a dump into the KV store
 func LoadDump(ctx context.Context, store Store, dump *DumpFormat, sectionsToLoad []string, strategy LoadStrategy) error {
 	if dump.Version != "1.0" {
