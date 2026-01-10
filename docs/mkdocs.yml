@@ -50,6 +50,8 @@ extra:
   palette:
     primary: white
     accent: teal
+  features:
+    enable_ask_ai: !ENV [ENABLE_ASK_AI, true]
 
 # Markdown settings
 markdown_extensions:

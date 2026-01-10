@@ -50,6 +50,9 @@
           {% include ".icons/" ~ icon ~ ".svg" %}
         </label>
         {% include "partials/slack.html" %}
+        {% if config.extra.features and config.extra.features.enable_ask_ai %}
+          {% include "partials/ask-ai.html" %}
+        {% endif %}
         {% include "partials/search.html" %}
       {% endif %}
     {% endif %}
