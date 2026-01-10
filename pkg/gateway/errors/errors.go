@@ -669,8 +669,8 @@ var Codes = errorCodeMap{
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrMetadataTooLarge: {
-		Code:           "InvalidArgument",
-		Description:    "Your metadata headers exceed the maximum allowed metadata size.",
+		Code:           "MetadataTooLarge",
+		Description:    "Your metadata headers exceed the maximum allowed metadata size",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidEncryptionMethod: {
