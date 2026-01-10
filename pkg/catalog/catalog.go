@@ -2983,9 +2983,9 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 }
 
 // cloneEntry clones entry information without copying the underlying object in the object store, so the physical address remains the same.
-// clone can only clone within the same repository and branch.
-// It is limited to our grace-time from the object creation, in order to prevent GC from deleting the object.
-// ErrCannotClone error is returned if clone conditions are not met.
+// It may only clone within the same repository and is bound by the grace time from the object's creation—this ensures the GC does
+// not delete the underlying object.
+// ErrCannotClone is returned if any of the clone conditions are not satisfied.
 func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry *DBEntry, destRepository, destBranch, destPath string,
 	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
 ) (*DBEntry, error) {
@@ -2994,25 +2994,31 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry 
 		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
 	}
 
-	// we verify the metadata creation date is within the grace period
-	if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
-		return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
-	}
+	// An entry’s metadata can be cloned repeatedly, so we must verify that the
+	// entry’s grace‑period timestamp still precedes the actual object's
+	// last‑modified time—exactly the check performed by the garbage collector.
+	// Objects that are not part of the storage namespace (e.g., imported objects)
+	// are exempt from this validation, mirroring the GC’s behavior.
+	if srcEntry.AddressType == AddressTypeRelative || strings.HasPrefix(srcEntry.PhysicalAddress, srcRepo.StorageNamespace) {
+		// verify the metadata creation date is within the grace period
+		if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
+			return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
+		}
 
-	// entry information can be cloned over and over,
-	// so we also need to verify the grace period against the actual object last-modified time
-	srcObject := block.ObjectPointer{
-		StorageID:        srcRepo.StorageID,
-		StorageNamespace: srcRepo.StorageNamespace,
-		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
-		Identifier:       srcEntry.PhysicalAddress,
-	}
-	props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
-	if err != nil {
-		return nil, err
-	}
-	if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
-		return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+		// verify the actual object last-modified is within the grace period
+		srcObject := block.ObjectPointer{
+			StorageID:        srcRepo.StorageID,
+			StorageNamespace: srcRepo.StorageNamespace,
+			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+			Identifier:       srcEntry.PhysicalAddress,
+		}
+		props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
+		if err != nil {
+			return nil, err
+		}
+		if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
+			return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+		}
 	}
 
 	// copy the metadata into a new entry
