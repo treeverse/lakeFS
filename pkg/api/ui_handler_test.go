@@ -60,7 +60,7 @@ func TestNewUIHandler_GatewayError(t *testing.T) {
 	if err != nil {
 		t.Fatal("Message unmarshal failed:", err)
 	}
-	const expectedErrorCode = "ERRLakeFSWrongEndpoint"
+	const expectedErrorCode = "ErrLakeFSWrongEndpoint"
 	if errMsg.Code != expectedErrorCode {
 		t.Fatalf("Invalid XML Code '%s', expected '%s' - response body '%s'",
 			errMsg.Code, expectedErrorCode, rr.Body.String())

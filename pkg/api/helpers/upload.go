@@ -190,7 +190,7 @@ func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStat
 	g, grpCtx := errgroup.WithContext(context.Background())
 	g.SetLimit(u.uploader.Concurrency)
 
-	for i := 0; i < u.numParts; i++ {
+	for i := range u.numParts {
 		g.Go(func() error {
 			etag, err := u.uploadPart(grpCtx, parts[i].Reader, parts[i].URL)
 			if err != nil {

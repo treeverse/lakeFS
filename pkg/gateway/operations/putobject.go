@@ -145,13 +145,13 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	partNumberStr := query.Get(QueryParamPartNumber)
 
 	var partNumber int
-	if n, err := strconv.ParseInt(partNumberStr, 10, 32); err != nil { //nolint: mnd
+	n, err := strconv.ParseInt(partNumberStr, 10, 32) //nolint: mnd
+	if err != nil {
 		o.Log(req).WithError(err).Error("invalid part number")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidPartNumberMarker))
 		return
-	} else {
-		partNumber = int(n)
 	}
+	partNumber = int(n)
 
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
 		logging.PartNumberFieldKey: partNumber,
@@ -311,7 +311,7 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 
 	if query.Has("tagging") {
 		o.Log(req).Debug("put-object-tagging isn't supported yet")
-		o.EncodeError(w, req, nil, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ERRLakeFSNotSupported))
+		o.EncodeError(w, req, nil, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrLakeFSNotSupported))
 		return
 	}
 

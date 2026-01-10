@@ -3,7 +3,6 @@ package testutil
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -47,7 +46,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
-	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
+	viper.SetDefault("storage_namespace", "s3://"+params.StorageNS)
 	viper.SetDefault(config.BlockstoreTypeKey, block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	currDir, err := os.Getwd()
@@ -69,7 +68,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 
 	// initialize the env/repo
 	logger = logging.ContextUnavailable()
-	logger.WithField("settings", viper.AllSettings()).Info(fmt.Sprintf("Starting %s", params.Name))
+	logger.WithField("settings", viper.AllSettings()).Info("Starting " + params.Name)
 
 	endpointURL := ParseEndpointURL(logger, viper.GetString("endpoint_url"))
 

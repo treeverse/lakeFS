@@ -59,7 +59,7 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	resource, err := pool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
-		fmt.Sprintf("POSTGRES_DB=%s", DBName),
+		"POSTGRES_DB=" + DBName,
 	})
 	if err != nil {
 		log.Fatalf("Could not start postgresql: %s", err)

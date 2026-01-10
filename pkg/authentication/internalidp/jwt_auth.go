@@ -2,7 +2,6 @@ package internalidp
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -47,7 +46,7 @@ func NewJWTClientInterceptor(logger logging.Logger, client LoginClient) apigen.R
 		if err != nil {
 			return err
 		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("Authorization", "Bearer "+token)
 		return nil
 	}
 }

@@ -21,8 +21,8 @@ type MockAdapter struct {
 }
 
 var (
-	errorGetPropertiesNotImplemented = errors.New("getProperties method not implemented in mock adapter")
-	errorCopyNotImplemented          = errors.New("copy method not implemented in mock adapter")
+	errGetPropertiesNotImplemented = errors.New("getProperties method not implemented in mock adapter")
+	errCopyNotImplemented          = errors.New("copy method not implemented in mock adapter")
 )
 
 type MockAdapterOption func(a *MockAdapter)
@@ -88,11 +88,11 @@ func (a *MockAdapter) GetRange(_ context.Context, _ block.ObjectPointer, _ int64
 }
 
 func (a *MockAdapter) GetProperties(_ context.Context, _ block.ObjectPointer) (block.Properties, error) {
-	return block.Properties{}, errorGetPropertiesNotImplemented
+	return block.Properties{}, errGetPropertiesNotImplemented
 }
 
 func (a *MockAdapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
-	return errorCopyNotImplemented
+	return errCopyNotImplemented
 }
 
 func (a *MockAdapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
@@ -149,9 +149,8 @@ func (a *MockAdapter) ResolveNamespace(_, storageNamespace, key string, identifi
 func (a *MockAdapter) GetRegion(_ context.Context, _, _ string) (string, error) {
 	if a.namespaceRegion != nil {
 		return *a.namespaceRegion, nil
-	} else {
-		return "", block.ErrOperationNotSupported
 	}
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *MockAdapter) RuntimeStats() map[string]string {

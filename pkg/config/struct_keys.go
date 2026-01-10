@@ -29,7 +29,7 @@ func appendStructKeys(typ reflect.Type, tag, squashValue string, prefix []string
 		return append(keys, strings.Join(prefix, sep))
 	}
 
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		fieldType := typ.Field(i)
 		var (
 			// fieldName is the name to use for the field.
@@ -105,7 +105,7 @@ func appendStructKeysIfZero(value reflect.Value, tag, squashValue, validateTag, 
 		return keys
 	}
 
-	for i := 0; i < value.NumField(); i++ {
+	for i := range value.NumField() {
 		fieldType := value.Type().Field(i)
 		fieldValue := value.Field(i)
 

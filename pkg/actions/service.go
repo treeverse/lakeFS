@@ -370,7 +370,7 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 				if task.Err != nil {
 					_, _ = fmt.Fprintf(&buf, "Error: %s\n", task.Err)
 					// wrap error with more information
-					if _, ok := task.Err.(hook.ErrHookFailure); ok {
+					if _, ok := task.Err.(hook.HookFailureError); ok {
 						task.Err = fmt.Errorf("%s: %w", task.HookID, task.Err)
 					} else {
 						task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",

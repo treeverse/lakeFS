@@ -628,7 +628,7 @@ func DecoderConfig() viper.DecoderConfigOption {
 
 func stringReverse(s string) string {
 	chars := []rune(s)
-	for i := 0; i < len(chars)/2; i++ {
+	for i := range len(chars) / 2 {
 		j := len(chars) - 1 - i
 		chars[i], chars[j] = chars[j], chars[i]
 	}
@@ -646,7 +646,7 @@ func (c *BaseConfig) ValidateDomainNames() error {
 	for i, d := range domainNames {
 		domainNames[i] = stringReverse(d)
 	}
-	for i := 0; i < len(domainNames)-1; i++ {
+	for i := range len(domainNames) - 1 {
 		if strings.HasSuffix(domainNames[i+1], "."+domainNames[i]) {
 			return fmt.Errorf("%w: %s, %s", ErrBadDomainNames, domainNames[i], domainNames[i+1])
 		}

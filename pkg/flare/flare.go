@@ -4,6 +4,7 @@ package flare
 
 import (
 	"crypto/sha512"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -60,7 +61,7 @@ type Flare struct {
 func defaultSecretReplacer(value string) string {
 	hasher := sha512.New()
 	hasher.Write([]byte(value))
-	return fmt.Sprintf("%x", hasher.Sum(nil))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 type Option func(*Flare)

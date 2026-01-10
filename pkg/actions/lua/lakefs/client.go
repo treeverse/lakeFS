@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -147,7 +146,7 @@ func diffRefs(l *lua.State, ctx context.Context, user *model.User, server *http.
 		q.Add("delimiter", lua.CheckString(l, 6))
 	}
 	if !l.IsNone(7) {
-		q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 7)))
+		q.Add("amount", strconv.Itoa(lua.CheckInteger(l, 7)))
 	}
 	req.URL.RawQuery = q.Encode()
 	return getLakeFSJSONResponse(l, server, req)
@@ -173,7 +172,7 @@ func listObjects(l *lua.State, ctx context.Context, user *model.User, server *ht
 		q.Add("delimiter", lua.CheckString(l, 5))
 	}
 	if !l.IsNone(6) {
-		q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 6)))
+		q.Add("amount", strconv.Itoa(lua.CheckInteger(l, 6)))
 	}
 	if !l.IsNone(7) {
 		withUserMetadata := "false"
@@ -242,7 +241,7 @@ func diffBranch(l *lua.State, ctx context.Context, user *model.User, server *htt
 		q.Add("after", lua.CheckString(l, 3))
 	}
 	if !l.IsNone(4) {
-		q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 4)))
+		q.Add("amount", strconv.Itoa(lua.CheckInteger(l, 4)))
 	}
 	if !l.IsNone(5) {
 		q.Add("prefix", lua.CheckString(l, 5))

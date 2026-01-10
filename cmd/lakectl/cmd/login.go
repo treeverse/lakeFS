@@ -152,7 +152,7 @@ var loginCmd = &cobra.Command{
 		Write(webLoginTemplate, webLoginParams{RedirectURL: redirectURL.String()})
 		err = open.Run(redirectURL.String())
 		if err != nil {
-			Warning(fmt.Sprintf("Failed to open URL: %s", err.Error()))
+			Warning("Failed to open URL: " + err.Error())
 			// Keep going, user can manually use the URL.
 		}
 

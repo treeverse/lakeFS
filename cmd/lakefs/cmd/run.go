@@ -155,7 +155,7 @@ var runCmd = &cobra.Command{
 		}
 		if !blockstoreMetadata.IsProductionSafe {
 			blockstoreType := blockStore.BlockstoreType()
-			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
+			printLocalWarning(os.Stderr, "blockstore type "+blockstoreType)
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 

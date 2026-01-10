@@ -211,7 +211,7 @@ func generateAdvisoryLockID(name string) (string, error) {
 	if _, err := h.Write([]byte(name)); err != nil {
 		return "", err
 	}
-	aid := fmt.Sprint(h.Sum32())
+	aid := strconv.FormatUint(uint64(h.Sum32()), 10)
 	return aid, nil
 }
 

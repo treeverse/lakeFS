@@ -37,7 +37,7 @@ var branchRevertCmd = &cobra.Command{
 			Die("parent number must be number greater than 0, if specified", 1)
 		}
 		commits := strings.Join(args[1:], " ")
-		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commits %s", commits))
+		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to revert the effect of commits "+commits)
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}

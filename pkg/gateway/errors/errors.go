@@ -45,12 +45,14 @@ type APIErrorResponse struct {
 	HostID     string `xml:"HostId" json:"HostId"`
 }
 
-// APIErrorCode type of error status.
-type APIErrorCode int
+// S3ErrorCode type of error status.
+//
+//nolint:errname
+type S3ErrorCode int
 
 // Error codes, non exhaustive list - https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
 const (
-	ErrNone APIErrorCode = iota
+	ErrNone S3ErrorCode = iota
 	ErrAccessDenied
 	ErrBadDigest
 	ErrEntityTooSmall
@@ -173,15 +175,15 @@ const (
 	ErrContentSHA256Mismatch
 
 	// Lakefs errors
-	ERRLakeFSNotSupported
-	ERRLakeFSWrongEndpoint
+	ErrLakeFSNotSupported
+	ErrLakeFSWrongEndpoint
 	ErrWriteToProtectedBranch
 	ErrReadOnlyRepository
 )
 
-type errorCodeMap map[APIErrorCode]APIError
+type errorCodeMap map[S3ErrorCode]APIError
 
-func (e errorCodeMap) ToAPIErr(errCode APIErrorCode) APIError {
+func (e errorCodeMap) ToAPIErr(errCode S3ErrorCode) APIError {
 	apiErr, ok := e[errCode]
 	if !ok {
 		return e[ErrInternalError]
@@ -189,17 +191,17 @@ func (e errorCodeMap) ToAPIErr(errCode APIErrorCode) APIError {
 	return apiErr
 }
 
-func (e errorCodeMap) ToAPIErrWithInternalError(errCode APIErrorCode, err error) APIError {
+func (e errorCodeMap) ToAPIErrWithInternalError(errCode S3ErrorCode, err error) APIError {
 	apiErr := e.ToAPIErr(errCode)
 	apiErr.Description = err.Error()
 	return apiErr
 }
 
-func (a APIErrorCode) Error() string {
+func (a S3ErrorCode) Error() string {
 	return Codes.ToAPIErr(a).Code
 }
 
-func (a APIErrorCode) ToAPIErr() APIError {
+func (a S3ErrorCode) ToAPIErr() APIError {
 	return Codes.ToAPIErr(a)
 }
 
@@ -772,13 +774,11 @@ var Codes = errorCodeMap{
 	},
 
 	// LakeFS errors
-	ERRLakeFSNotSupported: {
-		Code:           "ERRLakeFSNotSupported",
-		Description:    "This operation is not supported in LakeFS",
-		HTTPStatusCode: http.StatusMethodNotAllowed,
+	ErrLakeFSNotSupported: {
+		Code: "ErrLakeFSNotSupported",
 	},
-	ERRLakeFSWrongEndpoint: {
-		Code:           "ERRLakeFSWrongEndpoint",
+	ErrLakeFSWrongEndpoint: {
+		Code:           "ErrLakeFSWrongEndpoint",
 		Description:    "S3 request received in UI handler, did you forget to set your s3 gateway domain name?",
 		HTTPStatusCode: http.StatusNotFound,
 	},

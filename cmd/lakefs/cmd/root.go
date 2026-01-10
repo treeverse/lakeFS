@@ -83,7 +83,7 @@ func newConfig() (config.Config, error) {
 		} else if res {
 			configName = flagName
 			// Print a warning for using local configuration
-			printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", configName))
+			printLocalWarning(os.Stderr, configName+" parameters configuration")
 			break
 		}
 	}

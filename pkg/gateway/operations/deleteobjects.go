@@ -31,7 +31,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 	// verify we only handle delete request
 	query := req.URL.Query()
 	if !query.Has("delete") {
-		_ = o.EncodeError(w, req, nil, gerrors.ERRLakeFSNotSupported.ToAPIErr())
+		_ = o.EncodeError(w, req, nil, gerrors.ErrLakeFSNotSupported.ToAPIErr())
 		return
 	}
 	o.Incr("delete_objects", o.Principal, o.Repository.Name, "")
@@ -172,14 +172,14 @@ func checkForDeleteError(log logging.Logger, key string, err error) *serde.Delet
 		return &serde.DeleteError{
 			Code:    apiErr.Code,
 			Key:     key,
-			Message: fmt.Sprintf("error deleting object: %s", apiErr.Description),
+			Message: "error deleting object: " + apiErr.Description,
 		}
 	case errors.Is(err, graveler.ErrReadOnlyRepository):
 		apiErr := gerrors.Codes.ToAPIErr(gerrors.ErrReadOnlyRepository)
 		return &serde.DeleteError{
 			Code:    apiErr.Code,
 			Key:     key,
-			Message: fmt.Sprintf("error deleting object: %s", apiErr.Description),
+			Message: "error deleting object: " + apiErr.Description,
 		}
 	case errors.Is(err, catalog.ErrPathRequiredValue):
 		// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706

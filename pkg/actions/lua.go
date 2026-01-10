@@ -37,11 +37,10 @@ type LuaHook struct {
 
 func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRecord) {
 	parents := make([]string, len(record.Commit.Parents))
-	for i := 0; i < len(record.Commit.Parents); i++ {
-		parents[i] = string(record.Commit.Parents[i])
+	for i, parent := range record.Commit.Parents {
+		parents[i] = string(parent)
 	}
-	metadata := make(map[string]string, len(record.Commit.Metadata))
-	maps.Copy(metadata, record.Commit.Metadata)
+	metadata := maps.Clone(record.Commit.Metadata)
 	luautil.DeepPush(l, map[string]any{
 		"action_name":       actionName,
 		"hook_id":           hookID,

@@ -36,13 +36,13 @@ var branchResetCmd = &cobra.Command{
 		var confirmationMsg string
 		switch {
 		case len(prefix) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes from path: %s", prefix)
+			confirmationMsg = "Are you sure you want to reset all uncommitted changes from path: " + prefix
 			reset = apigen.ResetCreation{
 				Path: &prefix,
 				Type: "common_prefix",
 			}
 		case len(object) > 0:
-			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes for object: %s", object)
+			confirmationMsg = "Are you sure you want to reset all uncommitted changes for object: " + object
 			reset = apigen.ResetCreation{
 				Path: &object,
 				Type: "object",

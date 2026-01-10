@@ -40,7 +40,7 @@ func structFieldsFunc(value reflect.Value, tag, squashValue string, prefix []str
 	}
 
 	// Scan the struct and
-	for i := 0; i < value.NumField(); i++ {
+	for i := range value.NumField() {
 		fieldType := value.Type().Field(i)
 		var (
 			// fieldName is the name to use for the field
@@ -106,7 +106,7 @@ func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string
 		return
 	}
 
-	for i := 0; i < value.NumField(); i++ {
+	for i := range value.NumField() {
 		fieldType := value.Type().Field(i)
 		var (
 			fieldName string

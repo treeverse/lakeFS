@@ -76,7 +76,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	for i := 0; i < s.cfg.Parallelism; i++ {
+	for range s.cfg.Parallelism {
 		wg.Go(func() error {
 			for change := range changeSet {
 				if err := s.apply(ctx, rootPath, remote, change); err != nil {
@@ -195,7 +195,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		}
 		isRetry = true
 
-		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
+		b := s.progressBar.AddReader("download "+path, sizeBytes)
 		defer func() {
 			if err != nil {
 				b.Error()

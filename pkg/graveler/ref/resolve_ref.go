@@ -91,7 +91,7 @@ func ResolveRawRef(ctx context.Context, store Store, addressProvider ident.Addre
 
 		case graveler.RefModTypeTilde:
 			// skip mod.ValueNumeric iterations
-			for i := 0; i < mod.Value; i++ {
+			for range mod.Value {
 				commit, err := store.GetCommit(ctx, repository, baseCommit)
 				if err != nil {
 					return nil, err

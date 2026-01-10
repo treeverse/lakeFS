@@ -49,7 +49,7 @@ var flareCmd = &cobra.Command{
 		flarePath := fmt.Sprintf(flareOutputDirTemplate, outputPath, now)
 		err = os.MkdirAll(flarePath, flare.DirPermissions)
 		if err != nil {
-			msg := fmt.Sprintf("failed to create flare directory at %s", flarePath)
+			msg := "failed to create flare directory at " + flarePath
 			printMsgAndExit(msg, err)
 		}
 		var ow flare.FlareOutputWriter = &flare.FileWriter{}
