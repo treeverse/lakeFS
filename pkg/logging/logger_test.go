@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -154,6 +155,72 @@ func TestDurationFormatting(t *testing.T) {
 			expected := tc.FormatInt("scalar", 17)
 			if !bytes.Contains(contents, []byte(expected)) {
 				t.Errorf("Log contents do not contain expected substring %s:\n%s", expected, string(contents))
+			}
+		})
+	}
+}
+
+func TestLogCallerTrimmer(t *testing.T) {
+	tests := []struct {
+		name             string
+		file             string
+		function         string
+		expectedFile     string
+		expectedFunction string
+	}{
+		{
+			name:             "standard lakefs directory",
+			file:             "/home/user/work/lakefs/pkg/logging/logger.go",
+			function:         "github.com/treeverse/lakefs/pkg/logging.TestFunc",
+			expectedFile:     "pkg/logging/logger.go",
+			expectedFunction: "pkg/logging.TestFunc",
+		},
+		{
+			name:             "lakefs-enterprise directory",
+			file:             "/home/user/work/lakefs-enterprise/pkg/logging/logger.go",
+			function:         "github.com/treeverse/lakefs-enterprise/pkg/logging.TestFunc",
+			expectedFile:     "pkg/logging/logger.go",
+			expectedFunction: "pkg/logging.TestFunc",
+		},
+		{
+			name:             "lakefs_foo directory with underscore",
+			file:             "/home/user/work/lakefs_foo/pkg/api/handler.go",
+			function:         "github.com/treeverse/lakefs_foo/pkg/api.Handler",
+			expectedFile:     "pkg/api/handler.go",
+			expectedFunction: "pkg/api.Handler",
+		},
+		{
+			name:             "uppercase LakeFS in path",
+			file:             "/home/user/work/LakeFS/pkg/block/adapter.go",
+			function:         "github.com/treeverse/lakefs/pkg/block.Adapter",
+			expectedFile:     "pkg/block/adapter.go",
+			expectedFunction: "pkg/block.Adapter",
+		},
+		{
+			name:             "no lakefs in path",
+			file:             "/home/user/other/project/main.go",
+			function:         "github.com/other/project.Main",
+			expectedFile:     "home/user/other/project/main.go", // leading separator gets trimmed
+			expectedFunction: "github.com/other/project.Main",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			frame := &runtime.Frame{
+				File:     tt.file,
+				Line:     42,
+				Function: tt.function,
+			}
+
+			gotFunction, gotFile := logCallerTrimmer(frame)
+
+			expectedFileWithLine := fmt.Sprintf("%s:42", tt.expectedFile)
+			if gotFile != expectedFileWithLine {
+				t.Errorf("file = %q, want %q", gotFile, expectedFileWithLine)
+			}
+			if gotFunction != tt.expectedFunction {
+				t.Errorf("function = %q, want %q", gotFunction, tt.expectedFunction)
 			}
 		})
 	}
