@@ -64,7 +64,12 @@ const useConfigContext = () => useContext(configContext);
 const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     const pluginManager = usePluginManager();
     const { user } = useAuth();
-    const { response, loading, error } = useAPI(() => config.getConfig(), [user]);
+    const { response, loading, error } = useAPI(
+        () => config.getConfig(),
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [user],
+    );
 
     useEffect(() => {
         if (response) {

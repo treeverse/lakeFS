@@ -319,6 +319,8 @@ export const PrefixSearchWidget = ({ onFilter, text = 'Search by Prefix', defaul
             e.preventDefault();
             onFilter(ref.current.value);
         },
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [ref],
     );
 

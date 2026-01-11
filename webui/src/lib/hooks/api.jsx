@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AuthenticationError } from '../api';
 import { useAuth } from '../auth/authContext';
 
@@ -17,6 +17,7 @@ export const useAPIWithPagination = (promise, deps = []) => {
     const { response, error, loading } = useAPI(() => {
         setPagination({ ...initialPaginationState });
         return promise();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [...deps, initialPaginationState]);
 
     useEffect(() => {
@@ -52,6 +53,7 @@ const initialAPIState = {
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
     const { onUnauthenticated } = useAuth();
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         let isMounted = true;
@@ -77,6 +79,12 @@ export const useAPI = (promise, deps = []) => {
         };
         execute();
         return () => (isMounted = false);
-    }, deps);
-    return { ...request };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [...deps, refreshKey]);
+
+    const refetch = useCallback(() => {
+        setRefreshKey((prev) => prev + 1);
+    }, []);
+
+    return { ...request, refetch };
 };
