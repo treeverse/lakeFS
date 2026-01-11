@@ -79,12 +79,32 @@ type Fields map[string]any
 func logCallerTrimmer(frame *runtime.Frame) (function string, file string) {
 	indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
 	if indexOfModule != -1 {
-		file = frame.File[indexOfModule+len(ProjectDirectoryName):]
+		// Find the next path separator after the project directory name match
+		remainingPath := frame.File[indexOfModule+len(ProjectDirectoryName):]
+		separatorIdx := strings.Index(remainingPath, string(os.PathSeparator))
+		if separatorIdx != -1 {
+			file = remainingPath[separatorIdx:]
+		} else {
+			file = remainingPath
+		}
 	} else {
 		file = frame.File
 	}
 	file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, string(os.PathSeparator)), frame.Line)
-	function = strings.TrimPrefix(frame.Function, fmt.Sprintf("%s%s", ModuleName, string(os.PathSeparator)))
+
+	// For function name, find the module and then capture until the next separator
+	indexOfModuleName := strings.Index(frame.Function, ModuleName)
+	if indexOfModuleName != -1 {
+		remainingFunc := frame.Function[indexOfModuleName+len(ModuleName):]
+		if _, after, found := strings.Cut(remainingFunc, "/"); found {
+			function = after
+		} else {
+			// Handle case where there's no "/" but might have a "." (e.g., module.Function)
+			function = strings.TrimPrefix(remainingFunc, "/")
+		}
+	} else {
+		function = frame.Function
+	}
 	return
 }
 
