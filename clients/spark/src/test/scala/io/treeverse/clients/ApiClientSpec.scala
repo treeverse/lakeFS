@@ -105,7 +105,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       apiClient.setInternalApiForTesting(mockInternalApi)
 
       // Call the method - it should fallback to sync API
-      val result = apiClient.prepareGarbageCollectionCommits(repoName, timeoutMinutes = 1)
+      val result = apiClient.prepareGarbageCollectionCommits(repoName, timeoutSeconds = 60)
 
       // Verify async API was called first (may be retried by retry wrapper)
       Mockito.verify(mockInternalApi, Mockito.atLeastOnce()).prepareGarbageCollectionCommitsAsync(repoName)
@@ -150,7 +150,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       apiClient.setInternalApiForTesting(mockInternalApi)
 
       // Call the method
-      val response = apiClient.prepareGarbageCollectionCommits(repoName, timeoutMinutes = 1)
+      val response = apiClient.prepareGarbageCollectionCommits(repoName, timeoutSeconds = 60)
 
       // Verify async API was called
       Mockito.verify(mockInternalApi, Mockito.times(1)).prepareGarbageCollectionCommitsAsync(repoName)
@@ -183,7 +183,7 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
 
       // Call the method - it should throw the exception without fallback
       val thrown = intercept[ApiException] {
-        apiClient.prepareGarbageCollectionCommits(repoName, timeoutMinutes = 1)
+        apiClient.prepareGarbageCollectionCommits(repoName, timeoutSeconds = 60)
       }
 
       thrown.getCode should be(HttpStatus.SC_NOT_FOUND)

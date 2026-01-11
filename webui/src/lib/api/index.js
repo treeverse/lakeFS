@@ -677,6 +677,23 @@ class Tags {
         return response.json();
     }
 
+    listAll(repoId, prefix = '') {
+        let after = '';
+        return {
+            next: async () => {
+                const query = qs({ prefix, after, amount: MAX_LISTING_AMOUNT });
+                const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags?` + query);
+                if (response.status !== 200) {
+                    throw new Error(`could not list tags: ${await extractError(response)}`);
+                }
+                const responseBody = await response.json();
+                const done = !responseBody.pagination.has_more;
+                if (!done) after = responseBody.pagination.next_offset;
+                return { page: responseBody.results, done };
+            },
+        };
+    }
+
     async create(repoId, id, ref) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags`, {
             method: 'POST',

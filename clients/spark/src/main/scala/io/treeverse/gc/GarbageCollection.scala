@@ -187,9 +187,18 @@ object GarbageCollection {
         // Process committed
         val clientStorageNamespace =
           apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
+        val prepareCommitsTimeoutSeconds = hc.getInt(
+          LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS,
+          DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS
+        )
         val committedLister =
           if (uncommittedOnly) new NaiveCommittedAddressLister()
-          else new ActiveCommitsAddressLister(apiClient, repo, storageType)
+          else
+            new ActiveCommitsAddressLister(apiClient,
+                                           repo,
+                                           storageType,
+                                           prepareCommitsTimeoutSeconds
+                                          )
         val committedDF =
           committedLister.listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
 

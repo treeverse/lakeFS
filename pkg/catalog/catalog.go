@@ -48,6 +48,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -76,7 +77,8 @@ const (
 	RestoreRefsTaskIDPrefix               = "RR"
 	GarbageCollectionPrepareCommitsPrefix = "GCPC"
 
-	TaskExpiryTime = 24 * time.Hour
+	TaskExpiryTime        = 24 * time.Hour
+	TaskHeartbeatInterval = 5 * time.Second
 
 	// LinkAddressTime the time address is valid from get to link
 	LinkAddressTime             = 6 * time.Hour
@@ -2245,7 +2247,7 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 		Id:        taskID,
 		UpdatedAt: timestamppb.Now(),
 	}
-	reflect.ValueOf(taskStatus).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
+	setTaskInStatus(taskStatus, task)
 
 	// initial task update done before we run each step in the background task
 	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
@@ -2257,8 +2259,50 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 	taskCtx = httputil.CopyRequestIDFromContext(ctx, taskCtx)
 	taskCtx = auth.CopyUserFromContext(ctx, taskCtx)
 
+	// start heartbeat: a background goroutine to update the task status in the kv store
+	// every TaskHeartbeatInterval seconds, until the task is done
+	cancelCtx, cancel := context.WithCancel(taskCtx)
+	currTaskStatus := proto.Clone(taskStatus) // deep copy of the task status, to avoid race conditions
+	go func() {
+		for {
+			select {
+			case <-cancelCtx.Done():
+				return
+			case <-time.After(TaskHeartbeatInterval):
+				// get the task status from the kv store
+				predicate, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, currTaskStatus)
+				if err != nil {
+					c.log(ctx).WithError(err).Error("Catalog failed to get task status")
+					continue
+				}
+				// get the task from the task status
+				currTask := getTaskFromStatus(currTaskStatus)
+				if currTask == nil {
+					c.log(ctx).Error("Catalog failed to get task")
+					continue
+				}
+				if currTask.Done {
+					// task is done, so we can stop the heartbeat
+					cancel() // cancel just in case
+					return
+				}
+
+				// update the task in the kv store with the new "updated_at", only if its status is not changed
+				currTask.UpdatedAt = timestamppb.Now()
+				err = kv.SetMsgIf(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), currTaskStatus, predicate)
+				if err != nil {
+					if !errors.Is(err, kv.ErrPredicateFailed) {
+						c.log(ctx).WithError(err).Error("Catalog failed to update task status")
+					}
+					continue
+				}
+			}
+		}
+	}()
+
 	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
+		defer cancel()
 		for stepIdx, step := range steps {
 			// call the step function
 			err := step.Func(taskCtx)
@@ -2290,6 +2334,18 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 		}
 	})
 	return nil
+}
+
+func getTaskFromStatus(statusMsg protoreflect.ProtoMessage) *Task {
+	taskField := reflect.ValueOf(statusMsg).Elem().FieldByName("Task")
+	if !taskField.IsValid() || taskField.IsNil() {
+		return nil
+	}
+	return taskField.Interface().(*Task)
+}
+
+func setTaskInStatus(statusMsg protoreflect.ProtoMessage, task *Task) {
+	reflect.ValueOf(statusMsg).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
 }
 
 // DeleteExpiredRepositoryTasks deletes all expired tasks for the given repository
@@ -2782,7 +2838,7 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if !IsTaskID(prefix, taskID) {
 		return graveler.ErrNotFound
 	}
-	if err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
+	if _, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
 	checkAndMarkTaskExpired(statusMsg, expiryDuration)
@@ -2794,13 +2850,8 @@ func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration
 		return
 	}
 
-	taskField := reflect.ValueOf(statusMsg).Elem().FieldByName("Task")
-	if !taskField.IsValid() || taskField.IsNil() {
-		return
-	}
-
-	task := taskField.Interface().(*Task)
-	if task.UpdatedAt == nil {
+	task := getTaskFromStatus(statusMsg)
+	if task == nil || task.UpdatedAt == nil {
 		return
 	}
 
@@ -2932,9 +2983,9 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 }
 
 // cloneEntry clones entry information without copying the underlying object in the object store, so the physical address remains the same.
-// clone can only clone within the same repository and branch.
-// It is limited to our grace-time from the object creation, in order to prevent GC from deleting the object.
-// ErrCannotClone error is returned if clone conditions are not met.
+// It may only clone within the same repository and is bound by the grace time from the object's creation—this ensures the GC does
+// not delete the underlying object.
+// ErrCannotClone is returned if any of the clone conditions are not satisfied.
 func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry *DBEntry, destRepository, destBranch, destPath string,
 	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
 ) (*DBEntry, error) {
@@ -2943,25 +2994,31 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry 
 		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
 	}
 
-	// we verify the metadata creation date is within the grace period
-	if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
-		return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
-	}
+	// An entry’s metadata can be cloned repeatedly, so we must verify that the
+	// entry’s grace‑period timestamp still precedes the actual object's
+	// last‑modified time—exactly the check performed by the garbage collector.
+	// Objects that are not part of the storage namespace (e.g., imported objects)
+	// are exempt from this validation, mirroring the GC’s behavior.
+	if srcEntry.AddressType == AddressTypeRelative || strings.HasPrefix(srcEntry.PhysicalAddress, srcRepo.StorageNamespace) {
+		// verify the metadata creation date is within the grace period
+		if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
+			return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
+		}
 
-	// entry information can be cloned over and over,
-	// so we also need to verify the grace period against the actual object last-modified time
-	srcObject := block.ObjectPointer{
-		StorageID:        srcRepo.StorageID,
-		StorageNamespace: srcRepo.StorageNamespace,
-		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
-		Identifier:       srcEntry.PhysicalAddress,
-	}
-	props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
-	if err != nil {
-		return nil, err
-	}
-	if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
-		return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+		// verify the actual object last-modified is within the grace period
+		srcObject := block.ObjectPointer{
+			StorageID:        srcRepo.StorageID,
+			StorageNamespace: srcRepo.StorageNamespace,
+			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+			Identifier:       srcEntry.PhysicalAddress,
+		}
+		props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
+		if err != nil {
+			return nil, err
+		}
+		if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
+			return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+		}
 	}
 
 	// copy the metadata into a new entry
