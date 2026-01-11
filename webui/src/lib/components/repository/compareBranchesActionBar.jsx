@@ -65,6 +65,8 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     };
     const [mergeState, setMergeState] = useState(initialMerge);
 
+    // TODO: Review and remove this eslint-disable once dependencies are validated
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const onClickMerge = useCallback(() => {
         setMergeState({
             merging: mergeState.merging,

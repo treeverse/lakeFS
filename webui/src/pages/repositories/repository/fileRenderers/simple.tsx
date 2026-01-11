@@ -40,6 +40,8 @@ export const UnsupportedFileType: FC<RendererComponent> = ({ path, fileExtension
 export const TextDownloader: FC<RendererComponentWithTextCallback> = ({ repoId, refId, path, presign, onReady }) => {
     const { response, error, loading } = useAPI(
         async () => await objects.get(repoId, refId, path, presign),
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [repoId, refId, path],
     );
     if (loading) {

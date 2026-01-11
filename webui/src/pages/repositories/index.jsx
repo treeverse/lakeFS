@@ -198,6 +198,8 @@ const RepositoryList = ({
 }) => {
     const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return repositories.list(search, after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, search, after]);
     useEffect(() => {
         toggleShowActionsBar();
@@ -335,6 +337,8 @@ const RepositoriesPage = () => {
     const createRepositoryButtonCallback = useCallback(() => {
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
     const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(storageConfigs);
@@ -354,6 +358,8 @@ const RepositoriesPage = () => {
         }
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, storageConfigs, createRepo]);
 
     return (

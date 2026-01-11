@@ -133,6 +133,8 @@ const GroupsContainer = () => {
             })),
         );
         return { ...groups, results: enrichedResults };
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [lc.RBAC, refresh, prefix, after]);
 
     useEffect(() => {

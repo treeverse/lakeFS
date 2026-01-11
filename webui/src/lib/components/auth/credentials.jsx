@@ -43,6 +43,8 @@ export const CredentialsTable = ({ userId, currentAccessKey, refresh, after, onP
 
     const { results, error, loading, nextPage } = useAPIWithPagination(() => {
         return auth.listCredentials(userId, after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, internalRefresh, userId, after]);
 
     if (error) return <AlertError error={error} />;

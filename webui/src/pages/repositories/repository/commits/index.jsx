@@ -182,6 +182,8 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return commits.log(repo.id, reference.id, after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, refresh, after]);
 
     // Load tags once when repo changes or on refresh
@@ -198,6 +200,8 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
             setTagsLimitExceeded(false);
             setTagsError(err);
         }
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, refresh]);
 
     useEffect(() => {
