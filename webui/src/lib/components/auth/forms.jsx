@@ -28,6 +28,7 @@ export const AttachModal = ({
 
     const { response, error, loading } = useAPI(() => {
         return searchFn(paginationParams.prefix, paginationParams.after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [paginationParams]);
 

@@ -28,6 +28,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
         return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, () =>
             refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter),
         );
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, commit.id, afterUpdated, prefix]);
 

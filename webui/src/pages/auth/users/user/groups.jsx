@@ -35,6 +35,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
 
     const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return auth.listUserGroups(userId, after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId, after, refresh]);
 

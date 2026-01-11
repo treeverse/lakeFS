@@ -62,6 +62,7 @@ export const TreeItemRow = ({
         const { results, pagination } = await getMore(afterUpdated, entry.path);
         setResultsState({ results: resultsState.results.concat(results), pagination: pagination });
         return { results: resultsState.results, pagination: pagination };
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded]);
 

@@ -55,6 +55,7 @@ export function useMarkdownProcessor(
 
             setContent(file.result);
         })();
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [text]);
 

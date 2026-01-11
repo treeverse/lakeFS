@@ -951,6 +951,7 @@ const TreeContainer = ({
             }
         }
         return { results: [] };
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, path, refreshToken, showChangesOnly, after]);
 
@@ -965,6 +966,7 @@ const TreeContainer = ({
             // Show all objects
             return objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui);
         }
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, lastSeenPath, delimiter]);
 
@@ -1131,6 +1133,7 @@ const ReadmeContainer = ({ config, repo, reference, path = '', refreshDep = '' }
     }
     const { response, error, loading } = useAPI(
         () => objects.head(repo.id, reference.id, readmePath),
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [path, refreshDep],
     );
@@ -1163,6 +1166,7 @@ const NoGCRulesWarning = ({ repoId }) => {
     const closeAndRemember = useCallback(() => {
         window.localStorage.setItem(storageKey, 'false');
         setShow(false);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repoId]);
 
@@ -1259,6 +1263,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
         } else {
             setHasChanges(false);
         }
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo?.id, reference?.id, refreshToken]);
 

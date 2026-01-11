@@ -37,6 +37,7 @@ const CompareBranches = ({ repo, reference, compareReference, showActionsBar, pr
             setResultsState,
             getMoreResults,
         );
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix]);
 
@@ -49,6 +50,7 @@ const CompareBranches = ({ repo, reference, compareReference, showActionsBar, pr
             type: DiffActionType.setResults,
             value: { results, loading, error, nextPage },
         });
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [results, loading, error, nextPage]);
 

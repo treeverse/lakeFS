@@ -247,6 +247,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
     const [refresh, setRefresh] = useState(true);
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return tags.list(repo.id, prefix, after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, prefix, refresh, after]);
 

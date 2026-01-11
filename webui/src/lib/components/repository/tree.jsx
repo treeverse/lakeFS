@@ -394,6 +394,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
             return await commits.blame(repo.id, reference.id, entry.path, entry.path_type);
         }
         return null;
+        // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [show, repo.id, reference.id, entry.path]);
 
