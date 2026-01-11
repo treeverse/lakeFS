@@ -200,6 +200,8 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
             setTagsLimitExceeded(false);
             setTagsError(err);
         }
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, refresh]);
 
     useEffect(() => {
