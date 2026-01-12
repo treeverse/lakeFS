@@ -2,6 +2,9 @@
 
 ## next
 
+### S3 Gateway
+- Fix: return correct error code `MetadataTooLarge` when metadata exceeds size limit (#9909)
+
 ## v1.74.4
 
 :bug: Bugs Fixed
