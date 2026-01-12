@@ -89,7 +89,8 @@ func TestDurationFormatting(t *testing.T) {
 	cases := []TestCase{{
 		OutputFormat: "text",
 		FormatDurations: func(label string, duration time.Duration) []string {
-			return []string{fmt.Sprint(label, "_str", "=", duration.String()),
+			return []string{
+				fmt.Sprint(label, "_str", "=", duration.String()),
 				fmt.Sprint(label, "=", int64(duration)),
 			}
 		},
@@ -101,7 +102,8 @@ func TestDurationFormatting(t *testing.T) {
 		FormatDurations: func(label string, duration time.Duration) []string {
 			// Useful only inside this test.  Does not protect
 			// special chars in label.
-			return []string{fmt.Sprintf("\"%s_str\":\"%s\"", label, duration.String()),
+			return []string{
+				fmt.Sprintf("\"%s_str\":\"%s\"", label, duration.String()),
 				fmt.Sprintf("\"%s\":%d", label, duration),
 			}
 		},
@@ -126,7 +128,8 @@ func TestDurationFormatting(t *testing.T) {
 			// Tests both WithField and WithFields
 			ContextUnavailable().
 				WithField("xyzzy", duration).
-				WithFields(Fields{"bar": duration,
+				WithFields(Fields{
+					"bar":    duration,
 					"scalar": 17,
 					"baz":    duration,
 				}).
@@ -176,9 +179,9 @@ func TestLogCallerTrimmer(t *testing.T) {
 			expectedFunction: "pkg/logging.TestFunc",
 		},
 		{
-			name:             "lakefs-enterprise directory",
-			file:             "/home/user/work/lakefs-enterprise/pkg/logging/logger.go",
-			function:         "github.com/treeverse/lakefs-enterprise/pkg/logging.TestFunc",
+			name:             "lakefs-demo directory",
+			file:             "/home/user/work/lakefs-demo/pkg/logging/logger.go",
+			function:         "github.com/treeverse/lakefs-demo/pkg/logging.TestFunc",
 			expectedFile:     "pkg/logging/logger.go",
 			expectedFunction: "pkg/logging.TestFunc",
 		},
