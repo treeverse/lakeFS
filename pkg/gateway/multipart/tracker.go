@@ -35,6 +35,23 @@ type Upload struct {
 	ContentType string `db:"content_type"`
 }
 
+// UploadIterator is an iterator over multipart uploads sorted by Path, then UploadID
+type UploadIterator interface {
+	// Next advances the iterator to the next upload
+	// Returns true if there is a next upload, false otherwise
+	Next() bool
+	// Value returns the current upload
+	// Should only be called after Next returns true
+	Value() *Upload
+	// Err returns any error encountered during iteration
+	Err() error
+	// Close releases resources associated with the iterator
+	Close()
+	// SeekGE seeks to the first upload with key >= uploadIDKey(path, uploadID)
+	// After calling SeekGE, Next() must be called to access the first element at or after the seek position
+	SeekGE(key, uploadID string)
+}
+
 type Tracker interface {
 	Create(ctx context.Context, partition string, multipart Upload) error
 	Get(ctx context.Context, partition, path, uploadID string) (*Upload, error)

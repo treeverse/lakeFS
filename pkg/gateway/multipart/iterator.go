@@ -7,23 +7,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-// UploadIterator is an iterator over multipart uploads sorted by Path, then UploadID
-type UploadIterator interface {
-	// Next advances the iterator to the next upload
-	// Returns true if there is a next upload, false otherwise
-	Next() bool
-	// Value returns the current upload
-	// Should only be called after Next returns true
-	Value() *Upload
-	// Err returns any error encountered during iteration
-	Err() error
-	// Close releases resources associated with the iterator
-	Close()
-	// SeekGE seeks to the first upload with key >= uploadIDKey(path, uploadID)
-	// After calling SeekGE, Next() must be called to access the first element at or after the seek position
-	SeekGE(key, uploadID string)
-}
-
 // kvUploadIterator streams uploads directly from KV store using natural ordering of composite keys
 type kvUploadIterator struct {
 	kvIter        *kv.PrimaryIterator
@@ -36,7 +19,7 @@ type kvUploadIterator struct {
 
 // newUploadIterator creates an iterator that streams from KV store
 // Uses composite key (path + uploadID) for natural ordering - no in-memory sorting needed
-func newUploadIterator(ctx context.Context, store kv.Store, partitionKey string) (UploadIterator, error) {
+func newUploadIterator(ctx context.Context, store kv.Store, partitionKey string) (*kvUploadIterator, error) {
 	kvIter, err := kv.NewPrimaryIterator(ctx, store, (&UploadData{}).ProtoReflect().Type(), partitionKey, []byte(multipartUploadPath()), kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return nil, err
@@ -90,14 +73,14 @@ func (it *kvUploadIterator) Close() {
 }
 
 func (it *kvUploadIterator) SeekGE(key, uploadID string) {
-	if it.Err() != nil {
-		return
-	}
 	it.Close()
 	itr, err := kv.NewPrimaryIterator(it.ctx, it.store, (&UploadData{}).ProtoReflect().Type(),
 		it.repoPartition,
 		[]byte(multipartUploadPath()), kv.IteratorOptionsFrom([]byte(multipartUploadPath(key, uploadID))))
-	it.kvIter = itr
-	it.err = err
+	if err != nil {
+		it.err = err
+	} else { // assign only when no error occurred
+		it.kvIter = itr
+	}
 	it.value = nil
 }
