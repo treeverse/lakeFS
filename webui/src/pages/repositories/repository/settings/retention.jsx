@@ -26,16 +26,14 @@ const exampleJson = (defaultBranch) => {
 };
 
 const GCPolicy = ({ repo }) => {
-    const [refresh, setRefresh] = useState(true);
     const [jsonView, setJsonView] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
     const [isActionsDisabled, setIsActionsDisabled] = useState(false);
 
-    const { response, error, loading } = useAPI(async () => {
+    const { response, error, loading, refetch } = useAPI(async () => {
         return await retention.getGCPolicy(repo.id);
-    }, [repo, refresh]);
+    }, [repo]);
 
-    const doRefresh = () => setRefresh(!refresh);
     const onDelete = async () => {
         setIsActionsDisabled(true);
         try {
@@ -44,7 +42,7 @@ const GCPolicy = ({ repo }) => {
             setIsActionsDisabled(false);
             throw err;
         }
-        setRefresh(!refresh);
+        refetch();
         setIsActionsDisabled(false);
     };
 
@@ -57,7 +55,7 @@ const GCPolicy = ({ repo }) => {
             throw err;
         }
         setShowCreate(false);
-        setRefresh(!refresh);
+        refetch();
         setIsActionsDisabled(false);
     };
 
@@ -146,7 +144,7 @@ const GCPolicy = ({ repo }) => {
                 <h4 className={'mb-0'}>
                     <div className={'ms-1 me-1 pl-0 d-flex'}>
                         <div className="flex-grow-1">Garbage collection policy</div>
-                        <RefreshButton className={'ms-1'} onClick={doRefresh} />
+                        <RefreshButton className={'ms-1'} onClick={refetch} />
                         {!error && !loading && !isPolicyNotSet && (
                             <Button className={'ms-2 btn-secondary'} disabled={isActionsDisabled} onClick={onDelete}>
                                 Delete Policy

@@ -24,6 +24,8 @@ const CompareBranchesSelection = ({
             params: { repoId: repo.id },
             query: { ref: compareReference.id, compare: reference.id },
         });
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const route = (query) =>

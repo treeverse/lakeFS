@@ -154,9 +154,13 @@ const ContentDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightS
 const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, isDarkMode }) => {
     const left =
         leftRef &&
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui), [repoId, leftRef, path]);
     const right =
         rightRef &&
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui), [repoId, rightRef, path]);
 
     if ((left && left.loading) || (right && right.loading)) return <Loading />;

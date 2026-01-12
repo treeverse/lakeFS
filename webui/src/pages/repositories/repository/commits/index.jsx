@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { BrowserIcon, LinkIcon, PlayIcon } from '@primer/octicons-react';
+import { BrowserIcon, LinkIcon, PlayIcon, TagIcon } from '@primer/octicons-react';
 
-import { commits } from '../../../../lib/api';
+import { commits, tags, MAX_LISTING_AMOUNT } from '../../../../lib/api';
+import Badge from 'react-bootstrap/Badge';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Card from 'react-bootstrap/Card';
@@ -29,7 +32,49 @@ import { useRouter } from '../../../../lib/hooks/router';
 import { RepoError } from '../error';
 import { RefTypeBranch } from '../../../../constants';
 
-const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, onToggleSelect = null }) => {
+const MAX_TAG_PAGES = 3; // Limit number of calls to have responsive UI and not overload the server with calls
+const MAX_TAGS_FOR_DISPLAY = MAX_TAG_PAGES * MAX_LISTING_AMOUNT;
+
+// Fetch all tags up to MAX_TAG_PAGES pages
+// Returns { tags: [...], limitExceeded: boolean }
+const fetchAllTags = async (repoId) => {
+    const allTags = [];
+    const iterator = tags.listAll(repoId);
+
+    for (let page = 0; page < MAX_TAG_PAGES; page++) {
+        const { page: results, done } = await iterator.next();
+        allTags.push(...results);
+        if (done) {
+            return { tags: allTags, limitExceeded: false };
+        }
+    }
+
+    // More than MAX_TAG_PAGES pages of tags, don't display any
+    // and report limit exceeded
+    return { tags: [], limitExceeded: true };
+};
+
+// Build a map of commit ID to array of tag names
+const buildCommitTagsMap = (tagsList) => {
+    const map = new Map();
+    for (const tag of tagsList) {
+        const commitId = tag.commit_id;
+        if (!map.has(commitId)) {
+            map.set(commitId, []);
+        }
+        map.get(commitId).push(tag.id);
+    }
+    return map;
+};
+
+const CommitWidget = ({
+    repo,
+    commit,
+    commitTags = [],
+    revertMode = false,
+    isSelected = false,
+    onToggleSelect = null,
+}) => {
     const buttonVariant = 'light';
 
     return (
@@ -55,6 +100,21 @@ const CommitWidget = ({ repo, commit, revertMode = false, isSelected = false, on
                             >
                                 <CommitMessage commit={commit} />
                             </Link>
+                            {commitTags.map((tagName) => (
+                                <Link
+                                    key={tagName}
+                                    href={{
+                                        pathname: '/repositories/:repoId/objects',
+                                        params: { repoId: repo.id },
+                                        query: { ref: tagName },
+                                    }}
+                                >
+                                    <Badge bg="secondary" className="ms-2">
+                                        <TagIcon size={12} className="me-1" />
+                                        {tagName}
+                                    </Badge>
+                                </Link>
+                            ))}
                         </h6>
                         <p>
                             <small>
@@ -116,10 +176,37 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     const [refresh, setRefresh] = useState(true);
     const [revertMode, setRevertMode] = useState(false);
     const [selectedCommits, setSelectedCommits] = useState(new Set());
+    const [commitTagsMap, setCommitTagsMap] = useState(new Map());
+    const [tagsLimitExceeded, setTagsLimitExceeded] = useState(false);
+    const [tagsError, setTagsError] = useState(null);
 
     const { results, error, loading, nextPage } = useAPIWithPagination(async () => {
         return commits.log(repo.id, reference.id, after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, refresh, after]);
+
+    // Load tags once when repo changes or on refresh
+    const loadTags = useCallback(async () => {
+        try {
+            const { tags: allTags, limitExceeded } = await fetchAllTags(repo.id);
+            setTagsLimitExceeded(limitExceeded);
+            setTagsError(null);
+            const tagsMap = limitExceeded ? new Map() : buildCommitTagsMap(allTags);
+            setCommitTagsMap(tagsMap);
+        } catch (err) {
+            // On error, just don't show tags
+            setCommitTagsMap(new Map());
+            setTagsLimitExceeded(false);
+            setTagsError(err);
+        }
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [repo.id, refresh]);
+
+    useEffect(() => {
+        loadTags();
+    }, [loadTags]);
 
     const toggleCommitSelection = (commitId) => {
         const newSelected = new Set(selectedCommits);
@@ -186,6 +273,21 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                 </ActionGroup>
             </ActionsBar>
 
+            {tagsError && <AlertError error={tagsError} onDismiss={() => setTagsError(null)} className="mt-3" />}
+
+            {tagsLimitExceeded && (
+                <OverlayTrigger
+                    placement="right"
+                    overlay={
+                        <Tooltip>Too many tags to display ({MAX_TAGS_FOR_DISPLAY.toLocaleString()}+ limit)</Tooltip>
+                    }
+                >
+                    <small className="text-muted d-inline-block mb-2" style={{ cursor: 'help' }}>
+                        <TagIcon /> Tag labels hidden
+                    </small>
+                </OverlayTrigger>
+            )}
+
             <Card>
                 <ListGroup variant="flush">
                     {results.map((commit) => (
@@ -193,6 +295,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                             key={commit.id}
                             repo={repo}
                             commit={commit}
+                            commitTags={commitTagsMap.get(commit.id) || []}
                             revertMode={revertMode}
                             isSelected={selectedCommits.has(commit.id)}
                             onToggleSelect={toggleCommitSelection}

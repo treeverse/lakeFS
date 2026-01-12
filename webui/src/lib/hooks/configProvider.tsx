@@ -15,6 +15,11 @@ type ConfigType = {
     storages?: StorageConfig[];
     uiConfig?: UIConfig;
     versionConfig?: VersionConfig;
+    capabilitiesConfig?: CapabilitiesConfig;
+};
+
+type CapabilitiesConfig = {
+    async_ops?: boolean;
 };
 
 type StorageConfig = {
@@ -59,7 +64,12 @@ const useConfigContext = () => useContext(configContext);
 const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     const pluginManager = usePluginManager();
     const { user } = useAuth();
-    const { response, loading, error } = useAPI(() => config.getConfig(), [user]);
+    const { response, loading, error } = useAPI(
+        () => config.getConfig(),
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [user],
+    );
 
     useEffect(() => {
         if (response) {
@@ -75,6 +85,6 @@ const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     return <configContext.Provider value={value}>{children}</configContext.Provider>;
 };
 
-export type { ConfigType, CustomViewer };
+export type { ConfigType, CustomViewer, CapabilitiesConfig };
 
 export { ConfigProvider, useConfigContext };

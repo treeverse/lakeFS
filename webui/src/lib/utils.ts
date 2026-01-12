@@ -41,3 +41,13 @@ export const normalizeNext = (raw?: string | null) => {
         return ROUTES.REPOSITORIES;
     }
 };
+
+/**
+ * Compares two strings lexicographically (by byte/ASCII order).
+ * Use this instead of localeCompare to ensure consistent ordering across locales.
+ */
+export const compareLexicographically = (a: string, b: string): number => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+};

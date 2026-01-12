@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { compareLexicographically } from '../../../lib/utils';
 import dayjs from 'dayjs';
 import { useOutletContext } from 'react-router-dom';
 import {
@@ -71,6 +72,7 @@ import { getMetadataIfValid, touchInvalidFields } from '../../../lib/components/
 import { ConfirmationModal } from '../../../lib/components/modals';
 import { Link } from '../../../lib/components/nav';
 import Card from 'react-bootstrap/Card';
+import { mergeResults } from '../../../lib/components/repository/mergeResults';
 
 const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
@@ -91,7 +93,9 @@ export async function appendMoreResults(resultsState, prefix, lastSeenPath, setL
 
     const { results, pagination } = await getMore();
     // Ensure concatenated results maintain lexicographic order
-    const concatenatedResults = resultsFiltered.concat(results).sort((a, b) => a.path.localeCompare(b.path));
+    const concatenatedResults = resultsFiltered
+        .concat(results)
+        .sort((a, b) => compareLexicographically(a.path, b.path));
     setResultsState({ prefix: prefix, results: concatenatedResults, pagination: pagination });
     return { results: resultsState.results, pagination: pagination };
 }
@@ -944,13 +948,15 @@ const TreeContainer = ({
     const { response: changesData } = useAPI(async () => {
         if (!showChangesOnly && reference && reference.type === RefTypeBranch) {
             try {
-                return await refs.changes(repo.id, reference.id, '', path, delimiter);
+                return await refs.changes(repo.id, reference.id, after, path, delimiter);
             } catch (error) {
                 return { results: [] };
             }
         }
         return { results: [] };
-    }, [repo.id, reference.id, path, refreshToken, showChangesOnly]);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [repo.id, reference.id, path, refreshToken, showChangesOnly, after]);
 
     // Use different API calls based on whether we're showing changes only or all objects
     const { results, error, loading, nextPage } = useAPIWithPagination(() => {
@@ -963,78 +969,15 @@ const TreeContainer = ({
             // Show all objects
             return objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui);
         }
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, lastSeenPath, delimiter]);
 
     // Merge changes with objects for highlighting
-    const mergedResults = React.useMemo(() => {
-        if (showChangesOnly || !results || !changesData?.results) {
-            // Ensure regular results are also sorted lexicographically
-            return results ? results.sort((a, b) => a.path.localeCompare(b.path)) : results;
-        }
-
-        const changesMap = new Map();
-        const directoryChanges = new Map(); // Store change type for directories
-
-        // Map direct changes and identify affected directories
-        changesData.results.forEach((change) => {
-            // Map change type to what EntryRow expects
-            const mappedType = change.type === 'removed' ? 'removed' : change.type === 'added' ? 'added' : 'changed';
-
-            changesMap.set(change.path, mappedType);
-
-            // If this is a prefix entry from changes, mark it directly with its type
-            if (change.path_type === 'common_prefix') {
-                directoryChanges.set(change.path, mappedType);
-            } else {
-                // For file changes, mark parent directories as changed
-                const pathParts = change.path.split('/');
-                for (let i = 1; i < pathParts.length; i++) {
-                    const dirPath = pathParts.slice(0, i).join('/') + '/';
-                    // Only mark as changed if not already marked with a more specific type
-                    if (!directoryChanges.has(dirPath)) {
-                        directoryChanges.set(dirPath, 'changed');
-                    }
-                }
-            }
-        });
-
-        // Add missing items from changes that aren't in the regular results
-        // This includes deleted files and deleted/changed prefixes
-        const missingItems = changesData.results.filter(
-            (change) => !results.find((result) => result.path === change.path),
-        );
-
-        // Merge regular results with change info
-        const enhancedResults = results.map((entry) => {
-            const directChangeType = changesMap.get(entry.path);
-            if (directChangeType) {
-                return { ...entry, diff_type: directChangeType };
-            }
-
-            // Check if this directory contains changes (either directly or has changed children)
-            const directoryChangeType = directoryChanges.get(entry.path);
-            if (entry.path_type === 'common_prefix' && directoryChangeType) {
-                return { ...entry, diff_type: directoryChangeType };
-            }
-
-            return entry;
-        });
-
-        // Add missing items (deleted files, deleted/changed prefixes) to the results
-        const allResults = [
-            ...enhancedResults,
-            ...missingItems.map((item) => {
-                const mappedType = item.type === 'removed' ? 'removed' : item.type === 'added' ? 'added' : 'changed';
-                return {
-                    ...item,
-                    diff_type: mappedType,
-                };
-            }),
-        ];
-
-        // Sort to maintain proper order
-        return allResults.sort((a, b) => a.path.localeCompare(b.path));
-    }, [results, changesData, showChangesOnly]);
+    const mergedResults = React.useMemo(
+        () => mergeResults(results, changesData, showChangesOnly),
+        [results, changesData, showChangesOnly],
+    );
 
     const initialState = {
         inProgress: false,
@@ -1076,7 +1019,7 @@ const TreeContainer = ({
     if (showChangesOnly) {
         const rawChangesResults = resultsState.results.length > 0 ? resultsState.results : results || [];
         // Always sort changes lexicographically to maintain consistent ordering
-        const changesResults = rawChangesResults.sort((a, b) => a.path.localeCompare(b.path));
+        const changesResults = rawChangesResults.sort((a, b) => compareLexicographically(a.path, b.path));
 
         if (changesResults.length === 0) {
             return <EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />;
@@ -1193,6 +1136,8 @@ const ReadmeContainer = ({ config, repo, reference, path = '', refreshDep = '' }
     }
     const { response, error, loading } = useAPI(
         () => objects.head(repo.id, reference.id, readmePath),
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [path, refreshDep],
     );
 
@@ -1224,6 +1169,8 @@ const NoGCRulesWarning = ({ repoId }) => {
     const closeAndRemember = useCallback(() => {
         window.localStorage.setItem(storageKey, 'false');
         setShow(false);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repoId]);
 
     const { response } = useAPI(async () => {
@@ -1258,7 +1205,7 @@ const NoGCRulesWarning = ({ repoId }) => {
     return <></>;
 };
 
-const ObjectsBrowser = ({ config }) => {
+const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const router = useRouter();
     const { path, after, importDialog, upload, showChanges } = router.query;
     const [searchParams, setSearchParams] = useSearchParams();
@@ -1319,6 +1266,8 @@ const ObjectsBrowser = ({ config }) => {
         } else {
             setHasChanges(false);
         }
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo?.id, reference?.id, refreshToken]);
 
     // Handle toggle changes view
@@ -1446,8 +1395,8 @@ const ObjectsBrowser = ({ config }) => {
                     </Button>
 
                     <Button
-                        variant={!config.import_support ? 'success' : 'light'}
-                        disabled={!config.import_support}
+                        variant={!storageConfig.import_support ? 'success' : 'light'}
+                        disabled={!storageConfig.import_support}
                         onClick={() => setShowImport(true)}
                     >
                         <BsCloudArrowUp /> Import
@@ -1466,6 +1415,7 @@ const ObjectsBrowser = ({ config }) => {
                                             reference.id,
                                             commitDetails.message,
                                             commitDetails.metadata,
+                                            capabilitiesConfig,
                                         );
                                         setActionError(null);
 
@@ -1490,7 +1440,7 @@ const ObjectsBrowser = ({ config }) => {
                         </div>
 
                         <UploadButton
-                            config={config}
+                            config={storageConfig}
                             path={path}
                             repo={repo}
                             reference={reference}
@@ -1505,7 +1455,7 @@ const ObjectsBrowser = ({ config }) => {
                     </div>
 
                     <ImportModal
-                        config={config}
+                        config={storageConfig}
                         path={path}
                         repoId={repo.id}
                         referenceId={reference.id}
@@ -1558,7 +1508,7 @@ const ObjectsBrowser = ({ config }) => {
                 }}
             >
                 <TreeContainer
-                    config={config}
+                    config={storageConfig}
                     reference={reference}
                     repo={repo}
                     path={path ? path : ''}
@@ -1588,7 +1538,7 @@ const ObjectsBrowser = ({ config }) => {
                 />
 
                 <ReadmeContainer
-                    config={config}
+                    config={storageConfig}
                     reference={reference}
                     repo={repo}
                     path={path}
@@ -1613,7 +1563,7 @@ const RepositoryObjectsPage = () => {
     if (configLoading) return <Loading />;
     if (configError) return <RepoError error={configError} />;
 
-    return <ObjectsBrowser config={storageConfig} />;
+    return <ObjectsBrowser storageConfig={storageConfig} capabilitiesConfig={config?.capabilitiesConfig} />;
 };
 
 export default RepositoryObjectsPage;
