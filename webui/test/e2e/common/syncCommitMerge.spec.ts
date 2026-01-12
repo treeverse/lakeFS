@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { RepositoriesPage } from '../poms/repositoriesPage';
 import { RepositoryPage } from '../poms/repositoryPage';
-import fs from 'fs';
-import path from 'path';
 
 const TEST_REPO_NAME = 'test-commit-merge';
 const SOURCE_BRANCH = 'feature-branch';
@@ -14,42 +12,6 @@ test.describe('Commit and Merge Operations', () => {
     test.describe.configure({ mode: 'serial' });
 
     let setupComplete = false;
-    const createdFiles: string[] = [];
-
-    // Clean up any leftover files from previous crashed test runs
-    test.beforeAll(() => {
-        const testDir = __dirname;
-        const pattern = /^sync-(commit-merge-test|conflict-test)-in-syncCommitMerge-playwright-file(-\d+)?\.txt$/;
-
-        try {
-            const files = fs.readdirSync(testDir);
-            files.forEach((file) => {
-                if (pattern.test(file)) {
-                    const filePath = path.join(testDir, file);
-                    try {
-                        fs.unlinkSync(filePath);
-                    } catch (error) {
-                        console.error(`Failed to delete ${file}:`, error);
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Failed to clean up leftover files:', error);
-        }
-    });
-
-    // Clean up files created during this test run
-    test.afterAll(() => {
-        createdFiles.forEach((filePath) => {
-            try {
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
-                }
-            } catch (error) {
-                console.error(`Failed to delete file ${filePath}:`, error);
-            }
-        });
-    });
 
     test('Setup: Create repository', async ({ page }) => {
         const repositoriesPage = new RepositoriesPage(page);
@@ -68,18 +30,19 @@ test.describe('Commit and Merge Operations', () => {
         await expect(page.getByRole('button', { name: 'Upload' })).toBeVisible({ timeout: 10000 });
 
         const fileCount = 2;
-        const filePaths: string[] = [];
+        const fileBuffers = [];
 
         for (let i = 0; i < fileCount; i++) {
             const fileName = `sync-commit-merge-test-in-syncCommitMerge-playwright-file-${i}.txt`;
-            const filePath = path.join(__dirname, fileName);
-            // Make each file larger to increase commit time
-            fs.writeFileSync(filePath, `Testing commit functionality - File ${i}\n`.repeat(1000));
-            filePaths.push(filePath);
-            createdFiles.push(filePath);
+            const content = `Testing commit functionality - File ${i}\n`.repeat(1000);
+            fileBuffers.push({
+                name: fileName,
+                mimeType: 'text/plain',
+                buffer: Buffer.from(content)
+            });
         }
 
-        await repositoryPage.uploadMultipleObjects(filePaths);
+        await repositoryPage.uploadMultipleObjects(fileBuffers);
 
         await expect(
             page.getByText(/sync-commit-merge-test-in-syncCommitMerge-playwright-file(-\d+)?\.txt/).first(),
@@ -193,11 +156,13 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.switchBranch(tempBranch);
 
         const fileName = 'sync-conflict-test-in-syncCommitMerge-playwright-file.txt';
-        const filePath = path.join(__dirname, fileName);
-        fs.writeFileSync(filePath, 'Version on main branch');
-        createdFiles.push(filePath);
+        const fileBuffer = {
+            name: fileName,
+            mimeType: 'text/plain',
+            buffer: Buffer.from('Version on main branch')
+        };
 
-        await repositoryPage.uploadObject(filePath);
+        await repositoryPage.uploadObject(fileBuffer);
         await expect(page.getByText(fileName)).toBeVisible();
         await page.getByRole('button', { name: 'Upload 1 File' }).click();
         await expect(page.getByRole('cell', { name: fileName })).toBeVisible({ timeout: 10000 });
@@ -216,8 +181,12 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(SOURCE_BRANCH);
 
-        fs.writeFileSync(filePath, 'Version on feature branch');
-        await repositoryPage.uploadObject(filePath);
+        const featureFileBuffer = {
+            name: fileName,
+            mimeType: 'text/plain',
+            buffer: Buffer.from('Version on feature branch')
+        };
+        await repositoryPage.uploadObject(featureFileBuffer);
         await expect(page.getByText(fileName)).toBeVisible();
         await page.getByRole('button', { name: 'Upload 1 File' }).click();
         await expect(page.getByRole('cell', { name: fileName })).toBeVisible({ timeout: 10000 });
