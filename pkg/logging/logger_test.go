@@ -6,9 +6,62 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
+
+func TestLogCallerTrimmer(t *testing.T) {
+	t.Run("dir name is just lakeFS", func(t *testing.T) {
+		frame := &runtime.Frame{
+			File:     "lakefs/to/main.go",
+			Line:     42,
+			Function: "main.someFunction",
+		}
+		wantFile := "lakefs/to/main.go:42"
+		wantFunction := "main.someFunction"
+		resultFunction, resultFile := logCallerTrimmer(frame)
+		if resultFile != wantFile {
+			t.Fatalf("Result File '%s', should be '%s'", resultFile, wantFile)
+		}
+		if resultFunction != wantFunction {
+			t.Fatalf("Result Function '%s', should be '%s'", resultFunction, wantFunction)
+		}
+	})
+
+	t.Run("dir name is lakeFS-foo", func(t *testing.T) {
+		frame := &runtime.Frame{
+			File:     "lakefs-foo/to/main.go",
+			Line:     42,
+			Function: "main.someFunction",
+		}
+		wantFile := "lakefs-foo/to/main.go:42"
+		wantFunction := "main.someFunction"
+		resultFunction, resultFile := logCallerTrimmer(frame)
+		if resultFile != wantFile {
+			t.Fatalf("Result File '%s', should be '%s'", resultFile, wantFile)
+		}
+		if resultFunction != wantFunction {
+			t.Fatalf("Result Function '%s', should be '%s'", resultFunction, wantFunction)
+		}
+	})
+	t.Run("dir name is just full absolute path", func(t *testing.T) {
+		frame := &runtime.Frame{
+			File:     "Users/Apps/lakeFS-foo/to/main.go",
+			Line:     42,
+			Function: "main.someFunction",
+		}
+		wantFile := "lakeFS-foo/to/main.go:42"
+		wantFunction := "main.someFunction"
+		resultFunction, resultFile := logCallerTrimmer(frame)
+		if resultFile != wantFile {
+			t.Fatalf("Result File '%s', should be '%s'", resultFile, wantFile)
+		}
+		if resultFunction != wantFunction {
+			t.Fatalf("Result Function '%s', should be '%s'", resultFunction, wantFunction)
+		}
+	})
+}
 
 func TestSetOutputs(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
