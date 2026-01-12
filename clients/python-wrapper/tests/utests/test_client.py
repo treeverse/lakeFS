@@ -96,3 +96,27 @@ credentials:
                 assert config.password == TEST_SECRET_ACCESS_KEY
             finally:
                 client._DEFAULT_CLIENT = None
+
+    def test_client_kwargs_override_config_file_env_var(self, monkeypatch, tmp_path):
+        # Test that kwargs override LAKECTL_CONFIG_FILE when both are set
+        # This is equivalent to lakectl's "flag_and_env" test
+        env_cfg = tmp_path / "env_config.yaml"
+        env_cfg.write_bytes(TEST_CONFIG.encode())
+
+        with lakectl_no_config_context(monkeypatch):
+            monkeypatch.setenv("LAKECTL_CONFIG_FILE", str(env_cfg))
+            # Import client module after setting env var
+            from lakefs import client
+            import importlib
+            client = importlib.reload(client)
+            try:
+                # Pass kwargs that should override the config file
+                clt = client.Client(**TEST_CONFIG_KWARGS)
+                config = clt.config
+                # Should use kwargs, not env config file
+                assert config.host == TEST_CONFIG_KWARGS["host"] + TEST_ENDPOINT_PATH
+                assert config.username == TEST_CONFIG_KWARGS["username"]
+                assert config.password == TEST_CONFIG_KWARGS["password"]
+                assert config.access_token == TEST_CONFIG_KWARGS["access_token"]
+            finally:
+                client._DEFAULT_CLIENT = None
