@@ -188,9 +188,8 @@ func TestAmzMetaAsMetadata_ExceedingLimit(t *testing.T) {
 
 	metadata, err := amzMetaAsMetadata(req)
 
-	assert.Nil(t, metadata)
-	assert.Error(t, err)
 	assert.ErrorIs(t, err, gwerrors.ErrMetadataTooLarge)
+	assert.Nil(t, metadata)
 }
 
 func TestAmzMetaAsMetadata_MultipleHeadersExceedingLimit(t *testing.T) {
@@ -202,7 +201,6 @@ func TestAmzMetaAsMetadata_MultipleHeadersExceedingLimit(t *testing.T) {
 
 	metadata, err := amzMetaAsMetadata(req)
 
-	assert.Nil(t, metadata)
-	assert.Error(t, err)
 	assert.ErrorIs(t, err, gwerrors.ErrMetadataTooLarge)
+	assert.Nil(t, metadata)
 }
