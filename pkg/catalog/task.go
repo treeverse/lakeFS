@@ -13,7 +13,7 @@ import (
 
 const (
 	taskIDNanoLength = 20
-	tasksPrefix      = "task"
+	tasksPrefix      = "tasks"
 )
 
 type TaskStep struct {
