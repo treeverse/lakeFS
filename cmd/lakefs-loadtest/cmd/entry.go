@@ -13,8 +13,8 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/wire"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -50,7 +50,7 @@ var entryCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 
-		confInterface, err := configfactory.BuildConfig("")
+		confInterface, err := wire.InitializeConfig("")
 		if err != nil {
 			fmt.Printf("config: %s\n", err)
 		}

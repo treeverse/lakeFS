@@ -18,14 +18,9 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
-	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
-	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
-	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
-	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
-	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
+	"github.com/treeverse/lakefs/pkg/wire"
+	wireapi "github.com/treeverse/lakefs/pkg/wire/api"
+	wirecatalog "github.com/treeverse/lakefs/pkg/wire/catalog"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -69,9 +64,9 @@ var runCmd = &cobra.Command{
 		baseCfg := cfg.GetBaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
-			// get current level before calling BuildConfig
+			// get current level before calling InitializeConfig
 			currentLevel := logging.Level()
-			c, err := configfactory.BuildConfig("")
+			c, err := wire.InitializeConfig("")
 			if err != nil {
 				logger.WithError(err).Error("Failed to reload configuration")
 				return
@@ -103,7 +98,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}
 
-		licenseManager, err := licensefactory.NewLicenseManager(ctx, cfg)
+		licenseManager, err := wire.InitializeLicenseManager(ctx, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create license manager")
 		}
@@ -112,7 +107,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("License validation failed")
 		}
 
-		icebergSyncer := apifactory.NewIcebergSyncController(cfg)
+		icebergSyncer := wire.InitializeIcebergController(cfg)
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
@@ -124,17 +119,17 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, installationID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		authService, err := wire.InitializeAuthService(ctx, cfg, logger, kvStore)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create authorization service")
 		}
 
-		authenticationService, err := authenticationfactory.NewAuthenticationService(ctx, cfg, logger)
+		authenticationService, err := wire.InitializeAuthenticationService(ctx, cfg, logger)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create authentication service")
 		}
 
-		loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
+		loginTokenProvider, err := wire.InitializeLoginTokenProvider(ctx, cfg, logger, kvStore)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create login token provider")
 		}
@@ -144,7 +139,7 @@ var runCmd = &cobra.Command{
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
 		// init block store
-		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
+		blockStore, err := wire.InitializeBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
@@ -167,7 +162,7 @@ var runCmd = &cobra.Command{
 			Config:                  cfg,
 			KVStore:                 kvStore,
 			PathProvider:            upload.DefaultPathProvider,
-			ConflictResolvers:       catalogfactory.BuildConflictResolvers(cfg, blockStore),
+			ConflictResolvers:       wire.InitializeConflictResolvers(cfg, blockStore),
 			ErrorToStatusCodeAndMsg: api.ErrorToStatusAndMsg,
 		}
 
@@ -177,7 +172,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		catalogExtendedOps := catalogfactory.BuildExtendedOperations(c)
+		catalogExtendedOps := wirecatalog.BuildExtendedOperations(c)
 
 		// Setup usage reporter - it is no longer possible to disable it
 		usageReporter := stats.NewUsageReporter(metadata.InstallationID, kvStore)
@@ -222,7 +217,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		middlewareAuthenticator, err := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
+		middlewareAuthenticator, err := wire.InitializeAuthenticatorChain(cfg, logger, authService)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create authentication chain")
 		}
@@ -292,7 +287,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
 		}
 
-		middlewareFactory, err := gatewayfactory.BuildMiddleware(ctx, cfg, logger)
+		middlewareFactory, err := wire.InitializeGatewayMiddleware(ctx, cfg, logger)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create gateway middleware")
 		}
@@ -341,7 +336,7 @@ var runCmd = &cobra.Command{
 		actionsService.SetEndpoint(server)
 
 		// register additional API services
-		err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+		err = wireapi.RegisterServices(ctx, wireapi.ServiceDependencies{
 			Config:                cfg,
 			Authenticator:         middlewareAuthenticator,
 			AuthService:           authService,

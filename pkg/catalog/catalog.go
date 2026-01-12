@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
-	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	wireblock "github.com/treeverse/lakefs/pkg/wire/block"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -330,7 +330,7 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 
 func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
-	adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg.Config)
+	adapter, err := wireblock.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)

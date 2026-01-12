@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/wire"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
@@ -241,7 +241,7 @@ var migrateTaskRunCmd = &cobra.Command{
 		defer kvStore.Close()
 
 		// init block store
-		blockAdapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg)
+		blockAdapter, err := wire.InitializeBlockAdapter(ctx, nil, cfg)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Failed to create block adapter: %s\n", err)
 			os.Exit(1)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/cmd/lakefs/cmd"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	wireconfig "github.com/treeverse/lakefs/pkg/wire/config"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
@@ -33,7 +33,7 @@ func TestDoMigrate(t *testing.T) {
 	})
 
 	t.Run("initial_kv_version", func(t *testing.T) {
-		cfg := configfactory.ConfigImpl{}
+		cfg := wireconfig.ConfigImpl{}
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		cfg.Auth.GetBaseAuthConfig().Encrypt.SecretKey = "test"
 		kvStore := kvtest.GetStore(ctx, t)
@@ -46,7 +46,7 @@ func TestDoMigrate(t *testing.T) {
 	})
 
 	t.Run("from_acl_v1_force", func(t *testing.T) {
-		cfg := configfactory.ConfigImpl{}
+		cfg := wireconfig.ConfigImpl{}
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion))
@@ -58,7 +58,7 @@ func TestDoMigrate(t *testing.T) {
 	})
 
 	t.Run("from_acl_v2", func(t *testing.T) {
-		cfg := configfactory.ConfigImpl{}
+		cfg := wireconfig.ConfigImpl{}
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		startVer := kv.ACLNoReposMigrateVersion
 		for !kv.IsLatestSchemaVersion(startVer) {
@@ -74,7 +74,7 @@ func TestDoMigrate(t *testing.T) {
 	})
 
 	t.Run("latest_version", func(t *testing.T) {
-		cfg := configfactory.ConfigImpl{}
+		cfg := wireconfig.ConfigImpl{}
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.NextSchemaVersion-1))
@@ -86,7 +86,7 @@ func TestDoMigrate(t *testing.T) {
 	})
 
 	t.Run("next_version", func(t *testing.T) {
-		cfg := configfactory.ConfigImpl{}
+		cfg := wireconfig.ConfigImpl{}
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.NextSchemaVersion))

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
+	wireconfig "github.com/treeverse/lakefs/pkg/wire/config"
+	wiregateway "github.com/treeverse/lakefs/pkg/wire/gateway"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -49,7 +49,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 
-	cfg := &configfactory.ConfigImpl{}
+	cfg := &wireconfig.ConfigImpl{}
 	_, err = config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 	cfg.Committed.LocalCache.Dir = path.Join(t.TempDir(), "cache")
@@ -73,7 +73,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	testutil.Must(t, err)
 
 	logger := logging.ContextUnavailable().WithField("test", t.Name())
-	middlewareFactory, err := gatewayfactory.BuildMiddleware(ctx, cfg, logger)
+	middlewareFactory, err := wiregateway.BuildMiddleware(ctx, cfg, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create gateway middleware")
 	}

@@ -12,8 +12,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/wire"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -88,7 +88,7 @@ func newConfig() (config.Config, error) {
 		}
 	}
 
-	cfg, err := configfactory.BuildConfig(configName)
+	cfg, err := wire.InitializeConfig(configName)
 	if err != nil {
 		return nil, err
 	}

@@ -14,10 +14,10 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
-	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
+	wireapi "github.com/treeverse/lakefs/pkg/wire/api"
+	wireauthentication "github.com/treeverse/lakefs/pkg/wire/authentication"
+	wireconfig "github.com/treeverse/lakefs/pkg/wire/config"
+	wirelicense "github.com/treeverse/lakefs/pkg/wire/license"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -120,7 +120,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	viper.Set("committed.sstable.memory.cache_size_bytes", 2*1024*1024)
 
 	collector := &memCollector{}
-	cfg := &configfactory.ConfigImpl{}
+	cfg := &wireconfig.ConfigImpl{}
 	baseCfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 	cfg.Committed.LocalCache.Dir = path.Join(t.TempDir(), "cache")
@@ -173,11 +173,11 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 
 	authenticationService := authentication.NewDummyService()
-	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
+	licenseManager, _ := wirelicense.NewLicenseManager(ctx, cfg)
 	logger := logging.FromContext(ctx)
-	loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
+	loginTokenProvider, err := wireauthentication.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
 	testutil.Must(t, err)
-	icebergSyncer := apifactory.NewIcebergSyncController(cfg)
+	icebergSyncer := wireapi.NewIcebergSyncController(cfg)
 	handler := api.Serve(
 		cfg,
 		c,
@@ -205,7 +205,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	cloud.Reset()
 
 	// register additional API services
-	err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+	err = wireapi.RegisterServices(ctx, wireapi.ServiceDependencies{
 		Config:                cfg,
 		Authenticator:         authenticator,
 		AuthService:           authService,

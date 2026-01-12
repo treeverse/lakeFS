@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/wire"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -80,7 +80,7 @@ var setupCmd = &cobra.Command{
 
 		logger := logging.FromContext(ctx)
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
-		authService, err = authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		authService, err = wire.InitializeAuthService(ctx, cfg, logger, kvStore)
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)

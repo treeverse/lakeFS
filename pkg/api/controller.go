@@ -27,7 +27,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
+	wireapi "github.com/treeverse/lakefs/pkg/wire/api"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -1137,7 +1137,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
-	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	condition, err := wireapi.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3731,7 +3731,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	var setOpts []graveler.SetOptionsFunc
 	// Handle preconditions
-	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	condition, err := wireapi.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
