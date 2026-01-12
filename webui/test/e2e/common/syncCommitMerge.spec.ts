@@ -30,7 +30,7 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.createBranch(SOURCE_BRANCH);
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(SOURCE_BRANCH);
-        await expect(page.getByRole('button', { name: 'Upload' })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeVisible({ timeout: 10000 });
 
         const fileBuffers = [
             {
