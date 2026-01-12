@@ -7,6 +7,9 @@ const SOURCE_BRANCH = 'feature-branch';
 const DEST_BRANCH = 'main';
 const COMMIT_MESSAGE = 'Test commit';
 const MERGE_MESSAGE = 'Test merge';
+const FILE_1_NAME = 'sync-commit-merge-test-in-syncCommitMerge-playwright-file-0.txt';
+const FILE_2_NAME = 'sync-commit-merge-test-in-syncCommitMerge-playwright-file-1.txt';
+const CONFLICT_FILE_NAME = 'sync-conflict-test-in-syncCommitMerge-playwright-file.txt';
 
 test.describe('Commit and Merge Operations', () => {
     test.describe.configure({ mode: 'serial' });
@@ -29,35 +32,29 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.switchBranch(SOURCE_BRANCH);
         await expect(page.getByRole('button', { name: 'Upload' })).toBeVisible({ timeout: 10000 });
 
-        const fileCount = 2;
-        const fileBuffers = [];
-
-        for (let i = 0; i < fileCount; i++) {
-            const fileName = `sync-commit-merge-test-in-syncCommitMerge-playwright-file-${i}.txt`;
-            const content = `Testing commit functionality - File ${i}\n`.repeat(1000);
-            fileBuffers.push({
-                name: fileName,
+        const fileBuffers = [
+            {
+                name: FILE_1_NAME,
                 mimeType: 'text/plain',
-                buffer: Buffer.from(content)
-            });
-        }
+                buffer: Buffer.from('Testing commit functionality - File 0\n'.repeat(1000))
+            },
+            {
+                name: FILE_2_NAME,
+                mimeType: 'text/plain',
+                buffer: Buffer.from('Testing commit functionality - File 1\n'.repeat(1000))
+            }
+        ];
 
         await repositoryPage.uploadMultipleObjects(fileBuffers);
 
-        await expect(
-            page.getByText(/sync-commit-merge-test-in-syncCommitMerge-playwright-file(-\d+)?\.txt/).first(),
-        ).toBeVisible();
-        await page.getByRole('button', { name: `Upload ${fileCount} Files` }).click();
+        await expect(page.getByText(FILE_1_NAME).first()).toBeVisible({ timeout: 10000 });
+        await page.getByRole('button', { name: 'Upload 2 Files' }).click();
 
-        await expect(
-            page
-                .getByRole('cell', { name: /sync-commit-merge-test-in-syncCommitMerge-playwright-file(-\d+)?\.txt/ })
-                .first(),
-        ).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible({ timeout: 10000 });
 
         await repositoryPage.showOnlyChanges();
         const count = await repositoryPage.getUncommittedCount();
-        expect(count).toBeGreaterThan(0);
+        expect(count).toBe(2);
 
         // Set up network request listener to verify sync commit endpoint is called
         const commitRequestPromise = page.waitForRequest((request) => {
@@ -81,11 +78,7 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.gotoObjectsTab();
         await expect(page.getByRole('button', { name: 'Uncommitted Changes' })).not.toBeVisible();
 
-        await expect(
-            page
-                .getByRole('cell', { name: /sync-commit-merge-test-in-syncCommitMerge-playwright-file(-\d+)?\.txt/ })
-                .first(),
-        ).toBeVisible();
+        await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible();
     });
 
     test('Merge: Merge feature branch into main', async ({ page }) => {
@@ -97,9 +90,7 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.selectComparedToBranch(SOURCE_BRANCH);
 
         // Wait for diff to load
-        await expect(
-            page.getByText(/sync-commit-merge-test-in-syncCommitMerge-playwright-file(-\d+)?\.txt/).first(),
-        ).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText(FILE_1_NAME).first()).toBeVisible({ timeout: 10000 });
 
         // Set up network request listener to verify sync merge endpoint is called
         const mergeRequestPromise = page.waitForRequest((request) => {
@@ -122,11 +113,7 @@ test.describe('Commit and Merge Operations', () => {
 
         // Go to objects and verify the merged files are there
         await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${DEST_BRANCH}`);
-        await expect(
-            page
-                .getByRole('cell', { name: /sync-commit-merge-test-in-syncCommitMerge-playwright-file(-\d+)?\.txt/ })
-                .first(),
-        ).toBeVisible();
+        await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible();
     });
 
     test('Commit: Handle empty commit attempt', async ({ page }) => {
@@ -155,17 +142,16 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(tempBranch);
 
-        const fileName = 'sync-conflict-test-in-syncCommitMerge-playwright-file.txt';
         const fileBuffer = {
-            name: fileName,
+            name: CONFLICT_FILE_NAME,
             mimeType: 'text/plain',
             buffer: Buffer.from('Version on main branch')
         };
 
         await repositoryPage.uploadObject(fileBuffer);
-        await expect(page.getByText(fileName)).toBeVisible();
+        await expect(page.getByText(CONFLICT_FILE_NAME)).toBeVisible({ timeout: 10000 });
         await page.getByRole('button', { name: 'Upload 1 File' }).click();
-        await expect(page.getByRole('cell', { name: fileName })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('cell', { name: CONFLICT_FILE_NAME })).toBeVisible({ timeout: 10000 });
 
         // Commit on temp branch
         await repositoryPage.showOnlyChanges();
@@ -182,14 +168,14 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.switchBranch(SOURCE_BRANCH);
 
         const featureFileBuffer = {
-            name: fileName,
+            name: CONFLICT_FILE_NAME,
             mimeType: 'text/plain',
             buffer: Buffer.from('Version on feature branch')
         };
         await repositoryPage.uploadObject(featureFileBuffer);
-        await expect(page.getByText(fileName)).toBeVisible();
+        await expect(page.getByText(CONFLICT_FILE_NAME)).toBeVisible({ timeout: 10000 });
         await page.getByRole('button', { name: 'Upload 1 File' }).click();
-        await expect(page.getByRole('cell', { name: fileName })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('cell', { name: CONFLICT_FILE_NAME })).toBeVisible({ timeout: 10000 });
 
         // Commit on feature branch
         await repositoryPage.showOnlyChanges();
@@ -216,9 +202,9 @@ test.describe('Commit and Merge Operations', () => {
         await expect(page.getByRole('button', { name: `branch: ${DEST_BRANCH}` })).toBeVisible();
 
         await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${DEST_BRANCH}`);
-        await expect(page.getByRole('cell', { name: fileName })).toBeVisible();
+        await expect(page.getByRole('cell', { name: CONFLICT_FILE_NAME })).toBeVisible();
 
-        await page.getByRole('link', { name: fileName }).click();
+        await page.getByRole('link', { name: CONFLICT_FILE_NAME }).click();
 
         // Verify the content is from the source branch (feature-branch) due to source-wins strategy
         await expect(page.getByText('Version on feature branch')).toBeVisible({ timeout: 10000 });
