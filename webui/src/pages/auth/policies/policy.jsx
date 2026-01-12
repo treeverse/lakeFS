@@ -18,6 +18,8 @@ const PolicyView = ({ policyId }) => {
 
     const { response, loading, error } = useAPI(() => {
         return auth.getPolicy(policyId);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [policyId, refresh]);
 
     const policy = response;

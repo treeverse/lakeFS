@@ -37,7 +37,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -3989,7 +3988,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -5823,7 +5822,6 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	storageConfig := c.Config.GetBaseConfig().StorageConfig()
 	metadataProviders := []stats.MetadataProvider{
 		c.MetadataManager,
-		cloud.NewMetadataProvider(storageConfig, false),
 		block.NewMetadataProvider(storageConfig),
 	}
 	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)

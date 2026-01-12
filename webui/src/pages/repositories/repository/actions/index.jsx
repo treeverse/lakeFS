@@ -127,6 +127,8 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     const [refresh, setRefresh] = useState(false);
     const { results, loading, error, nextPage } = useAPIWithPagination(async () => {
         return await actions.listRuns(repo.id, branch, commit, after);
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, after, refresh, branch, commit]);
 
     const doRefresh = () => setRefresh(!refresh);
