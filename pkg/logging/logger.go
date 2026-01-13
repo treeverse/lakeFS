@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"reflect"
 	"runtime"
@@ -72,18 +73,38 @@ func Level() string {
 	return defaultLogger.GetLevel().String()
 }
 
-type Fields map[string]interface{}
+type Fields map[string]any
 
 // logCallerTrimmer is used to trim the caller paths to be relative to the project root
 func logCallerTrimmer(frame *runtime.Frame) (function string, file string) {
 	indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
 	if indexOfModule != -1 {
-		file = frame.File[indexOfModule+len(ProjectDirectoryName):]
+		// Find the next path separator after the project directory name match
+		remainingPath := frame.File[indexOfModule+len(ProjectDirectoryName):]
+		separatorIdx := strings.Index(remainingPath, string(os.PathSeparator))
+		if separatorIdx != -1 {
+			file = remainingPath[separatorIdx:]
+		} else {
+			file = remainingPath
+		}
 	} else {
 		file = frame.File
 	}
 	file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, string(os.PathSeparator)), frame.Line)
-	function = strings.TrimPrefix(frame.Function, fmt.Sprintf("%s%s", ModuleName, string(os.PathSeparator)))
+
+	// For function name, find the module and then capture until the next separator
+	indexOfModuleName := strings.Index(frame.Function, ModuleName)
+	if indexOfModuleName != -1 {
+		remainingFunc := frame.Function[indexOfModuleName+len(ModuleName):]
+		if _, after, found := strings.Cut(remainingFunc, "/"); found {
+			function = after
+		} else {
+			// Handle case where there's no "/" but might have a "." (e.g., module.Function)
+			function = strings.TrimPrefix(remainingFunc, "/")
+		}
+	} else {
+		function = frame.Function
+	}
 	return
 }
 
@@ -211,27 +232,27 @@ func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
 
 type Logger interface {
 	WithContext(ctx context.Context) Logger
-	WithField(key string, value interface{}) Logger
+	WithField(key string, value any) Logger
 	WithFields(fields Fields) Logger
 	WithError(err error) Logger
-	Trace(args ...interface{})
-	Debug(args ...interface{})
-	Info(args ...interface{})
-	Warn(args ...interface{})
-	Warning(args ...interface{})
-	Error(args ...interface{})
-	Fatal(args ...interface{})
-	Panic(args ...interface{})
-	Log(level logrus.Level, args ...interface{})
-	Tracef(format string, args ...interface{})
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Warningf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Panicf(format string, args ...interface{})
-	Logf(level logrus.Level, format string, args ...interface{})
+	Trace(args ...any)
+	Debug(args ...any)
+	Info(args ...any)
+	Warn(args ...any)
+	Warning(args ...any)
+	Error(args ...any)
+	Fatal(args ...any)
+	Panic(args ...any)
+	Log(level logrus.Level, args ...any)
+	Tracef(format string, args ...any)
+	Debugf(format string, args ...any)
+	Infof(format string, args ...any)
+	Warnf(format string, args ...any)
+	Warningf(format string, args ...any)
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
+	Panicf(format string, args ...any)
+	Logf(level logrus.Level, format string, args ...any)
 	IsTracing() bool
 	IsDebugging() bool
 	IsInfo() bool
@@ -250,7 +271,7 @@ func (l *logrusEntryWrapper) WithContext(ctx context.Context) Logger {
 	)
 }
 
-var durationType = reflect.TypeOf(time.Duration(0))
+var durationType = reflect.TypeFor[time.Duration]()
 
 // splitDurationFields modifies fields to split every field of type
 // time.Duration into 2 fields, one "_nsecs" and one "_str".
@@ -271,7 +292,7 @@ func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
 	return &logrusEntryWrapper{l.e.WithFields(logrus.Fields(fields))}
 }
 
-func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {
+func (l *logrusEntryWrapper) WithField(key string, value any) Logger {
 	return l.WithFields(Fields{key: value})
 }
 
@@ -279,75 +300,75 @@ func (l *logrusEntryWrapper) WithError(err error) Logger {
 	return &logrusEntryWrapper{l.e.WithError(err)}
 }
 
-func (l *logrusEntryWrapper) Trace(args ...interface{}) {
+func (l *logrusEntryWrapper) Trace(args ...any) {
 	l.e.Trace(args...)
 }
 
-func (l *logrusEntryWrapper) Debug(args ...interface{}) {
+func (l *logrusEntryWrapper) Debug(args ...any) {
 	l.e.Debug(args...)
 }
 
-func (l *logrusEntryWrapper) Info(args ...interface{}) {
+func (l *logrusEntryWrapper) Info(args ...any) {
 	l.e.Info(args...)
 }
 
-func (l *logrusEntryWrapper) Warn(args ...interface{}) {
+func (l *logrusEntryWrapper) Warn(args ...any) {
 	l.e.Warn(args...)
 }
 
-func (l *logrusEntryWrapper) Warning(args ...interface{}) {
+func (l *logrusEntryWrapper) Warning(args ...any) {
 	l.e.Warning(args...)
 }
 
-func (l *logrusEntryWrapper) Error(args ...interface{}) {
+func (l *logrusEntryWrapper) Error(args ...any) {
 	l.e.Error(args...)
 }
 
-func (l *logrusEntryWrapper) Fatal(args ...interface{}) {
+func (l *logrusEntryWrapper) Fatal(args ...any) {
 	l.e.Fatal(args...)
 }
 
-func (l *logrusEntryWrapper) Panic(args ...interface{}) {
+func (l *logrusEntryWrapper) Panic(args ...any) {
 	l.e.Panic(args...)
 }
 
-func (l *logrusEntryWrapper) Log(level logrus.Level, args ...interface{}) {
+func (l *logrusEntryWrapper) Log(level logrus.Level, args ...any) {
 	l.e.Log(level, args...)
 }
 
-func (l *logrusEntryWrapper) Tracef(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Tracef(format string, args ...any) {
 	l.e.Tracef(format, args...)
 }
 
-func (l *logrusEntryWrapper) Debugf(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Debugf(format string, args ...any) {
 	l.e.Debugf(format, args...)
 }
 
-func (l *logrusEntryWrapper) Infof(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Infof(format string, args ...any) {
 	l.e.Infof(format, args...)
 }
 
-func (l *logrusEntryWrapper) Warnf(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Warnf(format string, args ...any) {
 	l.e.Warnf(format, args...)
 }
 
-func (l *logrusEntryWrapper) Warningf(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Warningf(format string, args ...any) {
 	l.e.Warningf(format, args...)
 }
 
-func (l *logrusEntryWrapper) Errorf(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Errorf(format string, args ...any) {
 	l.e.Errorf(format, args...)
 }
 
-func (l *logrusEntryWrapper) Fatalf(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Fatalf(format string, args ...any) {
 	l.e.Fatalf(format, args...)
 }
 
-func (l *logrusEntryWrapper) Panicf(format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Panicf(format string, args ...any) {
 	l.e.Panicf(format, args...)
 }
 
-func (l *logrusEntryWrapper) Logf(level logrus.Level, format string, args ...interface{}) {
+func (l *logrusEntryWrapper) Logf(level logrus.Level, format string, args ...any) {
 	l.e.Logf(level, format, args...)
 }
 
@@ -421,8 +442,6 @@ func AddFields(ctx context.Context, fields Fields) context.Context {
 	if ctxFields != nil {
 		loggerFields = ctxFields.(Fields)
 	}
-	for k, v := range fields {
-		loggerFields[k] = v
-	}
+	maps.Copy(loggerFields, fields)
 	return context.WithValue(ctx, LogFieldsContextKey, loggerFields)
 }

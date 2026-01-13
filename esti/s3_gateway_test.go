@@ -183,7 +183,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 				}()
 			}
 
-			for i := 0; i < numUploads; i++ {
+			for range numUploads {
 				objects <- Object{
 					Content: testutil.RandomString(r, randomDataContentLength),
 					Path:    gatewayTestPrefix + testutil.RandomS3Path(randomDataPathLength-len(gatewayTestPrefix)),
@@ -235,7 +235,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 			require.NoError(t, err, "failed to create multipart upload")
 
 			parts := make([][]byte, multipartNumberOfParts)
-			for i := 0; i < multipartNumberOfParts; i++ {
+			for i := range multipartNumberOfParts {
 				parts[i] = randstr.Bytes(multipartPartSize + i)
 			}
 
@@ -399,7 +399,7 @@ func TestListMultipartUploads(t *testing.T) {
 	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
 	require.NoError(t, err, "failed to create multipart upload")
 	parts := make([][]byte, numOfParts)
-	for i := 0; i < numOfParts; i++ {
+	for i := range numOfParts {
 		parts[i] = randstr.Bytes(multipartPartSize + i)
 	}
 
@@ -719,6 +719,33 @@ func TestS3HeadBucket(t *testing.T) {
 		if ok {
 			t.Errorf("Got that bad bucket %s exists", badRepo)
 		}
+	})
+}
+
+func TestS3CreateBucket(t *testing.T) {
+	t.Parallel()
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	nonExistentRepo := "bucket-that-does-not-exist"
+	s3Client := createS3Client(viper.GetString("s3_endpoint"), t)
+
+	t.Run("create_bucket_not_exists", func(t *testing.T) {
+		t.Parallel()
+		_, err := s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(nonExistentRepo),
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, gtwerrors.ErrNotImplemented.Error())
+	})
+
+	t.Run("create_bucket_exists", func(t *testing.T) {
+		t.Parallel()
+		_, err := s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(repo),
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, gtwerrors.ErrBucketAlreadyExists.Error())
 	})
 }
 

@@ -144,7 +144,7 @@ func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord
 		Key:          key,
 	}
 	tmp := proto.Clone(dst)
-	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
+	setting, err := m.cache.GetOrSet(k, func() (v any, err error) {
 		_, err = m.GetLatest(ctx, repository, key, tmp)
 		if errors.Is(err, graveler.ErrNotFound) {
 			// do not return this error here, so that empty settings are cached

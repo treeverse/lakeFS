@@ -2,7 +2,8 @@
     "parser": "@typescript-eslint/parser",
     "plugins": [
         "@typescript-eslint",
-        "compat"
+        "compat",
+        "react-hooks"
     ],
     "env": {
       "browser": true,
@@ -19,14 +20,27 @@
       "strict": "error",
       "react/prop-types": 0,
       "react/jsx-key": 0,
-      "react/display-name": 0
+      "react/display-name": 0,
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_"
+        }
+      ],
+      "react-hooks/exhaustive-deps": [
+        "error",
+        {
+          "additionalHooks": "(useAPI|useAPIWithPagination)"
+        }
+      ]
     },
     "extends": [
       "eslint:recommended",
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended",
       "plugin:react/recommended",
-      "plugin:compat/recommended"
+      "plugin:compat/recommended",
+      "plugin:prettier/recommended"
     ],
     "globals": {
       "process": true

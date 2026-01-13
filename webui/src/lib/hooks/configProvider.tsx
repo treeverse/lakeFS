@@ -1,9 +1,9 @@
-import React, {createContext, FC, useContext, useEffect, useMemo} from "react";
+import React, { createContext, FC, useContext, useEffect, useMemo } from 'react';
 
-import { config } from "../api";
-import { usePluginManager } from "../../extendable/plugins/pluginsContext";
-import {useAPI} from "./api";
-import {useAuth} from "../auth/authContext";
+import { config } from '../api';
+import { usePluginManager } from '../../extendable/plugins/pluginsContext';
+import { useAPI } from './api';
+import { useAuth } from '../auth/authContext';
 
 type ConfigContextType = {
     error: Error | null;
@@ -15,6 +15,11 @@ type ConfigType = {
     storages?: StorageConfig[];
     uiConfig?: UIConfig;
     versionConfig?: VersionConfig;
+    capabilitiesConfig?: CapabilitiesConfig;
+};
+
+type CapabilitiesConfig = {
+    async_ops?: boolean;
 };
 
 type StorageConfig = {
@@ -56,10 +61,15 @@ const configContext = createContext<ConfigContextType>(configInitialState);
 
 const useConfigContext = () => useContext(configContext);
 
-const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
+const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     const pluginManager = usePluginManager();
-    const {user} = useAuth();
-    const { response, loading, error } = useAPI(() => config.getConfig(), [user]);
+    const { user } = useAuth();
+    const { response, loading, error } = useAPI(
+        () => config.getConfig(),
+        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [user],
+    );
 
     useEffect(() => {
         if (response) {
@@ -68,18 +78,13 @@ const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     }, [response, pluginManager]);
 
     const value = useMemo(
-        () => (
-            { config: response ?? null, loading, error } satisfies ConfigContextType
-        ),
-        [response, loading, error]);
-
-    return (
-        <configContext.Provider value={value}>
-            {children}
-        </configContext.Provider>
+        () => ({ config: response ?? null, loading, error }) satisfies ConfigContextType,
+        [response, loading, error],
     );
+
+    return <configContext.Provider value={value}>{children}</configContext.Provider>;
 };
 
-export type { ConfigType, CustomViewer };
+export type { ConfigType, CustomViewer, CapabilitiesConfig };
 
 export { ConfigProvider, useConfigContext };

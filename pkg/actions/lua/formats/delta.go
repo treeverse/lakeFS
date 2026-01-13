@@ -138,14 +138,14 @@ var functions = map[string]func(client *DeltaClient) lua.Function{
 
 // AccessProvider is used to provide different expected access properties to different storage providers
 type AccessProvider interface {
-	GetAccessProperties() (interface{}, error)
+	GetAccessProperties() (any, error)
 }
 
 type AWSInfo struct {
 	AWSProps storage.AWSProperties
 }
 
-func (awsI AWSInfo) GetAccessProperties() (interface{}, error) {
+func (awsI AWSInfo) GetAccessProperties() (any, error) {
 	return awsI, nil
 }
 

@@ -18,22 +18,22 @@ export class RepositoryPage {
 
   async clickObject(objectName: string): Promise<void> {
     await this.page
-      .getByRole("cell", { name: objectName })
-      .getByRole("link")
-      .click();
+        .getByRole("cell", { name: objectName })
+        .getByRole("link")
+        .click();
   }
 
   // branch operations
 
   async createBranch(name: string): Promise<void> {
     await this.page
-      .getByRole("link", { name: "Branches", exact: false })
-      .click();
+        .getByRole("link", { name: "Branches", exact: false })
+        .click();
     await this.page.getByRole("button", { name: "Create Branch" }).click();
     await this.page.getByPlaceholder("Branch Name").fill(name);
     await this.page
-      .getByRole("button", { name: "Create", exact: true })
-      .click();
+        .getByRole("button", { name: "Create", exact: true })
+        .click();
   }
 
   async switchBranch(name: string): Promise<void> {
@@ -41,6 +41,16 @@ export class RepositoryPage {
     await this.page.getByRole("button", { name }).click();
     // Wait for URL to update after branch switch
     await this.page.waitForURL(/.*ref=.*/, { timeout: 5000 });
+  }
+
+  async selectComparedToBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Compared to branch: " }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
+  }
+
+  async switchBaseBranch(name: string): Promise<void> {
+    await this.page.getByRole("button", { name: "Base branch: " }).click();
+    await this.page.getByRole("button", { name, exact: true }).first().click();
   }
 
   // file manipulation operations
@@ -54,11 +64,15 @@ export class RepositoryPage {
     const firstRow = this.page.locator('table tbody tr').first();
     const actionButton = firstRow.locator('button').last();
 
+    // Scroll the row into the viewport center to avoid navbar overlap
+    await firstRow.scrollIntoViewIfNeeded();
+
     // Hover and wait for the action button to actually become visible
     await firstRow.hover();
     await actionButton.waitFor({ state: 'visible', timeout: 5000 });
 
-    await actionButton.click();
+    // Click with force since navbar sometimes intercepts even though button is visible
+    await actionButton.click({ force: true });
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
   }
@@ -72,10 +86,10 @@ export class RepositoryPage {
   async getUncommittedCount(): Promise<number> {
     await this.page.locator(".tree-container div.card").isVisible();
     return this.page
-      .locator("table.table")
-      .locator("tbody")
-      .locator("tr")
-      .count();
+        .locator("table.table")
+        .locator("tbody")
+        .locator("tr")
+        .count();
   }
 
   async commitChanges(commitMsg: string): Promise<void> {
@@ -86,9 +100,9 @@ export class RepositoryPage {
       await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
     }
     await this.page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Commit Changes" })
-      .click();
+        .getByRole("dialog")
+        .getByRole("button", { name: "Commit Changes" })
+        .click();
   }
 
   // merge operations
@@ -97,18 +111,13 @@ export class RepositoryPage {
     await this.page.getByRole("button", { name: "Merge" }).click();
     if (commitMsg?.length) {
       await this.page
-        .getByPlaceholder("Commit Message (Optional)")
-        .fill(commitMsg);
+          .getByPlaceholder("Commit Message (Optional)")
+          .fill(commitMsg);
     }
     await this.page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Merge" })
-      .click();
-  }
-
-  async switchBaseBranch(name: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Base branch: " }).click();
-    await this.page.getByRole("button", { name }).click();
+        .getByRole("dialog")
+        .getByRole("button", { name: "Merge" })
+        .click();
   }
 
   // navigation

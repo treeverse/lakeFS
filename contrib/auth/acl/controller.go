@@ -630,14 +630,14 @@ func (c *Controller) handleAPIError(w http.ResponseWriter, err error) bool {
 	return true
 }
 
-func writeError(w http.ResponseWriter, code int, v interface{}) {
+func writeError(w http.ResponseWriter, code int, v any) {
 	apiErr := apigen.Error{
 		Message: fmt.Sprint(v),
 	}
 	writeResponse(w, code, apiErr)
 }
 
-func writeResponse(w http.ResponseWriter, code int, response interface{}) {
+func writeResponse(w http.ResponseWriter, code int, response any) {
 	log := logging.ContextUnavailable()
 	if response == nil {
 		w.WriteHeader(code)

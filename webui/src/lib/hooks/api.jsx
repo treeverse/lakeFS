@@ -1,12 +1,12 @@
-import {useEffect, useState} from 'react';
-import {AuthenticationError} from "../api";
-import {useAuth} from "../auth/authContext";
+import { useEffect, useState, useCallback } from 'react';
+import { AuthenticationError } from '../api';
+import { useAuth } from '../auth/authContext';
 
 const initialPaginationState = {
     loading: true,
     error: null,
     nextPage: null,
-    results: []
+    results: [],
 };
 
 export const useAPIWithPagination = (promise, deps = []) => {
@@ -14,33 +14,34 @@ export const useAPIWithPagination = (promise, deps = []) => {
 
     // do the actual API request
     // we do this if pagination changed, or if we reset to an initial state
-    const {response, error, loading} = useAPI(() => {
-        setPagination({...initialPaginationState});
+    const { response, error, loading } = useAPI(() => {
+        setPagination({ ...initialPaginationState });
         return promise();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [...deps, initialPaginationState]);
 
     useEffect(() => {
         if (loading) {
-            setPagination({results: [], loading: true});
+            setPagination({ results: [], loading: true });
             return;
         }
 
         if (!!error || !response) {
-            setPagination({error, loading: false});
+            setPagination({ error, loading: false });
             return;
         }
 
         // calculate current state on API response
         setPagination({
             error: null,
-            nextPage: (!!response.pagination && response.pagination.has_more) ? response.pagination.next_offset : null,
+            nextPage: !!response.pagination && response.pagination.has_more ? response.pagination.next_offset : null,
             loading: false,
-            results: response.results
+            results: response.results,
         });
     }, [response, loading, error]);
 
     return pagination;
-}
+};
 
 const initialAPIState = {
     loading: true,
@@ -52,6 +53,7 @@ const initialAPIState = {
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
     const { onUnauthenticated } = useAuth();
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         let isMounted = true;
@@ -76,7 +78,13 @@ export const useAPI = (promise, deps = []) => {
             }
         };
         execute();
-        return () => isMounted = false;
-    }, deps);
-    return {...request};
-}
+        return () => (isMounted = false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [...deps, refreshKey]);
+
+    const refetch = useCallback(() => {
+        setRefreshKey((prev) => prev + 1);
+    }, []);
+
+    return { ...request, refetch };
+};

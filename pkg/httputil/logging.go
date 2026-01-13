@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"context"
+	"maps"
 	"net/http"
 	"strings"
 	"time"
@@ -62,6 +63,13 @@ func RequestIDFromContext(ctx context.Context) *string {
 	return &ret
 }
 
+func CopyRequestIDFromContext(srcCtx, dstCtx context.Context) context.Context {
+	if val := srcCtx.Value(RequestIDContextKey); val != nil {
+		return context.WithValue(dstCtx, RequestIDContextKey, val)
+	}
+	return dstCtx
+}
+
 func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string, isAdvancedAuth bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,9 +86,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			}
 			if isAdvancedAuth {
 				requestFields[logging.RequestIDFieldKey] = reqID
-				for k, v := range fields {
-					requestFields[k] = v
-				}
+				maps.Copy(requestFields, fields)
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			writer.Header().Set(requestIDHeaderName, reqID)

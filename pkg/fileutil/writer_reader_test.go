@@ -13,7 +13,7 @@ func TestWriterThenReader(t *testing.T) {
 	text := []byte("the quick brown fox jumps over the lazy dog. ")
 
 	const count = 100000
-	for i := 0; i < count; i++ {
+	for i := range count {
 		l, err := writer.Write(text)
 		if err != nil {
 			t.Fatalf("writing block %d: %s", i, err)
@@ -29,7 +29,7 @@ func TestWriterThenReader(t *testing.T) {
 		t.Fatalf("start reading fileWriterThenReader: %s", err)
 	}
 	t.Log("total length", length, "reader", reader)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		p := make([]byte, len(text))
 		l, err := reader.Read(p)
 		if err != nil {
@@ -45,7 +45,7 @@ func TestWriterThenReader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rewind fileWriterThenReader: %s", err)
 	}
-	for i := 0; i < count; i++ {
+	for i := range count {
 		p := make([]byte, len(text))
 		l, err := reader.Read(p)
 		if err != nil {

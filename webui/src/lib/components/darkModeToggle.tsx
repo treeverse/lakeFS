@@ -1,7 +1,7 @@
-import React, { FC, useContext } from "react";
-import "@theme-toggles/react/css/Classic.css";
-import { Classic } from "@theme-toggles/react";
-import { AppActionType, AppContext } from "../hooks/appContext";
+import React, { FC, useContext } from 'react';
+import '@theme-toggles/react/css/Classic.css';
+import { Classic } from '@theme-toggles/react';
+import { AppActionType, AppContext } from '../hooks/appContext';
 
 const DarkModeToggle: FC = () => {
     const { state, dispatch } = useContext(AppContext);
@@ -25,7 +25,7 @@ const DarkModeToggle: FC = () => {
                 marginRight: 'var(--spacing-md)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
             }}
         />
     );

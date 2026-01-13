@@ -15,11 +15,10 @@ PY_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" -e PYTHON_PO
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
 
-GOLANGCI_LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 BUF_CLI_VERSION=v1.54.0
 
 ifndef PACKAGE_VERSION
-	PACKAGE_VERSION=0.1.0-SNAPSHOT
+	PACKAGE_VERSION=0.0.0
 endif
 
 PYTHON_IMAGE=python:3.9
@@ -87,7 +86,6 @@ gen-docs: ## Generate CLI docs automatically
 
 .PHONY: tools
 tools: ## Install tools
-	$(GOCMD) install $(GOLANGCI_LINT)
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
 client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
@@ -172,7 +170,7 @@ build-binaries:
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: ## Lint code
-	$(GOCMD) run $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS)
+	$(GOCMD) tool golangci-lint run ./... $(GOLANGCI_LINT_FLAGS)
 	npx eslint@8.57.0 $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
 
 esti: ## run esti (system testing)
@@ -204,17 +202,6 @@ build-docker: build ## Build Docker image file (Docker required)
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
 	$(GOFMT) -e -s -w .
-
-validate-fmt:  ## Validate go format
-	@echo checking gofmt...
-	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./pkg/metastore/hive/gen-go \) -prune -prune -o \( -path ./pkg/api/gen \) -prune -o \( -path ./pkg/permissions/*.gen.go \) -prune -o -name '*.go' -print)); \
-	if [ -n "$${res}" ]; then \
-		echo checking gofmt fail... ; \
-		echo "$${res}"; \
-		exit 1; \
-	else \
-		echo Your code formatting is according to gofmt standards; \
-	fi
 
 .PHONY: validate-proto
 validate-proto: gen-proto  ## build proto and check if diff found
@@ -271,8 +258,11 @@ validate-python-wrapper:
 	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq
 	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
 
+validate-ui-format: ## Validate UI code formatting with prettier
+	cd $(UI_DIR) && $(NPM) run format:check
+
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto \
+checks-validator: lint validate-proto validate-ui-format \
 	validate-client-python validate-client-java validate-client-rust validate-reference \
 	validate-mockgen \
 	validate-permissions-gen \

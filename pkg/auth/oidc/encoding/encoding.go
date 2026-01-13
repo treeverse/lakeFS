@@ -5,7 +5,7 @@ package encoding
 
 import "encoding/gob"
 
-type Claims map[string]interface{}
+type Claims map[string]any
 
 // OIDCClaimsSerdeNickname is the typename used to serialize Claims using
 // gob encoding in JWT.  It is the default value that gob would give had

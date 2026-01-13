@@ -1,12 +1,9 @@
 package esti
 
 import (
-	"context"
 	"net/http"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
@@ -30,11 +27,10 @@ func TestCopyObject(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	t.Run("copy_large_size_file", func(t *testing.T) {
+	t.Run("copy_large_imported_object", func(t *testing.T) {
 		importPath := getImportPath(t)
 
 		const ingestionBranch = "test-copy"
-
 		_ = testImportNew(t, ctx, repo, ingestionBranch,
 			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
 			map[string]string{"created_by": "import"},
@@ -46,22 +42,22 @@ func TestCopyObject(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, res.StatusCode())
-
 		objStat := res.JSON200
-		destPath := "foo"
-		srcBranch := ingestionBranch
+
+		const destPath = "foo"
 		copyResp, err := client.CopyObjectWithResponse(ctx, repo, "main", &apigen.CopyObjectParams{
 			DestPath: destPath,
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: largeObject,
-			SrcRef:  &srcBranch,
+			SrcRef:  apiutil.Ptr(ingestionBranch),
 		})
 		require.NoError(t, err, "failed to copy")
 		require.NotNil(t, copyResp.JSON201)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation path and date
+		// copy of imported object should have same physical address (clone)
 		copyStat := copyResp.JSON201
-		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
@@ -78,57 +74,7 @@ func TestCopyObject(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	// Copying different accounts takes more time and allows us to abort the copy in the middle
-	t.Run("copy_large_size_file_abort", func(t *testing.T) {
-		RequireBlockstoreType(t, block.BlockstoreTypeAzure)
-		importPath := strings.Replace(azureCopyDataPath, "esti", azureAbortAccount, 1)
-		const ingestionBranch = "test-copy-abort"
-		_ = testImportNew(t, ctx, repo, ingestionBranch,
-			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
-			map[string]string{"created_by": "import"},
-			false,
-		)
-
-		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &apigen.StatObjectParams{
-			Path: largeObject,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, res.JSON200)
-
-		destPath := "bar"
-		srcBranch := ingestionBranch
-		cancelCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		var (
-			wg       sync.WaitGroup
-			copyResp *apigen.CopyObjectResponse
-			copyErr  error
-		)
-		// Run copy object async and cancel context after 5 seconds
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			copyResp, copyErr = client.CopyObjectWithResponse(cancelCtx, repo, "main", &apigen.CopyObjectParams{
-				DestPath: destPath,
-			}, apigen.CopyObjectJSONRequestBody{
-				SrcPath: largeObject,
-				SrcRef:  &srcBranch,
-			})
-		}()
-
-		time.Sleep(5 * time.Second)
-		cancel()
-		wg.Wait()
-		require.ErrorIs(t, copyErr, context.Canceled)
-		require.Nil(t, copyResp)
-
-		// Verify object doesn't exist
-		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNotFound, statResp.StatusCode())
-	})
-
-	t.Run("read-only repository", func(t *testing.T) {
+	t.Run("readonly_repository", func(t *testing.T) {
 		name := strings.ToLower(t.Name())
 		storageNamespace := GenerateUniqueStorageNamespace(name)
 		repoName := MakeRepositoryName(name)
@@ -146,7 +92,6 @@ func TestCopyObject(t *testing.T) {
 		importPath := getImportPath(t)
 
 		const ingestionBranch = "test-copy"
-
 		_ = testImportNew(t, ctx, repoName, ingestionBranch,
 			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
 			map[string]string{"created_by": "import"},
@@ -160,13 +105,12 @@ func TestCopyObject(t *testing.T) {
 		require.Equal(t, http.StatusOK, res.StatusCode())
 
 		objStat := res.JSON200
-		destPath := "foo"
-		srcBranch := ingestionBranch
+		const destPath = "foo"
 		copyResp, err := client.CopyObjectWithResponse(ctx, repoName, "main", &apigen.CopyObjectParams{
 			DestPath: destPath,
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: largeObject,
-			SrcRef:  &srcBranch,
+			SrcRef:  apiutil.Ptr(ingestionBranch),
 		})
 		require.NoError(t, err, "failed to copy")
 		if copyResp.StatusCode() != http.StatusForbidden {
@@ -177,15 +121,16 @@ func TestCopyObject(t *testing.T) {
 			DestPath: destPath,
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: largeObject,
-			SrcRef:  &srcBranch,
+			SrcRef:  apiutil.Ptr(ingestionBranch),
 			Force:   swag.Bool(true),
 		})
 		require.NoError(t, err, "failed to copy")
 		require.NotNil(t, copyResp.JSON201)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation path and date
 		copyStat := copyResp.JSON201
-		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress,
+			"imported object should be cloned with same physical address")
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 

@@ -30,7 +30,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -201,9 +200,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		loginTokenProvider,
 	)
 
-	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
-	cloud.Reset()
-
 	// register additional API services
 	err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
 		Config:                cfg,
@@ -303,6 +299,9 @@ func TestInvalidRoute(t *testing.T) {
 	errMsg := resp.JSONDefault.Message
 	if errMsg != expectedErrMsg {
 		t.Fatalf("client response error message: %s, expected: %s", errMsg, expectedErrMsg)
+	}
+	if resp.StatusCode() != http.StatusNotFound {
+		t.Fatalf("expected status code %d, got %d for invalid API endpoint", http.StatusNotFound, resp.StatusCode())
 	}
 }
 

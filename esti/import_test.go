@@ -77,7 +77,7 @@ func setupLocalImportPath(t testing.TB) string {
 		t.Fatal(err)
 	}
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		prefix := "prefix-" + strconv.Itoa(i+1)
 		// make dirs once
 		dirs := []string{
@@ -89,7 +89,7 @@ func setupLocalImportPath(t testing.TB) string {
 				t.Fatal(err)
 			}
 		}
-		for n := 0; n < 2100; n++ {
+		for n := range 2100 {
 			name := fmt.Sprintf("file%06d", n+1)
 			const filePerm = 0o644
 			for _, dir := range dirs {

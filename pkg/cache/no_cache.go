@@ -4,11 +4,11 @@ var NoCache Cache = &noCache{}
 
 type noCache struct{}
 
-func (m *noCache) GetOrSet(_ interface{}, setFn SetFn) (v interface{}, err error) {
+func (m *noCache) GetOrSet(_ any, setFn SetFn) (v any, err error) {
 	return setFn()
 }
 
-func (m *noCache) GetOrSetWithExpiry(_ interface{}, setFn SetFnWithExpiry) (v interface{}, err error) {
+func (m *noCache) GetOrSetWithExpiry(_ any, setFn SetFnWithExpiry) (v any, err error) {
 	v, _, err = setFn()
 	return v, err
 }

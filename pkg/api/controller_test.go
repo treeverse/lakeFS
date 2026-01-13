@@ -362,7 +362,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	commits := 100
 	const prefix = "foo/bar"
 	commitsToLook := map[string]*catalog.CommitLog{}
-	for i := 0; i < commits; i++ {
+	for i := range commits {
 		n := strconv.Itoa(i + 1)
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
@@ -409,7 +409,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 	const prefix = "foo/bar"
 	const totalCommits = 10
 	commits := make([]*catalog.CommitLog, totalCommits)
-	for i := 0; i < totalCommits; i++ {
+	for i := range totalCommits {
 		n := strconv.Itoa(i + 1)
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
@@ -1146,7 +1146,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		const times = 3 // try to create the same repo multiple times
-		for i := 0; i < times; i++ {
+		for range times {
 			resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 				DefaultBranch:    apiutil.Ptr("main"),
 				Name:             repo,
@@ -1571,7 +1571,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false)
 		testutil.Must(t, err)
 
-		for i := 0; i < 7; i++ {
+		for i := range 7 {
 			branchName := "main" + strconv.Itoa(i+1)
 			_, err := deps.catalog.CreateBranch(ctx, repo, branchName, "main", graveler.WithHidden(i%2 != 0))
 			testutil.MustDo(t, "create branch "+branchName, err)
@@ -1640,7 +1640,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	testutil.Must(t, err)
 	const createTagLen = 7
 	var createdTags []apigen.Ref
-	for i := 0; i < createTagLen; i++ {
+	for i := range createTagLen {
 		tagID := "tag" + strconv.Itoa(i)
 		commitID := commitLog.Reference
 		_, err := clt.CreateTagWithResponse(ctx, repo, apigen.CreateTagJSONRequestBody{
@@ -3386,7 +3386,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		const namePrefix = "foo2/bar"
 		const numOfObjs = 3
 		var paths []string
-		for i := 0; i < numOfObjs; i++ {
+		for i := range numOfObjs {
 			objPath := namePrefix + strconv.Itoa(i)
 			paths = append(paths, objPath)
 			resp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, branch)
@@ -3432,7 +3432,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		const namePrefix = "foo3/bar"
 		const numOfObjs = api.DefaultMaxDeleteObjects + 1
 		var paths []string
-		for i := 0; i < numOfObjs; i++ {
+		for i := range numOfObjs {
 			paths = append(paths, namePrefix+strconv.Itoa(i))
 		}
 
@@ -3975,7 +3975,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	// upload and commit content on branch
 	commitIDs := []string{respCommit.JSON201.Id}
 	const contentCount = 5
-	for i := 0; i < contentCount; i++ {
+	for i := range contentCount {
 		content := fmt.Sprintf("content-%d", i)
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, content, strings.NewReader(content), repo, "work")
 		verifyResponseOK(t, uploadResp, err)
@@ -4809,7 +4809,7 @@ func TestController_GetPhysicalAddress(t *testing.T) {
 
 		var prevPartitionTime time.Time
 		const links = 5
-		for i := 0; i < links; i++ {
+		for i := range links {
 			params := &apigen.GetPhysicalAddressParams{
 				Path: "get-path/obj" + strconv.Itoa(i),
 			}
@@ -4916,7 +4916,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
-		for i := 0; i < items; i++ {
+		for i := range items {
 			objPath := fmt.Sprintf("uncommitted/obj%d", i)
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
@@ -4929,7 +4929,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
-		for i := 0; i < items; i++ {
+		for i := range items {
 			objPath := fmt.Sprintf("committed/obj%d", i)
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
@@ -4945,7 +4945,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
-		for i := 0; i < items; i++ {
+		for i := range items {
 			objPath := fmt.Sprintf("uncommitted/obj%d", i)
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
@@ -5053,7 +5053,7 @@ func TestController_ClientDisconnect(t *testing.T) {
 		}
 
 		// process relevant metrics
-		for _, line := range strings.Split(string(body), "\n") {
+		for line := range strings.SplitSeq(string(body), "\n") {
 			if strings.HasPrefix(line, apiReqTotalMetricLabel) {
 				if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
 					clientRequestClosedCount += count
@@ -5501,6 +5501,121 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		verifyResponseOK(t, statResp, err)
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
+
+	t.Run("imported_object", func(t *testing.T) {
+		const (
+			srcPath  = "foo/imported-object"
+			destPath = "foo/copied-imported-object"
+		)
+		// Stage an object with absolute physical address (simulating an imported object)
+		absolutePhysicalAddress := onBlock(deps, "external-bucket/imported/data")
+		stageResp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: srcPath,
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "abc123def456",
+			SizeBytes: 1024,
+			Mtime:     swag.Int64(time.Now().Add(-24 * time.Hour).Unix()),
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: apiutil.Ptr(absolutePhysicalAddress),
+			},
+		})
+		verifyResponseOK(t, stageResp, err)
+		require.NotNil(t, stageResp.JSON200)
+
+		// Copy the object with absolute path
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		// Verify the object was cloned (same physical address) not copied
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.Equal(t, absolutePhysicalAddress, copyStat.PhysicalAddress, "physical address should be the same (cloned)")
+		require.Equal(t, destPath, copyStat.Path)
+		require.Equal(t, stageResp.JSON200.Checksum, copyStat.Checksum)
+
+		// Verify we can stat the copied object
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.Equal(t, absolutePhysicalAddress, statResp.JSON200.PhysicalAddress)
+	})
+
+	t.Run("old_object_beyond_grace_period", func(t *testing.T) {
+		const (
+			srcPath  = "foo/old-object"
+			destPath = "foo/copied-old-object"
+		)
+		// Test copying an object whose last-modified time is beyond the grace period (5 hours).
+		// In this case, CopyObject should perform a full copy to a new physical address
+		// instead of cloning (reusing the same physical address).
+
+		const content = "old content that needs to be copied not cloned"
+
+		// Upload content using get a physical address, upload data and link the physical address with an old mtime (24 hours ago)
+		getAddrResp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{
+			Path: srcPath,
+		})
+		verifyResponseOK(t, getAddrResp, err)
+		require.NotNil(t, getAddrResp.JSON200)
+		physicalAddress := apiutil.Value(getAddrResp.JSON200.PhysicalAddress)
+
+		repoInfo, err := deps.catalog.GetRepository(ctx, repo)
+		require.NoError(t, err)
+
+		uploadObj := block.ObjectPointer{
+			StorageID:        repoInfo.StorageID,
+			StorageNamespace: repoInfo.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       strings.TrimPrefix(physicalAddress, repoInfo.StorageNamespace+"/"),
+		}
+
+		_, err = deps.blocks.Put(ctx, uploadObj, int64(len(content)), strings.NewReader(content), block.PutOpts{})
+		require.NoError(t, err)
+
+		oldMtime := time.Now().Add(-24 * time.Hour)
+		stageResp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: srcPath,
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "test-checksum-old",
+			SizeBytes: int64(len(content)),
+			Mtime:     swag.Int64(oldMtime.Unix()),
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: &physicalAddress,
+			},
+		})
+		verifyResponseOK(t, stageResp, err)
+		require.NotNil(t, stageResp.JSON200)
+		srcPhysicalAddr := stageResp.JSON200.PhysicalAddress
+
+		// Copy the object
+		copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		// Verify the object was copied to a new physical address (not cloned)
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.Equal(t, destPath, copyStat.Path)
+		require.NotEmpty(t, copyStat.PhysicalAddress, "copied object should have a physical address")
+		require.NotEqual(t, srcPhysicalAddr, copyStat.PhysicalAddress,
+			"copied object should have a different physical address than source when beyond grace period")
+
+		require.Equal(t, stageResp.JSON200.Checksum, copyStat.Checksum, "checksum should be preserved")
+		require.Equal(t, int64(len(content)), apiutil.Value(copyStat.SizeBytes), "size should be preserved")
+
+		// Verify stat object returns the copied object
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.NotNil(t, statResp.JSON200)
+		require.Equal(t, destPath, statResp.JSON200.Path)
+		require.Equal(t, copyStat.PhysicalAddress, statResp.JSON200.PhysicalAddress)
+	})
 }
 
 func TestController_LocalAdapter_StageObject(t *testing.T) {
@@ -5620,7 +5735,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 	testutil.Must(t, err)
 
 	const commits = 3
-	for i := 0; i < commits; i++ {
+	for i := range commits {
 		n := strconv.Itoa(i + 1)
 		p := "foo/bar" + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})

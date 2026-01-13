@@ -6,7 +6,7 @@ description: lakeFS quickstart / Run lakeFS locally pre-populated with a sample 
 # Spin up the environment
 
 !!! tip
-    If you don't want to install lakeFS locally, you can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register). Once you launch the free trial you will have access to the same content as this quickstart within the provided repository once you login.
+    If you don't want to install lakeFS locally, you can use the [30-day free trial of lakeFS Cloud](https://lakefs.io/cloud-registration). Once you launch the free trial you will have access to the same content as this quickstart within the provided repository once you login.
 
 install and launch lakeFS:
 

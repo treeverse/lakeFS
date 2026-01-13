@@ -116,7 +116,7 @@ func TestManager_WriteRange(t *testing.T) {
 				rangeManager.EXPECT().GetWriter(t.Context(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 				rangeWriter.EXPECT().WriteRecord(gomock.Any()).Return(nil).Times(expectedTimes)
 				rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
+					DoAndReturn(func(any, any) bool { times++; return times == maxRecords }).Times(expectedTimes)
 				rangeWriter.EXPECT().Close().Return(writeResult, nil)
 				rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
 			}

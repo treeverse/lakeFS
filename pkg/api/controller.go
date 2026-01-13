@@ -37,7 +37,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -2198,7 +2197,7 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 			Action:   permissions.ReadConfigAction,
 			Resource: permissions.All,
 		},
-	}, func(_ http.ResponseWriter, _ *http.Request, code int, v interface{}) {
+	}, func(_ http.ResponseWriter, _ *http.Request, code int, v any) {
 		switch code {
 		case http.StatusInternalServerError:
 			writeError(w, r, code, v)
@@ -3105,7 +3104,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 // (such as async commits and merges) before storing them in task status records. It maps domain-specific
 // errors to appropriate HTTP status codes following the same classification rules as HTTP API handlers.
 func ErrorToStatusAndMsg(logger logging.Logger, err error) (status int, msg string, ok bool) {
-	ok = handleApiErrorCallback(logger, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+	ok = handleApiErrorCallback(logger, nil, nil, err, func(w http.ResponseWriter, r *http.Request, code int, v any) {
 		status = code
 		if v != nil {
 			msg = fmt.Sprintf("%v", v)
@@ -3115,7 +3114,7 @@ func ErrorToStatusAndMsg(logger logging.Logger, err error) (status int, msg stri
 }
 
 // handleApiErrorCallback is a standalone function that handles API errors and maps them to appropriate HTTP status codes.
-func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.Request, err error, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool {
 	// verify if request canceled even if there is no error, early exit point
 	if httputil.IsRequestCanceled(r) {
 		cb(w, r, httputil.HttpStatusClientClosedRequest, httputil.HttpStatusClientClosedRequestText)
@@ -3989,7 +3988,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -4965,7 +4964,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 			Action:   permissions.ReadObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
-	}, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+	}, func(w http.ResponseWriter, r *http.Request, code int, v any) {
 		writeResponse(w, r, code, nil)
 	}) {
 		return
@@ -4977,7 +4976,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
 	if err != nil {
 		log := c.Logger.WithContext(ctx).WithError(err)
-		handleApiErrorCallback(log, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+		handleApiErrorCallback(log, w, r, err, func(w http.ResponseWriter, r *http.Request, code int, v any) {
 			writeResponse(w, r, code, nil)
 		})
 		return
@@ -5823,7 +5822,6 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	storageConfig := c.Config.GetBaseConfig().StorageConfig()
 	metadataProviders := []stats.MetadataProvider{
 		c.MetadataManager,
-		cloud.NewMetadataProvider(storageConfig, false),
 		block.NewMetadataProvider(storageConfig),
 	}
 	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)
@@ -6249,11 +6247,11 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 	})
 }
 
-func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
+func writeError(w http.ResponseWriter, r *http.Request, code int, v any) {
 	httputil.WriteAPIError(w, r, code, v)
 }
 
-func writeResponse(w http.ResponseWriter, r *http.Request, code int, response interface{}) {
+func writeResponse(w http.ResponseWriter, r *http.Request, code int, response any) {
 	httputil.WriteAPIResponse(w, r, code, response)
 }
 
@@ -6370,7 +6368,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 	usageCounter.Add(1)
 }
 
-func paginationFor(hasMore bool, results interface{}, fieldName string) apigen.Pagination {
+func paginationFor(hasMore bool, results any, fieldName string) apigen.Pagination {
 	pagination := apigen.Pagination{
 		HasMore:    hasMore,
 		MaxPerPage: DefaultMaxPerPage,
@@ -6392,7 +6390,7 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) apigen.P
 	return pagination
 }
 
-func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, perms permissions.Node, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, perms permissions.Node, cb func(w http.ResponseWriter, r *http.Request, code int, v any)) bool {
 	ctx := r.Context()
 	user, err := auth.GetUser(ctx)
 	if err != nil {
