@@ -34,11 +34,7 @@ func IsTaskID(prefix, taskID string) bool {
 }
 
 func UpdateTaskStatus(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, taskID string, statusMsg protoreflect.ProtoMessage) error {
-	err := kv.SetMsg(ctx, kvStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), statusMsg)
-	if err != nil {
-		return err
-	}
-	return nil
+	return kv.SetMsg(ctx, kvStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), statusMsg)
 }
 
 func GetTaskStatus(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, taskID string, statusMsg protoreflect.ProtoMessage) (kv.Predicate, error) {
