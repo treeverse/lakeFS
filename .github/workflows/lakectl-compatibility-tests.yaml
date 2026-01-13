@@ -1,0 +1,181 @@
+name: lakectl Compatibility Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch: {}
+
+# These permissions are needed to interact with GitHub's OIDC Token endpoint.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check-secrets:
+    name: Check if secrets are available
+    outputs:
+      secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
+    runs-on: ubuntu-22.04
+    steps:
+      - id: enablejobs
+        env:
+          ENABLE_NEXT_JOBS: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
+          echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_OUTPUT
+
+  gen-code:
+    name: Generate code from latest lakeFS app
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+        id: go
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.17.x"
+
+      - name: Generate code
+        run: |
+          make -j3 gen-api gen-code
+          mkdir -p webui/dist
+          touch webui/dist/index.html
+          tar -czf /tmp/generated.tar.gz .
+
+      - name: Store generated code
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-code
+          path: /tmp/generated.tar.gz
+
+  build-lakectl:
+    name: Build lakectl binary
+    needs: [gen-code]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+        id: go
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
+
+      - name: Build lakectl
+        run: |
+          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${{ steps.version.outputs.tag }}" -o lakectl ./cmd/lakectl
+
+      - name: Store lakectl binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: lakectl-binary
+          path: lakectl
+
+  lakectl-compatibility-test:
+    name: Test lakectl compatibility with lakeFS ${{ matrix.lakefs_version }}
+    needs: [check-secrets, gen-code, build-lakectl]
+    if: needs.check-secrets.outputs.secretsavailable == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        lakefs_version:
+          - 1.60.0
+          - 1.65.2
+          - 1.70.1
+          - 1.73.0
+          - 1.74.4
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ matrix.lakefs_version }}
+      REGISTRY: treeverse
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+        id: go
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      - name: Retrieve lakectl binary
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: lakectl-binary
+          path: /tmp/bin/
+
+      - name: Prepare lakectl binary
+        run: |
+          chmod +x /tmp/bin/lakectl
+          /tmp/bin/lakectl --version
+
+      - name: Generate uniquifying value
+        id: unique
+        shell: bash
+        run: echo "value=$(cat /proc/sys/kernel/random/uuid)" >> $GITHUB_OUTPUT
+
+      - name: Start lakeFS for tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/spark
+        env:
+          REGISTRY: treeverse
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Run lakectl compatibility tests
+        timeout-minutes: 30
+        env:
+          ESTI_ENDPOINT_URL: http://localhost:8000
+          ESTI_BINARIES_DIR: /tmp/bin
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/lakectl-compat/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_SETUP_LAKEFS: "true"
+        run: |
+          go test -v -timeout 30m ./esti --system-tests -run "TestLakectl"
+
+      - name: lakeFS logs on failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker compose logs --tail=1000 lakefs
