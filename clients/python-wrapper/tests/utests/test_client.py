@@ -53,14 +53,12 @@ class TestClient:
             from lakefs import client
             import importlib
             client = importlib.reload(client)
-            try:
-                clt = client.Client()
-                config = clt.config
-                assert config.host == TEST_SERVER + TEST_ENDPOINT_PATH
-                assert config.username == TEST_ACCESS_KEY_ID
-                assert config.password == TEST_SECRET_ACCESS_KEY
-            finally:
-                client._DEFAULT_CLIENT = None
+
+            clt = client.Client()
+            config = clt.config
+            assert config.host == TEST_SERVER + TEST_ENDPOINT_PATH
+            assert config.username == TEST_ACCESS_KEY_ID
+            assert config.password == TEST_SECRET_ACCESS_KEY
 
     def test_client_config_file_env_var_precedence(self, monkeypatch, tmp_path):
         # Test that LAKECTL_CONFIG_FILE takes precedence over default path
@@ -87,15 +85,14 @@ credentials:
             from lakefs import client
             import importlib
             client = importlib.reload(client)
-            try:
-                clt = client.Client()
-                config = clt.config
-                # Should use custom config, not default
-                assert config.host == TEST_SERVER + TEST_ENDPOINT_PATH
-                assert config.username == TEST_ACCESS_KEY_ID
-                assert config.password == TEST_SECRET_ACCESS_KEY
-            finally:
-                client._DEFAULT_CLIENT = None
+
+            clt = client.Client()
+            config = clt.config
+            # Should use custom config, not default
+            assert config.host == TEST_SERVER + TEST_ENDPOINT_PATH
+            assert config.username == TEST_ACCESS_KEY_ID
+            assert config.password == TEST_SECRET_ACCESS_KEY
+
 
     def test_client_kwargs_override_config_file_env_var(self, monkeypatch, tmp_path):
         # Test that kwargs override LAKECTL_CONFIG_FILE when both are set
@@ -109,14 +106,12 @@ credentials:
             from lakefs import client
             import importlib
             client = importlib.reload(client)
-            try:
-                # Pass kwargs that should override the config file
-                clt = client.Client(**TEST_CONFIG_KWARGS)
-                config = clt.config
-                # Should use kwargs, not env config file
-                assert config.host == TEST_CONFIG_KWARGS["host"] + TEST_ENDPOINT_PATH
-                assert config.username == TEST_CONFIG_KWARGS["username"]
-                assert config.password == TEST_CONFIG_KWARGS["password"]
-                assert config.access_token == TEST_CONFIG_KWARGS["access_token"]
-            finally:
-                client._DEFAULT_CLIENT = None
+
+            # Pass kwargs that should override the config file
+            clt = client.Client(**TEST_CONFIG_KWARGS)
+            config = clt.config
+            # Should use kwargs, not env config file
+            assert config.host == TEST_CONFIG_KWARGS["host"] + TEST_ENDPOINT_PATH
+            assert config.username == TEST_CONFIG_KWARGS["username"]
+            assert config.password == TEST_CONFIG_KWARGS["password"]
+            assert config.access_token == TEST_CONFIG_KWARGS["access_token"]
