@@ -18,6 +18,7 @@ from lakefs.exceptions import NoAuthenticationFound, UnsupportedCredentialsProvi
 from lakefs.namedtuple import LenientNamedTuple
 
 _LAKECTL_YAML_PATH = os.path.join(Path.home(), ".lakectl.yaml")
+_LAKECTL_CONFIG_FILE_ENV = "LAKECTL_CONFIG_FILE"
 _LAKECTL_ENDPOINT_URL_ENV = "LAKECTL_SERVER_ENDPOINT_URL"
 _LAKECTL_ACCESS_KEY_ID_ENV = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID"
 _LAKECTL_SECRET_ACCESS_KEY_ENV = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"
@@ -124,8 +125,9 @@ class ClientConfig(Configuration):
 
     def _load_from_config_file(self):
         """Load configuration from .lakectl.yaml file if it exists"""
+        config_path = os.getenv(_LAKECTL_CONFIG_FILE_ENV, _LAKECTL_YAML_PATH)
         try:
-            with open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd:
+            with open(config_path, encoding="utf-8") as fd:
                 config_data = yaml.load(fd, Loader=yaml.Loader)
                 if "server" in config_data:
                     self.server = ClientConfig.Server(**config_data["server"])
