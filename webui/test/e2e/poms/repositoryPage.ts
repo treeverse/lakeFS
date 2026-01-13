@@ -30,7 +30,7 @@ export class RepositoryPage {
         .getByRole("link", { name: "Branches", exact: false })
         .click();
     await this.page.getByRole("button", { name: "Create Branch" }).click();
-    await this.page.getByPlaceholder("Branch Name").fill(name);
+    await this.page.getByPlaceholder("Branch Nam").fill(name);
     await this.page
         .getByRole("button", { name: "Create", exact: true })
         .click();
