@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## v0.15.0
+
+:new: What's new:
+
+- Support environment variable `LAKECTL_CONFIG_FILE` (#9968)
+
+:bug: Bugs fixed:
+
+- Improved traceback on interrupt when running lakefs server (#9805)
+- Report short repeatable strings for `str(lakefs.Repository)` (#9800)
+- Fix lakefs.quickstart and lakefs.download (#9784)
+
 ## v0.14.1
 
 :bug: Bugs fixed:
