@@ -35,7 +35,6 @@ const (
 	v4shortTimeFormat        = "20060102"
 
 	AmzPresignMaxExpires = 7 * 24 * time.Hour // Maximum expiry duration for presigned URLs (7 days or 604800 seconds)
-	AmzMaxClockSkew      = 15 * time.Minute   // Maximum allowed clock skew (15 minutes for AWS S3 compatibility)
 
 	v4AmzAlgorithm = "X-Amz-Algorithm"
 	//nolint:gosec
@@ -208,7 +207,7 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 	}
 
 	// check that the request hasn't expired
-	if err := ctx.verifyExpiration(); err != nil {
+	if err := ctx.verifyExpiration(time.Now().UTC()); err != nil {
 		return err
 	}
 
@@ -361,11 +360,7 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	return amzDate, nil
 }
 
-func (ctx *verificationCtx) verifyExpiration() error {
-	if !ctx.AuthValue.IsPresigned {
-		return nil
-	}
-
+func (ctx *verificationCtx) verifyExpiration(now time.Time) error {
 	// Get and validate the request timestamp
 	amzDate, err := ctx.getAmzDate()
 	if err != nil {
@@ -377,18 +372,17 @@ func (ctx *verificationCtx) verifyExpiration() error {
 		return err
 	}
 
-	now := time.Now().UTC()
-	timeDiff := now.Sub(requestTime)
-
-	// Check for requests signed more than 15 minutes in the future (matches S3 behavior)
-	if timeDiff < 0 && timeDiff.Abs() > AmzMaxClockSkew {
-		return errors.ErrRequestNotReadyYet
+	// Validate timestamp is within the allowed clock-skew window to prevent replay attacks
+	if err := ValidateClockSkew(now, requestTime); err != nil {
+		return err
 	}
 
-	// Calculate expiration from the signed time, not current time
-	expirationTime := requestTime.Add(time.Duration(ctx.AuthValue.Expires) * time.Second)
-	if now.After(expirationTime) {
-		return errors.ErrExpiredPresignRequest
+	// For presigned URLs, also check if the URL has expired based on X-Amz-Expires
+	if ctx.AuthValue.IsPresigned {
+		expirationTime := requestTime.Add(time.Duration(ctx.AuthValue.Expires) * time.Second)
+		if now.After(expirationTime) {
+			return errors.ErrExpiredPresignRequest
+		}
 	}
 
 	return nil
