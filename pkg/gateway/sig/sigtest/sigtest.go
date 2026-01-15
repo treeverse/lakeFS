@@ -21,6 +21,8 @@ func CommonClockSkewTestCases(maxClockSkew time.Duration) []ClockSkewTestCase {
 		panic("maxClockSkew must be positive")
 	}
 
+	const denominator = 2
+
 	return []ClockSkewTestCase{
 		{
 			Name:          "valid request with current time",
@@ -29,32 +31,32 @@ func CommonClockSkewTestCases(maxClockSkew time.Duration) []ClockSkewTestCase {
 		},
 		{
 			Name:          "request within clock skew (past)",
-			Offset:        -maxClockSkew / 2,
+			Offset:        -maxClockSkew / denominator,
 			ExpectedError: nil,
 		},
 		{
 			Name:          "request within clock skew (future)",
-			Offset:        maxClockSkew / 2,
+			Offset:        maxClockSkew / denominator,
 			ExpectedError: nil,
 		},
 		{
 			Name:          "request beyond clock skew (past)",
-			Offset:        -maxClockSkew - 1*time.Minute,
+			Offset:        -maxClockSkew - time.Minute,
 			ExpectedError: gatewayerrors.ErrRequestTimeTooSkewed,
 		},
 		{
 			Name:          "request beyond clock skew (future)",
-			Offset:        maxClockSkew + 1*time.Minute,
+			Offset:        maxClockSkew + time.Minute,
 			ExpectedError: gatewayerrors.ErrRequestNotReadyYet,
 		},
 		{
 			Name:          "request just within clock skew boundary (past)",
-			Offset:        -maxClockSkew + 1*time.Second,
+			Offset:        -maxClockSkew + time.Second,
 			ExpectedError: nil,
 		},
 		{
 			Name:          "request just within clock skew boundary (future)",
-			Offset:        maxClockSkew - 1*time.Second,
+			Offset:        maxClockSkew - time.Second,
 			ExpectedError: nil,
 		},
 	}
