@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -134,6 +135,11 @@ func signCanonicalJavaV2String(msg string, signature []byte) []byte {
 }
 
 func (j *JavaV2Signer) Verify(creds *model.Credential) error {
+	// Verify the timestamp is within the allowed clock-skew period
+	if err := j.verifyRequestDate(time.Now().UTC()); err != nil {
+		return err
+	}
+
 	rawPath := j.req.URL.EscapedPath()
 
 	path := buildPath(j.req.Host, j.bareDomain, rawPath)
@@ -143,4 +149,25 @@ func (j *JavaV2Signer) Verify(creds *model.Credential) error {
 		return errors.ErrSignatureDoesNotMatch
 	}
 	return nil
+}
+
+func (j *JavaV2Signer) verifyRequestDate(now time.Time) error {
+	timestampStr := j.req.URL.Query().Get("Timestamp")
+	if timestampStr == "" {
+		return errors.ErrMissingFields
+	}
+
+	// Parse timestamp in ISO8601 format (with or without milliseconds)
+	// The AWS Java SDK's QueryStringSigner uses "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" format,
+	// which differs from standard Signature V2 that uses RFC 2616 formats.
+	// See: https://github.com/aws/aws-sdk-java/blob/07926f08a70/aws-java-sdk-core/src/main/java/com/amazonaws/auth/QueryStringSigner.java#L180-L193
+	requestTime, err := time.Parse("2006-01-02T15:04:05.999Z", timestampStr)
+	if err != nil {
+		requestTime, err = time.Parse("2006-01-02T15:04:05Z", timestampStr)
+		if err != nil {
+			return errors.ErrMalformedDate
+		}
+	}
+
+	return ValidateClockSkew(now, requestTime)
 }
