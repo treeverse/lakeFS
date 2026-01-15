@@ -2,7 +2,27 @@
 
 ## next
 
-### S3 Gateway
+## v1.75.0
+
+### Security Fixes
+- S3 Gateway: Fixed timestamp validation vulnerability allowing replay attacks. See [GHSA-f2ph-gc9m-q55f](https://github.com/treeverse/lakeFS/security/advisories/GHSA-f2ph-gc9m-q55f).
+
+:new: What's new:
+
+- Report pre-signed URL expiry for GCS (#9927)
+- Add --all and --repo flags to kv dump command (#9874)
+- Add heartbeat to catalog background tasks (#9868)
+- Add lakectl support for prepare GC commits (#9951)
+- WebUI: Show tag badges in commit log with paginated tag fetching (#9953)
+
+:bug: Bugs Fixed
+
+- Fix: Return 404 instead of 500 for non-existent API endpoints (#9877)
+- Fix: Incorrect date for uncommitted objects in webui (#9939)
+- Fix: S3 CreateBucket error response for non-existent repositories (#9945)
+- Fix: ObjectCopy for imported objects (#9943)
+- Fix: WebUI object list sorting to use lexicographic order (#9942) (#9955)
+- Fix: log caller trimming for module paths and function names (#9965)
 - Fix: return correct error code `MetadataTooLarge` when metadata exceeds size limit (#9909)
 
 ## v1.74.4
