@@ -197,6 +197,7 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 		}
 		nextOffset = resp.JSON200.Pagination.NextOffset
 	}
+	logger.WithField("usersToDelete", usersToDelete).Info("List of users to be deleted")
 
 	// delete users
 	var errs *multierror.Error
@@ -204,8 +205,14 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 		resp, err := client.DeleteUserWithResponse(ctx, id)
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("delete user %s: %w", id, err))
-		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = multierror.Append(errs, fmt.Errorf("delete user %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+		} else {
+			switch resp.StatusCode() {
+			case http.StatusNoContent,
+				http.StatusNotFound:
+				continue
+			default:
+				errs = multierror.Append(errs, fmt.Errorf("delete user %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+			}
 		}
 	}
 	return errs.ErrorOrNil()
