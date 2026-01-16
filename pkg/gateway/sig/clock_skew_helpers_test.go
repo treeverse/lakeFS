@@ -1,4 +1,4 @@
-package sigtest
+package sig
 
 import (
 	"time"
@@ -21,7 +21,7 @@ func CommonClockSkewTestCases(maxClockSkew time.Duration) []ClockSkewTestCase {
 		panic("maxClockSkew must be positive")
 	}
 
-	const denominator = 2
+	const midpointDivisor = 2
 
 	return []ClockSkewTestCase{
 		{
@@ -31,12 +31,12 @@ func CommonClockSkewTestCases(maxClockSkew time.Duration) []ClockSkewTestCase {
 		},
 		{
 			Name:          "request within clock skew (past)",
-			Offset:        -maxClockSkew / denominator,
+			Offset:        -maxClockSkew / midpointDivisor,
 			ExpectedError: nil,
 		},
 		{
 			Name:          "request within clock skew (future)",
-			Offset:        maxClockSkew / denominator,
+			Offset:        maxClockSkew / midpointDivisor,
 			ExpectedError: nil,
 		},
 		{
