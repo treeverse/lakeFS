@@ -179,7 +179,7 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 	_, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
-	require.Equal(t, expectedURLExp(adapter), *exp)
+	require.Equal(t, expectedURLExp(), *exp)
 
 	// with filename
 	const filename = "test_file"
@@ -187,7 +187,7 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 	parsedURL, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
-	require.Equal(t, expectedURLExp(adapter), *exp)
+	require.Equal(t, expectedURLExp(), *exp)
 
 	// Parse and verify content-disposition from URL query parameters
 	queryParams := parsedURL.Query()
@@ -214,7 +214,7 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 func testGetPreSignedURLEndpointOverride(t *testing.T, adapter block.Adapter, storageNamespace string, oe *url.URL) {
 	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace, "")
 	require.NotNil(t, exp)
-	expectedExpiry := expectedURLExp(adapter)
+	expectedExpiry := expectedURLExp()
 	require.Equal(t, expectedExpiry, *exp)
 	u, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
@@ -238,13 +238,8 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 	return preSignedURL, &exp
 }
 
-func expectedURLExp(adapter block.Adapter) time.Time {
-	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
-		// we didn't implement expiry for Azure yet
-		return time.Time{}
-	} else {
-		return NowMockDefault().Add(block.DefaultPreSignExpiryDuration)
-	}
+func expectedURLExp() time.Time {
+	return NowMockDefault().Add(block.DefaultPreSignExpiryDuration)
 }
 
 // tests the GetProperties method of the adapter, verifying ETag population and consistency with Walker

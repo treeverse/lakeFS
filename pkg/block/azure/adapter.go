@@ -59,9 +59,18 @@ type Adapter struct {
 	preSignedExpiry    time.Duration
 	disablePreSigned   bool
 	disablePreSignedUI bool
+	nowFactory         func() time.Time
 }
 
-func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
+type AdapterOption func(a *Adapter)
+
+func WithNowFactory(f func() time.Time) AdapterOption {
+	return func(a *Adapter) {
+		a.nowFactory = f
+	}
+}
+
+func NewAdapter(ctx context.Context, params params.Azure, opts ...AdapterOption) (*Adapter, error) {
 	logging.FromContext(ctx).WithField("type", "azure").Info("initialized blockstore adapter")
 	preSignedExpiry := params.PreSignedExpiry
 	if preSignedExpiry == 0 {
@@ -79,12 +88,17 @@ func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
 		return nil, err
 	}
 
-	return &Adapter{
+	a := &Adapter{
 		clientCache:        cache,
 		preSignedExpiry:    preSignedExpiry,
 		disablePreSigned:   params.DisablePreSigned,
 		disablePreSignedUI: params.DisablePreSignedUI,
-	}, nil
+		nowFactory:         time.Now, // current time function can be mocked out via injection for testing purposes
+	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a, nil
 }
 
 type BlobURLInfo struct {
@@ -259,19 +273,17 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Write: true,
 		}
 	}
-	preSignedURL, err := a.getPreSignedURL(ctx, obj, permissions, filename)
-	// TODO(#6347): Report expiry.
-	return preSignedURL, time.Time{}, err
+	return a.getPreSignedURL(ctx, obj, permissions, filename)
 }
 
-func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions, filename string) (string, error) {
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions, filename string) (string, time.Time, error) {
 	if a.disablePreSigned {
-		return "", block.ErrOperationNotSupported
+		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 
 	// Add content-disposition if filename provided
@@ -283,7 +295,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	// Snapshot time
 	urlParts, err := sas.ParseURL(qualifiedKey.BlobURL)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	snapshotTime, err := time.Parse(blob.SnapshotTimeFormat, urlParts.Snapshot)
 	if err != nil {
@@ -308,23 +320,29 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
 		credentials, err := azblob.NewSharedKeyCredential(qualifiedKey.StorageAccountName, a.clientCache.params.StorageAccessKey)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
 		sasQueryParams, err = blobSignatureValues.SignWithSharedKey(credentials)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
 	} else {
 		// Otherwise assume using role based credentials and build signed URL using user delegation credentials
 		udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
 
 		sasQueryParams, err = blobSignatureValues.SignWithUserDelegation(udc)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
+	}
+
+	// User Delegation SAS becomes invalid when UDK expires, so use the earlier of urlExpiry and signedExpiry.
+	// For Shared Key SAS, signedExpiry is zero and urlExpiry is used.
+	if signedExpiry := sasQueryParams.SignedExpiry(); !signedExpiry.IsZero() && signedExpiry.Before(urlExpiry) {
+		urlExpiry = signedExpiry
 	}
 
 	var accountEndpoint string
@@ -337,10 +355,10 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	u, err := url.JoinPath(accountEndpoint, qualifiedKey.ContainerName, qualifiedKey.BlobURL)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	u += "?" + sasQueryParams.Encode()
-	return u, nil
+	return u, urlExpiry, nil
 }
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
@@ -665,7 +683,7 @@ func (a *Adapter) RuntimeStats() map[string]string {
 }
 
 func (a *Adapter) newPreSignedTime() time.Time {
-	return time.Now().UTC().Add(a.preSignedExpiry)
+	return a.nowFactory().UTC().Add(a.preSignedExpiry)
 }
 
 func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
