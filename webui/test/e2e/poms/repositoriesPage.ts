@@ -1,10 +1,10 @@
 import { Locator, Page, expect } from "@playwright/test";
 
-const SAMPLE_REPO_README_TITLE = "Welcome to the Lake!";
-const REGULAR_REPO_README_TITLE = "Your repository is ready!";
+export const SAMPLE_REPO_README_TITLE = "Welcome to the Lake!";
+export const REGULAR_REPO_README_TITLE = "Your repository is ready!";
 
 export class RepositoriesPage {
-    private page: Page;
+    protected page: Page;
 
     public noRepositoriesTitleLocator: Locator;
     public readOnlyIndicatorLocator: Locator;

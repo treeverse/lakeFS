@@ -143,11 +143,18 @@ export class RepositoryPage {
     await this.page.getByRole("link", { name: "Commits" }).click();
   }
 
-  async uploadObject(filePath: string): Promise<void> {
+  async uploadObject(filePathOrBuffer: string | { name: string; mimeType: string; buffer: Buffer }): Promise<void> {
     await this.page.getByRole("button", { name: "Upload", exact: true }).click();
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
-    await fileInput.setInputFiles(filePath);
+    await fileInput.setInputFiles(filePathOrBuffer as any);
+  }
+
+  async uploadMultipleObjects(filePathsOrBuffers: (string | { name: string; mimeType: string; buffer: Buffer })[]): Promise<void> {
+    await this.page.getByRole("button", { name: "Upload", exact: true }).click();
+    await this.page.getByText("Drag & drop files or folders here").click();
+    const fileInput = await this.page.locator('input[type="file"]');
+    await fileInput.setInputFiles(filePathsOrBuffers as any);
   }
 
   // revert operations
