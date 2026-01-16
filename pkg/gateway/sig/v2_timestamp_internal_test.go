@@ -7,12 +7,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-	"github.com/treeverse/lakefs/pkg/gateway/sig/sigtest"
 )
 
 func TestV2VerifyRequestDate(t *testing.T) {
 	// Use shared clock skew test cases
-	testCases := sigtest.CommonClockSkewTestCases(AmzMaxClockSkew)
+	testCases := CommonClockSkewTestCases(AmzMaxClockSkew)
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 
 	for _, tc := range testCases {
