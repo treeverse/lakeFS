@@ -59,9 +59,18 @@ type Adapter struct {
 	preSignedExpiry    time.Duration
 	disablePreSigned   bool
 	disablePreSignedUI bool
+	nowFactory         func() time.Time
 }
 
-func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
+type AdapterOption func(a *Adapter)
+
+func WithNowFactory(f func() time.Time) AdapterOption {
+	return func(a *Adapter) {
+		a.nowFactory = f
+	}
+}
+
+func NewAdapter(ctx context.Context, params params.Azure, opts ...AdapterOption) (*Adapter, error) {
 	logging.FromContext(ctx).WithField("type", "azure").Info("initialized blockstore adapter")
 	preSignedExpiry := params.PreSignedExpiry
 	if preSignedExpiry == 0 {
@@ -79,12 +88,17 @@ func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
 		return nil, err
 	}
 
-	return &Adapter{
+	a := &Adapter{
 		clientCache:        cache,
 		preSignedExpiry:    preSignedExpiry,
 		disablePreSigned:   params.DisablePreSigned,
 		disablePreSignedUI: params.DisablePreSignedUI,
-	}, nil
+		nowFactory:         time.Now, // current time function can be mocked out via injection for testing purposes
+	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a, nil
 }
 
 type BlobURLInfo struct {
@@ -669,7 +683,7 @@ func (a *Adapter) RuntimeStats() map[string]string {
 }
 
 func (a *Adapter) newPreSignedTime() time.Time {
-	return time.Now().UTC().Add(a.preSignedExpiry)
+	return a.nowFactory().UTC().Add(a.preSignedExpiry)
 }
 
 func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
