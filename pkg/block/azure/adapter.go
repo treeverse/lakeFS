@@ -259,19 +259,17 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Write: true,
 		}
 	}
-	preSignedURL, err := a.getPreSignedURL(ctx, obj, permissions, filename)
-	// TODO(#6347): Report expiry.
-	return preSignedURL, time.Time{}, err
+	return a.getPreSignedURL(ctx, obj, permissions, filename)
 }
 
-func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions, filename string) (string, error) {
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions, filename string) (string, time.Time, error) {
 	if a.disablePreSigned {
-		return "", block.ErrOperationNotSupported
+		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 
 	// Add content-disposition if filename provided
@@ -283,7 +281,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	// Snapshot time
 	urlParts, err := sas.ParseURL(qualifiedKey.BlobURL)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	snapshotTime, err := time.Parse(blob.SnapshotTimeFormat, urlParts.Snapshot)
 	if err != nil {
@@ -308,23 +306,29 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
 		credentials, err := azblob.NewSharedKeyCredential(qualifiedKey.StorageAccountName, a.clientCache.params.StorageAccessKey)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
 		sasQueryParams, err = blobSignatureValues.SignWithSharedKey(credentials)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
 	} else {
 		// Otherwise assume using role based credentials and build signed URL using user delegation credentials
 		udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
 
 		sasQueryParams, err = blobSignatureValues.SignWithUserDelegation(udc)
 		if err != nil {
-			return "", err
+			return "", time.Time{}, err
 		}
+	}
+
+	// User Delegation SAS becomes invalid when UDK expires, so use the earlier of urlExpiry and signedExpiry.
+	// For Shared Key SAS, signedExpiry is zero and urlExpiry is used.
+	if signedExpiry := sasQueryParams.SignedExpiry(); !signedExpiry.IsZero() && signedExpiry.Before(urlExpiry) {
+		urlExpiry = signedExpiry
 	}
 
 	var accountEndpoint string
@@ -337,10 +341,10 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	u, err := url.JoinPath(accountEndpoint, qualifiedKey.ContainerName, qualifiedKey.BlobURL)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	u += "?" + sasQueryParams.Encode()
-	return u, nil
+	return u, urlExpiry, nil
 }
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
