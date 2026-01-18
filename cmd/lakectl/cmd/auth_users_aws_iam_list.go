@@ -10,7 +10,7 @@ import (
 
 var authUsersAWSIAMList = &cobra.Command{
 	Use:   "list",
-	Short: "List external principals (IAM roles) attached to a user",
+	Short: "List all IAM roles attached to a lakeFS user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		prefix, after, amount := getPaginationFlags(cmd)
