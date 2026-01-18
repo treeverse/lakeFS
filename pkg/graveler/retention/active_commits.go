@@ -25,7 +25,8 @@ type CommitsMap struct {
 }
 
 const (
-	commitsPartition = "gc:commits"
+	commitsPartition    = "gc:commits"
+	traceReportInterval = 30 * time.Second
 )
 
 var (
@@ -35,7 +36,7 @@ var (
 func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter, store kv.Store) (CommitsMap, error) {
 	c := CommitsMap{
 		ctx:          ctx,
-		Log:          logging.FromContext(ctx),
+		Log:          logging.FromContext(ctx).WithField("component", "gc"),
 		NumMisses:    int64(0),
 		CommitGetter: commitGetter,
 		Store:        store,
@@ -146,16 +147,28 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			commitsMap.Close()
 		}
 	}()
+
+	log := logging.FromContext(ctx).WithField("component", "gc")
+	log.Debug("Loaded initial commits map")
+
 	// Observe NumMisses.  This should not be a metric unless we see it happen a _lot_.
 	defer func() {
-		logging.FromContext(ctx).
+		log.
 			WithField("num_misses", commitsMap.NumMisses).
 			Info("Commits map - misses are due to concurrent commits")
 	}()
 
 	now := time.Now()
-	defer startingPointIterator.Close()
+	var lastReport time.Time
 	for startingPointIterator.Next() {
+		if log.IsDebugging() && time.Since(lastReport) > traceReportInterval {
+			log.WithFields(logging.Fields{
+				"num_processed":     len(processed),
+				"num_active":        len(activeMap),
+				"proportion_active": float64(len(activeMap)) / float64(len(processed)),
+			}).Debug("Processing...")
+			lastReport = time.Now()
+		}
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
 		commitNode, err := commitsMap.Get(ctx, startingPoint.CommitID)
@@ -208,6 +221,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			processed[nextCommitID] = branchExpirationThreshold
 		}
 	}
+	log.Debug("Finished iteration")
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
@@ -218,14 +232,30 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[graveler.CommitID]struct{}) iter.Seq2[graveler.CommitID, MetaRangeIDOrError] {
 	return func(yield func(graveler.CommitID, MetaRangeIDOrError) bool) {
 		defer commitsMap.Close()
+
+		log := logging.FromContext(ctx).
+			WithFields(logging.Fields{
+				"component":        "gc",
+				"commits_to_clean": len(commitSet),
+			})
+		log.Debug("Start getting cleanup map")
+		var (
+			commit *CommitNode
+			err    error
+		)
 		for commitID := range commitSet {
-			commit, err := commitsMap.Get(ctx, commitID)
+			commit, err = commitsMap.Get(ctx, commitID)
 			if err != nil {
 				yield(commitID, MetaRangeIDOrError{Err: err})
 				break
 			} else {
 				yield(commitID, MetaRangeIDOrError{ID: graveler.MetaRangeID(commit.MetaRangeID)})
 			}
+		}
+		if err != nil {
+			log.WithError(err).Debug("Done getting cleanup map")
+		} else {
+			log.Debug("Done getting cleanup map")
 		}
 	}
 }
