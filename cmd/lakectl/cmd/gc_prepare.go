@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -22,7 +23,9 @@ var gcPrepareCommitsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
-		resp, err := client.PrepareGarbageCollectionCommitsAsyncWithResponse(cmd.Context(), u.Repository)
+		// cmd.Context() is about to expire, use a context which won't.
+		ctx := context.Background()
+		resp, err := client.PrepareGarbageCollectionCommitsAsyncWithResponse(ctx, u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusAccepted)
 		id := resp.JSON202.Id
 		Write(gcPrepareCommitsTemplate, struct{ RepoURL, ID string }{u.String(), id})
