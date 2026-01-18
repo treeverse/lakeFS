@@ -312,6 +312,56 @@ This functionality is supported with an external auth service only.
 
 
 
+### lakectl auth aws-iam
+
+Manage AWS IAM
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for aws-iam
+```
+
+
+
+### lakectl auth aws-iam describe
+
+Describe an external principal (IAM role)
+
+```
+lakectl auth aws-iam describe [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help                  help for describe
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
+```
+
+
+
+### lakectl auth aws-iam help
+
+Help about any command
+
+<h4>Synopsis</h4>
+
+Help provides help for any command in the application.
+Simply type aws-iam help [path to command] for full details.
+
+```
+lakectl auth aws-iam help [command] [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for help
+```
+
+
+
 ### lakectl auth groups
 
 Manage groups
@@ -789,6 +839,95 @@ Manage users
 
 ```
   -h, --help   help for users
+```
+
+
+
+### lakectl auth users aws-iam
+
+Manage AWS IAM
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for aws-iam
+```
+
+
+
+### lakectl auth users aws-iam attach
+
+Attach an external principal (IAM role) to a user
+
+```
+lakectl auth users aws-iam attach [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help                  help for attach
+      --id string             Username (email for password-based users, default: current user)
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
+```
+
+
+
+### lakectl auth users aws-iam detach
+
+Detach an external principal (IAM role) from a user
+
+```
+lakectl auth users aws-iam detach [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help                  help for detach
+      --id string             Username (email for password-based users, default: current user)
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
+```
+
+
+
+### lakectl auth users aws-iam help
+
+Help about any command
+
+<h4>Synopsis</h4>
+
+Help provides help for any command in the application.
+Simply type aws-iam help [path to command] for full details.
+
+```
+lakectl auth users aws-iam help [command] [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth users aws-iam list
+
+List external principals (IAM roles) attached to a user
+
+```
+lakectl auth users aws-iam list [flags]
+```
+
+<h4>Options</h4>
+
+```
+      --id string       User ID to list external principals for
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
