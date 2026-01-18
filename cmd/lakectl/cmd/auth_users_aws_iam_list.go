@@ -8,15 +8,24 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
-var authIAMExternalPrincipalsList = &cobra.Command{
+var authUsersAWSIAMList = &cobra.Command{
 	Use:   "list",
 	Short: "List external principals (IAM roles) attached to a user",
 	Run: func(cmd *cobra.Command, args []string) {
-		userID := Must(cmd.Flags().GetString("user-id"))
+		id := Must(cmd.Flags().GetString("id"))
 		prefix, after, amount := getPaginationFlags(cmd)
 		clt := getClient()
 
-		resp, err := clt.ListUserExternalPrincipalsWithResponse(cmd.Context(), userID, &apigen.ListUserExternalPrincipalsParams{
+		if id == "" {
+			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				Die("Bad response from server", 1)
+			}
+			id = resp.JSON200.User.Id
+		}
+
+		resp, err := clt.ListUserExternalPrincipalsWithResponse(cmd.Context(), id, &apigen.ListUserExternalPrincipalsParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
@@ -39,9 +48,8 @@ var authIAMExternalPrincipalsList = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	authIAMExternalPrincipalsList.Flags().String("user-id", "", "User ID to list external principals for")
-	_ = authIAMExternalPrincipalsList.MarkFlagRequired("user-id")
-	withPaginationFlags(authIAMExternalPrincipalsList)
+	authUsersAWSIAMList.Flags().String("id", "", "User ID to list external principals for")
+	withPaginationFlags(authUsersAWSIAMList)
 
-	authIAMExternalPrincipals.AddCommand(authIAMExternalPrincipalsList)
+	authUsersAWSIAMCmd.AddCommand(authUsersAWSIAMList)
 }

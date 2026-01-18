@@ -11,7 +11,7 @@ const externalPrincipalTemplate = `Principal ID: {{ .PrincipalID | bold }}
 User ID: {{ .UserID | bold }}
 `
 
-var authIAMExternalPrincipalsDescribe = &cobra.Command{
+var authAWSIAMDescribe = &cobra.Command{
 	Use:   "describe",
 	Short: "Describe an external principal (IAM role)",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -39,8 +39,8 @@ var authIAMExternalPrincipalsDescribe = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	authIAMExternalPrincipalsDescribe.Flags().String("principal-id", "", "External principal ID (e.g., AWS IAM role ARN)")
-	_ = authIAMExternalPrincipalsDescribe.MarkFlagRequired("principal-id")
+	authAWSIAMDescribe.Flags().String("principal-id", "", "External principal ID (e.g., AWS IAM role ARN)")
+	_ = authAWSIAMDescribe.MarkFlagRequired("principal-id")
 
-	authIAMExternalPrincipals.AddCommand(authIAMExternalPrincipalsDescribe)
+	authAWSIAMCmd.AddCommand(authAWSIAMDescribe)
 }
