@@ -10,7 +10,7 @@ import (
 
 var authUsersAWSIAMDetach = &cobra.Command{
 	Use:   "detach",
-	Short: "Detach an external principal (IAM role) from a user",
+	Short: "Detach an IAM Role from a lakeFS user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		principalID := Must(cmd.Flags().GetString("principal-id"))
