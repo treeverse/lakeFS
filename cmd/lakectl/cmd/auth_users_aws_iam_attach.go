@@ -10,7 +10,7 @@ import (
 
 var authUsersAWSIAMAttach = &cobra.Command{
 	Use:   "attach",
-	Short: "Attach an external principal (IAM role) to a user",
+	Short: "Attach an IAM role to a lakeFS user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		principalID := Must(cmd.Flags().GetString("principal-id"))
