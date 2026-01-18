@@ -312,56 +312,6 @@ This functionality is supported with an external auth service only.
 
 
 
-### lakectl auth aws-iam
-
-Manage AWS IAM
-
-<h4>Options</h4>
-
-```
-  -h, --help   help for aws-iam
-```
-
-
-
-### lakectl auth aws-iam describe
-
-Describe an external principal (IAM role)
-
-```
-lakectl auth aws-iam describe [flags]
-```
-
-<h4>Options</h4>
-
-```
-  -h, --help                  help for describe
-      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
-```
-
-
-
-### lakectl auth aws-iam help
-
-Help about any command
-
-<h4>Synopsis</h4>
-
-Help provides help for any command in the application.
-Simply type aws-iam help [path to command] for full details.
-
-```
-lakectl auth aws-iam help [command] [flags]
-```
-
-<h4>Options</h4>
-
-```
-  -h, --help   help for help
-```
-
-
-
 ### lakectl auth groups
 
 Manage groups
@@ -928,6 +878,23 @@ lakectl auth users aws-iam list [flags]
       --after string    show results after this value (used for pagination)
       --prefix string   filter results by prefix (used for pagination)
   -h, --help            help for list
+```
+
+
+
+### lakectl auth users aws-iam lookup
+
+Lookup an external principal (IAM role)
+
+```
+lakectl auth users aws-iam lookup [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help                  help for lookup
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
 ```
 
 
