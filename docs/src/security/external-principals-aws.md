@@ -106,20 +106,20 @@ This can be done through lakectl, the lakeFS [External Principals API][external-
 ### Using lakectl
 
 ```bash
-# Attach IAM role(s) to a lakeFS user
+# Attach IAM role to a lakeFS user (omit --id to use current user)
 lakectl auth users aws-iam attach [--id <lakefs-user>] \
     --principal-id 'arn:aws:sts::<id>:assumed-role/<role A>/<optional session name>'
 lakectl auth users aws-iam attach [--id <lakefs-user>] \
     --principal-id 'arn:aws:sts::<id>:assumed-role/<role B>'
 
-# Detach an IAM role from a user
+# Detach an IAM role from a user (omit --id to use current user)
 lakectl auth users aws-iam detach [--id <lakefs-user>] \
     --principal-id 'arn:aws:sts::<id>:assumed-role/<role A>'
 
 # List IAM roles attached to a user (omit --id to use current user)
 lakectl auth users aws-iam list [--id <lakefs-user>]
 
-# Lookup which user an IAM role is attached to
+# Lookup which lakeFS users are attached to an IAM role
 lakectl auth users aws-iam lookup --principal-id 'arn:aws:sts::<id>:assumed-role/<role>'
 ```
 
