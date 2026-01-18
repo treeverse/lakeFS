@@ -243,12 +243,18 @@ func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[g
 				"component":        "gc",
 				"commits_to_clean": len(commitSet),
 			})
-		log.Debug("Start getting cleanup map")
 		var (
-			commit *CommitNode
-			err    error
+			numCommits int
+			commit     *CommitNode
+			err        error
+			lastReport = time.Now()
 		)
 		for commitID := range commitSet {
+			if time.Since(lastReport) > traceReportInterval {
+				log.WithField("num_commits", numCommits).
+					Debug("Get cleanup map")
+			}
+			numCommits++
 			commit, err = commitsMap.Get(ctx, commitID)
 			if err != nil {
 				yield(commitID, MetaRangeIDOrError{Err: err})
@@ -258,7 +264,7 @@ func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[g
 			}
 		}
 		if err != nil {
-			log.WithError(err).Debug("Done getting cleanup map")
+			log.WithError(err).Debug("Failed to get cleanup map")
 		} else {
 			log.Debug("Done getting cleanup map")
 		}
