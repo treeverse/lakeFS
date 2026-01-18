@@ -159,16 +159,21 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	}()
 
 	now := time.Now()
-	var lastReport time.Time
+	var (
+		lastReport        time.Time
+		numStartingPoints int
+	)
 	for startingPointIterator.Next() {
 		if log.IsDebugging() && time.Since(lastReport) > traceReportInterval {
 			log.WithFields(logging.Fields{
-				"num_processed":     len(processed),
-				"num_active":        len(activeMap),
-				"proportion_active": float64(len(activeMap)) / float64(len(processed)),
+				"num_starting_points": numStartingPoints,
+				"num_processed":       len(processed),
+				"num_active":          len(activeMap),
+				"proportion_active":   float64(len(activeMap)) / float64(len(processed)),
 			}).Debug("Processing...")
 			lastReport = time.Now()
 		}
+		numStartingPoints++
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
 		commitNode, err := commitsMap.Get(ctx, startingPoint.CommitID)
