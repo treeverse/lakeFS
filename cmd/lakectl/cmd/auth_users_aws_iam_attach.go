@@ -13,7 +13,7 @@ var authUsersAWSIAMAttach = &cobra.Command{
 	Short: "Attach an IAM role to a lakeFS user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		principalID := Must(cmd.Flags().GetString("principal-id"))
+		principalID := Must(cmd.Flags().GetString("aws-role-arn"))
 		clt := getClient()
 
 		if id == "" {
@@ -29,15 +29,15 @@ var authUsersAWSIAMAttach = &cobra.Command{
 			PrincipalId: principalID,
 		}, apigen.CreateUserExternalPrincipalJSONRequestBody{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		fmt.Println("External principal attached successfully")
+		fmt.Println("IAM role attached successfully")
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
-	authUsersAWSIAMAttach.Flags().String("id", "", "Username (email for password-based users, default: current user)")
-	authUsersAWSIAMAttach.Flags().String("principal-id", "", "External principal ID (e.g., AWS IAM role ARN)")
-	_ = authUsersAWSIAMAttach.MarkFlagRequired("principal-id")
+	authUsersAWSIAMAttach.Flags().String("id", "", idHelperText)
+	authUsersAWSIAMAttach.Flags().String("aws-role-arn", "", "External principal ID (e.g., AWS IAM role ARN)")
+	_ = authUsersAWSIAMAttach.MarkFlagRequired("aws-role-arn")
 
 	authUsersAWSIAMCmd.AddCommand(authUsersAWSIAMAttach)
 }

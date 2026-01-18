@@ -11,3 +11,5 @@ var authUsersAWSIAMCmd = &cobra.Command{
 func init() {
 	authUsersCmd.AddCommand(authUsersAWSIAMCmd)
 }
+
+var idHelperText = "lakeFS Username (default: current user)"

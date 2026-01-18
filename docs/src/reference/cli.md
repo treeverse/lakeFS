@@ -795,7 +795,7 @@ Manage users
 
 ### lakectl auth users aws-iam
 
-Manage AWS IAM
+Manage AWS IAM Role for lakeFS Users (External Principals API)
 
 <h4>Options</h4>
 
@@ -807,7 +807,7 @@ Manage AWS IAM
 
 ### lakectl auth users aws-iam attach
 
-Attach an external principal (IAM role) to a user
+Attach an IAM role to a lakeFS user
 
 ```
 lakectl auth users aws-iam attach [flags]
@@ -816,16 +816,16 @@ lakectl auth users aws-iam attach [flags]
 <h4>Options</h4>
 
 ```
+      --aws-role-arn string   External principal ID (e.g., AWS IAM role ARN)
   -h, --help                  help for attach
-      --id string             Username (email for password-based users, default: current user)
-      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
+      --id string             lakeFS Username (default: current user)
 ```
 
 
 
 ### lakectl auth users aws-iam detach
 
-Detach an external principal (IAM role) from a user
+Detach an IAM Role from a lakeFS user
 
 ```
 lakectl auth users aws-iam detach [flags]
@@ -835,7 +835,7 @@ lakectl auth users aws-iam detach [flags]
 
 ```
   -h, --help                  help for detach
-      --id string             Username (email for password-based users, default: current user)
+      --id string             lakeFS Username (default: current user)
       --principal-id string   External principal ID (e.g., AWS IAM role ARN)
 ```
 
@@ -864,7 +864,7 @@ lakectl auth users aws-iam help [command] [flags]
 
 ### lakectl auth users aws-iam list
 
-List external principals (IAM roles) attached to a user
+List all IAM roles attached to a lakeFS user
 
 ```
 lakectl auth users aws-iam list [flags]
@@ -873,7 +873,7 @@ lakectl auth users aws-iam list [flags]
 <h4>Options</h4>
 
 ```
-      --id string       User ID to list external principals for
+      --id string       lakeFS Username (default: current user)
       --amount int      how many results to return (default 100)
       --after string    show results after this value (used for pagination)
       --prefix string   filter results by prefix (used for pagination)
@@ -884,7 +884,7 @@ lakectl auth users aws-iam list [flags]
 
 ### lakectl auth users aws-iam lookup
 
-Lookup an external principal (IAM role)
+Lookup IAM Role attachments
 
 ```
 lakectl auth users aws-iam lookup [flags]

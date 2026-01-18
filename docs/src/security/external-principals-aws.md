@@ -101,12 +101,32 @@ auth:
 
 Administration refers to the management of the IAM roles that are allowed to authenticate to lakeFS.
 Operations such as attaching and detaching IAM roles to a user, listing the roles attached to a user, and listing the users attached to a role.
-Currently, this is done through the lakeFS [External Principals API][external-principal-admin] and generated clients.
+This can be done through lakectl, the lakeFS [External Principals API][external-principal-admin], or generated clients.
 
-Example of attaching an IAM roles to a user:
+### Using lakectl
+
+```bash
+# Attach IAM role(s) to a lakeFS user
+lakectl auth users aws-iam attach [--id <lakefs-user>] \
+    --principal-id 'arn:aws:sts::<id>:assumed-role/<role A>/<optional session name>'
+lakectl auth users aws-iam attach [--id <lakefs-user>] \
+    --principal-id 'arn:aws:sts::<id>:assumed-role/<role B>'
+
+# Detach an IAM role from a user
+lakectl auth users aws-iam detach [--id <lakefs-user>] \
+    --principal-id 'arn:aws:sts::<id>:assumed-role/<role A>'
+
+# List IAM roles attached to a user (omit --id to use current user)
+lakectl auth users aws-iam list [--id <lakefs-user>]
+
+# Lookup which user an IAM role is attached to
+lakectl auth users aws-iam lookup --principal-id 'arn:aws:sts::<id>:assumed-role/<role>'
+```
+
+### Using Python SDK
 
 ```python
-import lakefs_sdk as lakefs  
+import lakefs_sdk as lakefs
 
 configuration = lakefs.Configuration(host = "...",username="...",password="...")
 username = "<lakefs-user>"

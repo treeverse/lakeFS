@@ -48,7 +48,7 @@ var authUsersAWSIAMList = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	authUsersAWSIAMList.Flags().String("id", "", "User ID to list external principals for")
+	authUsersAWSIAMList.Flags().String("id", "", idHelperText)
 	withPaginationFlags(authUsersAWSIAMList)
 
 	authUsersAWSIAMCmd.AddCommand(authUsersAWSIAMList)

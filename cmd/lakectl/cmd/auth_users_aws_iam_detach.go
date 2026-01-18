@@ -29,13 +29,13 @@ var authUsersAWSIAMDetach = &cobra.Command{
 			PrincipalId: principalID,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Println("External principal detached successfully")
+		fmt.Println("IAM role detached successfully")
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
-	authUsersAWSIAMDetach.Flags().String("id", "", "Username (email for password-based users, default: current user)")
+	authUsersAWSIAMDetach.Flags().String("id", "", idHelperText)
 	authUsersAWSIAMDetach.Flags().String("principal-id", "", "External principal ID (e.g., AWS IAM role ARN)")
 	_ = authUsersAWSIAMDetach.MarkFlagRequired("principal-id")
 
