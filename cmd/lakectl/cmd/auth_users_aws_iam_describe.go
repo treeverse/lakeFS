@@ -13,7 +13,7 @@ User ID: {{ .UserID | bold }}
 
 var authAWSIAMLookup = &cobra.Command{
 	Use:   "lookup",
-	Short: "Lookup an external principal (IAM role)",
+	Short: "Lookup an IAM Role attachment",
 	Run: func(cmd *cobra.Command, args []string) {
 		principalID := Must(cmd.Flags().GetString("principal-id"))
 		clt := getClient()
