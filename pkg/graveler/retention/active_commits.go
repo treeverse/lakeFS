@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"os"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -121,8 +122,9 @@ type MetaRangeIDOrError struct {
 
 // GetGarbageCollectionCommits returns the sets of active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
-// Upon completion, the given startingPointIterator is closed.
 func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (iter.Seq2[graveler.CommitID, MetaRangeIDOrError], error) {
+	log := logging.FromContext(ctx).WithField("component", "gc")
+
 	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	processed := make(map[graveler.CommitID]time.Time)
@@ -136,6 +138,11 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if err != nil {
 		return nil, fmt.Errorf("open commits map temp KV: %w", err)
 	}
+	defer func() {
+		if err := os.RemoveAll("gc.db"); err != nil {
+			log.WithError(err).Error("Failed to delete GC local commits KV; space wasted")
+		}
+	}()
 
 	commitsMap, err := NewCommitsMap(ctx, commitGetter, store)
 	if err != nil {
@@ -148,13 +155,11 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		}
 	}()
 
-	log := logging.FromContext(ctx).WithField("component", "gc")
 	log.Debug("Loaded initial commits map")
 
 	// Observe NumMisses.  This should not be a metric unless we see it happen a _lot_.
 	defer func() {
-		log.
-			WithField("num_misses", commitsMap.NumMisses).
+		log.WithField("num_misses", commitsMap.NumMisses).
 			Info("Commits map - misses are due to concurrent commits")
 	}()
 
@@ -226,7 +231,12 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			processed[nextCommitID] = branchExpirationThreshold
 		}
 	}
-	log.Debug("Finished iteration")
+	log.WithFields(logging.Fields{
+		"num_starting_points": numStartingPoints,
+		"num_processed":       len(processed),
+		"num_active":          len(activeMap),
+		"proportion_active":   float64(len(activeMap)) / float64(len(processed)),
+	}).Debug("Finished iteration")
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
@@ -260,7 +270,9 @@ func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[g
 				yield(commitID, MetaRangeIDOrError{Err: err})
 				break
 			} else {
-				yield(commitID, MetaRangeIDOrError{ID: graveler.MetaRangeID(commit.MetaRangeID)})
+				if !yield(commitID, MetaRangeIDOrError{ID: graveler.MetaRangeID(commit.MetaRangeID)}) {
+					break
+				}
 			}
 		}
 		if err != nil {
