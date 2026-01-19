@@ -793,6 +793,112 @@ Manage users
 
 
 
+### lakectl auth users aws-iam
+
+Manage AWS IAM Role for lakeFS Users (External Principals API)
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for aws-iam
+```
+
+
+
+### lakectl auth users aws-iam attach
+
+Attach an IAM role to a lakeFS user
+
+```
+lakectl auth users aws-iam attach [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help                  help for attach
+      --id string             lakeFS Username (default: current user)
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
+```
+
+
+
+### lakectl auth users aws-iam detach
+
+Detach an IAM Role from a lakeFS user
+
+```
+lakectl auth users aws-iam detach [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help                  help for detach
+      --id string             lakeFS Username (default: current user)
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
+```
+
+
+
+### lakectl auth users aws-iam help
+
+Help about any command
+
+<h4>Synopsis</h4>
+
+Help provides help for any command in the application.
+Simply type aws-iam help [path to command] for full details.
+
+```
+lakectl auth users aws-iam help [command] [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth users aws-iam list
+
+List all IAM roles attached to a lakeFS user
+
+```
+lakectl auth users aws-iam list [flags]
+```
+
+<h4>Options</h4>
+
+```
+      --id string       lakeFS Username (default: current user)
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
+```
+
+
+
+### lakectl auth users aws-iam lookup
+
+Lookup IAM Role attachments
+
+```
+lakectl auth users aws-iam lookup [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help                  help for lookup
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
+```
+
+
+
 ### lakectl auth users create
 
 Create a user

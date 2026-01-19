@@ -69,8 +69,8 @@ func getScope(t time.Time, region, service string) string {
 	return scope
 }
 
-// getChunkSignature - get chunk signature.
-func getChunkSignature(cred *model.Credential, seedSignature string, region string, service string, date time.Time, hashedChunk string) string {
+// GetChunkSignature - get chunk signature. Exported for testing purposes.
+func GetChunkSignature(cred *model.Credential, seedSignature string, region string, service string, date time.Time, hashedChunk string) string {
 	// Calculate string to sign.
 	stringToSign := signV4ChunkedAlgorithm + "\n" +
 		date.Format(v4timeFormat) + "\n" +
@@ -327,7 +327,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) { //nolint:gocycl
 			// Calculate the hashed chunk.
 			hashedChunk := hex.EncodeToString(cr.chunkSHA256Writer.Sum(nil))
 			// Calculate the chunk signature.
-			newSignature := getChunkSignature(cr.cred, cr.seedSignature, cr.region, cr.service, cr.seedDate, hashedChunk)
+			newSignature := GetChunkSignature(cr.cred, cr.seedSignature, cr.region, cr.service, cr.seedDate, hashedChunk)
 			if !Equal([]byte(cr.chunkSignature), []byte(newSignature)) {
 				return 0, gwerrors.ErrSignatureDoesNotMatch
 			}

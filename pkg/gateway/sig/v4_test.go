@@ -15,8 +15,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	gtwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 )
 
@@ -27,7 +28,7 @@ var mockCreds = &model.Credential{
 	},
 }
 
-func TestDoesPolicySignatureMatch(t *testing.T) {
+func TestV4AuthenticationFailures(t *testing.T) {
 	testCases := []struct {
 		Name               string
 		Header             http.Header
@@ -58,22 +59,6 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 				"Policy":           []string{"policy"},
 			},
 			ExpectedParseError: true,
-		},
-		{
-			Name: "Amazon single chunk example", //  https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
-			Header: http.Header{
-				"X-Amz-Credential":     []string{"AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request"},
-				"X-Amz-Date":           []string{"20130524T000000Z"},
-				"X-Amz-Content-Sha256": []string{"44ce7dd67c959e0d3524ffac1771dfbba87d2b6b4b4e99e42034a8b803f8b072"},
-				"Authorization":        []string{"AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request,SignedHeaders=date;host;x-amz-content-sha256;x-amz-date;x-amz-storage-class,Signature=98ad721746da40c64f1a55b78f14c238d841ea1380cd77a1b5971af0ece108bd"},
-				"X-Amz-Storage-Class":  []string{"REDUCED_REDUNDANCY"},
-				"Policy":               []string{"policy"},
-
-				"Date": []string{"Fri, 24 May 2013 00:00:00 GMT"},
-			},
-			Host:   "examplebucket.s3.amazonaws.com",
-			Method: http.MethodPut,
-			Path:   "test$file.text",
 		},
 	}
 
@@ -107,6 +92,67 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 	}
 }
 
+func TestV4SignedPayloadVerification(t *testing.T) {
+	// This test verifies successful V4 signature verification with a signed payload
+	// Based on the Amazon single chunk example from AWS documentation
+	// https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
+
+	const (
+		host    = "examplebucket.s3.amazonaws.com"
+		path    = "test$file.text"
+		region  = "us-east-1"
+		service = "s3"
+	)
+
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("https://%s/%s", host, path), nil)
+	if err != nil {
+		t.Fatalf("failed to create http.Request, got %v", err)
+	}
+
+	payload := []byte("Welcome to Amazon S3.")
+	h := sha256.Sum256(payload)
+	payloadHash := hex.EncodeToString(h[:])
+
+	// Use current time for signing
+	sigTime := time.Now().UTC()
+
+	req.Header.Set("Host", host)
+	req.Header.Set("X-Amz-Date", sigTime.Format("20060102T150405Z"))
+	req.Header.Set("X-Amz-Content-Sha256", payloadHash)
+	req.Header.Set("X-Amz-Storage-Class", "REDUCED_REDUNDANCY")
+	req.Header.Set("Date", sigTime.Format(time.RFC1123))
+
+	creds := aws.Credentials{
+		AccessKeyID:     mockCreds.AccessKeyID,
+		SecretAccessKey: mockCreds.SecretAccessKey,
+	}
+	signer := v4.NewSigner()
+	err = signer.SignHTTP(t.Context(), creds, req, payloadHash, service, region, sigTime)
+	if err != nil {
+		t.Fatalf("Failed to sign request: %v", err)
+	}
+
+	req.Body = io.NopCloser(bytes.NewReader(payload))
+
+	authenticator := sig.NewV4Authenticator(req)
+	_, err = authenticator.Parse()
+	require.NoError(t, err, "failed to parse auth header")
+
+	err = authenticator.Verify(&model.Credential{
+		BaseCredential: model.BaseCredential{
+			AccessKeyID:     mockCreds.AccessKeyID,
+			SecretAccessKey: mockCreds.SecretAccessKey,
+			IssuedDate:      sigTime,
+		},
+	})
+	require.NoError(t, err, "failed to verify signature")
+
+	// Read and verify the body
+	bodyData, err := io.ReadAll(req.Body)
+	require.NoError(t, err, "failed to read body")
+	require.Equal(t, payload, bodyData, "body mismatch")
+}
+
 func TestSingleChunkPut(t *testing.T) {
 	tt := []struct {
 		Name              string
@@ -124,7 +170,7 @@ func TestSingleChunkPut(t *testing.T) {
 			Name:              "amazon example should fail",
 			RequestBody:       "Welcome to Amazon S3",
 			SignBody:          "Welcome to Amazon S3.",
-			ExpectedReadError: gtwerrors.ErrSignatureDoesNotMatch,
+			ExpectedReadError: gatewayerrors.ErrSignatureDoesNotMatch,
 		},
 		{
 			Name:        "empty body",
@@ -190,124 +236,139 @@ func TestSingleChunkPut(t *testing.T) {
 	}
 }
 
-func TestStreaming(t *testing.T) {
-	const (
-		host   = "s3.amazonaws.com"
-		path   = "examplebucket/chunkObject.txt"
-		ID     = "AKIAIOSFODNN7EXAMPLE"
-		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-	)
+// setupAndSignStreamingRequest creates and signs a streaming request, returning the request,
+// seed signature, and credential for further chunk signature calculations.
+func setupAndSignStreamingRequest(t *testing.T, accessKey, secretKey, host, path, region, service string, sigTime time.Time, decodedContentLength int) (*http.Request, string, *model.Credential) {
+	t.Helper()
+
+	// Create request
 	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("https://%s/%s", host, path), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header = http.Header{
-		"Authorization":                []string{"AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request,SignedHeaders=content-encoding;content-length;host;x-amz-content-sha256;x-amz-date;x-amz-decoded-content-length;x-amz-storage-class,Signature=4f232c4386841ef735655705268965c44a0e4690baa4adea153f7db9fa80a0a9"},
-		"X-Amz-Credential":             []string{"EXAMPLEINVALIDEXAMPL/20130524/us-east-1/s3/aws4_request"},
-		"X-Amz-Date":                   []string{"20130524T000000Z"},
-		"X-Amz-Storage-Class":          []string{"REDUCED_REDUNDANCY"},
-		"X-Amz-Content-Sha256":         []string{"STREAMING-AWS4-HMAC-SHA256-PAYLOAD"},
-		"Content-Encoding":             []string{"aws-chunked"},
-		"X-Amz-Decoded-Content-Length": []string{"66560"},
-		"Content-Length":               []string{"66824"},
+
+	req.Header.Set("Host", host)
+	req.Header.Set("X-Amz-Date", sigTime.Format("20060102T150405Z"))
+	req.Header.Set("X-Amz-Content-Sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD")
+	req.Header.Set("Content-Encoding", "aws-chunked")
+	req.Header.Set("X-Amz-Decoded-Content-Length", fmt.Sprintf("%d", decodedContentLength))
+
+	creds := aws.Credentials{
+		AccessKeyID:     accessKey,
+		SecretAccessKey: secretKey,
 	}
-	var body bytes.Buffer
+	signer := v4.NewSigner()
+	err = signer.SignHTTP(t.Context(), creds, req, "STREAMING-AWS4-HMAC-SHA256-PAYLOAD", service, region, sigTime)
+	require.NoError(t, err, "failed to sign request")
 
-	// chunk1
-	body.Write([]byte("10000;chunk-signature=ad80c730a21e5b8d04586a2213dd63b9a0e99e0e2307b0ade35a65485a288648\r\n"))
-	const chunk1Size = 65536
-	body.Write(bytes.Repeat([]byte("a"), chunk1Size))
-	body.Write([]byte("\r\n"))
+	// Get the seed signature from the Authorization header
+	authHeader := req.Header.Get("Authorization")
+	_, seedSig, found := strings.Cut(authHeader, "Signature=")
+	require.True(t, found, "Authorization header missing Signature field")
 
-	// chunk2
-	body.Write([]byte("400;chunk-signature=0055627c9e194cb4542bae2aa5492e3c1575bbb81b612b7d234b86a503ef5497\r\n"))
-	const chunk2Size = 1024
-	body.Write(bytes.Repeat([]byte("a"), chunk2Size))
-	body.Write([]byte("\r\n"))
-
-	// chunk3
-	body.Write([]byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n"))
-
-	req.Body = io.NopCloser(bytes.NewReader(body.Bytes()))
-
-	// now test it
-	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse()
-	if err != nil {
-		t.Errorf("expect not no error, got %v", err)
-	}
-
-	err = authenticator.Verify(&model.Credential{
+	// Create credential for chunk signature calculation
+	modelCred := &model.Credential{
 		BaseCredential: model.BaseCredential{
-			AccessKeyID:     ID,
-			SecretAccessKey: SECRET,
-			IssuedDate:      time.Now(),
+			AccessKeyID:     accessKey,
+			SecretAccessKey: secretKey,
+			IssuedDate:      sigTime,
 		},
-	})
-	if err != nil {
-		t.Error(err)
 	}
-	if req.ContentLength != int64(chunk1Size+chunk2Size) {
-		t.Fatal("expected content length to be equal to decoded content length")
-	}
-	_, err = io.ReadAll(req.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	return req, seedSig, modelCred
 }
 
-func TestStreamingLastByteWrong(t *testing.T) {
+func TestStreaming(t *testing.T) {
 	const (
-		key    = "AKIAIOSFODNN7EXAMPLE"
-		secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		ID      = "AKIAIOSFODNN7EXAMPLE"
+		SECRET  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		host    = "s3.amazonaws.com"
+		path    = "examplebucket/chunkObject.txt"
+		region  = "us-east-1"
+		service = "s3"
 	)
-	req, err := http.NewRequest(http.MethodPut, "https://s3.amazonaws.com/examplebucket/chunkObject.txt", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header = http.Header{
-		"Authorization":                []string{"AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request,SignedHeaders=content-encoding;content-length;host;x-amz-content-sha256;x-amz-date;x-amz-decoded-content-length;x-amz-storage-class,Signature=4f232c4386841ef735655705268965c44a0e4690baa4adea153f7db9fa80a0a9"},
-		"X-Amz-Credential":             []string{"EXAMPLEINVALIDEXAMPL/20130524/us-east-1/s3/aws4_request"},
-		"X-Amz-Date":                   []string{"20130524T000000Z"},
-		"X-Amz-Storage-Class":          []string{"REDUCED_REDUNDANCY"},
-		"X-Amz-Content-Sha256":         []string{"STREAMING-AWS4-HMAC-SHA256-PAYLOAD"},
-		"Content-Encoding":             []string{"aws-chunked"},
-		"X-Amz-Decoded-Content-Length": []string{"66560"},
-		"Content-Length":               []string{"66824"},
-	}
 
-	a := bytes.Repeat([]byte("a"), 65536)
-	a = append(a, '\r', '\n')
-	chunk1 := append([]byte("10000;chunk-signature=ad80c730a21e5b8d04586a2213dd63b9a0e99e0e2307b0ade35a65485a288648\r\n"), a...)
-	b := bytes.Repeat([]byte("a"), 1023)
-	b = append(b, 'b', '\r', '\n')
-	chunk2 := append([]byte("400;chunk-signature=0055627c9e194cb4542bae2aa5492e3c1575bbb81b612b7d234b86a503ef5497\r\n"), b...)
-	chunk3 := []byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n")
-	body := append(chunk1, chunk2...)
-	body = append(body, chunk3...)
-	req.Body = io.NopCloser(bytes.NewReader(body))
-
-	// now test it
-	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse()
-	if err != nil {
-		t.Errorf("expect not no error, got %v", err)
-	}
-
-	err = authenticator.Verify(&model.Credential{
-		BaseCredential: model.BaseCredential{
-			AccessKeyID:     key,
-			SecretAccessKey: secret,
-			IssuedDate:      time.Now(),
+	testCases := []struct {
+		name              string
+		corruptLastByte   bool
+		expectedReadError error
+	}{
+		{
+			name:              "successful signature verification with valid chunks",
+			corruptLastByte:   false,
+			expectedReadError: nil,
 		},
-	})
-	if err != nil {
-		t.Errorf("expect not no error, got %v", err)
+		{
+			name:              "signature mismatch on corrupted chunk",
+			corruptLastByte:   true,
+			expectedReadError: gatewayerrors.ErrSignatureDoesNotMatch,
+		},
 	}
 
-	_, err = io.ReadAll(req.Body)
-	if !errors.Is(err, gtwerrors.ErrSignatureDoesNotMatch) {
-		t.Errorf("expect %v, got %v", gtwerrors.ErrSignatureDoesNotMatch, err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Define chunk data
+			const chunk1Size = 65536 // 64KB
+			const chunk2Size = 1024  // 1KB
+			decodedContentLength := chunk1Size + chunk2Size
+			chunk1Data := bytes.Repeat([]byte("a"), chunk1Size)
+			chunk2Data := bytes.Repeat([]byte("a"), chunk2Size)
+
+			// Use current time for signing
+			sigTime := time.Now().UTC()
+
+			// Setup and sign the streaming request
+			req, seedSig, modelCred := setupAndSignStreamingRequest(t, ID, SECRET, host, path, region, service, sigTime, decodedContentLength)
+
+			// Calculate chunk signatures with the correct data
+			chunk1Hash := sha256.Sum256(chunk1Data)
+			chunk1Sig := sig.GetChunkSignature(modelCred, seedSig, region, service, sigTime, hex.EncodeToString(chunk1Hash[:]))
+
+			chunk2Hash := sha256.Sum256(chunk2Data)
+			chunk2Sig := sig.GetChunkSignature(modelCred, chunk1Sig, region, service, sigTime, hex.EncodeToString(chunk2Hash[:]))
+
+			emptyHash := sha256.Sum256([]byte{})
+			finalSig := sig.GetChunkSignature(modelCred, chunk2Sig, region, service, sigTime, hex.EncodeToString(emptyHash[:]))
+
+			// Optionally corrupt the last byte of chunk2 after signing
+			if tc.corruptLastByte {
+				chunk2Data[len(chunk2Data)-1] = 'b'
+			}
+
+			// Build the chunked body
+			var body bytes.Buffer
+			body.WriteString(fmt.Sprintf("%x;chunk-signature=%s\r\n", chunk1Size, chunk1Sig))
+			body.Write(chunk1Data)
+			body.WriteString("\r\n")
+
+			body.WriteString(fmt.Sprintf("%x;chunk-signature=%s\r\n", chunk2Size, chunk2Sig))
+			body.Write(chunk2Data)
+			body.WriteString("\r\n")
+
+			body.WriteString(fmt.Sprintf("0;chunk-signature=%s\r\n\r\n", finalSig))
+
+			// Update Content-Length with actual body size
+			req.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
+			req.Body = io.NopCloser(bytes.NewReader(body.Bytes()))
+
+			authenticator := sig.NewV4Authenticator(req)
+			_, err := authenticator.Parse()
+			require.NoError(t, err, "failed to parse auth header")
+
+			err = authenticator.Verify(modelCred)
+			require.NoError(t, err, "failed to verify signature")
+
+			require.Equal(t, int64(decodedContentLength), req.ContentLength, "content length mismatch")
+
+			bodyContent, err := io.ReadAll(req.Body)
+			require.ErrorIs(t, err, tc.expectedReadError, "unexpected read error: %v", err)
+			if tc.expectedReadError != nil {
+				return
+			}
+
+			expectedContent := append(chunk1Data, chunk2Data...)
+			require.Equal(t, expectedContent, bodyContent, "body content mismatch")
+		})
 	}
 }
 
@@ -315,42 +376,39 @@ func TestUnsignedPayload(t *testing.T) {
 	const (
 		testID     = "AKIAIOSFODNN7EXAMPLE"
 		testSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		region     = "us-east-1"
+		service    = "s3"
 	)
-	req, err := http.NewRequest(http.MethodHead, "https://repo1.s3.dev.lakefs.io/imdb-spark/collections/shows/title.basics.tsv.gz", nil)
-	if err != nil {
-		t.Fatal(err)
+
+	req, err := http.NewRequest(http.MethodHead, "https://s3.amazonaws.com/examplebucket/test.txt", nil)
+	require.NoError(t, err, "failed to create request")
+
+	req.Header.Set("Host", "s3.amazonaws.com")
+	req.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
+
+	creds := aws.Credentials{
+		AccessKeyID:     testID,
+		SecretAccessKey: testSecret,
 	}
-	req.Header = http.Header{
-		"X-Forwarded-For":       []string{"10.20.1.90"},
-		"X-Forwarded-Proto":     []string{"https"},
-		"X-Forwarded-Port":      []string{"443"},
-		"Host":                  []string{"repo1.s3.dev.lakefs.io"},
-		"X-Amzn-Trace-UploadId": []string{"Root=1-5eb036bc-dd84b3a2115db68a77b1c068"},
-		"amz-sdk-invocation-id": []string{"a8288d69-e8fa-219d-856b-b58b53b6fd5b"},
-		"amz-sdk-retry":         []string{"0/0/500"},
-		"Authorization":         []string{"AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20200504/dev/s3/aws4_request, SignedHeaders=amz-sdk-invocation-id;amz-sdk-retry;content-type;host;user-agent;x-amz-content-sha256;x-amz-date, Signature=9e54ee9b3917a632abc594f4a013cd0580331e627f60de9fffac26ba5b067b81"},
-		"Content-Type":          []string{"application/octet-stream"},
-		"User-Agent":            []string{"Hadoop 2.8.5-amzn-5, aws-sdk-java/1.11.682 Linux/4.14.154-99.181.amzn1.x86_64 OpenJDK_64-Bit_Server_VM/25.242-b08 java/1.8.0_242 scala/2.11.12 vendor/Oracle_Corporation"},
-		"x-amz-content-sha256":  []string{"UNSIGNED-PAYLOAD"},
-		"X-Amz-Date":            []string{"20200504T153732Z"},
-	}
+
+	// Use the current time for signing
+	sigTime := time.Now().UTC()
+	signer := v4.NewSigner()
+	err = signer.SignHTTP(t.Context(), creds, req, "UNSIGNED-PAYLOAD", service, region, sigTime)
+	require.NoError(t, err, "failed to sign request")
 
 	authenticator := sig.NewV4Authenticator(req)
 	_, err = authenticator.Parse()
-	if err != nil {
-		t.Errorf("expect not no error, got %v", err)
-	}
+	require.NoError(t, err, "failed to parse auth header")
 
 	err = authenticator.Verify(&model.Credential{
 		BaseCredential: model.BaseCredential{
 			AccessKeyID:     testID,
 			SecretAccessKey: testSecret,
-			IssuedDate:      time.Now(),
+			IssuedDate:      sigTime,
 		},
 	})
-	if err != nil {
-		t.Errorf("expect not no error, got %v", err)
-	}
+	require.NoError(t, err, "failed to verify signature")
 }
 
 // Helper function to truncate long strings for display in error messages
@@ -363,16 +421,17 @@ func truncateForDisplay(s string) string {
 
 func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 	testCases := []struct {
-		name           string
-		method         string
-		host           string
-		path           string
-		trailerHeader  sig.ChecksumAlgorithm
-		trailerContent string
-		chunkSize      int
-		totalChunks    int
-		chunkData      [][]byte
-		expectedError  error
+		name                string
+		method              string
+		host                string
+		path                string
+		trailerHeader       sig.ChecksumAlgorithm
+		trailerContent      string
+		chunkSize           int
+		totalChunks         int
+		chunkData           [][]byte
+		expectedVerifyError error
+		expectedReadError   error
 	}{
 		{
 			name:           "CRC32C Trailer",
@@ -387,7 +446,6 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 				bytes.Repeat([]byte("a"), 64),
 				bytes.Repeat([]byte("b"), 64),
 			},
-			expectedError: nil,
 		},
 		{
 			name:           "CRC32 Trailer",
@@ -402,7 +460,6 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 				bytes.Repeat([]byte("a"), 64),
 				bytes.Repeat([]byte("b"), 64),
 			},
-			expectedError: nil,
 		},
 		{
 			name:           "Invalid TrailerHeader",
@@ -416,7 +473,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 			chunkData: [][]byte{
 				bytes.Repeat([]byte("a"), 64),
 			},
-			expectedError: sig.ErrUnsupportedChecksum,
+			expectedVerifyError: sig.ErrUnsupportedChecksum,
 		},
 		{
 			name:           "Invalid TrailerContent",
@@ -430,7 +487,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 			chunkData: [][]byte{
 				bytes.Repeat([]byte("a"), 64),
 			},
-			expectedError: sig.ErrChecksumTypeMismatch,
+			expectedReadError: sig.ErrChecksumTypeMismatch,
 		},
 	}
 
@@ -439,12 +496,13 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 		testSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 		region     = "us-east-1"
 		service    = "s3"
-		date       = "20130524"
-		timeStamp  = "20130524T000000Z"
 	)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Use the current time for signing to pass timestamp validation
+			sigTime := time.Now().UTC()
+
 			// Create a request
 			req, err := http.NewRequest(tc.method, fmt.Sprintf("https://%s/%s", tc.host, tc.path), nil)
 			if err != nil {
@@ -452,7 +510,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 			}
 
 			// Set required headers for unsigned trailers
-			req.Header.Set("X-Amz-Date", timeStamp)
+			req.Header.Set("X-Amz-Date", sigTime.Format("20060102T150405Z"))
 			req.Header.Set("X-Amz-Content-Sha256", "STREAMING-UNSIGNED-PAYLOAD-TRAILER")
 			req.Header.Set("Content-Encoding", "aws-chunked")
 			req.Header.Set("X-Amz-Trailer", string(tc.trailerHeader))
@@ -473,7 +531,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// Sign the request using AWS SDK v4 signer
 			signer := v4.NewSigner()
-			err = signer.SignHTTP(t.Context(), creds, req, "STREAMING-UNSIGNED-PAYLOAD-TRAILER", service, region, time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC))
+			err = signer.SignHTTP(t.Context(), creds, req, "STREAMING-UNSIGNED-PAYLOAD-TRAILER", service, region, sigTime)
 			if err != nil {
 				t.Fatalf("Failed to sign request: %v", err)
 			}
@@ -493,7 +551,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// For valid trailer types, calculate checksum
 			var checksumB64 string
-			if tc.expectedError == nil {
+			if tc.expectedVerifyError == nil && tc.expectedReadError == nil {
 				// Get the appropriate checksum writer using the public API
 				checksumWriter, err := sig.GetChecksumWriter(string(tc.trailerHeader))
 				if err != nil {
@@ -523,7 +581,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 				BaseCredential: model.BaseCredential{
 					AccessKeyID:     testID,
 					SecretAccessKey: testSecret,
-					IssuedDate:      time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC),
+					IssuedDate:      sigTime,
 				},
 			}
 
@@ -536,8 +594,10 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// Verify the signature
 			err = authenticator.Verify(&modelCred)
-			if err != nil && errors.Is(err, tc.expectedError) {
-				t.Logf("expected an error, got: %v", err)
+			if !errors.Is(err, tc.expectedVerifyError) {
+				t.Fatalf("unexpected verify error: expected %v but got %v", tc.expectedVerifyError, err)
+			} else if tc.expectedVerifyError != nil {
+				t.Logf("got expected error: %v", tc.expectedVerifyError)
 				return
 			}
 
@@ -553,8 +613,10 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// Read the body to verify the chunks are correctly parsed
 			bodyData, err := io.ReadAll(req.Body)
-			if err != nil && errors.Is(err, tc.expectedError) {
-				t.Logf("expected %v error, got: %v", tc.expectedError, err)
+			if !errors.Is(err, tc.expectedReadError) {
+				t.Fatalf("unexpected read error: expected %v but got %v", tc.expectedReadError, err)
+			} else if tc.expectedReadError != nil {
+				t.Logf("got expected error: %v", tc.expectedReadError)
 				return
 			}
 
