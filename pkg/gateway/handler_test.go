@@ -6,8 +6,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/esti"
 	"github.com/treeverse/lakefs/pkg/gateway/testutil"
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
@@ -17,18 +22,26 @@ const repoName = "example"
 func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
 	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
 		BareDomain:      "example.com",
-		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
-		SecretAccessKey: "MockAccessSecretKey",
+		AccessKeyID:     esti.DefaultAdminAccessKeyID,
+		SecretAccessKey: esti.DefaultAdminSecretAccessKey,
 		UserID:          "65867",
 		Region:          "MockRegion",
 	}, repoName)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(method, target, body)
-	req.Header["Content-Type"] = []string{"text/tab - separated - values"}
-	req.Header["X-Amz-Content-Sha256"] = []string{"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
-	req.Header["X-Amz-Date"] = []string{"20200517T093907Z"}
-	req.Header["Host"] = []string{"host.domain.com"}
-	req.Header["Authorization"] = []string{"AWS4-HMAC-SHA256 Credential=AKIAIO5FODNN7EXAMPLE/20200517/us-east-1/s3/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=cdb193f2140d1d0c093adc7aba9a62bc3c75f84b117100888553115900f39223"}
+	req.Host = "host.domain.com"
+	req.Header.Set("Content-Type", "text/tab - separated - values")
+
+	creds := aws.Credentials{
+		AccessKeyID:     esti.DefaultAdminAccessKeyID,
+		SecretAccessKey: esti.DefaultAdminSecretAccessKey,
+	}
+
+	signer := v4.NewSigner()
+	payloadHash := "UNSIGNED-PAYLOAD" // For unsigned payload
+	err := signer.SignHTTP(t.Context(), creds, req, payloadHash, "s3", "us-east-1", time.Now())
+	require.NoError(t, err)
+
 	h.ServeHTTP(rr, req)
 	return rr.Result()
 }
