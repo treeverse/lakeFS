@@ -15,7 +15,7 @@ func testHooksFailure(t *testing.T, testFunc func(context.Context, *testing.T, s
 }
 
 func TestHooksFailure(t *testing.T) {
-	t.Run("webhook", func(t *testing.T) {
+	t.Run("webhooks", func(t *testing.T) {
 		testHooksFailure(t, WebhookHooksFailureTest)
 	})
 	t.Run("lua", func(t *testing.T) {
