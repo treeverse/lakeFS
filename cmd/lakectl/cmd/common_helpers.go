@@ -104,8 +104,8 @@ func deref(a any) string {
 
 // String converts c to a string with ANSI control codes.
 func (c ColoredText) String() string {
-	text := deref(c.Text)
-	return c.Colors.Sprint(text)
+	t := deref(c.Text)
+	return c.Colors.Sprint(t)
 }
 
 // Add returns c with color added to it.
