@@ -25,7 +25,7 @@ func TestAzureAdapter(t *testing.T) {
 		StorageAccessKey: accountKey,
 		TestEndpointURL:  blockURL,
 		Domain:           domain,
-	})
+	}, azure.WithNowFactory(blocktest.NowMockDefault))
 	require.NoError(t, err, "create new adapter")
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
