@@ -36,7 +36,7 @@ var (
 	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
 	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/(?:[0-9a-v]{20}(?:,.+)?)?`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
-	rePreSignURL      = regexp.MustCompile(`https://\S+\?\S+`)
+	rePreSignURL      = regexp.MustCompile(`https?://\S+\?\S+`)
 	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 )

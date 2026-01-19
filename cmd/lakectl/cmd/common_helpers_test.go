@@ -75,12 +75,14 @@ func TestColors(t *testing.T) {
 		{name: "greenbold", template: `{{"abc" | green | bold}}def`, want: "\x1b[92;1mabc\x1b[0mdef"},
 		{name: "redunderline", template: `{{"abc" | red | underline}}def`, want: "\x1b[91;4mabc\x1b[0mdef"},
 		{name: "red-number", template: `{{2 | red}}`, want: "\x1b[91m2\x1b[0m"},
+		{name: "red-pointer", template: `{{. | red}}`, want: "\x1b[91mxyzzy\x1b[0m"},
 	}
 
+	text := "xyzzy"
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			w := strings.Builder{}
-			WriteTo(tc.template, nil, &w)
+			WriteTo(tc.template, &text, &w)
 			got := w.String()
 			if got != tc.want {
 				t.Errorf("%s got %q want %q", tc.template, got, tc.want)

@@ -8,100 +8,108 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/gateway/sig/sigtest"
 )
 
-func TestVerifyExpiration(t *testing.T) {
-	now := time.Now().UTC()
+func TestSigV4VerifyExpirationPresigned(t *testing.T) {
+	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 
 	testCases := []struct {
 		name          string
-		isPresigned   bool
 		expires       int64
 		requestTime   time.Time
 		expectedError error
 	}{
-		// Presigned URL tests
 		{
 			name:          "valid presigned URL",
-			isPresigned:   true,
 			expires:       3600,
 			requestTime:   now,
 			expectedError: nil,
 		},
 		{
 			name:          "expired presigned URL",
-			isPresigned:   true,
 			expires:       10,
 			requestTime:   now.Add(-1 * time.Minute),
 			expectedError: errors.ErrExpiredPresignRequest,
 		},
 		{
 			name:          "presigned URL with zero expiration",
-			isPresigned:   true,
 			expires:       0,
 			requestTime:   now.Add(-1 * time.Second),
 			expectedError: errors.ErrExpiredPresignRequest,
 		},
 		{
-			name:          "presigned URL at max expiration (7 days)",
-			isPresigned:   true,
-			expires:       604800,
+			name:          "presigned URL at max expiration",
+			expires:       int64(AmzPresignMaxExpires),
 			requestTime:   now,
 			expectedError: nil,
 		},
 		{
 			name:          "presigned URL future request beyond clock skew",
-			isPresigned:   true,
 			expires:       3600,
 			requestTime:   now.Add(AmzMaxClockSkew + 1*time.Minute),
 			expectedError: errors.ErrRequestNotReadyYet,
 		},
 		{
 			name:          "presigned URL future request within clock skew",
-			isPresigned:   true,
 			expires:       3600,
-			requestTime:   now.Add(3 * time.Minute),
+			requestTime:   now.Add(AmzMaxClockSkew / 2),
 			expectedError: nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a minimal verification context
+			// Create a minimal verification context - verifyExpiration only needs the X-Amz-Date and Expiry parameters
 			amzDate := tc.requestTime.Format(v4timeFormat)
-			// Use the same date for the credential scope (must match calendar day)
 			dateStamp := tc.requestTime.Format(v4shortTimeFormat)
 
 			req, _ := http.NewRequest(http.MethodGet, "https://example.com/test", nil)
 
 			// Set X-Amz-Date in query for presigned URLs
-			if tc.isPresigned {
-				query := url.Values{}
-				query.Set("X-Amz-Date", amzDate)
-				req.URL.RawQuery = query.Encode()
-			}
+			query := url.Values{}
+			query.Set("X-Amz-Date", amzDate)
+			req.URL.RawQuery = query.Encode()
 
 			ctx := &verificationCtx{
 				Request: req,
 				Query:   req.URL.Query(),
 				AuthValue: V4Auth{
 					Date:        dateStamp,
-					IsPresigned: tc.isPresigned,
+					IsPresigned: true,
 					Expires:     tc.expires,
 				},
 			}
 
-			err := ctx.verifyExpiration()
+			err := ctx.verifyExpiration(now)
+			require.ErrorIs(t, err, tc.expectedError)
+		})
+	}
+}
 
-			if tc.expectedError == nil {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-			} else {
-				if err != tc.expectedError {
-					t.Errorf("expected error %v, got %v", tc.expectedError, err)
-				}
+func TestSigV4VerifyExpirationNonPresigned(t *testing.T) {
+	// Test non-presigned requests using shared clock skew test cases
+	testCases := sigtest.CommonClockSkewTestCases(AmzMaxClockSkew)
+	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			requestTime := now.Add(tc.Offset)
+			// Create a minimal verification context - verifyExpiration only needs the X-Amz-Date header
+			amzDate := requestTime.Format(v4timeFormat)
+			dateStamp := requestTime.Format(v4shortTimeFormat)
+
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/test", nil)
+			req.Header.Set("X-Amz-Date", amzDate)
+
+			ctx := &verificationCtx{
+				Request:   req,
+				Query:     req.URL.Query(),
+				AuthValue: V4Auth{Date: dateStamp},
 			}
+
+			err := ctx.verifyExpiration(now)
+			require.ErrorIs(t, err, tc.ExpectedError)
 		})
 	}
 }
@@ -292,19 +300,8 @@ func TestParseExpires(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			value, err := parseExpires(tc.expiresStr)
 
-			if value != tc.expectedValue {
-				t.Errorf("expected value %d, got %d", tc.expectedValue, value)
-			}
-
-			if tc.expectedError == nil {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-			} else {
-				if err != tc.expectedError {
-					t.Errorf("expected error %v, got %v", tc.expectedError, err)
-				}
-			}
+			require.ErrorIs(t, err, tc.expectedError)
+			require.Equal(t, value, tc.expectedValue)
 		})
 	}
 }
@@ -382,9 +379,7 @@ func TestIsV4PresignedRequest(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := isV4PresignedRequest(tc.query)
-			if err != tc.expectedError {
-				t.Errorf("expected error %v, got %v", tc.expectedError, err)
-			}
+			require.ErrorIs(t, err, tc.expectedError)
 		})
 	}
 }

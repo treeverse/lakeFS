@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -243,6 +244,11 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential) error {
 			- QSA(Query String Arguments) - query arguments are searched for "interesting Resources".
 	*/
 
+	// Verify the request timestamp is within the max clock skew window
+	if err := a.verifyRequestDate(time.Now().UTC()); err != nil {
+		return err
+	}
+
 	// Prefer the raw path if it exists -- *this* is what SigV2 signs
 	rawPath := a.req.URL.EscapedPath()
 
@@ -253,6 +259,42 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential) error {
 		return errors.ErrSignatureDoesNotMatch
 	}
 	return nil
+}
+
+// parseRequestTime parses a timestamp string in RFC1123, RFC1123Z, or ISO8601 formats
+func parseRequestTime(dateStr string) (time.Time, error) {
+	formats := []string{
+		time.RFC1123,
+		time.RFC1123Z,
+		"20060102T150405Z",
+	}
+
+	for _, format := range formats {
+		if t, err := time.Parse(format, dateStr); err == nil {
+			return t, nil
+		}
+	}
+
+	return time.Time{}, errors.ErrMalformedDate
+}
+
+func (a *V2SigAuthenticator) verifyRequestDate(now time.Time) error {
+	// X-Amz-Date header takes precedence over Date header
+	var dateStr string
+	if amzDate := a.req.Header.Get("X-Amz-Date"); amzDate != "" {
+		dateStr = amzDate
+	} else if date := a.req.Header.Get("Date"); date != "" {
+		dateStr = date
+	} else {
+		return errors.ErrMissingFields
+	}
+
+	requestTime, err := parseRequestTime(dateStr)
+	if err != nil {
+		return err
+	}
+
+	return ValidateClockSkew(now, requestTime)
 }
 
 func (a *V2SigAuthenticator) String() string {

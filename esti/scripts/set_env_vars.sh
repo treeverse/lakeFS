@@ -3,7 +3,7 @@
 # System tests env vars
 export TEST_WEBHOOK_HOST="localhost"
 export ESTI_SETUP_LAKEFS="true"
-export ESTI_STORAGE_NAMESPACE="local://system-testing"
+export ESTI_STORAGE_NAMESPACE=${ESTI_STORAGE_NAMESPACE:-"local://system-testing"}
 
 # Lakefs env vars for test
 export LAKEFSACTION_VAR="this_is_actions_var"

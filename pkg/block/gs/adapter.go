@@ -260,8 +260,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		a.log(ctx).WithError(err).Error("error generating pre-signed URL")
 		return "", time.Time{}, err
 	}
-	// TODO(#6347): Report expiry.
-	return k, time.Time{}, nil
+	return k, opts.Expires, nil
 }
 
 func isErrNotFound(err error) bool {
