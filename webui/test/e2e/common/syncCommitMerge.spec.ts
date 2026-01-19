@@ -65,7 +65,7 @@ test.describe('Commit and Merge Operations', () => {
 
         // Verify the commit used the sync endpoint: /branches/{branch}/commits
         const commitRequest = await commitRequestPromise;
-        expect(commitRequest.url()).toMatch(/\/branches\/[^/]+\/commits$/);
+        expect(commitRequest.url()).toContain(`/branches/${SOURCE_BRANCH}/commits`);
 
         await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 120000 }); // 2 min timeout
 
@@ -82,6 +82,7 @@ test.describe('Commit and Merge Operations', () => {
     });
 
     test('Merge: Merge feature branch into main', async ({ page }) => {
+        expect(setupComplete).toBeTruthy();
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.gotoCompareTab();
@@ -101,7 +102,7 @@ test.describe('Commit and Merge Operations', () => {
 
         // Verify the merge used the sync endpoint: /refs/{sourceRef}/merge/{destinationBranch}
         const mergeRequest = await mergeRequestPromise;
-        expect(mergeRequest.url()).toMatch(/\/refs\/[^/]+\/merge\/[^/]+$/);
+        expect(mergeRequest.url()).toContain(`/refs/${SOURCE_BRANCH}/merge/${DEST_BRANCH}`);
 
         await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 120000 }); // 2 min timeout
 
@@ -117,6 +118,7 @@ test.describe('Commit and Merge Operations', () => {
     });
 
     test('Commit: Handle empty commit attempt', async ({ page }) => {
+        expect(setupComplete).toBeTruthy();
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.gotoObjectsTab();
@@ -126,12 +128,14 @@ test.describe('Commit and Merge Operations', () => {
     });
 
     test('Merge: Handle no-diff merge attempt', async ({ page }) => {
+        expect(setupComplete).toBeTruthy();
         await page.goto(`/repositories/${TEST_REPO_NAME}/compare?ref=${DEST_BRANCH}&compare=${DEST_BRANCH}`);
 
         await expect(page.getByRole('button', { name: 'Merge' })).toBeDisabled();
     });
 
     test('Merge: With merge strategy on conflict', async ({ page }) => {
+        expect(setupComplete).toBeTruthy();
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.goto(TEST_REPO_NAME);
 
