@@ -816,9 +816,9 @@ lakectl auth users aws-iam attach [flags]
 <h4>Options</h4>
 
 ```
-      --aws-role-arn string   External principal ID (e.g., AWS IAM role ARN)
   -h, --help                  help for attach
       --id string             lakeFS Username (default: current user)
+      --principal-id string   External principal ID (e.g., AWS IAM role ARN)
 ```
 
 

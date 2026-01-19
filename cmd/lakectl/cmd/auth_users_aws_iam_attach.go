@@ -13,7 +13,7 @@ var authUsersAWSIAMAttach = &cobra.Command{
 	Short: "Attach an IAM role to a lakeFS user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		principalID := Must(cmd.Flags().GetString("aws-role-arn"))
+		principalID := Must(cmd.Flags().GetString("principal-id"))
 		clt := getClient()
 
 		if id == "" {
@@ -36,8 +36,8 @@ var authUsersAWSIAMAttach = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	authUsersAWSIAMAttach.Flags().String("id", "", idHelperText)
-	authUsersAWSIAMAttach.Flags().String("aws-role-arn", "", "External principal ID (e.g., AWS IAM role ARN)")
-	_ = authUsersAWSIAMAttach.MarkFlagRequired("aws-role-arn")
+	authUsersAWSIAMAttach.Flags().String("principal-id", "", "External principal ID (e.g., AWS IAM role ARN)")
+	_ = authUsersAWSIAMAttach.MarkFlagRequired("principal-id")
 
 	authUsersAWSIAMCmd.AddCommand(authUsersAWSIAMAttach)
 }
