@@ -2618,7 +2618,7 @@ lakectl repo create-bare <repository URI> <storage namespace> [flags]
 <h4>Examples</h4>
 
 ```
-lakectl create-bare lakefs://my-repo s3://my-bucket
+lakectl repo create-bare lakefs://my-repo s3://my-bucket
 ```
 
 <h4>Options</h4>
