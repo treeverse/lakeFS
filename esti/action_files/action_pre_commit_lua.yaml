@@ -1,0 +1,14 @@
+name: Test Lua Pre Commit
+description: Lua pre-commit metadata validation
+on:
+  pre-commit:
+    branches:
+      - lua-test-branch
+hooks:
+  - id: check_commit_metadata
+    type: lua
+    properties:
+      script_path: scripts/test_pre_commit.lua
+      args:
+        owner: { }
+        environment: { "pattern": "^(production|staging|development)$" }

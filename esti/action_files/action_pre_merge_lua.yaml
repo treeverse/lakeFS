@@ -1,0 +1,17 @@
+name: Test Lua Pre Merge
+description: Lua pre-merge PII validation
+on:
+  pre-merge:
+    branches:
+      - main
+hooks:
+  - id: check_blocked_pii_columns
+    type: lua
+    properties:
+      script_path: scripts/test_pre_merge.lua
+      args:
+        sample: true
+        column_block_list: [ "user_id", "email", "ssn", "private_*" ] # these PII columns are not allowed
+        locations:
+          - tables/customers/
+          - tables/orders/

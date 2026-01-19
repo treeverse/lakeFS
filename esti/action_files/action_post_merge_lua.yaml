@@ -1,0 +1,12 @@
+name: Test Lua Post Merge
+description: Lua post-merge commit ID validation
+on:
+  post-merge:
+    branches:
+      - main
+hooks:
+  - id: check_commit_id_on_merge
+    type: lua
+    description: Verify merge completed successfully
+    properties:
+      script_path: scripts/test_post_merge.lua
