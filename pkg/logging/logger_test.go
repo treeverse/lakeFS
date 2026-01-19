@@ -2,8 +2,11 @@ package logging
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -227,4 +230,197 @@ func TestLogCallerTrimmer(t *testing.T) {
 			}
 		})
 	}
+}
+
+// requireLoggerFields verifies a logger outputs the expected fields.  It sets up JSON output to
+// a temp file, logs a message using the provided logger, parses the JSON output, and verifies
+// all additionalFields are present with correct values.
+func requireLoggerFields(t *testing.T, logger Logger, additionalFields Fields) {
+	t.Helper()
+
+	logDir := t.TempDir()
+	logFile := filepath.Join(logDir, "test.log")
+	err := SetOutputs([]string{logFile}, 0, 0)
+	if err != nil {
+		t.Fatalf("SetOutputs: %s", err)
+	}
+	SetOutputFormat("json")
+
+	logger.Info("test message")
+
+	err = CloseWriters()
+	if err != nil {
+		t.Fatalf("CloseWriters: %s", err)
+	}
+
+	contents, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("ReadFile %s: %s", logFile, err)
+	}
+
+	var logEntry map[string]any
+	if err := json.Unmarshal(contents, &logEntry); err != nil {
+		t.Fatalf("Unmarshal log entry: %s\nContents: %s", err, string(contents))
+	}
+
+	for key, expectedValue := range additionalFields {
+		actualValue, exists := logEntry[key]
+		if !exists {
+			t.Errorf("Expected field %q not found in log entry. Log: %s", key, string(contents))
+			continue
+		}
+		if fmt.Sprintf("%v", actualValue) != fmt.Sprintf("%v", expectedValue) {
+			t.Errorf("Field %q: got %v, want %v", key, actualValue, expectedValue)
+		}
+	}
+}
+
+func TestContextLogging(t *testing.T) {
+	type testCase struct {
+		name string
+		// contextFields are the fields to put on context.
+		contextFields Fields
+		// logFields are the fields to put directly on the logger.
+		logFields Fields
+		// expectedFields overrides the default expected fields when set.
+		// Use this when contextFields and logFields have overlapping keys.
+		expectedFields Fields
+	}
+
+	cases := []testCase{
+		{
+			name:          "no fields",
+			contextFields: nil,
+			logFields:     nil,
+		},
+		{
+			name: "context field only",
+			contextFields: Fields{
+				RequestIDFieldKey: "req-123",
+			},
+			logFields: nil,
+		},
+		{
+			name: "multiple context fields",
+			contextFields: Fields{
+				RequestIDFieldKey:  "req-456",
+				RepositoryFieldKey: "my-repo",
+				UserFieldKey:       "alice",
+			},
+			logFields: nil,
+		},
+		{
+			name:          "logger field only",
+			contextFields: nil,
+			logFields: Fields{
+				"custom_key": "custom_value",
+			},
+		},
+		{
+			name: "both context and logger fields",
+			contextFields: Fields{
+				UserFieldKey: "bob",
+			},
+			logFields: Fields{
+				"existing_key": "existing_value",
+			},
+		},
+		{
+			name: "overlapping field",
+			contextFields: Fields{
+				UserFieldKey: "from_context",
+			},
+			logFields: Fields{
+				UserFieldKey: "from_logger",
+			},
+		},
+	}
+
+	// expectedFieldsLogFirst returns combined fields with logFields first, then contextFields.
+	// Context fields override logger fields for same key.
+	expectedFieldsLogFirst := func(tc testCase) Fields {
+		if tc.expectedFields != nil {
+			return tc.expectedFields
+		}
+		result := Fields{}
+		maps.Copy(result, tc.logFields)
+		maps.Copy(result, tc.contextFields)
+		return result
+	}
+
+	// expectedFieldsContextFirst returns combined fields with contextFields first, then logFields.
+	// Logger fields override context fields for same key.
+	expectedFieldsContextFirst := func(tc testCase) Fields {
+		if tc.expectedFields != nil {
+			return tc.expectedFields
+		}
+		result := Fields{}
+		maps.Copy(result, tc.contextFields)
+		maps.Copy(result, tc.logFields)
+		return result
+	}
+
+	t.Run("FromContext", func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := context.Background()
+				if tc.contextFields != nil {
+					ctx = AddFields(ctx, tc.contextFields)
+				}
+				logger := FromContext(ctx)
+				if tc.logFields != nil {
+					logger = logger.WithFields(tc.logFields)
+				}
+				// FromContext creates logger from context, then WithFields adds logFields.
+				// So logFields are applied after contextFields: logFields win on conflict.
+				requireLoggerFields(t, logger, expectedFieldsContextFirst(tc))
+			})
+		}
+	})
+
+	t.Run("WithContext", func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := context.Background()
+				if tc.contextFields != nil {
+					ctx = AddFields(ctx, tc.contextFields)
+				}
+				logger := ContextUnavailable()
+				if tc.logFields != nil {
+					logger = logger.WithFields(tc.logFields)
+				}
+				logger = logger.WithContext(ctx)
+				// WithContext applies contextFields on top of existing logger fields.
+				// So contextFields are applied after logFields: contextFields win on conflict.
+				requireLoggerFields(t, logger, expectedFieldsLogFirst(tc))
+			})
+		}
+	})
+}
+
+func TestGetFieldsFromContext(t *testing.T) {
+	t.Run("context with no fields", func(t *testing.T) {
+		ctx := context.Background()
+		fields := GetFieldsFromContext(ctx)
+		if fields != nil {
+			t.Errorf("Expected nil fields, got %v", fields)
+		}
+	})
+
+	t.Run("context with fields", func(t *testing.T) {
+		ctx := AddFields(context.Background(), Fields{
+			RequestIDFieldKey: "req-789",
+			UserFieldKey:      "dave",
+		})
+		fields := GetFieldsFromContext(ctx)
+		if fields == nil {
+			t.Fatal("Expected fields, got nil")
+		}
+		if fields[RequestIDFieldKey] != "req-789" {
+			t.Errorf("RequestIDFieldKey: got %v, want %v", fields[RequestIDFieldKey], "req-789")
+		}
+		if fields[UserFieldKey] != "dave" {
+			t.Errorf("UserFieldKey: got %v, want %v", fields[UserFieldKey], "dave")
+		}
+	})
 }
