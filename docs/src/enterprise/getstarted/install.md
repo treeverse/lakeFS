@@ -62,7 +62,8 @@ The following lakeFS Enterprise features must be included in the lakeFS Enterpri
 ##### Advanced Functionality
 
 - [Mount](../../reference/mount.md)
-- [Metadata Search](https://info.lakefs.io/metadata-search)
+- [Iceberg Catalog](../../integrations/iceberg.md)
+- [Metadata Search](../../datamanagment/metadata-search.md)
 - [MSB (Multiple Storage Backends)](../../howto/multiple-storage-backends.md)
 - [Transactional Mirroring](../../howto/mirroring.md)
 - [Sparkless GC (Garbage Collection)](../../howto/garbage-collection/standalone-gc.md)

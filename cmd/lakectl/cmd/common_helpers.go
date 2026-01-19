@@ -89,9 +89,23 @@ type ColoredText struct {
 	Text   any // Usually just a string, but anything goes
 }
 
+func deref(a any) string {
+	r := reflect.ValueOf(a)
+	for {
+		next := reflect.Indirect(r)
+		if next == r {
+			break
+		}
+		r = next
+	}
+	i := r.Interface()
+	return fmt.Sprint(i)
+}
+
 // String converts c to a string with ANSI control codes.
 func (c ColoredText) String() string {
-	return c.Colors.Sprint(c.Text)
+	t := deref(c.Text)
+	return c.Colors.Sprint(t)
 }
 
 // Add returns c with color added to it.
