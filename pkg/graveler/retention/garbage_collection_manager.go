@@ -192,7 +192,9 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	defer commitIterator.Close()
 	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
 	defer startingPointIterator.Close()
-	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules)
+
+	// TODO(ariels): Re-use configurable path.
+	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, ".")
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}

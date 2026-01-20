@@ -147,7 +147,7 @@ func TestCommitsMap(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			commitsMap, err := NewCommitsMap(t.Context(), tc.CommitGetter, store)
+			commitsMap, err := NewCommitsMap(t.Context(), tc.CommitGetter, store, store.Close)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -388,7 +388,7 @@ func TestActiveCommits(t *testing.T) {
 				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetterAdapter{
 				RefManager: refManagerMock,
 				Repository: repositoryRecord,
-			}, garbageCollectionRules)
+			}, garbageCollectionRules, t.TempDir())
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
 			}

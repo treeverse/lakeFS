@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"iter"
 	"os"
+	"path/filepath"
 	"runtime/trace"
 	"time"
 
@@ -24,6 +25,7 @@ type CommitsMap struct {
 	NumMisses    int64
 	CommitGetter RepositoryCommitGetter
 	Store        kv.Store
+	Cleanup      func()
 }
 
 const (
@@ -35,7 +37,9 @@ var (
 	ErrBadCommitID = errors.New("bad format commit ID")
 )
 
-func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter, store kv.Store) (CommitsMap, error) {
+// NewCommitsMap creates a new CommitMap to use commitGetter.  It uses store to cache all
+// commits, and calls cleanup when closed.
+func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter, store kv.Store, cleanup func()) (CommitsMap, error) {
 	defer trace.StartRegion(ctx, "build commits map").End()
 	c := CommitsMap{
 		ctx:          ctx,
@@ -97,7 +101,9 @@ func (c *CommitsMap) Get(ctx context.Context, id graveler.CommitID) (*CommitNode
 }
 
 func (c *CommitsMap) Close() {
-	c.Store.Close()
+	if c.Cleanup != nil {
+		c.Cleanup()
+	}
 }
 
 // nodeFromCommit returns a new CommitNode for a Commit.
@@ -124,7 +130,7 @@ type MetaRangeIDOrError struct {
 
 // GetGarbageCollectionCommits returns the sets of active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
-func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (iter.Seq2[graveler.CommitID, MetaRangeIDOrError], error) {
+func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, fsPrefix string) (iter.Seq2[graveler.CommitID, MetaRangeIDOrError], error) {
 	log := logging.FromContext(ctx).WithField("component", "gc")
 
 	defer trace.StartRegion(ctx, "get gc commits").End()
@@ -134,23 +140,23 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	processed := make(map[graveler.CommitID]time.Time)
 	activeMap := make(map[graveler.CommitID]struct{})
 
-	// TODO(ariels): Re-use configurable path.
+	storePath := filepath.Join(fsPrefix, "gc.db")
 	store, err := kv.Open(ctx, kvparams.Config{
 		Type:  local.DriverName,
-		Local: &kvparams.Local{Path: "gc.db"},
+		Local: &kvparams.Local{Path: storePath},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("open commits map temp KV: %w", err)
 	}
-	defer func() {
+	cleanupStore := func() {
 		defer trace.StartRegion(ctx, "delete local commits store")
 		store.Close()
-		if err := os.RemoveAll("gc.db"); err != nil {
+		if err := os.RemoveAll(storePath); err != nil {
 			log.WithError(err).Error("Failed to delete GC local commits KV; space wasted")
 		}
-	}()
+	}
 
-	commitsMap, err := NewCommitsMap(ctx, commitGetter, store)
+	commitsMap, err := NewCommitsMap(ctx, commitGetter, store, cleanupStore)
 	if err != nil {
 		return nil, fmt.Errorf("initial read commits: %w", err)
 	}
@@ -178,12 +184,15 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	trace.WithRegion(ctx, "iterate commits", func() {
 		for startingPointIterator.Next() {
 			if log.IsDebugging() && time.Since(lastReport) > traceReportInterval {
-				log.WithFields(logging.Fields{
+				l := log.WithFields(logging.Fields{
 					"num_starting_points": numStartingPoints,
 					"num_processed":       len(processed),
 					"num_active":          len(activeMap),
-					"proportion_active":   float64(len(activeMap)) / float64(len(processed)),
-				}).Debug("Processing...")
+				})
+				if len(processed) > 0 {
+					l = l.WithField("proportion_active", float64(len(activeMap))/float64(len(processed)))
+				}
+				l.Debug("Processing...")
 				lastReport = time.Now()
 			}
 			numStartingPoints++
@@ -287,6 +296,7 @@ func makeCleanupMap(ctx context.Context, commitsMap *CommitsMap, commitSet map[g
 			if time.Since(lastReport) > traceReportInterval {
 				log.WithField("num_commits", numCommits).
 					Debug("Get cleanup map")
+				lastReport = time.Now()
 			}
 			numCommits++
 			commit, err = commitsMap.Get(ctx, commitID)
