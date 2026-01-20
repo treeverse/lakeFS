@@ -1,6 +1,7 @@
 package retention
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/csv"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/trace"
 	"strings"
 	"time"
 
@@ -26,6 +28,10 @@ const (
 
 	// unixYear4000 epoch value for Saturday, January 1, 4000 12:00:00 AM. Changing this value is a breaking change as it is used to have reverse order for time based unique ID (xid).
 	unixYear4000 = 64060588800
+
+	// writeCSVBufferSize is the number of bytes to buffer when writing GC CSV to the
+	// backing store.
+	writeCSVBufferSize = 256 * 1024
 )
 
 type GarbageCollectionManager struct {
@@ -168,6 +174,7 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageID grav
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
+	defer trace.StartRegion(ctx, "save gc commits").End()
 	commitGetter := &RepositoryCommitGetterAdapter{
 		RefManager: m.refManager,
 		Repository: repository,
@@ -185,42 +192,57 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	defer commitIterator.Close()
 	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
 	defer startingPointIterator.Close()
-	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules)
+
+	// TODO(ariels): Re-use configurable path.
+	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, ".")
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}
-	b := &strings.Builder{}
-	csvWriter := csv.NewWriter(b)
+
+	r, w := io.Pipe()
+
+	defer w.Close()
 	// (TODO) - remove expired column from the CSV file and from the GC logic
 	headers := []string{"commit_id", "expired", "metarange_id"}
-	if err = csvWriter.Write(headers); err != nil {
-		return "", err
-	}
-	for commitID, metarangeID := range gcCommits {
-		err := csvWriter.Write([]string{string(commitID), "false", string(metarangeID)})
-		if err != nil {
-			return "", err
-		}
-	}
-	csvWriter.Flush()
-	err = csvWriter.Error()
-	if err != nil {
-		return "", err
-	}
-	commitsStr := b.String()
+
 	runID := m.NewID()
 	csvLocation, err := m.GetCommitsCSVLocation(runID, repository.StorageID, repository.StorageNamespace)
 	if err != nil {
 		return "", err
 	}
-	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		StorageID:      string(repository.StorageID),
-		Identifier:     csvLocation,
-		IdentifierType: block.IdentifierTypeFull,
-	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
+
+	go func() {
+		bufferedWriter := bufio.NewWriterSize(w, writeCSVBufferSize)
+		csvWriter := csv.NewWriter(bufferedWriter)
+		if err := csvWriter.Write(headers); err != nil {
+			w.CloseWithError(err)
+			return
+		}
+		for commitID, metarangeID := range gcCommits {
+			if err := metarangeID.Err; err != nil {
+				w.CloseWithError(err)
+				return
+			}
+			if err := csvWriter.Write([]string{string(commitID), "false", string(metarangeID.ID)}); err != nil {
+				w.CloseWithError(err)
+				return
+			}
+		}
+		csvWriter.Flush()
+		w.CloseWithError(csvWriter.Error())
+	}()
+
+	trace.WithRegion(ctx, "put gc results", func() {
+		_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
+			StorageID:      string(repository.StorageID),
+			Identifier:     csvLocation,
+			IdentifierType: block.IdentifierTypeFull,
+		}, -1, r, block.PutOpts{})
+	})
 	if err != nil {
 		return "", err
 	}
+
 	return runID, nil
 }
 
