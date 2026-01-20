@@ -125,8 +125,6 @@ const (
 	location  = "lu-alpha-1"
 )
 
-var date = time.Unix(1631523198, 0)
-
 type SignCase struct {
 	Name     string
 	Signer   Signer
@@ -167,6 +165,7 @@ func TestAWSSigVerify(t *testing.T) {
 		bucket     = "my-bucket"
 	)
 	methods := []string{"GET", "PUT", "DELETE", "PATCH"}
+	requestTimestamp := time.Now().UTC()
 
 	for _, s := range signatures {
 		t.Run("Sig"+s.Name, func(t *testing.T) {
@@ -191,8 +190,8 @@ func TestAWSSigVerify(t *testing.T) {
 					Host:   host,
 					URL:    bucketURL,
 					Header: MakeHeader(map[string]string{
-						"Date":         date.Format(http.TimeFormat),
-						"x-amz-date":   date.Format("20060102T150405Z"),
+						"Date":         requestTimestamp.Format(http.TimeFormat),
+						"x-amz-date":   requestTimestamp.Format("20060102T150405Z"),
 						"Content-Md5":  "deadbeef",
 						"Content-Type": "application/binary",
 					}),

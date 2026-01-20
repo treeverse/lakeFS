@@ -2,10 +2,9 @@ package retention
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"testing"
 	"time"
@@ -15,6 +14,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
+	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 )
 
 type testCommit struct {
@@ -22,27 +24,15 @@ type testCommit struct {
 	parents    []graveler.CommitID
 }
 
-func newTestCommit(daysPassed int, parents ...string) testCommit {
-	hParents := make([]graveler.CommitID, len(parents))
-	for i, p := range parents {
-		hParents[i] = h256(p)
-	}
+func newTestCommit(daysPassed int, parents ...graveler.CommitID) testCommit {
 	return testCommit{
 		daysPassed: daysPassed,
-		parents:    hParents,
+		parents:    parents,
 	}
-}
-
-func hashSlice[S ~string](s []S) []S {
-	ret := make([]S, len(s))
-	for index, value := range s {
-		ret[index] = S(h256(string(value)))
-	}
-	return ret
 }
 
 // findMainAncestryLeaves returns commits which are not the first parent of any child.
-func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[string]testCommit) []*graveler.CommitRecord {
+func findMainAncestryLeaves(now time.Time, heads map[graveler.CommitID]int32, commits map[graveler.CommitID]testCommit) []*graveler.CommitRecord {
 	var res []*graveler.CommitRecord
 	for commitID1, commit1 := range commits {
 		if _, ok := heads[commitID1]; ok {
@@ -53,7 +43,7 @@ func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[s
 			if len(commit2.parents) == 0 {
 				continue
 			}
-			if commitID1 == string(commit2.parents[0]) {
+			if commitID1 == commit2.parents[0] {
 				isLeaf = false
 			}
 		}
@@ -105,14 +95,8 @@ func (c *fakeRepositoryCommitGetter) Get(_ context.Context, id graveler.CommitID
 	return c.AnotherCommit.Commit, nil
 }
 
-// d256 digests s into 256 bytes, as a CommitID.
-func h256(s string) graveler.CommitID {
-	hash := sha256.Sum256([]byte(s))
-	encoded := hex.EncodeToString(hash[:])
-	return graveler.CommitID(encoded)
-}
-
 func TestCommitsMap(t *testing.T) {
+	ctx := t.Context()
 	cases := []struct {
 		Name         string
 		CommitGetter *fakeRepositoryCommitGetter
@@ -122,13 +106,13 @@ func TestCommitsMap(t *testing.T) {
 			CommitGetter: &fakeRepositoryCommitGetter{
 				Commits: []*graveler.CommitRecord{
 					{
-						CommitID: h256("a"),
+						CommitID: "a",
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:A"),
 						},
 					},
 					{
-						CommitID: h256("b"),
+						CommitID: "b",
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:B"),
 						},
@@ -141,14 +125,14 @@ func TestCommitsMap(t *testing.T) {
 			CommitGetter: &fakeRepositoryCommitGetter{
 				Commits: []*graveler.CommitRecord{
 					{
-						CommitID: h256("a"),
+						CommitID: "a",
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:A"),
 						},
 					},
 				},
 				AnotherCommit: &graveler.CommitRecord{
-					CommitID: h256("b"),
+					CommitID: "b",
 					Commit: &graveler.Commit{
 						MetaRangeID: graveler.MetaRangeID("metarange:B"),
 					},
@@ -159,26 +143,30 @@ func TestCommitsMap(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			commitsMap, err := NewCommitsMap(t.Context(), tc.CommitGetter)
+			store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			commitsMap, err := NewCommitsMap(t.Context(), tc.CommitGetter, store, store.Close)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			a, err := commitsMap.Get(h256("a"))
+			a, err := commitsMap.Get(ctx, "a")
 			if err != nil {
 				t.Errorf("Failed to get a: %s", err)
 			}
 			if a.MetaRangeID != "metarange:A" {
 				t.Errorf("Got metarange %s for a, expected \"metarange:A\"", a.MetaRangeID)
 			}
-			b, err := commitsMap.Get(h256("b"))
+			b, err := commitsMap.Get(ctx, "b")
 			if err != nil {
 				t.Errorf("Failed to get b: %s", err)
 			}
 			if b.MetaRangeID != "metarange:B" {
 				t.Errorf("Got metarange %s for b, expected \"metarange:B\"", b.MetaRangeID)
 			}
-			c, err := commitsMap.Get(graveler.CommitID(h256("c")))
+			c, err := commitsMap.Get(ctx, graveler.CommitID("c"))
 			if !errors.Is(err, graveler.ErrNotFound) {
 				t.Errorf("Got node %+v, error %s for c, expected not found", c.MetaRangeID, err)
 			}
@@ -188,12 +176,12 @@ func TestCommitsMap(t *testing.T) {
 
 func TestActiveCommits(t *testing.T) {
 	tests := map[string]struct {
-		commits            map[string]testCommit
-		headsRetentionDays map[string]int32
+		commits            map[graveler.CommitID]testCommit
+		headsRetentionDays map[graveler.CommitID]int32
 		expectedActiveIDs  []string
 	}{
 		"two_branches": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"a": newTestCommit(15),
 				"b": newTestCommit(10, "a"),
 				"c": newTestCommit(10, "a"),
@@ -201,42 +189,42 @@ func TestActiveCommits(t *testing.T) {
 				"e": newTestCommit(5, "b"),
 				"f": newTestCommit(1, "e"),
 			},
-			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			headsRetentionDays: map[graveler.CommitID]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f"},
 		},
 		"old_heads": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"a": newTestCommit(15),
 				"b": newTestCommit(20),
 				"c": newTestCommit(20, "a"),
 				"d": newTestCommit(20, "a"),
 			},
-			headsRetentionDays: map[string]int32{"b": 7, "c": 7, "d": 7},
+			headsRetentionDays: map[graveler.CommitID]int32{"b": 7, "c": 7, "d": 7},
 			expectedActiveIDs:  []string{"b", "c", "d"},
 		},
 		"all_commits_active": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"a": newTestCommit(5),
 				"b": newTestCommit(4, "a"),
 				"c": newTestCommit(3, "b"),
 				"d": newTestCommit(2, "b"),
 				"e": newTestCommit(1, "b"),
 			},
-			headsRetentionDays: map[string]int32{"d": 15, "e": 7, "c": 2},
+			headsRetentionDays: map[graveler.CommitID]int32{"d": 15, "e": 7, "c": 2},
 			expectedActiveIDs:  []string{"a", "b", "c", "d", "e"},
 		},
 		"merge": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"a": newTestCommit(7),
 				"b": newTestCommit(6, "a"),
 				"c": newTestCommit(7),
 				"d": newTestCommit(6, "c", "a"),
 			},
-			headsRetentionDays: map[string]int32{"b": 3, "d": 10},
+			headsRetentionDays: map[graveler.CommitID]int32{"b": 3, "d": 10},
 			expectedActiveIDs:  []string{"b", "c", "d"},
 		},
 		"two_branches_with_previously_expired": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"a": newTestCommit(15),
 				"b": newTestCommit(10, "a"),
 				"c": newTestCommit(10, "a"),
@@ -244,7 +232,7 @@ func TestActiveCommits(t *testing.T) {
 				"e": newTestCommit(7, "b"),
 				"f": newTestCommit(1, "e"),
 			},
-			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			headsRetentionDays: map[graveler.CommitID]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"d", "e", "f"},
 		},
 		"merge_in_history": {
@@ -254,7 +242,7 @@ func TestActiveCommits(t *testing.T) {
 			//  \  `---------G   \
 			//   \                \
 			//    F----------------H
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"e": newTestCommit(21),
 				"d": newTestCommit(20, "e"),
 				"f": newTestCommit(19, "e"),
@@ -264,11 +252,11 @@ func TestActiveCommits(t *testing.T) {
 				"g": newTestCommit(4, "b", "e"),
 				"h": newTestCommit(3, "a", "f"),
 			},
-			headsRetentionDays: map[string]int32{"h": 14, "g": 7, "f": 7},
+			headsRetentionDays: map[graveler.CommitID]int32{"h": 14, "g": 7, "f": 7},
 			expectedActiveIDs:  []string{"h", "a", "b", "c", "f", "g"},
 		},
 		"dangling_commits_active": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"a": newTestCommit(15),
 				"b": newTestCommit(10, "a"),
 				"c": newTestCommit(10, "a"),
@@ -279,11 +267,11 @@ func TestActiveCommits(t *testing.T) {
 				"h": newTestCommit(7, "g"),
 				"i": newTestCommit(4, "h"),
 			},
-			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			headsRetentionDays: map[graveler.CommitID]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f", "h", "i"},
 		},
 		"dangling_commits_expired": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"a": newTestCommit(15),
 				"b": newTestCommit(10, "a"),
 				"c": newTestCommit(10, "a"),
@@ -294,12 +282,12 @@ func TestActiveCommits(t *testing.T) {
 				"h": newTestCommit(7, "g"),
 				"i": newTestCommit(6, "h"),
 			},
-			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			headsRetentionDays: map[graveler.CommitID]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f"},
 		},
 
 		"dangling_from_before_expired": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"root":        newTestCommit(20),
 				"pre_expired": newTestCommit(20, "root"),
 				"e1":          newTestCommit(15, "pre_expired"),
@@ -311,18 +299,18 @@ func TestActiveCommits(t *testing.T) {
 				"g":           newTestCommit(10, "root"), // dangling
 				"h":           newTestCommit(6, "g"),     // dangling
 			},
-			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
+			headsRetentionDays: map[graveler.CommitID]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"d", "e", "f"},
 		},
 		"retained_by_non_leaf_head": {
 			// commit x is retained because of the rule of head2, and not the rule of head1.
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"root":  newTestCommit(20),
 				"x":     newTestCommit(14, "root"),
 				"head2": newTestCommit(10, "x"),
 				"head1": newTestCommit(9, "head2"),
 			},
-			headsRetentionDays: map[string]int32{"head1": 9, "head2": 12},
+			headsRetentionDays: map[graveler.CommitID]int32{"head1": 9, "head2": 12},
 			expectedActiveIDs:  []string{"head1", "head2", "x"},
 		},
 		/*
@@ -335,7 +323,7 @@ func TestActiveCommits(t *testing.T) {
 				  <e5- 6 days> -- <e3- 6 days> -- <h3- 1 day>        (5-day-retention)
 		*/
 		"reachable_previously_expired": {
-			commits: map[string]testCommit{
+			commits: map[graveler.CommitID]testCommit{
 				"ep1": newTestCommit(8),
 				"ep2": newTestCommit(8),
 				"e5":  newTestCommit(6, "ep2"),
@@ -347,7 +335,7 @@ func TestActiveCommits(t *testing.T) {
 				"h2":  newTestCommit(1, "e2"),
 				"h1":  newTestCommit(1, "e1"),
 			},
-			headsRetentionDays: map[string]int32{"h1": 5, "h2": 5, "h3": 5},
+			headsRetentionDays: map[graveler.CommitID]int32{"h1": 5, "h2": 5, "h3": 5},
 			expectedActiveIDs:  []string{"h1", "h2", "h3", "e1", "e2", "e3"},
 		},
 	}
@@ -366,10 +354,10 @@ func TestActiveCommits(t *testing.T) {
 				branches = append(branches, &graveler.BranchRecord{
 					BranchID: graveler.BranchID(head),
 					Branch: &graveler.Branch{
-						CommitID: h256(head),
+						CommitID: head,
 					},
 				})
-				garbageCollectionRules.BranchRetentionDays[head] = retentionDays
+				garbageCollectionRules.BranchRetentionDays[string(head)] = retentionDays
 			}
 			sort.Slice(branches, func(i, j int) bool {
 				return branches[i].CommitID < branches[j].CommitID
@@ -378,36 +366,43 @@ func TestActiveCommits(t *testing.T) {
 			var commitsRecords []*graveler.CommitRecord
 			for commitID, commit := range tst.commits {
 				commitsRecords = append(commitsRecords, &graveler.CommitRecord{
-					CommitID: h256(commitID),
+					CommitID: commitID,
 					Commit: &graveler.Commit{
 						Parents:      commit.parents,
 						CreationDate: now.AddDate(0, 0, -commit.daysPassed),
 						Version:      graveler.CurrentCommitVersion,
-						MetaRangeID:  graveler.MetaRangeID("mr-" + string(h256(commitID))),
+						MetaRangeID:  graveler.MetaRangeID("mr-" + string(commitID)),
 					},
 				})
 			}
 
-			commitsWithHashedKeys := make(map[string]testCommit, len(tst.commits))
+			commitsWithHashedKeys := make(map[graveler.CommitID]testCommit, len(tst.commits))
 			for k, v := range tst.commits {
-				commitsWithHashedKeys[string(h256(k))] = v
+				commitsWithHashedKeys[k] = v
 			}
 
 			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
 
-			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
+			gcCommitsSeq, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
 				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, commitsWithHashedKeys)),
 				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetterAdapter{
 				RefManager: refManagerMock,
 				Repository: repositoryRecord,
-			}, garbageCollectionRules)
+			}, garbageCollectionRules, t.TempDir())
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
+			}
+			gcCommits := make(map[graveler.CommitID]graveler.MetaRangeID)
+			for k, v := range gcCommitsSeq {
+				if v.Err != nil {
+					t.Errorf("%s: %s", k, v.Err)
+				}
+				gcCommits[k] = v.ID
 			}
 			validateMetaRangeIDs(t, gcCommits)
 			activeCommitIDs := testMapToCommitIDs(gcCommits)
 
-			expectedActiveIDs := hashSlice(tst.expectedActiveIDs)
+			expectedActiveIDs := slices.Clone(tst.expectedActiveIDs)
 			sort.Strings(expectedActiveIDs)
 			sort.Slice(activeCommitIDs, func(i, j int) bool {
 				return activeCommitIDs[i].Ref() < activeCommitIDs[j].Ref()

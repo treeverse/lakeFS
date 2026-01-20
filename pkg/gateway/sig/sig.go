@@ -8,10 +8,18 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	gwErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+)
+
+const (
+	// AmzMaxClockSkew is the maximum allowed clock skew (15 minutes) for AWS S3 compatibility.
+	// All signature methods (V2, JavaV2, V4) validate request timestamps are within this window
+	// to prevent replay attacks.
+	AmzMaxClockSkew = 15 * time.Minute
 )
 
 var (
@@ -107,11 +115,26 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 			return nil, err
 		}
 	}
-	return nil, gwErrors.ErrMissingFields
+	return nil, gatewayerrors.ErrMissingFields
 }
 
 func Equal(sig1, sig2 []byte) bool {
 	return hmac.Equal(sig1, sig2)
+}
+
+// ValidateClockSkew ensures the request timestamp is within AmzMaxClockSkew (15 minutes)
+// of the current time to prevent replay attacks. This validation is used by all AWS
+// signature methods (V2, JavaV2, V4).
+func ValidateClockSkew(now, requestTime time.Time) error {
+	timeDiff := now.Sub(requestTime)
+
+	if timeDiff < -AmzMaxClockSkew {
+		return gatewayerrors.ErrRequestNotReadyYet
+	} else if timeDiff > AmzMaxClockSkew {
+		return gatewayerrors.ErrRequestTimeTooSkewed
+	}
+
+	return nil
 }
 
 func (c *chainedAuthenticator) Verify(creds *model.Credential) error {

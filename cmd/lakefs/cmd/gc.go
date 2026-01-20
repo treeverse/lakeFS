@@ -280,7 +280,7 @@ and look for the instance_uid field.
 		defer commitIterator.Close()
 		startingPointIterator := retention.NewGCStartingPointIterator(commitIterator, branchIterator)
 		defer startingPointIterator.Close()
-		gcCommits, err := retention.GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, &rules)
+		gcCommits, err := retention.GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, &rules, ".")
 		if err != nil {
 			printMsgAndExit(fmt.Errorf("find expired commits: %w", err))
 		}

@@ -1,0 +1,177 @@
+name: lakectl Compatibility Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  check-secrets:
+    name: Check if secrets are available.
+    outputs:
+      secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
+    runs-on: ubuntu-22.04
+    steps:
+      - id: enablejobs
+        env:
+          ENABLE_NEXT_JOBS: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
+          echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build binaries
+    needs: [check-secrets]
+    if: needs.check-secrets.outputs.secretsavailable == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22.17.x"
+
+      - name: Set version
+        run: echo "VERSION=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_ENV
+
+      - name: Generate code
+        run: |
+          make -j3 gen-api gen-code gen-ui VERSION=${{ env.VERSION }}
+          tar -czf /tmp/generated.tar.gz .
+
+      - name: Store generated code
+        uses: actions/upload-artifact@v6
+        with:
+          name: generated-code
+          path: /tmp/generated.tar.gz
+          retention-days: 1
+
+      - name: Build binaries
+        run: make build-binaries VERSION=${{ env.VERSION }}
+
+      - name: Store binaries
+        uses: actions/upload-artifact@v6
+        with:
+          name: binaries
+          path: |
+            lakefs
+            lakectl
+          retention-days: 1
+
+  compatibility-checks:
+    name: Test lakectl ${{ matrix.lakectl }} compatibility against lakeFS ${{ matrix.lakefs }}
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Forward compatibility: old client vs new server
+          - { lakectl: latest, lakefs: HEAD }
+          # Backward compatibility: new client vs old server
+          - { lakectl: HEAD, lakefs: latest }
+          # Running specific versions
+          # - { lakectl: HEAD, lakefs: v1.73.0 }
+          # - { lakectl: v1.73.0, lakefs: HEAD }
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Download binaries
+        uses: actions/download-artifact@v7
+        with:
+          name: binaries
+          path: bin
+      - run: |
+          chmod +x bin/lakefs bin/lakectl
+          echo "$PWD/bin" >> $GITHUB_PATH
+
+      - name: Download lakefs from GitHub Release
+        if: matrix.lakefs != 'HEAD'
+        run: |
+          gh release download ${{ matrix.lakefs != 'latest' && matrix.lakefs || '' }} -R treeverse/lakeFS -p "lakeFS_*_Linux_x86_64.tar.gz" -O- | tar -xz -C bin lakefs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download lakectl from GitHub Release
+        if: matrix.lakectl != 'HEAD'
+        run: |
+          gh release download ${{ matrix.lakectl != 'latest' && matrix.lakectl || '' }} -R treeverse/lakeFS -p "lakeFS_*_Linux_x86_64.tar.gz" -O- | tar -xz -C bin lakectl
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check binaries' versions
+        run: |
+          lakefs --version
+          echo "ESTI_VERSION=$(lakefs --version | cut -d' ' -f3)" >> $GITHUB_ENV
+          lakectl --version
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v7
+        with:
+          name: generated-code
+          path: /tmp/
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$(cat /proc/sys/kernel/random/uuid)" >> $GITHUB_OUTPUT
+
+      - name: Run lakectl tests
+        run: |
+          ./esti/scripts/runner.sh -r all -test.run 'TestLakectl' -test.skip "${SKIP_TESTS}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_BINARIES_DIR: ${{ github.workspace }}/bin
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/lakectl-compat/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          SKIP_TESTS: 'TestLakectl(Usage|Help)$'
+
+  notify-slack:
+    name: Notify slack on workflow failures
+    needs: [compatibility-checks]
+    runs-on: ubuntu-22.04
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.ref == 'refs/heads/master' }}
+    steps:
+      - name: slack-send
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "mrkdwn": true,
+              "text": "Lakectl compatibility tests failure in master branch: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }

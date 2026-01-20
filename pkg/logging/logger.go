@@ -445,3 +445,11 @@ func AddFields(ctx context.Context, fields Fields) context.Context {
 	maps.Copy(loggerFields, fields)
 	return context.WithValue(ctx, LogFieldsContextKey, loggerFields)
 }
+
+// CopyFieldsFromContext copies logging fields from srcCtx to dstCtx.
+func CopyFieldsFromContext(srcCtx, dstCtx context.Context) context.Context {
+	if fields := GetFieldsFromContext(srcCtx); fields != nil {
+		return context.WithValue(dstCtx, LogFieldsContextKey, fields)
+	}
+	return dstCtx
+}

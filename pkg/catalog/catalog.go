@@ -2236,104 +2236,103 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 	return &taskStatus, nil
 }
 
-// RunBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
-// the task status is updated after each step, and the task is marked as completed if the step is the last one.
-// initial update if the task is done before running the steps.
+// RunBackgroundTaskSteps updates task status and executes each step in the background.
+// The task status is updated after each step and marked as completed on success or failure.
 func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
-	// Allocate Task and set if on the taskStatus's 'Task' field.
-	// We continue to update this field while running each step.
-	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
 	task := &Task{
 		Id:        taskID,
 		UpdatedAt: timestamppb.Now(),
 	}
 	setTaskInStatus(taskStatus, task)
 
-	// initial task update done before we run each step in the background task
 	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return err
 	}
 
-	// Create a background context that won't be canceled when the HTTP request completes,
+	// Background context that persists after HTTP request completes
 	taskCtx := context.Background()
 	taskCtx = httputil.CopyRequestIDFromContext(ctx, taskCtx)
 	taskCtx = auth.CopyUserFromContext(ctx, taskCtx)
+	taskCtx = logging.CopyFieldsFromContext(ctx, taskCtx)
 
-	// start heartbeat: a background goroutine to update the task status in the kv store
-	// every TaskHeartbeatInterval seconds, until the task is done
 	cancelCtx, cancel := context.WithCancel(taskCtx)
-	currTaskStatus := proto.Clone(taskStatus) // deep copy of the task status, to avoid race conditions
-	go func() {
-		for {
-			select {
-			case <-cancelCtx.Done():
-				return
-			case <-time.After(TaskHeartbeatInterval):
-				// get the task status from the kv store
-				predicate, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, currTaskStatus)
-				if err != nil {
-					c.log(ctx).WithError(err).Error("Catalog failed to get task status")
-					continue
-				}
-				// get the task from the task status
-				currTask := getTaskFromStatus(currTaskStatus)
-				if currTask == nil {
-					c.log(ctx).Error("Catalog failed to get task")
-					continue
-				}
-				if currTask.Done {
-					// task is done, so we can stop the heartbeat
-					cancel() // cancel just in case
-					return
-				}
-
-				// update the task in the kv store with the new "updated_at", only if its status is not changed
-				currTask.UpdatedAt = timestamppb.Now()
-				err = kv.SetMsgIf(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), currTaskStatus, predicate)
-				if err != nil {
-					if !errors.Is(err, kv.ErrPredicateFailed) {
-						c.log(ctx).WithError(err).Error("Catalog failed to update task status")
-					}
-					continue
-				}
-			}
-		}
-	}()
+	go c.runTaskHeartbeat(cancelCtx, repository, taskID, proto.Clone(taskStatus))
 
 	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
 		defer cancel()
-		for stepIdx, step := range steps {
-			// call the step function
-			err := step.Func(taskCtx)
-			// update task part
-			task.UpdatedAt = timestamppb.Now()
-			if err != nil {
-				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
-				task.Done = true
-				// Convert the error to status code and error message before the original error is lost when stored in
-				// protobuf, and populate the task's error details.
-				statusCode, errorMsg, ok := c.errorToStatusCodeAndMsg(log, err)
-				if ok {
-					task.StatusCode = int32(statusCode) //nolint:gosec
-					task.ErrorMsg = errorMsg
-				}
-			} else if stepIdx == len(steps)-1 {
-				task.Done = true
-			}
-
-			// update task status
-			if err := UpdateTaskStatus(taskCtx, c.KVStore, repository, taskID, taskStatus); err != nil {
-				log.WithError(err).WithField("step", step.Name).Error("Catalog failed to update task status")
-			}
-
-			// make sure we stop based on task completed status, as we may fail
-			if task.Done {
-				break
-			}
-		}
+		c.executeTaskSteps(taskCtx, log, repository, taskID, task, taskStatus, steps)
 	})
 	return nil
+}
+
+// runTaskHeartbeat periodically updates the task's timestamp in KV store until the task is done or context is canceled.
+func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, taskStatus protoreflect.ProtoMessage) {
+	ticker := time.NewTicker(TaskHeartbeatInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			predicate, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus)
+			if err != nil {
+				c.log(ctx).WithError(err).Error("Catalog failed to get task status")
+				continue
+			}
+			task := getTaskFromStatus(taskStatus)
+			if task == nil {
+				c.log(ctx).Error("Catalog failed to get task")
+				continue
+			}
+			if task.Done {
+				return
+			}
+			task.UpdatedAt = timestamppb.Now()
+			err = kv.SetMsgIf(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), taskStatus, predicate)
+			if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
+				c.log(ctx).WithError(err).Error("Catalog failed to update task status")
+			}
+		}
+	}
+}
+
+// executeTaskSteps runs each step sequentially, updating task status after each step.
+func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repository *graveler.RepositoryRecord, taskID string, task *Task, taskStatus protoreflect.ProtoMessage, steps []TaskStep) {
+	// no steps to execute, we need to update the task status
+	if len(steps) == 0 {
+		task.Done = true
+		task.UpdatedAt = timestamppb.Now()
+		if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
+			log.WithError(err).Error("Catalog failed to update task status")
+		}
+		return
+	}
+
+	// execute each step sequentially
+	for i, step := range steps {
+		err := step.Func(ctx)
+		task.UpdatedAt = timestamppb.Now()
+
+		if err != nil {
+			log.WithError(err).WithField("step", step.Name).Error("Catalog background task step failed")
+			task.Done = true
+			if statusCode, errorMsg, ok := c.errorToStatusCodeAndMsg(log, err); ok {
+				task.StatusCode = int32(statusCode) //nolint:gosec
+				task.ErrorMsg = errorMsg
+			}
+		} else if i == len(steps)-1 {
+			task.Done = true
+		}
+
+		if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
+			log.WithError(err).WithField("step", step.Name).Error("Catalog failed to update task status")
+		}
+
+		if task.Done {
+			return
+		}
+	}
 }
 
 func getTaskFromStatus(statusMsg protoreflect.ProtoMessage) *Task {

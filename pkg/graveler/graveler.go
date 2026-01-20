@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"runtime/trace"
 	"slices"
 	"strconv"
 	"strings"
@@ -1703,6 +1704,7 @@ func (g *Graveler) GetStagingToken(ctx context.Context, repository *RepositoryRe
 }
 
 func (g *Graveler) getGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRules, error) {
+	defer trace.StartRegion(ctx, "get gc rules").End()
 	return g.garbageCollectionManager.GetRules(ctx, repository.StorageID, repository.StorageNamespace)
 }
 
@@ -1715,6 +1717,8 @@ func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repository *Re
 }
 
 func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRunMetadata, error) {
+	ctx, task := trace.NewTask(ctx, "save gc commits")
+	defer task.End()
 	rules, err := g.getGarbageCollectionRules(ctx, repository)
 	if err != nil {
 		return nil, fmt.Errorf("get gc rules: %w", err)
