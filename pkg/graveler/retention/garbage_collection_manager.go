@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/trace"
 	"strings"
 	"time"
 
@@ -173,6 +174,7 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageID grav
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
+	defer trace.StartRegion(ctx, "save gc commits").End()
 	commitGetter := &RepositoryCommitGetterAdapter{
 		RefManager: m.refManager,
 		Repository: repository,
@@ -228,11 +230,13 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		w.CloseWithError(csvWriter.Error())
 	}()
 
-	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		StorageID:      string(repository.StorageID),
-		Identifier:     csvLocation,
-		IdentifierType: block.IdentifierTypeFull,
-	}, -1, r, block.PutOpts{})
+	trace.WithRegion(ctx, "put gc results", func() {
+		_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
+			StorageID:      string(repository.StorageID),
+			Identifier:     csvLocation,
+			IdentifierType: block.IdentifierTypeFull,
+		}, -1, r, block.PutOpts{})
+	})
 	if err != nil {
 		return "", err
 	}

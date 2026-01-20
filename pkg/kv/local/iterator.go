@@ -1,6 +1,8 @@
 package local
 
 import (
+	"context"
+	"runtime/trace"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -9,6 +11,7 @@ import (
 )
 
 type EntriesIterator struct {
+	ctx          context.Context
 	start        []byte
 	partitionKey []byte
 	primed       bool
@@ -20,6 +23,8 @@ type EntriesIterator struct {
 }
 
 func (e *EntriesIterator) Next() bool {
+	defer trace.StartRegion(e.ctx, "local k: iterator next").End()
+
 	if e.err != nil {
 		return false
 	}
