@@ -143,8 +143,9 @@ func testCommitMergeLua(t *testing.T, ctx context.Context, repo string, lakeFSCl
 	t.Log("Commit created successfully", commitID)
 
 	t.Log("Verify pre-commit and post-commit hooks ran successfully")
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, commitID, 2, lakeFSClient)
-	require.Len(t, runs.Results, 2)
+	const expectedActionRunsCount = 2
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, commitID, expectedActionRunsCount, lakeFSClient)
+	require.Len(t, runs.Results, expectedActionRunsCount)
 
 	commitEventType := map[string]bool{
 		"pre-commit":  true,
@@ -167,8 +168,8 @@ func testCommitMergeLua(t *testing.T, ctx context.Context, repo string, lakeFSCl
 	t.Log("Merge successful", mergeCommitID)
 
 	t.Log("Verify merge hooks ran successfully")
-	mergeRuns := WaitForListRepositoryRunsLen(ctx, t, repo, mergeCommitID, 2, lakeFSClient)
-	require.Len(t, mergeRuns.Results, 2)
+	mergeRuns := WaitForListRepositoryRunsLen(ctx, t, repo, mergeCommitID, expectedActionRunsCount, lakeFSClient)
+	require.Len(t, mergeRuns.Results, expectedActionRunsCount)
 
 	mergeEventType := map[string]bool{
 		"pre-merge":  true,
