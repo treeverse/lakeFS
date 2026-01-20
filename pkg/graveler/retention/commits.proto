@@ -1,0 +1,13 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/pkg/graveler/retention";
+
+package io.treeverse.lakefs.graveler.retention;
+
+message CommitNode {
+    // Microseconds-since-epoch (takes ~2x less space than a Timestamp).
+    int64 CreationUsecs = 1;
+    // CommitID of main-branch ("first", on any non-ancient commit) parent.
+    string MainParent = 2;
+    // MetaRangeID of this commit.
+    string MetaRangeID = 3;
+}
