@@ -72,7 +72,27 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 	})
 
 	t.Log("check runs are sorted in descending order")
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", len(hvd.data), lakeFSClient)
+	var runs *apigen.ActionRunList
+
+	// Poll until the runs appear in the correct descending order
+	require.Eventually(t, func() bool {
+		// Get the runs (with correct count)
+		r := WaitForListRepositoryRunsLen(ctx, t, repo, "", len(hvd.data), lakeFSClient)
+		runs = r
+
+		// Check if they're in the correct descending order
+		for i, run := range runs.Results {
+			valIdx := len(hvd.data) - (i + 1) // Reverse index for comparison
+			if hvd.data[valIdx].EventType != run.EventType {
+				// Order not correct yet, log and retry
+				t.Logf("Order not yet correct at index %d: expected %s, got %s",
+					i, hvd.data[valIdx].EventType, run.EventType)
+				return false // Will retry
+			}
+		}
+		return true // All in correct order!
+	}, 30*time.Second, 1*time.Second, "runs never appeared in correct descending order")
+
 	for i, run := range runs.Results {
 		valIdx := len(hvd.data) - (i + 1)
 		require.Equal(t, hvd.data[valIdx].EventType, run.EventType)
