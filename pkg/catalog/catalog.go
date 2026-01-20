@@ -2253,6 +2253,7 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 	taskCtx := context.Background()
 	taskCtx = httputil.CopyRequestIDFromContext(ctx, taskCtx)
 	taskCtx = auth.CopyUserFromContext(ctx, taskCtx)
+	taskCtx = logging.CopyFieldsFromContext(ctx, taskCtx)
 
 	cancelCtx, cancel := context.WithCancel(taskCtx)
 	go c.runTaskHeartbeat(cancelCtx, repository, taskID, proto.Clone(taskStatus))
