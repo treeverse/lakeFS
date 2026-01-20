@@ -68,9 +68,9 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	}
 	metadata, err := amzMetaAsMetadata(req)
 	if err != nil {
-		if errors.Is(err, gatewayErrors.ErrMetadataTooLarge) {
+		if errors.Is(err, gatewayerrors.ErrMetadataTooLarge) {
 			o.Log(req).WithError(err).Warn("user-defined metadata too large")
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrMetadataTooLarge))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrMetadataTooLarge))
 			return
 		}
 		o.Log(req).WithError(err).Error("failed to decode user metadata")
