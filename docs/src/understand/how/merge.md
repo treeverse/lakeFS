@@ -58,5 +58,35 @@ The strategy will affect all conflicting objects in the merge if it is set. Curr
 As a format-agnostic system, lakeFS currently merges by complete files. Format-specific and
 other user-defined merge strategies for handling conflicts are on the roadmap.
 
+## Async Merge (Enterprise) {#async-merge}
+
+!!! info
+    Available in **lakeFS Cloud** and **lakeFS Enterprise**
+
+lakeFS Enterprise supports asynchronous merge operations for improved scalability.
+
+### Overview
+
+In lakeFS Enterprise, merge operations execute asynchronously:
+
+1. The API returns immediately with a task ID
+2. The merge executes in the background
+3. Clients poll for completion status
+4. Results (or errors) are available once the operation completes
+
+### lakectl and UI behavior
+
+When using lakeFS Enterprise:
+
+- `lakectl merge` uses async merge by default
+- The lakeFS UI uses async merge by default
+- Both handle polling automatically—the experience is seamless
+
+### API usage
+
+For direct API access, use the experimental async endpoints:
+
+- `POST /repositories/{repo}/refs/{source}/merge/{dest}/async` - Start async merge
+- `GET /repositories/{repo}/refs/{source}/merge/{dest}/async/{id}/status` - Poll status
 
 [lakectl-merge]:  ../../reference/cli.md#lakectl-merge
