@@ -70,6 +70,8 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 
 lakeFS Enterprise provides asynchronous commit and merge operations for improved scalability when working with large repositories.
 
+**Atomicity guarantees are unchanged**: Async operations are still fully atomic. The only difference is that the API returns immediately while the operation executes in the background.
+
 ### How it works
 
 - Operations return immediately with a task ID
