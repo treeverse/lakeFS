@@ -7,7 +7,7 @@
 :new: What's new:
 
 - Report pre-signed URL expiry time for Azure (#9986)
-- Add external policies management commands to lakectl (#9978)
+- Add external principals management commands to lakectl (#9978)
 - Copy logging fields to background task context (#9995)
 - Prepare gc commits: Reduce memory usage (#9996)
 
