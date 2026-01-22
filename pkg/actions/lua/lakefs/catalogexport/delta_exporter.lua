@@ -140,6 +140,48 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
                         end
+
+                        -- Handle deletion vector paths (Protocol 3/7)
+                        local action_entry = entry.add or entry.remove
+                        if action_entry and action_entry.deletionVector then
+                            local dv = action_entry.deletionVector
+                            -- Only transform path-based (p) and UUID-based (u) deletion vectors
+                            -- Inline (i) has data embedded in JSON, no file to transform
+                            if dv.storageType == "p" then
+                                -- Path-based: pathOrInlineDv is the relative file path
+                                local dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
+                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+                                if dv_code == 200 then
+                                    local dv_stat = json.unmarshal(dv_obj)
+                                    local dv_u = url.parse(dv_stat["physical_address"])
+                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+                                    if path_transformer ~= nil then
+                                        dv_physical = path_transformer(dv_physical)
+                                    end
+                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                end
+                            elseif dv.storageType == "u" then
+                                -- UUID-based: find .bin file in table directory
+                                local list_code, list_resp = lakefs.list_objects(repo, commit_id, "", "", table_path .. "/")
+                                if list_code == 200 and list_resp.results then
+                                    for _, obj in ipairs(list_resp.results) do
+                                        if strings.has_suffix(obj.path, ".bin") then
+                                            local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, obj.path)
+                                            if dv_code == 200 then
+                                                local dv_stat = json.unmarshal(dv_obj)
+                                                local dv_u = url.parse(dv_stat["physical_address"])
+                                                local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+                                                if path_transformer ~= nil then
+                                                    dv_physical = path_transformer(dv_physical)
+                                                end
+                                                action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                            end
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
                     elseif code == 404 then
                         if entry.remove ~= nil then
                             -- If the object is not found, and the entry is a remove entry, we can assume it was vacuumed
