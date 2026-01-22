@@ -1,0 +1,1460 @@
+openapi: "3.0.0"
+
+info:
+  title: lakeFS authorization API
+  description: authorization API used to manages users, groups, credentials and policies
+  version: 0.1.0
+
+servers:
+  - url: "/api/v1"
+    description: lakeFS authentication endpoint
+
+security:
+  - jwt_token: []
+
+components:
+  securitySchemes:
+    jwt_token:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PaginationPrefix:
+      description: Indicates the prefix that all returned items must start with for the purpose of filtering results.
+      in: query
+      name: prefix
+      allowEmptyValue: true
+      schema:
+        type: string
+
+    PaginationAfter:
+      in: query
+      name: after
+      description: Indicates the starting point for the returned items. Items must be sorted by a specific parameter, 
+        and the response should include only those that come after the "after" value in the sorted list. This is used 
+        for pagination, as the next page needs to start from a specific point in the ordered items list.
+      allowEmptyValue: true
+      schema:
+        type: string
+
+    PaginationAmount:
+      description: Specifies the number of items the server should return. It is used to determine how many results to 
+        display.
+      in: query
+      name: amount
+      schema:
+        type: integer
+        minimum: -1
+        maximum: 1000
+        default: 100
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Validation Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Pagination:
+      description: The pagination mechanism is used to retrieve a list of items.
+      type: object
+      required:
+        - has_more
+        - max_per_page
+        - results
+        - next_offset
+      properties:
+        has_more:
+          type: boolean
+          description: A boolean indicating whether the Next page is available.
+        next_offset:
+          type: string
+          description: A value used to retrieve the next page of results. This value is typically passed as the after 
+            parameter in the subsequent API call. The next page will include all items appearing after the specified 
+            next_offset.
+        results:
+          type: integer
+          minimum: 0
+          description: Number of values in the results.
+        max_per_page:
+          type: integer
+          minimum: 0
+          description: Maximum number of entries per page.
+
+    VersionConfig:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: The error message.
+          type: string
+
+    User:
+      type: object
+      required:
+        - name
+        - username
+        - creation_date
+        - encryptedPassword
+      properties:
+        username:
+          type: string
+          description: A unique identifier for the user.
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds.
+        friendly_name:
+          type: string
+          description: A name for the user that is not necessarily unique.
+        email:
+          type: string
+        source:
+          type: string
+          description: User source. Based on implementation.
+        encryptedPassword:
+          type: string
+          format: byte
+          description: Represents an encrypted password as a string.
+        external_id:
+          type: string
+
+    UserPassword:
+      type: object
+      required:
+        - encryptedPassword
+      properties:
+        encryptedPassword:
+          type: string
+          format: byte
+
+    UserCreation:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: A unique identifier for the user. For password-based authentication, it is the email.
+        email:
+          type: string
+          description: If provided, the email is set to the same value as the username.
+        friendlyName:
+          type: string
+        source:
+          type: string
+          description: User source. Based on implementation.
+        encryptedPassword:
+          type: string
+          format: byte
+          description: Represents an encrypted password as a string.
+        external_id:
+          type: string
+        invite:
+          type: boolean
+          description: A boolean that determines whether an invitation email should be sent to a user for account 
+            creation. If passed and set to true, the invitation email will be sent along with the user creation.
+
+    Credentials:
+      type: object
+      required:
+        - access_key_id
+        - creation_date
+      properties:
+        access_key_id:
+          type: string
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+
+    CredentialsList:
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Credentials"
+
+    CredentialsWithSecret:
+      type: object
+      required:
+        - access_key_id
+        - secret_access_key
+        - creation_date
+        - user_id
+      properties:
+        access_key_id:
+          type: string
+        secret_access_key:
+          type: string
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds.
+        user_id:
+          type: integer
+          format: int64
+          deprecated: true
+        user_name:
+          type: string
+          description: Important - this filed is required instead of the user_id which is deprecated.
+            A unique identifier for the user. In password-based authentication should be the email.
+
+    Group:
+      description: If the id is not provided, it will be generated by converting the given name into a group id.
+      type: object
+      required:
+        - name
+        - creation_date
+      properties:
+        id:
+          type: string
+          description: A unique identifier of the group.
+        name:
+          type: string
+          description: A unique identifier for the group, represented by a human-readable name.
+        description:
+          type: string
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds.
+
+    GroupList:
+      type: object
+      required:
+        - results
+        - pagination
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+
+    UserList:
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+
+    GroupCreation:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: A unique identifier for the group, represented by a human-readable name.
+        description:
+          type: string
+
+    PolicyCondition:
+      type: object
+      description: Condition operator (e.g., IpAddress)
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        IpAddress:
+          - 192.168.0.1/32
+          - 192.168.0.2/32
+
+    Statement:
+      type: object
+      description: Details about the expected structure of the properties can be found in the lakeFS documentation.
+      required:
+        - effect
+        - resource
+        - action
+      properties:
+        effect:
+          type: string
+          enum: [ allow, deny ]
+        resource:
+          type: string
+        action:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        condition:
+          type: object
+          description: Optional conditions for when this statement applies.
+          additionalProperties:
+            $ref: "#/components/schemas/PolicyCondition"
+
+    Policy:
+      type: object
+      required:
+        - name
+        - statement
+      properties:
+        name:
+          type: string
+          description: A unique, human-readable name for the policy.
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds.
+        statement:
+          type: array
+          items:
+            $ref: "#/components/schemas/Statement"
+          minItems: 1
+        acl:
+          type: string
+          description: Represents the access control list assigned to this policy.
+
+    PolicyList:
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Policy"
+
+    ClaimTokenId:
+      type: object
+      required:
+        - token_id
+        - expires_at
+      properties:
+        token_id:
+          type: string
+        expires_at:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+
+    ExternalPrincipal:
+      type: object
+      required:
+        - user_id
+        - id
+      properties:
+        user_id:
+          type: string
+        id:
+          type: string
+
+    ExternalPrincipalList:
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalPrincipal"
+
+paths:
+  /auth/users:
+    get:
+      description: Returns a list of all users. Accepts pagination parameters as input and returns a Pagination 
+        component along with a list of users. The results must be sorted by the username property of each User 
+        component. Internally, the username value is converted to the id field, and the creation_date is stored, along 
+        with optional fields such as friendly_name and email. The external_id property in the User component in the 
+        UserList component is for external system association. The max_per_page property in the pagination of the 
+        Pagination component within the UserList component is not used internally. The encryptedPassword property in 
+        the User component within the UserList component is not used internally. This endpoint should be implemented in 
+        a function named listUsers.
+      tags:
+        - auth
+      operationId: listUsers
+      summary: list users
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: id
+          allowEmptyValue: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: email
+          allowEmptyValue: true
+          schema:
+            type: string
+        - in: query
+          description: Used only in lakeFS Enterprise; not applicable in the lakeFS OSS version.
+          name: external_id
+          schema:
+            type: string
+      responses:
+        200:
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      description: Creates a new user. The input is provided in the request body, and the response returns a
+        User component. This endpoint is also used during the setup phase to create the initial admin user with
+        username="admin" and source="internal". The output fields in the User schema must align with the input
+        fields in the UserCreation schema. The external_id property in the UserCreation and User components is for 
+        external system association. The encryptedPassword property in the User component is not used internally. The 
+        encryptedPassword property in the UserCreation component is not used internally. If the invite property in the 
+        UserCreation component is passed and true, send an invitation by email and create the user. Otherwise, only 
+        create the user. This endpoint should be implemented in a function named createUser.
+      tags:
+        - auth
+      operationId: createUser
+      summary: create user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreation"
+      responses:
+        201:
+          description: The username in the response must match the username provided in the input.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        400:
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the details of a specific user. Takes a unique userId as a path parameter, which must match 
+        an existing user ID. The response includes a User component. Internally, the creation_date, email, and id fields 
+        (where id is derived from the username) are used from the response. The external_id property in the User 
+        component is for external system association. The encryptedPassword property in the User component is not used 
+        internally. This endpoint should be implemented in a function named getUser.
+      tags:
+        - auth
+      operationId: getUser
+      summary: get user
+      responses:
+        200:
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      description: Deletes a user. Takes a unique userId (username) as a path parameter, which must match an existing
+        user ID in your users list. No output is returned if the deletion is successful. This endpoint should
+        be implemented in a function named deleteUser.
+      tags:
+        - auth
+      operationId: deleteUser
+      summary: delete user
+      responses:
+        204:
+          description: User deleted successfully.
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/password:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - auth
+      operationId: updatePassword
+      summary: update users password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPassword"
+      responses:
+        200:
+          description: Password updated successfully.
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/friendly_name:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    put:
+      description: Updates the friendly_name field of a user. Takes a unique userId as a path parameter and a new
+        friendly_name in the request body. No output is returned if the update is successful. This endpoint
+        should be implemented in a function named updateUserFriendlyName.
+      tags:
+        - auth
+      operationId: updateUserFriendlyName
+      summary: update users friendly name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - friendly_name
+              type: object
+              properties:
+                friendly_name:
+                  type: string
+      responses:
+        204:
+          description: Friendly name was successfully updated.
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/groups:
+    get:
+      description: Returns a list of groups. Accepts pagination parameters as input and returns a Pagination
+        component along with a list of groups. The results must be sorted by the name property of each Group
+        component in the GroupList response. The max_per_page property in the pagination of the Pagination component 
+        within the GroupList component is not used internally. This endpoint should be implemented in a function named 
+        listGroups.
+      tags:
+        - auth
+      operationId: listGroups
+      summary: list groups
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      responses:
+        200:
+          description: group list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      description: Creates a new group. The input is provided in the request body, and the response returns a Group
+        component. The name property must be a unique, human-readable group name. If the id field is not specified, the 
+        name value will be used as the id. This endpoint is called during the setup stage to create initial groups, 
+        including "Admins", "SuperUsers", "Developers", and "Viewers". The output fields in the Group schema must align 
+        with the input fields in the GroupCreation schema. This endpoint should be implemented in a function named 
+        createGroup.
+      tags:
+        - auth
+      operationId: createGroup
+      summary: create group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreation"
+      responses:
+        201:
+          description: group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/groups/{groupId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the details of a specific group. Takes a unique groupId as a path parameter, which must 
+        match an existing group ID. The response includes a Group component. Internally, the name property in the Group
+        component is converted to the id. During the setup phase, this endpoint is called with the "Admins" group ID to 
+        verify that the group was created. This endpoint should be implemented in a function named getGroup.
+      tags:
+        - auth
+      operationId: getGroup
+      summary: get group
+      responses:
+        200:
+          description: group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      description: Deletes a group. Takes a unique groupId as a path parameter, which must match an existing group ID. 
+        No output is returned if the deletion is successful. This endpoint should be
+        implemented in a function named deleteGroup.
+      tags:
+        - auth
+      operationId: deleteGroup
+      summary: delete group
+      responses:
+        204:
+          description: Group deleted successfully.
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/policies:
+    get:
+      description: Returns a list of policies. Accepts pagination parameters as input and returns a Pagination component 
+        along with a list of policies. The results must be sorted by the name property of each Policy component in the 
+        PolicyList response. Internally, the name property of each Policy component is converted to the id field. The 
+        max_per_page property in the pagination of the Pagination component within the PolicyList component is not used 
+        internally. The acl property in the Policy component within the PolicyList is for internal use only and is not 
+        needed when implementing an RBAC authentication server. This endpoint should be implemented in a function named 
+        listPolicies.
+
+      tags:
+        - auth
+      operationId: listPolicies
+      summary: list policies
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      responses:
+        200:
+          description: policy list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      description: Creates a new policy. The input is provided in the request body, and the response returns a Policy
+        component. The response fields should match the input parameters. This endpoint is called during the setup 
+        phase to create default policies required for operation. The policy IDs (names) that are sent include 
+        "FSFullAccess", "FSReadWriteAll", "FSReadAll", "RepoManagementFullAccess", "PRReadWriteAll", 
+        "RepoManagementReadAll", "AuthFullAccess", and "AuthManageOwnCredentials". The output fields in the Policy 
+        schema must align with the input fields in the Policy schema. The acl property in the Policy component is for 
+        internal use only and is not needed when implementing an RBAC authentication server. This endpoint should be 
+        implemented in a function named createPolicy.
+      tags:
+        - auth
+      operationId: createPolicy
+      summary: create policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Policy"
+      responses:
+        201:
+          description: policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        409:
+          $ref: "#/components/responses/Conflict"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/policies/{policyId}:
+    parameters:
+      - in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the details of a specific policy. Takes a unique policyId as input and returns a Policy
+        component. Internally, the name property of the Policy component is converted to the id property. The acl 
+        property in the Policy component is for internal use only and is not needed when implementing an RBAC 
+        authentication server. This endpoint should be implemented in a function named getPolicy.
+      tags:
+        - auth
+      operationId: getPolicy
+      summary: get policy
+      responses:
+        200:
+          description: policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      description: Updates an existing policy. Takes a unique policyId (name) and a request body containing
+        the updated policy details, and returns the updated Policy component. The response fields should match
+        those provided in the request body. The acl property in the Policy component is for internal use only and is 
+        not needed when implementing an RBAC authentication server. This endpoint should be implemented in a function 
+        named updatePolicy.
+      tags:
+        - auth
+      operationId: updatePolicy
+      summary: update policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Policy"
+      responses:
+        200:
+          description: policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      description: Deletes a policy. Takes a unique policyId as a path parameter, which must match an existing policy
+        ID. No output is returned if the deletion is successful. This endpoint should be
+        implemented in a function named deletePolicy.
+      tags:
+        - auth
+      operationId: deletePolicy
+      summary: delete policy
+      responses:
+        204:
+          description: policy deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/groups/{groupId}/members:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the list of users associated with a specific group. Takes the groupId and pagination
+        parameters as input, and returns a Pagination component along with the list of users. The results must be
+        sorted by the username property of each User component in the UserList response. The external_id property in 
+        the User component in the UserList component is for external system association. The max_per_page property in 
+        the pagination of the Pagination component within the UserList component is not used internally. The 
+        encryptedPassword property in the User component within the UserList component is not used internally. This 
+        endpoint should be implemented in a function named listGroupMembers.
+      tags:
+        - auth
+      operationId: listGroupMembers
+      summary: list group members
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      responses:
+        200:
+          description: group member list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/groups/{groupId}/members/{userId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    put:
+      description: Adds a specific user to a specific group. Takes the groupId and userId (username) as input.
+        No output is returned if the user is successfully added to the group. This endpoint should be
+        implemented in a function named addGroupMembership.
+      tags:
+        - auth
+      operationId: addGroupMembership
+      summary: add group membership
+      responses:
+        201:
+          description: membership added successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      description: Removes a specific user from a specific group. Takes the groupId and userId (username) as input.
+        No output is returned if the user is successfully removed from the group. This endpoint should be
+        implemented in a function named deleteGroupMembership.
+      tags:
+        - auth
+      operationId: deleteGroupMembership
+      summary: delete group membership
+      responses:
+        204:
+          description: membership deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/credentials:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns a list of all access_key_ids and their creation dates for a specific user. Takes a unique
+        userId that matches an existing user along with pagination parameters. The response includes a Pagination
+        component and a list of results sorted by the access_key_id field in Credentials component within the 
+        CredentialsList component. The max_per_page property in the pagination of the Pagination component within the 
+        CredentialsList component is not used internally. This endpoint should be implemented in a function named 
+        listUserCredentials.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      operationId: listUserCredentials
+      summary: list user credentials
+      responses:
+        200:
+          description: credential list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialsList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      description: Creates new credentials for a specific user. The input might include access_key and secret_key, and
+        the output is a CredentialsWithSecret component where the username field is required. If either the access_key
+        or secret_key is empty, the server should generate random values for both and store them for the user. The path
+        parameter includes a unique userId that matches an existing user. During initialization, credentials must be
+        created for the "admin" userId, and this API will be invoked to perform that action. This endpoint should be
+        implemented in a function named createCredentials.
+      parameters:
+        - in: query
+          name: access_key
+          schema:
+            type: string
+        - in: query
+          name: secret_key
+          schema:
+            type: string
+      tags:
+        - auth
+      operationId: createCredentials
+      summary: create credentials
+      responses:
+        201:
+          description: credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialsWithSecret"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/credentials/{accessKeyId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: accessKeyId
+        required: true
+        schema:
+          type: string
+    delete:
+      description: Deletes credentials for a specific user. Takes the userId and accessKeyId as input. The path
+        parameter includes a unique userId that matches an existing user. No output is returned if the deletion is 
+        successful. This endpoint should be implemented in a function named deleteCredentials.
+      tags:
+        - auth
+      operationId: deleteCredentials
+      summary: delete credentials
+      responses:
+        204:
+          description: Credentials deleted successfully.
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    get:
+      description: Returns a specific user's credentials. Takes the user's userId and a specific accessKeyId associated
+        with that user as input. The output includes the user's access key id and creation date. This endpoint should 
+        be implemented in a function named getCredentialsForUser.
+      tags:
+        - auth
+      operationId: getCredentialsForUser
+      summary: get credentials for a user
+      responses:
+        200:
+          description: credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credentials"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/credentials/{accessKeyId}:
+    parameters:
+      - in: path
+        name: accessKeyId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the credentials details associated with a specific accessKeyId. The input is the accessKeyId, 
+        and the output is a CredentialsWithSecret component containing all credential details. Note that the previously 
+        required user_id is now deprecated, and the username is required instead, even though it is not listed under 
+        the "required" label in this yaml. This endpoint should be implemented in a function named getCredentials.
+      tags:
+        - auth
+      operationId: getCredentials
+      summary: get credentials
+      responses:
+        200:
+          description: credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialsWithSecret"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/groups:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the list of groups that a specific user is associated with. Takes a unique userId
+        and pagination parameters as input, and returns a Pagination component along with the list of results.
+        The results must be sorted by the name property of each Group component in the GroupList. The max_per_page 
+        property in the pagination of the Pagination component within the GroupList component is not used internally. 
+        This endpoint should be implemented in a function named listUserGroups.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      operationId: listUserGroups
+      summary: list user groups
+      responses:
+        200:
+          description: group list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/policies:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the list of policies associated with a specific user. If the effective input is true, the
+        response should include all policies attached to the user directly and through any groups the user
+        belongs to. If effective is false, only policies directly attached to the user should be returned.
+        The input includes a unique userId corresponding to an existing user, pagination parameters, and the
+        effective boolean. The output includes a Pagination component and a list of results sorted by the name
+        field of each Policy component in the PolicyList. The max_per_page property in the pagination of the Pagination 
+        component within the PolicyList component is not used internally. The acl property in the Policy component 
+        within the PolicyList is for internal use only and is not needed when implementing an RBAC authentication 
+        server. This endpoint should be implemented in a function named listUserPolicies.
+
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: effective
+          schema:
+            type: boolean
+            default: false
+          description: If true, return all distinct policies attached to the user or any of the groups the user belongs
+            to, otherwise, return only the policies directly attached to the user.
+      operationId: listUserPolicies
+      summary: list user policies
+      responses:
+        200:
+          description: policy list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/policies/{policyId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+    put:
+      description: Attaches a policy to a specific user. Takes a unique userId and policyId as input. No output is
+        returned if the attachment is successful. This endpoint should be implemented in a function named
+        attachPolicyToUser.
+      tags:
+        - auth
+      operationId: attachPolicyToUser
+      summary: attach policy to user
+      responses:
+        201:
+          description: Policy attached successfully.
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      description: Detaches a policy from a specific user. Takes a unique policyId and userId as input. No output is
+        returned if the detachment is successful. This endpoint should be implemented in a function named
+        detachPolicyFromUser.
+      tags:
+        - auth
+      operationId: detachPolicyFromUser
+      summary: detach policy from user
+      responses:
+        204:
+          description: Policy detached successfully.
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/groups/{groupId}/policies:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the list of policies attached to a specific group. Takes a unique groupId and pagination 
+        parameters as input. The output includes a Pagination component and a list of results sorted by the name field 
+        of each Policy component in the PolicyList. Internally, the name property of the Policy component is converted 
+        to the id field. The max_per_page property in the pagination of the Pagination component within the PolicyList 
+        component is not used internally. The acl property in the Policy component within the PolicyList is for 
+        internal use only and is not needed when implementing an RBAC authentication server. This endpoint should be 
+        implemented in a function named listGroupPolicies.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      operationId: listGroupPolicies
+      summary: list group policies
+      responses:
+        200:
+          description: Policy list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/groups/{groupId}/policies/{policyId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+    put:
+      description: Attaches a policy to a specific group. Takes a unique groupId and policyId as input. No output is
+        returned if the attachment is successful. This endpoint should be implemented in a function named
+        attachPolicyToGroup.
+      tags:
+        - auth
+      operationId: attachPolicyToGroup
+      summary: attach policy to group
+      responses:
+        201:
+          description: Policy attached successfully.
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      description: Detaches a policy from a specific group. Takes a unique groupId and policyId as input. No output is
+        returned if the detachment is successful. This endpoint should be implemented in a function named detachPolicyFromGroup.
+      tags:
+        - auth
+      operationId: detachPolicyFromGroup
+      summary: detach policy from group
+      responses:
+        204:
+          description: Policy detached successfully.
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/tokenid/claim:
+    post:
+      description: For internal use only.
+      tags:
+        - auth
+      operationId: claimTokenId
+      summary: claim a token ID, returns validation error if already claimed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimTokenId"
+      responses:
+        201:
+          description: token id claimed
+        400:
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/external/principals/ls:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+        - experimental
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      operationId: listUserExternalPrincipals
+      summary: list external principals for user
+      responses:
+        200:
+          description: external principals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipalList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/external/principals:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - auth
+        - experimental
+      operationId: createUserExternalPrincipal
+      summary: Create principal as external identity connected to a user
+      responses:
+        201:
+          description: external principal created successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - auth
+        - experimental
+      operationId: deleteUserExternalPrincipal
+      summary: delete external principal from user's external principal list
+      responses:
+        204:
+          description: external principal deleted
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/external/principals:
+    parameters:
+      - in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+        - external
+        - experimental
+      operationId: getExternalPrincipal
+      summary: describe external principal by id
+      responses:
+        200:
+          description: external principal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipal"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /healthcheck:
+    get:
+      operationId: healthCheck
+      security: [ ]
+      tags:
+        - healthCheck
+      description: check that the API server is up and running
+      responses:
+        204:
+          description: NoContent
+
+  /config/version:
+    get:
+      tags:
+        - config
+      operationId: getVersion
+      description: get server version
+      responses:
+        200:
+          description: external authorization API server version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionConfig"
