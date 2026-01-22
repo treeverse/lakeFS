@@ -647,26 +647,6 @@ func WaitForCacheExpiration(ctx context.Context, t *testing.T) {
 	}
 }
 
-func UploadFiles(t *testing.T, ctx context.Context, repo, branch string, embedFS fs.FS, subPath, globPattern, destDir string, lakeFSClient apigen.ClientWithResponsesInterface) {
-	t.Helper()
-
-	filesDir, err := fs.Sub(embedFS, subPath)
-	require.NoError(t, err)
-
-	files, err := fs.Glob(filesDir, globPattern)
-	require.NoError(t, err)
-
-	for _, file := range files {
-		content, err := fs.ReadFile(filesDir, file)
-		require.NoError(t, err)
-
-		filePath := path.Join(destDir, file)
-		resp, err := UploadContent(ctx, repo, branch, filePath, string(content), lakeFSClient)
-		require.NoError(t, err)
-		require.Equal(t, http.StatusCreated, resp.StatusCode())
-	}
-}
-
 func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	t.Helper()
 	// render actions based on templates
