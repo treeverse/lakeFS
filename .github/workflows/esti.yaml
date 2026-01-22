@@ -1174,7 +1174,7 @@ jobs:
     timeout-minutes: 20
     services:
       dynamodb:
-        image: amazon/dynamodb-local:1.13.6
+        image: amazon/dynamodb-local:3.3.0
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
         credentials:
@@ -1250,7 +1250,7 @@ jobs:
     timeout-minutes: 20
     services:
       dynamodb:
-        image: amazon/dynamodb-local:1.13.6
+        image: amazon/dynamodb-local:3.3.0
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
         credentials:
