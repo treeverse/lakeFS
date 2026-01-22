@@ -65,6 +65,7 @@ clean:
 		$(UI_DIR)/node_modules \
 		pkg/api/apigen/lakefs.gen.go \
 		pkg/auth/*.gen.go
+	@mkdir -p $(UI_BUILD_DIR) && touch $(UI_BUILD_DIR)/.gitkeep
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 

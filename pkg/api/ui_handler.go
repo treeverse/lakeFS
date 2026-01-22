@@ -28,7 +28,12 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 		return newFallbackUIHandler(gatewayDomains)
 	}
 
-	injectedContent, err := NewInjectIndexFS(webui.Content, uiIndexDoc, uiIndexMarker, snippets)
+	// Get the dist subdirectory from the embedded content
+	distContent, err := fs.Sub(webui.Content, "dist")
+	if err != nil {
+		panic(err)
+	}
+	injectedContent, err := NewInjectIndexFS(distContent, uiIndexDoc, uiIndexMarker, snippets)
 	if err != nil {
 		// failed to inject snippets to index.html
 		panic(err)
@@ -41,7 +46,8 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 }
 
 func newFallbackUIHandler(gatewayDomains []string) http.Handler {
-	fallbackHTML := webui.FallbackHTML()
+	// Read fallback.html from the embedded content
+	fallbackHTML, _ := fs.ReadFile(webui.Content, "fallback.html")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
 			handleGatewayRequest(w, r, gatewayDomains)
