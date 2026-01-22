@@ -18,7 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
-var luaActionTmpl = template.Must(template.New("lua-action").Parse(`name: Test Lua {{.EventType}}
+var LuaActionTmpl = template.Must(template.New("lua-action").Parse(`name: Test Lua {{.EventType}}
 on:
   {{.EventType}}:
     branches:
@@ -134,7 +134,7 @@ func testCommitMergeLua(t *testing.T, ctx context.Context, repo string, lakeFSCl
 	}
 	for _, action := range luaActions {
 		var buf bytes.Buffer
-		err := luaActionTmpl.Execute(&buf, action)
+		err := LuaActionTmpl.Execute(&buf, action)
 		require.NoError(t, err)
 		actionPath := path.Join("_lakefs_actions", fmt.Sprintf("action_%s_lua.yaml", action.HookID))
 		resp, err := UploadContent(ctx, repo, branch, actionPath, buf.String(), lakeFSClient)

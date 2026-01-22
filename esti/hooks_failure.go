@@ -43,7 +43,7 @@ hooks:
       timeout : {{.Timeout}}
 `))
 
-var luaActionFailTmpl = template.Must(template.New("lua-action-fail").Parse(`name: Test Lua {{.EventType}} Fail
+var LuaActionFailTmpl = template.Must(template.New("lua-action-fail").Parse(`name: Test Lua {{.EventType}} Fail
 on:
   {{.EventType}}:
     branches:
@@ -181,7 +181,7 @@ func luaHooksMergeFailTest(ctx context.Context, t *testing.T, repo string, lakeF
 		Branch    string
 	}{"pre-merge", "pre_merge", mainBranch}
 	var buf bytes.Buffer
-	err = luaActionFailTmpl.Execute(&buf, action)
+	err = LuaActionFailTmpl.Execute(&buf, action)
 	require.NoError(t, err)
 	actionPath := "_lakefs_actions/action_pre_merge_fail_lua.yaml"
 	resp, err := UploadContent(ctx, repo, branch, actionPath, buf.String(), lakeFSClient)
