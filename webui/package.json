@@ -46,7 +46,7 @@
     "react-ipynb-renderer": "^2.2.1",
     "react-leaflet": "^4.2.1",
     "react-markdown": "^8.0.7",
-    "react-router-dom": "^6.20.1",
+    "react-router-dom": "^6.30.3",
     "react-simple-code-editor": "^0.13.1",
     "react-syntax-highlighter": "^15.5.0",
     "rehype-raw": "^7.0.0",
