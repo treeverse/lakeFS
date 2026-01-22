@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "touch dist/.gitkeep",
     "build-watch": "vite build --watch",
     "serve": "vite preview",
     "test": "vitest run",
