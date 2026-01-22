@@ -21,7 +21,7 @@ Unlike conventional mirroring, data isn't simply copied between regions - lakeFS
 
 <iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/NhOWGVjQrrA"></iframe>
 
-## Uses cases
+## Use cases
 
 ### Disaster recovery
 
