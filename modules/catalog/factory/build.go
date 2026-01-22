@@ -14,3 +14,9 @@ func BuildConflictResolvers(cfg config.Config, block block.Adapter) []graveler.C
 func BuildExtendedOperations(_ *catalog.Catalog) catalog.ExtendedOperations {
 	return catalog.NewNoopExtendedOperations()
 }
+
+// BuildTaskObserver returns the task observer for async operation lifecycle events.
+// OSS returns a no-op observer. Enterprise overrides this to provide metrics.
+func BuildTaskObserver() catalog.TaskObserver {
+	return &catalog.NoOpTaskObserver{}
+}

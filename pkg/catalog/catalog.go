@@ -242,6 +242,7 @@ type Config struct {
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
 	ConflictResolvers       []graveler.ConflictResolver
 	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
+	TaskObserver            TaskObserver
 }
 
 type ErrorToStatusCodeAndMsg func(logger logging.Logger, err error) (status int, msg string, ok bool)
@@ -261,6 +262,7 @@ type Catalog struct {
 	UGCPrepareInterval      time.Duration
 	signingKey              config.SecureString
 	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
+	taskObserver            TaskObserver
 }
 
 const (
@@ -436,6 +438,11 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		errToStatusFunc = defaultErrorToStatusCodeAndMsg
 	}
 
+	taskObserver := cfg.TaskObserver
+	if taskObserver == nil {
+		taskObserver = &NoOpTaskObserver{}
+	}
+
 	return &Catalog{
 		BlockAdapter:            tierFSParams.Adapter,
 		Store:                   gStore,
@@ -451,6 +458,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		deleteSensor:            deleteSensor,
 		signingKey:              cfg.Config.StorageConfig().SigningKey(),
 		errorToStatusCodeAndMsg: errToStatusFunc,
+		taskObserver:            taskObserver,
 	}, nil
 }
 
@@ -2249,6 +2257,10 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 		return err
 	}
 
+	notifyObserver(taskID, func() {
+		c.taskObserver.OnTaskSubmitted(taskID)
+	})
+
 	// Background context that persists after HTTP request completes
 	taskCtx := context.Background()
 	taskCtx = httputil.CopyRequestIDFromContext(ctx, taskCtx)
@@ -2299,6 +2311,17 @@ func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.Rep
 
 // executeTaskSteps runs each step sequentially, updating task status after each step.
 func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repository *graveler.RepositoryRecord, taskID string, task *Task, taskStatus protoreflect.ProtoMessage, steps []TaskStep) {
+	// Mark task as started
+	task.UpdatedAt = timestamppb.Now()
+	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
+		log.WithError(err).Error("Failed to update task start time")
+	}
+
+	// Notify observer that execution has begun
+	notifyObserver(taskID, func() {
+		c.taskObserver.OnTaskStarted(taskID)
+	})
+
 	// no steps to execute, we need to update the task status
 	if len(steps) == 0 {
 		task.Done = true
@@ -2306,18 +2329,23 @@ func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repo
 		if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 			log.WithError(err).Error("Catalog failed to update task status")
 		}
+		// Notify observer of completion (success with no steps)
+		notifyObserver(taskID, func() {
+			c.taskObserver.OnTaskCompleted(taskID, nil)
+		})
 		return
 	}
 
 	// execute each step sequentially
+	var stepErr error
 	for i, step := range steps {
-		err := step.Func(ctx)
+		stepErr = step.Func(ctx)
 		task.UpdatedAt = timestamppb.Now()
 
-		if err != nil {
-			log.WithError(err).WithField("step", step.Name).Error("Catalog background task step failed")
+		if stepErr != nil {
+			log.WithError(stepErr).WithField("step", step.Name).Error("Catalog background task step failed")
 			task.Done = true
-			if statusCode, errorMsg, ok := c.errorToStatusCodeAndMsg(log, err); ok {
+			if statusCode, errorMsg, ok := c.errorToStatusCodeAndMsg(log, stepErr); ok {
 				task.StatusCode = int32(statusCode) //nolint:gosec
 				task.ErrorMsg = errorMsg
 			}
@@ -2330,6 +2358,10 @@ func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repo
 		}
 
 		if task.Done {
+			// Notify observer of completion
+			notifyObserver(taskID, func() {
+				c.taskObserver.OnTaskCompleted(taskID, stepErr)
+			})
 			return
 		}
 	}
@@ -2840,11 +2872,15 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if _, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
-	checkAndMarkTaskExpired(statusMsg, expiryDuration)
+	checkAndMarkTaskExpired(statusMsg, expiryDuration, c.taskObserver)
 	return nil
 }
 
-func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) {
+// checkAndMarkTaskExpired checks if a task has expired based on its updated_at timestamp
+// and the provided expiry duration. If expired, marks the task as done with timeout error
+// and notifies the observer. The observer is notified exactly once when the task
+// transitions to expired state (already-done tasks are skipped).
+func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration, observer TaskObserver) {
 	if expiryDuration == 0 {
 		return
 	}
@@ -2854,11 +2890,23 @@ func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration
 		return
 	}
 
+	// Don't re-expire already done tasks
+	if task.Done {
+		return
+	}
+
 	updatedAt := task.UpdatedAt.AsTime()
 	if time.Since(updatedAt) > expiryDuration {
 		task.Done = true
 		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %s. Please retry the operation.", expiryDuration)
 		task.StatusCode = http.StatusRequestTimeout
+
+		// Notify observer of expiration
+		if observer != nil {
+			notifyObserver(task.Id, func() {
+				observer.OnTaskExpired(task.Id)
+			})
+		}
 	}
 }
 
