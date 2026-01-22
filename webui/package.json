@@ -11,8 +11,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
-    "build-watch": "NODE_OPTIONS=--max-old-space-size=4096 vite build --watch",
+    "build": "vite build",
+    "build-watch": "vite build --watch",
     "serve": "vite preview",
     "test": "vitest run",
     "test-watch": "vitest",
