@@ -2,6 +2,19 @@
 
 ## next
 
+## v1.76.0
+
+:new: What's new:
+
+- Report pre-signed URL expiry time for Azure (#9986)
+- Add external principals management commands to lakectl (#9978)
+- Copy logging fields to background task context (#9995)
+- Prepare gc commits: Reduce memory usage (#9996)
+
+:bug: Bugs Fixed
+
+- Fix: lakectl gc check-async print a usable URL (#9994)
+
 ## v1.75.0
 
 ### Security Fixes

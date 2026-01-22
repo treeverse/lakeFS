@@ -12,7 +12,7 @@ import (
 var repoCreateBareCmd = &cobra.Command{
 	Use:               "create-bare <repository URI> <storage namespace>",
 	Short:             "Create a new repository with no initial branch or commit",
-	Example:           "lakectl create-bare " + myRepoExample + " " + myBucketExample,
+	Example:           "lakectl repo create-bare " + myRepoExample + " " + myBucketExample,
 	Hidden:            true,
 	Args:              cobra.ExactArgs(repoCreateCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
