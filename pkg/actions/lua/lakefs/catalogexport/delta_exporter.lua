@@ -174,6 +174,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                                                 if path_transformer ~= nil then
                                                     dv_physical = path_transformer(dv_physical)
                                                 end
+                                                -- Change storageType to 'p' since we're now using a path
+                                                action_entry.deletionVector.storageType = "p"
                                                 action_entry.deletionVector.pathOrInlineDv = dv_physical
                                             end
                                             break
