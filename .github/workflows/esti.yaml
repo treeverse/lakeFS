@@ -93,12 +93,21 @@ jobs:
 
   deploy-image:
     name: Build and push Docker image
-    needs: [ check-secrets, gen-code ]
+    needs: [ check-secrets, gen-code, login-to-amazon-ecr ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-22.04-16-cores
     outputs:
       tag: ${{ needs.gen-code.outputs.tag }}
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -110,16 +119,6 @@ jobs:
 
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -150,6 +149,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
         with:
           mask-password: 'false'
+
     outputs:
       registry: ${{ steps.login-ecr.outputs.registry }}
       docker_username: ${{ steps.login-ecr.outputs.docker_username_977611293394_dkr_ecr_us_east_1_amazonaws_com }}
@@ -253,29 +253,30 @@ jobs:
 
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image
-    needs: check-secrets
+    needs: [check-secrets, login-to-amazon-ecr]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          aws-region: us-east-1
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Extract version
         shell: bash
         run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
         id: version
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -296,15 +297,6 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -359,15 +351,6 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -496,15 +479,6 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -591,15 +565,6 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Start lakeFS for export tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -701,15 +666,6 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -781,15 +737,6 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -828,7 +775,7 @@ jobs:
 
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -862,15 +809,6 @@ jobs:
           ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -944,15 +882,6 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -1007,15 +936,6 @@ jobs:
           ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -1078,15 +998,6 @@ jobs:
           ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -1422,15 +1333,6 @@ jobs:
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Test lakeFS with S3 tests + Basic Auth
         uses: ./.github/actions/bootstrap-test-lakefs
