@@ -145,12 +145,16 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         local action_entry = entry.add or entry.remove
                         if action_entry and action_entry.deletionVector then
                             local dv = action_entry.deletionVector
+                            print(string.format("Found deletionVector: storageType=%s, pathOrInlineDv=%s",
+                                tostring(dv.storageType), tostring(dv.pathOrInlineDv)))
                             -- Only transform path-based (p) and UUID-based (u) deletion vectors
                             -- Inline (i) has data embedded in JSON, no file to transform
                             if dv.storageType == "p" then
                                 -- Path-based: pathOrInlineDv is the relative file path
                                 local dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
+                                print(string.format("Looking for DV file at: %s", dv_full_path))
                                 local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+                                print(string.format("DV stat_object returned code: %d", dv_code))
                                 if dv_code == 200 then
                                     local dv_stat = json.unmarshal(dv_obj)
                                     local dv_u = url.parse(dv_stat["physical_address"])
@@ -158,14 +162,24 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                                     if path_transformer ~= nil then
                                         dv_physical = path_transformer(dv_physical)
                                     end
+                                    print(string.format("Transformed DV path to: %s", dv_physical))
                                     action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                else
+                                    print(string.format("WARNING: DV file not found at %s (code=%d)", dv_full_path, dv_code))
                                 end
                             elseif dv.storageType == "u" then
-                                -- UUID-based: find .bin file in table directory
-                                local list_code, list_resp = lakefs.list_objects(repo, commit_id, "", "", table_path .. "/")
+                                -- UUID-based: The pathOrInlineDv contains a base85-encoded UUID
+                                -- The DV file is located relative to the parent directory of the data file
+                                print(string.format("UUID-based DV, looking for .bin files in table: %s", table_path))
+                                -- list_objects signature: (repo, ref, after, prefix, delimiter, amount)
+                                local list_code, list_resp = lakefs.list_objects(repo, commit_id, "", table_path .. "/", "")
+                                print(string.format("list_objects returned code: %d", list_code))
                                 if list_code == 200 and list_resp.results then
+                                    print(string.format("Found %d objects in table directory", #list_resp.results))
                                     for _, obj in ipairs(list_resp.results) do
+                                        print(string.format("  Checking: %s", obj.path))
                                         if strings.has_suffix(obj.path, ".bin") then
+                                            print(string.format("  Found .bin file: %s", obj.path))
                                             local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, obj.path)
                                             if dv_code == 200 then
                                                 local dv_stat = json.unmarshal(dv_obj)
@@ -177,10 +191,13 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                                                 -- Change storageType to 'p' since we're now using a path
                                                 action_entry.deletionVector.storageType = "p"
                                                 action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                                print(string.format("Transformed UUID DV to path: %s", dv_physical))
                                             end
                                             break
                                         end
                                     end
+                                else
+                                    print(string.format("WARNING: Failed to list objects in %s (code=%d)", table_path, list_code))
                                 end
                             end
                         end
