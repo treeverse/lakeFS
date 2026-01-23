@@ -143,7 +143,7 @@ Being able to look at data as it was at a given point is particularly useful in 
 
 With lakeFS, each member of the team can create their own branch, isolated from other people's changes.
 
-This allows to iterate on changes to an algorithm or transformation, without stepping on eachother's toes. These branches are centralized - they could be share among users for collaboration, and can even be merged.
+This allows you to iterate on changes to an algorithm or transformation, without stepping on each other's toes. These branches are centralized - they could be shared among users for collaboration, and can even be merged.
 
 With lakeFS you can even open [pull requests](./howto/pull-requests.md), allowing you to easily share changes with other members and collaborate on them.
 

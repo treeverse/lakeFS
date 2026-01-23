@@ -195,8 +195,8 @@ lakectl fs upload lakefs://repo/main/_lakefs_actions/unity_exports_action.yaml -
 lakectl commit lakefs://repo/main -m "upload action and run it"
 ```
 
-The action has run and exported the `famous_people` Delta Lake table to the repo's storage namespace, and has register 
-the table as an external table in Unity Catalog under the catalog `my-catalog-name`, schema `main` (as the branch's name) and 
+The action has run and exported the `famous_people` Delta Lake table to the repo's storage namespace, and has registered
+the table as an external table in Unity Catalog under the catalog `my-catalog-name`, schema `main` (as the branch's name) and
 table name `famous_people`: `my-catalog-name.main.famous_people`.
 
 ![Hooks log result in lakeFS UI](../assets/img/unity_export_hook_result_log.png)
