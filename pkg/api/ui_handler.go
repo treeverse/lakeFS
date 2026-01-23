@@ -41,15 +41,15 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 }
 
 func newFallbackUIHandler(gatewayDomains []string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	fallbackHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGatewayRequest(r) {
 			handleGatewayRequest(w, r, gatewayDomains)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(webui.FallbackHTML)
 	})
+	return SecurityMiddleware(fallbackHandler)
 }
 
 func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
