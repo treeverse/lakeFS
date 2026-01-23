@@ -15,8 +15,13 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Generated files
-*.gen.go
+# Test-only generated files (mocks)
+**/mock/*.go
+
+# Test-specific generated protos and wrappers
+pkg/graveler/settings/test_settings.pb.go
+pkg/kv/kvtest/test_model.pb.go
+tools/wrapgen/testcode/wrapped_gen.go
 
 ### Go Patch ###
 /vendor/

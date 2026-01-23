@@ -23,12 +23,12 @@ const (
 )
 
 func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.Handler {
-	content, err := fs.Sub(webui.Content, "dist")
-	if err != nil {
-		// embedded UI content is missing
-		panic(err)
+	// Check if UI was built - if not, return a handler that serves the fallback page
+	if !webui.UIBuilt {
+		return newFallbackUIHandler(gatewayDomains)
 	}
-	injectedContent, err := NewInjectIndexFS(content, uiIndexDoc, uiIndexMarker, snippets)
+
+	injectedContent, err := NewInjectIndexFS(webui.Content, uiIndexDoc, uiIndexMarker, snippets)
 	if err != nil {
 		// failed to inject snippets to index.html
 		panic(err)
@@ -38,6 +38,18 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 	etagHandler := EtagMiddleware(injectedContent, http.StripPrefix("/", gzipHandler))
 	securityHandler := SecurityMiddleware(etagHandler)
 	return NewHandlerWithDefault(fileSystem, securityHandler, gatewayDomains)
+}
+
+func newFallbackUIHandler(gatewayDomains []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isGatewayRequest(r) {
+			handleGatewayRequest(w, r, gatewayDomains)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(webui.FallbackHTML)
+	})
 }
 
 func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
