@@ -249,7 +249,7 @@ In the case of On-Premises deployment, you are responsible for collecting, stori
 
 ### Reference Architecture
 
-A audit log pipeline for lakeFS Enterprise consists of three stages:
+An audit log pipeline for lakeFS Enterprise consists of three stages:
 
 1. **Collect**: Capture logs from lakeFS container stdout and filter for `log_audit: true`
 2. **Store**: Ship filtered logs to durable storage (e.g., S3, GCS, Azure Blob)
