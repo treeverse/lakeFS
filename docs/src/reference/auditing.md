@@ -313,6 +313,6 @@ At high scale, lakeFS can generate a significant volume of audit logs. Consider 
 
 **Schema Considerations**
 
-The audit log schema is generally stable but may evolve over time as new fields are added. If you're using a schema-aware query engine (e.g., Athena, BigQuery), consider using a schema discovery mechanism such as AWS Glue Crawler or equivalent to automatically detect and update your table schema as new fields appear.
+The audit log schema is stable and evolves additively over time. If you're using a schema-aware query engine (e.g., Athena, BigQuery), consider using a schema discovery mechanism such as AWS Glue Crawler or equivalent to automatically detect and update your table schema as new fields appear.
 The fields described in the [Schema](#schema) section above (remove the `data_` prefix for on-prem) are expected to be present in all audit log entries.
 
