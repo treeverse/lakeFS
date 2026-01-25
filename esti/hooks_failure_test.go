@@ -8,7 +8,6 @@ import (
 )
 
 func testHooksFailure(t *testing.T, testFunc func(context.Context, *testing.T, string, apigen.ClientWithResponsesInterface)) {
-	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	testFunc(ctx, t, repo, client)
