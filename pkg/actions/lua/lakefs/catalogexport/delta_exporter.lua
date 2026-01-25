@@ -144,9 +144,11 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
 
                         -- Handle deletion vector paths (Protocol 3/7)
                         local action_entry = entry.add or entry.remove
+                        local action_type = entry.add and "add" or "remove"
                         if action_entry and action_entry.deletionVector then
                             local dv = action_entry.deletionVector
-                            print(string.format("Found deletionVector: storageType=%s, pathOrInlineDv=%s",
+                            print(string.format("Found deletionVector for %s action on file: %s", action_type, action_entry.path))
+                            print(string.format("  storageType=%s, pathOrInlineDv=%s",
                                 tostring(dv.storageType), tostring(dv.pathOrInlineDv)))
                             -- Only transform path-based (p) and UUID-based (u) deletion vectors
                             -- Inline (i) has data embedded in JSON, no file to transform
