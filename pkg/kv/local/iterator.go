@@ -2,7 +2,6 @@ package local
 
 import (
 	"context"
-	"runtime/trace"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -23,8 +22,6 @@ type EntriesIterator struct {
 }
 
 func (e *EntriesIterator) Next() bool {
-	defer trace.StartRegion(e.ctx, "local k: iterator next").End()
-
 	if e.err != nil {
 		return false
 	}

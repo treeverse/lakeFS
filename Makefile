@@ -241,7 +241,7 @@ validate-wrapgen-testcode: gen-code
 	git diff --quiet -- ./tools/wrapgen/testcode || (echo "Modification verification failed! tools/wrapgen/testcode"; false)
 
 validate-reference:
-	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)
+	git diff --quiet -- docs/src/reference/cli.md || (echo "Modification verification failed! docs/src/reference/cli.md"; false)
 
 validate-client-python: validate-python-sdk
 
