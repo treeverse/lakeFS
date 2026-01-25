@@ -235,6 +235,12 @@ validate-mockgen: gen-code
 validate-permissions-gen: gen-code
 	git diff --quiet -- pkg/permissions/actions.gen.go || (echo "Modification verification failed!  pkg/permissions/actions.gen.go"; false)
 
+.PHONY: validate-api
+validate-api: gen-api
+	git diff --quiet -- pkg/api/apigen/lakefs.gen.go || (echo "Modification verification failed! pkg/api/apigen/lakefs.gen.go"; false)
+	git diff --quiet -- pkg/auth/client.gen.go || (echo "Modification verification failed! pkg/auth/client.gen.go"; false)
+	git diff --quiet -- pkg/authentication/apiclient/client.gen.go || (echo "Modification verification failed! pkg/authentication/apiclient/client.gen.go"; false)
+
 .PHONY: validate-wrapper
 validate-wrapper: gen-code
 	git diff --quiet -- pkg/auth/service_wrapper.gen.go || (echo "Modification verification failed! pkg/auth/service_wrapper.gen.go"; false)
@@ -270,7 +276,7 @@ checks-validator: lint validate-proto validate-ui-format \
 	validate-client-python validate-client-java validate-client-rust validate-reference \
 	validate-mockgen \
 	validate-permissions-gen \
-	validate-wrapper validate-wrapgen-testcode
+	validate-api validate-wrapper validate-wrapgen-testcode
 
 python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
