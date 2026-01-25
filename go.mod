@@ -327,6 +327,7 @@ require (
 	github.com/stbenjam/no-sprintf-host-port v0.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tetafro/godot v1.5.4 // indirect
+	github.com/tilinna/z85 v1.0.0 // indirect
 	github.com/timakin/bodyclose v0.0.0-20241222091800-1db5c5ca4d67 // indirect
 	github.com/timonwong/loggercheck v0.11.0 // indirect
 	github.com/tomarrell/wrapcheck/v2 v2.12.0 // indirect
@@ -442,6 +443,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260118153017-93593587e11e 
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260118153017-93593587e11e
 
 tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint

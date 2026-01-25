@@ -5,6 +5,7 @@ local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
 local strings = require("strings")
 local url = require("net/url")
+local z85 = require("encoding/z85")
 
 local function isTableNotEmpty(t)
     return next(t) ~= nil
@@ -168,36 +169,29 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                                     print(string.format("WARNING: DV file not found at %s (code=%d)", dv_full_path, dv_code))
                                 end
                             elseif dv.storageType == "u" then
-                                -- UUID-based: The pathOrInlineDv contains a base85-encoded UUID
-                                -- The DV file is located relative to the parent directory of the data file
-                                print(string.format("UUID-based DV, looking for .bin files in table: %s", table_path))
-                                -- list_objects signature: (repo, ref, after, prefix, delimiter, amount)
-                                local list_code, list_resp = lakefs.list_objects(repo, commit_id, "", table_path .. "/", "")
-                                print(string.format("list_objects returned code: %d", list_code))
-                                if list_code == 200 and list_resp.results then
-                                    print(string.format("Found %d objects in table directory", #list_resp.results))
-                                    for _, obj in ipairs(list_resp.results) do
-                                        print(string.format("  Checking: %s", obj.path))
-                                        if strings.has_suffix(obj.path, ".bin") then
-                                            print(string.format("  Found .bin file: %s", obj.path))
-                                            local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, obj.path)
-                                            if dv_code == 200 then
-                                                local dv_stat = json.unmarshal(dv_obj)
-                                                local dv_u = url.parse(dv_stat["physical_address"])
-                                                local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
-                                                if path_transformer ~= nil then
-                                                    dv_physical = path_transformer(dv_physical)
-                                                end
-                                                -- Change storageType to 'p' since we're now using a path
-                                                action_entry.deletionVector.storageType = "p"
-                                                action_entry.deletionVector.pathOrInlineDv = dv_physical
-                                                print(string.format("Transformed UUID DV to path: %s", dv_physical))
-                                            end
-                                            break
-                                        end
+                                -- UUID-based: The pathOrInlineDv contains a Z85-encoded UUID (last 20 chars)
+                                -- with optional random prefix before it
+                                local uuid, prefix = z85.decode_uuid(dv.pathOrInlineDv)
+                                local dv_filename = "deletion_vector_" .. uuid .. ".bin"
+                                if prefix ~= "" then
+                                    dv_filename = prefix .. "/" .. dv_filename
+                                end
+                                local dv_full_path = pathlib.join("/", table_path, dv_filename)
+                                print(string.format("UUID-based DV decoded: uuid=%s, prefix=%s, path=%s", uuid, prefix, dv_full_path))
+                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+                                if dv_code == 200 then
+                                    local dv_stat = json.unmarshal(dv_obj)
+                                    local dv_u = url.parse(dv_stat["physical_address"])
+                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+                                    if path_transformer ~= nil then
+                                        dv_physical = path_transformer(dv_physical)
                                     end
+                                    -- Change storageType to 'p' since we're now using an absolute path
+                                    action_entry.deletionVector.storageType = "p"
+                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                    print(string.format("Transformed UUID DV to path: %s", dv_physical))
                                 else
-                                    print(string.format("WARNING: Failed to list objects in %s (code=%d)", table_path, list_code))
+                                    print(string.format("WARNING: DV file not found at %s (code=%d)", dv_full_path, dv_code))
                                 end
                             end
                         end
@@ -330,6 +324,6 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
 end
 
 return {
-    export_delta_log = export_delta_log,
+export_delta_log = export_delta_log,
     changed_table_defs = changed_table_defs,
 }
