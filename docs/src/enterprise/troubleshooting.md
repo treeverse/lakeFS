@@ -43,7 +43,7 @@ lakeFS Enterprise allow configuration to be supplied in multiple ways: configura
 
 ### Environment Variables
 
-When troubleshooting, it's important to get a view of the environment in which lakeFS are running. This is especially true for container-based deployment environments, like Kubernetes, where env vars are used extensively. The `flare` command collects environment variables with the following prefixes:
+When troubleshooting, it's important to get a view of the environment in which lakeFS is running. This is especially true for container-based deployment environments, like Kubernetes, where env vars are used extensively. The `flare` command collects environment variables with the following prefixes:
 
 - `LAKEFS_`
 - `HTTP_`

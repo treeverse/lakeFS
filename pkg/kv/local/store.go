@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"runtime/trace"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -36,7 +35,6 @@ type Store struct {
 }
 
 func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
-	defer trace.StartRegion(ctx, "local kv:get").End()
 	k := composeKey(partitionKey, key)
 	start := time.Now()
 	log := s.logger.WithField("key", string(k)).WithField("op", "get").WithContext(ctx)
@@ -78,7 +76,6 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 }
 
 func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
-	defer trace.StartRegion(ctx, "local kv:set").End()
 	k := composeKey(partitionKey, key)
 	start := time.Now()
 	log := s.logger.WithField("key", string(k)).WithField("op", "set").WithContext(ctx)
@@ -107,7 +104,6 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 }
 
 func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
-	defer trace.StartRegion(ctx, "local kv:set-if").End()
 	k := composeKey(partitionKey, key)
 	start := time.Now()
 	log := s.logger.WithField("key", string(k)).WithField("op", "set_if").WithContext(ctx)
@@ -166,7 +162,6 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 }
 
 func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
-	defer trace.StartRegion(ctx, "local kv:delete").End()
 	k := composeKey(partitionKey, key)
 	start := time.Now()
 	log := s.logger.
@@ -196,9 +191,6 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
-	// Cannot trace.StartRegion around an entire iterator, as iterators will not nest with
-	// the calling routine's regions.  Instead, trace Next(), and callers should trace their
-	// _use_ of iterators.
 	log := s.logger.WithFields(logging.Fields{
 		"partition_key": string(partitionKey),
 		"start_key":     string(options.KeyStart),
