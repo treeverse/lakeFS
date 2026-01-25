@@ -1,6 +1,8 @@
 import React, { FC, useContext } from 'react';
-import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
+import { DownloadIcon, FileIcon } from '@primer/octicons-react';
 import { humanSize } from '../../../../lib/components/repository/tree';
+import { linkToPath } from '../../../../lib/api';
 import { useAPI } from '../../../../lib/hooks/api';
 import { objects, qs } from '../../../../lib/api';
 import { AlertError, Loading } from '../../../../lib/components/controls';
@@ -15,25 +17,37 @@ import { AppContext } from '../../../../lib/hooks/appContext';
 import { GeoJSONPreview } from '../../../../lib/components/repository/GeoJSONPreview';
 import { github as lightTheme, nightOwl as darkTheme } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
-export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
+export const ObjectTooLarge: FC<RendererComponent> = ({ repoId, refId, path, sizeBytes, presign }) => {
+    const downloadUrl = linkToPath(repoId, refId, path, presign || false);
+    const fileName = path.split('/').pop() || path;
+
     return (
-        <Alert variant="warning" className="m-5">
-            <div>
-                Could not render: <code>{path}</code>:
-            </div>
-            <div>{`size ${sizeBytes}b (${humanSize(sizeBytes)}) is too big`}</div>
-        </Alert>
+        <div className="cannot-render-file">
+            <FileIcon size={48} className="cannot-render-icon" />
+            <h5>Cannot preview this file</h5>
+            <p className="text-muted">File size ({humanSize(sizeBytes)}) exceeds the maximum preview size.</p>
+            <Button as="a" href={downloadUrl} download={fileName} variant="outline-primary">
+                <DownloadIcon className="me-2" />
+                Download File
+            </Button>
+        </div>
     );
 };
 
-export const UnsupportedFileType: FC<RendererComponent> = ({ path, fileExtension, contentType }) => {
+export const UnsupportedFileType: FC<RendererComponent> = ({ repoId, refId, path, presign }) => {
+    const downloadUrl = linkToPath(repoId, refId, path, presign || false);
+    const fileName = path.split('/').pop() || path;
+
     return (
-        <Alert variant="warning" className="m-5">
-            <div>
-                Could not render: <code>{path}</code>: <br />
-            </div>
-            <div>{`lakeFS doesn't know how to render this file (extension = "${fileExtension}", content-type = "${contentType}")`}</div>
-        </Alert>
+        <div className="cannot-render-file">
+            <FileIcon size={48} className="cannot-render-icon" />
+            <h5>Cannot preview this file</h5>
+            <p className="text-muted">This file type is not supported for preview.</p>
+            <Button as="a" href={downloadUrl} download={fileName} variant="outline-primary">
+                <DownloadIcon className="me-2" />
+                Download File
+            </Button>
+        </div>
     );
 };
 
@@ -100,15 +114,49 @@ export const ImageRenderer: FC<RendererComponent> = ({ repoId, refId, path, pres
 };
 
 export const PDFRenderer: FC<RendererComponent> = ({ repoId, refId, path, presign }) => {
-    const query = qs({ path, presign });
+    const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        let objectUrl: string | null = null;
+
+        const fetchPdf = async () => {
+            try {
+                const query = qs({ path, presign });
+                const response = await fetch(
+                    `/api/v1/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/objects?${query}`,
+                );
+                if (!response.ok) {
+                    throw new Error(`Failed to load PDF: ${response.statusText}`);
+                }
+                const blob = await response.blob();
+                objectUrl = URL.createObjectURL(blob);
+                setBlobUrl(objectUrl);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to load PDF');
+            }
+        };
+
+        fetchPdf();
+
+        return () => {
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+        };
+    }, [repoId, refId, path, presign]);
+
+    if (error) {
+        return <AlertError error={error} />;
+    }
+
+    if (!blobUrl) {
+        return <Loading />;
+    }
+
     return (
-        <div className="m-3 object-viewer-pdf">
-            <object
-                data={`/api/v1/repositories/${encodeURIComponent(
-                    repoId,
-                )}/refs/${encodeURIComponent(refId)}/objects?${query}`}
-                type="application/pdf"
-            ></object>
+        <div className="object-viewer-pdf">
+            <iframe src={`${blobUrl}#toolbar=1&navpanes=0`} title={path} />
         </div>
     );
 };

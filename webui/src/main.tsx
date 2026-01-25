@@ -12,6 +12,7 @@ import './styles/objects/object-viewer.css';
 import './styles/objects/upload.css';
 import './styles/objects/tree.css';
 import './styles/objects/diff.css';
+import './styles/objects/data-browser.css';
 import './styles/auth.css';
 // Components
 import './styles/components/buttons.css';

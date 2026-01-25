@@ -58,7 +58,6 @@ import {
 } from '../services/import_data';
 import { Box } from '@mui/material';
 import { RepoError } from './error';
-import { getContentType, getFileExtension, FileContents } from './objectViewer';
 import { ProgressBar } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
 import { useConfigContext } from '../../../lib/hooks/configProvider';
@@ -68,13 +67,13 @@ import pMap from 'p-map';
 import { formatAlertText } from '../../../lib/components/repository/errors';
 import { ChangesTreeContainer } from '../../../lib/components/repository/changes';
 import { MetadataFields } from '../../../lib/components/repository/metadata';
+import { DataBrowserLayout } from '../../../lib/components/repository/data';
 import { getMetadataIfValid, touchInvalidFields } from '../../../lib/components/repository/metadataHelpers';
 import { ConfirmationModal } from '../../../lib/components/modals';
 import { Link } from '../../../lib/components/nav';
 import Card from 'react-bootstrap/Card';
 import { mergeResults } from '../../../lib/components/repository/mergeResults';
 
-const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
@@ -1126,43 +1125,6 @@ const TreeContainer = ({
     );
 };
 
-const ReadmeContainer = ({ config, repo, reference, path = '', refreshDep = '' }) => {
-    let readmePath = '';
-
-    if (path) {
-        readmePath = path.endsWith('/') ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
-    } else {
-        readmePath = README_FILE_NAME;
-    }
-    const { response, error, loading } = useAPI(
-        () => objects.head(repo.id, reference.id, readmePath),
-        // TODO: Review and remove this eslint-disable once dependencies are validated
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [path, refreshDep],
-    );
-
-    if (loading || error) {
-        return <></>; // no file found.
-    }
-
-    const fileExtension = getFileExtension(readmePath);
-    const contentType = getContentType(response?.headers);
-
-    return (
-        <FileContents
-            repoId={repo.id}
-            reference={reference}
-            path={readmePath}
-            fileExtension={fileExtension}
-            contentType={contentType}
-            error={error}
-            loading={loading}
-            showFullNavigator={false}
-            presign={config.pre_sign_support_ui}
-        />
-    );
-};
-
 const NoGCRulesWarning = ({ repoId }) => {
     const storageKey = `show_gc_warning_${repoId}`;
     const [show, setShow] = useState(window.localStorage.getItem(storageKey) !== 'false');
@@ -1499,52 +1461,65 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
 
             <NoGCRulesWarning repoId={repo.id} />
 
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    mb: '30px',
-                }}
-            >
-                <TreeContainer
-                    config={storageConfig}
-                    reference={reference}
-                    repo={repo}
-                    path={path ? path : ''}
-                    after={after ? after : ''}
-                    onPaginate={(after) => {
-                        const query = { after };
-                        if (path) query.path = path;
-                        if (reference) query.ref = reference.id;
-                        if (showChangesOnly) query.showChanges = 'true';
-                        const url = {
-                            pathname: `/repositories/:repoId/objects`,
-                            query,
-                            params: { repoId: repo.id },
-                        };
-                        router.push(url);
+            {showChangesOnly ? (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                        mb: '30px',
                     }}
-                    refreshToken={refreshToken}
-                    onUpload={() => {
-                        setShowUpload(true);
-                    }}
-                    onImport={() => {
-                        setShowImport(true);
-                    }}
-                    onRefresh={refresh}
-                    showChangesOnly={showChangesOnly}
-                    toggleShowChangesOnly={() => setShowChangesOnly(false)}
-                />
-
-                <ReadmeContainer
-                    config={storageConfig}
-                    reference={reference}
-                    repo={repo}
-                    path={path}
-                    refreshDep={refreshToken}
-                />
-            </Box>
+                >
+                    <TreeContainer
+                        config={storageConfig}
+                        reference={reference}
+                        repo={repo}
+                        path={path ? path : ''}
+                        after={after ? after : ''}
+                        onPaginate={(after) => {
+                            const query = { after };
+                            if (path) query.path = path;
+                            if (reference) query.ref = reference.id;
+                            if (showChangesOnly) query.showChanges = 'true';
+                            const url = {
+                                pathname: `/repositories/:repoId/objects`,
+                                query,
+                                params: { repoId: repo.id },
+                            };
+                            router.push(url);
+                        }}
+                        refreshToken={refreshToken}
+                        onUpload={() => {
+                            setShowUpload(true);
+                        }}
+                        onImport={() => {
+                            setShowImport(true);
+                        }}
+                        onRefresh={refresh}
+                        showChangesOnly={showChangesOnly}
+                        toggleShowChangesOnly={() => setShowChangesOnly(false)}
+                    />
+                </Box>
+            ) : (
+                <Box sx={{ mb: '30px' }}>
+                    <DataBrowserLayout
+                        repo={repo}
+                        reference={reference}
+                        config={storageConfig}
+                        initialPath={path}
+                        onNavigate={(newPath) => {
+                            const query = { path: newPath };
+                            if (reference) query.ref = reference.id;
+                            router.push({
+                                pathname: `/repositories/:repoId/objects`,
+                                query,
+                                params: { repoId: repo.id },
+                            });
+                        }}
+                        refreshToken={refreshToken}
+                    />
+                </Box>
+            )}
         </>
     );
 };
