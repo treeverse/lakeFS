@@ -49,6 +49,9 @@
           {% set icon = config.theme.icon.search or "material/magnify" %}
           {% include ".icons/" ~ icon ~ ".svg" %}
         </label>
+        {% block outdated %}
+          {% include "partials/outdated.html" %}
+        {% endblock %}
         {% include "partials/slack.html" %}
         {% if config.extra.features and config.extra.features.enable_ask_ai %}
           {% include "partials/ask-ai.html" %}
