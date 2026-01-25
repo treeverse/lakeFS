@@ -308,6 +308,7 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
                     if value and strings.has_prefix(changed_path, path) then
                         table.insert(changed_table_def_names, table_name_yaml)
                         print("  (inserted)")
+                        break  -- only insert once per table
                     end
                 end
             else
