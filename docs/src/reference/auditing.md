@@ -1,6 +1,6 @@
 ---
 title: Auditing
-description: Auditing is a solution for lakeFS Cloud which enables tracking of events and activities performed within the solution. These logs capture information such as who accessed the solution, what actions were taken, and when they occurred.
+description: Audit logs track events and activities in lakeFS, capturing who accessed the system, what actions were taken, and when they occurred. Available for both lakeFS Cloud and lakeFS Enterprise.
 status: enterprise
 ---
 
@@ -242,3 +242,91 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     s3_dyf.show()
     s3_dyf.printSchema()
     ```
+
+## Audit Logs for lakeFS Enterprise On-Premises
+
+In lakeFS Enterprise (self-managed), you are responsible for collecting, storing, and querying audit logs. lakeFS emits audit logs to standard output (stdout) alongside regular application logs.
+
+### Identifying Audit Logs
+
+lakeFS outputs two kinds of logs:
+
+- **Regular logs**: API errors, event descriptions, and debugging information
+- **Audit logs**: User actions such as creating a branch, committing, or deleting a repository
+
+To filter audit logs, use the boolean field `log_audit`. When `log_audit` is `true`, the log entry is an audit event.
+
+Example audit log entry (JSON):
+
+```json
+{
+  "level": "info",
+  "timestamp": "2024-06-15T10:23:45.123Z",
+  "log_audit": true,
+  "service_name": "rest_api",
+  "operation_id": "create_branch",
+  "repository": "my-repo",
+  "ref": "feature-branch",
+  "user": "user@example.com",
+  "status_code": 201,
+  "method": "POST",
+  "path": "/api/v1/repositories/my-repo/branches",
+  "request_id": "abc123"
+}
+```
+
+### Audit Log Fields
+
+| Field          | Description                                                        |
+|----------------|--------------------------------------------------------------------|
+| `log_audit`    | Boolean. `true` indicates this is an audit log entry               |
+| `user`         | User ID or email that performed the action                         |
+| `repository`   | Repository ID (when applicable)                                    |
+| `ref`          | Reference (branch, tag) involved (when applicable)                 |
+| `operation_id` | Logical operation (e.g., `create_branch`, `commit`, `delete_repository`) |
+| `service_name` | Either `rest_api` or `s3_gateway`                                  |
+| `status_code`  | HTTP status code of the response                                   |
+| `method`       | HTTP method (`GET`, `POST`, `DELETE`, etc.)                        |
+| `path`         | HTTP request path                                                  |
+| `request_id`   | Unique identifier for the request                                  |
+| `timestamp`    | Time of the request in ISO 8601 format                             |
+
+### Reference Architecture
+
+A typical audit log pipeline for lakeFS Enterprise consists of three stages:
+
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   Collect   │ ───▸ │    Store    │ ───▸ │    Query    │
+└─────────────┘      └─────────────┘      └─────────────┘
+```
+
+1. **Collect**: Capture logs from lakeFS container stdout and filter for `log_audit: true`
+2. **Store**: Ship filtered logs to durable storage (e.g., S3, GCS, Azure Blob)
+3. **Query**: Use a query engine to analyze logs (e.g., Athena, BigQuery, Elasticsearch)
+
+### Collection
+
+The recommended practice is to send logs to container stdout (the default configuration) and use a log collector to capture and forward them. See the [logging configuration](./configuration.md#logging) and the [Enterprise log collection guide](../enterprise/getstarted/install.md#log-collection) for more details.
+
+Common log collectors include:
+
+- [Fluent Bit](https://fluentbit.io/)
+- [Fluentd](https://www.fluentd.org/)
+- [Logstash](https://www.elastic.co/logstash)
+- [Vector](https://vector.dev/)
+
+When configuring your log collector, filter for entries where `log_audit` equals `true` to separate audit logs from regular application logs.
+
+### Storage and Querying
+
+Once collected, audit logs can be stored and queried using various approaches depending on your infrastructure:
+
+| Storage             | Query Engine                     |
+|---------------------|----------------------------------|
+| S3 / GCS / Azure Blob | Athena, BigQuery, Presto, Spark |
+| Elasticsearch       | Kibana                           |
+| Loki                | Grafana                          |
+| Splunk              | Splunk Search                    |
+
+The choice of storage and query engine depends on your existing infrastructure, retention requirements, and query patterns.
