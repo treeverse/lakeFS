@@ -9,7 +9,6 @@ import {
     AlertIcon,
     PencilIcon,
     GitCommitIcon,
-    HistoryIcon,
     NorthStarIcon,
 } from '@primer/octicons-react';
 import RefDropdown from '../../../lib/components/repository/refDropdown';
@@ -23,11 +22,9 @@ import {
     Warnings,
 } from '../../../lib/components/controls';
 import Button from 'react-bootstrap/Button';
-import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
-import Dropdown from 'react-bootstrap/Dropdown';
 import { BsCloudArrowUp } from 'react-icons/bs';
 
 import { humanSize, Tree, URINavigator } from '../../../lib/components/repository/tree';
@@ -69,7 +66,6 @@ import { ChangesTreeContainer } from '../../../lib/components/repository/changes
 import { MetadataFields } from '../../../lib/components/repository/metadata';
 import { DataBrowserLayout } from '../../../lib/components/repository/data';
 import { getMetadataIfValid, touchInvalidFields } from '../../../lib/components/repository/metadataHelpers';
-import { ConfirmationModal } from '../../../lib/components/modals';
 import { Link } from '../../../lib/components/nav';
 import Card from 'react-bootstrap/Card';
 import { mergeResults } from '../../../lib/components/repository/mergeResults';
@@ -1179,7 +1175,6 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const [showChangesOnly, setShowChangesOnly] = useState(showChanges === 'true');
     const [actionError, setActionError] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
-    const [showRevertModal, setShowRevertModal] = useState(false);
 
     const refresh = () => {
         setRefreshToken(!refreshToken);
@@ -1236,22 +1231,6 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo?.id, reference?.id, refreshToken]);
 
-    // Handle toggle changes view
-    const handleToggleChanges = () => {
-        const newShowChanges = !showChangesOnly;
-        setShowChangesOnly(newShowChanges);
-
-        const query = { path: path || '' };
-        if (reference) query.ref = reference.id;
-        if (newShowChanges) query.showChanges = 'true';
-
-        router.push({
-            pathname: `/repositories/:repoId/objects`,
-            query,
-            params: { repoId: repo.id },
-        });
-    };
-
     if (loading) return <Loading />;
     if (error) return <RepoError error={error} />;
 
@@ -1277,59 +1256,23 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                         }
                     />
 
-                    {/* Changes Management Button Group */}
+                    {/* Commit Button - shown when there are uncommitted changes */}
                     {reference && reference.type === RefTypeBranch && hasChanges && (
-                        <Dropdown as={ButtonGroup} className="me-2">
-                            {/* Toggle Switch */}
-                            <Button
-                                variant={showChangesOnly ? 'secondary' : 'outline-secondary'}
-                                size="sm"
-                                onClick={handleToggleChanges}
-                                className="d-flex align-items-center"
-                            >
-                                <NorthStarIcon className="me-1" />
-                                Uncommitted Changes
-                            </Button>
-
-                            {/* Actions Dropdown */}
-                            <Dropdown.Toggle
-                                variant="outline-secondary"
-                                size="sm"
-                                id="changes-dropdown"
-                            ></Dropdown.Toggle>
-
-                            <Dropdown.Menu className="changes-dropdown-menu">
-                                <div className="d-flex flex-column gap-2 p-2">
-                                    <Button
-                                        variant="success"
-                                        size="sm"
-                                        onClick={() => {
-                                            // Trigger the commit modal by finding the actual button and clicking it
-                                            const commitBtn = document.querySelector('[data-commit-btn] button');
-                                            if (commitBtn) {
-                                                commitBtn.click();
-                                            }
-                                        }}
-                                        disabled={repo?.read_only}
-                                        className="d-flex align-items-center justify-content-center changes-action-btn"
-                                    >
-                                        <GitCommitIcon className="me-1" />
-                                        Commit Changes
-                                    </Button>
-
-                                    <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        onClick={() => setShowRevertModal(true)}
-                                        disabled={repo?.read_only}
-                                        className="d-flex align-items-center justify-content-center changes-action-btn"
-                                    >
-                                        <HistoryIcon className="me-1" />
-                                        Revert All Changes
-                                    </Button>
-                                </div>
-                            </Dropdown.Menu>
-                        </Dropdown>
+                        <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => {
+                                const commitBtn = document.querySelector('[data-commit-btn] button');
+                                if (commitBtn) {
+                                    commitBtn.click();
+                                }
+                            }}
+                            disabled={repo?.read_only}
+                            className="d-flex align-items-center me-2"
+                        >
+                            <GitCommitIcon className="me-1" />
+                            Commit
+                        </Button>
                     )}
                 </ActionGroup>
 
@@ -1431,32 +1374,6 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             setShowImport(false);
                         }}
                         show={showImport}
-                    />
-
-                    <ConfirmationModal
-                        show={showRevertModal}
-                        onHide={() => setShowRevertModal(false)}
-                        msg="Are you sure you want to revert all uncommitted changes?"
-                        onConfirm={() => {
-                            branches
-                                .reset(repo.id, reference.id, { type: 'reset' })
-                                .then(() => {
-                                    // Reset to normal view after revert
-                                    setShowChangesOnly(false);
-                                    const query = { path: path || '' };
-                                    if (reference) query.ref = reference.id;
-                                    // Don't include showChanges parameter to go back to normal mode
-                                    router.push({
-                                        pathname: `/repositories/:repoId/objects`,
-                                        query,
-                                        params: { repoId: repo.id },
-                                    });
-
-                                    refresh();
-                                })
-                                .catch((error) => setActionError(error));
-                            setShowRevertModal(false);
-                        }}
                     />
                 </ActionGroup>
             </ActionsBar>

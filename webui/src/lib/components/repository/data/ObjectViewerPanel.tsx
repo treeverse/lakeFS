@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import Spinner from 'react-bootstrap/Spinner';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import Table from 'react-bootstrap/Table';
 import {
     EyeIcon,
     InfoIcon,
@@ -19,6 +23,7 @@ import {
     DiffRemovedIcon,
     DiffModifiedIcon,
     ReplyIcon,
+    GraphIcon,
 } from '@primer/octicons-react';
 import { Box } from '@mui/material';
 
@@ -27,11 +32,223 @@ import { ObjectInfoPanel } from './ObjectInfoPanel';
 import { ObjectBlamePanel } from './ObjectBlamePanel';
 import { DirectoryInfoPanel } from './DirectoryInfoPanel';
 import { ObjectRenderer } from '../../../../pages/repositories/repository/fileRenderers';
-import { linkToPath, objects, branches } from '../../../api';
+import { linkToPath, objects, branches, refs } from '../../../api';
 import { URINavigator } from '../tree';
 import { ConfirmationModal } from '../../modals';
 import { copyTextToClipboard } from '../../controls';
 import { RefTypeBranch } from '../../../../constants';
+
+// Human-readable file size
+const humanSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const sign = bytes < 0 ? '-' : '';
+    const absBytes = Math.abs(bytes);
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(absBytes) / Math.log(1024));
+    const size = absBytes / Math.pow(1024, i);
+    return sign + size.toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+};
+
+// Summary stats interface
+interface ChangesSummary {
+    added: number;
+    addedBytes: number;
+    removed: number;
+    removedBytes: number;
+    changed: number;
+    changedBytes: number;
+}
+
+// Summarize Changes Modal Component
+interface SummarizeChangesModalProps {
+    show: boolean;
+    onHide: () => void;
+    repoId: string;
+    refId: string;
+    prefix: string;
+}
+
+const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onHide, repoId, refId, prefix }) => {
+    const [summary, setSummary] = useState<ChangesSummary>({
+        added: 0,
+        addedBytes: 0,
+        removed: 0,
+        removedBytes: 0,
+        changed: 0,
+        changedBytes: 0,
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [progress, setProgress] = useState(0);
+    const [totalProcessed, setTotalProcessed] = useState(0);
+
+    const fetchChanges = useCallback(async () => {
+        if (!show) return;
+
+        setLoading(true);
+        setError(null);
+        setSummary({ added: 0, addedBytes: 0, removed: 0, removedBytes: 0, changed: 0, changedBytes: 0 });
+        setProgress(0);
+        setTotalProcessed(0);
+
+        let after = '';
+        let hasMore = true;
+        const newSummary: ChangesSummary = {
+            added: 0,
+            addedBytes: 0,
+            removed: 0,
+            removedBytes: 0,
+            changed: 0,
+            changedBytes: 0,
+        };
+        let processed = 0;
+
+        try {
+            while (hasMore) {
+                const response = await refs.changes(repoId, refId, after, prefix, '', 1000);
+                const results = response.results || [];
+
+                for (const item of results) {
+                    // Skip prefix_changed entries (directory markers)
+                    if (item.type === 'prefix_changed') continue;
+
+                    const sizeBytes = item.size_bytes || 0;
+
+                    switch (item.type) {
+                        case 'added':
+                            newSummary.added++;
+                            newSummary.addedBytes += sizeBytes;
+                            break;
+                        case 'removed':
+                            newSummary.removed++;
+                            newSummary.removedBytes += sizeBytes;
+                            break;
+                        case 'changed':
+                            newSummary.changed++;
+                            newSummary.changedBytes += sizeBytes;
+                            break;
+                    }
+                    processed++;
+                }
+
+                // Update state after each page
+                setSummary({ ...newSummary });
+                setTotalProcessed(processed);
+
+                // Check for more pages
+                hasMore = response.pagination?.has_more || false;
+                after = response.pagination?.next_offset || '';
+
+                // Update progress (estimate based on whether there's more)
+                if (!hasMore) {
+                    setProgress(100);
+                } else {
+                    // Increment progress but cap at 95% until done
+                    setProgress((prev) => Math.min(prev + 10, 95));
+                }
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch changes');
+        } finally {
+            setLoading(false);
+            setProgress(100);
+        }
+    }, [show, repoId, refId, prefix]);
+
+    useEffect(() => {
+        if (show) {
+            fetchChanges();
+        }
+    }, [show, fetchChanges]);
+
+    const totalChanges = summary.added + summary.removed + summary.changed;
+    const netDeltaBytes = summary.addedBytes - summary.removedBytes;
+    const displayPrefix = prefix || '(root)';
+
+    return (
+        <Modal show={show} onHide={onHide} centered>
+            <Modal.Header closeButton>
+                <Modal.Title>
+                    <GraphIcon className="me-2" />
+                    Changes Summary
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p className="text-muted mb-3">
+                    Summarizing uncommitted changes in <code>{displayPrefix}</code>
+                </p>
+
+                {loading && (
+                    <div className="mb-3">
+                        <ProgressBar animated now={progress} label={`${Math.round(progress)}%`} />
+                        <small className="text-muted">Processing {totalProcessed} objects...</small>
+                    </div>
+                )}
+
+                {error && <Alert variant="danger">{error}</Alert>}
+
+                <Table bordered size="sm">
+                    <thead>
+                        <tr>
+                            <th>Change Type</th>
+                            <th className="text-end">Count</th>
+                            <th className="text-end">Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr className="table-success">
+                            <td>
+                                <DiffAddedIcon className="me-2" />
+                                Added
+                            </td>
+                            <td className="text-end">{summary.added.toLocaleString()}</td>
+                            <td className="text-end">{humanSize(summary.addedBytes)}</td>
+                        </tr>
+                        <tr className="table-danger">
+                            <td>
+                                <DiffRemovedIcon className="me-2" />
+                                Removed
+                            </td>
+                            <td className="text-end">{summary.removed.toLocaleString()}</td>
+                            <td className="text-end">{humanSize(summary.removedBytes)}</td>
+                        </tr>
+                        <tr className="table-warning">
+                            <td>
+                                <DiffModifiedIcon className="me-2" />
+                                Modified
+                            </td>
+                            <td className="text-end">{summary.changed.toLocaleString()}</td>
+                            <td className="text-end">{humanSize(summary.changedBytes)}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr className="fw-bold">
+                            <td>Total</td>
+                            <td className="text-end">{totalChanges.toLocaleString()}</td>
+                            <td className="text-end">
+                                <span className={netDeltaBytes >= 0 ? 'text-success' : 'text-danger'}>
+                                    {netDeltaBytes >= 0 ? '+' : ''}
+                                    {humanSize(netDeltaBytes)}
+                                </span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </Table>
+
+                {!loading && totalChanges === 0 && (
+                    <Alert variant="info" className="mb-0">
+                        No uncommitted changes found in this location.
+                    </Alert>
+                )}
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide}>
+                    Close
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
 
 // Helper to get diff badge
 const DiffBadge: React.FC<{ diffType: DiffType }> = ({ diffType }) => {
@@ -81,7 +298,7 @@ const getFileExtension = (path: string): string => {
 const README_FILE_NAME = 'README.md';
 
 export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, reference, config }) => {
-    const { selectedObject, activeTab, setActiveTab, selectObject, refresh } = useDataBrowser();
+    const { selectedObject, activeTab, setActiveTab, selectObject, refresh, hasUncommittedChanges } = useDataBrowser();
     const [hasReadme, setHasReadme] = useState(false);
     const [readmePath, setReadmePath] = useState<string | null>(null);
     const [hasRootReadme, setHasRootReadme] = useState(false);
@@ -90,19 +307,40 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
     const [showRevertConfirmation, setShowRevertConfirmation] = useState(false);
     const [revertError, setRevertError] = useState<Error | null>(null);
     const [isReverting, setIsReverting] = useState(false);
+    const [showRootRevertConfirmation, setShowRootRevertConfirmation] = useState(false);
+    const [showSummarizeModal, setShowSummarizeModal] = useState(false);
+    const [summarizePrefix, setSummarizePrefix] = useState('');
 
     const isDirectory = selectedObject?.path_type === 'common_prefix';
-    const canDelete = !repo.read_only && reference.type === RefTypeBranch && selectedObject && !isDirectory;
+    const isBranch = reference.type === RefTypeBranch;
+    const canDelete = !repo.read_only && isBranch && selectedObject && !isDirectory;
     const canCopyPresignedUrl = config.pre_sign_support && selectedObject && !isDirectory;
-    // Can revert if it's a branch and the object has uncommitted changes (added or changed, not removed)
-    const canRevert =
-        !repo.read_only &&
-        reference.type === RefTypeBranch &&
-        selectedObject &&
-        (selectedObject.diff_type === 'added' || selectedObject.diff_type === 'changed');
-    // Can restore if it's a branch and the object is deleted (diff_type === 'removed')
-    const canRestore =
-        !repo.read_only && reference.type === RefTypeBranch && selectedObject && selectedObject.diff_type === 'removed';
+    // Can undo addition if it's an uncommitted added file
+    const canUndoAddition = !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'added';
+    // Can undo change if it's an uncommitted modified file
+    const canUndoChange = !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'changed';
+    // Can undo deletion if it's a deleted file (restore it)
+    const canUndoDeletion = !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'removed';
+    // Can revert changes in a directory (always available for directories on branches)
+    const canRevertDir = !repo.read_only && isBranch && isDirectory;
+    // Can revert all at root level if there are uncommitted changes
+    const canRevertAll = !repo.read_only && isBranch && hasUncommittedChanges;
+
+    // Get the appropriate revert label based on diff type
+    const getRevertLabel = () => {
+        if (!selectedObject) return 'Revert Changes';
+        if (isDirectory) return 'Revert Changes Here';
+        switch (selectedObject.diff_type) {
+            case 'added':
+                return 'Undo Addition';
+            case 'changed':
+                return 'Undo Change';
+            case 'removed':
+                return 'Undo Deletion';
+            default:
+                return 'Revert Changes';
+        }
+    };
 
     const handleDelete = async () => {
         if (!selectedObject) return;
@@ -119,9 +357,22 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
 
     const handleCopyUri = async (e: React.MouseEvent) => {
         e.preventDefault();
-        if (!selectedObject) return;
-        const uri = `lakefs://${repo.id}/${reference.id}/${selectedObject.path}`;
+        const path = selectedObject?.path || '';
+        const uri = `lakefs://${repo.id}/${reference.id}/${path}`;
         await copyTextToClipboard(uri);
+    };
+
+    const handleRevertAll = async () => {
+        setShowRootRevertConfirmation(false);
+        setIsReverting(true);
+        try {
+            await branches.reset(repo.id, reference.id, { type: 'reset' });
+            refresh();
+        } catch (err) {
+            setRevertError(err instanceof Error ? err : new Error('Failed to revert all changes'));
+        } finally {
+            setIsReverting(false);
+        }
     };
 
     const handleCopyPresignedUrl = async (e: React.MouseEvent) => {
@@ -152,6 +403,57 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
             setIsReverting(false);
         }
     };
+
+    // Handle hotlinking to files - fetch full metadata if missing
+    // This handles the case where a deleted file is accessed via direct URL
+    useEffect(() => {
+        if (!selectedObject || isDirectory) return;
+        // Skip if we already have full metadata (diff_type is set or we have size_bytes)
+        if (selectedObject.diff_type !== undefined || selectedObject.size_bytes !== undefined) return;
+        // Only check on branches where files can be deleted
+        if (reference.type !== RefTypeBranch) return;
+
+        const fetchObjectData = async () => {
+            try {
+                // Try to fetch the object stat from current branch
+                const stat = await objects.getStat(repo.id, reference.id, selectedObject.path);
+                // Object exists - update with full metadata
+                selectObject({
+                    path: selectedObject.path,
+                    path_type: 'object',
+                    physical_address: stat.physical_address,
+                    size_bytes: stat.size_bytes,
+                    checksum: stat.checksum,
+                    mtime: stat.mtime,
+                    content_type: stat.content_type,
+                    metadata: stat.metadata,
+                });
+            } catch {
+                // Object doesn't exist on current branch - try committed version
+                // If it exists there, it's a deleted file
+                try {
+                    const committedRef = `${reference.id}@`;
+                    const stat = await objects.getStat(repo.id, committedRef, selectedObject.path);
+                    // File exists in committed version but not in working tree - it's deleted
+                    selectObject({
+                        path: selectedObject.path,
+                        path_type: 'object',
+                        physical_address: stat.physical_address,
+                        size_bytes: stat.size_bytes,
+                        checksum: stat.checksum,
+                        mtime: stat.mtime,
+                        content_type: stat.content_type,
+                        metadata: stat.metadata,
+                        diff_type: 'removed',
+                    });
+                } catch {
+                    // File doesn't exist in either location - truly doesn't exist
+                }
+            }
+        };
+
+        fetchObjectData();
+    }, [selectedObject, isDirectory, repo.id, reference.id, reference.type, selectObject]);
 
     // Check for README.md at root when nothing is selected
     useEffect(() => {
@@ -215,19 +517,79 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
 
     const presign = config.pre_sign_support_ui || false;
 
+    // Root directory context menu component
+    const RootContextMenu = () => (
+        <Dropdown align="end">
+            <Dropdown.Toggle variant="outline-secondary" size="sm" className="object-actions-toggle">
+                <KebabHorizontalIcon />
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+                <Dropdown.Item onClick={handleCopyUri}>
+                    <PasteIcon className="me-2" /> Copy URI
+                </Dropdown.Item>
+                {canRevertAll && (
+                    <>
+                        <Dropdown.Divider />
+                        <Dropdown.Item
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setSummarizePrefix('');
+                                setShowSummarizeModal(true);
+                            }}
+                        >
+                            <GraphIcon className="me-2" /> Summarize Changes
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setShowRootRevertConfirmation(true);
+                            }}
+                            className="text-warning"
+                        >
+                            <HistoryIcon className="me-2" /> Revert All Changes
+                        </Dropdown.Item>
+                    </>
+                )}
+            </Dropdown.Menu>
+        </Dropdown>
+    );
+
     if (!selectedObject) {
         // Show root README.md if it exists
         if (hasRootReadme) {
             return (
                 <div className="object-viewer-panel">
+                    {isReverting && (
+                        <div className="object-viewer-loading-overlay">
+                            <Spinner animation="border" size="sm" className="me-2" />
+                            Reverting all changes...
+                        </div>
+                    )}
+                    {revertError && (
+                        <Alert variant="danger" dismissible onClose={() => setRevertError(null)} className="m-2">
+                            {revertError.message}
+                        </Alert>
+                    )}
+                    <ConfirmationModal
+                        show={showRootRevertConfirmation}
+                        onHide={() => setShowRootRevertConfirmation(false)}
+                        msg="Are you sure you want to revert all uncommitted changes?"
+                        onConfirm={handleRevertAll}
+                    />
+                    <SummarizeChangesModal
+                        show={showSummarizeModal}
+                        onHide={() => setShowSummarizeModal(false)}
+                        repoId={repo.id}
+                        refId={reference.id}
+                        prefix={summarizePrefix}
+                    />
                     <div className="object-viewer-header">
-                        <URINavigator
-                            path=""
-                            repo={repo}
-                            reference={reference}
-                            isPathToFile={false}
-                            hasCopyButton={true}
-                        />
+                        <div className="object-viewer-header-nav">
+                            <URINavigator path="" repo={repo} reference={reference} isPathToFile={false} />
+                        </div>
+                        <div className="object-viewer-header-actions">
+                            <RootContextMenu />
+                        </div>
                     </div>
                     <div className="object-viewer-content">
                         <Box sx={{ mx: 1 }}>
@@ -248,9 +610,41 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
 
         return (
             <div className="object-viewer-panel">
+                {isReverting && (
+                    <div className="object-viewer-loading-overlay">
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Reverting all changes...
+                    </div>
+                )}
+                {revertError && (
+                    <Alert variant="danger" dismissible onClose={() => setRevertError(null)} className="m-2">
+                        {revertError.message}
+                    </Alert>
+                )}
+                <ConfirmationModal
+                    show={showRootRevertConfirmation}
+                    onHide={() => setShowRootRevertConfirmation(false)}
+                    msg="Are you sure you want to revert all uncommitted changes?"
+                    onConfirm={handleRevertAll}
+                />
+                <SummarizeChangesModal
+                    show={showSummarizeModal}
+                    onHide={() => setShowSummarizeModal(false)}
+                    repoId={repo.id}
+                    refId={reference.id}
+                    prefix={summarizePrefix}
+                />
+                <div className="object-viewer-header">
+                    <div className="object-viewer-header-nav">
+                        <URINavigator path="" repo={repo} reference={reference} isPathToFile={false} />
+                    </div>
+                    <div className="object-viewer-header-actions">
+                        <RootContextMenu />
+                    </div>
+                </div>
                 <div className="object-viewer-empty">
                     <FileIcon size={48} className="mb-3 opacity-25" />
-                    <p>Select an object or directory to view its details</p>
+                    <p>No objects in this directory</p>
                 </div>
             </div>
         );
@@ -295,6 +689,13 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                     msg={revertDirMsg}
                     onConfirm={handleRevert}
                 />
+                <SummarizeChangesModal
+                    show={showSummarizeModal}
+                    onHide={() => setShowSummarizeModal(false)}
+                    repoId={repo.id}
+                    refId={reference.id}
+                    prefix={summarizePrefix}
+                />
                 <div className={dirHeaderClass}>
                     <div className="object-viewer-header-nav">
                         <URINavigator
@@ -314,9 +715,18 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                                 <Dropdown.Item onClick={handleCopyUri}>
                                     <PasteIcon className="me-2" /> Copy URI
                                 </Dropdown.Item>
-                                {canRevert && (
+                                {canRevertDir && (
                                     <>
                                         <Dropdown.Divider />
+                                        <Dropdown.Item
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setSummarizePrefix(selectedObject.path);
+                                                setShowSummarizeModal(true);
+                                            }}
+                                        >
+                                            <GraphIcon className="me-2" /> Summarize Changes
+                                        </Dropdown.Item>
                                         <Dropdown.Item
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -324,7 +734,7 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                                             }}
                                             className="text-warning"
                                         >
-                                            <ReplyIcon className="me-2" /> Revert Changes
+                                            <ReplyIcon className="me-2" /> {getRevertLabel()}
                                         </Dropdown.Item>
                                     </>
                                 )}
@@ -394,9 +804,11 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
     const getRevertConfirmMsg = () => {
         switch (selectedObject.diff_type) {
             case 'added':
-                return `Are you sure you want to revert "${selectedObject.path}"? This will remove the file.`;
+                return `Are you sure you want to undo the addition of "${selectedObject.path}"? This will remove the file.`;
             case 'removed':
-                return `Are you sure you want to restore "${selectedObject.path}"? This will restore the file to its last committed state.`;
+                return `Are you sure you want to undo the deletion of "${selectedObject.path}"? This will restore the file to its last committed state.`;
+            case 'changed':
+                return `Are you sure you want to undo changes to "${selectedObject.path}"? This will restore the file to its last committed state.`;
             default:
                 return `Are you sure you want to revert "${selectedObject.path}" to its last committed state?`;
         }
@@ -469,7 +881,7 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                                     </Dropdown.Item>
                                 </>
                             )}
-                            {canRevert && (
+                            {canUndoAddition && (
                                 <>
                                     <Dropdown.Divider />
                                     <Dropdown.Item
@@ -479,11 +891,25 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                                         }}
                                         className="text-warning"
                                     >
-                                        <ReplyIcon className="me-2" /> Revert Changes
+                                        <ReplyIcon className="me-2" /> {getRevertLabel()}
                                     </Dropdown.Item>
                                 </>
                             )}
-                            {canRestore && (
+                            {canUndoChange && (
+                                <>
+                                    <Dropdown.Divider />
+                                    <Dropdown.Item
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setShowRevertConfirmation(true);
+                                        }}
+                                        className="text-warning"
+                                    >
+                                        <ReplyIcon className="me-2" /> {getRevertLabel()}
+                                    </Dropdown.Item>
+                                </>
+                            )}
+                            {canUndoDeletion && (
                                 <>
                                     <Dropdown.Divider />
                                     <Dropdown.Item
@@ -493,7 +919,7 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                                         }}
                                         className="text-success"
                                     >
-                                        <ReplyIcon className="me-2" /> Restore Object
+                                        <ReplyIcon className="me-2" /> {getRevertLabel()}
                                     </Dropdown.Item>
                                 </>
                             )}

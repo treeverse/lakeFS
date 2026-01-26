@@ -213,7 +213,7 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
         });
     }, []);
 
-    // Update expanded paths when initialPath changes
+    // Update expanded paths and selected object when initialPath changes
     useEffect(() => {
         if (initialPath) {
             const parentPaths = getParentPaths(initialPath);
@@ -222,6 +222,15 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
                 parentPaths.forEach((p) => next.add(p));
                 return next;
             });
+            // Update selected object to match new path
+            const isDirectory = initialPath.endsWith('/');
+            setSelectedObject({
+                path: initialPath,
+                path_type: isDirectory ? 'common_prefix' : 'object',
+            });
+        } else {
+            // Clear selection when navigating to root
+            setSelectedObject(null);
         }
     }, [initialPath]);
 
