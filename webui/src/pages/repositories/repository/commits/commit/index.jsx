@@ -1,94 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import Alert from 'react-bootstrap/Alert';
 import { AlertError, Loading } from '../../../../../lib/components/controls';
 import { useRefs } from '../../../../../lib/hooks/repo';
-import { useAPI, useAPIWithPagination } from '../../../../../lib/hooks/api';
-import { commits, refs } from '../../../../../lib/api';
-import { ChangesTreeContainer, defaultGetMoreChanges } from '../../../../../lib/components/repository/changes';
+import { useAPI } from '../../../../../lib/hooks/api';
+import { commits } from '../../../../../lib/api';
 import { useRouter } from '../../../../../lib/hooks/router';
-import { URINavigator } from '../../../../../lib/components/repository/tree';
-import { appendMoreResults } from '../../objects';
 import { CommitInfoCard } from '../../../../../lib/components/repository/commits';
+import { DataBrowserLayout } from '../../../../../lib/components/repository/data';
 import { useOutletContext } from 'react-router-dom';
+import { useConfigContext } from '../../../../../lib/hooks/configProvider';
 
-const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
-    const [actionError, setActionError] = useState(null);
-    const [afterUpdated, setAfterUpdated] = useState(''); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({
-        prefix: prefix,
-        results: [],
-        pagination: {},
-    }); // current retrieved children of the item
-
-    const delimiter = '/';
-
-    const { error, loading, nextPage } = useAPIWithPagination(async () => {
-        if (!repo) return;
-        if (!commit.parents || commit.parents.length === 0) return { results: [], pagination: { has_more: false } };
-
-        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, () =>
-            refs.diff(repo.id, commit.parents[0], commit.id, afterUpdated, prefix, delimiter),
-        );
-        // TODO: Review and remove this eslint-disable once dependencies are validated
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [repo.id, commit.id, afterUpdated, prefix]);
-
-    const results = resultsState.results;
-
-    if (error) return <AlertError error={error} />;
-    if (loading) return <Loading />;
-
-    const actionErrorDisplay = actionError ? (
-        <AlertError error={actionError} onDismiss={() => setActionError(null)} />
-    ) : (
-        <></>
-    );
-
-    const commitSha = commit.id.substring(0, 12);
-    const uriNavigator = (
-        <URINavigator
-            path={prefix}
-            reference={commit}
-            repo={repo}
-            relativeTo={`${commitSha}`}
-            pathURLBuilder={(params, query) => {
-                return {
-                    pathname: '/repositories/:repoId/commits/:commitId',
-                    params: { repoId: repo.id, commitId: commit.id },
-                    query: { prefix: query.path },
-                };
-            }}
-        />
-    );
-    const changesTreeMessage = (
-        <p>
-            Showing changes for commit <strong>{commitSha}</strong>
-        </p>
-    );
-    return (
-        <>
-            {actionErrorDisplay}
-            <ChangesTreeContainer
-                results={results}
-                delimiter={delimiter}
-                uriNavigator={uriNavigator}
-                leftDiffRefID={commit.parents[0]}
-                rightDiffRefID={commit.id}
-                repo={repo}
-                reference={commit}
-                prefix={prefix}
-                getMore={defaultGetMoreChanges(repo, commit.parents[0], commit.id, delimiter)}
-                loading={loading}
-                nextPage={nextPage}
-                setAfterUpdated={setAfterUpdated}
-                onNavigate={onNavigate}
-                changesTreeMessage={changesTreeMessage}
-            />
-        </>
-    );
-};
-
-const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
-    // pull commit itself
+const CommitView = ({ repo, commitId, prefix, onNavigate, config }) => {
     const { response, loading, error } = useAPI(async () => {
         return await commits.get(repo.id, commitId);
     }, [repo.id, commitId]);
@@ -97,17 +19,45 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
     if (error) return <AlertError error={error} />;
 
     const commit = response;
+    const hasParent = commit.parents && commit.parents.length > 0;
+
+    // For commits without a parent (initial commit), we can't show a diff
+    if (!hasParent) {
+        return (
+            <div className="mb-5 mt-3">
+                <CommitInfoCard repo={repo} commit={commit} />
+                <div className="mt-4">
+                    <Alert variant="info">This is the initial commit. No changes to display.</Alert>
+                </div>
+            </div>
+        );
+    }
+
+    // Create a reference object for the commit
+    const commitRef = {
+        id: commit.id,
+        type: 'commit',
+    };
+
+    // Diff mode configuration: compare parent to this commit
+    const diffModeConfig = {
+        enabled: true,
+        leftRef: commit.parents[0],
+        rightRef: commit.id,
+    };
 
     return (
         <div className="mb-5 mt-3">
             <CommitInfoCard repo={repo} commit={commit} />
-            <div className="mt-4">
-                <ChangeList
-                    prefix={prefix}
-                    view={view ? view : ''}
+            <div className="mt-4 commit-diff-browser">
+                <DataBrowserLayout
                     repo={repo}
-                    commit={commit}
+                    reference={commitRef}
+                    config={config || {}}
+                    initialPath={prefix}
                     onNavigate={onNavigate}
+                    diffMode={diffModeConfig}
+                    showOnlyChanges={true}
                 />
             </div>
         </div>
@@ -117,27 +67,24 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
 const CommitContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
+    const { config, loading: configLoading, error: configError } = useConfigContext();
     const { prefix } = router.query;
     const { commitId } = router.params;
 
-    if (loading) return <Loading />;
+    if (loading || configLoading) return <Loading />;
     if (error) return <AlertError error={error} />;
+    if (configError) return <AlertError error={configError} />;
+
+    const handleNavigate = (path) => {
+        router.push({
+            pathname: '/repositories/:repoId/commits/:commitId',
+            params: { repoId: repo.id, commitId: commitId },
+            query: { prefix: path },
+        });
+    };
 
     return (
-        <CommitView
-            repo={repo}
-            prefix={prefix ? prefix : ''}
-            commitId={commitId}
-            onNavigate={(entry) => {
-                return {
-                    pathname: '/repositories/:repoId/commits/:commitId',
-                    params: { repoId: repo.id, commitId: commitId },
-                    query: {
-                        prefix: entry.path,
-                    },
-                };
-            }}
-        />
+        <CommitView repo={repo} prefix={prefix || ''} commitId={commitId} onNavigate={handleNavigate} config={config} />
     );
 };
 

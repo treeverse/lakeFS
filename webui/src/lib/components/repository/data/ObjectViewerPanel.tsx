@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -7,7 +7,6 @@ import Badge from 'react-bootstrap/Badge';
 import Spinner from 'react-bootstrap/Spinner';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
-import ProgressBar from 'react-bootstrap/ProgressBar';
 import Table from 'react-bootstrap/Table';
 import {
     EyeIcon,
@@ -66,9 +65,20 @@ interface SummarizeChangesModalProps {
     repoId: string;
     refId: string;
     prefix: string;
+    leftRef?: string; // For diff mode: base ref
+    rightRef?: string; // For diff mode: target ref
 }
 
-const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onHide, repoId, refId, prefix }) => {
+const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({
+    show,
+    onHide,
+    repoId,
+    refId,
+    prefix,
+    leftRef,
+    rightRef,
+}) => {
+    const isDiffMode = !!leftRef && !!rightRef;
     const [summary, setSummary] = useState<ChangesSummary>({
         added: 0,
         addedBytes: 0,
@@ -79,16 +89,35 @@ const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onH
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [progress, setProgress] = useState(0);
     const [totalProcessed, setTotalProcessed] = useState(0);
+
+    // Ref to track if the operation should be cancelled
+    const cancelledRef = useRef(false);
+
+    // Reset all state to initial values
+    const resetState = useCallback(() => {
+        setSummary({ added: 0, addedBytes: 0, removed: 0, removedBytes: 0, changed: 0, changedBytes: 0 });
+        setLoading(false);
+        setError(null);
+        setTotalProcessed(0);
+    }, []);
+
+    // Handle modal close - cancel operation and reset state
+    const handleClose = useCallback(() => {
+        cancelledRef.current = true;
+        resetState();
+        onHide();
+    }, [onHide, resetState]);
 
     const fetchChanges = useCallback(async () => {
         if (!show) return;
 
+        // Reset cancelled flag when starting a new operation
+        cancelledRef.current = false;
+
         setLoading(true);
         setError(null);
         setSummary({ added: 0, addedBytes: 0, removed: 0, removedBytes: 0, changed: 0, changedBytes: 0 });
-        setProgress(0);
         setTotalProcessed(0);
 
         let after = '';
@@ -105,7 +134,21 @@ const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onH
 
         try {
             while (hasMore) {
-                const response = await refs.changes(repoId, refId, after, prefix, '', 1000);
+                // Check if cancelled before making the next API call
+                if (cancelledRef.current) {
+                    return;
+                }
+
+                // Use refs.diff in diff mode, refs.changes otherwise
+                const response = isDiffMode
+                    ? await refs.diff(repoId, leftRef!, rightRef!, after, prefix, '', 1000)
+                    : await refs.changes(repoId, refId, after, prefix, '', 1000);
+
+                // Check again after the API call returns
+                if (cancelledRef.current) {
+                    return;
+                }
+
                 const results = response.results || [];
 
                 for (const item of results) {
@@ -131,29 +174,28 @@ const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onH
                     processed++;
                 }
 
-                // Update state after each page
-                setSummary({ ...newSummary });
-                setTotalProcessed(processed);
+                // Update state after each page (only if not cancelled)
+                if (!cancelledRef.current) {
+                    setSummary({ ...newSummary });
+                    setTotalProcessed(processed);
+                }
 
                 // Check for more pages
                 hasMore = response.pagination?.has_more || false;
                 after = response.pagination?.next_offset || '';
-
-                // Update progress (estimate based on whether there's more)
-                if (!hasMore) {
-                    setProgress(100);
-                } else {
-                    // Increment progress but cap at 95% until done
-                    setProgress((prev) => Math.min(prev + 10, 95));
-                }
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch changes');
+            // Only set error if not cancelled
+            if (!cancelledRef.current) {
+                setError(err instanceof Error ? err.message : 'Failed to fetch changes');
+            }
         } finally {
-            setLoading(false);
-            setProgress(100);
+            // Only update loading state if not cancelled
+            if (!cancelledRef.current) {
+                setLoading(false);
+            }
         }
-    }, [show, repoId, refId, prefix]);
+    }, [show, repoId, refId, prefix, isDiffMode, leftRef, rightRef]);
 
     useEffect(() => {
         if (show) {
@@ -161,12 +203,19 @@ const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onH
         }
     }, [show, fetchChanges]);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            cancelledRef.current = true;
+        };
+    }, []);
+
     const totalChanges = summary.added + summary.removed + summary.changed;
     const netDeltaBytes = summary.addedBytes - summary.removedBytes;
     const displayPrefix = prefix || '(root)';
 
     return (
-        <Modal show={show} onHide={onHide} centered>
+        <Modal show={show} onHide={handleClose} centered>
             <Modal.Header closeButton>
                 <Modal.Title>
                     <GraphIcon className="me-2" />
@@ -175,13 +224,15 @@ const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onH
             </Modal.Header>
             <Modal.Body>
                 <p className="text-muted mb-3">
-                    Summarizing uncommitted changes in <code>{displayPrefix}</code>
+                    Summarizing changes in <code>{displayPrefix}</code>
                 </p>
 
                 {loading && (
-                    <div className="mb-3">
-                        <ProgressBar animated now={progress} label={`${Math.round(progress)}%`} />
-                        <small className="text-muted">Processing {totalProcessed} objects...</small>
+                    <div className="mb-3 d-flex align-items-center">
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        <span className="text-muted">
+                            Processing... ({totalProcessed.toLocaleString()} objects found)
+                        </span>
                     </div>
                 )}
 
@@ -237,13 +288,13 @@ const SummarizeChangesModal: React.FC<SummarizeChangesModalProps> = ({ show, onH
 
                 {!loading && totalChanges === 0 && (
                     <Alert variant="info" className="mb-0">
-                        No uncommitted changes found in this location.
+                        No changes found in this location.
                     </Alert>
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>
-                    Close
+                <Button variant="secondary" onClick={handleClose}>
+                    {loading ? 'Cancel' : 'Close'}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -298,7 +349,8 @@ const getFileExtension = (path: string): string => {
 const README_FILE_NAME = 'README.md';
 
 export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, reference, config }) => {
-    const { selectedObject, activeTab, setActiveTab, selectObject, refresh, hasUncommittedChanges } = useDataBrowser();
+    const { selectedObject, activeTab, setActiveTab, selectObject, refresh, hasUncommittedChanges, diffMode } =
+        useDataBrowser();
     const [hasReadme, setHasReadme] = useState(false);
     const [readmePath, setReadmePath] = useState<string | null>(null);
     const [hasRootReadme, setHasRootReadme] = useState(false);
@@ -313,18 +365,26 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
 
     const isDirectory = selectedObject?.path_type === 'common_prefix';
     const isBranch = reference.type === RefTypeBranch;
-    const canDelete = !repo.read_only && isBranch && selectedObject && !isDirectory;
+    const isInDiffMode = diffMode?.enabled || false;
+
+    // In diff mode, disable all write operations
+    const canDelete = !isInDiffMode && !repo.read_only && isBranch && selectedObject && !isDirectory;
     const canCopyPresignedUrl = config.pre_sign_support && selectedObject && !isDirectory;
-    // Can undo addition if it's an uncommitted added file
-    const canUndoAddition = !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'added';
-    // Can undo change if it's an uncommitted modified file
-    const canUndoChange = !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'changed';
-    // Can undo deletion if it's a deleted file (restore it)
-    const canUndoDeletion = !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'removed';
-    // Can revert changes in a directory (always available for directories on branches)
-    const canRevertDir = !repo.read_only && isBranch && isDirectory;
-    // Can revert all at root level if there are uncommitted changes
-    const canRevertAll = !repo.read_only && isBranch && hasUncommittedChanges;
+    // Can undo addition if it's an uncommitted added file (not in diff mode)
+    const canUndoAddition =
+        !isInDiffMode && !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'added';
+    // Can undo change if it's an uncommitted modified file (not in diff mode)
+    const canUndoChange =
+        !isInDiffMode && !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'changed';
+    // Can undo deletion if it's a deleted file (restore it) (not in diff mode)
+    const canUndoDeletion =
+        !isInDiffMode && !repo.read_only && isBranch && selectedObject && selectedObject.diff_type === 'removed';
+    // Can revert changes in a directory (not in diff mode)
+    const canRevertDir = !isInDiffMode && !repo.read_only && isBranch && isDirectory;
+    // Can revert all at root level if there are uncommitted changes (not in diff mode)
+    const canRevertAll = !isInDiffMode && !repo.read_only && isBranch && hasUncommittedChanges;
+    // Can summarize changes - always available in diff mode for directories, or when there are uncommitted changes
+    const canSummarizeChanges = isInDiffMode || hasUncommittedChanges;
 
     // Get the appropriate revert label based on diff type
     const getRevertLabel = () => {
@@ -455,9 +515,9 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
         fetchObjectData();
     }, [selectedObject, isDirectory, repo.id, reference.id, reference.type, selectObject]);
 
-    // Check for README.md at root when nothing is selected
+    // Check for README.md at root when nothing is selected (skip in diff mode)
     useEffect(() => {
-        if (selectedObject) {
+        if (selectedObject || isInDiffMode) {
             setHasRootReadme(false);
             return;
         }
@@ -472,11 +532,11 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
         };
 
         checkRootReadme();
-    }, [selectedObject, repo.id, reference.id]);
+    }, [selectedObject, repo.id, reference.id, isInDiffMode]);
 
-    // Check for README.md in directory
+    // Check for README.md in directory (skip in diff mode)
     useEffect(() => {
-        if (!selectedObject || !isDirectory) {
+        if (!selectedObject || !isDirectory || isInDiffMode) {
             setHasReadme(false);
             setReadmePath(null);
             return;
@@ -498,7 +558,7 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
         };
 
         checkReadme();
-    }, [selectedObject, isDirectory, repo.id, reference.id]);
+    }, [selectedObject, isDirectory, repo.id, reference.id, isInDiffMode]);
 
     // Set default tab based on selection type
     useEffect(() => {
@@ -527,7 +587,7 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                 <Dropdown.Item onClick={handleCopyUri}>
                     <PasteIcon className="me-2" /> Copy URI
                 </Dropdown.Item>
-                {canRevertAll && (
+                {canSummarizeChanges && (
                     <>
                         <Dropdown.Divider />
                         <Dropdown.Item
@@ -539,22 +599,45 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                         >
                             <GraphIcon className="me-2" /> Summarize Changes
                         </Dropdown.Item>
-                        <Dropdown.Item
-                            onClick={(e) => {
-                                e.preventDefault();
-                                setShowRootRevertConfirmation(true);
-                            }}
-                            className="text-warning"
-                        >
-                            <HistoryIcon className="me-2" /> Revert All Changes
-                        </Dropdown.Item>
                     </>
+                )}
+                {canRevertAll && (
+                    <Dropdown.Item
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setShowRootRevertConfirmation(true);
+                        }}
+                        className="text-warning"
+                    >
+                        <HistoryIcon className="me-2" /> Revert All Changes
+                    </Dropdown.Item>
                 )}
             </Dropdown.Menu>
         </Dropdown>
     );
 
     if (!selectedObject) {
+        // In diff mode, show a friendly empty state prompting user to select an item
+        if (isInDiffMode) {
+            return (
+                <div className="object-viewer-panel">
+                    <SummarizeChangesModal
+                        show={showSummarizeModal}
+                        onHide={() => setShowSummarizeModal(false)}
+                        repoId={repo.id}
+                        refId={reference.id}
+                        prefix={summarizePrefix}
+                        leftRef={diffMode?.leftRef}
+                        rightRef={diffMode?.rightRef}
+                    />
+                    <div className="object-viewer-empty">
+                        <FileIcon size={48} className="mb-3 opacity-25" />
+                        <p className="text-muted">Select an object or folder from the tree to view details</p>
+                    </div>
+                </div>
+            );
+        }
+
         // Show root README.md if it exists
         if (hasRootReadme) {
             return (
@@ -582,6 +665,8 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                         repoId={repo.id}
                         refId={reference.id}
                         prefix={summarizePrefix}
+                        leftRef={diffMode?.leftRef}
+                        rightRef={diffMode?.rightRef}
                     />
                     <div className="object-viewer-header">
                         <div className="object-viewer-header-nav">
@@ -633,6 +718,8 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                     repoId={repo.id}
                     refId={reference.id}
                     prefix={summarizePrefix}
+                    leftRef={diffMode?.leftRef}
+                    rightRef={diffMode?.rightRef}
                 />
                 <div className="object-viewer-header">
                     <div className="object-viewer-header-nav">
@@ -651,7 +738,6 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
     }
 
     const fileExtension = getFileExtension(selectedObject.path);
-    const objectUrl = linkToPath(repo.id, reference.id, selectedObject.path, presign);
 
     const handleTabSelect = (key: string | null) => {
         if (key) {
@@ -695,6 +781,8 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                     repoId={repo.id}
                     refId={reference.id}
                     prefix={summarizePrefix}
+                    leftRef={diffMode?.leftRef}
+                    rightRef={diffMode?.rightRef}
                 />
                 <div className={dirHeaderClass}>
                     <div className="object-viewer-header-nav">
@@ -715,7 +803,7 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                                 <Dropdown.Item onClick={handleCopyUri}>
                                     <PasteIcon className="me-2" /> Copy URI
                                 </Dropdown.Item>
-                                {canRevertDir && (
+                                {(isInDiffMode || canRevertDir) && (
                                     <>
                                         <Dropdown.Divider />
                                         <Dropdown.Item
@@ -727,16 +815,18 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                                         >
                                             <GraphIcon className="me-2" /> Summarize Changes
                                         </Dropdown.Item>
-                                        <Dropdown.Item
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setShowRevertConfirmation(true);
-                                            }}
-                                            className="text-warning"
-                                        >
-                                            <ReplyIcon className="me-2" /> {getRevertLabel()}
-                                        </Dropdown.Item>
                                     </>
+                                )}
+                                {canRevertDir && (
+                                    <Dropdown.Item
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setShowRevertConfirmation(true);
+                                        }}
+                                        className="text-warning"
+                                    >
+                                        <ReplyIcon className="me-2" /> {getRevertLabel()}
+                                    </Dropdown.Item>
                                 )}
                             </Dropdown.Menu>
                         </Dropdown>
@@ -776,21 +866,28 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                         }
                     >
                         <div className="object-viewer-content">
-                            <DirectoryInfoPanel entry={selectedObject} repo={repo} reference={reference} />
+                            <DirectoryInfoPanel
+                                entry={selectedObject}
+                                repo={repo}
+                                reference={reference}
+                                hideStats={isInDiffMode}
+                            />
                         </div>
                     </Tab>
-                    <Tab
-                        eventKey="blame"
-                        title={
-                            <>
-                                <HistoryIcon className="me-1" /> Blame
-                            </>
-                        }
-                    >
-                        <div className="object-viewer-content">
-                            <ObjectBlamePanel entry={selectedObject} repo={repo} reference={reference} />
-                        </div>
-                    </Tab>
+                    {!isInDiffMode && (
+                        <Tab
+                            eventKey="blame"
+                            title={
+                                <>
+                                    <HistoryIcon className="me-1" /> Blame
+                                </>
+                            }
+                        >
+                            <div className="object-viewer-content">
+                                <ObjectBlamePanel entry={selectedObject} repo={repo} reference={reference} />
+                            </div>
+                        </Tab>
+                    )}
                 </Tabs>
             </div>
         );
@@ -815,11 +912,17 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
     };
     const revertConfirmMsg = getRevertConfirmMsg();
 
-    // For deleted files, use the committed reference (branch@) to fetch content
-    const effectiveRefId = isDeleted ? `${reference.id}@` : reference.id;
-    const effectiveObjectUrl = isDeleted
-        ? linkToPath(repo.id, effectiveRefId, selectedObject.path, presign)
-        : objectUrl;
+    // Determine the effective reference for fetching content
+    // In diff mode: use leftRef for deleted files, rightRef for added/changed files
+    // In normal mode: use branch@ for deleted files, reference.id for others
+    const effectiveRefId = isDeleted
+        ? diffMode?.enabled
+            ? diffMode.leftRef
+            : `${reference.id}@`
+        : diffMode?.enabled
+          ? diffMode.rightRef
+          : reference.id;
+    const effectiveObjectUrl = linkToPath(repo.id, effectiveRefId, selectedObject.path, presign);
 
     // Get header class based on diff type
     const headerClass = selectedObject.diff_type
@@ -974,18 +1077,20 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                         <ObjectInfoPanel entry={selectedObject} />
                     </div>
                 </Tab>
-                <Tab
-                    eventKey="blame"
-                    title={
-                        <>
-                            <HistoryIcon className="me-1" /> Blame
-                        </>
-                    }
-                >
-                    <div className="object-viewer-content">
-                        <ObjectBlamePanel entry={selectedObject} repo={repo} reference={reference} />
-                    </div>
-                </Tab>
+                {!isInDiffMode && (
+                    <Tab
+                        eventKey="blame"
+                        title={
+                            <>
+                                <HistoryIcon className="me-1" /> Blame
+                            </>
+                        }
+                    >
+                        <div className="object-viewer-content">
+                            <ObjectBlamePanel entry={selectedObject} repo={repo} reference={reference} />
+                        </div>
+                    </Tab>
+                )}
             </Tabs>
         </div>
     );

@@ -12,6 +12,7 @@ interface DirectoryInfoPanelProps {
     entry: ObjectEntry;
     repo: { id: string };
     reference: { id: string; type: string };
+    hideStats?: boolean;
 }
 
 const humanSize = (bytes: number): string => {
@@ -25,7 +26,12 @@ interface Statistics {
     totalBytes: number;
 }
 
-export const DirectoryInfoPanel: React.FC<DirectoryInfoPanelProps> = ({ entry, repo, reference }) => {
+export const DirectoryInfoPanel: React.FC<DirectoryInfoPanelProps> = ({
+    entry,
+    repo,
+    reference,
+    hideStats = false,
+}) => {
     const [statistics, setStatistics] = useState<Statistics | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
@@ -162,12 +168,14 @@ export const DirectoryInfoPanel: React.FC<DirectoryInfoPanelProps> = ({ entry, r
                         </td>
                         <td>Directory</td>
                     </tr>
-                    <tr>
-                        <td className="info-label">
-                            <strong>Statistics</strong>
-                        </td>
-                        <td>{renderStatisticsValue()}</td>
-                    </tr>
+                    {!hideStats && (
+                        <tr>
+                            <td className="info-label">
+                                <strong>Statistics</strong>
+                            </td>
+                            <td>{renderStatisticsValue()}</td>
+                        </tr>
+                    )}
                 </tbody>
             </Table>
         </div>

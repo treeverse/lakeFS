@@ -29,6 +29,13 @@ export const normalizeDiffType = (type: DiffType): DiffType => {
 
 export type ActiveTab = 'preview' | 'info' | 'blame' | 'statistics';
 
+// Diff mode configuration for comparing two refs (e.g., commit diff)
+export interface DiffModeConfig {
+    enabled: boolean;
+    leftRef: string; // Base ref (e.g., parent commit)
+    rightRef: string; // Target ref (e.g., current commit)
+}
+
 interface DataBrowserContextType {
     expandedPaths: Set<string>;
     selectedObject: ObjectEntry | null;
@@ -37,6 +44,7 @@ interface DataBrowserContextType {
     diffResults: Map<string, DiffType>;
     hasUncommittedChanges: boolean;
     showOnlyChanges: boolean;
+    diffMode: DiffModeConfig | null;
     toggleExpand: (path: string) => void;
     expandPath: (path: string) => void;
     selectObject: (object: ObjectEntry | null) => void;
@@ -47,9 +55,16 @@ interface DataBrowserContextType {
     setDiffResults: (entries: DiffEntry[]) => void;
     setHasUncommittedChanges: (value: boolean) => void;
     setShowOnlyChanges: (value: boolean) => void;
+    reportDiffStatus: (status: DiffStatus) => void;
 }
 
 const DataBrowserContext = createContext<DataBrowserContextType | undefined>(undefined);
+
+export interface DiffStatus {
+    isEmpty: boolean;
+    loading: boolean;
+    error: Error | null;
+}
 
 interface DataBrowserProviderProps {
     children: ReactNode;
@@ -59,6 +74,8 @@ interface DataBrowserProviderProps {
     showOnlyChanges?: boolean;
     onShowOnlyChangesChange?: (value: boolean) => void;
     onHasUncommittedChangesChange?: (value: boolean) => void;
+    diffMode?: DiffModeConfig;
+    onDiffStatusChange?: (status: DiffStatus) => void;
 }
 
 // Helper to get all parent paths for a given path
@@ -90,6 +107,8 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
     showOnlyChanges: externalShowOnlyChanges,
     onShowOnlyChangesChange,
     onHasUncommittedChangesChange,
+    diffMode = null,
+    onDiffStatusChange,
 }) => {
     const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => {
         const paths = new Set<string>();
@@ -213,6 +232,15 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
         });
     }, []);
 
+    const reportDiffStatus = useCallback(
+        (status: DiffStatus) => {
+            if (onDiffStatusChange) {
+                onDiffStatusChange(status);
+            }
+        },
+        [onDiffStatusChange],
+    );
+
     // Update expanded paths and selected object when initialPath changes
     useEffect(() => {
         if (initialPath) {
@@ -251,6 +279,7 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
                 diffResults,
                 hasUncommittedChanges: hasUncommittedChangesState,
                 showOnlyChanges,
+                diffMode,
                 toggleExpand,
                 expandPath,
                 selectObject,
@@ -261,6 +290,7 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
                 setDiffResults,
                 setHasUncommittedChanges,
                 setShowOnlyChanges,
+                reportDiffStatus,
             }}
         >
             {children}

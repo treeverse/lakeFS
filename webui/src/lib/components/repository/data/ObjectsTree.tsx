@@ -72,8 +72,16 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     targetPath,
     diffMap,
 }) => {
-    const { isExpanded, toggleExpand, selectObject, selectedObject, refreshToken, showOnlyChanges, setDiffResults } =
-        useDataBrowser();
+    const {
+        isExpanded,
+        toggleExpand,
+        selectObject,
+        selectedObject,
+        refreshToken,
+        showOnlyChanges,
+        setDiffResults,
+        diffMode,
+    } = useDataBrowser();
     const [children, setChildren] = useState<ObjectEntryWithDiff[]>([]);
     const [deletedChildren, setDeletedChildren] = useState<ObjectEntryWithDiff[]>([]);
     const [loading, setLoading] = useState(false);
@@ -107,7 +115,63 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             }
 
             try {
-                // Fetch listing and diff in parallel (diff only for branches)
+                // In diff mode, use refs.diff to fetch changes between two refs
+                if (diffMode?.enabled) {
+                    const diffResponse = await refs.diff(
+                        repo.id,
+                        diffMode.leftRef,
+                        diffMode.rightRef,
+                        after,
+                        entry.path,
+                        '/',
+                    );
+
+                    const newDiffMap = new Map<string, DiffType>();
+                    const entries: ObjectEntryWithDiff[] = [];
+
+                    if (diffResponse?.results) {
+                        diffResponse.results.forEach((item: DiffEntry & { size_bytes?: number }) => {
+                            const normalizedType = normalizeDiffType(item.type);
+                            newDiffMap.set(item.path, normalizedType);
+                            entries.push({
+                                path: item.path,
+                                path_type: item.path_type,
+                                size_bytes: item.size_bytes,
+                                diff_type: normalizedType,
+                            });
+                        });
+                        setDiffResults(diffResponse.results);
+                    }
+
+                    if (!append) {
+                        setLocalDiffMap(newDiffMap);
+                        setDeletedChildren([]);
+                        setChildren(entries);
+                        if (markTruncated) {
+                            setTruncatedBefore(true);
+                        }
+                    } else {
+                        setLocalDiffMap((prev) => {
+                            const merged = new Map(prev);
+                            newDiffMap.forEach((v, k) => merged.set(k, v));
+                            return merged;
+                        });
+                        setChildren((prev) => [...prev, ...entries]);
+                    }
+
+                    const apiHasMore = diffResponse.pagination?.has_more || false;
+                    const effectiveHasMore = append && entries.length === 0 ? false : apiHasMore;
+
+                    setPagination({
+                        hasMore: effectiveHasMore,
+                        nextOffset: diffResponse.pagination?.next_offset || '',
+                    });
+                    setLoaded(true);
+
+                    return entries;
+                }
+
+                // Normal mode: Fetch listing and diff in parallel (diff only for branches)
                 const isBranch = reference.type === RefTypeBranch;
                 const [listResponse, diffResponse] = await Promise.all([
                     objects.list(repo.id, reference.id, entry.path, after, config.pre_sign_support_ui),
@@ -193,7 +257,16 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 setLoadingMore(false);
             }
         },
-        [repo.id, reference.id, reference.type, entry.path, config.pre_sign_support_ui, isDirectory, setDiffResults],
+        [
+            repo.id,
+            reference.id,
+            reference.type,
+            entry.path,
+            config.pre_sign_support_ui,
+            isDirectory,
+            setDiffResults,
+            diffMode,
+        ],
     );
 
     useEffect(() => {
@@ -267,10 +340,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 diff_type: diffType,
             });
         } else if (diffType === 'removed') {
-            // For deleted files, fetch stat from committed version (branch@)
+            // For deleted files, fetch stat from the base reference
+            // In diff mode, use leftRef; in normal mode, use branch@
+            const baseRef = diffMode?.enabled ? diffMode.leftRef : reference.id + '@';
             try {
-                const committedRef = reference.id + '@';
-                const stat = await objects.getStat(repo.id, committedRef, entry.path);
+                const stat = await objects.getStat(repo.id, baseRef, entry.path);
                 selectObject({
                     path: entry.path,
                     path_type: 'object',
@@ -291,8 +365,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 });
             }
         } else {
+            // For added/changed files, fetch stat from the target reference
+            // In diff mode, use rightRef; in normal mode, use reference.id
+            const targetRef = diffMode?.enabled ? diffMode.rightRef : reference.id;
             try {
-                const stat = await objects.getStat(repo.id, reference.id, entry.path);
+                const stat = await objects.getStat(repo.id, targetRef, entry.path);
                 selectObject({
                     path: entry.path,
                     path_type: 'object',
@@ -504,7 +581,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const ObjectsTree: React.FC<ObjectsTreeProps> = ({ repo, reference, config, onNavigate, initialPath }) => {
-    const { refreshToken, showOnlyChanges, setHasUncommittedChanges, setDiffResults } = useDataBrowser();
+    const { refreshToken, showOnlyChanges, setHasUncommittedChanges, setDiffResults, diffMode, reportDiffStatus } =
+        useDataBrowser();
     const [rootEntries, setRootEntries] = useState<ObjectEntryWithDiff[]>([]);
     const [deletedRootEntries, setDeletedRootEntries] = useState<ObjectEntryWithDiff[]>([]);
     const [loading, setLoading] = useState(true);
@@ -520,8 +598,14 @@ export const ObjectsTree: React.FC<ObjectsTreeProps> = ({ repo, reference, confi
     // Get the first segment of the initial path for targeting
     const targetFirstSegment = initialPath ? initialPath.split('/')[0] : null;
 
-    // Check for uncommitted changes on mount (for branches only)
+    // Check for uncommitted changes on mount (for branches only, not in diff mode)
     useEffect(() => {
+        // In diff mode, we're viewing a committed diff, not uncommitted changes
+        if (diffMode?.enabled) {
+            setHasUncommittedChanges(false);
+            return;
+        }
+
         if (!isBranch) {
             setHasUncommittedChanges(false);
             return;
@@ -537,7 +621,7 @@ export const ObjectsTree: React.FC<ObjectsTreeProps> = ({ repo, reference, confi
         };
 
         checkUncommittedChanges();
-    }, [repo.id, reference.id, isBranch, refreshToken, setHasUncommittedChanges]);
+    }, [repo.id, reference.id, isBranch, refreshToken, setHasUncommittedChanges, diffMode]);
 
     const loadRoot = useCallback(
         async (after: string = '', append: boolean = false, markTruncated: boolean = false) => {
@@ -548,8 +632,66 @@ export const ObjectsTree: React.FC<ObjectsTreeProps> = ({ repo, reference, confi
                 setError(null);
             }
 
+            // Report loading status in diff mode (only on initial load, not pagination)
+            if (diffMode?.enabled && !append) {
+                reportDiffStatus({ isEmpty: false, loading: true, error: null });
+            }
+
             try {
-                // Fetch listing and diff in parallel (diff only for branches)
+                // In diff mode, use refs.diff to fetch changes between two refs
+                if (diffMode?.enabled) {
+                    const diffResponse = await refs.diff(repo.id, diffMode.leftRef, diffMode.rightRef, after, '', '/');
+
+                    const newDiffMap = new Map<string, DiffType>();
+                    const entries: ObjectEntryWithDiff[] = [];
+
+                    if (diffResponse?.results) {
+                        diffResponse.results.forEach((item: DiffEntry & { size_bytes?: number }) => {
+                            const normalizedType = normalizeDiffType(item.type);
+                            newDiffMap.set(item.path, normalizedType);
+                            entries.push({
+                                path: item.path,
+                                path_type: item.path_type,
+                                size_bytes: item.size_bytes,
+                                diff_type: normalizedType,
+                            });
+                        });
+                        setDiffResults(diffResponse.results);
+                    }
+
+                    if (!append) {
+                        setRootDiffMap(newDiffMap);
+                        setDeletedRootEntries([]);
+                        setRootEntries(entries);
+                        if (markTruncated) {
+                            setTruncatedBefore(true);
+                        }
+                    } else {
+                        setRootDiffMap((prev) => {
+                            const merged = new Map(prev);
+                            newDiffMap.forEach((v, k) => merged.set(k, v));
+                            return merged;
+                        });
+                        setRootEntries((prev) => [...prev, ...entries]);
+                    }
+
+                    const apiHasMore = diffResponse.pagination?.has_more || false;
+                    const effectiveHasMore = append && entries.length === 0 ? false : apiHasMore;
+
+                    setPagination({
+                        hasMore: effectiveHasMore,
+                        nextOffset: diffResponse.pagination?.next_offset || '',
+                    });
+
+                    // Report success status (only on initial load)
+                    if (!append) {
+                        reportDiffStatus({ isEmpty: entries.length === 0, loading: false, error: null });
+                    }
+
+                    return entries;
+                }
+
+                // Normal mode: Fetch listing and diff in parallel (diff only for branches)
                 const [listResponse, diffResponse] = await Promise.all([
                     objects.list(repo.id, reference.id, '', after, config.pre_sign_support_ui),
                     isBranch ? refs.changes(repo.id, reference.id, '', '', '/') : Promise.resolve(null),
@@ -625,14 +767,19 @@ export const ObjectsTree: React.FC<ObjectsTreeProps> = ({ repo, reference, confi
 
                 return entries;
             } catch (err) {
-                setError(err instanceof Error ? err : new Error('Failed to load objects'));
+                const error = err instanceof Error ? err : new Error('Failed to load objects');
+                setError(error);
+                // Report error status in diff mode
+                if (diffMode?.enabled) {
+                    reportDiffStatus({ isEmpty: false, loading: false, error });
+                }
                 return [];
             } finally {
                 setLoading(false);
                 setLoadingMore(false);
             }
         },
-        [repo.id, reference.id, config.pre_sign_support_ui, isBranch, setDiffResults],
+        [repo.id, reference.id, config.pre_sign_support_ui, isBranch, setDiffResults, diffMode, reportDiffStatus],
     );
 
     useEffect(() => {

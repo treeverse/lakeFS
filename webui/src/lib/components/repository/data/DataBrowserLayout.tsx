@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
-import { DataBrowserProvider } from './DataBrowserContext';
+import { DataBrowserProvider, DiffModeConfig, DiffStatus } from './DataBrowserContext';
 import { DataAccordion } from './DataAccordion';
 import { ObjectViewerPanel } from './ObjectViewerPanel';
 
@@ -17,6 +17,8 @@ interface DataBrowserLayoutProps {
     showOnlyChanges?: boolean;
     onShowOnlyChangesChange?: (value: boolean) => void;
     onHasUncommittedChangesChange?: (value: boolean) => void;
+    diffMode?: DiffModeConfig;
+    onDiffStatusChange?: (status: DiffStatus) => void;
 }
 
 const MIN_LEFT_WIDTH = 200;
@@ -34,6 +36,8 @@ export const DataBrowserLayout: React.FC<DataBrowserLayoutProps> = ({
     showOnlyChanges,
     onShowOnlyChangesChange,
     onHasUncommittedChangesChange,
+    diffMode,
+    onDiffStatusChange,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [leftWidth, setLeftWidth] = useState<number>(() => {
@@ -101,6 +105,8 @@ export const DataBrowserLayout: React.FC<DataBrowserLayoutProps> = ({
             showOnlyChanges={showOnlyChanges}
             onShowOnlyChangesChange={onShowOnlyChangesChange}
             onHasUncommittedChangesChange={onHasUncommittedChangesChange}
+            diffMode={diffMode}
+            onDiffStatusChange={onDiffStatusChange}
         >
             <div className="data-browser-layout" ref={containerRef}>
                 <div className="data-browser-panels">

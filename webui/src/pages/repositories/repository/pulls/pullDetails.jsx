@@ -1,8 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
+import Alert from 'react-bootstrap/Alert';
 import { GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from '@primer/octicons-react';
 import dayjs from 'dayjs';
 import Markdown from 'react-markdown';
@@ -14,19 +15,36 @@ import { RepoError } from '../error';
 import { pulls as pullsAPI } from '../../../../lib/api';
 import { useAPI } from '../../../../lib/hooks/api';
 import { Link } from '../../../../lib/components/nav';
-import CompareBranches from '../../../../lib/components/repository/compareBranches';
+import { DataBrowserLayout } from '../../../../lib/components/repository/data';
 import { PullStatus, RefTypeBranch } from '../../../../constants';
-import { DiffContext, WithDiffContext } from '../../../../lib/hooks/diffContext';
-import Alert from 'react-bootstrap/Alert';
+import { useConfigContext } from '../../../../lib/hooks/configProvider';
 
-const PullDetailsContent = ({ repo, pull }) => {
-    let [loading, setLoading] = useState(false);
-    let [error, setError] = useState(null);
+const PullDetailsContent = ({ repo, pull, config }) => {
+    const router = useRouter();
+    const { prefix } = router.query;
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [isEmptyDiff, setIsEmptyDiff] = useState(false);
+    const [diffError, setDiffError] = useState(null);
 
-    const {
-        state: { results: diffResults, loading: diffLoading, error: diffError },
-    } = useContext(DiffContext);
-    const isEmptyDiff = !diffLoading && !diffError && !!diffResults && diffResults.length === 0;
+    const handleNavigate = useCallback(
+        (path) => {
+            router.push({
+                pathname: '/repositories/:repoId/pulls/:pullId',
+                params: { repoId: repo.id, pullId: pull.id },
+                query: { prefix: path },
+            });
+        },
+        [router, repo.id, pull.id],
+    );
+
+    const handleDiffStatusChange = useCallback((status) => {
+        if (!status.loading) {
+            setIsEmptyDiff(status.isEmpty);
+            setDiffError(status.error);
+        }
+    }, []);
+
     const formattedDiffError = getFormattedDiffError(diffError);
 
     const mergePullRequest = async () => {
@@ -34,8 +52,8 @@ const PullDetailsContent = ({ repo, pull }) => {
         setLoading(true);
         try {
             await pullsAPI.merge(repo.id, pull.id);
-        } catch (error) {
-            setError(error.message);
+        } catch (err) {
+            setError(err.message);
             setLoading(false);
             return;
         }
@@ -48,14 +66,21 @@ const PullDetailsContent = ({ repo, pull }) => {
         try {
             await pullsAPI.update(repo.id, pull.id, { status });
             window.location.reload(); // TODO (gilo): replace with a more elegant solution
-        } catch (error) {
-            setError(`Failed to change pull-request status to ${status}: ${error.message}`);
+        } catch (err) {
+            setError(`Failed to change pull-request status to ${status}: ${err.message}`);
             setLoading(false);
         }
     };
 
     const isPullOpen = () => pull.status === PullStatus.open;
     const headerDate = isPullOpen() ? dayjs(pull.creation_date) : dayjs(pull.closed_date);
+
+    // Create diff mode configuration for comparing destination (base) to source (changes)
+    const diffModeConfig = {
+        enabled: true,
+        leftRef: pull.destination_branch,
+        rightRef: pull.source_branch,
+    };
 
     return (
         <div className="pull-details w-75 mb-5">
@@ -65,8 +90,8 @@ const PullDetailsContent = ({ repo, pull }) => {
             </div>
             <Card className="mt-4">
                 <Card.Header>
-                    <span className="text-capitalize">{pull.status}</span> {''}
-                    on {headerDate.format('MMM D, YYYY')} ({headerDate.fromNow()}).
+                    <span className="text-capitalize">{pull.status}</span> on {headerDate.format('MMM D, YYYY')} (
+                    {headerDate.fromNow()}).
                 </Card.Header>
                 <Card.Body className="description">
                     <Markdown>{pull.description}</Markdown>
@@ -95,17 +120,23 @@ const PullDetailsContent = ({ repo, pull }) => {
                     </>
                 )}
             </div>
-            {isPullOpen() &&
-                !formattedDiffError && ( // in case of diff error, we show an error message above instead.
-                    <>
-                        <hr className="mt-5 mb-4" />
-                        <CompareBranches
+            {isPullOpen() && !formattedDiffError && (
+                <>
+                    <hr className="mt-5 mb-4" />
+                    <div className="pull-diff-browser">
+                        <DataBrowserLayout
                             repo={repo}
                             reference={{ id: pull.destination_branch, type: RefTypeBranch }}
-                            compareReference={{ id: pull.source_branch, type: RefTypeBranch }}
+                            config={config || {}}
+                            initialPath={prefix}
+                            onNavigate={handleNavigate}
+                            diffMode={diffModeConfig}
+                            showOnlyChanges={true}
+                            onDiffStatusChange={handleDiffStatusChange}
                         />
-                    </>
-                )}
+                    </div>
+                </>
+            )}
             {pull.status === PullStatus.merged && pull.merged_commit_id && (
                 <MergedCommitDetails repo={repo} pull={pull} />
             )}
@@ -119,8 +150,8 @@ const PullInfo = ({ repo, pull }) => (
         <StatusBadge status={pull.status} />
         <span className="ms-2">
             <strong>{pull.author}</strong> {`${getActionText(pull.status)} `}
-            <BranchLink repo={repo} branch={pull.source_branch} /> {''}
-            into <BranchLink repo={repo} branch={pull.destination_branch} />.
+            <BranchLink repo={repo} branch={pull.source_branch} /> into{' '}
+            <BranchLink repo={repo} branch={pull.destination_branch} />.
         </span>
     </>
 );
@@ -193,7 +224,7 @@ const MergePullButton = ({ onClick, isEmptyDiff, loading }) => (
 // message example: "<author> merged commit <commit-id> into master 2 days ago."
 const MergedCommitDetails = ({ repo, pull }) => (
     <div>
-        <strong>{pull.author}</strong> merged {''}
+        <strong>{pull.author}</strong> merged{' '}
         <Link
             href={{
                 pathname: '/repositories/:repoId/commits/:commitId',
@@ -202,9 +233,7 @@ const MergedCommitDetails = ({ repo, pull }) => (
         >
             commit {pull.merged_commit_id.substring(0, 7)}
         </Link>{' '}
-        {''}
-        into <BranchLink repo={repo} branch={pull.destination_branch} /> {''}
-        {dayjs(pull.closed_date).fromNow()}.
+        into <BranchLink repo={repo} branch={pull.destination_branch} /> {dayjs(pull.closed_date).fromNow()}.
     </div>
 );
 
@@ -235,7 +264,7 @@ function getFormattedDiffError(error) {
     return error?.message;
 }
 
-const PullDetails = ({ repo, pullId }) => {
+const PullDetails = ({ repo, pullId, config }) => {
     const {
         response: pull,
         error,
@@ -247,28 +276,26 @@ const PullDetails = ({ repo, pullId }) => {
     if (loading) return <Loading />;
     if (error) return <AlertError error={error} />;
 
-    return <PullDetailsContent repo={repo} pull={pull} />;
+    return <PullDetailsContent repo={repo} pull={pull} config={config} />;
 };
 
 const PullDetailsContainer = () => {
     const router = useRouter();
     const { repo, loading, error } = useRefs();
+    const { config, loading: configLoading, error: configError } = useConfigContext();
     const { pullId } = router.params;
 
-    if (loading) return <Loading />;
+    if (loading || configLoading) return <Loading />;
     if (error) return <RepoError error={error} />;
+    if (configError) return <RepoError error={configError} />;
 
-    return <PullDetails repo={repo} pullId={pullId} />;
+    return <PullDetails repo={repo} pullId={pullId} config={config} />;
 };
 
 const RepositoryPullDetailsPage = () => {
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage('pulls'), [setActivePage]);
-    return (
-        <WithDiffContext>
-            <PullDetailsContainer />
-        </WithDiffContext>
-    );
+    return <PullDetailsContainer />;
 };
 
 export default RepositoryPullDetailsPage;

@@ -1,5 +1,5 @@
 export { DataBrowserProvider, useDataBrowser } from './DataBrowserContext';
-export type { ObjectEntry, ActiveTab } from './DataBrowserContext';
+export type { ObjectEntry, ActiveTab, DiffModeConfig, DiffStatus } from './DataBrowserContext';
 export { DataAccordion } from './DataAccordion';
 export { ObjectsTree } from './ObjectsTree';
 export { ObjectInfoPanel } from './ObjectInfoPanel';
