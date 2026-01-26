@@ -164,14 +164,9 @@ gen-code: gen-api ## Run the generator for inline commands
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen build-binaries ## Download dependencies and build the default binary
 
-build-binaries: ensure-generated-code
+build-binaries:
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
-
-# Ensure generated code exists - generate if missing (files are normally committed)
-.PHONY: ensure-generated-code
-ensure-generated-code:
-	@test -f pkg/api/apigen/lakefs.gen.go || $(MAKE) gen-api gen-code
 
 lint: ## Lint code
 	$(GOCMD) tool golangci-lint run ./... $(GOLANGCI_LINT_FLAGS)
@@ -276,7 +271,8 @@ checks-validator: lint validate-proto validate-ui-format \
 	validate-client-python validate-client-java validate-client-rust validate-reference \
 	validate-mockgen \
 	validate-permissions-gen \
-	validate-api validate-wrapper validate-wrapgen-testcode
+	validate-api \
+	validate-wrapper validate-wrapgen-testcode
 
 python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
