@@ -1199,6 +1199,10 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     let searchPrefix = parts.join('/');
     searchPrefix = searchPrefix && searchPrefix + '/';
 
+    // For uploads, use the directory prefix (not the full file path)
+    // If path ends with '/', it's already a directory; otherwise extract the parent directory
+    const uploadPath = path && !path.endsWith('/') ? searchPrefix : path;
+
     useEffect(() => {
         if (importDialog) {
             setShowImport(true);
@@ -1403,7 +1407,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
 
                         <UploadButton
                             config={storageConfig}
-                            path={path}
+                            path={uploadPath}
                             repo={repo}
                             reference={reference}
                             onDone={refresh}
@@ -1517,6 +1521,9 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             });
                         }}
                         refreshToken={refreshToken}
+                        showOnlyChanges={showChangesOnly}
+                        onShowOnlyChangesChange={setShowChangesOnly}
+                        onHasUncommittedChangesChange={setHasChanges}
                     />
                 </Box>
             )}

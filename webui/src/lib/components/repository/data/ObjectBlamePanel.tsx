@@ -4,7 +4,7 @@ import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 import Alert from 'react-bootstrap/Alert';
 import dayjs from 'dayjs';
-import { CopyIcon, CheckIcon } from '@primer/octicons-react';
+import { CopyIcon, CheckIcon, DiffAddedIcon, DiffRemovedIcon, DiffModifiedIcon } from '@primer/octicons-react';
 
 import { commits } from '../../../api';
 import { useAPI } from '../../../hooks/api';
@@ -17,16 +17,49 @@ interface ObjectBlamePanelProps {
     reference: { id: string; type: string };
 }
 
+const getUncommittedMessage = (diffType: string) => {
+    switch (diffType) {
+        case 'added':
+            return {
+                icon: <DiffAddedIcon size={16} className="me-2" />,
+                variant: 'success' as const,
+                title: 'Uncommitted Addition',
+                message: 'This file has been added but not yet committed.',
+            };
+        case 'removed':
+            return {
+                icon: <DiffRemovedIcon size={16} className="me-2" />,
+                variant: 'danger' as const,
+                title: 'Uncommitted Deletion',
+                message: 'This file has been deleted but the change is not yet committed.',
+            };
+        case 'changed':
+            return {
+                icon: <DiffModifiedIcon size={16} className="me-2" />,
+                variant: 'warning' as const,
+                title: 'Uncommitted Modification',
+                message: 'This file has been modified but the change is not yet committed.',
+            };
+        default:
+            return null;
+    }
+};
+
 export const ObjectBlamePanel: React.FC<ObjectBlamePanelProps> = ({ entry, repo, reference }) => {
     const [copiedId, setCopiedId] = useState(false);
 
+    const uncommittedInfo = entry.diff_type ? getUncommittedMessage(entry.diff_type) : null;
+    const hasUncommittedChanges = !!entry.diff_type;
+
+    // For any uncommitted change, don't fetch blame - just show the notice
     const {
         response: commit,
         error,
         loading,
     } = useAPI(async () => {
+        if (hasUncommittedChanges) return null;
         return await commits.blame(repo.id, reference.id, entry.path, entry.path_type);
-    }, [repo.id, reference.id, entry.path, entry.path_type]);
+    }, [repo.id, reference.id, entry.path, entry.path_type, hasUncommittedChanges]);
 
     const copyCommitId = useCallback(async () => {
         if (!commit) return;
@@ -38,6 +71,19 @@ export const ObjectBlamePanel: React.FC<ObjectBlamePanelProps> = ({ entry, repo,
             console.error('Failed to copy to clipboard:', err);
         }
     }, [commit]);
+
+    // For any uncommitted change, show just the notice
+    if (uncommittedInfo) {
+        return (
+            <div className="object-blame-panel p-3">
+                <Alert variant={uncommittedInfo.variant}>
+                    {uncommittedInfo.icon}
+                    <strong>{uncommittedInfo.title}</strong>
+                    <p className="mb-0 mt-1">{uncommittedInfo.message}</p>
+                </Alert>
+            </div>
+        );
+    }
 
     if (loading) {
         return (

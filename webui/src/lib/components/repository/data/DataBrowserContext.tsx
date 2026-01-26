@@ -9,7 +9,23 @@ export interface ObjectEntry {
     mtime?: number;
     content_type?: string;
     metadata?: Record<string, string>;
+    diff_type?: DiffType;
 }
+
+export type DiffType = 'added' | 'removed' | 'changed' | 'conflict' | 'prefix_changed' | undefined;
+
+// API response uses 'type' field
+export interface DiffEntry {
+    path: string;
+    path_type: 'object' | 'common_prefix';
+    type: DiffType;
+}
+
+// Normalize prefix_changed to changed for display purposes
+export const normalizeDiffType = (type: DiffType): DiffType => {
+    if (type === 'prefix_changed') return 'changed';
+    return type;
+};
 
 export type ActiveTab = 'preview' | 'info' | 'blame' | 'statistics';
 
@@ -18,12 +34,19 @@ interface DataBrowserContextType {
     selectedObject: ObjectEntry | null;
     activeTab: ActiveTab;
     refreshToken: number;
+    diffResults: Map<string, DiffType>;
+    hasUncommittedChanges: boolean;
+    showOnlyChanges: boolean;
     toggleExpand: (path: string) => void;
     expandPath: (path: string) => void;
     selectObject: (object: ObjectEntry | null) => void;
     setActiveTab: (tab: ActiveTab) => void;
     isExpanded: (path: string) => boolean;
     refresh: () => void;
+    getDiffType: (path: string) => DiffType;
+    setDiffResults: (entries: DiffEntry[]) => void;
+    setHasUncommittedChanges: (value: boolean) => void;
+    setShowOnlyChanges: (value: boolean) => void;
 }
 
 const DataBrowserContext = createContext<DataBrowserContextType | undefined>(undefined);
@@ -33,6 +56,9 @@ interface DataBrowserProviderProps {
     initialPath?: string;
     onPathChange?: (path: string) => void;
     externalRefreshToken?: boolean;
+    showOnlyChanges?: boolean;
+    onShowOnlyChangesChange?: (value: boolean) => void;
+    onHasUncommittedChangesChange?: (value: boolean) => void;
 }
 
 // Helper to get all parent paths for a given path
@@ -61,6 +87,9 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
     initialPath,
     onPathChange,
     externalRefreshToken,
+    showOnlyChanges: externalShowOnlyChanges,
+    onShowOnlyChangesChange,
+    onHasUncommittedChangesChange,
 }) => {
     const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => {
         const paths = new Set<string>();
@@ -86,6 +115,33 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('preview');
     const [refreshToken, setRefreshToken] = useState<number>(0);
+    const [diffResults, setDiffResultsState] = useState<Map<string, DiffType>>(new Map());
+    const [hasUncommittedChangesState, setHasUncommittedChangesState] = useState<boolean>(false);
+    const [showOnlyChangesState, setShowOnlyChangesState] = useState<boolean>(externalShowOnlyChanges ?? false);
+
+    // Use external showOnlyChanges if provided, otherwise use internal state
+    const showOnlyChanges = externalShowOnlyChanges ?? showOnlyChangesState;
+
+    const setShowOnlyChanges = useCallback(
+        (value: boolean) => {
+            if (onShowOnlyChangesChange) {
+                onShowOnlyChangesChange(value);
+            } else {
+                setShowOnlyChangesState(value);
+            }
+        },
+        [onShowOnlyChangesChange],
+    );
+
+    const setHasUncommittedChanges = useCallback(
+        (value: boolean) => {
+            setHasUncommittedChangesState(value);
+            if (onHasUncommittedChangesChange) {
+                onHasUncommittedChangesChange(value);
+            }
+        },
+        [onHasUncommittedChangesChange],
+    );
 
     const toggleExpand = useCallback((path: string) => {
         setExpandedPaths((prev) => {
@@ -133,6 +189,28 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
 
     const refresh = useCallback(() => {
         setRefreshToken((prev) => prev + 1);
+        setDiffResultsState(new Map());
+        setHasUncommittedChangesState(false);
+        if (onHasUncommittedChangesChange) {
+            onHasUncommittedChangesChange(false);
+        }
+    }, [onHasUncommittedChangesChange]);
+
+    const getDiffType = useCallback(
+        (path: string): DiffType => {
+            return diffResults.get(path);
+        },
+        [diffResults],
+    );
+
+    const setDiffResults = useCallback((entries: DiffEntry[]) => {
+        setDiffResultsState((prev) => {
+            const next = new Map(prev);
+            entries.forEach((entry) => {
+                next.set(entry.path, normalizeDiffType(entry.type));
+            });
+            return next;
+        });
     }, []);
 
     // Update expanded paths when initialPath changes
@@ -161,12 +239,19 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
                 selectedObject,
                 activeTab,
                 refreshToken,
+                diffResults,
+                hasUncommittedChanges: hasUncommittedChangesState,
+                showOnlyChanges,
                 toggleExpand,
                 expandPath,
                 selectObject,
                 setActiveTab,
                 isExpanded,
                 refresh,
+                getDiffType,
+                setDiffResults,
+                setHasUncommittedChanges,
+                setShowOnlyChanges,
             }}
         >
             {children}

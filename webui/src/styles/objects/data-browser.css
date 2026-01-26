@@ -183,6 +183,28 @@
     overflow-y: auto;
 }
 
+/* Objects Tree Toolbar */
+.objects-tree-toolbar {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 1px solid var(--border-light);
+    background-color: var(--background-alt);
+}
+
+.show-changes-toggle {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+.show-changes-toggle .form-check-label {
+    display: flex;
+    align-items: center;
+    color: var(--text-light);
+}
+
+.show-changes-toggle .form-check-input:checked + .form-check-label {
+    color: var(--text);
+}
+
 /* Objects Tree */
 .objects-tree {
     padding: var(--spacing-xs) 0;
@@ -292,6 +314,117 @@
     border-width: 2px;
 }
 
+/* Tree Node Diff Styling */
+.tree-node-content.diff-added {
+    background-color: var(--color-bg-added);
+}
+
+.tree-node-content.diff-added:hover {
+    background-color: var(--color-bg-added);
+    filter: brightness(0.95);
+}
+
+.tree-node-content.diff-removed {
+    background-color: var(--color-bg-removed);
+}
+
+.tree-node-content.diff-removed:hover {
+    background-color: var(--color-bg-removed);
+    filter: brightness(0.95);
+}
+
+.tree-node-content.diff-changed {
+    background-color: var(--color-bg-changed);
+}
+
+.tree-node-content.diff-changed:hover {
+    background-color: var(--color-bg-changed);
+    filter: brightness(0.95);
+}
+
+.tree-node-content.diff-added.selected {
+    background-color: #2da44e;
+    color: white;
+}
+
+.tree-node-content.diff-added.selected:hover {
+    background-color: #278c41;
+}
+
+.tree-node-content.diff-removed.selected {
+    background-color: #cf222e;
+    color: white;
+}
+
+.tree-node-content.diff-removed.selected:hover {
+    background-color: #b01c25;
+}
+
+.tree-node-content.diff-changed.selected {
+    background-color: #bf8700;
+    color: white;
+}
+
+.tree-node-content.diff-changed.selected:hover {
+    background-color: #a67600;
+}
+
+.tree-node-diff-icon {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding-left: var(--spacing-xs);
+}
+
+.diff-added-icon {
+    color: var(--color-fg-added);
+}
+
+.diff-removed-icon {
+    color: var(--color-fg-removed);
+}
+
+.diff-changed-icon {
+    color: var(--color-fg-changed);
+}
+
+.tree-node-content.selected .tree-node-diff-icon {
+    color: white;
+}
+
+.tree-node-content.diff-added.selected .tree-node-icon,
+.tree-node-content.diff-added.selected .tree-node-type-icon,
+.tree-node-content.diff-removed.selected .tree-node-icon,
+.tree-node-content.diff-removed.selected .tree-node-type-icon,
+.tree-node-content.diff-changed.selected .tree-node-icon,
+.tree-node-content.diff-changed.selected .tree-node-type-icon {
+    color: white;
+}
+
+/* Dark mode diff styling */
+[data-bs-theme='dark'] .tree-node-content.diff-added {
+    background-color: rgba(46, 160, 67, 0.2);
+}
+
+[data-bs-theme='dark'] .tree-node-content.diff-removed {
+    background-color: rgba(248, 81, 73, 0.2);
+}
+
+[data-bs-theme='dark'] .tree-node-content.diff-changed {
+    background-color: rgba(210, 153, 34, 0.2);
+}
+
+[data-bs-theme='dark'] .tree-node-content.diff-added.selected {
+    background-color: #2da44e;
+}
+
+[data-bs-theme='dark'] .tree-node-content.diff-removed.selected {
+    background-color: #cf222e;
+}
+
+[data-bs-theme='dark'] .tree-node-content.diff-changed.selected {
+    background-color: #bf8700;
+}
+
 /* Object Viewer Panel */
 .object-viewer-panel {
     height: 100%;
@@ -300,10 +433,79 @@
     background-color: var(--surface);
 }
 
+.object-viewer-loading-overlay {
+    padding: var(--spacing-md);
+    background-color: var(--background-alt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border-light);
+}
+
 .object-viewer-header {
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: 1px solid var(--border-light);
     background-color: var(--surface);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.object-viewer-header-nav {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.object-viewer-header-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
+}
+
+.object-viewer-header-actions .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+}
+
+/* Object actions dropdown */
+.object-actions-toggle {
+    border: none;
+    background: transparent;
+    color: var(--text-light);
+}
+
+.object-actions-toggle:hover,
+.object-actions-toggle:focus,
+.object-actions-toggle.show {
+    background-color: var(--border-light);
+    color: var(--text);
+    border: none;
+    box-shadow: none;
+}
+
+.object-actions-toggle::after {
+    display: none; /* Hide the default dropdown caret */
+}
+
+.object-viewer-header-actions .dropdown-menu {
+    min-width: 180px;
+}
+
+.object-viewer-header-actions .dropdown-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.object-viewer-header-actions .dropdown-item .octicon {
     flex-shrink: 0;
 }
 
@@ -548,4 +750,52 @@
 
 [data-bs-theme='dark'] .object-viewer-tabs .nav-link.active {
     border-bottom-color: var(--primary);
+}
+
+/* Object Viewer Header Diff Styling */
+.object-viewer-header.diff-added {
+    background-color: var(--color-bg-added);
+    border-bottom-color: var(--color-fg-added);
+}
+
+.object-viewer-header.diff-removed {
+    background-color: var(--color-bg-removed);
+    border-bottom-color: var(--color-fg-removed);
+}
+
+.object-viewer-header.diff-changed {
+    background-color: var(--color-bg-changed);
+    border-bottom-color: var(--color-fg-changed);
+}
+
+[data-bs-theme='dark'] .object-viewer-header.diff-added {
+    background-color: rgba(46, 160, 67, 0.2);
+}
+
+[data-bs-theme='dark'] .object-viewer-header.diff-removed {
+    background-color: rgba(248, 81, 73, 0.2);
+}
+
+[data-bs-theme='dark'] .object-viewer-header.diff-changed {
+    background-color: rgba(210, 153, 34, 0.2);
+}
+
+/* Diff Badge in Header */
+.object-viewer-header-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.diff-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.diff-badge .octicon {
+    margin-right: 4px;
 }

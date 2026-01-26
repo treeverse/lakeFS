@@ -14,6 +14,9 @@ interface DataBrowserLayoutProps {
     initialPath?: string;
     onNavigate?: (path: string) => void;
     refreshToken?: boolean;
+    showOnlyChanges?: boolean;
+    onShowOnlyChangesChange?: (value: boolean) => void;
+    onHasUncommittedChangesChange?: (value: boolean) => void;
 }
 
 const MIN_LEFT_WIDTH = 200;
@@ -28,6 +31,9 @@ export const DataBrowserLayout: React.FC<DataBrowserLayoutProps> = ({
     initialPath,
     onNavigate,
     refreshToken,
+    showOnlyChanges,
+    onShowOnlyChangesChange,
+    onHasUncommittedChangesChange,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [leftWidth, setLeftWidth] = useState<number>(() => {
@@ -92,6 +98,9 @@ export const DataBrowserLayout: React.FC<DataBrowserLayoutProps> = ({
             initialPath={initialPath}
             onPathChange={handlePathChange}
             externalRefreshToken={refreshToken}
+            showOnlyChanges={showOnlyChanges}
+            onShowOnlyChangesChange={onShowOnlyChangesChange}
+            onHasUncommittedChangesChange={onHasUncommittedChangesChange}
         >
             <div className="data-browser-layout" ref={containerRef}>
                 <div className="data-browser-panels">
