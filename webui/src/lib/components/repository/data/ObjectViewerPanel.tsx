@@ -17,12 +17,14 @@ import {
     LinkIcon,
     DownloadIcon,
     PasteIcon,
-    KebabHorizontalIcon,
     DiffAddedIcon,
     DiffRemovedIcon,
     DiffModifiedIcon,
     ReplyIcon,
     GraphIcon,
+    UploadIcon,
+    GearIcon,
+    SyncIcon,
 } from '@primer/octicons-react';
 import { Box } from '@mui/material';
 
@@ -349,8 +351,16 @@ const getFileExtension = (path: string): string => {
 const README_FILE_NAME = 'README.md';
 
 export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, reference, config }) => {
-    const { selectedObject, activeTab, setActiveTab, selectObject, refresh, hasUncommittedChanges, diffMode } =
-        useDataBrowser();
+    const {
+        selectedObject,
+        activeTab,
+        setActiveTab,
+        selectObject,
+        refresh,
+        hasUncommittedChanges,
+        diffMode,
+        onUpload,
+    } = useDataBrowser();
     const [hasReadme, setHasReadme] = useState(false);
     const [readmePath, setReadmePath] = useState<string | null>(null);
     const [hasRootReadme, setHasRootReadme] = useState(false);
@@ -385,6 +395,8 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
     const canRevertAll = !isInDiffMode && !repo.read_only && isBranch && hasUncommittedChanges;
     // Can summarize changes - always available in diff mode for directories, or when there are uncommitted changes
     const canSummarizeChanges = isInDiffMode || hasUncommittedChanges;
+    // Can upload if not in diff mode, not read-only, and on a branch
+    const canUpload = !isInDiffMode && !repo.read_only && isBranch && !!onUpload;
 
     // Get the appropriate revert label based on diff type
     const getRevertLabel = () => {
@@ -580,10 +592,29 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
     // Root directory context menu component
     const RootContextMenu = () => (
         <Dropdown align="end">
-            <Dropdown.Toggle variant="outline-secondary" size="sm" className="object-actions-toggle">
-                <KebabHorizontalIcon />
+            <Dropdown.Toggle variant="secondary" size="sm" className="object-actions-btn">
+                <GearIcon className="me-1" /> Actions
             </Dropdown.Toggle>
             <Dropdown.Menu>
+                <Dropdown.Item onClick={refresh}>
+                    <SyncIcon className="me-2" /> Refresh
+                </Dropdown.Item>
+                <Dropdown.Divider />
+                {canUpload && (
+                    <>
+                        <Dropdown.Item
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onUpload?.();
+                            }}
+                        >
+                            <span className="fw-bold">
+                                <UploadIcon className="me-2" /> Upload Objects
+                            </span>
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                    </>
+                )}
                 <Dropdown.Item onClick={handleCopyUri}>
                     <PasteIcon className="me-2" /> Copy URI
                 </Dropdown.Item>
@@ -796,10 +827,27 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                     </div>
                     <div className="object-viewer-header-actions">
                         <Dropdown align="end">
-                            <Dropdown.Toggle variant="outline-secondary" size="sm" className="object-actions-toggle">
-                                <KebabHorizontalIcon />
+                            <Dropdown.Toggle variant="secondary" size="sm" className="object-actions-btn">
+                                <GearIcon className="me-1" /> Actions
                             </Dropdown.Toggle>
                             <Dropdown.Menu>
+                                <Dropdown.Item onClick={refresh}>
+                                    <SyncIcon className="me-2" /> Refresh
+                                </Dropdown.Item>
+                                <Dropdown.Divider />
+                                {canUpload && (
+                                    <>
+                                        <Dropdown.Item
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                onUpload?.();
+                                            }}
+                                        >
+                                            <UploadIcon className="me-2" /> Upload Object
+                                        </Dropdown.Item>
+                                        <Dropdown.Divider />
+                                    </>
+                                )}
                                 <Dropdown.Item onClick={handleCopyUri}>
                                     <PasteIcon className="me-2" /> Copy URI
                                 </Dropdown.Item>
@@ -955,10 +1003,14 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                 </div>
                 <div className="object-viewer-header-actions">
                     <Dropdown align="end">
-                        <Dropdown.Toggle variant="outline-secondary" size="sm" className="object-actions-toggle">
-                            <KebabHorizontalIcon />
+                        <Dropdown.Toggle variant="secondary" size="sm" className="object-actions-btn">
+                            <GearIcon className="me-1" /> Actions
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
+                            <Dropdown.Item onClick={refresh}>
+                                <SyncIcon className="me-2" /> Refresh
+                            </Dropdown.Item>
+                            <Dropdown.Divider />
                             <Dropdown.Item onClick={handleCopyUri}>
                                 <PasteIcon className="me-2" /> Copy URI
                             </Dropdown.Item>

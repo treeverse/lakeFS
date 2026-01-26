@@ -25,24 +25,11 @@ export const DataAccordion: React.FC<DataAccordionProps> = ({ repo, reference, c
                     <TableIcon className="me-2" />
                     Tables
                     <Badge bg="secondary" className="ms-2">
-                        Coming Soon
+                        Disabled
                     </Badge>
                 </Accordion.Header>
                 <Accordion.Body className="text-muted disabled-accordion-body">
                     Table management is available in lakeFS Enterprise.
-                </Accordion.Body>
-            </Accordion.Item>
-
-            <Accordion.Item eventKey="vectors">
-                <Accordion.Header className="disabled-accordion-header">
-                    <FaVectorSquare className="me-2" />
-                    Vectors
-                    <Badge bg="secondary" className="ms-2">
-                        Coming Soon
-                    </Badge>
-                </Accordion.Header>
-                <Accordion.Body className="text-muted disabled-accordion-body">
-                    Vector storage is available in lakeFS Enterprise.
                 </Accordion.Body>
             </Accordion.Item>
 
@@ -60,6 +47,16 @@ export const DataAccordion: React.FC<DataAccordionProps> = ({ repo, reference, c
                         initialPath={initialPath}
                     />
                 </Accordion.Body>
+            </Accordion.Item>
+
+            <Accordion.Item eventKey="vectors" className="vectors-accordion-item">
+                <Accordion.Header className="disabled-accordion-header">
+                    <FaVectorSquare className="me-2" />
+                    Vectors
+                    <Badge bg="secondary" className="ms-2">
+                        Coming Soon
+                    </Badge>
+                </Accordion.Header>
             </Accordion.Item>
         </Accordion>
     );

@@ -45,6 +45,7 @@ interface DataBrowserContextType {
     hasUncommittedChanges: boolean;
     showOnlyChanges: boolean;
     diffMode: DiffModeConfig | null;
+    onUpload?: () => void;
     toggleExpand: (path: string) => void;
     expandPath: (path: string) => void;
     selectObject: (object: ObjectEntry | null) => void;
@@ -76,6 +77,7 @@ interface DataBrowserProviderProps {
     onHasUncommittedChangesChange?: (value: boolean) => void;
     diffMode?: DiffModeConfig;
     onDiffStatusChange?: (status: DiffStatus) => void;
+    onUpload?: () => void;
 }
 
 // Helper to get all parent paths for a given path
@@ -109,6 +111,7 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
     onHasUncommittedChangesChange,
     diffMode = null,
     onDiffStatusChange,
+    onUpload,
 }) => {
     const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => {
         const paths = new Set<string>();
@@ -280,6 +283,7 @@ export const DataBrowserProvider: React.FC<DataBrowserProviderProps> = ({
                 hasUncommittedChanges: hasUncommittedChangesState,
                 showOnlyChanges,
                 diffMode,
+                onUpload,
                 toggleExpand,
                 expandPath,
                 selectObject,

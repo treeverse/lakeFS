@@ -19,6 +19,7 @@ interface DataBrowserLayoutProps {
     onHasUncommittedChangesChange?: (value: boolean) => void;
     diffMode?: DiffModeConfig;
     onDiffStatusChange?: (status: DiffStatus) => void;
+    onUpload?: () => void;
 }
 
 const MIN_LEFT_WIDTH = 200;
@@ -38,6 +39,7 @@ export const DataBrowserLayout: React.FC<DataBrowserLayoutProps> = ({
     onHasUncommittedChangesChange,
     diffMode,
     onDiffStatusChange,
+    onUpload,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [leftWidth, setLeftWidth] = useState<number>(() => {
@@ -107,6 +109,7 @@ export const DataBrowserLayout: React.FC<DataBrowserLayoutProps> = ({
             onHasUncommittedChangesChange={onHasUncommittedChangesChange}
             diffMode={diffMode}
             onDiffStatusChange={onDiffStatusChange}
+            onUpload={onUpload}
         >
             <div className="data-browser-layout" ref={containerRef}>
                 <div className="data-browser-panels">

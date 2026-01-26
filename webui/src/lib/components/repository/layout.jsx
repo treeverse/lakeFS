@@ -43,7 +43,7 @@ const RepoNav = () => {
     );
 };
 
-export const RepositoryPageLayout = ({ fluid = 'sm' }) => {
+export const RepositoryPageLayout = ({ fluid = true }) => {
     const [activePage, setActivePage] = useState('objects');
     return (
         <RefContextProvider>
@@ -54,7 +54,7 @@ export const RepositoryPageLayout = ({ fluid = 'sm' }) => {
                     <RepositoryNavTabs active={activePage} />
                 </div>
 
-                <Container fluid={fluid}>
+                <Container fluid={fluid} className="repo-page-container">
                     <div className="mt-4">
                         <Outlet context={[setActivePage]} />
                     </div>

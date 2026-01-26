@@ -122,21 +122,26 @@
     border-top: none;
 }
 
-.data-accordion .accordion-item:last-child {
+.data-accordion .accordion-item.vectors-accordion-item {
+    margin-top: auto;
+    flex: 0;
+}
+
+.data-accordion .accordion-item:nth-child(2) {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
 }
 
-.data-accordion .accordion-item:last-child .accordion-collapse {
+.data-accordion .accordion-item:nth-child(2) .accordion-collapse {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
 }
 
-.data-accordion .accordion-item:last-child .accordion-collapse.show {
+.data-accordion .accordion-item:nth-child(2) .accordion-collapse.show {
     flex: 1;
 }
 
@@ -474,7 +479,19 @@
     padding: 4px 8px;
 }
 
-/* Object actions dropdown */
+/* Object actions dropdown button */
+.object-actions-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+.object-actions-btn::after {
+    margin-left: 4px;
+}
+
+/* Legacy kebab toggle (keep for backwards compatibility) */
 .object-actions-toggle {
     border: none;
     background: transparent;
@@ -798,4 +815,152 @@
 
 .diff-badge .octicon {
     margin-right: 4px;
+}
+
+/* Repository Page Container - responsive width */
+.repo-page-container {
+    max-width: 2200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+@media (min-width: 1600px) {
+    .repo-page-container {
+        padding-left: var(--spacing-xl);
+        padding-right: var(--spacing-xl);
+    }
+}
+
+/* Pull Details Page */
+.pull-details {
+    max-width: 1400px;
+}
+
+.pull-details .pull-diff-browser {
+    margin-left: calc(-1 * var(--spacing-lg));
+    margin-right: calc(-1 * var(--spacing-lg));
+    width: calc(100% + 2 * var(--spacing-lg));
+}
+
+@media (min-width: 1600px) {
+    .pull-details .pull-diff-browser {
+        margin-left: calc(-1 * var(--spacing-xl));
+        margin-right: calc(-1 * var(--spacing-xl));
+        width: calc(100% + 2 * var(--spacing-xl));
+    }
+}
+
+/* Create Pull Page */
+.create-pull-page {
+    max-width: 1400px;
+}
+
+.create-pull-page .create-pull-diff-browser {
+    margin-left: calc(-1 * var(--spacing-lg));
+    margin-right: calc(-1 * var(--spacing-lg));
+    width: calc(100% + 2 * var(--spacing-lg));
+}
+
+@media (min-width: 1600px) {
+    .create-pull-page .create-pull-diff-browser {
+        margin-left: calc(-1 * var(--spacing-xl));
+        margin-right: calc(-1 * var(--spacing-xl));
+        width: calc(100% + 2 * var(--spacing-xl));
+    }
+}
+
+/* Compare Page */
+.compare-diff-browser {
+    /* Full width within container */
+}
+
+/* Commit Page */
+.commit-diff-browser {
+    /* Full width within container */
+}
+
+/* Data Browser Actions Bar */
+.data-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+/* Uncommitted toggle styling */
+#show-uncommitted-toggle {
+    margin-right: 0.25rem;
+}
+
+/* Search widget styling in actions bar - match outline-secondary style */
+.action-bar .prefix-search-form {
+    margin-right: 0.5rem;
+}
+
+.action-bar .prefix-search-input-group {
+    border: 1px solid var(--bs-secondary, #6c757d);
+    border-radius: var(--bs-border-radius);
+    overflow: hidden;
+}
+
+.action-bar .prefix-search-input-group .form-control {
+    border: none;
+}
+
+.action-bar .prefix-search-input-group .btn {
+    border: none;
+    border-left: 1px solid var(--bs-secondary, #6c757d);
+}
+
+/* Collapsed search button - match outline-secondary style */
+.action-group-right > div:has(.btn-light) {
+    margin-right: 0.5rem;
+}
+
+.action-group-right > div > .btn-light,
+.action-bar .action-group-right > .btn-light {
+    border: 1px solid var(--bs-secondary, #6c757d);
+    color: var(--bs-secondary, #6c757d);
+}
+
+.action-group-right > div > .btn-light:hover,
+.action-bar .action-group-right > .btn-light:hover {
+    background-color: var(--bs-secondary, #6c757d);
+    color: white;
+}
+
+.data-actions-bar .btn-group {
+    flex-shrink: 0;
+}
+
+.data-actions-bar .btn-group .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+/* View toggle button styling */
+.data-actions-bar .view-toggle {
+    font-size: 0.875rem;
+}
+
+.data-actions-bar .view-toggle .btn {
+    padding: 0.25rem 0.75rem;
+}
+
+/* Ensure button groups have consistent styling */
+.action-bar .btn-group > .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+/* Improve spacing between action groups */
+.action-bar .action-group-right {
+    gap: var(--spacing-sm);
+}
+
+.action-bar .action-group-right > * {
+    margin-left: 0 !important;
 }

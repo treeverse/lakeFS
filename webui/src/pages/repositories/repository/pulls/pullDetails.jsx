@@ -83,7 +83,7 @@ const PullDetailsContent = ({ repo, pull, config }) => {
     };
 
     return (
-        <div className="pull-details w-75 mb-5">
+        <div className="pull-details mb-5">
             <h1>{pull.title}</h1>
             <div className="pull-info mt-3">
                 <PullInfo repo={repo} pull={pull} />
