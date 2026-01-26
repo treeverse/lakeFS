@@ -2311,13 +2311,6 @@ func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.Rep
 
 // executeTaskSteps runs each step sequentially, updating task status after each step.
 func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repository *graveler.RepositoryRecord, taskID string, task *Task, taskStatus protoreflect.ProtoMessage, steps []TaskStep) {
-	// Mark task as started
-	task.UpdatedAt = timestamppb.Now()
-	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
-		log.WithError(err).Error("Failed to update task start time")
-	}
-
-	// Notify observer that execution has begun
 	notifyObserver(taskID, func() {
 		c.taskObserver.OnTaskStarted(taskID)
 	})
@@ -2329,7 +2322,6 @@ func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repo
 		if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 			log.WithError(err).Error("Catalog failed to update task status")
 		}
-		// Notify observer of completion (success with no steps)
 		notifyObserver(taskID, func() {
 			c.taskObserver.OnTaskCompleted(taskID, nil)
 		})
@@ -2358,7 +2350,6 @@ func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repo
 		}
 
 		if task.Done {
-			// Notify observer of completion
 			notifyObserver(taskID, func() {
 				c.taskObserver.OnTaskCompleted(taskID, stepErr)
 			})
@@ -2400,6 +2391,9 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 		if time.Since(msg.Task.UpdatedAt.AsTime()) < TaskExpiryTime {
 			continue
 		}
+		notifyObserver(msg.Task.Id, func() {
+			c.taskObserver.OnTaskExpired(msg.Task.Id)
+		})
 		err := c.KVStoreLimited.Delete(ctx, []byte(repoPartition), ent.Key)
 		if err != nil {
 			return err
@@ -2872,15 +2866,14 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if _, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
-	checkAndMarkTaskExpired(statusMsg, expiryDuration, c.taskObserver)
+	checkAndMarkTaskExpired(statusMsg, expiryDuration)
 	return nil
 }
 
 // checkAndMarkTaskExpired checks if a task has expired based on its updated_at timestamp
-// and the provided expiry duration. If expired, marks the task as done with timeout error
-// and notifies the observer. The observer is notified exactly once when the task
-// transitions to expired state (already-done tasks are skipped).
-func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration, observer TaskObserver) {
+// and the provided expiry duration. If expired, marks the task as done with timeout error.
+// This only modifies the in-memory status; expiration is not persisted to KV.
+func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) {
 	if expiryDuration == 0 {
 		return
 	}
@@ -2890,23 +2883,11 @@ func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration
 		return
 	}
 
-	// Don't re-expire already done tasks
-	if task.Done {
-		return
-	}
-
 	updatedAt := task.UpdatedAt.AsTime()
 	if time.Since(updatedAt) > expiryDuration {
 		task.Done = true
 		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %s. Please retry the operation.", expiryDuration)
 		task.StatusCode = http.StatusRequestTimeout
-
-		// Notify observer of expiration
-		if observer != nil {
-			notifyObserver(task.Id, func() {
-				observer.OnTaskExpired(task.Id)
-			})
-		}
 	}
 }
 

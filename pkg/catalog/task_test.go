@@ -415,8 +415,6 @@ func TestRunBackgroundTaskSteps_ObserverLifecycle(t *testing.T) {
 	})
 }
 
-// TestRunBackgroundTaskSteps_ObserverReceivesError verifies that OnTaskCompleted
-// receives the error when a task step fails
 func TestRunBackgroundTaskSteps_ObserverReceivesError(t *testing.T) {
 	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
@@ -452,7 +450,6 @@ func TestRunBackgroundTaskSteps_ObserverReceivesError(t *testing.T) {
 		err := catalog.RunBackgroundTaskSteps(ctx, repository, taskID, steps, &CommitAsyncStatusData{})
 		require.NoError(t, err)
 
-		// Wait for background execution to complete
 		time.Sleep(100 * time.Millisecond)
 		synctest.Wait()
 
@@ -476,7 +473,6 @@ func setupTaskTest(t *testing.T) (kv.Store, *Catalog, *graveler.RepositoryRecord
 		errorToStatusCodeAndMsg: func(logger logging.Logger, err error) (int, string, bool) {
 			return 500, err.Error(), true
 		},
-		taskObserver: &NoOpTaskObserver{},
 	}
 
 	// repository

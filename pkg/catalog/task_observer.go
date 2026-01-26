@@ -18,8 +18,7 @@ type TaskObserver interface {
 	// OnTaskCompleted is called when task execution is done (success or error).
 	OnTaskCompleted(taskID string, err error)
 
-	// OnTaskExpired is called exactly once when GetValidatedTaskStatus detects
-	// a stale heartbeat and marks the task as expired.
+	// OnTaskExpired is called exactly once when the cleanup job deletes an expired task.
 	OnTaskExpired(taskID string)
 }
 

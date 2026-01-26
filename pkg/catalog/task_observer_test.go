@@ -39,7 +39,6 @@ func TestNotifyObserver_RecoversPanicWithError(t *testing.T) {
 	require.True(t, called, "callback should have been called")
 }
 
-// panicError is a test error type for panic tests
 type panicError struct {
 	msg string
 }
