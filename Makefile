@@ -149,9 +149,8 @@ gen-api: ## Run the swagger code generator
 .PHONY: gen-code
 gen-code: gen-api ## Run the generator for inline commands
 	$(GOGENERATE) \
+		./contrib/auth/acl \
 		./pkg/actions \
-		./pkg/auth/ \
-		./pkg/authentication \
 		./pkg/distributed \
 		./pkg/graveler \
 		./pkg/graveler/committed \
@@ -226,6 +225,7 @@ validate-mockgen: gen-code
 	git diff --quiet -- pkg/graveler/hooks_handler_isvalid.gen.go || (echo "Modification verification failed! pkg/graveler/hooks_handler_isvalid.gen.go"; false)
 	git diff --quiet -- pkg/kv/mock/store.go || (echo "Modification verification failed! pkg/kv/mock/store.go"; false)
 	git diff --quiet -- pkg/pyramid/mock/pyramid.go || (echo "Modification verification failed! pkg/pyramid/mock/pyramid.go"; false)
+	git diff --quiet -- contrib/auth/apigen/authapi.gen.go || (echo "Modification verification failed! contrib/auth/apigen/authapi.gen.go"; false)
 
 .PHONY: validate-permissions-gen
 validate-permissions-gen: gen-code
