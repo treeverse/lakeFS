@@ -210,50 +210,6 @@ pre {
     border-color: #4b5563;
 }
 
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes expandWidth {
-    from {
-        width: 0;
-        opacity: 0;
-    }
-    to {
-        width: 100%;
-        opacity: 1;
-    }
-}
-
-.fade-in {
-    animation: fadeIn var(--transition-slow);
-}
-
-/* Utilities */
-.overlay {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.gray-out {
-    opacity: 0.5;
-    pointer-events: none;
-}
-
 .geojson-map-wrapper {
     height: 400px;
     width: 100%;

@@ -14,11 +14,6 @@
         background-color var(--transition-fast) ease-in-out;
 }
 
-.badge-info {
-    color: white;
-    background-color: var(--info);
-}
-
 /* Alerts */
 .alert {
     position: relative;
@@ -28,22 +23,10 @@
     border-radius: var(--radius);
 }
 
-.alert-info {
-    color: var(--info-dark);
-    background-color: var(--color-bg-unknown);
-    border-color: var(--info-light);
-}
-
 .alert-warning {
     color: var(--warning-dark);
     background-color: var(--color-bg-changed);
     border-color: var(--warning-light);
-}
-
-.alert-danger {
-    color: var(--danger-dark);
-    background-color: var(--color-bg-removed);
-    border-color: var(--danger-light);
 }
 
 .alert-error-body {
@@ -57,12 +40,6 @@
 }
 
 /* Dark mode alert fixes */
-[data-bs-theme='dark'] .alert-info {
-    background-color: #1e3a8a;
-    color: #bfdbfe;
-    border-color: #3b82f6;
-}
-
 [data-bs-theme='dark'] .alert-warning {
     background-color: #fbbf24;
     color: #1f2937;
@@ -278,64 +255,7 @@ a[title*='Upload'] + a[title*='Import'] {
     box-shadow: none;
 }
 
-/* GetStarted Component Styles */
-.get-started-container {
-    background-color: var(--background-alt);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    padding: 0.5rem;
-    text-align: center;
-}
-
-.get-started-image {
-    max-height: 250px;
-    transition:
-        transform var(--transition),
-        opacity var(--transition);
-}
-
-.get-started-container:hover .get-started-image {
-    transform: scale(1.1);
-}
-
-.get-started-card {
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    border: 1px solid var(--border);
-    transition:
-        transform var(--transition),
-        box-shadow var(--transition);
-}
-
-.get-started-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--primary-light);
-}
-
-.get-started-icon-container {
-    background-color: var(--border-light);
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Dark mode adjustments */
-[data-bs-theme='dark'] .get-started-container {
-    background-color: var(--surface);
-}
-
-[data-bs-theme='dark'] .get-started-icon-container {
-    background-color: rgba(59, 130, 246, 0.1);
-}
-
 /* Bootstrap popover size */
-.bs-popover-max-width {
-    max-width: 400px !important;
-}
 .popover {
     max-width: 400px !important;
 }

@@ -251,34 +251,6 @@ tr:hover .row-hover .btn-outline-danger {
     background-color: rgba(59, 130, 246, 0.05);
 }
 
-/* Upload item styles */
-.upload-item {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-light);
-}
-
-.upload-item:last-child {
-    border-bottom: none;
-}
-
-.upload-item-done {
-    background-color: rgba(16, 185, 129, 0.1);
-}
-
-.upload-item-error {
-    background-color: rgba(239, 68, 68, 0.1);
-}
-
-.upload-item .path {
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-}
-
-.upload-item .size {
-    font-size: 0.85rem;
-    color: var(--text-light);
-}
-
 /* Data Table Specific Styling (often used in object views like SQL results) */
 .object-viewer-sql-results {
     margin-top: var(--spacing-md);
@@ -391,38 +363,10 @@ tr:hover .row-hover .btn-outline-danger {
     background-color: rgba(59, 130, 246, 0.1);
 }
 
-/* Changes dropdown styling */
-.changes-dropdown-menu {
-    min-width: 200px;
-}
-
 /* Fix for object browser gear icon dropdown */
 .tree-container .dropdown-menu,
 .change-entry-row .dropdown-menu {
     position: fixed !important; /* Use fixed positioning to avoid container constraints */
     max-height: 80vh; /* Limit height to 80% of viewport height */
     overflow-y: auto; /* Add scrolling if needed */
-}
-
-/* Dark mode styles for changes dropdown menu */
-[data-bs-theme='dark'] .changes-dropdown-menu {
-    background-color: #1f2937;
-    border: 1px solid #374151;
-    box-shadow:
-        0 10px 15px -3px rgba(0, 0, 0, 0.3),
-        0 4px 6px -2px rgba(0, 0, 0, 0.2);
-}
-
-[data-bs-theme='dark'] .changes-dropdown-menu .btn {
-    color: #f9fafb;
-}
-
-[data-bs-theme='dark'] .changes-dropdown-menu .btn-outline-secondary {
-    color: #f9fafb;
-    border-color: #6b7280;
-}
-
-[data-bs-theme='dark'] .changes-dropdown-menu .btn-outline-secondary:hover {
-    background-color: #4b5563;
-    color: #f9fafb;
 }

@@ -10,17 +10,6 @@ import Table from 'react-bootstrap/Table';
 import { OverlayTrigger } from 'react-bootstrap';
 import { CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon } from '@primer/octicons-react';
 import { Link } from './nav';
-import {
-    Box,
-    Button as MuiButton,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    Typography,
-} from '@mui/material';
 import InputGroup from 'react-bootstrap/InputGroup';
 
 const defaultDebounceMs = 300;
@@ -480,61 +469,6 @@ export const Warnings = ({ warnings = [] }) => {
         </ul>
     );
 };
-
-export const ProgressSpinner = ({ text, changingElement = '' }) => {
-    return (
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box>
-                <CircularProgress size={50} />
-            </Box>
-            <Box sx={{ p: 4 }}>
-                <Typography>
-                    {text}
-                    {changingElement}
-                </Typography>
-            </Box>
-        </Box>
-    );
-};
-
-export const ExitConfirmationDialog = ({ dialogAlert, dialogDescription, onExit, onContinue, isOpen = false }) => {
-    return (
-        <Dialog open={isOpen} aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description">
-            <DialogTitle id="alert-dialog-title">{dialogAlert}</DialogTitle>
-            <DialogContent>
-                <DialogContentText id="alert-dialog-description">{dialogDescription}</DialogContentText>
-            </DialogContent>
-            <DialogActions>
-                <MuiButton onClick={onContinue} autoFocus>
-                    Cancel
-                </MuiButton>
-                <MuiButton onClick={onExit}>Exit</MuiButton>
-            </DialogActions>
-        </Dialog>
-    );
-};
-
-export const ExperimentalOverlayTooltip = ({ children, show = true, placement = 'auto' }) => {
-    const experimentalTooltip = () => <Tooltip id="button-tooltip">Experimental</Tooltip>;
-    return show ? (
-        <OverlayTrigger placement={placement} overlay={experimentalTooltip()}>
-            {children}
-        </OverlayTrigger>
-    ) : (
-        <></>
-    );
-};
-
-export const GrayOut = ({ children }) => (
-    <div style={{ position: 'relative' }}>
-        <div>
-            <div className={'gray-out overlay'} />
-            {children}
-        </div>
-    </div>
-);
-
-export const WrapIf = ({ enabled, Component, children }) => (enabled ? <Component>{children}</Component> : children);
 
 export const SearchInput = ({ searchPrefix, setSearchPrefix, placeholder }) => {
     return (

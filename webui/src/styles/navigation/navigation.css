@@ -129,13 +129,6 @@
         border-bottom-color var(--transition);
 }
 
-/* Full-width border for repository navigation */
-.nav-tabs-container {
-    position: relative;
-    width: 100%;
-    border-bottom: 1px solid var(--border);
-}
-
 /* Add this class to the parent element of nav-tabs */
 .full-width-tabs-border {
     position: relative;
@@ -176,14 +169,6 @@
     z-index: 2; /* Ensure active tab appears above the border */
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
-}
-
-/* Pagination */
-.pagination-group {
-    display: flex;
-    justify-content: center;
-    margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
 }
 
 /* Fix branch selector width */

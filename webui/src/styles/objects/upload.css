@@ -73,11 +73,6 @@
     border-bottom: none;
 }
 
-.upload-item-done {
-    /* Optional: subtle background for completed items */
-    /* background-color: rgba(16, 185, 129, 0.05); */
-}
-
 .upload-item-error {
     background-color: rgba(239, 68, 68, 0.1);
 }
