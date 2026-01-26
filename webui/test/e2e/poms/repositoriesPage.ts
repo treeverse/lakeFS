@@ -42,9 +42,10 @@ export class RepositoriesPage {
         }
         await this.page.getByRole("dialog").getByRole("button", { name: "Create Repository", exact: true }).click();
         if (includeSampleData) {
-            await expect(this.page.getByRole("heading", { name: SAMPLE_REPO_README_TITLE })).toBeVisible();
+            // Wait for the README to load - it may take a moment after repository creation
+            await expect(this.page.getByRole("heading", { name: SAMPLE_REPO_README_TITLE })).toBeVisible({ timeout: 15000 });
             return;
         }
-        await expect(this.page.getByRole("heading", { name: REGULAR_REPO_README_TITLE })).toBeVisible();
+        await expect(this.page.getByRole("heading", { name: REGULAR_REPO_README_TITLE })).toBeVisible({ timeout: 15000 });
     }
 }

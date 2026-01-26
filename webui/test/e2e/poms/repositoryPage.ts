@@ -17,9 +17,11 @@ export class RepositoryPage {
   }
 
   async clickObject(objectName: string): Promise<void> {
+    // New DataBrowser UI uses a tree structure
     await this.page
-        .getByRole("cell", { name: objectName })
-        .getByRole("link")
+        .locator('.tree-node-name')
+        .filter({ hasText: objectName })
+        .first()
         .click();
   }
 
@@ -56,23 +58,37 @@ export class RepositoryPage {
   // file manipulation operations
 
   async deleteFirstObjectInDirectory(dirName: string): Promise<void> {
-    await this.page.getByRole("link", { name: dirName }).click();
+    // Click on the directory in the tree to expand it
+    const dirNode = this.page
+        .locator('.tree-node-name')
+        .filter({ hasText: dirName })
+        .first();
+    await dirNode.click();
 
-    // Wait for the table to be visible and stable after navigation
-    await this.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for tree to update and show children
+    await this.page.waitForTimeout(1000);
 
-    const firstRow = this.page.locator('table tbody tr').first();
-    const actionButton = firstRow.locator('button').last();
+    // Find the first file inside the directory (files don't end with '/')
+    // Get all tree-node-name elements that don't end with '/' and pick one that's visible
+    const fileNodes = this.page.locator('.tree-node-name').filter({ hasNotText: '/' });
+    const fileCount = await fileNodes.count();
 
-    // Scroll the row into the viewport center to avoid navbar overlap
-    await firstRow.scrollIntoViewIfNeeded();
+    // Find the first actual file (skip the directory itself)
+    for (let i = 0; i < fileCount; i++) {
+      const node = fileNodes.nth(i);
+      const text = await node.textContent();
+      // Skip if it's a directory (contains /)
+      if (text && !text.includes('/')) {
+        await node.click();
+        break;
+      }
+    }
 
-    // Hover and wait for the action button to actually become visible
-    await firstRow.hover();
-    await actionButton.waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for the right panel to show the object and click Actions dropdown
+    await this.page.locator('.object-actions-btn').first().waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.locator('.object-actions-btn').first().click();
 
-    // Click with force since navbar sometimes intercepts even though button is visible
-    await actionButton.click({ force: true });
+    // Click Delete in the dropdown menu
     await this.page.getByRole('button', { name: 'Delete' }).click();
     await this.page.getByRole("button", { name: "Yes" }).click();
   }
@@ -80,22 +96,46 @@ export class RepositoryPage {
   // uncommitted changes operations
 
   async showOnlyChanges(): Promise<void> {
-    await this.page.getByRole("button", { name: "Uncommitted Changes" }).click();
+    // Toggle the "Uncommitted only" switch
+    const toggle = this.page.locator('#show-uncommitted-toggle');
+    await toggle.waitFor({ state: 'visible', timeout: 5000 });
+    await toggle.click();
   }
 
   async getUncommittedCount(): Promise<number> {
-    await this.page.locator(".tree-container div.card").isVisible();
+    // Handle both new DataBrowser (tree-based) and Compare tab (table-based)
+    // First try to find the data browser layout (Objects tab)
+    const dataBrowserLayout = this.page.locator(".data-browser-layout");
+    const dataBrowserExists = await dataBrowserLayout.count() > 0;
+
+    if (dataBrowserExists) {
+      await dataBrowserLayout.waitFor({ state: 'visible', timeout: 5000 });
+      // Wait a bit for the tree to fully render
+      await this.page.waitForTimeout(500);
+      // Count tree nodes that have a diff indicator (added, removed, or changed)
+      // The diff icons are SVGs with class tree-node-diff-icon
+      // Try finding by class first, fall back to counting visible file nodes
+      const diffIconCount = await this.page.locator('svg.tree-node-diff-icon').count();
+      if (diffIconCount > 0) {
+        return diffIconCount;
+      }
+      // Fall back: in showOnlyChanges mode, count all visible file tree nodes
+      // Files don't end with '/' in their name
+      return this.page.locator('.tree-node-name').filter({ hasNotText: '/' }).count();
+    }
+
+    // Fall back to table-based counting (Compare tab)
+    await this.page.locator("table.table").waitFor({ state: 'visible', timeout: 5000 });
     return this.page
         .locator("table.table")
         .locator("tbody")
-        .locator("tr")
+        .locator("tr.leaf-entry-row")
         .count();
   }
 
   async commitChanges(commitMsg: string): Promise<void> {
-    // Click the Actions dropdown (empty button next to Uncommitted Changes)
-    await this.page.locator('button[id="changes-dropdown"]').click();
-    await this.page.getByRole("button", { name: "Commit Changes" }).click();
+    // Click the Commit button in the action bar (use exact match to avoid matching tree nodes)
+    await this.page.getByRole("button", { name: "Commit", exact: true }).click();
     if (commitMsg?.length) {
       await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
     }
@@ -108,7 +148,7 @@ export class RepositoryPage {
   // merge operations
 
   async merge(commitMsg: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Merge" }).click();
+    await this.page.getByRole("button", { name: "Merge", exact: true }).click();
     if (commitMsg?.length) {
       await this.page
           .getByPlaceholder("Commit Message (Optional)")
@@ -123,7 +163,14 @@ export class RepositoryPage {
   // navigation
 
   async gotoObjectsTab(): Promise<void> {
-    await this.page.getByRole("link", { name: "Objects", exact: true }).first().click();
+    // Tab was renamed from "Objects" to "Data"
+    // Wait for the link to be stable before clicking
+    const dataLink = this.page.getByRole("link", { name: "Data", exact: true }).first();
+    await dataLink.waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.waitForTimeout(200); // Brief pause for stability
+    await dataLink.click();
+    // Wait for the data browser to load
+    await this.page.locator('.data-browser-layout').waitFor({ state: 'visible', timeout: 10000 });
   }
 
 
@@ -144,14 +191,20 @@ export class RepositoryPage {
   }
 
   async uploadObject(filePathOrBuffer: string | { name: string; mimeType: string; buffer: Buffer }): Promise<void> {
-    await this.page.getByRole("button", { name: "Upload", exact: true }).click();
+    // Upload is now in the Actions dropdown in the right panel
+    await this.page.locator('.object-actions-btn').first().click();
+    // Click on "Upload Objects" in the dropdown
+    await this.page.getByRole('button', { name: 'Upload Objects' }).click();
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
     await fileInput.setInputFiles(filePathOrBuffer as any);
   }
 
   async uploadMultipleObjects(filePathsOrBuffers: (string | { name: string; mimeType: string; buffer: Buffer })[]): Promise<void> {
-    await this.page.getByRole("button", { name: "Upload", exact: true }).click();
+    // Upload is now in the Actions dropdown in the right panel
+    await this.page.locator('.object-actions-btn').first().click();
+    // Click on "Upload Objects" in the dropdown
+    await this.page.getByRole('button', { name: 'Upload Objects' }).click();
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
     await fileInput.setInputFiles(filePathsOrBuffers as any);

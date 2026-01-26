@@ -30,7 +30,8 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.createBranch(SOURCE_BRANCH);
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(SOURCE_BRANCH);
-        await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeVisible({ timeout: 10000 });
+        // Wait for the data browser to load - the tree or the empty state should be visible
+        await expect(page.locator('.data-browser-layout')).toBeVisible({ timeout: 10000 });
 
         const fileBuffers = [
             {
@@ -50,7 +51,8 @@ test.describe('Commit and Merge Operations', () => {
         await expect(page.getByText(FILE_1_NAME).first()).toBeVisible({ timeout: 10000 });
         await page.getByRole('button', { name: 'Upload 2 Files' }).click();
 
-        await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible({ timeout: 10000 });
+        // Wait for file to appear in tree view
+        await expect(page.locator('.tree-node-name').filter({ hasText: FILE_1_NAME }).first()).toBeVisible({ timeout: 10000 });
 
         await repositoryPage.showOnlyChanges();
         const count = await repositoryPage.getUncommittedCount();
@@ -76,9 +78,10 @@ test.describe('Commit and Merge Operations', () => {
         await expect(page.getByRole('button', { name: `branch: ${SOURCE_BRANCH}` })).toBeVisible();
 
         await repositoryPage.gotoObjectsTab();
-        await expect(page.getByRole('button', { name: 'Uncommitted Changes' })).not.toBeVisible();
+        // Toggle should not be visible when there are no uncommitted changes
+        await expect(page.locator('#show-uncommitted-toggle')).not.toBeVisible();
 
-        await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible();
+        await expect(page.locator('.tree-node-name').filter({ hasText: FILE_1_NAME }).first()).toBeVisible();
     });
 
     test('Merge: Merge feature branch into main', async ({ page }) => {
@@ -114,7 +117,7 @@ test.describe('Commit and Merge Operations', () => {
 
         // Go to objects and verify the merged files are there
         await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${DEST_BRANCH}`);
-        await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible();
+        await expect(page.locator('.tree-node-name').filter({ hasText: FILE_1_NAME }).first()).toBeVisible();
     });
 
     test('Commit: Handle empty commit attempt', async ({ page }) => {
@@ -124,7 +127,8 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(SOURCE_BRANCH);
 
-        await expect(page.getByRole('button', { name: 'Uncommitted Changes' })).not.toBeVisible();
+        // Toggle should not be visible when there are no uncommitted changes
+        await expect(page.locator('#show-uncommitted-toggle')).not.toBeVisible();
     });
 
     test('Merge: Handle no-diff merge attempt', async ({ page }) => {
@@ -155,7 +159,7 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.uploadObject(fileBuffer);
         await expect(page.getByText(CONFLICT_FILE_NAME)).toBeVisible({ timeout: 10000 });
         await page.getByRole('button', { name: 'Upload 1 File' }).click();
-        await expect(page.getByRole('cell', { name: CONFLICT_FILE_NAME })).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('.tree-node-name').filter({ hasText: CONFLICT_FILE_NAME })).toBeVisible({ timeout: 10000 });
 
         // Commit on temp branch
         await repositoryPage.showOnlyChanges();
@@ -179,7 +183,7 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.uploadObject(featureFileBuffer);
         await expect(page.getByText(CONFLICT_FILE_NAME)).toBeVisible({ timeout: 10000 });
         await page.getByRole('button', { name: 'Upload 1 File' }).click();
-        await expect(page.getByRole('cell', { name: CONFLICT_FILE_NAME })).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('.tree-node-name').filter({ hasText: CONFLICT_FILE_NAME })).toBeVisible({ timeout: 10000 });
 
         // Commit on feature branch
         await repositoryPage.showOnlyChanges();
@@ -189,7 +193,7 @@ test.describe('Commit and Merge Operations', () => {
         // Navigate to Compare page with feature-branch -> main
         await page.goto(`/repositories/${TEST_REPO_NAME}/compare?ref=${DEST_BRANCH}&compare=${SOURCE_BRANCH}`);
 
-        await page.getByRole('button', { name: 'Merge' }).click();
+        await page.getByRole('button', { name: 'Merge', exact: true }).click();
 
         await page.getByLabel('Strategy').click();
         await page.getByRole('option', { name: 'source-wins' }).click();
@@ -206,9 +210,10 @@ test.describe('Commit and Merge Operations', () => {
         await expect(page.getByRole('button', { name: `branch: ${DEST_BRANCH}` })).toBeVisible();
 
         await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${DEST_BRANCH}`);
-        await expect(page.getByRole('cell', { name: CONFLICT_FILE_NAME })).toBeVisible();
+        await expect(page.locator('.tree-node-name').filter({ hasText: CONFLICT_FILE_NAME })).toBeVisible();
 
-        await page.getByRole('link', { name: CONFLICT_FILE_NAME }).click();
+        // Click on the file in the tree to view it
+        await page.locator('.tree-node-name').filter({ hasText: CONFLICT_FILE_NAME }).click();
 
         // Verify the content is from the source branch (feature-branch) due to source-wins strategy
         await expect(page.getByText('Version on feature branch')).toBeVisible({ timeout: 10000 });

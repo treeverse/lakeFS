@@ -28,18 +28,21 @@ test.describe("Upload File", () => {
 			await repositoryPage.switchBranch(TEST_BRANCH)
 			await repositoryPage.uploadObject(filePath);
 			
-			// upload file, check path 
+			// upload file, check path
 			await expect(page.getByText(FILE_NAME)).toBeVisible();
 			await page.getByRole('button', { name: 'Upload 1 File' }).click();
-            await expect(page.getByRole('cell', {name: FILE_NAME})).toBeVisible();
+			// Wait for file to appear in tree view
+			await expect(page.locator('.tree-node-name').filter({ hasText: FILE_NAME })).toBeVisible();
 
 			// upload again with prefix, check path
 			await repositoryPage.uploadObject(filePath);
 			await page.getByRole('textbox', { name: 'Common Destination Directory' }).fill(PREFIX);
 			await expect(page.getByText(PREFIX+FILE_NAME)).toBeVisible();
 			await page.getByRole('button', { name: 'Upload 1 File' }).click();
-			await page.getByRole('cell', { name: PREFIX }).click();
- 			await expect(page.getByRole('cell', { name: FILE_NAME })).toBeVisible();
+			// Click on the prefix directory in the tree
+			await page.locator('.tree-node-name').filter({ hasText: 'prefix' }).click();
+			// Verify the file is inside the prefix directory (use last() since root file also exists)
+			await expect(page.locator('.tree-node-name').filter({ hasText: FILE_NAME }).last()).toBeVisible();
 
 	});
 })

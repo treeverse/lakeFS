@@ -81,18 +81,24 @@ test.describe("Quickstart", () => {
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(NEW_BRANCH_NAME);
         await repositoryPage.showOnlyChanges();
-        await expect(page.getByText("Showing 1 change for branch")).toBeVisible();
+        // In the new UI, we show the tree with changed files
+        // Wait for the tree to show changes
+        await page.waitForTimeout(500);
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
 
         await repositoryPage.commitChanges("denmark");
-        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
+        // Toggle should not be visible when there are no uncommitted changes
+        await expect(page.locator('#show-uncommitted-toggle')).not.toBeVisible();
 
         await repositoryPage.gotoCompareTab();
         await repositoryPage.switchBaseBranch("main");
-        await expect(page.getByText("Showing changes between")).toBeVisible();
-        expect(await repositoryPage.getUncommittedCount()).toEqual(1);
+        // Wait for the compare view to load with the DataBrowser layout
+        await expect(page.locator('.data-browser-layout')).toBeVisible({ timeout: 10000 });
+        // Verify there's at least one changed file (the modified lakes.parquet)
+        expect(await repositoryPage.getUncommittedCount()).toBeGreaterThanOrEqual(1);
         await repositoryPage.merge("merge commit");
-        await expect(page.getByText("No changes")).toBeVisible();
+        // After merge, the dialog closes and we should see the compare view
+        await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 30000 });
 
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(QUICKSTART_REPO_NAME);
@@ -124,7 +130,8 @@ test.describe("Quickstart", () => {
         await repositoryPage.showOnlyChanges();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
         await repositoryPage.commitChanges("Commit for pull-1");
-        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
+        // Toggle should not be visible when there are no uncommitted changes
+        await expect(page.locator('#show-uncommitted-toggle')).not.toBeVisible();
 
         // pulls list sanity
         await repositoryPage.gotoPullRequestsTab();

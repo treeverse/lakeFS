@@ -25,7 +25,21 @@ export class PullsPage {
     }
 
     async getBranchesCompareURI(): Promise<string> {
-        return await this.page.locator("div.lakefs-uri").innerText();
+        // The new UI shows branch info as "admin wants to merge [source] into [dest]"
+        // Expected format is "dest...source/"
+        // Find the text that contains "wants to merge X into Y"
+        const mergeInfoText = this.page.locator('text=wants to merge');
+        await mergeInfoText.waitFor({ state: 'visible', timeout: 5000 });
+
+        // Get the parent element and extract branch names from links
+        const parent = mergeInfoText.locator('..');
+        const links = parent.locator('a');
+
+        // First link is source branch, second is destination
+        const source = await links.nth(0).textContent() || '';
+        const dest = await links.nth(1).textContent() || '';
+
+        return `${dest}...${source}/`;
     }
 
     async clickMergePullButton(): Promise<void> {

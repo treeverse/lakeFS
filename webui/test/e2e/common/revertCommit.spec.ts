@@ -39,7 +39,8 @@ test.describe("Revert Commit", () => {
         await repositoryPage.showOnlyChanges();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
         await repositoryPage.commitChanges("Delete image file");
-        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
+        // Toggle should not be visible when there are no uncommitted changes
+        await expect(page.locator('#show-uncommitted-toggle')).not.toBeVisible();
     });
 
     test("revert single commit", async ({ page }) => {

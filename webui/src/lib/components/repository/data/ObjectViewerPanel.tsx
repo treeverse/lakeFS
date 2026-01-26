@@ -760,9 +760,17 @@ export const ObjectViewerPanel: React.FC<ObjectViewerPanelProps> = ({ repo, refe
                         <RootContextMenu />
                     </div>
                 </div>
-                <div className="object-viewer-empty">
-                    <FileIcon size={48} className="mb-3 opacity-25" />
-                    <p>No objects in this directory</p>
+                <div className="object-viewer-empty get-started">
+                    <h4>Your repository is ready!</h4>
+                    <p className="text-muted mt-2">
+                        Get started by uploading files or importing data from external storage.
+                    </p>
+                    {canUpload && onUpload && (
+                        <Button variant="success" onClick={onUpload} className="mt-3">
+                            <UploadIcon className="me-2" />
+                            Upload Object
+                        </Button>
+                    )}
                 </div>
             </div>
         );
