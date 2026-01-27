@@ -44,10 +44,6 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22.17.x"
-
       - name: Set version
         run: echo "VERSION=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_ENV
 

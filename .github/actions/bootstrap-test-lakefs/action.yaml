@@ -12,15 +12,21 @@ inputs:
     description: working directory for the docker compose step
     required: false
     default: "."
+  skip-generated-code:
+    description: skip downloading and unpacking generated code artifact
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
     - name: Retrieve generated code
+      if: inputs.skip-generated-code != 'true'
       uses: actions/download-artifact@v4.1.8
       with:
         name: generated-code
         path: /tmp/
     - name: Unpack generated code
+      if: inputs.skip-generated-code != 'true'
       shell: bash
       run: tar -xzvf /tmp/generated.tar.gz
     - name: Configure AWS Credentials
