@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -368,6 +369,100 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 		require.True(t, statusAfter.Task.Done)
 		require.NotNil(t, statusAfter.Info)
 		require.Equal(t, expectedCommitID, statusAfter.Info.Id)
+	})
+}
+
+// TestCheckAndMarkTaskExpired verifies that tasks are correctly marked as expired
+// when their UpdatedAt timestamp exceeds the expiry duration
+func TestCheckAndMarkTaskExpired(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		taskAge        time.Duration
+		expiryDuration time.Duration
+		expectExpired  bool
+	}{
+		{
+			name:           "task not expired - within expiry window",
+			taskAge:        5 * time.Minute,
+			expiryDuration: 10 * time.Minute,
+			expectExpired:  false,
+		},
+		{
+			name:           "task expired - exceeds expiry window",
+			taskAge:        15 * time.Minute,
+			expiryDuration: 10 * time.Minute,
+			expectExpired:  true,
+		},
+		{
+			name:           "task just under expiry boundary - not expired",
+			taskAge:        9*time.Minute + 59*time.Second,
+			expiryDuration: 10 * time.Minute,
+			expectExpired:  false,
+		},
+		{
+			name:           "zero expiry duration - never expires",
+			taskAge:        1 * time.Hour,
+			expiryDuration: 0,
+			expectExpired:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			taskStatus := &TaskMsg{
+				Task: &Task{
+					Id:        t.Name(),
+					Done:      false,
+					UpdatedAt: timestamppb.New(time.Now().Add(-tt.taskAge)),
+				},
+			}
+
+			checkAndMarkTaskExpired(taskStatus, tt.expiryDuration)
+
+			if tt.expectExpired {
+				require.True(t, taskStatus.Task.Done, "task should be marked as done when expired")
+				require.NotEmpty(t, taskStatus.Task.ErrorMsg, "expired task should have an error message")
+				require.Contains(t, taskStatus.Task.ErrorMsg, "expired", "error message should mention expiry")
+				require.Equal(t, http.StatusRequestTimeout, int(taskStatus.Task.StatusCode), "expired task should have 408 status code")
+			} else {
+				require.False(t, taskStatus.Task.Done, "task should not be marked as done when not expired")
+				require.Empty(t, taskStatus.Task.ErrorMsg, "non-expired task should not have an error message")
+			}
+		})
+	}
+}
+
+// TestCheckAndMarkTaskExpired_Nil verifies that the expiry check handles nil cases gracefully
+func TestCheckAndMarkTaskExpired_Nil(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil task", func(t *testing.T) {
+		t.Parallel()
+		taskStatus := &TaskMsg{
+			Task: nil,
+		}
+
+		// Should not panic
+		checkAndMarkTaskExpired(taskStatus, 10*time.Minute)
+		require.Nil(t, taskStatus.Task)
+	})
+
+	t.Run("nil UpdatedAt", func(t *testing.T) {
+		t.Parallel()
+		taskStatus := &TaskMsg{
+			Task: &Task{
+				Id:        t.Name(),
+				Done:      false,
+				UpdatedAt: nil,
+			},
+		}
+
+		// Should not panic
+		checkAndMarkTaskExpired(taskStatus, 10*time.Minute)
+		require.False(t, taskStatus.Task.Done, "task with nil UpdatedAt should not be marked as expired")
 	})
 }
 
