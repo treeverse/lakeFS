@@ -35,17 +35,6 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - name: Generate code
-        run: |
-          make -j3 gen-api gen-code VERSION=${{ steps.version.outputs.tag }}
-          tar -czf /tmp/generated.tar.gz .
-
-      - name: Store generated code
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-code
-          path: /tmp/generated.tar.gz
-
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
         run: |
@@ -78,15 +67,6 @@ jobs:
         with:
           go-version-file: 'go.mod'
         id: go
-
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
-        with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Extract version
         shell: bash
