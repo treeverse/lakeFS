@@ -2307,7 +2307,35 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), search(params.Search), paginationAfter(params.After))
+	// Get user for policy-based filtering
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+
+	// Fetch effective policies for the user to filter repositories.
+	// If the auth service doesn't support listing policies (e.g., BasicAuthService),
+	// skip filtering and return all repositories (backward compatible behavior).
+	var opts []catalog.ListRepositoriesOptionsFunc
+	policies, _, err := c.Auth.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: -1})
+	if err != nil && !errors.Is(err, auth.ErrNotImplemented) {
+		c.Logger.WithContext(ctx).WithError(err).Error("failed to list effective policies")
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if err == nil {
+		opts = append(opts, catalog.WithListReposPermissionFilter(user.Username, policies))
+	}
+
+	repos, hasMore, err := c.Catalog.ListRepositories(
+		ctx,
+		paginationAmount(params.Amount),
+		paginationPrefix(params.Prefix),
+		search(params.Search),
+		paginationAfter(params.After),
+		opts...,
+	)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
