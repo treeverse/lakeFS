@@ -465,7 +465,8 @@ func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, filenames []str
 	if err != nil {
 		return 0, err
 	}
-	unitedFile, err := os.Create(p)
+	p = filepath.Clean(p)
+	unitedFile, err := l.maybeMkdir(p, os.Create)
 	if err != nil {
 		return 0, fmt.Errorf("create path %s: %w", p, err)
 	}

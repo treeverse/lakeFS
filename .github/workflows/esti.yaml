@@ -80,9 +80,9 @@ jobs:
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
-          make -j3 gen-api gen-code gen-ui VERSION=${{ steps.version.outputs.tag }}
+          make -j3 gen-ui VERSION=${{ steps.version.outputs.tag }}
           go build ./contrib/auth/acl/cmd/acl
-          tar -czf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/{client,service_wrapper,service_inviter_wrapper}.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go ./acl
+          tar -czf /tmp/generated.tar.gz ./webui/dist ./acl
 
         # must upload artifact in order to download generated later
       - name: Store generated code
