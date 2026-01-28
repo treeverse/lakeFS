@@ -21,24 +21,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up NodeJS
-      uses: actions/setup-node@v4
-      with:
-        node-version: "22.17.x"
-
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: 'go.mod'
-
-    - name: Generate code
-      env:
-        NODE_OPTIONS: "--max-old-space-size=4096"
-      run: |
-        mkdir ./webui/dist
-        touch ./webui/dist/index.html
-        make gen-api
-
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:

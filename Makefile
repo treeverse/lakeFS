@@ -62,9 +62,8 @@ clean:
 		$(LAKECTL_BINARY_NAME) \
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
-		$(UI_DIR)/node_modules \
-		pkg/api/apigen/lakefs.gen.go \
-		pkg/auth/*.gen.go
+		$(UI_DIR)/node_modules
+	@mkdir -p $(UI_BUILD_DIR) && touch $(UI_BUILD_DIR)/.gitkeep
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -150,9 +149,8 @@ gen-api: ## Run the swagger code generator
 .PHONY: gen-code
 gen-code: gen-api ## Run the generator for inline commands
 	$(GOGENERATE) \
+		./contrib/auth/acl \
 		./pkg/actions \
-		./pkg/auth/ \
-		./pkg/authentication \
 		./pkg/distributed \
 		./pkg/graveler \
 		./pkg/graveler/committed \
@@ -224,12 +222,20 @@ validate-mockgen: gen-code
 	git diff --quiet -- pkg/graveler/committed/mock/meta_range.go || (echo "Modification verification failed! pkg/graveler/committed/mock/meta_range.go"; false)
 	git diff --quiet -- pkg/graveler/committed/mock/range_manager.go || (echo "Modification verification failed! pkg/graveler/committed/mock/range_manager.go"; false)
 	git diff --quiet -- pkg/graveler/mock/graveler.go || (echo "Modification verification failed! pkg/graveler/mock/graveler.go"; false)
+	git diff --quiet -- pkg/graveler/hooks_handler_isvalid.gen.go || (echo "Modification verification failed! pkg/graveler/hooks_handler_isvalid.gen.go"; false)
 	git diff --quiet -- pkg/kv/mock/store.go || (echo "Modification verification failed! pkg/kv/mock/store.go"; false)
 	git diff --quiet -- pkg/pyramid/mock/pyramid.go || (echo "Modification verification failed! pkg/pyramid/mock/pyramid.go"; false)
+	git diff --quiet -- contrib/auth/apigen/authapi.gen.go || (echo "Modification verification failed! contrib/auth/apigen/authapi.gen.go"; false)
 
 .PHONY: validate-permissions-gen
 validate-permissions-gen: gen-code
 	git diff --quiet -- pkg/permissions/actions.gen.go || (echo "Modification verification failed!  pkg/permissions/actions.gen.go"; false)
+
+.PHONY: validate-api
+validate-api: gen-api
+	git diff --quiet -- pkg/api/apigen/lakefs.gen.go || (echo "Modification verification failed! pkg/api/apigen/lakefs.gen.go"; false)
+	git diff --quiet -- pkg/auth/client.gen.go || (echo "Modification verification failed! pkg/auth/client.gen.go"; false)
+	git diff --quiet -- pkg/authentication/apiclient/client.gen.go || (echo "Modification verification failed! pkg/authentication/apiclient/client.gen.go"; false)
 
 .PHONY: validate-wrapper
 validate-wrapper: gen-code
@@ -266,6 +272,7 @@ checks-validator: lint validate-proto validate-ui-format \
 	validate-client-python validate-client-java validate-client-rust validate-reference \
 	validate-mockgen \
 	validate-permissions-gen \
+	validate-api \
 	validate-wrapper validate-wrapgen-testcode
 
 python-wrapper-lint:
