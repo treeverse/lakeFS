@@ -100,7 +100,7 @@ jobs:
           mike deploy --config-file ../mkdocs.yml --branch main --push "${{ steps.setvars.outputs.VERSION }}" ${{ steps.setvars.outputs.ALIASES }}
 
       - name: Notify Slack on failure
-        if: failure()
+        if: failure() && github.event_name != 'workflow_dispatch'
         uses: slackapi/slack-github-action@v2
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
