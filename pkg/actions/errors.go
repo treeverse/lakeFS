@@ -11,4 +11,5 @@ var (
 	ErrUnknownHookType       = errors.New("unknown hook type")
 	ErrInvalidAction         = errors.New("invalid action")
 	ErrInvalidEventParameter = errors.New("invalid event parameter")
+	ErrActionsDisabled       = errors.New("actions are disabled")
 )
