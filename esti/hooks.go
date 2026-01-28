@@ -137,6 +137,13 @@ func testCommitMergeLua(t *testing.T, ctx context.Context, repo string, lakeFSCl
 		err := LuaActionTmpl.Execute(&buf, action)
 		require.NoError(t, err)
 		actionPath := path.Join("_lakefs_actions", fmt.Sprintf("action_%s_lua.yaml", action.HookID))
+		// Upload action files directly to the branch (not action.Branch) because actions are only triggered once
+		// committed, not just staged.
+		// This test uploads the action files and a test file to a branch, then merges it into mainBranch.
+		// Commit-related actions run on the branch, and merge-related actions run on mainBranch.
+		// Adding the action files to mainBranch via the merge triggers the mainBranch actions.
+		// Otherwise, if the action files were uploaded directly to the main branch (action.Branch) in this test,
+		// they would remain uncommitted, so won't run.
 		resp, err := UploadContent(ctx, repo, branch, actionPath, buf.String(), lakeFSClient)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
@@ -145,7 +152,7 @@ func testCommitMergeLua(t *testing.T, ctx context.Context, repo string, lakeFSCl
 	WaitForCacheExpiration(ctx, t)
 
 	t.Log("Upload test file")
-	resp, err := UploadContent(ctx, repo, branch, "test-lua-file.txt", "test content", lakeFSClient)
+	resp, err := UploadContent(ctx, repo, branch, "test-file", "test content", lakeFSClient)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 

@@ -184,6 +184,13 @@ func luaHooksMergeFailTest(ctx context.Context, t *testing.T, repo string, lakeF
 	err = LuaActionFailTmpl.Execute(&buf, action)
 	require.NoError(t, err)
 	actionPath := "_lakefs_actions/action_pre_merge_fail_lua.yaml"
+	// Upload action file directly to the branch (not mainBranch) because actions are only triggered once
+	// committed, not just staged.
+	// This test uploads the action file and a test file to a branch, then merges it into mainBranch.
+	// Merge-related action run on mainBranch.
+	// Adding the action file to mainBranch via the merge triggers the mainBranch action.
+	// Otherwise, if the action file was uploaded directly to the mainBranch in this test,
+	// it would remain uncommitted, so won't run.
 	resp, err := UploadContent(ctx, repo, branch, actionPath, buf.String(), lakeFSClient)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
