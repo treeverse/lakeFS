@@ -147,21 +147,19 @@ New branches created after deployment will have `dirty` properly maintained from
 
 #### `Get`
 
-Current logic (simplified):
+Current logic:
 
-```go
-if reference.StagingToken != "" {
-    try staging (current token + sealed tokens)
-}
+```
+if stagingToken exists:
+    try staging
 read committed
 ```
 
 Proposed logic:
 
-```go
-if reference.Dirty {
-    try staging (current token + sealed tokens)
-}
+```
+if dirty:
+    try staging
 read committed
 ```
 
@@ -176,34 +174,18 @@ Same change applies:
 
 ### Write path changes
 
-The **first staging write** after a branch becomes clean must set:
+**Critical: The dirty flag must be set BEFORE writing to staging.**
 
-```go
-dirty = true
+If we wrote to staging first, a concurrent reader could see `dirty=false`, skip staging, and miss the write.
+
+Acceptable failure mode: If the dirty update succeeds but the staging write fails, the branch is marked dirty with no staged data. Readers check staging unnecessarily (performance penalty), but correctness is preserved.
+
 ```
-
-This is implemented as a **conditional update** to avoid unnecessary writes:
-
-```go
-func (g *Graveler) Set(ctx context.Context, ...) error {
-    return g.safeBranchWrite(ctx, ..., func(branch *Branch) error {
-        // Write to staging
-        err := g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
-        if err != nil {
-            return err
-        }
-
-        // Conditionally mark branch as dirty (only if currently clean)
-        if !branch.Dirty {
-            branch.Dirty = true
-            // This triggers a branch record update
-        }
-        return nil
-    }, "set")
-}
+on staging write:
+    if not dirty:
+        set dirty = true (must complete before proceeding)
+    write to staging
 ```
-
-**Important**: The branch record update only occurs on the **first write** after the branch becomes clean. Subsequent writes while `dirty=true` do not update the branch record.
 
 Operations that set `dirty = true`:
 - object put (first write only)
@@ -214,11 +196,7 @@ Operations that set `dirty = true`:
 
 ### Commit and reset paths
 
-Operations that guarantee the absence of uncommitted changes must set:
-
-```go
-dirty = false
-```
+Operations that guarantee the absence of uncommitted changes set `dirty = false`.
 
 Examples:
 - successful commit (after sealed tokens are cleared)
