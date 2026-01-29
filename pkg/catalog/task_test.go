@@ -371,92 +371,6 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 	})
 }
 
-// TestRunBackgroundTaskSteps_ObserverLifecycle verifies that observer callbacks
-// fire in the correct order: submitted -> started -> completed
-func TestRunBackgroundTaskSteps_ObserverLifecycle(t *testing.T) {
-	t.Parallel()
-	synctest.Test(t, func(t *testing.T) {
-		ctx := t.Context()
-		kvStore := kvtest.GetStore(ctx, t)
-		workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
-
-		var calls []string
-		observer := &recordingTaskObserver{
-			onSubmitted: func(string) { calls = append(calls, "submitted") },
-			onStarted:   func(string) { calls = append(calls, "started") },
-			onCompleted: func(string, error) { calls = append(calls, "completed") },
-		}
-
-		catalog := &Catalog{
-			KVStore:  kvStore,
-			workPool: workPool,
-			errorToStatusCodeAndMsg: func(logging.Logger, error) (int, string, bool) {
-				return 500, "error", true
-			},
-			taskObserver: observer,
-		}
-
-		repository := &graveler.RepositoryRecord{
-			RepositoryID: "test-repo",
-			Repository:   &graveler.Repository{StorageNamespace: "s3://test", DefaultBranchID: "main"},
-		}
-
-		taskID := NewTaskID("TEST")
-		steps := []TaskStep{{Name: "simple", Func: func(context.Context) error { return nil }}}
-
-		err := catalog.RunBackgroundTaskSteps(ctx, repository, taskID, steps, &CommitAsyncStatusData{})
-		require.NoError(t, err)
-
-		// Wait for background execution to complete
-		time.Sleep(100 * time.Millisecond)
-		synctest.Wait()
-
-		require.Equal(t, []string{"submitted", "started", "completed"}, calls)
-	})
-}
-
-func TestRunBackgroundTaskSteps_ObserverReceivesError(t *testing.T) {
-	t.Parallel()
-	synctest.Test(t, func(t *testing.T) {
-		ctx := t.Context()
-		kvStore := kvtest.GetStore(ctx, t)
-		workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
-
-		taskErr := errors.New("step failed")
-		var completedErr error
-		observer := &recordingTaskObserver{
-			onSubmitted: func(string) {},
-			onStarted:   func(string) {},
-			onCompleted: func(_ string, err error) { completedErr = err },
-		}
-
-		catalog := &Catalog{
-			KVStore:  kvStore,
-			workPool: workPool,
-			errorToStatusCodeAndMsg: func(logging.Logger, error) (int, string, bool) {
-				return 500, "error", true
-			},
-			taskObserver: observer,
-		}
-
-		repository := &graveler.RepositoryRecord{
-			RepositoryID: "test-repo",
-			Repository:   &graveler.Repository{StorageNamespace: "s3://test", DefaultBranchID: "main"},
-		}
-
-		taskID := NewTaskID("TEST")
-		steps := []TaskStep{{Name: "failing", Func: func(context.Context) error { return taskErr }}}
-
-		err := catalog.RunBackgroundTaskSteps(ctx, repository, taskID, steps, &CommitAsyncStatusData{})
-		require.NoError(t, err)
-
-		time.Sleep(100 * time.Millisecond)
-		synctest.Wait()
-
-		require.Equal(t, taskErr, completedErr)
-	})
-}
-
 // setupTaskTest creates the common test setup used by all task tests
 func setupTaskTest(t *testing.T) (kv.Store, *Catalog, *graveler.RepositoryRecord) {
 	t.Helper()
@@ -468,8 +382,9 @@ func setupTaskTest(t *testing.T) (kv.Store, *Catalog, *graveler.RepositoryRecord
 	// catalog
 	workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
 	catalog := &Catalog{
-		KVStore:  kvStore,
-		workPool: workPool,
+		KVStore:     kvStore,
+		workPool:    workPool,
+		taskMonitor: DefaultTaskMonitor(),
 		errorToStatusCodeAndMsg: func(logger logging.Logger, err error) (int, string, bool) {
 			return 500, err.Error(), true
 		},
@@ -484,36 +399,4 @@ func setupTaskTest(t *testing.T) (kv.Store, *Catalog, *graveler.RepositoryRecord
 		},
 	}
 	return kvStore, catalog, repository
-}
-
-// recordingTaskObserver is a test helper that invokes callbacks for each observer method
-type recordingTaskObserver struct {
-	onSubmitted func(taskID string)
-	onStarted   func(taskID string)
-	onCompleted func(taskID string, err error)
-	onExpired   func(taskID string)
-}
-
-func (r *recordingTaskObserver) OnTaskSubmitted(taskID string) {
-	if r.onSubmitted != nil {
-		r.onSubmitted(taskID)
-	}
-}
-
-func (r *recordingTaskObserver) OnTaskStarted(taskID string) {
-	if r.onStarted != nil {
-		r.onStarted(taskID)
-	}
-}
-
-func (r *recordingTaskObserver) OnTaskCompleted(taskID string, err error) {
-	if r.onCompleted != nil {
-		r.onCompleted(taskID, err)
-	}
-}
-
-func (r *recordingTaskObserver) OnTaskExpired(taskID string) {
-	if r.onExpired != nil {
-		r.onExpired(taskID)
-	}
 }
