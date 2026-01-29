@@ -5,6 +5,26 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
 )
 
+// HasActionOnAnyResource checks if a user has a specific action on ANY resource.
+// This is used for list-type operations where we want to verify the user has
+// some permission before filtering results, rather than requiring wildcard access.
+// Returns true if the user has at least one allow statement for the action.
+func HasActionOnAnyResource(policies []*model.Policy, action string) bool {
+	for _, policy := range policies {
+		for _, stmt := range policy.Statement {
+			if stmt.Effect != model.StatementEffectAllow {
+				continue
+			}
+			for _, stmtAction := range stmt.Action {
+				if wildcard.Match(stmtAction, action) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // CheckPermission checks if a user has a specific action permission on a resource.
 // Returns true if allowed, false if denied or not permitted.
 // This evaluates policies similar to CheckPermissions but optimized for filtering.

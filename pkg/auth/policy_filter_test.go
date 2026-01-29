@@ -7,6 +7,130 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 )
 
+func TestHasActionOnAnyResource(t *testing.T) {
+	tests := []struct {
+		name     string
+		policies []*model.Policy
+		action   string
+		want     bool
+	}{
+		{
+			name:     "no policies",
+			policies: nil,
+			action:   "fs:ListRepositories",
+			want:     false,
+		},
+		{
+			name:     "empty policies",
+			policies: []*model.Policy{},
+			action:   "fs:ListRepositories",
+			want:     false,
+		},
+		{
+			name: "wildcard action",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:*"},
+					Resource: "arn:lakefs:fs:::repository/some-repo",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name: "exact action match",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: "arn:lakefs:fs:::repository/specific-repo",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name: "pattern action match",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:List*"},
+					Resource: "arn:lakefs:fs:::repository/*",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name: "different action",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ReadRepository"},
+					Resource: "*",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   false,
+		},
+		{
+			name: "deny statement ignored",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectDeny,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: "*",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   false,
+		},
+		{
+			name: "multiple policies one allows",
+			policies: []*model.Policy{
+				{
+					Statement: model.Statements{{
+						Effect:   model.StatementEffectAllow,
+						Action:   []string{"fs:ReadRepository"},
+						Resource: "*",
+					}},
+				},
+				{
+					Statement: model.Statements{{
+						Effect:   model.StatementEffectAllow,
+						Action:   []string{"fs:ListRepositories"},
+						Resource: "arn:lakefs:fs:::repository/analytics-*",
+					}},
+				},
+			},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name: "global wildcard",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"*"},
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := auth.HasActionOnAnyResource(tt.policies, tt.action)
+			if got != tt.want {
+				t.Errorf("HasActionOnAnyResource() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCheckPermission(t *testing.T) {
 	tests := []struct {
 		name        string
