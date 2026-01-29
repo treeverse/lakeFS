@@ -242,7 +242,7 @@ type Config struct {
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
 	ConflictResolvers       []graveler.ConflictResolver
 	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
-	TaskObserver            TaskObserver
+	TaskMonitor             *TaskMonitor
 }
 
 type ErrorToStatusCodeAndMsg func(logger logging.Logger, err error) (status int, msg string, ok bool)
@@ -262,7 +262,7 @@ type Catalog struct {
 	UGCPrepareInterval      time.Duration
 	signingKey              config.SecureString
 	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
-	taskObserver            TaskObserver
+	taskMonitor             *TaskMonitor
 }
 
 const (
@@ -438,9 +438,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		errToStatusFunc = defaultErrorToStatusCodeAndMsg
 	}
 
-	taskObserver := cfg.TaskObserver
-	if taskObserver == nil {
-		taskObserver = &NoOpTaskObserver{}
+	taskMonitor := cfg.TaskMonitor
+	if taskMonitor == nil {
+		taskMonitor = NewTaskMonitor(nil, baseCfg.Logging.AuditLogLevel, false)
 	}
 
 	return &Catalog{
@@ -458,7 +458,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		deleteSensor:            deleteSensor,
 		signingKey:              cfg.Config.StorageConfig().SigningKey(),
 		errorToStatusCodeAndMsg: errToStatusFunc,
-		taskObserver:            taskObserver,
+		taskMonitor:             taskMonitor,
 	}, nil
 }
 
@@ -2257,9 +2257,7 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 		return err
 	}
 
-	notifyObserver(taskID, func() {
-		c.taskObserver.OnTaskSubmitted(taskID)
-	})
+	c.taskMonitor.Record(ctx, task, string(repository.RepositoryID))
 
 	// Background context that persists after HTTP request completes
 	taskCtx := context.Background()
@@ -2311,9 +2309,8 @@ func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.Rep
 
 // executeTaskSteps runs each step sequentially, updating task status after each step.
 func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repository *graveler.RepositoryRecord, taskID string, task *Task, taskStatus protoreflect.ProtoMessage, steps []TaskStep) {
-	notifyObserver(taskID, func() {
-		c.taskObserver.OnTaskStarted(taskID)
-	})
+	repoID := string(repository.RepositoryID)
+	c.taskMonitor.Record(ctx, task, repoID)
 
 	// no steps to execute, we need to update the task status
 	if len(steps) == 0 {
@@ -2322,9 +2319,7 @@ func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repo
 		if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 			log.WithError(err).Error("Catalog failed to update task status")
 		}
-		notifyObserver(taskID, func() {
-			c.taskObserver.OnTaskCompleted(taskID, nil)
-		})
+		c.taskMonitor.Record(ctx, task, repoID)
 		return
 	}
 
@@ -2350,9 +2345,7 @@ func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repo
 		}
 
 		if task.Done {
-			notifyObserver(taskID, func() {
-				c.taskObserver.OnTaskCompleted(taskID, stepErr)
-			})
+			c.taskMonitor.Record(ctx, task, repoID)
 			return
 		}
 	}
@@ -2391,13 +2384,15 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 		if time.Since(msg.Task.UpdatedAt.AsTime()) < TaskExpiryTime {
 			continue
 		}
-		notifyObserver(msg.Task.Id, func() {
-			c.taskObserver.OnTaskExpired(msg.Task.Id)
-		})
+		// Mark task as expired and record metrics
+		msg.Task.Done = true
+		msg.Task.StatusCode = http.StatusRequestTimeout
+		c.taskMonitor.Record(ctx, msg.Task, string(repo.RepositoryID))
 		err := c.KVStoreLimited.Delete(ctx, []byte(repoPartition), ent.Key)
 		if err != nil {
 			return err
 		}
+		c.taskMonitor.Cleanup(msg.Task.Id)
 	}
 	return it.Err()
 }
