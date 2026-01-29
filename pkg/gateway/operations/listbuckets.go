@@ -1,9 +1,13 @@
 package operations
 
 import (
+	"errors"
 	"net/http"
 
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/catalog"
+	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -30,13 +34,24 @@ func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, 
 	parms := req.URL.Query()
 	prefix := parms.Get("prefix")
 
+	// Fetch effective policies for filtering
+	var opts []catalog.ListRepositoriesOptionsFunc
+	policies, _, err := o.Auth.ListEffectivePolicies(req.Context(), o.Principal, &model.PaginationParams{Amount: -1})
+	if err != nil && !errors.Is(err, auth.ErrNotImplemented) {
+		_ = o.EncodeError(w, req, err, gwerrors.Codes.ToAPIErr(gwerrors.ErrInternalError))
+		return
+	}
+	if err == nil {
+		opts = append(opts, catalog.WithListReposPermissionFilter(o.Principal, policies))
+	}
+
 	buckets := make([]serde.Bucket, 0)
 	var after string
 	for {
 		// list repositories
-		repos, hasMore, err := o.Catalog.ListRepositories(req.Context(), -1, prefix, "", after)
+		repos, hasMore, err := o.Catalog.ListRepositories(req.Context(), -1, prefix, "", after, opts...)
 		if err != nil {
-			_ = o.EncodeError(w, req, err, errors.Codes.ToAPIErr(errors.ErrInternalError))
+			_ = o.EncodeError(w, req, err, gwerrors.Codes.ToAPIErr(gwerrors.ErrInternalError))
 			return
 		}
 
