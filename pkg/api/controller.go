@@ -2296,16 +2296,7 @@ func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, params apigen.ListRepositoriesParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ListRepositoriesAction,
-			Resource: permissions.All,
-		},
-	}) {
-		return
-	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_repos", r, "", "", "")
 
 	// Get user for policy-based filtering
 	user, err := auth.GetUser(ctx)
@@ -2315,8 +2306,10 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	}
 
 	// Fetch effective policies for the user to filter repositories.
-	// If the auth service doesn't support listing policies (e.g., BasicAuthService),
-	// skip filtering and return all repositories (backward compatible behavior).
+	// We skip the standard authorize() call because it requires Resource: "*",
+	// which fails for users with pattern-based policies (e.g., "repository/analytics-*").
+	// Instead, we check if the user has ListRepositories on at least one resource,
+	// then apply RBAC-based filtering to return only accessible repositories.
 	var opts []catalog.ListRepositoriesOptionsFunc
 	policies, _, err := c.Auth.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: -1})
 	if err != nil && !errors.Is(err, auth.ErrNotImplemented) {
@@ -2325,8 +2318,14 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 	if err == nil {
+		if !auth.HasActionOnAnyResource(policies, permissions.ListRepositoriesAction) {
+			writeError(w, r, http.StatusUnauthorized, auth.ErrInsufficientPermissions)
+			return
+		}
 		opts = append(opts, catalog.WithListReposPermissionFilter(user.Username, policies))
 	}
+
+	c.LogAction(ctx, "list_repos", r, "", "", "")
 
 	repos, hasMore, err := c.Catalog.ListRepositories(
 		ctx,

@@ -7,6 +7,88 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 )
 
+func TestHasActionOnAnyResource(t *testing.T) {
+	tests := []struct {
+		name     string
+		policies []*model.Policy
+		action   string
+		want     bool
+	}{
+		{
+			name:     "no policies",
+			policies: nil,
+			action:   "fs:ListRepositories",
+			want:     false,
+		},
+		{
+			name: "wildcard action allows",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:*"},
+					Resource: "arn:lakefs:fs:::repository/some-repo",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name: "exact action match",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: "arn:lakefs:fs:::repository/specific-repo",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name: "different action no match",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ReadRepository"},
+					Resource: "*",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   false,
+		},
+		{
+			name: "deny statements ignored",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectDeny,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: "*",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   false,
+		},
+		{
+			name: "multiple policies one allows",
+			policies: []*model.Policy{
+				{Statement: model.Statements{{Effect: model.StatementEffectAllow, Action: []string{"fs:ReadRepository"}, Resource: "*"}}},
+				{Statement: model.Statements{{Effect: model.StatementEffectAllow, Action: []string{"fs:ListRepositories"}, Resource: "arn:lakefs:fs:::repository/analytics-*"}}},
+			},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := auth.HasActionOnAnyResource(tt.policies, tt.action)
+			if got != tt.want {
+				t.Errorf("HasActionOnAnyResource() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCheckPermission(t *testing.T) {
 	tests := []struct {
 		name        string
