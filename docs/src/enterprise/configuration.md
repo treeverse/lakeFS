@@ -27,8 +27,8 @@ Configuration section for lakeFS Enterprise database options.
 * `database.redis.cluster_mode` `(bool : false)` - Enable Redis Cluster mode support
 * `database.redis.username` `(string : "")` - Username for Redis authentication
 * `database.redis.password` `(string : "")` - Password for Redis authentication
-* `database.redis.pool_size` `(int : 25)` - Connection pool size for Redis connections
-* `database.redis.min_idle_conns` `(int : 25)` - Minimum number of idle connections in the pool
+* `database.redis.pool_size` `(int : 10)` - Connection pool size for Redis connections
+* `database.redis.min_idle_conns` `(int : 0)` - Minimum number of idle connections in the pool
 * `database.redis.dial_timeout` `(duration : 5s)` - Timeout for establishing new connections
 * `database.redis.read_timeout` `(duration : 3s)` - Timeout for socket reads
 * `database.redis.write_timeout` `(duration : 3s)` - Timeout for socket writes
