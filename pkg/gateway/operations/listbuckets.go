@@ -1,7 +1,6 @@
 package operations
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
@@ -12,12 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
-
-// EffectivePoliciesLister is an interface for services that can list effective policies.
-// This is used for RBAC-based filtering in ListBuckets.
-type EffectivePoliciesLister interface {
-	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
-}
 
 type ListBuckets struct{}
 
@@ -52,23 +45,21 @@ func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, 
 	// If the auth service supports it, apply RBAC-based filtering.
 	// Otherwise, fall back to returning all repositories (backward compatible).
 	var opts []catalog.ListRepositoriesOptionsFunc
-	if policyLister, ok := o.Auth.(EffectivePoliciesLister); ok {
-		policies, _, err := policyLister.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: -1})
-		if err != nil && !errors.Is(err, auth.ErrNotImplemented) {
-			o.Log(req).WithError(err).Error("failed to list effective policies")
-			_ = o.EncodeError(w, req, err, gwerrors.Codes.ToAPIErr(gwerrors.ErrInternalError))
+	policies, _, err := o.Auth.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: -1})
+	if err != nil && !errors.Is(err, auth.ErrNotImplemented) {
+		o.Log(req).WithError(err).Error("failed to list effective policies")
+		_ = o.EncodeError(w, req, err, gwerrors.Codes.ToAPIErr(gwerrors.ErrInternalError))
+		return
+	}
+	if err == nil {
+		// Verify the user has at least one ListRepositories permission.
+		// This ensures users without any repository access get AccessDenied
+		// rather than an empty list.
+		if !auth.HasActionOnAnyResource(policies, permissions.ListRepositoriesAction) {
+			_ = o.EncodeError(w, req, nil, gwerrors.Codes.ToAPIErr(gwerrors.ErrAccessDenied))
 			return
 		}
-		if err == nil {
-			// Verify the user has at least one ListRepositories permission.
-			// This ensures users without any repository access get AccessDenied
-			// rather than an empty list.
-			if !auth.HasActionOnAnyResource(policies, permissions.ListRepositoriesAction) {
-				_ = o.EncodeError(w, req, nil, gwerrors.Codes.ToAPIErr(gwerrors.ErrAccessDenied))
-				return
-			}
-			opts = append(opts, catalog.WithListReposPermissionFilter(user.Username, policies))
-		}
+		opts = append(opts, catalog.WithListReposPermissionFilter(user.Username, policies))
 	}
 
 	buckets := make([]serde.Bucket, 0)
