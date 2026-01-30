@@ -21,6 +21,12 @@ func TestHasActionOnAnyResource(t *testing.T) {
 			want:     false,
 		},
 		{
+			name:     "empty policies",
+			policies: []*model.Policy{},
+			action:   "fs:ListRepositories",
+			want:     false,
+		},
+		{
 			name: "wildcard action allows",
 			policies: []*model.Policy{{
 				Statement: model.Statements{{
@@ -39,6 +45,18 @@ func TestHasActionOnAnyResource(t *testing.T) {
 					Effect:   model.StatementEffectAllow,
 					Action:   []string{"fs:ListRepositories"},
 					Resource: "arn:lakefs:fs:::repository/specific-repo",
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name: "pattern action match",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:List*"},
+					Resource: "arn:lakefs:fs:::repository/*",
 				}},
 			}},
 			action: "fs:ListRepositories",
