@@ -27,7 +27,7 @@ func TestHasActionOnAnyResource(t *testing.T) {
 			want:     false,
 		},
 		{
-			name: "wildcard action",
+			name: "wildcard action allows",
 			policies: []*model.Policy{{
 				Statement: model.Statements{{
 					Effect:   model.StatementEffectAllow,
@@ -63,7 +63,7 @@ func TestHasActionOnAnyResource(t *testing.T) {
 			want:   true,
 		},
 		{
-			name: "different action",
+			name: "different action no match",
 			policies: []*model.Policy{{
 				Statement: model.Statements{{
 					Effect:   model.StatementEffectAllow,
@@ -75,7 +75,7 @@ func TestHasActionOnAnyResource(t *testing.T) {
 			want:   false,
 		},
 		{
-			name: "deny statement ignored",
+			name: "deny statements ignored",
 			policies: []*model.Policy{{
 				Statement: model.Statements{{
 					Effect:   model.StatementEffectDeny,
@@ -89,33 +89,9 @@ func TestHasActionOnAnyResource(t *testing.T) {
 		{
 			name: "multiple policies one allows",
 			policies: []*model.Policy{
-				{
-					Statement: model.Statements{{
-						Effect:   model.StatementEffectAllow,
-						Action:   []string{"fs:ReadRepository"},
-						Resource: "*",
-					}},
-				},
-				{
-					Statement: model.Statements{{
-						Effect:   model.StatementEffectAllow,
-						Action:   []string{"fs:ListRepositories"},
-						Resource: "arn:lakefs:fs:::repository/analytics-*",
-					}},
-				},
+				{Statement: model.Statements{{Effect: model.StatementEffectAllow, Action: []string{"fs:ReadRepository"}, Resource: "*"}}},
+				{Statement: model.Statements{{Effect: model.StatementEffectAllow, Action: []string{"fs:ListRepositories"}, Resource: "arn:lakefs:fs:::repository/analytics-*"}}},
 			},
-			action: "fs:ListRepositories",
-			want:   true,
-		},
-		{
-			name: "global wildcard",
-			policies: []*model.Policy{{
-				Statement: model.Statements{{
-					Effect:   model.StatementEffectAllow,
-					Action:   []string{"*"},
-					Resource: "arn:lakefs:fs:::repository/repo1",
-				}},
-			}},
 			action: "fs:ListRepositories",
 			want:   true,
 		},
@@ -374,6 +350,48 @@ func TestCheckPermission(t *testing.T) {
 			}},
 			action: "fs:ListRepositories",
 			want:   true,
+		},
+		{
+			name:        "wildcard + specific repo - match specific",
+			resourceArn: "arn:lakefs:fs:::repository/production-data",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: `["arn:lakefs:fs:::repository/analytics-*", "arn:lakefs:fs:::repository/production-data"]`,
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name:        "wildcard + specific repo - match wildcard",
+			resourceArn: "arn:lakefs:fs:::repository/analytics-prod",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: `["arn:lakefs:fs:::repository/analytics-*", "arn:lakefs:fs:::repository/production-data"]`,
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name:        "wildcard + specific repo - no match",
+			resourceArn: "arn:lakefs:fs:::repository/other-repo",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: `["arn:lakefs:fs:::repository/analytics-*", "arn:lakefs:fs:::repository/production-data"]`,
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   false,
 		},
 		{
 			name:        "statements with conditions are skipped",

@@ -149,6 +149,7 @@ type Database struct {
 		Password           SecureString  `mapstructure:"password"`
 		Database           int           `mapstructure:"database"`
 		PoolSize           int           `mapstructure:"pool_size"`
+		MinIdleConns       int           `mapstructure:"min_idle_conns"`
 		DialTimeout        time.Duration `mapstructure:"dial_timeout"`
 		ReadTimeout        time.Duration `mapstructure:"read_timeout"`
 		WriteTimeout       time.Duration `mapstructure:"write_timeout"`
