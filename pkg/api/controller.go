@@ -2312,6 +2312,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	// then apply RBAC-based filtering to return only accessible repositories.
 	var opts []catalog.ListRepositoriesOptionsFunc
 	policies, _, err := c.Auth.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: -1})
+	// Check auth.ErrNotImplemented for BasicAuthService
 	if err != nil && !errors.Is(err, auth.ErrNotImplemented) {
 		c.Logger.WithContext(ctx).WithError(err).Error("failed to list effective policies")
 		writeError(w, r, http.StatusInternalServerError, err)

@@ -334,6 +334,48 @@ func TestCheckPermission(t *testing.T) {
 			want:   true,
 		},
 		{
+			name:        "wildcard + specific repo - match specific",
+			resourceArn: "arn:lakefs:fs:::repository/production-data",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: `["arn:lakefs:fs:::repository/analytics-*", "arn:lakefs:fs:::repository/production-data"]`,
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name:        "wildcard + specific repo - match wildcard",
+			resourceArn: "arn:lakefs:fs:::repository/analytics-prod",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: `["arn:lakefs:fs:::repository/analytics-*", "arn:lakefs:fs:::repository/production-data"]`,
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   true,
+		},
+		{
+			name:        "wildcard + specific repo - no match",
+			resourceArn: "arn:lakefs:fs:::repository/other-repo",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"fs:ListRepositories"},
+					Resource: `["arn:lakefs:fs:::repository/analytics-*", "arn:lakefs:fs:::repository/production-data"]`,
+				}},
+			}},
+			action: "fs:ListRepositories",
+			want:   false,
+		},
+		{
 			name:        "statements with conditions are skipped",
 			resourceArn: "arn:lakefs:fs:::repository/repo1",
 			username:    "user1",
