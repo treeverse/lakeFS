@@ -729,7 +729,7 @@ const CollapsibleBreadcrumb = ({
                         <Dropdown.Toggle variant="link" size="sm" className="breadcrumb-dropdown-toggle">
                             …
                         </Dropdown.Toggle>
-                        <Dropdown.Menu className="breadcrumb-dropdown-menu">
+                        <Dropdown.Menu className="breadcrumb-dropdown-menu" popperConfig={{ strategy: 'fixed' }}>
                             {collapsedItems.map((item, index) => (
                                 <Dropdown.Item key={`collapsed-${index}`} as="div" className="breadcrumb-dropdown-item">
                                     {item.renderDropdown ? item.renderDropdown() : item.render()}
