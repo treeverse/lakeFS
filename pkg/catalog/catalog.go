@@ -680,7 +680,11 @@ func (c *Catalog) DeleteRepositoryMetadata(ctx context.Context, repository strin
 // ListRepositories list repository information, the bool returned is true when more repositories can be listed.
 // In this case, pass the last repository name as 'after' on the next call to ListRepositories. Results can be
 // filtered by specifying a prefix or, more generally, a searchString.
-func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searchString, after string) ([]*Repository, bool, error) {
+// Optional ListRepositoriesOptionsFunc can be provided to further filter results (e.g., by RBAC policies).
+func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searchString, after string, opts ...ListRepositoriesOptionsFunc) ([]*Repository, bool, error) {
+	// Process options
+	options := NewListRepositoriesOptions(opts)
+
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -710,6 +714,10 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searc
 			continue
 		}
 		if record.RepositoryID == afterRepositoryID {
+			continue
+		}
+		// Apply permission filter if provided
+		if options.FilterFunc != nil && !options.FilterFunc(string(record.RepositoryID)) {
 			continue
 		}
 		repos = append(repos, &Repository{
