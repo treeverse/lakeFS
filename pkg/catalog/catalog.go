@@ -242,6 +242,7 @@ type Config struct {
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
 	ConflictResolvers       []graveler.ConflictResolver
 	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
+	TaskMonitor             *TaskMonitor
 }
 
 type ErrorToStatusCodeAndMsg func(logger logging.Logger, err error) (status int, msg string, ok bool)
@@ -261,6 +262,7 @@ type Catalog struct {
 	UGCPrepareInterval      time.Duration
 	signingKey              config.SecureString
 	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
+	taskMonitor             *TaskMonitor
 }
 
 const (
@@ -436,6 +438,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		errToStatusFunc = defaultErrorToStatusCodeAndMsg
 	}
 
+	taskMonitor := cfg.TaskMonitor
+	if taskMonitor == nil {
+		// Default implementation (needed in case a service that is not the controller initializes it)
+		taskMonitor = DefaultTaskMonitor()
+	}
+
 	return &Catalog{
 		BlockAdapter:            tierFSParams.Adapter,
 		Store:                   gStore,
@@ -451,6 +459,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		deleteSensor:            deleteSensor,
 		signingKey:              cfg.Config.StorageConfig().SigningKey(),
 		errorToStatusCodeAndMsg: errToStatusFunc,
+		taskMonitor:             taskMonitor,
 	}, nil
 }
 
@@ -2307,6 +2316,9 @@ func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.Rep
 
 // executeTaskSteps runs each step sequentially, updating task status after each step.
 func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repository *graveler.RepositoryRecord, taskID string, task *Task, taskStatus protoreflect.ProtoMessage, steps []TaskStep) {
+	span := c.taskMonitor.StartSpan(ctx, task, string(repository.RepositoryID))
+	defer span.End() // reads status from task.StatusCode/ErrorMsg
+
 	// no steps to execute, we need to update the task status
 	if len(steps) == 0 {
 		task.Done = true
@@ -2380,6 +2392,8 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 		if err != nil {
 			return err
 		}
+		// Record metric for orphaned task after deleting
+		c.taskMonitor.RecordOrphanedTask(ctx, msg.Task.Id, string(repo.RepositoryID))
 	}
 	return it.Err()
 }

@@ -382,8 +382,9 @@ func setupTaskTest(t *testing.T) (kv.Store, *Catalog, *graveler.RepositoryRecord
 	// catalog
 	workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
 	catalog := &Catalog{
-		KVStore:  kvStore,
-		workPool: workPool,
+		KVStore:     kvStore,
+		workPool:    workPool,
+		taskMonitor: DefaultTaskMonitor(),
 		errorToStatusCodeAndMsg: func(logger logging.Logger, err error) (int, string, bool) {
 			return 500, err.Error(), true
 		},
