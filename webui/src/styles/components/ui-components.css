@@ -176,14 +176,6 @@ a[title*='Upload'] + a[title*='Import'] {
 }
 
 /* Collapsible Breadcrumb */
-.collapsible-breadcrumb-wrapper {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    flex: 1;
-    position: relative;
-}
-
 .collapsible-breadcrumb {
     display: flex;
     align-items: center;
