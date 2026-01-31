@@ -58,7 +58,10 @@ async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{
         if (tokenized.types[i] === DUCKDB_STRING_CONSTANT) {
             const matches = part.match(LAKEFS_URI_PATTERN);
             if (matches !== null) {
-                fileMap[matches[2]] = `s3://${matches[3]}?r=${r}`;
+                // Unescape SQL single quotes ('' -> ') then URL-encode the path for S3 protocol
+                const unescapedUri = matches[2].replace(/''/g, "'");
+                const encodedPath = matches[3].replace(/''/g, "'").split('/').map(encodeURIComponent).join('/');
+                fileMap[unescapedUri] = `s3://${encodedPath}?r=${r}`;
             }
         }
     });
