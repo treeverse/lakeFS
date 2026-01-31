@@ -7,8 +7,10 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Shopify/go-lua"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -141,24 +143,43 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	if metadata != nil {
 		metadataMap = metadata.(map[string]any)
 	}
-	status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
-	if err != nil {
-		if alreadyExists(err) {
-			err = client.deleteTable(catalogName, schemaName, tableName)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
-			}
-			status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
-			}
-		} else {
+
+	// check whether the the table already exists
+	_, err := client.workspaceClient.Tables.GetByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
+	if err != nil && !errors.Is(err, databricks.ErrResourceDoesNotExist) && !strings.Contains(err.Error(), "does not exist") {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	// in case there is no error, table exists and we will delete it before creating a new one
+	if err == nil {
+		err = client.deleteTable(catalogName, schemaName, tableName)
+		if err != nil && !strings.Contains(err.Error(), "does not exist") {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 	}
+
+	bo := backoff.NewExponentialBackOff(
+		backoff.WithInitialInterval(500*time.Millisecond),
+		backoff.WithMaxInterval(3*time.Second),
+		backoff.WithMaxElapsedTime(100*time.Second),
+	)
+	status, err := backoff.RetryWithData(func() (string, error) {
+		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
+		if err != nil {
+			if alreadyExists(err) {
+				return "", err
+			}
+			return "", backoff.Permanent(err)
+		}
+		return status, nil
+	}, backoff.WithContext(bo, client.ctx))
+
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+
 	l.PushString(status)
 	return 1
 }
