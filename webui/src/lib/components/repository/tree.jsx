@@ -702,7 +702,7 @@ const CollapsibleBreadcrumb = ({
     }, [items, collapsedCount]);
 
     return (
-        <>
+        <div className="collapsible-breadcrumb-wrapper">
             {/* Hidden measurement container */}
             <div
                 ref={measureRef}
@@ -722,33 +722,31 @@ const CollapsibleBreadcrumb = ({
                 ))}
             </div>
 
-            {/* Actual breadcrumb display */}
+            {/* Dropdown placed outside overflow container */}
+            {collapsedCount > 0 && (
+                <Dropdown className="breadcrumb-dropdown" align="start">
+                    <Dropdown.Toggle variant="link" size="sm" className="breadcrumb-dropdown-toggle">
+                        …
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="breadcrumb-dropdown-menu">
+                        {collapsedItems.map((item, index) => (
+                            <Dropdown.Item key={`collapsed-${index}`} as="div" className="breadcrumb-dropdown-item">
+                                {item.renderDropdown ? item.renderDropdown() : item.render()}
+                            </Dropdown.Item>
+                        ))}
+                    </Dropdown.Menu>
+                </Dropdown>
+            )}
+
+            {/* Visible path segments with overflow handling */}
             <div ref={containerRef} className="collapsible-breadcrumb">
-                {collapsedCount > 0 && (
-                    <Dropdown className="breadcrumb-dropdown" align="start">
-                        <Dropdown.Toggle variant="link" size="sm" className="breadcrumb-dropdown-toggle">
-                            …
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu
-                            className="breadcrumb-dropdown-menu"
-                            popperConfig={{ strategy: 'fixed' }}
-                            renderOnMount={true}
-                        >
-                            {collapsedItems.map((item, index) => (
-                                <Dropdown.Item key={`collapsed-${index}`} as="div" className="breadcrumb-dropdown-item">
-                                    {item.renderDropdown ? item.renderDropdown() : item.render()}
-                                </Dropdown.Item>
-                            ))}
-                        </Dropdown.Menu>
-                    </Dropdown>
-                )}
                 {visibleItems.map((item, index) => (
                     <span key={`visible-${index}`} className="breadcrumb-visible-item">
                         {item.render()}
                     </span>
                 ))}
             </div>
-        </>
+        </div>
     );
 };
 
