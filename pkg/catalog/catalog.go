@@ -2862,6 +2862,10 @@ func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration
 		return
 	}
 
+	if task.Done {
+		return
+	}
+
 	updatedAt := task.UpdatedAt.AsTime()
 	if time.Since(updatedAt) > expiryDuration {
 		task.Done = true
