@@ -614,6 +614,10 @@ function pathParts(path, isPathToFile) {
     return resolved;
 }
 
+// Layout constants for CollapsibleBreadcrumb
+const DROPDOWN_BUTTON_WIDTH = 50; // Width of the [...] dropdown button
+const BREADCRUMB_PADDING = 20; // Safety padding for container
+
 /**
  * CollapsibleBreadcrumb - A responsive breadcrumb component that collapses
  * leftmost path segments into a dropdown when space is limited, always
@@ -649,13 +653,11 @@ const CollapsibleBreadcrumb = ({
             if (!container) return;
 
             const containerWidth = container.getBoundingClientRect().width;
-            const dropdownWidth = 50; // Approximate width of [...] dropdown button
-            const padding = 20; // Safety padding
 
             // Calculate total width needed
             const totalWidth = itemWidths.reduce((sum, w) => sum + w, 0);
 
-            if (totalWidth <= containerWidth - padding) {
+            if (totalWidth <= containerWidth - BREADCRUMB_PADDING) {
                 // Everything fits
                 setCollapsedCount(0);
                 return;
@@ -663,7 +665,7 @@ const CollapsibleBreadcrumb = ({
 
             // Need to collapse - figure out how many items
             // Always keep at least maxItems visible at the end
-            const availableWidth = containerWidth - dropdownWidth - padding;
+            const availableWidth = containerWidth - DROPDOWN_BUTTON_WIDTH - BREADCRUMB_PADDING;
 
             // Start from the right (end of path) and work backwards
             let visibleWidth = 0;
@@ -715,8 +717,8 @@ const CollapsibleBreadcrumb = ({
                 }}
                 aria-hidden="true"
             >
-                {items.map((item, index) => (
-                    <span key={`measure-${index}`} className="breadcrumb-measure-item">
+                {items.map((item) => (
+                    <span key={`measure-${item.path}`} className="breadcrumb-measure-item">
                         {item.render()}
                     </span>
                 ))}
@@ -726,7 +728,12 @@ const CollapsibleBreadcrumb = ({
             <div ref={containerRef} className="collapsible-breadcrumb">
                 {collapsedCount > 0 && (
                     <Dropdown className="breadcrumb-dropdown" align="start">
-                        <Dropdown.Toggle variant="link" size="sm" className="breadcrumb-dropdown-toggle">
+                        <Dropdown.Toggle
+                            variant="link"
+                            size="sm"
+                            className="breadcrumb-dropdown-toggle"
+                            aria-label="Show collapsed path segments"
+                        >
                             …
                         </Dropdown.Toggle>
                         <Dropdown.Menu
@@ -734,16 +741,20 @@ const CollapsibleBreadcrumb = ({
                             popperConfig={{ strategy: 'fixed' }}
                             renderOnMount={true}
                         >
-                            {collapsedItems.map((item, index) => (
-                                <Dropdown.Item key={`collapsed-${index}`} as="div" className="breadcrumb-dropdown-item">
+                            {collapsedItems.map((item) => (
+                                <Dropdown.Item
+                                    key={`collapsed-${item.path}`}
+                                    as="div"
+                                    className="breadcrumb-dropdown-item"
+                                >
                                     {item.renderDropdown ? item.renderDropdown() : item.render()}
                                 </Dropdown.Item>
                             ))}
                         </Dropdown.Menu>
                     </Dropdown>
                 )}
-                {visibleItems.map((item, index) => (
-                    <span key={`visible-${index}`} className="breadcrumb-visible-item">
+                {visibleItems.map((item) => (
+                    <span key={`visible-${item.path}`} className="breadcrumb-visible-item">
                         {item.render()}
                     </span>
                 ))}

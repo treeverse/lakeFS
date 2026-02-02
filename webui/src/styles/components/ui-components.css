@@ -209,7 +209,7 @@ a[title*='Upload'] + a[title*='Import'] {
 .breadcrumb-dropdown-toggle:hover,
 .breadcrumb-dropdown-toggle:focus {
     color: var(--primary) !important;
-    background: rgba(var(--primary-rgb), 0.1) !important;
+    background: rgba(var(--primary-rgb, 59, 130, 246), 0.1) !important;
     border-radius: var(--radius-sm);
 }
 
