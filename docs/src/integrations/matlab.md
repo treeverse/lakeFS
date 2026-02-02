@@ -36,19 +36,6 @@ Before using lakeFS with MATLAB, ensure you have:
 
 ## Installation
 
-### Download Helper Files
-
-Download the MATLAB helper classes:
-- [`lakefs.m`](https://github.com/treeverse/lakeFS-samples/matlab/lakefs.m) - Core lakeFS operations
-- [`everest.m`](https://github.com/treeverse/lakeFS-samples/matlab/everest.m) - File system mounting
-
-Place both files in your MATLAB project directory or add to your MATLAB path:
-
-```matlab
-% Add helpers to MATLAB path
-addpath('/path/to/helpers');
-```
-
 ### Configure lakeFS Connection
 
 Create your lakeFS configuration by copying and editing the template:
