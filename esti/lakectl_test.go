@@ -7,14 +7,42 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 var emptyVars = make(map[string]string)
 
-const branchProtectTimeout = graveler.BranchUpdateMaxInterval + time.Second
+const (
+	branchProtectTimeout = graveler.BranchUpdateMaxInterval + time.Second
+
+	// lakectl import test paths for different object stores
+	s3LakectlImportPath    = "s3://lakectl-ingest-test-data"
+	gsLakectlImportPath    = "gs://lakectl-ingest-test-data"
+	azureLakectlImportPath = "https://esti.blob.core.windows.net/lakectl-ingest-test-data/"
+	lakectlImportObjects   = "10"
+)
+
+// getLakectlImportPath returns the import path for lakectl import tests based on the blockstore type
+func getLakectlImportPath(t *testing.T) string {
+	t.Helper()
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	switch blockstoreType {
+	case block.BlockstoreTypeS3:
+		return s3LakectlImportPath
+	case block.BlockstoreTypeGS:
+		return gsLakectlImportPath
+	case block.BlockstoreTypeAzure:
+		return azureLakectlImportPath
+	default:
+		t.Skip("lakectl import test isn't supported for non-production block adapters")
+		return ""
+	}
+}
 
 func TestLakectlHelp(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), false, "lakectl_help", emptyVars)
@@ -907,9 +935,7 @@ func TestLakectlFsStat(t *testing.T) {
 }
 
 func TestLakectlImport(t *testing.T) {
-	// TODO(barak): generalize test to work all supported object stores
-	const IngestTestBucketPath = "s3://esti-system-testing-data/ingest-test-data/"
-	skipOnSchemaMismatch(t, IngestTestBucketPath)
+	importPath := getLakectlImportPath(t)
 
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
@@ -917,14 +943,13 @@ func TestLakectlImport(t *testing.T) {
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
-		"OBJECTS": "10",
+		"OBJECTS": lakectlImportObjects,
 	}
 
-	const from = "s3://lakectl-ingest-test-data"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/to/", false, "lakectl_import", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/too/ --message \"import too\"", false, "lakectl_import_with_message", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/another/import/ --merge", false, "lakectl_import_and_merge", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+importPath+" --to lakefs://"+repoName+"/"+mainBranch+"/to/", false, "lakectl_import", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+importPath+" --to lakefs://"+repoName+"/"+mainBranch+"/too/ --message \"import too\"", false, "lakectl_import_with_message", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+importPath+" --to lakefs://"+repoName+"/"+mainBranch+"/another/import/ --merge", false, "lakectl_import_and_merge", vars)
 }
 
 func TestLakectlCherryPick(t *testing.T) {
