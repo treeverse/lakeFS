@@ -411,6 +411,12 @@ func TestGetValidatedTaskStatus_Expiry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			synctest.Test(t, func(t *testing.T) {
+				t.Cleanup(func() {
+					// Let the task goroutine finish
+					time.Sleep(time.Hour)
+					synctest.Wait()
+				})
+
 				kvStore, c, repository := setupTaskTest(t)
 				ctx := t.Context()
 
@@ -419,9 +425,9 @@ func TestGetValidatedTaskStatus_Expiry(t *testing.T) {
 
 				steps := []TaskStep{
 					{
-						Name: "quick task",
+						Name: "long task",
 						Func: func(ctx context.Context) error {
-							time.Sleep(100 * time.Millisecond)
+							time.Sleep(time.Hour)
 							return nil
 						},
 					},
@@ -433,23 +439,25 @@ func TestGetValidatedTaskStatus_Expiry(t *testing.T) {
 				time.Sleep(syncTestSleep)
 				synctest.Wait()
 
+				// Simulate stalled heartbeat by overwriting UpdatedAt
 				var status TaskMsg
 				_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &status)
 				require.NoError(t, err)
-				require.True(t, status.Task.Done)
-
-				time.Sleep(tt.timeAdvance)
-				synctest.Wait()
+				require.False(t, status.Task.Done)
+				status.Task.UpdatedAt = timestamppb.New(time.Now().Add(-tt.timeAdvance))
+				err = UpdateTaskStatus(ctx, kvStore, repository, taskID, &status)
+				require.NoError(t, err)
 
 				var resultStatus TaskMsg
 				err = c.GetValidatedTaskStatus(ctx, repository.RepositoryID.String(), taskID, testTaskPrefix, &resultStatus, tt.expiryDuration)
 				require.NoError(t, err)
-				require.True(t, resultStatus.Task.Done)
 
 				if tt.expectExpired {
+					require.True(t, resultStatus.Task.Done)
 					require.Contains(t, resultStatus.Task.ErrorMsg, "expired")
 					require.Equal(t, http.StatusRequestTimeout, int(resultStatus.Task.StatusCode))
 				} else {
+					require.False(t, resultStatus.Task.Done)
 					require.Empty(t, resultStatus.Task.ErrorMsg)
 				}
 			})
