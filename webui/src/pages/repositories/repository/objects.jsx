@@ -642,6 +642,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
         const mapper = async (file) => {
             const currentDestination = fileDestinations[file.path];
             if (!currentDestination) {
+                // eslint-disable-next-line no-console
                 console.error(`No destination path found for file: ${file.path}`);
                 setFileStates((next) => ({
                     ...next,
@@ -677,6 +678,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                 }));
             } catch (error) {
                 if (controller.signal.aborted) return;
+                // eslint-disable-next-line no-console
                 console.error('Upload error for:', file.path, error);
                 setFileStates((next) => ({
                     ...next,
@@ -702,6 +704,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
             }
         } catch (error) {
             if (!isAbortedError(error, controller)) {
+                // eslint-disable-next-line no-console
                 console.error('pMap upload error:', error);
                 setUploadState((prev) => ({
                     ...prev,
@@ -709,6 +712,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                     error: prev.error || error,
                 }));
             } else {
+                // eslint-disable-next-line no-console
                 console.log('Upload process aborted.');
                 setUploadState((prev) => ({ ...prev, inProgress: false }));
             }

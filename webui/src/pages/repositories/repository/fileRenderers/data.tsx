@@ -69,6 +69,7 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
                 setLoading(false);
             }
         };
+        // eslint-disable-next-line no-console
         runQuery(sql).catch(console.error);
         // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps

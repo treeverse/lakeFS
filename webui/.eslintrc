@@ -16,6 +16,7 @@
       }
     },
     "rules": {
+      "no-console": "error",
       "eqeqeq": "warn",
       "strict": "error",
       "react/prop-types": 0,
