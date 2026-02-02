@@ -19,11 +19,11 @@ func TestSliceResetLogic(t *testing.T) {
 			objs = append(objs, fmt.Sprintf("file%d", i))
 		}
 		require.Equal(t, 1000, len(objs))
-		
+
 		// Using clear zeroes elements but keeps length
 		clear(objs)
 		require.Equal(t, 1000, len(objs), "clear() does not reset slice length - this is the bug!")
-		
+
 		// Appending after clear would make the slice grow beyond original size
 		objs = append(objs, "new-file")
 		require.Equal(t, 1001, len(objs))
@@ -35,12 +35,12 @@ func TestSliceResetLogic(t *testing.T) {
 			objs = append(objs, fmt.Sprintf("file%d", i))
 		}
 		require.Equal(t, 1000, len(objs))
-		
+
 		// Using [:0] resets length to 0
 		objs = objs[:0]
 		require.Equal(t, 0, len(objs), "[:0] correctly resets slice length")
 		require.Equal(t, 1000, cap(objs), "[:0] preserves capacity")
-		
+
 		// Appending after [:0] starts from 0
 		objs = append(objs, "new-file")
 		require.Equal(t, 1, len(objs))
@@ -55,16 +55,16 @@ func TestSliceResetLogic(t *testing.T) {
 		// Simulate processing 2500 files
 		for i := 0; i < 2500; i++ {
 			objs = append(objs, fmt.Sprintf("file%d", i))
-			
+
 			if len(objs) >= batchSize {
 				// Record batch size
 				batchSizes = append(batchSizes, len(objs))
-				
+
 				// With the fix: objs = objs[:0]
 				objs = objs[:0]
 			}
 		}
-		
+
 		// Handle remaining files
 		if len(objs) > 0 {
 			batchSizes = append(batchSizes, len(objs))
@@ -75,7 +75,7 @@ func TestSliceResetLogic(t *testing.T) {
 		require.Equal(t, 1000, batchSizes[0])
 		require.Equal(t, 1000, batchSizes[1])
 		require.Equal(t, 500, batchSizes[2])
-		
+
 		// Verify no batch exceeds the limit
 		for i, size := range batchSizes {
 			require.LessOrEqual(t, size, batchSize, "batch %d exceeds limit", i)
@@ -91,16 +91,16 @@ func TestSliceResetLogic(t *testing.T) {
 		// Simulate processing 2500 files
 		for i := 0; i < 2500; i++ {
 			objs = append(objs, fmt.Sprintf("file%d", i))
-			
+
 			if len(objs) >= batchSize {
 				// Record batch size
 				batchSizes = append(batchSizes, len(objs))
-				
+
 				// With the bug: clear(objs) - doesn't reset length!
 				clear(objs)
 			}
 		}
-		
+
 		// Handle remaining files
 		if len(objs) > 0 {
 			batchSizes = append(batchSizes, len(objs))
@@ -108,10 +108,10 @@ func TestSliceResetLogic(t *testing.T) {
 
 		// With the bug, we'd get: 1000, 1001, 1002, ...
 		require.Greater(t, len(batchSizes), 3, "bug causes many small batches")
-		
+
 		// The first batch would be 1000
 		require.Equal(t, 1000, batchSizes[0])
-		
+
 		// But subsequent batches would exceed the limit due to the bug
 		for i := 1; i < len(batchSizes)-1; i++ {
 			require.Greater(t, batchSizes[i], batchSize, "bug causes batches %d to exceed limit", i)
