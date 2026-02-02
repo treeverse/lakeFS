@@ -7,7 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestBatchProcessing tests the batching logic used in deleteObjectWorker
+// TestBatchProcessing validates the batching algorithm used in deleteObjectWorker.
+// This test ensures that when processing items in batches, the slice reset logic
+// (using objs[:0]) correctly maintains batch sizes at or below the limit.
+// The algorithm tested here is the same one used in deleteObjectWorker (lines 93-106 of fs_rm.go).
 func TestBatchProcessing(t *testing.T) {
 	tests := []struct {
 		name            string
