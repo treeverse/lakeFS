@@ -370,7 +370,7 @@ const RefDropdown = ({
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: '250px' }}
+                style={{ maxWidth: '400px' }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >
