@@ -73,9 +73,18 @@ const (
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
 
+	// Task ID prefixes for async operations
 	DumpRefsTaskIDPrefix                  = "DR"
 	RestoreRefsTaskIDPrefix               = "RR"
 	GarbageCollectionPrepareCommitsPrefix = "GCPC"
+
+	// Operation names for async task metrics and logging.
+	// These are stored in Task.Operation field.
+	OpCommit           = "commit"
+	OpMerge            = "merge"
+	OpDumpRefs         = "dump_refs"
+	OpRestoreRefs      = "restore_refs"
+	OpGCPrepareCommits = "gc_prepare_commits"
 
 	TaskExpiryTime        = 24 * time.Hour
 	TaskHeartbeatInterval = 5 * time.Second
@@ -242,7 +251,6 @@ type Config struct {
 	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
 	ConflictResolvers       []graveler.ConflictResolver
 	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
-	TaskMonitor             *TaskMonitor
 }
 
 type ErrorToStatusCodeAndMsg func(logger logging.Logger, err error) (status int, msg string, ok bool)
@@ -262,7 +270,6 @@ type Catalog struct {
 	UGCPrepareInterval      time.Duration
 	signingKey              config.SecureString
 	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
-	taskMonitor             *TaskMonitor
 }
 
 const (
@@ -438,12 +445,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		errToStatusFunc = defaultErrorToStatusCodeAndMsg
 	}
 
-	taskMonitor := cfg.TaskMonitor
-	if taskMonitor == nil {
-		// Default implementation (needed in case a service that is not the controller initializes it)
-		taskMonitor = DefaultTaskMonitor()
-	}
-
 	return &Catalog{
 		BlockAdapter:            tierFSParams.Adapter,
 		Store:                   gStore,
@@ -459,7 +460,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		deleteSensor:            deleteSensor,
 		signingKey:              cfg.Config.StorageConfig().SigningKey(),
 		errorToStatusCodeAndMsg: errToStatusFunc,
-		taskMonitor:             taskMonitor,
 	}, nil
 }
 
@@ -2176,7 +2176,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 
 	// create refs dump task and update initial status.
 	taskID := NewTaskID(DumpRefsTaskIDPrefix)
-	err = c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
@@ -2230,7 +2230,7 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 		},
 	}
 	taskID := NewTaskID(RestoreRefsTaskIDPrefix)
-	if err := c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus); err != nil {
+	if err := c.RunBackgroundTaskSteps(ctx, repository, OpRestoreRefs, taskID, taskSteps, taskStatus); err != nil {
 		return "", err
 	}
 	return taskID, nil
@@ -2247,9 +2247,11 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 
 // RunBackgroundTaskSteps updates task status and executes each step in the background.
 // The task status is updated after each step and marked as completed on success or failure.
-func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
+// The operation parameter is used for metrics and logging (e.g., OpDumpRefs, OpRestoreRefs).
+func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, operation, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
 	task := &Task{
 		Id:        taskID,
+		Operation: operation,
 		UpdatedAt: timestamppb.Now(),
 	}
 	setTaskInStatus(taskStatus, task)
@@ -2308,8 +2310,8 @@ func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.Rep
 
 // executeTaskSteps runs each step sequentially, updating task status after each step.
 func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repository *graveler.RepositoryRecord, taskID string, task *Task, taskStatus protoreflect.ProtoMessage, steps []TaskStep) {
-	span := c.taskMonitor.StartSpan(ctx, task, string(repository.RepositoryID))
-	defer span.End() // reads status from task.StatusCode/ErrorMsg
+	span := StartTaskSpan(log, task)
+	defer span.End()
 
 	// no steps to execute, we need to update the task status
 	if len(steps) == 0 {
@@ -2385,7 +2387,11 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 			return err
 		}
 		// Record metric for orphaned task after deleting
-		c.taskMonitor.RecordOrphanedTask(ctx, msg.Task.Id, string(repo.RepositoryID))
+		log := c.log(ctx).WithFields(logging.Fields{
+			"task_id":    msg.Task.Id,
+			"repository": repo.RepositoryID,
+		})
+		RecordOrphanedTask(log, msg.Task)
 	}
 	return it.Err()
 }
@@ -2836,7 +2842,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	}
 
 	taskID := NewTaskID(GarbageCollectionPrepareCommitsPrefix)
-	err = c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(ctx, repository, OpGCPrepareCommits, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}

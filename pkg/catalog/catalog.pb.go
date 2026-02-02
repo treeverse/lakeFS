@@ -176,6 +176,7 @@ type Task struct {
 	Progress      int64                  `protobuf:"varint,4,opt,name=progress,proto3" json:"progress,omitempty"`
 	ErrorMsg      string                 `protobuf:"bytes,5,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
 	StatusCode    int32                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
+	Operation     string                 `protobuf:"bytes,7,opt,name=operation,proto3" json:"operation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -250,6 +251,13 @@ func (x *Task) GetStatusCode() int32 {
 		return x.StatusCode
 	}
 	return 0
+}
+
+func (x *Task) GetOperation() string {
+	if x != nil {
+		return x.Operation
+	}
+	return ""
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
@@ -739,7 +747,7 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\vAddressType\x12\x18\n" +
 	"\x14BY_PREFIX_DEPRECATED\x10\x00\x12\f\n" +
 	"\bRELATIVE\x10\x01\x12\b\n" +
-	"\x04FULL\x10\x02\"\xbf\x01\n" +
+	"\x04FULL\x10\x02\"\xdd\x01\n" +
 	"\x04Task\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04done\x18\x02 \x01(\bR\x04done\x129\n" +
@@ -748,7 +756,8 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\bprogress\x18\x04 \x01(\x03R\bprogress\x12\x1b\n" +
 	"\terror_msg\x18\x05 \x01(\tR\berrorMsg\x12\x1f\n" +
 	"\vstatus_code\x18\x06 \x01(\x05R\n" +
-	"statusCode\"\xa6\x01\n" +
+	"statusCode\x12\x1c\n" +
+	"\toperation\x18\a \x01(\tR\toperation\"\xa6\x01\n" +
 	"\x12RepositoryDumpInfo\x120\n" +
 	"\x14commits_metarange_id\x18\x01 \x01(\tR\x12commitsMetarangeId\x12*\n" +
 	"\x11tags_metarange_id\x18\x02 \x01(\tR\x0ftagsMetarangeId\x122\n" +

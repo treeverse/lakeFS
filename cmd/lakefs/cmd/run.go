@@ -169,7 +169,6 @@ var runCmd = &cobra.Command{
 			PathProvider:            upload.DefaultPathProvider,
 			ConflictResolvers:       catalogfactory.BuildConflictResolvers(cfg, blockStore),
 			ErrorToStatusCodeAndMsg: api.ErrorToStatusAndMsg,
-			TaskMonitor:             catalog.NewTaskMonitor(logger, cfg.GetBaseConfig().Logging.AuditLogLevel, authService.IsAdvancedAuth()),
 		}
 
 		c, err := catalog.New(ctx, catalogConfig)
