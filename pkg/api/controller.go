@@ -696,7 +696,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 	// limit check
 	if len(body.Paths) > DefaultMaxDeleteObjects {
 		err := fmt.Errorf("%w, max paths is set to %d", ErrRequestSizeExceeded, DefaultMaxDeleteObjects)
-		writeError(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
