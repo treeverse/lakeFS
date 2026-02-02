@@ -56,9 +56,11 @@ require (
 require golang.org/x/sync v0.19.0
 
 require (
+	cloud.google.com/go/compute/metadata v0.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.2.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
 	github.com/DmitriyVTitov/size v1.5.0
 	github.com/IBM/pgxpoolprometheus v1.1.1
@@ -97,15 +99,6 @@ require (
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/modules/catalog/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20260201081908-7cc7189e504f
-	github.com/treeverse/lakefs/webui v0.0.0-20260201081908-7cc7189e504f
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
@@ -116,7 +109,6 @@ require (
 	cel.dev/expr v0.24.0 // indirect
 	cloud.google.com/go/auth v0.16.5 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
-	cloud.google.com/go/compute/metadata v0.8.0 // indirect
 	cloud.google.com/go/iam v1.5.2 // indirect
 	cloud.google.com/go/monitoring v1.24.2 // indirect
 	codeberg.org/chavacava/garif v0.2.0 // indirect
@@ -132,6 +124,7 @@ require (
 	github.com/Antonboom/testifylint v1.6.4 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.2.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
