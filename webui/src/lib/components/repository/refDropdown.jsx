@@ -230,7 +230,11 @@ const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, wi
                     {!!selected && namedRef === selected.id ? (
                         <strong>{namedRef}</strong>
                     ) : (
-                        <Button variant="link" onClick={() => selectRef({ id: namedRef, type: refType })}>
+                        <Button
+                            variant="link"
+                            className="text-start text-truncate w-100 d-block"
+                            onClick={() => selectRef({ id: namedRef, type: refType })}
+                        >
                             {namedRef}
                         </Button>
                     )}
