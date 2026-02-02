@@ -2858,7 +2858,7 @@ func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration
 	}
 
 	task := getTaskFromStatus(statusMsg)
-	if task == nil || task.UpdatedAt == nil {
+	if task == nil || task.Done || task.UpdatedAt == nil {
 		return
 	}
 
