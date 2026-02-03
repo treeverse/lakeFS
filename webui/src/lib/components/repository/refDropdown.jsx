@@ -14,8 +14,7 @@ import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
 import { useRecentRefs } from '../../hooks/useRecentRefs';
 import RecentRefSelector from './RecentRefSelector';
-
-const MAX_UNTRIMMED_RESULT_LENGTH = 50;
+import { MAX_UNTRIMMED_RESULT_LENGTH, getRefDisplayName } from '../../utils/refDisplayName';
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300, onTrackRef }) => {
     // used for ref pagination
@@ -262,11 +261,7 @@ const RefEntry = ({
     withCommits,
     onTrackRef,
 }) => {
-    // If the ref is too long, we replace the prefix with '...'
-    const displayName =
-        replacePrefix && namedRef !== replacePrefix && namedRef.startsWith(replacePrefix)
-            ? '...' + namedRef.slice(replacePrefix.length)
-            : namedRef;
+    const displayName = getRefDisplayName(namedRef, replacePrefix);
     return (
         <ListGroup.Item as="li" key={namedRef}>
             <Row className="align-items-center">

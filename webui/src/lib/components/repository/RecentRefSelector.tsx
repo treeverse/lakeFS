@@ -7,8 +7,7 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import { GitBranchIcon, TagIcon } from '@primer/octicons-react';
 
 import { RecentRef, RefType } from '../../hooks/useRecentRefs';
-
-const MAX_UNTRIMMED_RESULT_LENGTH = 50;
+import { MAX_UNTRIMMED_RESULT_LENGTH, getRefDisplayName } from '../../utils/refDisplayName';
 
 type SelectedRef = {
     id: string;
@@ -41,13 +40,6 @@ const RecentRefSelector = ({
     // Apply prefix replacement logic for long ref names
     const replacePrefix = filteredRefs.some((ref) => ref.id.length > MAX_UNTRIMMED_RESULT_LENGTH) ? filter : undefined;
 
-    const getDisplayName = (refId: string): string => {
-        if (replacePrefix && refId !== replacePrefix && refId.startsWith(replacePrefix)) {
-            return '...' + refId.slice(replacePrefix.length);
-        }
-        return refId;
-    };
-
     return (
         <div className="ref-selector">
             <div className="ref-filter-form">
@@ -72,7 +64,7 @@ const RecentRefSelector = ({
                                         </Col>
                                         <Col title={ref.id} className="text-nowrap overflow-hidden text-truncate">
                                             {selected && ref.id === selected.id ? (
-                                                <strong>{getDisplayName(ref.id)}</strong>
+                                                <strong>{getRefDisplayName(ref.id, replacePrefix)}</strong>
                                             ) : (
                                                 <Button
                                                     variant="link"
@@ -82,7 +74,7 @@ const RecentRefSelector = ({
                                                         selectRef({ id: ref.id, type: ref.type });
                                                     }}
                                                 >
-                                                    {getDisplayName(ref.id)}
+                                                    {getRefDisplayName(ref.id, replacePrefix)}
                                                 </Button>
                                             )}
                                         </Col>
