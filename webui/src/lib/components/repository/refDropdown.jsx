@@ -24,7 +24,7 @@ import { useRecentRefs } from '../../hooks/useRecentRefs';
 const RefTypeRecent = 'recent';
 const MAX_UNTRIMMED_RESULT_LENGTH = 50;
 
-const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
+const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300, onTrackRef }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
@@ -298,7 +298,17 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({ repo, namedRef, replacePrefix, refType, selectRef, selected, logCommits, withCommits, onTrackRef }) => {
+const RefEntry = ({
+    repo,
+    namedRef,
+    replacePrefix,
+    refType,
+    selectRef,
+    selected,
+    logCommits,
+    withCommits,
+    onTrackRef,
+}) => {
     // If the ref is too long, we replace the prefix with '...'
     const displayName =
         replacePrefix && namedRef !== replacePrefix && namedRef.startsWith(replacePrefix)
