@@ -13,6 +13,8 @@ import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from '@primer
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
 
+const MAX_UNTRIMMED_RESULT_LENGTH = 50;
+
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
@@ -114,6 +116,10 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
 
     const results = refList.payload.results;
 
+    // If one of the refs name is too long (and will be trimmed), we replace the prefix of each result with '...'
+    const replacePrefix = results.some((namedRef) => namedRef.id.length > MAX_UNTRIMMED_RESULT_LENGTH)
+        ? pagination.prefix
+        : undefined;
     return (
         <div className="ref-selector">
             {form}
@@ -128,7 +134,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     repo={repo}
                                     refType={refType}
                                     namedRef={namedRef.id}
-                                    prefix={pagination.prefix}
+                                    replacePrefix={replacePrefix}
                                     selectRef={selectRef}
                                     selected={selected}
                                     withCommits={refType !== RefTypeTag && withCommits}
@@ -223,9 +229,12 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({ repo, namedRef, prefix, refType, selectRef, selected, logCommits, withCommits }) => {
+const RefEntry = ({ repo, namedRef, replacePrefix, refType, selectRef, selected, logCommits, withCommits }) => {
+    // If the ref is too long, we replace the prefix with '...'
     const displayName =
-        prefix && namedRef !== prefix && namedRef.startsWith(prefix) ? '...' + namedRef.slice(prefix.length) : namedRef;
+        replacePrefix && namedRef !== replacePrefix && namedRef.startsWith(replacePrefix)
+            ? '...' + namedRef.slice(replacePrefix.length)
+            : namedRef;
     return (
         <ListGroup.Item as="li" key={namedRef}>
             <Row className="align-items-center">
@@ -307,7 +316,6 @@ const RefDropdown = ({
     withCommits = true,
     withWorkspace = true,
     withTags = true,
-    wide = false,
 }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
@@ -378,7 +386,7 @@ const RefDropdown = ({
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: wide ? 320 : 250 }}
+                style={{ maxWidth: 320 }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >
