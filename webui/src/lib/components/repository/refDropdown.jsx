@@ -95,15 +95,42 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
         </Nav>
     );
 
+    const [recentFilter, setRecentFilter] = useState('');
+
     if (refType === RefTypeRecent) {
+        const filteredRecentRefs = recentFilter
+            ? recentRefs.filter((ref) => ref.id.toLowerCase().includes(recentFilter.toLowerCase()))
+            : recentRefs;
+
+        // Apply prefix replacement logic like RefEntry does
+        const recentReplacePrefix = filteredRecentRefs.some((ref) => ref.id.length > MAX_UNTRIMMED_RESULT_LENGTH)
+            ? recentFilter
+            : undefined;
+
+        const getDisplayName = (refId) => {
+            if (recentReplacePrefix && refId !== recentReplacePrefix && refId.startsWith(recentReplacePrefix)) {
+                return '...' + refId.slice(recentReplacePrefix.length);
+            }
+            return refId;
+        };
+
         return (
             <div className="ref-selector">
+                <div className="ref-filter-form">
+                    <Form onSubmit={(e) => e.preventDefault()}>
+                        <Form.Control
+                            type="text"
+                            placeholder="Filter recent"
+                            onChange={(e) => setRecentFilter(e.target.value)}
+                        />
+                    </Form>
+                </div>
                 {refTypeNav}
                 <div className="ref-scroller">
-                    {recentRefs.length > 0 ? (
+                    {filteredRecentRefs.length > 0 ? (
                         <>
                             <ListGroup as="ul" className="ref-list">
-                                {recentRefs.map((ref) => (
+                                {filteredRecentRefs.map((ref) => (
                                     <ListGroup.Item as="li" key={ref.id}>
                                         <Row className="align-items-center">
                                             <Col xs="auto" className="pe-0">
@@ -115,16 +142,17 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                             </Col>
                                             <Col title={ref.id} className="text-nowrap overflow-hidden text-truncate">
                                                 {!!selected && ref.id === selected.id ? (
-                                                    <strong>{ref.id}</strong>
+                                                    <strong>{getDisplayName(ref.id)}</strong>
                                                 ) : (
                                                     <Button
                                                         variant="link"
+                                                        className="text-start text-truncate w-100 d-block"
                                                         onClick={() => {
                                                             if (onTrackRef) onTrackRef(ref.id, ref.type);
                                                             selectRef({ id: ref.id, type: ref.type });
                                                         }}
                                                     >
-                                                        {ref.id}
+                                                        {getDisplayName(ref.id)}
                                                     </Button>
                                                 )}
                                             </Col>
@@ -132,15 +160,15 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     </ListGroup.Item>
                                 ))}
                             </ListGroup>
-                            <div className="mt-3 text-center">
-                                <Button variant="outline-secondary" size="sm" onClick={clearRecentRefs}>
-                                    Clear Recent
+                            <p className="ref-paginator">
+                                <Button variant="link" size="sm" onClick={clearRecentRefs}>
+                                    Clear
                                 </Button>
-                            </div>
+                            </p>
                         </>
                     ) : (
                         <p className="text-center mt-3">
-                            <small>No recent branches or tags</small>
+                            <small>{recentFilter ? 'No matching recent refs' : 'No recent branches or tags'}</small>
                         </p>
                     )}
                 </div>
