@@ -50,9 +50,12 @@ const CompareBranchesSelection = ({
                 withWorkspace={withWorkspace}
                 withTags={withTags}
                 selectRef={onSelectRef}
+                wide
             />
 
-            <ArrowLeftIcon className="me-2 mt-2" size="small" verticalAlign="middle" />
+            <span style={{ paddingTop: 6 }}>
+                <ArrowLeftIcon className="me-2" size="small" verticalAlign="middle" />
+            </span>
 
             <RefDropdown
                 prefix={'Compared to '}
@@ -63,6 +66,7 @@ const CompareBranchesSelection = ({
                 withWorkspace={withWorkspace}
                 withTags={withTags}
                 selectRef={onSelectCompare}
+                wide
             />
 
             <OverlayTrigger placement="bottom" overlay={<Tooltip>Switch directions</Tooltip>}>
