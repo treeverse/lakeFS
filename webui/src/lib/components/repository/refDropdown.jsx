@@ -148,7 +148,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                                         variant="link"
                                                         className="text-start text-truncate w-100 d-block"
                                                         onClick={() => {
-                                                            if (onTrackRef) onTrackRef(ref.id, ref.type);
+                                                            onTrackRef(ref.id, ref.type);
                                                             selectRef({ id: ref.id, type: ref.type });
                                                         }}
                                                     >
@@ -353,7 +353,7 @@ const RefEntry = ({
                             variant="link"
                             className="text-start text-truncate w-100 d-block"
                             onClick={() => {
-                                if (onTrackRef) onTrackRef(namedRef, refType);
+                                onTrackRef(namedRef, refType);
                                 selectRef({ id: namedRef, type: refType });
                             }}
                         >
