@@ -147,7 +147,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                             pagination={refList.payload.pagination}
                             from={pagination.after}
                             onPaginate={(after) => {
-                                setPagination({ after });
+                                setPagination((prev) => ({ ...prev, after }));
                             }}
                         />
                     </>
