@@ -128,6 +128,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     repo={repo}
                                     refType={refType}
                                     namedRef={namedRef.id}
+                                    prefix={pagination.prefix}
                                     selectRef={selectRef}
                                     selected={selected}
                                     withCommits={refType !== RefTypeTag && withCommits}
@@ -222,20 +223,22 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, withCommits }) => {
+const RefEntry = ({ repo, namedRef, prefix, refType, selectRef, selected, logCommits, withCommits }) => {
+    const displayName =
+        prefix && namedRef !== prefix && namedRef.startsWith(prefix) ? '...' + namedRef.slice(prefix.length) : namedRef;
     return (
         <ListGroup.Item as="li" key={namedRef}>
             <Row className="align-items-center">
                 <Col title={namedRef} className="text-nowrap overflow-hidden text-truncate">
                     {!!selected && namedRef === selected.id ? (
-                        <strong>{namedRef}</strong>
+                        <strong>{displayName}</strong>
                     ) : (
                         <Button
                             variant="link"
                             className="text-start text-truncate w-100 d-block"
                             onClick={() => selectRef({ id: namedRef, type: refType })}
                         >
-                            {namedRef}
+                            {displayName}
                         </Button>
                     )}
                 </Col>
@@ -304,6 +307,7 @@ const RefDropdown = ({
     withCommits = true,
     withWorkspace = true,
     withTags = true,
+    wide = false,
 }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
@@ -374,7 +378,7 @@ const RefDropdown = ({
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: '250px' }}
+                style={{ maxWidth: wide ? 320 : 250 }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >
