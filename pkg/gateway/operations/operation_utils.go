@@ -81,11 +81,10 @@ func amzMetaAsMetadata(req *http.Request) (catalog.Metadata, error) {
 
 			// Extract the metadata key part after the prefix and lowercase it
 			// to comply with S3 spec: "Amazon S3 stores user-defined metadata keys in lowercase"
-			keyPart := strings.TrimPrefix(k, amzMetaHeaderPrefix)
-			keyPart = strings.ToLower(keyPart)
+			name = strings.ToLower(name)
 			// Validate the key part - only store valid metadata keys
-			if isValidMetadataKey(keyPart) {
-				metadata[amzMetaHeaderPrefix+keyPart] = value
+			if isValidMetadataKey(name) {
+				metadata[amzMetaHeaderPrefix+name] = value
 			}
 		}
 	}
