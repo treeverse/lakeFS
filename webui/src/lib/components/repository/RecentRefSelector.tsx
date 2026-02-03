@@ -24,14 +24,14 @@ type RecentRefSelectorProps = {
     refTypeNav: ReactNode;
 };
 
-const RecentRefSelector: React.FC<RecentRefSelectorProps> = ({
+const RecentRefSelector = ({
     recentRefs,
     clearRecentRefs,
     selected,
     selectRef,
     onTrackRef,
     refTypeNav,
-}) => {
+}: RecentRefSelectorProps) => {
     const [filter, setFilter] = useState('');
 
     const filteredRefs = filter
