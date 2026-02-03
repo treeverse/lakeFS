@@ -410,10 +410,11 @@ func TestGetValidatedTaskStatus_Expiry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			const taskTime = 1 * time.Hour
 			synctest.Test(t, func(t *testing.T) {
 				t.Cleanup(func() {
 					// Let the task goroutine finish
-					time.Sleep(time.Hour)
+					time.Sleep(taskTime)
 					synctest.Wait()
 				})
 
@@ -427,7 +428,7 @@ func TestGetValidatedTaskStatus_Expiry(t *testing.T) {
 					{
 						Name: "long task",
 						Func: func(ctx context.Context) error {
-							time.Sleep(time.Hour)
+							time.Sleep(taskTime)
 							return nil
 						},
 					},
