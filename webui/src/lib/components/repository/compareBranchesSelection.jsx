@@ -52,7 +52,9 @@ const CompareBranchesSelection = ({
                 selectRef={onSelectRef}
             />
 
-            <ArrowLeftIcon className="me-2 mt-2" size="small" verticalAlign="middle" />
+            <span style={{ paddingTop: 6 }}>
+                <ArrowLeftIcon className="me-2" size="small" verticalAlign="middle" />
+            </span>
 
             <RefDropdown
                 prefix={'Compared to '}

@@ -22,8 +22,9 @@ import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
 import { useRecentRefs } from '../../hooks/useRecentRefs';
 
 const RefTypeRecent = 'recent';
+const MAX_UNTRIMMED_RESULT_LENGTH = 50;
 
-const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300, onTrackRef }) => {
+const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
@@ -183,6 +184,10 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
 
     const results = refList.payload.results;
 
+    // If one of the refs name is too long (and will be trimmed), we replace the prefix of each result with '...'
+    const replacePrefix = results.some((namedRef) => namedRef.id.length > MAX_UNTRIMMED_RESULT_LENGTH)
+        ? pagination.prefix
+        : undefined;
     return (
         <div className="ref-selector">
             {form}
@@ -197,6 +202,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     repo={repo}
                                     refType={refType}
                                     namedRef={namedRef.id}
+                                    replacePrefix={replacePrefix}
                                     selectRef={selectRef}
                                     selected={selected}
                                     withCommits={refType !== RefTypeTag && withCommits}
@@ -217,7 +223,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                             pagination={refList.payload.pagination}
                             from={pagination.after}
                             onPaginate={(after) => {
-                                setPagination({ after });
+                                setPagination((prev) => ({ ...prev, after }));
                             }}
                         />
                     </>
@@ -292,22 +298,28 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, withCommits, onTrackRef }) => {
+const RefEntry = ({ repo, namedRef, replacePrefix, refType, selectRef, selected, logCommits, withCommits, onTrackRef }) => {
+    // If the ref is too long, we replace the prefix with '...'
+    const displayName =
+        replacePrefix && namedRef !== replacePrefix && namedRef.startsWith(replacePrefix)
+            ? '...' + namedRef.slice(replacePrefix.length)
+            : namedRef;
     return (
         <ListGroup.Item as="li" key={namedRef}>
             <Row className="align-items-center">
                 <Col title={namedRef} className="text-nowrap overflow-hidden text-truncate">
                     {!!selected && namedRef === selected.id ? (
-                        <strong>{namedRef}</strong>
+                        <strong>{displayName}</strong>
                     ) : (
                         <Button
                             variant="link"
+                            className="text-start text-truncate w-100 d-block"
                             onClick={() => {
                                 if (onTrackRef) onTrackRef(namedRef, refType);
                                 selectRef({ id: namedRef, type: refType });
                             }}
                         >
-                            {namedRef}
+                            {displayName}
                         </Button>
                     )}
                 </Col>
@@ -448,7 +460,7 @@ const RefDropdown = ({
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: '250px' }}
+                style={{ maxWidth: 320 }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >

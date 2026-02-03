@@ -336,6 +336,21 @@ a[title*='Upload'] + a[title*='Import'] {
 .bs-popover-max-width {
     max-width: 400px !important;
 }
+
 .popover {
     max-width: 400px !important;
+}
+
+.ref-popover {
+    max-width: 600px !important;
+}
+
+.ref-list {
+    max-height: 412px;
+    overflow-y: auto;
+}
+
+.ref-paginator {
+    padding-top: 8px;
+    margin-top: 8px;
 }
