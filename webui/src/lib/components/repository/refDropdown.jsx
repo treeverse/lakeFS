@@ -8,16 +8,27 @@ import Overlay from 'react-bootstrap/Overlay';
 import { Col, Nav, Row } from 'react-bootstrap';
 import Popover from 'react-bootstrap/Popover';
 import ListGroup from 'react-bootstrap/ListGroup';
-import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from '@primer/octicons-react';
+import {
+    ChevronDownIcon,
+    ChevronRightIcon,
+    ChevronUpIcon,
+    XIcon,
+    GitBranchIcon,
+    TagIcon,
+} from '@primer/octicons-react';
 
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
+import { useRecentRefs } from '../../hooks/useRecentRefs';
 
-const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
+const RefTypeRecent = 'recent';
+
+const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300, onTrackRef }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
     const [refType, setRefType] = useState((selected && selected.type) || RefTypeBranch);
+    const { recentRefs, clearRecentRefs } = useRecentRefs(repo.id);
     useEffect(() => {
         setRefs({ loading: true, payload: null, error: null });
         const fetchRefs = async () => {
@@ -67,16 +78,74 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             </Form>
         </div>
     );
-    const refTypeNav = withTags && (
+    const refTypeNav = (
         <Nav variant="tabs" onSelect={setRefType} activeKey={refType} className="mt-2">
             <Nav.Item>
                 <Nav.Link eventKey={'branch'}>Branches</Nav.Link>
             </Nav.Item>
+            {withTags && (
+                <Nav.Item>
+                    <Nav.Link eventKey={'tag'}>Tags</Nav.Link>
+                </Nav.Item>
+            )}
             <Nav.Item>
-                <Nav.Link eventKey={'tag'}>Tags</Nav.Link>
+                <Nav.Link eventKey={RefTypeRecent}>Recent</Nav.Link>
             </Nav.Item>
         </Nav>
     );
+
+    if (refType === RefTypeRecent) {
+        return (
+            <div className="ref-selector">
+                {refTypeNav}
+                <div className="ref-scroller">
+                    {recentRefs.length > 0 ? (
+                        <>
+                            <ListGroup as="ul" className="ref-list">
+                                {recentRefs.map((ref) => (
+                                    <ListGroup.Item as="li" key={ref.id}>
+                                        <Row className="align-items-center">
+                                            <Col xs="auto" className="pe-0">
+                                                {ref.type === 'branch' ? (
+                                                    <GitBranchIcon size={16} />
+                                                ) : (
+                                                    <TagIcon size={16} />
+                                                )}
+                                            </Col>
+                                            <Col title={ref.id} className="text-nowrap overflow-hidden text-truncate">
+                                                {!!selected && ref.id === selected.id ? (
+                                                    <strong>{ref.id}</strong>
+                                                ) : (
+                                                    <Button
+                                                        variant="link"
+                                                        onClick={() => {
+                                                            if (onTrackRef) onTrackRef(ref.id, ref.type);
+                                                            selectRef({ id: ref.id, type: ref.type });
+                                                        }}
+                                                    >
+                                                        {ref.id}
+                                                    </Button>
+                                                )}
+                                            </Col>
+                                        </Row>
+                                    </ListGroup.Item>
+                                ))}
+                            </ListGroup>
+                            <div className="mt-3 text-center">
+                                <Button variant="outline-secondary" size="sm" onClick={clearRecentRefs}>
+                                    Clear Recent
+                                </Button>
+                            </div>
+                        </>
+                    ) : (
+                        <p className="text-center mt-3">
+                            <small>No recent branches or tags</small>
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     if (refList.loading) {
         return (
@@ -131,6 +200,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     selectRef={selectRef}
                                     selected={selected}
                                     withCommits={refType !== RefTypeTag && withCommits}
+                                    onTrackRef={onTrackRef}
                                     logCommits={async () => {
                                         const data = await commits.log(repo.id, namedRef.id);
                                         setCommitList({
@@ -222,7 +292,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, withCommits }) => {
+const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, withCommits, onTrackRef }) => {
     return (
         <ListGroup.Item as="li" key={namedRef}>
             <Row className="align-items-center">
@@ -230,7 +300,13 @@ const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, wi
                     {!!selected && namedRef === selected.id ? (
                         <strong>{namedRef}</strong>
                     ) : (
-                        <Button variant="link" onClick={() => selectRef({ id: namedRef, type: refType })}>
+                        <Button
+                            variant="link"
+                            onClick={() => {
+                                if (onTrackRef) onTrackRef(namedRef, refType);
+                                selectRef({ id: namedRef, type: refType });
+                            }}
+                        >
                             {namedRef}
                         </Button>
                     )}
@@ -303,6 +379,7 @@ const RefDropdown = ({
 }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
+    const { trackRef } = useRecentRefs(repo.id);
 
     const popover = (
         <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
@@ -314,6 +391,7 @@ const RefDropdown = ({
                         withWorkspace={withWorkspace}
                         withTags={withTags}
                         selected={selected}
+                        onTrackRef={trackRef}
                         selectRef={(ref) => {
                             selectRef(ref);
                             setShow(false);
