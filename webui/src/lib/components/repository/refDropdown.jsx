@@ -8,20 +8,13 @@ import Overlay from 'react-bootstrap/Overlay';
 import { Col, Nav, Row } from 'react-bootstrap';
 import Popover from 'react-bootstrap/Popover';
 import ListGroup from 'react-bootstrap/ListGroup';
-import {
-    ChevronDownIcon,
-    ChevronRightIcon,
-    ChevronUpIcon,
-    XIcon,
-    GitBranchIcon,
-    TagIcon,
-} from '@primer/octicons-react';
+import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from '@primer/octicons-react';
 
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
 import { useRecentRefs } from '../../hooks/useRecentRefs';
+import RecentRefSelector from './RecentRefSelector';
 
-const RefTypeRecent = 'recent';
 const MAX_UNTRIMMED_RESULT_LENGTH = 50;
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300, onTrackRef }) => {
@@ -90,89 +83,21 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                 </Nav.Item>
             )}
             <Nav.Item>
-                <Nav.Link eventKey={RefTypeRecent}>Recent</Nav.Link>
+                <Nav.Link eventKey={'recent'}>Recent</Nav.Link>
             </Nav.Item>
         </Nav>
     );
 
-    const [recentFilter, setRecentFilter] = useState('');
-
-    if (refType === RefTypeRecent) {
-        const filteredRecentRefs = recentFilter
-            ? recentRefs.filter((ref) => ref.id.toLowerCase().includes(recentFilter.toLowerCase()))
-            : recentRefs;
-
-        // Apply prefix replacement logic like RefEntry does
-        const recentReplacePrefix = filteredRecentRefs.some((ref) => ref.id.length > MAX_UNTRIMMED_RESULT_LENGTH)
-            ? recentFilter
-            : undefined;
-
-        const getDisplayName = (refId) => {
-            if (recentReplacePrefix && refId !== recentReplacePrefix && refId.startsWith(recentReplacePrefix)) {
-                return '...' + refId.slice(recentReplacePrefix.length);
-            }
-            return refId;
-        };
-
+    if (refType === 'recent') {
         return (
-            <div className="ref-selector">
-                <div className="ref-filter-form">
-                    <Form onSubmit={(e) => e.preventDefault()}>
-                        <Form.Control
-                            type="text"
-                            placeholder="Filter recent"
-                            onChange={(e) => setRecentFilter(e.target.value)}
-                        />
-                    </Form>
-                </div>
-                {refTypeNav}
-                <div className="ref-scroller">
-                    {filteredRecentRefs.length > 0 ? (
-                        <>
-                            <ListGroup as="ul" className="ref-list">
-                                {filteredRecentRefs.map((ref) => (
-                                    <ListGroup.Item as="li" key={ref.id}>
-                                        <Row className="align-items-center">
-                                            <Col xs="auto" className="pe-0">
-                                                {ref.type === 'branch' ? (
-                                                    <GitBranchIcon size={16} />
-                                                ) : (
-                                                    <TagIcon size={16} />
-                                                )}
-                                            </Col>
-                                            <Col title={ref.id} className="text-nowrap overflow-hidden text-truncate">
-                                                {!!selected && ref.id === selected.id ? (
-                                                    <strong>{getDisplayName(ref.id)}</strong>
-                                                ) : (
-                                                    <Button
-                                                        variant="link"
-                                                        className="text-start text-truncate w-100 d-block"
-                                                        onClick={() => {
-                                                            onTrackRef(ref.id, ref.type);
-                                                            selectRef({ id: ref.id, type: ref.type });
-                                                        }}
-                                                    >
-                                                        {getDisplayName(ref.id)}
-                                                    </Button>
-                                                )}
-                                            </Col>
-                                        </Row>
-                                    </ListGroup.Item>
-                                ))}
-                            </ListGroup>
-                            <p className="ref-paginator">
-                                <Button variant="link" size="sm" onClick={clearRecentRefs}>
-                                    Clear
-                                </Button>
-                            </p>
-                        </>
-                    ) : (
-                        <p className="text-center mt-3">
-                            <small>{recentFilter ? 'No matching recent refs' : 'No recent branches or tags'}</small>
-                        </p>
-                    )}
-                </div>
-            </div>
+            <RecentRefSelector
+                recentRefs={recentRefs}
+                clearRecentRefs={clearRecentRefs}
+                selected={selected}
+                selectRef={selectRef}
+                onTrackRef={onTrackRef}
+                refTypeNav={refTypeNav}
+            />
         );
     }
 
