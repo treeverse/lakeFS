@@ -21,10 +21,11 @@ const (
 	branchProtectTimeout = graveler.BranchUpdateMaxInterval + time.Second
 
 	// lakectl import test paths for different object stores
-	s3LakectlImportPath    = "s3://lakectl-ingest-test-data"
-	gsLakectlImportPath    = "gs://lakectl-ingest-test-data"
-	azureLakectlImportPath = "https://esti.blob.core.windows.net/lakectl-ingest-test-data/"
-	lakectlImportObjects   = "10"
+	// Uses prefix-1 subdirectory which contains 2100 objects in all providers
+	s3LakectlImportPath    = "s3://esti-system-testing-data/import-test-data/prefix-1/"
+	gsLakectlImportPath    = "gs://esti-system-testing-data/import-test-data/prefix-1/"
+	azureLakectlImportPath = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/prefix-1/"
+	lakectlImportObjects   = "2100"
 )
 
 // getLakectlImportPath returns the import path for lakectl import tests based on the blockstore type
