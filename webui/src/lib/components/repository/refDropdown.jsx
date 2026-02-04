@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
@@ -12,12 +12,16 @@ import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from '@primer
 
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
+import { useRecentRefs } from '../../hooks/useRecentRefs';
+import { RecentRefSelector } from './RecentRefSelector';
+import { MAX_UNTRIMMED_RESULT_LENGTH, getRefDisplayName } from '../../utils/refDisplayName';
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
     const [refType, setRefType] = useState((selected && selected.type) || RefTypeBranch);
+    const { recentRefs, clearRecentRefs } = useRecentRefs(repo.id);
     useEffect(() => {
         setRefs({ loading: true, payload: null, error: null });
         const fetchRefs = async () => {
@@ -67,16 +71,33 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             </Form>
         </div>
     );
-    const refTypeNav = withTags && (
+    const refTypeNav = (
         <Nav variant="tabs" onSelect={setRefType} activeKey={refType} className="mt-2">
             <Nav.Item>
                 <Nav.Link eventKey={'branch'}>Branches</Nav.Link>
             </Nav.Item>
+            {withTags && (
+                <Nav.Item>
+                    <Nav.Link eventKey={'tag'}>Tags</Nav.Link>
+                </Nav.Item>
+            )}
             <Nav.Item>
-                <Nav.Link eventKey={'tag'}>Tags</Nav.Link>
+                <Nav.Link eventKey={'recent'}>Recent</Nav.Link>
             </Nav.Item>
         </Nav>
     );
+
+    if (refType === 'recent') {
+        return (
+            <RecentRefSelector
+                recentRefs={recentRefs}
+                clearRecentRefs={clearRecentRefs}
+                selected={selected}
+                selectRef={selectRef}
+                refTypeNav={refTypeNav}
+            />
+        );
+    }
 
     if (refList.loading) {
         return (
@@ -114,6 +135,10 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
 
     const results = refList.payload.results;
 
+    // If one of the refs name is too long (and will be trimmed), we replace the prefix of each result with '...'
+    const replacePrefix = results.some((namedRef) => namedRef.id.length > MAX_UNTRIMMED_RESULT_LENGTH)
+        ? pagination.prefix
+        : undefined;
     return (
         <div className="ref-selector">
             {form}
@@ -128,6 +153,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     repo={repo}
                                     refType={refType}
                                     namedRef={namedRef.id}
+                                    replacePrefix={replacePrefix}
                                     selectRef={selectRef}
                                     selected={selected}
                                     withCommits={refType !== RefTypeTag && withCommits}
@@ -147,7 +173,7 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                             pagination={refList.payload.pagination}
                             from={pagination.after}
                             onPaginate={(after) => {
-                                setPagination({ after });
+                                setPagination((prev) => ({ ...prev, after }));
                             }}
                         />
                     </>
@@ -222,16 +248,23 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({ repo, namedRef, refType, selectRef, selected, logCommits, withCommits }) => {
+const RefEntry = ({ repo, namedRef, replacePrefix, refType, selectRef, selected, logCommits, withCommits }) => {
+    const displayName = getRefDisplayName(namedRef, replacePrefix);
     return (
         <ListGroup.Item as="li" key={namedRef}>
             <Row className="align-items-center">
                 <Col title={namedRef} className="text-nowrap overflow-hidden text-truncate">
                     {!!selected && namedRef === selected.id ? (
-                        <strong>{namedRef}</strong>
+                        <strong>{displayName}</strong>
                     ) : (
-                        <Button variant="link" onClick={() => selectRef({ id: namedRef, type: refType })}>
-                            {namedRef}
+                        <Button
+                            variant="link"
+                            className="text-start text-truncate w-100 d-block"
+                            onClick={() => {
+                                selectRef({ id: namedRef, type: refType });
+                            }}
+                        >
+                            {displayName}
                         </Button>
                     )}
                 </Col>
@@ -300,6 +333,7 @@ const RefDropdown = ({
     withCommits = true,
     withWorkspace = true,
     withTags = true,
+    narrow = false,
 }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
@@ -370,7 +404,7 @@ const RefDropdown = ({
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: '250px' }}
+                style={{ maxWidth: narrow ? 320 : 600 }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >

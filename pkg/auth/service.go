@@ -75,6 +75,7 @@ type GatewayService interface {
 	GetCredentials(_ context.Context, accessKey string) (*model.Credential, error)
 	GetUser(ctx context.Context, username string) (*model.User, error)
 	Authorize(_ context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error)
+	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 }
 
 type Authorizer interface {

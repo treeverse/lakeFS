@@ -271,23 +271,6 @@ func CleanupUser(t testing.TB, ctx context.Context, client apigen.ClientWithResp
 	require.Equal(t, http.StatusNoContent, resp.StatusCode())
 }
 
-// skipOnSchemaMismatch matches the rawURL schema to the current tested storage namespace schema
-func skipOnSchemaMismatch(t *testing.T, rawURL string) {
-	t.Helper()
-	namespaceURL, err := url.Parse(viper.GetString(ViperStorageNamespaceKey))
-	if err != nil {
-		t.Fatal("Failed to parse configured storage_namespace", err)
-	}
-	pathURL, err := url.Parse(rawURL)
-	if err != nil {
-		t.Fatal("Failed to parse rawURL", err)
-	}
-
-	if namespaceURL.Scheme != pathURL.Scheme {
-		t.Skip("Skip test on different URL schema type")
-	}
-}
-
 // VerifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
 func VerifyResponse(resp *http.Response, body []byte) error {

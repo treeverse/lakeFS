@@ -16,11 +16,13 @@
       }
     },
     "rules": {
+      "no-console": "error",
       "eqeqeq": "warn",
       "strict": "error",
       "react/prop-types": 0,
       "react/jsx-key": 0,
       "react/display-name": 0,
+      "react/react-in-jsx-scope": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {

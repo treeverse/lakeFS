@@ -49,10 +49,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Run Go tests
-        run: |
-          mkdir ./webui/dist
-          touch ./webui/dist/index.html
-          make test-go
+        run: make test-go
 
   test-webui:
     name: Run webui unit tests

@@ -20,6 +20,7 @@ export const getImageUrl = async (repo: string, ref: string, path: string, presi
             const obj = await objects.getStat(repo, ref, path, true);
             return obj.physical_address;
         } catch (e) {
+            // eslint-disable-next-line no-console
             console.error('failed to fetch presigned URL', e);
             return '';
         }

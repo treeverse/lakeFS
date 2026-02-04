@@ -182,6 +182,9 @@ func (w *GeneralMetaRangeWriter) writeRangesToMetaRange(ctx context.Context) (*g
 }
 
 func (w *GeneralMetaRangeWriter) Abort() error {
+	// Release workers by closing the channel
+	_, _ = w.batchWriteCloser.Wait()
+
 	if w.rangeWriter == nil {
 		return nil
 	}

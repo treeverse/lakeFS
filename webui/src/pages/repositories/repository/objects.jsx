@@ -44,6 +44,8 @@ import {
     refs,
 } from '../../../lib/api';
 import { useAPI, useAPIWithPagination } from '../../../lib/hooks/api';
+import { useMount } from '../../../lib/hooks/useMount';
+import { useRecentRefs } from '../../../lib/hooks/useRecentRefs';
 import { useRefs } from '../../../lib/hooks/repo';
 import { useRouter } from '../../../lib/hooks/router';
 import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
@@ -642,6 +644,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
         const mapper = async (file) => {
             const currentDestination = fileDestinations[file.path];
             if (!currentDestination) {
+                // eslint-disable-next-line no-console
                 console.error(`No destination path found for file: ${file.path}`);
                 setFileStates((next) => ({
                     ...next,
@@ -677,6 +680,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                 }));
             } catch (error) {
                 if (controller.signal.aborted) return;
+                // eslint-disable-next-line no-console
                 console.error('Upload error for:', file.path, error);
                 setFileStates((next) => ({
                     ...next,
@@ -702,6 +706,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
             }
         } catch (error) {
             if (!isAbortedError(error, controller)) {
+                // eslint-disable-next-line no-console
                 console.error('pMap upload error:', error);
                 setUploadState((prev) => ({
                     ...prev,
@@ -709,6 +714,7 @@ const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, 
                     error: prev.error || error,
                 }));
             } else {
+                // eslint-disable-next-line no-console
                 console.log('Upload process aborted.');
                 setUploadState((prev) => ({ ...prev, inProgress: false }));
             }
@@ -1218,6 +1224,13 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const [actionError, setActionError] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [showRevertModal, setShowRevertModal] = useState(false);
+
+    const { trackRef } = useRecentRefs(repo.id);
+    useMount(() => {
+        if (reference && ['tag', 'branch'].includes(reference.type)) {
+            trackRef(reference.id, reference.type);
+        }
+    });
 
     const refresh = () => {
         setRefreshToken(!refreshToken);
