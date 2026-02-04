@@ -80,8 +80,6 @@ const (
 
 	// Operation names for async task metrics and logging.
 	// These are stored in Task.Operation field.
-	OpCommit           = "commit"
-	OpMerge            = "merge"
 	OpDumpRefs         = "dump_refs"
 	OpRestoreRefs      = "restore_refs"
 	OpGCPrepareCommits = "gc_prepare_commits"
@@ -2386,12 +2384,14 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 		if err != nil {
 			return err
 		}
-		// Record metric for orphaned task after deleting
-		log := c.log(ctx).WithFields(logging.Fields{
-			"task_id":    msg.Task.Id,
-			"repository": repo.RepositoryID,
-		})
-		RecordOrphanedTask(log, msg.Task)
+		// Record metric for tasks that expired without completing
+		if !msg.Task.Done {
+			log := c.log(ctx).WithFields(logging.Fields{
+				"task_id":    msg.Task.Id,
+				"repository": repo.RepositoryID,
+			})
+			RecordExpiredTask(log, msg.Task)
+		}
 	}
 	return it.Err()
 }

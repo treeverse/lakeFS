@@ -38,7 +38,7 @@ func TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, OpCommit, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
 		time.Sleep(TaskHeartbeatInterval + 500*time.Millisecond)
@@ -100,7 +100,7 @@ func TestRunBackgroundTaskSteps_HeartbeatWritesFullStatus(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, OpCommit, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
 		time.Sleep(TaskHeartbeatInterval + 500*time.Millisecond)
@@ -145,7 +145,7 @@ func TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, OpCommit, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
 		// Read status multiple times during heartbeat updates
@@ -193,7 +193,7 @@ func TestRunBackgroundTaskSteps_HeartbeatLifecycle(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, OpCommit, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
 		// After 2 seconds, task should still be running and timestamp should be updated
@@ -262,7 +262,7 @@ func TestRunBackgroundTaskSteps_HeartbeatStopsWhenDone(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, OpCommit, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
 		time.Sleep(1 * time.Second)
@@ -306,7 +306,7 @@ func TestRunBackgroundTaskSteps_TaskFailure(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, OpCommit, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err) // RunBackgroundTaskSteps itself should not error
 
 		time.Sleep(500 * time.Millisecond)
@@ -348,7 +348,7 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, OpCommit, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
 		time.Sleep(TaskHeartbeatInterval + 500*time.Millisecond)
