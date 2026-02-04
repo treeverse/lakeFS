@@ -18,11 +18,7 @@ type ObjectDeleteError struct {
 }
 
 func (e *ObjectDeleteError) Error() string {
-	path := ""
-	if e.Path != nil {
-		path = *e.Path
-	}
-	return fmt.Sprintf("rm %s: [%d] %s", path, e.StatusCode, e.Message)
+	return fmt.Sprintf("rm %s: [%d] %s", apiutil.Value(e.Path), e.StatusCode, e.Message)
 }
 
 const deleteChunkSize = 1000

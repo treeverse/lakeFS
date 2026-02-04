@@ -6,9 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 type mockDeleteClient struct {
@@ -32,9 +32,9 @@ func TestFsRmRecursive_ObjectErrors(t *testing.T) {
 				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
 				JSON200: &apigen.ObjectErrorList{
 					Errors: []apigen.ObjectError{
-						{Path: swag.String("path/to/file1.txt"), StatusCode: 404, Message: "not found"},
-						{Path: swag.String("path/to/file2.txt"), StatusCode: 403, Message: "forbidden"},
-						{Path: swag.String("path/to/file3.txt"), StatusCode: 429, Message: "slow down"},
+						{Path: apiutil.Ptr("path/to/file1.txt"), StatusCode: 404, Message: "not found"},
+						{Path: apiutil.Ptr("path/to/file2.txt"), StatusCode: 403, Message: "forbidden"},
+						{Path: apiutil.Ptr("path/to/file3.txt"), StatusCode: 429, Message: "slow down"},
 					},
 				},
 			},
