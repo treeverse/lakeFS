@@ -3439,15 +3439,15 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		// delete objects
 		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		testutil.Must(t, err)
-		const expectedStatusCode = http.StatusInternalServerError
+		const expectedStatusCode = http.StatusBadRequest
 		if delResp.StatusCode() != expectedStatusCode {
 			t.Fatalf("DeleteObjects status code %d, expected %d", delResp.StatusCode(), expectedStatusCode)
 		}
-		if delResp.JSONDefault == nil {
-			t.Fatal("DeleteObjects expected default error")
+		if delResp.JSON400 == nil {
+			t.Fatal("DeleteObjects expected 400 error")
 		}
-		if !strings.Contains(delResp.JSONDefault.Message, api.ErrRequestSizeExceeded.Error()) {
-			t.Fatalf("DeleteObjects size exceeded error: '%s', expected '%s'", delResp.JSONDefault.Message, api.ErrRequestSizeExceeded)
+		if !strings.Contains(delResp.JSON400.Message, api.ErrRequestSizeExceeded.Error()) {
+			t.Fatalf("DeleteObjects size exceeded error: '%s', expected '%s'", delResp.JSON400.Message, api.ErrRequestSizeExceeded)
 		}
 	})
 
