@@ -102,7 +102,7 @@ func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesIn
 				rmErr := fmt.Errorf("rm objects - %w", err)
 				errors <- rmErr
 			}
-			clear(objs)
+			objs = objs[:0]
 		}
 	}
 	if len(objs) > 0 {
