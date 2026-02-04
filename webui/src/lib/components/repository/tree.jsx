@@ -724,7 +724,7 @@ const CollapsibleBreadcrumb = ({
                             className="breadcrumb-dropdown-toggle"
                             aria-label="Show collapsed path segments"
                         >
-                            …
+                            ...
                         </Dropdown.Toggle>
                         <Dropdown.Menu
                             className="breadcrumb-dropdown-menu"

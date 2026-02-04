@@ -205,14 +205,15 @@ a[title*='Upload'] + a[title*='Import'] {
 
 .breadcrumb-dropdown-toggle {
     padding: 0 4px !important;
-    font-size: 1rem !important;
-    font-weight: bold;
-    color: var(--text-muted) !important;
+    font-size: 0.875rem !important;
+    font-weight: normal;
+    color: var(--primary) !important;
     text-decoration: none !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     line-height: 1;
+    cursor: pointer;
 }
 
 .breadcrumb-dropdown-toggle:hover,
@@ -224,6 +225,10 @@ a[title*='Upload'] + a[title*='Import'] {
 
 .breadcrumb-dropdown-toggle::after {
     display: none !important;
+}
+
+.breadcrumb-dropdown-toggle:not(.show):focus {
+    background: transparent !important;
 }
 
 .breadcrumb-dropdown-menu {
