@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
@@ -12,14 +12,16 @@ import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from '@primer
 
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
-
-const MAX_UNTRIMMED_RESULT_LENGTH = 50;
+import { useRecentRefs } from '../../hooks/useRecentRefs';
+import { RecentRefSelector } from './RecentRefSelector';
+import { MAX_UNTRIMMED_RESULT_LENGTH, getRefDisplayName } from '../../utils/refDisplayName';
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
     const [refType, setRefType] = useState((selected && selected.type) || RefTypeBranch);
+    const { recentRefs, clearRecentRefs } = useRecentRefs(repo.id);
     useEffect(() => {
         setRefs({ loading: true, payload: null, error: null });
         const fetchRefs = async () => {
@@ -69,16 +71,33 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             </Form>
         </div>
     );
-    const refTypeNav = withTags && (
+    const refTypeNav = (
         <Nav variant="tabs" onSelect={setRefType} activeKey={refType} className="mt-2">
             <Nav.Item>
                 <Nav.Link eventKey={'branch'}>Branches</Nav.Link>
             </Nav.Item>
+            {withTags && (
+                <Nav.Item>
+                    <Nav.Link eventKey={'tag'}>Tags</Nav.Link>
+                </Nav.Item>
+            )}
             <Nav.Item>
-                <Nav.Link eventKey={'tag'}>Tags</Nav.Link>
+                <Nav.Link eventKey={'recent'}>Recent</Nav.Link>
             </Nav.Item>
         </Nav>
     );
+
+    if (refType === 'recent') {
+        return (
+            <RecentRefSelector
+                recentRefs={recentRefs}
+                clearRecentRefs={clearRecentRefs}
+                selected={selected}
+                selectRef={selectRef}
+                refTypeNav={refTypeNav}
+            />
+        );
+    }
 
     if (refList.loading) {
         return (
@@ -230,11 +249,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 };
 
 const RefEntry = ({ repo, namedRef, replacePrefix, refType, selectRef, selected, logCommits, withCommits }) => {
-    // If the ref is too long, we replace the prefix with '...'
-    const displayName =
-        replacePrefix && namedRef !== replacePrefix && namedRef.startsWith(replacePrefix)
-            ? '...' + namedRef.slice(replacePrefix.length)
-            : namedRef;
+    const displayName = getRefDisplayName(namedRef, replacePrefix);
     return (
         <ListGroup.Item as="li" key={namedRef}>
             <Row className="align-items-center">
@@ -245,7 +260,9 @@ const RefEntry = ({ repo, namedRef, replacePrefix, refType, selectRef, selected,
                         <Button
                             variant="link"
                             className="text-start text-truncate w-100 d-block"
-                            onClick={() => selectRef({ id: namedRef, type: refType })}
+                            onClick={() => {
+                                selectRef({ id: namedRef, type: refType });
+                            }}
                         >
                             {displayName}
                         </Button>

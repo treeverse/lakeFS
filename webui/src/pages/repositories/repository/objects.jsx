@@ -44,6 +44,8 @@ import {
     refs,
 } from '../../../lib/api';
 import { useAPI, useAPIWithPagination } from '../../../lib/hooks/api';
+import { useMount } from '../../../lib/hooks/useMount';
+import { useRecentRefs } from '../../../lib/hooks/useRecentRefs';
 import { useRefs } from '../../../lib/hooks/repo';
 import { useRouter } from '../../../lib/hooks/router';
 import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
@@ -1222,6 +1224,13 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const [actionError, setActionError] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
     const [showRevertModal, setShowRevertModal] = useState(false);
+
+    const { trackRef } = useRecentRefs(repo.id);
+    useMount(() => {
+        if (reference && ['tag', 'branch'].includes(reference.type)) {
+            trackRef(reference.id, reference.type);
+        }
+    });
 
     const refresh = () => {
         setRefreshToken(!refreshToken);
