@@ -23,7 +23,7 @@ type RecentRefSelectorProps = {
     refTypeNav: ReactNode;
 };
 
-const RecentRefSelector = ({
+export const RecentRefSelector = ({
     recentRefs,
     clearRecentRefs,
     selected,
@@ -97,5 +97,3 @@ const RecentRefSelector = ({
         </div>
     );
 };
-
-export default RecentRefSelector;
