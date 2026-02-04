@@ -50,6 +50,7 @@ const CompareBranchesSelection = ({
                 withWorkspace={withWorkspace}
                 withTags={withTags}
                 selectRef={onSelectRef}
+                narrow
             />
 
             <span style={{ paddingTop: 6 }}>
@@ -65,6 +66,7 @@ const CompareBranchesSelection = ({
                 withWorkspace={withWorkspace}
                 withTags={withTags}
                 selectRef={onSelectCompare}
+                narrow
             />
 
             <OverlayTrigger placement="bottom" overlay={<Tooltip>Switch directions</Tooltip>}>

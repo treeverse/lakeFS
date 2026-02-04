@@ -316,6 +316,7 @@ const RefDropdown = ({
     withCommits = true,
     withWorkspace = true,
     withTags = true,
+    narrow = false,
 }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
@@ -386,7 +387,7 @@ const RefDropdown = ({
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: 320 }}
+                style={{ maxWidth: narrow ? 320 : 600 }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >
