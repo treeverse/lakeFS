@@ -434,7 +434,7 @@ func TestGetValidatedTaskStatus_Expiry(t *testing.T) {
 					},
 				}
 
-				err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
+				err := c.RunBackgroundTaskSteps(ctx, repository, "operation", taskID, steps, taskStatus)
 				require.NoError(t, err)
 
 				time.Sleep(syncTestSleep)
