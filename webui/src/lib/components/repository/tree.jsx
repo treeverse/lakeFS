@@ -37,6 +37,7 @@ import { ClipboardButton, copyTextToClipboard, AlertError, Loading } from '../co
 import { useAPI } from '../../hooks/api';
 import noop from 'lodash/noop';
 import { CommitInfoCard } from './commits';
+import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
 
 export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';
@@ -46,7 +47,8 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui = false }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui = false, onRefresh }) => {
+    const pluginManager = usePluginManager();
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
     const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -75,6 +77,21 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
         },
         [setShowPrefixSize],
     );
+
+    // Get plugin-provided actions
+    const actionContext = {
+        repo,
+        reference,
+        entry,
+        config: {
+            pre_sign_support: presign,
+            pre_sign_support_ui: presign_ui,
+        },
+        onRefresh,
+    };
+    const pluginActions = pluginManager.objectActions
+        .getDropdownActions()
+        .filter((action) => action.isAvailable(actionContext));
 
     return (
         <>
@@ -145,6 +162,17 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
                     >
                         <PasteIcon /> Copy URI
                     </Dropdown.Item>
+
+                    {/* Plugin-provided actions */}
+                    {pluginActions.length > 0 && (
+                        <>
+                            <Dropdown.Divider />
+                            {pluginActions.map((action) => {
+                                const ActionComponent = action.render;
+                                return <ActionComponent key={action.id} {...actionContext} />;
+                            })}
+                        </>
+                    )}
 
                     {entry.path_type === 'object' && reference.type === RefTypeBranch && (
                         <>
@@ -456,7 +484,7 @@ const PathLink = ({ repoId, reference, path, children, presign = false, as = nul
     return React.createElement(as, { href: link, download: name }, children);
 };
 
-const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
+const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions, onRefresh }) => {
     let rowClass = 'change-entry-row ';
     switch (entry.diff_type) {
         case 'changed':
@@ -569,6 +597,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
                 onDelete={onDelete}
                 presign={config.config.pre_sign_support}
                 presign_ui={config.config.pre_sign_support_ui}
+                onRefresh={onRefresh}
             />
         );
     }
@@ -791,6 +820,7 @@ export const Tree = ({
     onUpload,
     onImport,
     onDelete,
+    onRefresh,
     showActions = false,
     path = '',
 }) => {
@@ -823,6 +853,7 @@ export const Tree = ({
                                 reference={reference}
                                 showActions={showActions}
                                 onDelete={onDelete}
+                                onRefresh={onRefresh}
                             />
                         ))}
                     </tbody>

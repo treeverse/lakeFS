@@ -1112,6 +1112,7 @@ const TreeContainer = ({
                 onPaginate={onPaginate}
                 onUpload={onUpload}
                 onImport={onImport}
+                onRefresh={onRefresh}
                 onDelete={(entry) => {
                     objects
                         .delete(repo.id, reference.id, entry.path)
@@ -1393,6 +1394,28 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                     <Button variant="success" disabled={repo?.read_only} onClick={() => setShowUpload(true)}>
                         <UploadIcon /> Upload
                     </Button>
+
+                    {/* Plugin-provided upload/create actions */}
+                    {reference &&
+                        (() => {
+                            const uploadActionContext = {
+                                repo,
+                                reference,
+                                entry: { path: path || '', path_type: 'common_prefix' },
+                                config: {
+                                    pre_sign_support_ui: storageConfig.pre_sign_support_ui,
+                                    blockstore_type: storageConfig.blockstore_type,
+                                },
+                                onRefresh: refresh,
+                            };
+                            const uploadActions = pluginManager.objectActions
+                                .getUploadActions()
+                                .filter((action) => action.isAvailable(uploadActionContext));
+                            return uploadActions.map((action) => {
+                                const ActionComponent = action.render;
+                                return <ActionComponent key={action.id} {...uploadActionContext} />;
+                            });
+                        })()}
 
                     <Button
                         variant={!storageConfig.import_support ? 'success' : 'light'}

@@ -6,8 +6,10 @@ import { PluginLoginStrategy } from './pluginLoginStrategy';
 import RedirectToSSOStrategyPlugin from './impls/RedirectToSSOStrategyPlugin';
 import { PluginCommitOperation } from './pluginCommitOperation';
 import { PluginMergeOperation } from './pluginMergeOperation';
+import { PluginObjectActions } from './pluginObjectActions';
 import SyncCommitPlugin from './impls/SyncCommitPlugin';
 import SyncMergePlugin from './impls/SyncMergePlugin';
+import DefaultObjectActionsPlugin from './pluginObjectActions';
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
@@ -15,6 +17,7 @@ export class PluginManager {
     private _loginStrategy: PluginLoginStrategy = RedirectToSSOStrategyPlugin;
     private _commitOperation: PluginCommitOperation = SyncCommitPlugin;
     private _mergeOperation: PluginMergeOperation = SyncMergePlugin;
+    private _objectActions: PluginObjectActions = DefaultObjectActionsPlugin;
 
     overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
         this._repoCreationForm = pluginRepoCreationForm;
@@ -54,5 +57,13 @@ export class PluginManager {
 
     get mergeOperation(): PluginMergeOperation {
         return this._mergeOperation;
+    }
+
+    overridePluginObjectActions(pluginObjectActions: PluginObjectActions): void {
+        this._objectActions = pluginObjectActions;
+    }
+
+    get objectActions(): PluginObjectActions {
+        return this._objectActions;
     }
 }

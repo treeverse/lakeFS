@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React, { FC, useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Alert from 'react-bootstrap/Alert';
@@ -15,6 +15,7 @@ import { RefContextProvider, useRefs } from '../../../lib/hooks/repo';
 import { useConfigContext } from '../../../lib/hooks/configProvider';
 import { linkToPath } from '../../../lib/api';
 import { getRepoStorageConfig } from './utils';
+import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
 
 import '../../../styles/quickstart.css';
 
@@ -39,6 +40,12 @@ interface FileContentsProps {
     sizeBytes: number;
     showFullNavigator?: boolean;
     presign?: boolean;
+    checksum?: string;
+    onRefresh?: () => void;
+    storageConfig?: {
+        pre_sign_support_ui?: boolean;
+        blockstore_type?: string;
+    };
 }
 
 export const Loading: FC = () => {
@@ -65,13 +72,21 @@ const FileObjectsViewerPage = () => {
     const queryString = useQuery<ObjectViewerQueryString>();
     const refId = queryString['ref'] ?? '';
     const path = queryString['path'] ?? '';
+    const [refreshToken, setRefreshToken] = useState(0);
+
     const {
         response,
         error: apiError,
         loading: apiLoading,
     } = useAPI(() => {
         return objects.head(repoId, refId, path);
-    }, [repoId, refId, path]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [repoId, refId, path, refreshToken]);
+
+    const handleRefresh = useCallback(() => {
+        setRefreshToken((prev) => prev + 1);
+    }, []);
+
     const loading = apiLoading || repoLoading || configLoading;
     const error = loading ? null : apiError || repoError || configsError || storageConfigError;
 
@@ -89,6 +104,8 @@ const FileObjectsViewerPage = () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (response as any)?.headers.get('Content-Length'),
         );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const checksum = (response as any)?.headers.get('ETag')?.replace(/[" ]+/g, '');
         content = (
             <FileContents
                 repoId={repoId || ''}
@@ -100,9 +117,12 @@ const FileObjectsViewerPage = () => {
                 fileExtension={fileExtension}
                 contentType={contentType}
                 sizeBytes={sizeBytes}
+                checksum={checksum}
                 error={error}
                 loading={loading}
                 presign={storageConfig.pre_sign_support_ui}
+                storageConfig={storageConfig}
+                onRefresh={handleRefresh}
             />
         );
     }
@@ -121,7 +141,11 @@ export const FileContents: FC<FileContentsProps> = ({
     sizeBytes = -1,
     showFullNavigator = true,
     presign = false,
+    checksum,
+    onRefresh,
+    storageConfig,
 }) => {
+    const pluginManager = usePluginManager();
     const objectUrl = linkToPath(repoId, reference.id, path, presign);
 
     if (loading || error) {
@@ -131,6 +155,29 @@ export const FileContents: FC<FileContentsProps> = ({
     const repo = {
         id: repoId,
     };
+
+    // Build action context for plugin toolbar actions
+    const actionContext = {
+        repo,
+        reference,
+        entry: {
+            path,
+            path_type: 'object' as const,
+            checksum,
+            size_bytes: sizeBytes,
+            content_type: contentType,
+        },
+        config: {
+            pre_sign_support_ui: storageConfig?.pre_sign_support_ui ?? presign,
+            blockstore_type: storageConfig?.blockstore_type,
+        },
+        onRefresh,
+    };
+
+    // Get toolbar actions from plugin
+    const toolbarActions = pluginManager.objectActions
+        .getViewerToolbarActions()
+        .filter((action) => action.isAvailable(actionContext));
 
     const titleComponent = showFullNavigator ? (
         <URINavigator
@@ -147,7 +194,19 @@ export const FileContents: FC<FileContentsProps> = ({
 
     return (
         <Card className={'file-content-card'}>
-            <Card.Header className={'file-content-heading'}>{titleComponent}</Card.Header>
+            <Card.Header className={'file-content-heading'}>
+                <div className="d-flex justify-content-between align-items-center">
+                    <div className="flex-grow-1">{titleComponent}</div>
+                    {toolbarActions.length > 0 && (
+                        <div className="object-viewer-toolbar ms-2">
+                            {toolbarActions.map((action) => {
+                                const ActionComponent = action.render;
+                                return <ActionComponent key={action.id} {...actionContext} />;
+                            })}
+                        </div>
+                    )}
+                </div>
+            </Card.Header>
             <Card.Body className={'file-content-body'}>
                 <Box sx={{ mx: 1 }}>
                     <ObjectRenderer
