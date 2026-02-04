@@ -13,6 +13,18 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
+type ObjectDeleteError struct {
+	apigen.ObjectError
+}
+
+func (e *ObjectDeleteError) Error() string {
+	path := ""
+	if e.Path != nil {
+		path = *e.Path
+	}
+	return fmt.Sprintf("rm %s: [%d] %s", path, e.StatusCode, e.Message)
+}
+
 const deleteChunkSize = 1000
 
 var fsRmCmd = &cobra.Command{
@@ -90,22 +102,8 @@ var fsRmCmd = &cobra.Command{
 
 func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, branch string, paths <-chan string, errors chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
-	objs := make([]string, 0, deleteChunkSize)
-	for objPath := range paths {
-		objs = append(objs, objPath)
-		if len(objs) >= deleteChunkSize {
-			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
-				Paths: objs,
-			})
-			err = RetrieveError(resp, err)
-			if err != nil {
-				rmErr := fmt.Errorf("rm objects - %w", err)
-				errors <- rmErr
-			}
-			clear(objs)
-		}
-	}
-	if len(objs) > 0 {
+
+	deleteBatch := func(objs []string) {
 		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
 			Paths: objs,
 		})
@@ -114,6 +112,24 @@ func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesIn
 			rmErr := fmt.Errorf("rm objects - %w", err)
 			errors <- rmErr
 		}
+		// Check for per-object errors in a 200 response
+		if resp.JSON200 != nil {
+			for _, objErr := range resp.JSON200.Errors {
+				errors <- &ObjectDeleteError{objErr}
+			}
+		}
+	}
+
+	objs := make([]string, 0, deleteChunkSize)
+	for objPath := range paths {
+		objs = append(objs, objPath)
+		if len(objs) >= deleteChunkSize {
+			deleteBatch(objs)
+			objs = objs[:0]
+		}
+	}
+	if len(objs) > 0 {
+		deleteBatch(objs)
 	}
 }
 
