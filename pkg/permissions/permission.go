@@ -1,8 +1,9 @@
 package permissions
 
 const (
-	fsArnPrefix   = "arn:lakefs:fs:::"
-	authArnPrefix = "arn:lakefs:auth:::"
+	fsArnPrefix      = "arn:lakefs:fs:::"
+	authArnPrefix    = "arn:lakefs:auth:::"
+	catalogArnPrefix = "arn:lakefs:catalog:::"
 
 	All = "*"
 )
@@ -60,4 +61,16 @@ func PolicyArn(policyID string) string {
 
 func ExternalPrincipalArn(principalID string) string {
 	return authArnPrefix + "externalPrincipal/" + principalID
+}
+
+func CatalogNamespaceArn(repository, namespace string) string {
+	return catalogArnPrefix + "namespace/" + repository + "/" + namespace
+}
+
+func CatalogTableArn(repository, namespace, table string) string {
+	return catalogArnPrefix + "table/" + repository + "/" + namespace + "/" + table
+}
+
+func CatalogViewArn(repository, namespace, view string) string {
+	return catalogArnPrefix + "view/" + repository + "/" + namespace + "/" + view
 }
