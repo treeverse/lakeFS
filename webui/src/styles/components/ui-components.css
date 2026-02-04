@@ -175,6 +175,15 @@ a[title*='Upload'] + a[title*='Import'] {
     flex-shrink: 0;
 }
 
+/* Hidden measurement container for calculating widths */
+.breadcrumb-measure-container {
+    position: absolute;
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
 /* Collapsible Breadcrumb */
 .collapsible-breadcrumb {
     display: flex;

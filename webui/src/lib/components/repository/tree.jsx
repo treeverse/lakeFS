@@ -625,7 +625,7 @@ const BREADCRUMB_PADDING = 20; // Safety padding for container
  */
 const CollapsibleBreadcrumb = ({
     items,
-    maxItems = 2, // Minimum items to always show at the end
+    minVisibleItems = 2, // Minimum items to always show at the end
 }) => {
     const containerRef = useRef(null);
     const measureRef = useRef(null);
@@ -664,7 +664,7 @@ const CollapsibleBreadcrumb = ({
             }
 
             // Need to collapse - figure out how many items
-            // Always keep at least maxItems visible at the end
+            // Always keep at least minVisibleItems visible at the end
             const availableWidth = containerWidth - DROPDOWN_BUTTON_WIDTH - BREADCRUMB_PADDING;
 
             // Start from the right (end of path) and work backwards
@@ -672,7 +672,7 @@ const CollapsibleBreadcrumb = ({
             let visibleCount = 0;
 
             for (let i = itemWidths.length - 1; i >= 0; i--) {
-                if (visibleWidth + itemWidths[i] <= availableWidth || visibleCount < maxItems) {
+                if (visibleWidth + itemWidths[i] <= availableWidth || visibleCount < minVisibleItems) {
                     visibleWidth += itemWidths[i];
                     visibleCount++;
                 } else {
@@ -691,7 +691,7 @@ const CollapsibleBreadcrumb = ({
         resizeObserver.observe(containerRef.current);
 
         return () => resizeObserver.disconnect();
-    }, [measured, itemWidths, items.length, maxItems]);
+    }, [measured, itemWidths, items.length, minVisibleItems]);
 
     // Items to show in dropdown (collapsed)
     const collapsedItems = useMemo(() => {
@@ -706,17 +706,7 @@ const CollapsibleBreadcrumb = ({
     return (
         <>
             {/* Hidden measurement container */}
-            <div
-                ref={measureRef}
-                style={{
-                    position: 'absolute',
-                    visibility: 'hidden',
-                    height: 0,
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                }}
-                aria-hidden="true"
-            >
+            <div ref={measureRef} className="breadcrumb-measure-container" aria-hidden="true">
                 {items.map((item) => (
                     <span key={`measure-${item.path}`} className="breadcrumb-measure-item">
                         {item.render()}
@@ -841,11 +831,9 @@ export const URINavigator = ({
 
     return (
         <div className="d-flex">
-            <div className="lakefs-uri flex-grow-1">
-                <div title={displayedReference} className="uri-navigator-container">
-                    <span className="uri-prefix">{prefixElement}</span>
-                    {breadcrumbItems.length > 0 && <CollapsibleBreadcrumb items={breadcrumbItems} maxItems={2} />}
-                </div>
+            <div className="lakefs-uri uri-navigator-container flex-grow-1" title={displayedReference}>
+                <span className="uri-prefix">{prefixElement}</span>
+                {breadcrumbItems.length > 0 && <CollapsibleBreadcrumb items={breadcrumbItems} minVisibleItems={2} />}
             </div>
             <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
                 {hasCopyButton && (
