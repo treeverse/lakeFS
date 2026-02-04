@@ -16,6 +16,8 @@ import { useRecentRefs } from '../../hooks/useRecentRefs';
 import { RecentRefSelector } from './RecentRefSelector';
 import { MAX_UNTRIMMED_RESULT_LENGTH, getRefDisplayName } from '../../utils/refDisplayName';
 
+const MAX_UNTRIMMED_RESULT_LENGTH = 50;
+
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300, onTrackRef }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
@@ -346,6 +348,7 @@ const RefDropdown = ({
     withCommits = true,
     withWorkspace = true,
     withTags = true,
+    narrow = false,
 }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
@@ -418,7 +421,7 @@ const RefDropdown = ({
                 ref={target}
                 variant={variant}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: 320 }}
+                style={{ maxWidth: narrow ? 320 : 600 }}
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >
