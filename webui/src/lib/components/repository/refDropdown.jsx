@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
@@ -16,9 +16,7 @@ import { useRecentRefs } from '../../hooks/useRecentRefs';
 import { RecentRefSelector } from './RecentRefSelector';
 import { MAX_UNTRIMMED_RESULT_LENGTH, getRefDisplayName } from '../../utils/refDisplayName';
 
-const MAX_UNTRIMMED_RESULT_LENGTH = 50;
-
-const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300, onTrackRef }) => {
+const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
     const [pagination, setPagination] = useState({ after: '', prefix: '', amount });
     const [refList, setRefs] = useState({ loading: true, payload: null, error: null });
@@ -96,7 +94,6 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                 clearRecentRefs={clearRecentRefs}
                 selected={selected}
                 selectRef={selectRef}
-                onTrackRef={onTrackRef}
                 refTypeNav={refTypeNav}
             />
         );
@@ -160,7 +157,6 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
                                     selectRef={selectRef}
                                     selected={selected}
                                     withCommits={refType !== RefTypeTag && withCommits}
-                                    onTrackRef={onTrackRef}
                                     logCommits={async () => {
                                         const data = await commits.log(repo.id, namedRef.id);
                                         setCommitList({
@@ -252,17 +248,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const RefEntry = ({
-    repo,
-    namedRef,
-    replacePrefix,
-    refType,
-    selectRef,
-    selected,
-    logCommits,
-    withCommits,
-    onTrackRef,
-}) => {
+const RefEntry = ({ repo, namedRef, replacePrefix, refType, selectRef, selected, logCommits, withCommits }) => {
     const displayName = getRefDisplayName(namedRef, replacePrefix);
     return (
         <ListGroup.Item as="li" key={namedRef}>
@@ -275,7 +261,6 @@ const RefEntry = ({
                             variant="link"
                             className="text-start text-truncate w-100 d-block"
                             onClick={() => {
-                                onTrackRef(namedRef, refType);
                                 selectRef({ id: namedRef, type: refType });
                             }}
                         >
@@ -352,7 +337,6 @@ const RefDropdown = ({
 }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
-    const { trackRef } = useRecentRefs(repo.id);
 
     const popover = (
         <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
@@ -364,7 +348,6 @@ const RefDropdown = ({
                         withWorkspace={withWorkspace}
                         withTags={withTags}
                         selected={selected}
-                        onTrackRef={trackRef}
                         selectRef={(ref) => {
                             selectRef(ref);
                             setShow(false);

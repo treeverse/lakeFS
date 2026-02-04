@@ -28,7 +28,6 @@ export const RecentRefSelector = ({
     clearRecentRefs,
     selected,
     selectRef,
-    onTrackRef,
     refTypeNav,
 }: RecentRefSelectorProps) => {
     const [filter, setFilter] = useState('');
@@ -70,7 +69,6 @@ export const RecentRefSelector = ({
                                                     variant="link"
                                                     className="text-start text-truncate w-100 d-block"
                                                     onClick={() => {
-                                                        onTrackRef(ref.id, ref.type);
                                                         selectRef({ id: ref.id, type: ref.type });
                                                     }}
                                                 >

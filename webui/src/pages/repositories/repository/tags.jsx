@@ -29,12 +29,10 @@ import { useRouter } from '../../../lib/hooks/router';
 import { ConfirmationButton } from '../../../lib/components/modals';
 import { RepoError } from './error';
 import { AppContext } from '../../../lib/hooks/appContext';
-import { useRecentRefs } from '../../../lib/hooks/useRecentRefs';
 
 const TagWidget = ({ repo, tag, onDelete }) => {
     const { state } = useContext(AppContext);
     const buttonVariant = state.settings.darkMode ? 'outline-light' : 'outline-dark';
-    const { trackRef } = useRecentRefs(repo.id);
 
     return (
         <ListGroup.Item>
@@ -47,7 +45,6 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                                 params: { repoId: repo.id },
                                 query: { ref: tag.id },
                             }}
-                            onClick={() => trackRef(tag.id, 'tag')}
                         >
                             {tag.id}
                         </Link>

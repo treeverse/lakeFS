@@ -44,7 +44,6 @@ import { useRouter } from '../../../lib/hooks/router';
 import { RepoError } from './error';
 import { Col, Row } from 'react-bootstrap';
 import { AppContext } from '../../../lib/hooks/appContext';
-import { useRecentRefs } from '../../../lib/hooks/useRecentRefs';
 
 const ImportBranchName = 'import-from-inventory';
 
@@ -52,7 +51,6 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
     const { state } = useContext(AppContext);
     const router = useRouter();
     const buttonVariant = state.settings.darkMode ? 'outline-light' : 'outline-dark';
-    const { trackRef } = useRecentRefs(repo.id);
     const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
         <>
@@ -91,7 +89,6 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                                 params: { repoId: repo.id },
                                 query: { ref: branch.id },
                             }}
-                            onClick={() => trackRef(branch.id, 'branch')}
                         >
                             {branch.id}
                         </Link>
