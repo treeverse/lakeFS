@@ -33,6 +33,7 @@ message Task {
   int64 progress = 4;
   string error_msg = 5;
   int32 status_code = 6;
+  string operation = 7;
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
