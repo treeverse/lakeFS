@@ -73,7 +73,6 @@ const setRecentRefs = (repoId: string, refs: RecentRef[]): void => {
  * @returns recentRefs - Array of recently accessed refs, most recent first
  * @returns trackRef - Add or update a ref's access time
  * @returns clearRecentRefs - Clear all recent refs for this repo
- * @returns removeRef - Remove a specific ref from history
  */
 export const useRecentRefs = (repoId: string) => {
     // Memoize subscribe function to maintain stable reference
@@ -97,19 +96,9 @@ export const useRecentRefs = (repoId: string) => {
         setRecentRefs(repoId, []);
     }, [repoId]);
 
-    const removeRef = useCallback(
-        (refId: string) => {
-            const current = getRecentRefs(repoId);
-            const updated = current.filter((ref) => ref.id !== refId);
-            setRecentRefs(repoId, updated);
-        },
-        [repoId],
-    );
-
     return {
         recentRefs,
         trackRef,
         clearRecentRefs,
-        removeRef,
     };
 };
