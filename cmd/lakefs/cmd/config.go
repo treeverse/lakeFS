@@ -392,7 +392,7 @@ func showMainMenu(state *configState) (string, bool) {
 	items := make([]menuItem, 0, len(categoryOrder)+3)
 
 	// Add separator for required sections
-	fmt.Println("─── Required Configuration ───")
+	fmt.Println("--- Required Configuration ---")
 	for _, catID := range categoryOrder {
 		cat := state.categories[catID]
 		if !cat.Required {
@@ -407,7 +407,7 @@ func showMainMenu(state *configState) (string, bool) {
 	}
 
 	// Add separator for optional sections
-	fmt.Println("─── Optional Configuration ───")
+	fmt.Println("--- Optional Configuration ---")
 	for _, catID := range categoryOrder {
 		cat := state.categories[catID]
 		if cat.Required {
@@ -422,7 +422,7 @@ func showMainMenu(state *configState) (string, bool) {
 	}
 
 	// Add action items
-	fmt.Println("─── Actions ───")
+	fmt.Println("--- Actions ---")
 	items = append(items, menuItem{id: categoryReview, display: "Review current configuration"})
 
 	saveStatus := ""
@@ -482,9 +482,8 @@ func formatStatus(status string) string {
 
 func showConfigurationReview(state *configState) {
 	fmt.Println()
-	fmt.Println("═══════════════════════════════════════════════════════════════")
-	fmt.Println("                    Configuration Review                        ")
-	fmt.Println("═══════════════════════════════════════════════════════════════")
+	fmt.Println("Configuration Review")
+	fmt.Println("====================")
 	fmt.Println()
 
 	v := state.viper
@@ -588,7 +587,7 @@ func showConfigurationReview(state *configState) {
 		fmt.Println()
 	}
 
-	fmt.Println("═══════════════════════════════════════════════════════════════")
+	fmt.Println("====================")
 	fmt.Println()
 
 	// Wait for user to press enter
@@ -622,7 +621,7 @@ func maskSecret(secret string) string {
 // configureListenAddress prompts for the server listen address
 func configureListenAddress(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── Listen Address Configuration ───")
+	fmt.Println("--- Listen Address Configuration ---")
 	fmt.Println("Configure the address and port lakeFS will listen on.")
 	fmt.Println()
 
@@ -647,7 +646,7 @@ func configureListenAddress(state *configState) error {
 // configureDatabase handles all database type configurations
 func configureDatabase(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── Database Configuration ───")
+	fmt.Println("--- Database Configuration ---")
 	fmt.Println("lakeFS requires a database for metadata storage.")
 	fmt.Println()
 	fmt.Println("postgres:  Production-ready PostgreSQL database")
@@ -878,7 +877,7 @@ func configureCosmosDB(state *configState) error {
 // configureBlockstore handles all blockstore type configurations
 func configureBlockstore(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── Object Storage Configuration ───")
+	fmt.Println("--- Object Storage Configuration ---")
 	fmt.Println("lakeFS stores data in an object storage backend.")
 	fmt.Println()
 	fmt.Println("s3:    Amazon S3 or S3-compatible storage (MinIO, Ceph, etc.)")
@@ -1070,7 +1069,7 @@ func configureLocalBlockstore(state *configState) error {
 // configureSecrets handles authentication and signing secrets
 func configureSecrets(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── Security Configuration ───")
+	fmt.Println("--- Security Configuration ---")
 	fmt.Println("lakeFS requires secret keys for authentication and signing.")
 	fmt.Println()
 
@@ -1162,7 +1161,7 @@ func configureSecrets(state *configState) error {
 // configureLoggingSection handles logging configuration
 func configureLoggingSection(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── Logging Configuration ───")
+	fmt.Println("--- Logging Configuration ---")
 	fmt.Println()
 	fmt.Println("text: Human-readable format")
 	fmt.Println("json: JSON format for log aggregators")
@@ -1233,7 +1232,7 @@ func configureLoggingSection(state *configState) error {
 // configureTLSSection handles TLS configuration
 func configureTLSSection(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── TLS Configuration ───")
+	fmt.Println("--- TLS Configuration ---")
 	fmt.Println("Configure HTTPS with TLS certificates.")
 	fmt.Println()
 
@@ -1267,7 +1266,7 @@ func configureTLSSection(state *configState) error {
 // configureS3Gateway handles S3 gateway configuration
 func configureS3Gateway(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── S3 Gateway Configuration ───")
+	fmt.Println("--- S3 Gateway Configuration ---")
 	fmt.Println("The S3 gateway allows S3-compatible access to lakeFS.")
 	fmt.Println()
 
@@ -1298,7 +1297,7 @@ func configureS3Gateway(state *configState) error {
 // configureStatsSection handles anonymous statistics configuration
 func configureStatsSection(state *configState) error {
 	fmt.Println()
-	fmt.Println("─── Anonymous Usage Statistics ───")
+	fmt.Println("--- Anonymous Usage Statistics ---")
 	fmt.Println("lakeFS collects anonymous usage statistics to help improve the product.")
 	fmt.Println("No personal or sensitive data is collected.")
 	fmt.Println()
@@ -1541,32 +1540,27 @@ func validatePath(input string) error {
 // UI formatting helpers
 
 const welcomeBanner = `
-╔═══════════════════════════════════════════════════════════════╗
-║                   lakeFS Configuration                        ║
-╠═══════════════════════════════════════════════════════════════╣
-║  This wizard will guide you through creating a configuration  ║
-║  file for running lakeFS.                                     ║
-║                                                               ║
-║  Navigate between categories using the menu.                  ║
-║  [REQUIRED] sections must be completed before saving.         ║
-║                                                               ║
-║  For more information, visit:                                 ║
-║  https://docs.lakefs.io/reference/configuration.html          ║
-╚═══════════════════════════════════════════════════════════════╝
+lakeFS Configuration
+====================
+
+This wizard will guide you through creating a configuration
+file for running lakeFS.
+
+Navigate between categories using the menu.
+[REQUIRED] sections must be completed before saving.
+
+For more information, visit:
+https://docs.lakefs.io/reference/configuration.html
 `
 
 const localStorageWarning = `
-┌─────────────────────────────────────────────────────────────────┐
-│  WARNING: Local storage is for testing/development only.       │
-│  Do NOT use local storage for production workloads!            │
-└─────────────────────────────────────────────────────────────────┘
+WARNING: Local storage is for testing/development only.
+Do NOT use local storage for production workloads!
 `
 
 const secretGeneratedNotice = `
-┌─────────────────────────────────────────────────────────────────┐
-│  IMPORTANT: Secret keys have been configured.                  │
-│  Keep your configuration file secure and backed up!            │
-└─────────────────────────────────────────────────────────────────┘
+IMPORTANT: Secret keys have been configured.
+Keep your configuration file secure and backed up!
 `
 
 func printWelcomeBanner() {
