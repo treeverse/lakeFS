@@ -161,6 +161,116 @@ a[title*='Upload'] + a[title*='Import'] {
     color: #f9fafb;
 }
 
+/* URI Navigator Container */
+.uri-navigator-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+    position: relative;
+}
+
+.uri-prefix {
+    flex-shrink: 0;
+}
+
+/* Hidden measurement container for calculating widths */
+.breadcrumb-measure-container {
+    position: absolute;
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Collapsible Breadcrumb */
+.collapsible-breadcrumb {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.breadcrumb-visible-item {
+    flex-shrink: 0;
+}
+
+/* Breadcrumb Dropdown */
+.breadcrumb-dropdown {
+    flex-shrink: 0;
+    margin-right: 2px;
+}
+
+.breadcrumb-dropdown-toggle {
+    padding: 0 4px !important;
+    font-size: 0.875rem !important;
+    font-weight: normal;
+    color: var(--primary) !important;
+    text-decoration: none !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.breadcrumb-dropdown-toggle:hover,
+.breadcrumb-dropdown-toggle:focus {
+    color: var(--primary) !important;
+    background: rgba(var(--primary-rgb, 59, 130, 246), 0.1) !important;
+    border-radius: var(--radius-sm);
+}
+
+.breadcrumb-dropdown-toggle::after {
+    display: none !important;
+}
+
+.breadcrumb-dropdown-toggle:not(.show):focus {
+    background: transparent !important;
+}
+
+.breadcrumb-dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+    min-width: 200px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+}
+
+.breadcrumb-dropdown-item {
+    padding: var(--spacing-xs) var(--spacing-md) !important;
+}
+
+.breadcrumb-dropdown-link {
+    color: var(--text) !important;
+    text-decoration: none !important;
+    display: block;
+    width: 100%;
+}
+
+.breadcrumb-dropdown-link:hover {
+    color: var(--primary) !important;
+}
+
+.breadcrumb-dropdown-item:hover {
+    background-color: var(--hover-bg);
+}
+
+[data-bs-theme='dark'] .breadcrumb-dropdown-menu {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+
+[data-bs-theme='dark'] .breadcrumb-dropdown-item:hover {
+    background-color: #4a5568;
+}
+
+[data-bs-theme='dark'] .breadcrumb-dropdown-link {
+    color: #f9fafb !important;
+}
+
 /* Getting Started Card */
 .getting-started-card {
     margin-top: 64px;
