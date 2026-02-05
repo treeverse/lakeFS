@@ -119,6 +119,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
     };
 
     const onSubmit = () => {
+        if (committing) return;
         const metadata = getMetadataIfValid(metadataFields);
         if (!metadata) {
             setMetadataFields(touchInvalidFields(metadataFields));
@@ -137,7 +138,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
     return (
         <>
             <Modal show={show} onHide={hide} size="lg">
-                <Modal.Header closeButton>
+                <Modal.Header closeButton={!committing}>
                     <Modal.Title>Commit Changes</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -149,11 +150,26 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                         }}
                     >
                         <Form.Group controlId="message" className="mb-3">
-                            <Form.Control type="text" placeholder="Commit Message" ref={textRef} />
+                            <Form.Control
+                                type="text"
+                                placeholder="Commit Message"
+                                ref={textRef}
+                                disabled={committing}
+                            />
                         </Form.Group>
 
-                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
+                        <MetadataFields
+                            metadataFields={metadataFields}
+                            setMetadataFields={setMetadataFields}
+                            disabled={committing}
+                        />
                     </Form>
+                    {committing && (
+                        <Alert variant="info" className="d-flex align-items-center">
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                            Committing changes...
+                        </Alert>
+                    )}
                     {alertText ? <Alert variant="danger">{alertText}</Alert> : <span />}
                 </Modal.Body>
                 <Modal.Footer>
@@ -161,7 +177,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                         Cancel
                     </Button>
                     <Button variant="success" disabled={committing} onClick={onSubmit}>
-                        Commit Changes
+                        {committing ? 'Committing...' : 'Commit Changes'}
                     </Button>
                 </Modal.Footer>
             </Modal>
