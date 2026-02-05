@@ -21,6 +21,7 @@ import Alert from 'react-bootstrap/Alert';
 
 const PullDetailsContent = ({ repo, pull }) => {
     let [loading, setLoading] = useState(false);
+    let [action, setAction] = useState(null);
     let [error, setError] = useState(null);
 
     const {
@@ -31,12 +32,14 @@ const PullDetailsContent = ({ repo, pull }) => {
 
     const mergePullRequest = async () => {
         setError(null);
+        setAction('merge');
         setLoading(true);
         try {
             await pullsAPI.merge(repo.id, pull.id);
         } catch (error) {
             setError(error.message);
             setLoading(false);
+            setAction(null);
             return;
         }
         window.location.reload(); // TODO (gilo): replace with a more elegant solution
@@ -44,6 +47,7 @@ const PullDetailsContent = ({ repo, pull }) => {
 
     const changePullStatus = (status) => async () => {
         setError(null);
+        setAction(status);
         setLoading(true);
         try {
             await pullsAPI.update(repo.id, pull.id, { status });
@@ -51,6 +55,7 @@ const PullDetailsContent = ({ repo, pull }) => {
         } catch (error) {
             setError(`Failed to change pull-request status to ${status}: ${error.message}`);
             setLoading(false);
+            setAction(null);
         }
     };
 
@@ -78,15 +83,30 @@ const PullDetailsContent = ({ repo, pull }) => {
                 {isPullOpen() && (
                     <>
                         <div className="bottom-buttons-group d-flex justify-content-end">
-                            <ClosePullButton onClick={changePullStatus(PullStatus.closed)} loading={loading} />
+                            <ClosePullButton
+                                onClick={changePullStatus(PullStatus.closed)}
+                                loading={loading && action === PullStatus.closed}
+                                disabled={loading}
+                            />
                             {!formattedDiffError && (
                                 <MergePullButton
                                     onClick={mergePullRequest}
                                     isEmptyDiff={isEmptyDiff}
-                                    loading={loading}
+                                    loading={loading && action === 'merge'}
+                                    disabled={loading}
                                 />
                             )}
                         </div>
+                        {loading && (
+                            <Alert variant="info" className="mt-3 mb-0 d-flex align-items-center">
+                                <span
+                                    className="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                    aria-hidden="true"
+                                />
+                                {action === 'merge' ? 'Merging pull request...' : 'Closing pull request...'}
+                            </Alert>
+                        )}
                         {isEmptyDiff && (
                             <Alert variant="warning" className="mt-4">
                                 Merging is disabled for pull requests without changes.
@@ -168,20 +188,16 @@ const StatusBadge = ({ status }) => {
     }
 };
 
-const ClosePullButton = ({ onClick, loading }) => (
-    <Button variant="outline-secondary" className="text-secondary-emphasis" disabled={loading} onClick={onClick}>
-        {loading ? (
-            <span className="spinner-border spinner-border-sm text-light" role="status" />
-        ) : (
-            <>Close pull request</>
-        )}
+const ClosePullButton = ({ onClick, loading, disabled }) => (
+    <Button variant="outline-secondary" className="text-secondary-emphasis" disabled={disabled} onClick={onClick}>
+        {loading ? 'Closing...' : 'Close pull request'}
     </Button>
 );
 
-const MergePullButton = ({ onClick, isEmptyDiff, loading }) => (
-    <Button variant="success" className="ms-2" disabled={loading || isEmptyDiff} onClick={onClick}>
+const MergePullButton = ({ onClick, isEmptyDiff, loading, disabled }) => (
+    <Button variant="success" className="ms-2" disabled={disabled || isEmptyDiff} onClick={onClick}>
         {loading ? (
-            <span className="spinner-border spinner-border-sm text-light" role="status" />
+            'Merging...'
         ) : (
             <>
                 <GitMergeIcon /> Merge pull request

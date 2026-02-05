@@ -7,6 +7,7 @@ import { GitMergeIcon, GitPullRequestIcon } from '@primer/octicons-react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert';
 import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
 import CompareBranchesSelection from './compareBranchesSelection';
 import { useRouter } from '../../../lib/hooks/router';
@@ -91,6 +92,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     };
 
     const onSubmit = async () => {
+        if (mergeState.merging) return;
         const metadata = getMetadataIfValid(metadataFields);
         if (!metadata) {
             setMetadataFields(touchInvalidFields(metadataFields));
@@ -140,7 +142,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
     return (
         <>
             <Modal show={mergeState.show} onHide={hide} size="lg">
-                <Modal.Header closeButton>
+                <Modal.Header closeButton={!mergeState.merging}>
                     <Modal.Title>
                         Merge branch {source} into {dest}
                     </Modal.Title>
@@ -152,6 +154,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                                 type="text"
                                 placeholder="Commit Message (Optional)"
                                 ref={textRef}
+                                disabled={mergeState.merging}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
@@ -161,9 +164,13 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                             />
                         </Form.Group>
 
-                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
+                        <MetadataFields
+                            metadataFields={metadataFields}
+                            setMetadataFields={setMetadataFields}
+                            disabled={mergeState.merging}
+                        />
                     </Form>
-                    <FormControl sx={{ m: 1, minWidth: 120 }}>
+                    <FormControl sx={{ m: 1, minWidth: 120 }} disabled={mergeState.merging}>
                         <InputLabel id="demo-select-small" className="text-secondary">
                             Strategy
                         </InputLabel>
@@ -174,6 +181,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                             label="Strategy"
                             className="text-secondary"
                             onChange={onStrategyChange}
+                            disabled={mergeState.merging}
                         >
                             <MenuItem value={'none'}>Default</MenuItem>
                             <MenuItem value={'source-wins'}>source-wins</MenuItem>
@@ -186,6 +194,12 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                         (&rdquo;source-wins&rdquo;). In case no selection is made, the merge process will fail in case
                         of a conflict.
                     </FormHelperText>
+                    {mergeState.merging && (
+                        <Alert variant="info" className="d-flex align-items-center mt-3">
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                            Merging changes...
+                        </Alert>
+                    )}
                     {mergeState.err ? <AlertError error={mergeState.err} /> : <></>}
                 </Modal.Body>
                 <Modal.Footer>
