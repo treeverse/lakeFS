@@ -1,26 +1,35 @@
+import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import compat from 'eslint-plugin-compat';
-import prettier from 'eslint-plugin-prettier';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import { includeIgnoreFile, fixupConfigRules } from '@eslint/compat';
+import { fileURLToPath } from 'node:url';
 
-export default [
+const gitignorePath = fileURLToPath(new URL('.gitignore', import.meta.url));
+
+export default defineConfig([
   {
+    name: 'ignore/defaults',
     ignores: ['node_modules', 'dist', 'pub'],
+  },
+  {
+    name: 'ignore/gitignore',
+    ...includeIgnoreFile(gitignorePath),
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    name: 'app/js-ts-jsx-tsx',
     files: ['**/*.{js,jsx,ts,tsx}'],
     plugins: {
       '@typescript-eslint': tseslint.plugin,
       react,
       'react-hooks': reactHooks,
       compat,
-      prettier,
     },
     languageOptions: {
       parser: tseslint.parser,
@@ -44,11 +53,9 @@ export default [
     rules: {
       'no-console': 'error',
       'eqeqeq': 'warn',
-      'strict': 'error',
       'react/prop-types': 0,
       'react/jsx-key': 0,
       'react/display-name': 0,
-      'react/react-in-jsx-scope': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -71,5 +78,8 @@ export default [
       ],
     },
   },
-  eslintConfigPrettier,
-];
+  {
+    name: 'prettier/config',
+    ...eslintConfigPrettier,
+  },
+]);

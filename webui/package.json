@@ -65,6 +65,7 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.23.3",
+    "@eslint/compat": "^2.0.2",
     "@playwright/test": "^1.40.1",
     "@rollup/plugin-replace": "^5.0.5",
     "@stoplight/prism-cli": "^5.14.2",
