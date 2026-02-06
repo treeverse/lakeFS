@@ -8,9 +8,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 import mime from 'mime-types';
 import { IHttpOperation } from '@stoplight/types';
-import { PrismHttp } from '@stoplight/prism-http/dist/client';
-import { getHttpOperationsFromSpec } from '@stoplight/prism-cli/dist/operations';
-import { createClientFromOperations } from '@stoplight/prism-http/dist/client';
+import { PrismHttp } from '@stoplight/prism-http/dist/client.js';
+import { getHttpOperationsFromSpec } from '@stoplight/prism-cli/dist/operations.js';
+import { createClientFromOperations } from '@stoplight/prism-http/dist/client.js';
 
 const statAsync = promisify(stat);
 
