@@ -71,6 +71,7 @@ var Actions = []string{
 	"catalog:CreateTable",
 	"catalog:UpdateTable",
 	"catalog:DeleteTable",
+	"catalog:ListViews",
 	"catalog:ReadView",
 	"catalog:CreateView",
 	"catalog:UpdateView",
