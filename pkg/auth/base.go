@@ -81,6 +81,23 @@ var statementByName = map[string]model.Statement{
 		},
 		Effect: model.StatementEffectAllow,
 	},
+	"CatalogRead": {
+		Action: []string{
+			permissions.CatalogListNamespacesAction,
+			permissions.CatalogGetNamespaceAction,
+			permissions.CatalogListTablesAction,
+			permissions.CatalogReadTableAction,
+			permissions.CatalogListViewsAction,
+			permissions.CatalogReadViewAction,
+		},
+		Effect: model.StatementEffectAllow,
+	},
+	"CatalogReadWrite": {
+		Action: []string{
+			"catalog:*",
+		},
+		Effect: model.StatementEffectAllow,
+	},
 }
 
 // GetActionsForPolicyType returns the actions for police type typ.
