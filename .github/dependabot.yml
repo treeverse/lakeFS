@@ -1,0 +1,13 @@
+version: 2
+
+updates:
+  - directory: "/"
+    package-ecosystem: "github-actions"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "area/ci"
+    groups:
+      dependencies:
+        patterns:
+        - "*"
