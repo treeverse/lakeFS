@@ -6,8 +6,6 @@ import { RevertOperations } from "./revertOperations";
 import { CommitsOperations } from "./commitsOperations";
 
 export class RepositoryPage {
-    private page: Page;
-
     public readOnlyIndicatorLocator: Locator;
     public breadcrumbsLocator: Locator;
 
@@ -17,8 +15,7 @@ export class RepositoryPage {
     public revert: RevertOperations;
     public commits: CommitsOperations;
 
-    constructor(page: Page) {
-        this.page = page;
+    constructor(private page: Page) {
         this.readOnlyIndicatorLocator = this.page.locator("text=Read-only");
         this.breadcrumbsLocator = this.page.locator("ol.breadcrumb");
 
@@ -32,8 +29,6 @@ export class RepositoryPage {
     async goto(repoName: string): Promise<void> {
         await this.page.goto(`/repositories/${repoName}`);
     }
-
-    // navigation
 
     async gotoObjectsTab(): Promise<void> {
         await this.page.getByRole("link", { name: "Objects", exact: true }).first().click();
@@ -54,5 +49,4 @@ export class RepositoryPage {
     async gotoCommitsTab(): Promise<void> {
         await this.page.getByRole("link", { name: "Commits" }).click();
     }
-
 }

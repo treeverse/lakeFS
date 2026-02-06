@@ -1,17 +1,10 @@
 import { expect, Page } from "@playwright/test";
 
 export class ObjectViewerPage {
-  private page: Page;
-
-  constructor(page: Page) {
-    this.page = page;
-  }
+  constructor(private page: Page) {}
 
   async enterQuery(query: string): Promise<void> {
-    await this.page
-      .locator("div.syntax-editor")
-      .locator("textarea")
-      .fill(query);
+    await this.page.locator("div.syntax-editor textarea").fill(query);
   }
 
   async clickExecuteButton(): Promise<void> {
@@ -25,10 +18,6 @@ export class ObjectViewerPage {
   }
 
   async getResultRowCount(): Promise<number> {
-    return this.page
-      .locator("table.table")
-      .locator("tbody")
-      .locator("tr")
-      .count();
+    return this.page.locator("table.table tbody tr").count();
   }
 }

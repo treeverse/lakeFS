@@ -9,11 +9,7 @@ export class ChangesOperations {
 
     async getUncommittedCount(): Promise<number> {
         await expect(this.page.locator(".tree-container div.card")).toBeVisible();
-        return this.page
-            .locator("table.table")
-            .locator("tbody")
-            .locator("tr")
-            .count();
+        return this.page.locator("table.table tbody tr").count();
     }
 
     async commitChanges(commitMsg: string): Promise<void> {

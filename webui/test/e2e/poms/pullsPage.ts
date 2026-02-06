@@ -1,11 +1,7 @@
 import { Page } from "@playwright/test";
 
 export class PullsPage {
-    private page: Page;
-
-    constructor(page: Page) {
-        this.page = page;
-    }
+    constructor(private page: Page) {}
 
     async getPullsListCount(): Promise<number> {
         const pullsList = this.page.locator("div.pulls-list");
@@ -25,7 +21,7 @@ export class PullsPage {
     }
 
     async getBranchesCompareURI(): Promise<string> {
-        return await this.page.locator("div.lakefs-uri").innerText();
+        return this.page.locator("div.lakefs-uri").innerText();
     }
 
     async clickMergePullButton(): Promise<void> {

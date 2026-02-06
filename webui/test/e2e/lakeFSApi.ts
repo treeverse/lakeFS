@@ -2,15 +2,11 @@ import { APIRequestContext } from "@playwright/test";
 import { LakeFSCredentials } from "./types";
 
 export class LakeFSApi {
-    private request: APIRequestContext;
-    private baseUrl: string;
-    private credentials: LakeFSCredentials | null;
-
-    constructor(request: APIRequestContext, baseUrl: string, credentials?: LakeFSCredentials) {
-        this.request = request;
-        this.baseUrl = baseUrl;
-        this.credentials = credentials ?? null;
-    }
+    constructor(
+        private request: APIRequestContext,
+        private baseUrl: string,
+        private credentials?: LakeFSCredentials,
+    ) {}
 
     private extraHeaders(): Record<string, string> {
         if (!this.credentials) {

@@ -8,6 +8,10 @@ import { COMMON_STORAGE_STATE_PATH } from "./test/e2e/consts";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:8000";
 const SKIP_SETUP = !!process.env.SKIP_SETUP;
+const SETUP_SPECS = [
+  "test/e2e/common/setup.spec.ts",
+  "test/e2e/common/setupInfra.spec.ts",
+];
 
 export default defineConfig({
   testDir: "test",
@@ -49,11 +53,7 @@ export default defineConfig({
         storageState: COMMON_STORAGE_STATE_PATH,
       },
       testMatch: "test/e2e/common/**/*.spec.ts",
-      testIgnore: [
-        "test/e2e/common/setup.spec.ts",
-        "test/e2e/common/setupInfra.spec.ts",
-        "test/e2e/common/quickstart.spec.ts",
-      ],
+      testIgnore: [...SETUP_SPECS, "test/e2e/common/quickstart.spec.ts"],
     },
     {
       name: "quickstart",
@@ -63,10 +63,7 @@ export default defineConfig({
         storageState: COMMON_STORAGE_STATE_PATH,
       },
       testMatch: "test/e2e/common/**/quickstart.spec.ts",
-      testIgnore: [
-        "test/e2e/common/setup.spec.ts",
-        "test/e2e/common/setupInfra.spec.ts",
-      ],
+      testIgnore: SETUP_SPECS,
     },
     {
       name: "integration",

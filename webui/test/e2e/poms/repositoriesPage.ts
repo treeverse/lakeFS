@@ -1,20 +1,17 @@
 import { Locator, Page, expect } from "@playwright/test";
-import { TIMEOUT_ELEMENT_VISIBLE, TIMEOUT_LONG_OPERATION } from "../timeouts";
+import { TIMEOUT_LONG_OPERATION } from "../timeouts";
 
 export const SAMPLE_REPO_README_TITLE = "Welcome to the Lake!";
 export const REGULAR_REPO_README_TITLE = "Your repository is ready!";
 
 export class RepositoriesPage {
-    protected page: Page;
-
     public noRepositoriesTitleLocator: Locator;
     public readOnlyIndicatorLocator: Locator;
     public uploadButtonLocator: Locator;
     public createRepositoryButtonLocator: Locator;
     public searchInputLocator: Locator;
 
-    constructor(page: Page) {
-        this.page = page;
+    constructor(protected page: Page) {
         this.noRepositoriesTitleLocator = this.page.getByText("Welcome to LakeFS!");
         this.readOnlyIndicatorLocator = this.page.locator("text=Read-only");
         this.uploadButtonLocator = this.page.locator("text=Upload").first();
@@ -51,10 +48,8 @@ export class RepositoriesPage {
             await this.page.getByRole('checkbox', { name: 'Add sample data, hooks' }).check();
         }
         await this.page.getByRole("dialog").getByRole("button", { name: "Create Repository", exact: true }).click();
-        if (includeSampleData) {
-            await expect(this.page.getByRole("heading", { name: SAMPLE_REPO_README_TITLE })).toBeVisible({ timeout: TIMEOUT_LONG_OPERATION });
-            return;
-        }
-        await expect(this.page.getByRole("heading", { name: REGULAR_REPO_README_TITLE })).toBeVisible({ timeout: TIMEOUT_LONG_OPERATION });
+
+        const expectedTitle = includeSampleData ? SAMPLE_REPO_README_TITLE : REGULAR_REPO_README_TITLE;
+        await expect(this.page.getByRole("heading", { name: expectedTitle })).toBeVisible({ timeout: TIMEOUT_LONG_OPERATION });
     }
 }
