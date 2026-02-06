@@ -1,32 +1,22 @@
-import { test, expect } from "@playwright/test";
-import { RepositoriesPage } from "../poms/repositoriesPage";
+import { test, expect } from "../fixtures";
 
 const READ_ONLY_REPO_NAME = 'ro-test-repo';
 
 test.describe("Read Only Repository", () => {
-    test.beforeAll(async ({ browser }) => {
-        const context = await browser.newContext();
-        await context.request.post('/api/v1/repositories', {
-            data: {
-                name: READ_ONLY_REPO_NAME,
-                storage_namespace: 'local://ro_test_repo',
-                read_only: true,
-            },
-        });
+    test.beforeAll(async ({ lakeFSApiWorker }) => {
+        const storageNamespace = (process.env.REPO_STORAGE_NAMESPACE_PREFIX || 'local://') + 'ro_test_repo';
+        await lakeFSApiWorker.createRepository(READ_ONLY_REPO_NAME, storageNamespace, { readOnly: true, ifNotExists: true });
     });
 
-    test("Read only indicator shown on repositories page", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("Read only indicator shown on repositories page", async ({ repositoriesPage }) => {
         await repositoriesPage.goto();
         await expect(repositoriesPage.readOnlyIndicatorLocator).toBeVisible();
     });
 
-    test("Read only indicator shown on repository page and upload button is disabled", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("Read only indicator shown on repository page and upload button is disabled", async ({ repositoriesPage, repositoryPage }) => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(READ_ONLY_REPO_NAME);
-        const repositoryPage = new RepositoriesPage(page);
         await expect(repositoryPage.readOnlyIndicatorLocator).toBeVisible();
-        await expect(repositoryPage.uploadButtonLocator).toBeDisabled();
+        await expect(repositoriesPage.uploadButtonLocator).toBeDisabled();
     });
-})
+});

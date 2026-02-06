@@ -1,12 +1,8 @@
 import fs from "fs/promises";
 import {RAW_CREDENTIALS_FILE_PATH} from "./consts";
+import {LakeFSCredentials} from "./types";
 
-interface Credentials {
-    accessKeyId: string;
-    secretAccessKey: string;
-}
-
-export const getCredentials = async (): Promise<Credentials|null> => {
+export const getCredentials = async (): Promise<LakeFSCredentials|null> => {
     try {
         return JSON.parse(await fs.readFile(RAW_CREDENTIALS_FILE_PATH, "utf-8"));
     } catch (e) {
@@ -17,7 +13,7 @@ export const getCredentials = async (): Promise<Credentials|null> => {
     }
 }
 
-export const writeCredentials = async (credentials: Credentials): Promise<void> => {
+export const writeCredentials = async (credentials: LakeFSCredentials): Promise<void> => {
     const jsonCredentials = JSON.stringify(credentials);
     await fs.writeFile(RAW_CREDENTIALS_FILE_PATH, jsonCredentials);
 }

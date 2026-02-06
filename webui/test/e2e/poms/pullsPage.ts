@@ -1,4 +1,4 @@
-import { Locator, Page } from "@playwright/test";
+import { Page } from "@playwright/test";
 
 export class PullsPage {
     private page: Page;
@@ -8,11 +8,11 @@ export class PullsPage {
     }
 
     async getPullsListCount(): Promise<number> {
-        await this.page.locator("div.pulls-list").isVisible();
-        return this.page
-            .locator("div.pulls-list")
-            .locator("pull-row")
-            .count();
+        const pullsList = this.page.locator("div.pulls-list");
+        if (!(await pullsList.isVisible())) {
+            return 0;
+        }
+        return pullsList.locator("div.pull-row").count();
     }
 
     async switchCompareBranch(name: string): Promise<void> {
@@ -40,8 +40,8 @@ export class PullsPage {
         await this.page.getByPlaceholder("Describe your changes...").fill(description);
     }
 
-    async gotoPullsTab(id: string): Promise<void> {
-        await this.page.locator(`#pulls-tabs-tab-${id}`).click();
+    async gotoPullsTab(name: string): Promise<void> {
+        await this.page.getByRole("tab", { name, exact: false }).click();
     }
 
     async getFirstPullsRowDetails(): Promise<{title: string, description: string}> {
