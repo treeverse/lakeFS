@@ -17,9 +17,6 @@ const (
 	SuperUsersGroup = "SuperUsers"
 	DevelopersGroup = "Developers"
 	ViewersGroup    = "Viewers"
-
-	IcebergServiceUserName   = "Iceberg Catalog handler"
-	IcebergServicePolicyName = "IcebergServicePolicy"
 )
 
 func createGroups(ctx context.Context, authService auth.Service, groups []*model.Group) error {
@@ -263,58 +260,6 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	}
 
 	return cred, err
-}
-
-// CreateIcebergServiceUser creates a dedicated Iceberg service user with permissions for the Iceberg Catalog fs path.
-// This user is used internally by the Iceberg catalog controller to perform underlying filesystem operations.
-func CreateIcebergServiceUser(ctx context.Context, authService auth.Service, ts time.Time) (*model.Credential, error) {
-	err := createPolicies(ctx, authService, []*model.Policy{
-		{
-			CreatedAt:   ts,
-			DisplayName: IcebergServicePolicyName,
-			Statement: model.Statements{
-				{
-					Action:   []string{"fs:*"},
-					Resource: "arn:lakefs:fs:::repository/*/object/_lakefs_tables/*",
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create iceberg service policy: %w", err)
-	}
-
-	user := &model.User{
-		CreatedAt: ts,
-		Username:  IcebergServiceUserName,
-		Source:    "internal",
-	}
-	_, err = authService.CreateUser(ctx, user)
-	if err != nil {
-		return nil, fmt.Errorf("create iceberg service user: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			logger := logging.ContextUnavailable()
-			logger.WithError(err).Warn("Failed to set up Iceberg service user, deleting user")
-			if delUserErr := authService.DeleteUser(ctx, IcebergServiceUserName); delUserErr != nil {
-				logger.WithError(delUserErr).Error("Failed to delete Iceberg service user")
-			}
-		}
-	}()
-
-	err = authService.AttachPolicyToUser(ctx, IcebergServicePolicyName, IcebergServiceUserName)
-	if err != nil {
-		return nil, fmt.Errorf("attach policy to iceberg service user: %w", err)
-	}
-
-	creds, err := authService.CreateCredentials(ctx, IcebergServiceUserName)
-	if err != nil {
-		return nil, fmt.Errorf("create credentials for iceberg service user: %w", err)
-	}
-
-	return creds, nil
 }
 
 func CreateBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
