@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { expect, Page } from "@playwright/test";
 
 export class ObjectViewerPage {
   private page: Page;
@@ -15,9 +15,10 @@ export class ObjectViewerPage {
   }
 
   async clickExecuteButton(): Promise<void> {
-    await this.page.getByRole("button", { name: "Execute" }).click();
-    await this.page.getByRole("button", { name: "Execute" }).isDisabled();
-    await this.page.getByRole("button", { name: "Execute" }).isEnabled();
+    const executeButton = this.page.getByRole("button", { name: "Execute" });
+    await executeButton.click();
+    await expect(executeButton).toBeDisabled();
+    await expect(executeButton).toBeEnabled();
   }
 
   async getResultRowCount(): Promise<number> {
