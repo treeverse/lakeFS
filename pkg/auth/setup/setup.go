@@ -262,6 +262,67 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	return cred, err
 }
 
+// CreateIcebergServiceUser creates a dedicated Iceberg service user with permissions for the Iceberg Catalog fs path.
+// This user is used internally by the Iceberg catalog controller to perform underlying filesystem operations.
+func CreateIcebergServiceUser(ctx context.Context, authService auth.Service, icebergObjectsPath string) (*model.Credential, error) {
+	if !authService.IsAdvancedAuth() {
+		return nil, nil
+	}
+	err := createIcebergServicePolicy(ctx, authService, icebergObjectsPath)
+	if err != nil {
+		return nil, fmt.Errorf("create iceberg service policy: %w", err)
+	}
+
+	userName := auth.IcebergServiceUserName
+
+	user := &model.User{
+		CreatedAt: time.Now(),
+		Username:  userName,
+		Source:    "internal",
+	}
+	_, err = authService.CreateUser(ctx, user)
+	if err != nil {
+		return nil, fmt.Errorf("create iceberg service user: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			logger := logging.ContextUnavailable()
+			logger.WithError(err).Warn("Failed to set up Iceberg service user, deleting user")
+			if delUserErr := authService.DeleteUser(ctx, userName); delUserErr != nil {
+				logger.WithError(delUserErr).Error("Failed to delete Iceberg service user")
+			}
+		}
+	}()
+
+	err = authService.AttachPolicyToUser(ctx, auth.IcebergServicePolicyName, userName)
+	if err != nil {
+		return nil, fmt.Errorf("attach policy to iceberg service user: %w", err)
+	}
+
+	creds, err := authService.CreateCredentials(ctx, userName)
+	if err != nil {
+		return nil, fmt.Errorf("create credentials for iceberg service user: %w", err)
+	}
+
+	return creds, nil
+}
+
+func createIcebergServicePolicy(ctx context.Context, authService auth.Service, icebergObjectsPath string) error {
+	return createPolicies(ctx, authService, []*model.Policy{
+		{
+			CreatedAt:   time.Now(),
+			DisplayName: auth.IcebergServicePolicyName,
+			Statement: model.Statements{
+				{
+					Action:   []string{"fs:*"},
+					Resource: fmt.Sprintf("arn:lakefs:fs:::repository/*/object/%s/*", icebergObjectsPath),
+					Effect:   model.StatementEffectAllow,
+				},
+			},
+		},
+	})
+}
+
 func CreateBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
 	if !authService.IsAdvancedAuth() {
 		return nil

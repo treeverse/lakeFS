@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -142,11 +143,19 @@ func setupLakeFS(ctx context.Context, cfg config.Config, metadataManager auth.Me
 	}
 
 	// populate initial data and create admin user
-	credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
+	adminCredentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
 	if err != nil {
 		return nil, fmt.Errorf("create initial admin user: %w", err)
 	}
-	return credentials, nil
+
+	if icebergObjectsPath := apifactory.GetIcebergObjectsPath(); icebergObjectsPath != nil {
+		_, err = setup.CreateIcebergServiceUser(ctx, authService, *icebergObjectsPath)
+		if err != nil {
+			return nil, fmt.Errorf("create iceberg service user: %w", err)
+		}
+	}
+
+	return adminCredentials, nil
 }
 
 const internalErrorCode = 2

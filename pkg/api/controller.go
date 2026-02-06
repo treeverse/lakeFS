@@ -5846,6 +5846,13 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
+	if icebergObjectsPath := apifactory.GetIcebergObjectsPath(); icebergObjectsPath != nil {
+		_, err = setup.CreateIcebergServiceUser(ctx, c.Auth, *icebergObjectsPath)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+	}
+
 	// collect metadata
 	storageConfig := c.Config.GetBaseConfig().StorageConfig()
 	metadataProviders := []stats.MetadataProvider{
