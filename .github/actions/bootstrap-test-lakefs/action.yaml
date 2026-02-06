@@ -21,7 +21,7 @@ runs:
   steps:
     - name: Retrieve generated code
       if: inputs.skip-generated-code != 'true'
-      uses: actions/download-artifact@v4.1.8
+      uses: actions/download-artifact@v7.0.0
       with:
         name: generated-code
         path: /tmp/
@@ -30,7 +30,7 @@ runs:
       shell: bash
       run: tar -xzvf /tmp/generated.tar.gz
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
