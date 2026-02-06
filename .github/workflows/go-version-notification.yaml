@@ -54,7 +54,7 @@ jobs:
 
       - name: Notify Slack on Go version change
         if: steps.versions.outputs.changed == 'true'
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v2
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
