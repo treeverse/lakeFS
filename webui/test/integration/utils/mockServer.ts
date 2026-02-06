@@ -1,7 +1,10 @@
-import { resolve, sep } from 'path';
+import { resolve, sep, dirname } from 'path';
 import { createServer } from 'http';
 import { readFileSync, stat, Stats } from 'fs';
 import { promisify } from 'util';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 import mime from 'mime-types';
 import { IHttpOperation } from '@stoplight/types';

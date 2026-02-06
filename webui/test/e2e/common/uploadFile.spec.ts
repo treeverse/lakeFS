@@ -3,6 +3,9 @@ import { RepositoriesPage } from "../poms/repositoriesPage";
 import { RepositoryPage } from "../poms/repositoryPage";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TEST_REPO_NAME = "test-upload";
 const FILE_NAME = "test-upload.txt";
