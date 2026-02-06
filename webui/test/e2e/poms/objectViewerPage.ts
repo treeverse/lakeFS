@@ -1,4 +1,4 @@
-import { expect, Page } from "@playwright/test";
+import { Page } from "@playwright/test";
 
 export class ObjectViewerPage {
   private page: Page;
@@ -15,10 +15,9 @@ export class ObjectViewerPage {
   }
 
   async clickExecuteButton(): Promise<void> {
-    const executeButton = this.page.getByRole("button", { name: "Execute" });
-    await executeButton.click();
-    // the button is disabled while the query is running and enabled after it finishes, so waiting for the end state
-    await expect(executeButton).toBeEnabled();
+    await this.page.getByRole("button", { name: "Execute" }).click();
+    await this.page.getByRole("button", { name: "Execute" }).isDisabled();
+    await this.page.getByRole("button", { name: "Execute" }).isEnabled();
   }
 
   async getResultRowCount(): Promise<number> {
