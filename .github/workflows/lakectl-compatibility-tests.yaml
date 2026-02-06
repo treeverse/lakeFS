@@ -143,11 +143,10 @@ jobs:
     steps:
       - name: slack-send
         uses: slackapi/slack-github-action@v2.1.1
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
-              "mrkdwn": true,
               "text": "Lakectl compatibility tests failure in master branch: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
