@@ -25,7 +25,7 @@ jobs:
         id: filter
         with:
           filters: |
-            python-sdk: 
+            python-sdk:
               - 'clients/python/**'
 
   check-secrets:
@@ -112,7 +112,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -220,7 +220,7 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -267,8 +267,6 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-        with:
-          aws-region: us-east-1
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -457,13 +455,13 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download lakeFS HadoopFS
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: lakefs-hadoopfs
           path: clients/hadoopfs/target
 
       - name: Download Spark App
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: spark-apps
           path: test/spark/app/target/
@@ -722,7 +720,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -795,7 +793,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -867,7 +865,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -922,7 +920,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -984,7 +982,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
