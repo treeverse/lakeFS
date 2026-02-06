@@ -28,12 +28,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check-out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -42,7 +42,7 @@ jobs:
         run: pip install -r requirements-docs.txt
 
       - name: Checkout the documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: treeverse/docs-lakeFS
           fetch-depth: 1
@@ -109,10 +109,10 @@ jobs:
             {
               "text": "Documentation deployment failed",
               "blocks": [
-                { 
+                {
                   "type": "header", "text": { "type": "plain_text", "text": "📚 Documentation Deployment Failed" }
                 },
-                { 
+                {
                   "type": "section", "fields": [
                     { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
                     { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
