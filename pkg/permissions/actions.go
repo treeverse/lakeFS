@@ -84,6 +84,7 @@ const (
 	CatalogCreateTableAction                  = "catalog:CreateTable"
 	CatalogUpdateTableAction                  = "catalog:UpdateTable"
 	CatalogDeleteTableAction                  = "catalog:DeleteTable"
+	CatalogListViewsAction                    = "catalog:ListViews"
 	CatalogReadViewAction                     = "catalog:ReadView"
 	CatalogCreateViewAction                   = "catalog:CreateView"
 	CatalogUpdateViewAction                   = "catalog:UpdateView"
