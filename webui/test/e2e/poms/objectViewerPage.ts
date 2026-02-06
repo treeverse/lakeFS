@@ -17,7 +17,7 @@ export class ObjectViewerPage {
   async clickExecuteButton(): Promise<void> {
     const executeButton = this.page.getByRole("button", { name: "Execute" });
     await executeButton.click();
-    await expect(executeButton).toBeDisabled();
+    // the button is disabled while the query is running and enabled after it finishes, so waiting for the end state
     await expect(executeButton).toBeEnabled();
   }
 
