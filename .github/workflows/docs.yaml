@@ -28,12 +28,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check-out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -42,7 +42,7 @@ jobs:
         run: pip install -r requirements-docs.txt
 
       - name: Checkout the documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: treeverse/docs-lakeFS
           fetch-depth: 1
@@ -101,7 +101,7 @@ jobs:
 
       - name: Notify Slack on failure
         if: failure() && github.event_name != 'workflow_dispatch'
-        uses: slackapi/slack-github-action@v2
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook

@@ -19,10 +19,10 @@ jobs:
           pull-requests: write
     steps:
       - name: Check-out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -48,7 +48,7 @@ jobs:
           done
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.DOCS_PREVIEW_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DOCS_PREVIEW_AWS_SECRET_ACCESS_KEY }}
@@ -58,7 +58,7 @@ jobs:
         run: aws s3 sync docs/site/ s3://lakefs-docs-pr-previews/prs/pr-${{ github.event.pull_request.number }}/
 
       - name: Comment with preview URL
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const previewUrl = `https://pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;
@@ -108,7 +108,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         name: Upload links report
         if: failure()
         with:

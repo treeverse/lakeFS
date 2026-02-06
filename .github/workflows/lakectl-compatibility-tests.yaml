@@ -87,7 +87,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Download binaries
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v7.0.0
         with:
           name: binaries
           path: bin
@@ -142,7 +142,7 @@ jobs:
     if: ${{ always() && contains(needs.*.result, 'failure') && github.ref == 'refs/heads/master' }}
     steps:
       - name: slack-send
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v2.1.1
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
