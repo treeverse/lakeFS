@@ -36,6 +36,9 @@ import (
 
 const (
 	contextKeyConditionContext contextKey = "condition_context"
+
+	IcebergServiceUserName   = "Iceberg Service user"
+	IcebergServicePolicyName = "IcebergServicePolicy"
 )
 
 type AuthorizationRequest struct {
