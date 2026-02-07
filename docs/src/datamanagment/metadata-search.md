@@ -190,22 +190,28 @@ asterisk, e.g., `dev-*`.
 ## How to Search by Metadata
 
 To search by object metadata in lakeFS, query the Iceberg `object_metadata` tables that lakeFS automatically creates and
-manages. These tables are always available under the data repository namespace: 
+manages. These tables are always available under the data repository namespace:
 
 ```
 <repo>.<ref>.system.object_metadata
-```  
+```
 
 You can use any Iceberg-compatible engine, such as DuckDB, Trino, Spark, PyIceberg, or others.
 
-If you're using DuckDB, note the Iceberg REST Catalog [guide](../integrations/iceberg.md#relative-namespace-support) for 
+If you're using DuckDB, note the Iceberg REST Catalog [guide](../integrations/iceberg.md#relative-namespace-support) for
 details on how to reference `object_metadata` tables.
 
-!!! requirements 
+!!! requirements
     Your Iceberg client must meet the [authorization requirements](../integrations/iceberg.md#authorization) of the lakeFS
-    Iceberg REST catalog. 
-    To perform metadata search queries, ensure users have access to the appropriate metadata repository (see 
-    [How it Works](#how-it-works)). 
+    Iceberg REST catalog.
+    To perform metadata search queries, ensure users have access to the appropriate metadata repository (see
+    [How it Works](#how-it-works)).
+
+!!! note "Metadata Key Casing with S3 Gateway"
+    When objects are uploaded through the S3 Gateway, user-defined metadata keys are stored in lowercase to comply with the
+    [S3 specification](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingMetadata.html#UserMetadata).
+    For example, if an object is uploaded with metadata key `MyKey`, it will be stored as `mykey` in the `user_metadata` map.
+    When querying, use the lowercase version: `user_metadata['mykey']` instead of `user_metadata['MyKey']`. 
 
 #### Search Steps
  

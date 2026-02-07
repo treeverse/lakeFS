@@ -163,8 +163,8 @@ func TestAmzMetaAsMetadata(t *testing.T) {
 	metadata, err := amzMetaAsMetadata(req)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "Value1", metadata["X-Amz-Meta-Key1"])
-	assert.Equal(t, "Value2", metadata["X-Amz-Meta-Key2"])
+	assert.Equal(t, "Value1", metadata["X-Amz-Meta-key1"])
+	assert.Equal(t, "Value2", metadata["X-Amz-Meta-key2"])
 }
 
 func TestAmzMetaAsMetadata_ExactLimit(t *testing.T) {
@@ -178,7 +178,7 @@ func TestAmzMetaAsMetadata_ExactLimit(t *testing.T) {
 	metadata, err := amzMetaAsMetadata(req)
 
 	assert.NoError(t, err)
-	assert.Equal(t, value, metadata["X-Amz-Meta-Key"])
+	assert.Equal(t, value, metadata["X-Amz-Meta-key"])
 }
 
 func TestAmzMetaAsMetadata_ExceedingLimit(t *testing.T) {
