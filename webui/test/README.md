@@ -28,7 +28,7 @@ npx playwright test
 
 ### Skip setup (already-configured lakeFS)
 
-If lakeFS is already set up and credentials are saved at `test/playwright/.auth/`:
+If lakeFS is already set up and credentials are saved at `test/playwright/`:
 
 ```bash
 SKIP_SETUP=true npx playwright test
@@ -53,12 +53,6 @@ Run tests with the browser visible:
 
 ```bash
 npx playwright test --headed
-```
-
-Slow down execution to watch interactions:
-
-```bash
-npx playwright test --headed --timeout=0
 ```
 
 ## Debugging
@@ -117,9 +111,8 @@ test/e2e/
 ├── fixtures.ts              # Custom Playwright fixtures (POMs, API helper)
 ├── lakeFSApi.ts             # lakeFS REST API wrapper for test setup
 ├── timeouts.ts              # Named timeout constants
-├── credentialsFile.ts       # Read/write saved credentials
+├── credentialsFile.ts       # Read/write saved credentials, auth file paths
 ├── types.ts                 # Shared TypeScript types
-├── consts.ts                # File path constants
 ├── poms/                    # Page Object Models
 │   ├── repositoriesPage.ts  # Repositories list page
 │   ├── repositoryPage.ts    # Single repository (facade)
@@ -143,6 +136,106 @@ test/e2e/
     ├── viewParquetObject.spec.ts
     └── revertCommit.spec.ts     # Revert commit tests
 ```
+
+## Design Principles
+
+### Fixtures over manual construction
+
+Tests receive POMs via [Playwright fixtures](https://playwright.dev/docs/test-fixtures) instead of constructing them manually. Import `test` and `expect` from `../fixtures`, not from `@playwright/test`:
+
+```ts
+// Good
+import { test, expect } from "../fixtures";
+test("my test", async ({ repositoriesPage, repositoryPage }) => { ... });
+
+// Bad — don't construct POMs manually in tests
+import { test } from "@playwright/test";
+import { RepositoriesPage } from "../poms/repositoriesPage";
+test("my test", async ({ page }) => {
+    const repositoriesPage = new RepositoriesPage(page);
+});
+```
+
+### Facade pattern for repository operations
+
+`RepositoryPage` is a thin facade that composes sub-POMs by domain. Access operations through the appropriate sub-POM:
+
+```ts
+repositoryPage.branches.createBranch("feature");
+repositoryPage.branches.switchBranch("feature");
+repositoryPage.objects.uploadFiles("file.txt");
+repositoryPage.changes.commitChanges("my commit");
+repositoryPage.changes.merge("merge msg");
+repositoryPage.revert.clickRevertButton();
+repositoryPage.commits.getCommitsCount();
+```
+
+When adding new repository operations, add them to the relevant sub-POM (or create a new one) — don't add methods directly to `RepositoryPage`.
+
+### Named timeouts
+
+Use the constants from `timeouts.ts` instead of magic numbers:
+
+```ts
+import { TIMEOUT_LONG_OPERATION, TIMEOUT_ELEMENT_VISIBLE, TIMEOUT_NAVIGATION } from "../timeouts";
+
+await expect(element).toBeVisible({ timeout: TIMEOUT_ELEMENT_VISIBLE });  // 10s
+await page.waitForURL(/.*ref=.*/, { timeout: TIMEOUT_NAVIGATION });       // 5s
+await expect(result).toBeVisible({ timeout: TIMEOUT_LONG_OPERATION });    // 120s
+```
+
+### Assertions, not boolean checks
+
+Use Playwright's auto-retrying assertions. Never use `.isVisible()`, `.isEnabled()`, or `.isDisabled()` as assertions — they return a boolean instantly without waiting:
+
+```ts
+// Good — auto-retries until timeout
+await expect(element).toBeVisible();
+await expect(button).toBeDisabled();
+
+// Bad — returns true/false immediately, no retries
+await element.isVisible();
+```
+
+Similarly, for counting elements, use `expect.poll()`:
+
+```ts
+// Good — retries until count matches
+await expect.poll(() => locator.count()).toEqual(3);
+
+// Bad — checks once, instantly
+expect(await locator.count()).toEqual(3);
+```
+
+### REST API for test setup, UI for test assertions
+
+Use `lakeFSApi` (via the fixture) to set up preconditions like creating repositories. Use the UI to verify behavior. This keeps tests fast and focused on what they're actually testing.
+
+## Adding a New Test
+
+1. Create a spec file in `common/` (e.g., `common/myFeature.spec.ts`).
+
+2. Import from fixtures, not from `@playwright/test`:
+   ```ts
+   import { test, expect } from "../fixtures";
+   ```
+
+3. Destructure the fixtures you need:
+   ```ts
+   test("should do something", async ({ repositoryPage, lakeFSApi }) => {
+       // lakeFSApi for setup, repositoryPage for UI interaction
+   });
+   ```
+
+4. If you need new UI operations, add methods to the appropriate sub-POM under `poms/`. If the operations don't fit an existing sub-POM, create a new `*Operations.ts` file, add it as a property on `RepositoryPage`, and register it as a fixture in `fixtures.ts` if it needs to be used directly.
+
+5. If you need new API operations, add methods to `LakeFSApi` in `lakeFSApi.ts`.
+
+6. For features unsupported by the local block adapter, tag the test with `@exclude-local`:
+   ```ts
+   test("import @exclude-local", async ({ repositoryPage }) => { ... });
+   ```
+   These can be skipped with `npx playwright test --grep-invert @exclude-local`.
 
 ## Test Projects (playwright.config.ts)
 

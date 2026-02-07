@@ -18,7 +18,7 @@ export class RevertOperations {
     }
 
     async selectCommitsForRevert(commitCount: number): Promise<void> {
-        const checkboxes = this.page.locator('input[type="checkbox"]').filter({ hasNot: this.page.locator('input[type="checkbox"][disabled]') });
+        const checkboxes = this.page.locator('input[type="checkbox"]:not([disabled])');
         for (let i = 0; i < commitCount; i++) {
             await checkboxes.nth(i).check();
         }

@@ -82,7 +82,7 @@ test.describe("Quickstart", () => {
             await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toBeVisible({ timeout: TIMEOUT_ELEMENT_VISIBLE });
             await repositoryPage.changes.showOnlyChanges();
             await expect(page.getByText("Showing 1 change for branch")).toBeVisible();
-            expect(await repositoryPage.changes.getUncommittedCount()).toEqual(1);
+            await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
             await repositoryPage.changes.commitChanges("denmark");
             await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
         });
@@ -91,7 +91,7 @@ test.describe("Quickstart", () => {
             await repositoryPage.gotoCompareTab();
             await repositoryPage.branches.switchBaseBranch("main");
             await expect(page.getByText("Showing changes between")).toBeVisible();
-            expect(await repositoryPage.changes.getUncommittedCount()).toEqual(1);
+            await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
             await repositoryPage.changes.merge("merge commit");
             await expect(page.getByText("No changes")).toBeVisible();
         });
@@ -122,7 +122,7 @@ test.describe("Quickstart", () => {
         await test.step("commit changes", async () => {
             await repositoryPage.gotoObjectsTab();
             await repositoryPage.changes.showOnlyChanges();
-            expect(await repositoryPage.changes.getUncommittedCount()).toEqual(1);
+            await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
             await repositoryPage.changes.commitChanges("Commit for pull-1");
             await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
         });
@@ -130,7 +130,7 @@ test.describe("Quickstart", () => {
         await test.step("verify empty pull requests list", async () => {
             await repositoryPage.gotoPullRequestsTab();
             await expect(page.getByText("Create Pull Request")).toBeVisible();
-            expect(await pullsPage.getPullsListCount()).toEqual(0);
+            await expect.poll(() => pullsPage.getPullsListCount()).toEqual(0);
         });
 
         const pullDetails = { title: "PR for branch 1", description: "A description for PR 1" };
@@ -173,7 +173,8 @@ test.describe("Quickstart", () => {
         }
 
         await validateRow("Repository name", QUICKSTART_REPO_NAME);
-        await validateRow("Storage namespace", "local://" + QUICKSTART_REPO_NAME);
+        const storagePrefix = process.env.REPO_STORAGE_NAMESPACE_PREFIX || "local://";
+        await validateRow("Storage namespace", storagePrefix + QUICKSTART_REPO_NAME);
         await validateRow("Default branch", "main");
     });
 });

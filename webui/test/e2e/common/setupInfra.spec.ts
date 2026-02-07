@@ -2,8 +2,7 @@ import { test, expect } from "@playwright/test";
 import { SetupPage } from "../poms/setupPage";
 import { LoginPage } from "../poms/loginPage";
 import { RepositoriesPage } from "../poms/repositoriesPage";
-import { COMMON_STORAGE_STATE_PATH } from "../consts";
-import { writeCredentials } from "../credentialsFile";
+import { STORAGE_STATE_PATH, writeCredentials } from "../credentialsFile";
 
 test("setup lakeFS and save auth state", async ({ page }) => {
     await test.step("submit setup form", async () => {
@@ -29,7 +28,7 @@ test("setup lakeFS and save auth state", async ({ page }) => {
         const repositoriesPage = new RepositoriesPage(loginTab);
         await expect(repositoriesPage.noRepositoriesTitleLocator).toBeVisible();
 
-        await loginTab.context().storageState({ path: COMMON_STORAGE_STATE_PATH });
+        await loginTab.context().storageState({ path: STORAGE_STATE_PATH });
         await writeCredentials(credentials);
     });
 });

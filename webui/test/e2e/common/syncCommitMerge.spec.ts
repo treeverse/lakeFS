@@ -47,8 +47,7 @@ test.describe('Commit and Merge Operations', () => {
 
         await test.step("commit changes and verify sync endpoint", async () => {
             await repositoryPage.changes.showOnlyChanges();
-            const count = await repositoryPage.changes.getUncommittedCount();
-            expect(count).toBe(2);
+            await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toBe(2);
 
             const commitRequestPromise = page.waitForRequest((request) => {
                 return request.url().includes('/commits') && request.method() === 'POST';

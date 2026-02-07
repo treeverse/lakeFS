@@ -27,7 +27,7 @@ test.describe("Revert Commit", () => {
 
         await test.step("commit the change", async () => {
             await repositoryPage.changes.showOnlyChanges();
-            expect(await repositoryPage.changes.getUncommittedCount()).toEqual(1);
+            await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
             await repositoryPage.changes.commitChanges("Delete image file");
             await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
         });
@@ -166,7 +166,7 @@ test.describe("Revert Commit", () => {
             await repositoryPage.revert.clickRevertButton();
             await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
             const checkboxes = page.locator('input[type="checkbox"]');
-            expect(await checkboxes.count()).toBeGreaterThan(0);
+            await expect.poll(() => checkboxes.count()).toBeGreaterThan(0);
         });
 
         await test.step("exit revert mode", async () => {

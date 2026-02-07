@@ -3,12 +3,10 @@ import { test, expect } from "../fixtures";
 const READ_ONLY_REPO_NAME = 'ro-test-repo';
 
 test.describe("Read Only Repository", () => {
-    test.beforeAll(async ({ lakeFSApiWorker }) => {
+    test.describe.configure({ mode: "serial" });
+    test("Read only indicator shown on repositories page", async ({ repositoriesPage, lakeFSApi }) => {
         const storageNamespace = (process.env.REPO_STORAGE_NAMESPACE_PREFIX || 'local://') + 'ro_test_repo';
-        await lakeFSApiWorker.createRepository(READ_ONLY_REPO_NAME, storageNamespace, { readOnly: true, ifNotExists: true });
-    });
-
-    test("Read only indicator shown on repositories page", async ({ repositoriesPage }) => {
+        await lakeFSApi.createRepository(READ_ONLY_REPO_NAME, storageNamespace, { readOnly: true, ifNotExists: true });
         await repositoriesPage.goto();
         await expect(repositoriesPage.readOnlyIndicatorLocator).toBeVisible();
     });
