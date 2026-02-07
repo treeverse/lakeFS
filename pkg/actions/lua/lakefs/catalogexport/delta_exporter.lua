@@ -5,6 +5,7 @@ local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
 local strings = require("strings")
 local url = require("net/url")
+local z85 = require("encoding/z85")
 
 local function isTableNotEmpty(t)
     return next(t) ~= nil
@@ -140,6 +141,62 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
                         end
+
+                        -- Handle deletion vector paths (Protocol 3/7)
+                        local action_entry = entry.add or entry.remove
+                        local action_type = entry.add and "add" or "remove"
+                        if action_entry and action_entry.deletionVector then
+                            local dv = action_entry.deletionVector
+                            print(string.format("Found deletionVector for %s action on file: %s", action_type, action_entry.path))
+                            print(string.format("  storageType=%s, pathOrInlineDv=%s",
+                                tostring(dv.storageType), tostring(dv.pathOrInlineDv)))
+                            -- Only transform path-based (p) and UUID-based (u) deletion vectors
+                            -- Inline (i) has data embedded in JSON, no file to transform
+                            if dv.storageType == "p" then
+                                -- Path-based: pathOrInlineDv is the relative file path
+                                local dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
+                                print(string.format("Looking for DV file at: %s", dv_full_path))
+                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+                                print(string.format("DV stat_object returned code: %d", dv_code))
+                                if dv_code == 200 then
+                                    local dv_stat = json.unmarshal(dv_obj)
+                                    local dv_u = url.parse(dv_stat["physical_address"])
+                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+                                    if path_transformer ~= nil then
+                                        dv_physical = path_transformer(dv_physical)
+                                    end
+                                    print(string.format("Transformed DV path to: %s", dv_physical))
+                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                else
+                                    print(string.format("WARNING: DV file not found at %s (code=%d)", dv_full_path, dv_code))
+                                end
+                            elseif dv.storageType == "u" then
+                                -- UUID-based: The pathOrInlineDv contains a Z85-encoded UUID (last 20 chars)
+                                -- with optional random prefix before it
+                                local uuid, prefix = z85.decode_uuid(dv.pathOrInlineDv)
+                                local dv_filename = "deletion_vector_" .. uuid .. ".bin"
+                                if prefix ~= "" then
+                                    dv_filename = prefix .. "/" .. dv_filename
+                                end
+                                local dv_full_path = pathlib.join("/", table_path, dv_filename)
+                                print(string.format("UUID-based DV decoded: uuid=%s, prefix=%s, path=%s", uuid, prefix, dv_full_path))
+                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+                                if dv_code == 200 then
+                                    local dv_stat = json.unmarshal(dv_obj)
+                                    local dv_u = url.parse(dv_stat["physical_address"])
+                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+                                    if path_transformer ~= nil then
+                                        dv_physical = path_transformer(dv_physical)
+                                    end
+                                    -- Change storageType to 'p' since we're now using an absolute path
+                                    action_entry.deletionVector.storageType = "p"
+                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                    print(string.format("Transformed UUID DV to path: %s", dv_physical))
+                                else
+                                    print(string.format("WARNING: DV file not found at %s (code=%d)", dv_full_path, dv_code))
+                                end
+                            end
+                        end
                     elseif code == 404 then
                         if entry.remove ~= nil then
                             -- If the object is not found, and the entry is a remove entry, we can assume it was vacuumed
@@ -251,6 +308,7 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
                     if value and strings.has_prefix(changed_path, path) then
                         table.insert(changed_table_def_names, table_name_yaml)
                         print("  (inserted)")
+                        break  -- only insert once per table
                     end
                 end
             else
@@ -269,6 +327,6 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
 end
 
 return {
-    export_delta_log = export_delta_log,
+export_delta_log = export_delta_log,
     changed_table_defs = changed_table_defs,
 }
