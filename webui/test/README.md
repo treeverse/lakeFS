@@ -104,39 +104,6 @@ Install the [Playwright Test for VS Code](https://marketplace.visualstudio.com/i
 | `SKIP_SETUP` | (unset) | Skip setup projects when set to any value |
 | `REPO_STORAGE_NAMESPACE_PREFIX` | `local://` | Storage namespace prefix for test repositories |
 
-## Project Structure
-
-```
-test/e2e/
-├── fixtures.ts              # Custom Playwright fixtures (POMs, API helper)
-├── lakeFSApi.ts             # lakeFS REST API wrapper for test setup
-├── timeouts.ts              # Named timeout constants
-├── credentialsFile.ts       # Read/write saved credentials, auth file paths
-├── types.ts                 # Shared TypeScript types
-├── poms/                    # Page Object Models
-│   ├── repositoriesPage.ts  # Repositories list page
-│   ├── repositoryPage.ts    # Single repository (facade)
-│   ├── branchOperations.ts  # Branch create/switch actions
-│   ├── objectOperations.ts  # File upload/delete/navigate
-│   ├── changesOperations.ts # Uncommitted changes, commit, merge
-│   ├── commitsOperations.ts # Commits tab
-│   ├── revertOperations.ts  # Revert commit flow
-│   ├── objectViewerPage.ts  # DuckDB query editor
-│   ├── pullsPage.ts         # Pull requests
-│   ├── loginPage.ts         # Login page
-│   └── setupPage.ts         # Initial setup page
-└── common/                  # Test specs
-    ├── setup.spec.ts            # Setup form validation tests
-    ├── setupInfra.spec.ts       # Setup infrastructure (saves auth state)
-    ├── quickstart.spec.ts       # Quickstart tutorial flow
-    ├── repositoriesPage.spec.ts # Repository list tests
-    ├── readOnlyRepository.spec.ts
-    ├── syncCommitMerge.spec.ts  # Commit and merge workflows
-    ├── uploadFile.spec.ts       # File upload tests
-    ├── viewParquetObject.spec.ts
-    └── revertCommit.spec.ts     # Revert commit tests
-```
-
 ## Design Principles
 
 ### Fixtures over manual construction
