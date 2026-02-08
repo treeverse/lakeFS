@@ -151,3 +151,31 @@ func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 		t.Errorf("Bad events ordering: diffs %s", diffs)
 	}
 }
+
+func TestMostlyCorrectOwnerConsecutiveCancelled(t *testing.T) {
+	ctx, finish := context.WithTimeout(t.Context(), 2*time.Second)
+	defer finish()
+	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	log := logging.FromContext(ctx).WithField("test", t.Name())
+
+	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
+	releaseA, err := w.Own(ctx, "me", "xyz")
+	if err != nil {
+		t.Fatalf("Own main me: %s", err)
+	}
+	defer releaseA()
+
+	waitCtx, waitCancel := context.WithTimeout(ctx, 50*time.Millisecond)
+	defer waitCancel()
+	_, err = w.Own(waitCtx, "us", "xyz")
+	if err == nil {
+		t.Fatal("expected cancellation error while waiting for ownership")
+	}
+	if err != context.DeadlineExceeded {
+		t.Fatalf("Own should fail with deadline exceeded, got: %v", err)
+	}
+}

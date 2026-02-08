@@ -71,6 +71,9 @@ type MostlyCorrectOwner struct {
 	// Prefix is used to separate "locking" keys between different
 	// instances of MostlyCorrectOwner.
 	Prefix string
+	// inProcessLock serializes ownership attempts per key inside this process,
+	// so only one goroutine for the same key polls the backing KV store.
+	inProcessLock *InProcessKeyedLock
 }
 
 func NewMostlyCorrectOwner(log logging.Logger, store kv.Store, prefix string, acquireInterval, refreshInterval time.Duration) *MostlyCorrectOwner {
@@ -80,6 +83,7 @@ func NewMostlyCorrectOwner(log logging.Logger, store kv.Store, prefix string, ac
 		Log:             log,
 		Store:           store,
 		Prefix:          prefix,
+		inProcessLock:   NewInProcessKeyedLock(),
 	}
 }
 
@@ -282,15 +286,22 @@ func (w *MostlyCorrectOwner) releaseIf(ctx context.Context, owner string, prefix
 // function to stop owning key.  Own appends its random slug to owner, to
 // identify the owner uniquely.
 func (w *MostlyCorrectOwner) Own(ctx context.Context, owner, key string) (func(), error) {
+	releaseInProcess, err := w.inProcessLock.Acquire(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
 	owner = fmt.Sprintf("%s#%s", owner, nanoid.Must())
 	prefixedKey := []byte(w.Prefix + "/" + key)
-	err := w.startOwningKey(ctx, owner, prefixedKey)
+	err = w.startOwningKey(ctx, owner, prefixedKey)
 	if err != nil {
+		releaseInProcess()
 		return nil, fmt.Errorf("start owning %s for %s: %w", owner, key, err)
 	}
 	refreshCtx, refreshCancel := context.WithCancel(ctx)
 	go w.refreshKey(refreshCtx, owner, prefixedKey)
 	stopOwning := func() {
+		defer releaseInProcess()
 		defer refreshCancel()
 		// This func might be called twice, so use the original ctx not refreshCtx.
 		err := w.releaseIf(ctx, owner, prefixedKey)
