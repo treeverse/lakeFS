@@ -45,6 +45,11 @@ type Adapter struct {
 	disablePreSignedUI                   bool
 	ServerSideEncryptionCustomerSupplied []byte
 	ServerSideEncryptionKmsKeyID         string
+	nowFactory                           func() time.Time
+	// presignedGoogleAccessID and presignedPrivateKey are used for testing with fake-gcs-server
+	// which requires explicit signing credentials since the test client has no credentials
+	presignedGoogleAccessID string
+	presignedPrivateKey     []byte
 }
 
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
@@ -73,12 +78,28 @@ func WithDisablePreSignedUI(b bool) func(a *Adapter) {
 	}
 }
 
+func WithNowFactory(f func() time.Time) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.nowFactory = f
+	}
+}
+
+// WithPresignedCredentials sets the Google Access ID and private key for signing URLs.
+// This is primarily used for testing with fake-gcs-server where the client has no credentials.
+func WithPresignedCredentials(googleAccessID string, privateKey []byte) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.presignedGoogleAccessID = googleAccessID
+		a.presignedPrivateKey = privateKey
+	}
+}
+
 type AdapterOption func(a *Adapter)
 
 func NewAdapter(client *storage.Client, opts ...AdapterOption) *Adapter {
 	a := &Adapter{
 		client:          client,
 		preSignedExpiry: block.DefaultPreSignExpiryDuration,
+		nowFactory:      time.Now, // current time function can be mocked out via injection for testing purposes
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -103,7 +124,7 @@ func (a *Adapter) log(ctx context.Context) logging.Logger {
 }
 
 func (a *Adapter) newPreSignedTime() time.Time {
-	return time.Now().UTC().Add(a.preSignedExpiry)
+	return a.nowFactory().UTC().Add(a.preSignedExpiry)
 }
 
 // withReadHandle returns a corresponding handle for reading object based on the encryption settings.
@@ -241,6 +262,12 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		Scheme:  storage.SigningSchemeV4,
 		Method:  method,
 		Expires: a.newPreSignedTime(),
+	}
+
+	// Use explicit signing credentials if provided (for testing with fake-gcs-server)
+	if a.presignedGoogleAccessID != "" && len(a.presignedPrivateKey) > 0 {
+		opts.GoogleAccessID = a.presignedGoogleAccessID
+		opts.PrivateKey = a.presignedPrivateKey
 	}
 
 	// Add content-disposition if filename provided
