@@ -31,7 +31,7 @@ func NewInProcessKeyedLock() *InProcessKeyedLock {
 }
 
 // Acquire waits until key is available, or returns ctx.Err() if waiting was
-// cancelled. The returned release function is idempotent and must be called
+// cancelled. If successful it returns a release function is idempotent and must be called
 // after successful Acquire.
 func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), error) {
 	lock := l.ref(key)
