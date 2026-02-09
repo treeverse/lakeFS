@@ -42,12 +42,9 @@ func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), e
 		return nil, ctx.Err()
 	}
 
-	var once sync.Once
 	return func() {
-		once.Do(func() {
-			lock.ch <- struct{}{}
-			l.unref(key)
-		})
+		lock.ch <- struct{}{}
+		l.unref(key)
 	}, nil
 }
 
