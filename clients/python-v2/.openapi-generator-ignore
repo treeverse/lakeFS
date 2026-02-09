@@ -1,0 +1,4 @@
+# Prevent generator from creating these files:
+git_push.sh
+.gitlab-ci.yml
+.github/

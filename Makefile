@@ -12,6 +12,9 @@ OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.4
 OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 PY_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python-static/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
+PY_V2_OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.9.0
+PY_V2_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(PY_V2_OPENAPI_GENERATOR_IMAGE)
+
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
 
@@ -104,6 +107,22 @@ client-python: api/swagger.yml  ## Generate SDK for Python client - openapi gene
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-sdk,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
 		-o /mnt/clients/python
 
+client-python-v2: api/swagger.yml  ## Generate SDK V2 for Python client (Pydantic V2) - openapi generator version 7.9.0
+	@rm -rf clients/python-v2
+	@mkdir -p clients/python-v2
+	@cp clients/python-v2-static/.openapi-generator-ignore clients/python-v2
+	@echo "Generating Python V2 client SDK"
+	$(PY_V2_OPENAPI_GENERATOR) generate \
+		-i /mnt/$< \
+		-g python \
+		-t /mnt/clients/python-v2-static/templates \
+		-c /mnt/clients/python-v2-static/python-codegen-config.yaml \
+		--package-name lakefs_sdk_v2 \
+		--http-user-agent "lakefs-python-sdk-v2/$(PACKAGE_VERSION)" \
+		--git-user-id treeverse --git-repo-id lakeFS \
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-sdk-v2,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python-v2 \
+		-o /mnt/clients/python-v2
+
 sdk-rust: api/swagger.yml  ## Generate SDK for Rust client - openapi generator version 7.1.0
 	@rm -rf clients/rust
 	@mkdir -p clients/rust
@@ -127,13 +146,17 @@ client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and 
 		--additional-properties disallowAdditionalPropertiesIfNotPresent=false,useSingleRequestParameter=true,hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='sdk',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.sdk,modelPackage=io.lakefs.clients.sdk.model,mainPackage=io.lakefs.clients.sdk,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python client-java
-clients: client-python client-java sdk-rust
+.PHONY: clients client-python client-python-v2 client-java
+clients: client-python client-python-v2 client-java sdk-rust
 
 package-python: package-python-sdk package-python-wrapper
 
 package-python-sdk: client-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
+
+package-python-v2-sdk: client-python-v2
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-v2 $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package-python-wrapper:
@@ -254,6 +277,9 @@ validate-client-python: validate-python-sdk
 validate-python-sdk:
 	git diff --quiet -- clients/python || (echo "Modification verification failed! python client"; false)
 
+validate-python-v2-sdk:
+	git diff --quiet -- clients/python-v2 || (echo "Modification verification failed! python v2 client"; false)
+
 validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
@@ -269,7 +295,7 @@ validate-ui-format: ## Validate UI code formatting with prettier
 
 # Run all validation/linting steps
 checks-validator: lint validate-proto validate-ui-format \
-	validate-client-python validate-client-java validate-client-rust validate-reference \
+	validate-client-python validate-python-v2-sdk validate-client-java validate-client-rust validate-reference \
 	validate-mockgen \
 	validate-permissions-gen \
 	validate-api \

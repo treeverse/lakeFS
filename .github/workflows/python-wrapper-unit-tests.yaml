@@ -11,17 +11,20 @@ jobs:
     outputs:
       wrapper-change: ${{ steps.filter.outputs.wrapper == 'true' }}
       sdk-change: ${{ steps.filter.outputs.sdk == 'true' }}
+      sdk-v2-change: ${{ steps.filter.outputs.sdk_v2 == 'true' }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
-            wrapper: 
+            wrapper:
               - 'clients/python-wrapper/**'
               - '.github/workflows/python-wrapper-unit-tests.yaml'
             sdk:
               - 'clients/python/**'
+            sdk_v2:
+              - 'clients/python-v2/**'
 
   always-succeed:
     needs: paths-filter
@@ -121,3 +124,37 @@ jobs:
           custom-arguments: './clients/python-wrapper/tests/utests -q -We'
           click-to-expand: true
           report-title: 'Python Wrapper Unit Tests SDK Changes Report'
+
+  unit-tests-new-sdk-v2:
+    needs: paths-filter
+    if: ${{ needs.paths-filter.outputs.sdk-v2-change == 'true' }}
+    name: Unit Test Python SDK Wrapper - SDK V2 Changes
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      # The minimal supported version of Python is 3.9, so we need to test it in this environment
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
+
+      - name: build and install lakeFS Python SDK V2
+        run: |
+          PACKAGE_VERSION=0.0.0-dev make client-python-v2
+          pip install ./clients/python-v2
+
+      - name: Run Unit Tests
+        uses: pavelzw/pytest-action@v2
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/tests/utests -q -We'
+          click-to-expand: true
+          report-title: 'Python Wrapper Unit Tests SDK V2 Changes Report'
