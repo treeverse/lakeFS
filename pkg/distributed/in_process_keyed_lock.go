@@ -1,79 +1,139 @@
 package distributed
 
 import (
+	"container/list"
 	"context"
 	"sync"
 )
 
-// InProcessKeyedLock serializes access per key inside a single process.
+// InProcessKeyedLock serializes access per key inside a single process
+// with strict FIFO ordering and context-aware cancellation.
+//
+// Waiters for the same key are served in the order they called Acquire.
+// Any waiter may bail early if its context is cancelled; in that case the
+// next waiter in line is promoted without an extra goroutine.
 //
 // Usage:
 //   - Create once (for example, as a field on a long-lived manager).
 //   - Call Acquire(ctx, key) before entering a key-specific critical section.
-//   - Always call the returned release function (typically via defer).
-//
-// Acquire is context-aware: callers waiting on a busy key return immediately
-// when ctx is cancelled.
+//   - Always call the returned release function when done.
 type InProcessKeyedLock struct {
-	mu    sync.Mutex
-	locks map[string]*inProcessLock
+	mu   sync.Mutex
+	keys map[string]*keyQueue
 }
 
-type inProcessLock struct {
-	ch   chan struct{}
-	refs int
+// keyQueue tracks the current holder and ordered waiters for a single key.
+type keyQueue struct {
+	held    bool
+	waiters list.List // elements are *waiter
+}
+
+// waiter is a slot in the FIFO queue.  Its channel is closed exactly once
+// to signal that it is now the waiter's turn.
+type waiter struct {
+	ch chan struct{}
 }
 
 func NewInProcessKeyedLock() *InProcessKeyedLock {
 	return &InProcessKeyedLock{
-		locks: make(map[string]*inProcessLock),
+		keys: make(map[string]*keyQueue),
 	}
 }
 
-// Acquire waits until key is available, or returns ctx.Err() if waiting was
-// cancelled. If successful it returns a release function is idempotent and must be called
-// after successful Acquire.
+// Acquire waits in FIFO order until key is available, or returns ctx.Err()
+// if waiting was cancelled.  On success it returns a release function that
+// must be called exactly once.  The release function is safe to call more
+// than once (subsequent calls are no-ops).
 func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), error) {
-	lock := l.ref(key)
+	l.mu.Lock()
+
+	kq := l.getOrCreateLocked(key)
+
+	if !kq.held {
+		// Fast path: no contention.
+		kq.held = true
+		l.mu.Unlock()
+		return l.makeRelease(key), nil
+	}
+
+	// Slow path: key is held — enqueue ourselves and wait.
+	w := &waiter{ch: make(chan struct{})}
+	elem := kq.waiters.PushBack(w)
+	l.mu.Unlock()
+
 	select {
-	case <-lock.ch:
+	case <-w.ch:
+		// We were signaled — we now hold the lock.
+		return l.makeRelease(key), nil
+
 	case <-ctx.Done():
-		l.unref(key)
+		l.mu.Lock()
+		// Between selecting ctx.Done() and acquiring mu, the holder
+		// may have closed w.ch (handed off to us).  Check for that.
+		select {
+		case <-w.ch:
+			// We received the handoff despite cancellation.
+			// Pass it along to the next waiter in line.
+			l.handoffLocked(key)
+		default:
+			// We were not signaled yet — remove ourselves.
+			kq.waiters.Remove(elem)
+			l.cleanupLocked(key)
+		}
+		l.mu.Unlock()
 		return nil, ctx.Err()
 	}
+}
 
+// makeRelease returns a release function for the given key.
+// The returned function is idempotent: only the first call has effect.
+func (l *InProcessKeyedLock) makeRelease(key string) func() {
+	var once sync.Once
 	return func() {
-		lock.ch <- struct{}{}
-		l.unref(key)
-	}, nil
-}
-
-func (l *InProcessKeyedLock) ref(key string) *inProcessLock {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	lock, ok := l.locks[key]
-	if !ok {
-		lock = &inProcessLock{
-			ch: make(chan struct{}, 1),
-		}
-		lock.ch <- struct{}{}
-		l.locks[key] = lock
+		once.Do(func() {
+			l.mu.Lock()
+			defer l.mu.Unlock()
+			l.handoffLocked(key)
+		})
 	}
-	lock.refs++
-	return lock
 }
 
-func (l *InProcessKeyedLock) unref(key string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+// handoffLocked passes the lock to the next FIFO waiter, or marks the key
+// as free if there are none.  Must be called with l.mu held.
+func (l *InProcessKeyedLock) handoffLocked(key string) {
+	kq := l.keys[key]
+	for kq.waiters.Len() > 0 {
+		front := kq.waiters.Front()
+		kq.waiters.Remove(front)
+		w := front.Value.(*waiter)
+		close(w.ch)
+		// The signaled waiter now holds the lock.
+		return
+	}
+	// No waiters — release the key.
+	kq.held = false
+	l.cleanupLocked(key)
+}
 
-	lock, ok := l.locks[key]
+// getOrCreateLocked returns the keyQueue for key, creating it if absent.
+// Must be called with l.mu held.
+func (l *InProcessKeyedLock) getOrCreateLocked(key string) *keyQueue {
+	kq, ok := l.keys[key]
+	if !ok {
+		kq = &keyQueue{}
+		l.keys[key] = kq
+	}
+	return kq
+}
+
+// cleanupLocked removes the keyQueue entry if it is empty and not held.
+// Must be called with l.mu held.
+func (l *InProcessKeyedLock) cleanupLocked(key string) {
+	kq, ok := l.keys[key]
 	if !ok {
 		return
 	}
-	lock.refs--
-	if lock.refs == 0 {
-		delete(l.locks, key)
+	if !kq.held && kq.waiters.Len() == 0 {
+		delete(l.keys, key)
 	}
 }
