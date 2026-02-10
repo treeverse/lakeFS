@@ -268,8 +268,8 @@ type Catalog struct {
 	UGCPrepareInterval      time.Duration
 	signingKey              config.SecureString
 	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
-	instanceID  string          // unique ID for this server process
-	activeTasks stdatomic.Int64 // number of tasks currently queued or running
+	instanceID              string          // unique ID for this server process
+	activeTasks             stdatomic.Int64 // number of tasks currently queued or running
 }
 
 const (
