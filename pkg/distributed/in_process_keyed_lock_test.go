@@ -163,7 +163,7 @@ func TestInProcessKeyedLock_CancelledMiddleWaiter(t *testing.T) {
 	}
 }
 
-func TestInProcessKeyedLock_ReleaseIsIdempotent(t *testing.T) {
+func TestInProcessKeyedLock_ReleaseAndReacquire(t *testing.T) {
 	ctx := t.Context()
 	l := distributed.NewInProcessKeyedLock()
 
@@ -172,11 +172,10 @@ func TestInProcessKeyedLock_ReleaseIsIdempotent(t *testing.T) {
 		t.Fatalf("Acquire: %v", err)
 	}
 
-	// Calling release multiple times should not panic or break state.
-	release()
+	// Release must be called exactly once.
 	release()
 
-	// Should be able to acquire again.
+	// Should be able to acquire again after release.
 	r2, err := l.Acquire(ctx, "k")
 	if err != nil {
 		t.Fatalf("Re-acquire: %v", err)

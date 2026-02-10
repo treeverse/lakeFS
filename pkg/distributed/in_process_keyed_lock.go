@@ -42,8 +42,7 @@ func NewInProcessKeyedLock() *InProcessKeyedLock {
 
 // Acquire waits in FIFO order until key is available, or returns ctx.Err()
 // if waiting was cancelled.  On success it returns a release function that
-// must be called exactly once.  The release function is safe to call more
-// than once (subsequent calls are no-ops).
+// must be called exactly once when the caller is done with the key.
 func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), error) {
 	l.mu.Lock()
 
@@ -86,15 +85,12 @@ func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), e
 }
 
 // makeRelease returns a release function for the given key.
-// The returned function is idempotent: only the first call has effect.
+// The caller must call the returned function exactly once.
 func (l *InProcessKeyedLock) makeRelease(key string) func() {
-	var once sync.Once
 	return func() {
-		once.Do(func() {
-			l.mu.Lock()
-			defer l.mu.Unlock()
-			l.handoffLocked(key)
-		})
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		l.handoffLocked(key)
 	}
 }
 
