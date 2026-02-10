@@ -98,7 +98,10 @@ func (l *InProcessKeyedLock) makeRelease(key string) func() {
 // as free if there are none.  Must be called with l.mu held.
 func (l *InProcessKeyedLock) handoffLocked(key string) {
 	kq := l.keys[key]
-	for kq.waiters.Len() > 0 {
+	if kq == nil {
+		panic("InProcessKeyedLock: release called twice for key " + key)
+	}
+	if kq.waiters.Len() > 0 {
 		front := kq.waiters.Front()
 		kq.waiters.Remove(front)
 		w := front.Value.(*waiter)
