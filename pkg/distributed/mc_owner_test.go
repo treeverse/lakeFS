@@ -179,3 +179,67 @@ func TestMostlyCorrectOwnerConsecutiveCancelled(t *testing.T) {
 		t.Fatalf("Own should fail with deadline exceeded, got: %v", err)
 	}
 }
+
+// TestMostlyCorrectOwnerFIFOOrdering verifies that multiple waiters on the
+// same key are granted ownership in FIFO order.
+func TestMostlyCorrectOwnerFIFOOrdering(t *testing.T) {
+	ctx, finish := context.WithTimeout(t.Context(), 5*time.Second)
+	defer finish()
+	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	log := logging.FromContext(ctx).WithField("test", t.Name())
+
+	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
+	events := Ordering[string]{}
+
+	// First owner holds the key.
+	releaseA, err := w.Own(ctx, "A", "key")
+	if err != nil {
+		t.Fatalf("Own A: %s", err)
+	}
+
+	const n = 3
+	ready := make([]chan struct{}, n)
+	for i := range ready {
+		ready[i] = make(chan struct{})
+	}
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			// Signal that this goroutine is about to call Own.
+			close(ready[idx])
+			release, err := w.Own(ctx, fmt.Sprintf("W%d", idx), "key")
+			if err != nil {
+				errChan <- fmt.Errorf("Own W%d: %w", idx, err)
+				return
+			}
+			events.Add(fmt.Sprintf("owner: W%d", idx))
+			release()
+		}(i)
+		// Wait for the goroutine to be ready before launching the next,
+		// so they enqueue in order W0, W1, W2.
+		<-ready[i]
+		// Give the goroutine time to actually block inside Acquire.
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Release the first owner — waiters should proceed in FIFO order.
+	releaseA()
+	wg.Wait()
+	close(errChan)
+	for err := range errChan {
+		t.Fatal(err)
+	}
+
+	expected := []string{"owner: W0", "owner: W1", "owner: W2"}
+	if diffs := deep.Equal(events.Slice(), expected); diffs != nil {
+		t.Errorf("Expected FIFO ordering %v, got %v (diffs: %s)", expected, events.Slice(), diffs)
+	}
+}
