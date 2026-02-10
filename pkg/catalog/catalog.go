@@ -2432,6 +2432,9 @@ func (c *Catalog) deleteExpiredInstanceHeartbeats(ctx context.Context) {
 			}
 		}
 	}
+	if err := it.Err(); err != nil {
+		c.log(ctx).WithError(err).Error("Iterator error during instance heartbeats cleanup")
+	}
 }
 
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
