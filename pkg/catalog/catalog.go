@@ -2383,7 +2383,11 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 	}
 	defer it.Close()
 
-	// iterate over all tasks and delete expired ones
+	// Iterate over all tasks and delete those whose UpdatedAt exceeds TaskExpiryTime.
+	// Note: with instance-level heartbeats, UpdatedAt is only updated on step completion,
+	// not periodically. This means a still-running single-step task will be cleaned up if
+	// it has been running for longer than TaskExpiryTime (24h). This is acceptable since
+	// all current tasks (commit, merge, dump, restore, GC prepare) complete in seconds.
 	for it.Next() {
 		ent := it.Entry()
 		msg := ent.Value.(*TaskMsg)
@@ -2912,6 +2916,7 @@ func (c *Catalog) markTaskExpiredIfStale(ctx context.Context, statusMsg protoref
 	if task.OwnerInstanceId != "" {
 		// Skip KV lookup when the task belongs to this instance — we know we're alive.
 		if task.OwnerInstanceId == c.instanceID {
+			task.UpdatedAt = timestamppb.Now()
 			return
 		}
 		heartbeat := &InstanceHeartbeat{}
@@ -2927,6 +2932,10 @@ func (c *Catalog) markTaskExpiredIfStale(ctx context.Context, statusMsg protoref
 			task.Done = true
 			task.ErrorMsg = fmt.Sprintf("Task status expired: owner instance not responding for more than %s. Please retry.", expiryDuration)
 			task.StatusCode = http.StatusRequestTimeout
+		} else {
+			// Backfill task timestamp from instance heartbeat so old clients
+			// that check UpdatedAt for staleness see a recent value.
+			task.UpdatedAt = heartbeat.UpdatedAt
 		}
 		return
 	}

@@ -367,10 +367,66 @@ func TestGetValidatedTaskStatus_InstanceHeartbeatExpiry(t *testing.T) {
 				} else {
 					require.False(t, resultStatus.Task.Done)
 					require.Empty(t, resultStatus.Task.ErrorMsg)
+					if tt.expiryDuration > 0 {
+						// UpdatedAt should be backfilled from the instance heartbeat
+						require.Equal(t, hb.UpdatedAt.AsTime().UnixNano(), resultStatus.Task.UpdatedAt.AsTime().UnixNano(),
+							"task UpdatedAt should be backfilled from instance heartbeat")
+					}
 				}
 			})
 		})
 	}
+}
+
+// TestGetValidatedTaskStatus_SameInstanceBackfillsTimestamp verifies that when the
+// same instance checks its own task status, UpdatedAt is set to the current time.
+func TestGetValidatedTaskStatus_SameInstanceBackfillsTimestamp(t *testing.T) {
+	t.Parallel()
+	const taskTime = 1 * time.Hour
+	synctest.Test(t, func(t *testing.T) {
+		t.Cleanup(func() {
+			time.Sleep(taskTime)
+			synctest.Wait()
+		})
+
+		_, c, repository := setupTaskTest(t)
+		ctx := t.Context()
+
+		taskID := NewTaskID(testTaskPrefix)
+		taskStatus := &TaskMsg{}
+
+		steps := []TaskStep{
+			{
+				Name: "long task",
+				Func: func(ctx context.Context) error {
+					time.Sleep(taskTime)
+					return nil
+				},
+			},
+		}
+
+		err := c.RunBackgroundTaskSteps(ctx, repository, "operation", taskID, steps, taskStatus)
+		require.NoError(t, err)
+
+		time.Sleep(syncTestSleep)
+		synctest.Wait()
+
+		// Advance time so the original task.UpdatedAt becomes stale
+		time.Sleep(5 * time.Minute)
+		synctest.Wait()
+
+		beforeCheck := time.Now()
+		var resultStatus TaskMsg
+		err = c.GetValidatedTaskStatus(ctx, repository.RepositoryID.String(), taskID, testTaskPrefix, &resultStatus, 2*time.Minute)
+		require.NoError(t, err)
+
+		require.False(t, resultStatus.Task.Done, "task should not be expired on same instance")
+		require.Empty(t, resultStatus.Task.ErrorMsg)
+		// UpdatedAt should be backfilled to current time, not the original creation time
+		require.False(t, resultStatus.Task.UpdatedAt.AsTime().Before(beforeCheck),
+			"task UpdatedAt (%v) should be at or after the check time (%v)",
+			resultStatus.Task.UpdatedAt.AsTime(), beforeCheck)
+	})
 }
 
 // TestGetValidatedTaskStatus_MissingInstanceHeartbeat verifies that a task whose
@@ -419,67 +475,6 @@ func TestGetValidatedTaskStatus_MissingInstanceHeartbeat(t *testing.T) {
 		require.Contains(t, resultStatus.Task.ErrorMsg, "no longer available")
 		require.Equal(t, http.StatusRequestTimeout, int(resultStatus.Task.StatusCode))
 	})
-}
-
-// TestGetValidatedTaskStatus_LegacyTaskFallback verifies that tasks without
-// OwnerInstanceId (created by older lakeFS versions) fall back to UpdatedAt-based expiry.
-func TestGetValidatedTaskStatus_LegacyTaskFallback(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name           string
-		expiryDuration time.Duration
-		timeAdvance    time.Duration
-		expectExpired  bool
-	}{
-		{
-			name:           "legacy expired",
-			expiryDuration: 10 * time.Minute,
-			timeAdvance:    11 * time.Minute,
-			expectExpired:  true,
-		},
-		{
-			name:           "legacy not expired",
-			expiryDuration: 10 * time.Minute,
-			timeAdvance:    5 * time.Minute,
-			expectExpired:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			synctest.Test(t, func(t *testing.T) {
-				kvStore, c, repository := setupTaskTest(t)
-				ctx := t.Context()
-
-				// Create a legacy task directly (no OwnerInstanceId)
-				taskID := NewTaskID(testTaskPrefix)
-				legacyTask := &TaskMsg{
-					Task: &Task{
-						Id:        taskID,
-						Operation: "legacy_op",
-						UpdatedAt: timestamppb.New(time.Now().Add(-tt.timeAdvance)),
-					},
-				}
-				err := UpdateTaskStatus(ctx, kvStore, repository, taskID, legacyTask)
-				require.NoError(t, err)
-
-				var resultStatus TaskMsg
-				err = c.GetValidatedTaskStatus(ctx, repository.RepositoryID.String(), taskID, testTaskPrefix, &resultStatus, tt.expiryDuration)
-				require.NoError(t, err)
-
-				if tt.expectExpired {
-					require.True(t, resultStatus.Task.Done)
-					require.Contains(t, resultStatus.Task.ErrorMsg, "expired")
-					require.Equal(t, http.StatusRequestTimeout, int(resultStatus.Task.StatusCode))
-				} else {
-					require.False(t, resultStatus.Task.Done)
-					require.Empty(t, resultStatus.Task.ErrorMsg)
-				}
-			})
-		})
-	}
 }
 
 // setupTaskTest creates the common test setup used by all task tests.
