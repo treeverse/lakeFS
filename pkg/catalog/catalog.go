@@ -2315,7 +2315,7 @@ func (c *Catalog) writeInstanceHeartbeat(ctx context.Context) {
 		UpdatedAt: timestamppb.Now(),
 	}
 	if err := kv.SetMsg(ctx, c.KVStore, instancesPartition, instanceHeartbeatPath(c.instanceID), msg); err != nil {
-		c.log(ctx).WithError(err).Error("Failed to write instance heartbeat")
+		c.log(ctx).WithError(err).WithField("instance_id", c.instanceID).Error("Failed to write instance heartbeat")
 	}
 }
 
@@ -2386,8 +2386,8 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 	// Iterate over all tasks and delete those whose UpdatedAt exceeds TaskExpiryTime.
 	// Note: with instance-level heartbeats, UpdatedAt is only updated on step completion,
 	// not periodically. This means a still-running single-step task will be cleaned up if
-	// it has been running for longer than TaskExpiryTime (24h). This is acceptable since
-	// all current tasks (commit, merge, dump, restore, GC prepare) complete in seconds.
+	// it has been running for longer than TaskExpiryTime. This is acceptable since
+	// all current tasks complete in seconds to few minutes.
 	for it.Next() {
 		ent := it.Entry()
 		msg := ent.Value.(*TaskMsg)
@@ -2901,35 +2901,40 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if _, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
-	c.markTaskExpiredIfStale(ctx, statusMsg, expiryDuration)
+	if err := c.markTaskExpiredIfStale(ctx, statusMsg, expiryDuration); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (c *Catalog) markTaskExpiredIfStale(ctx context.Context, statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) {
+func (c *Catalog) markTaskExpiredIfStale(ctx context.Context, statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) error {
 	if expiryDuration == 0 {
-		return
+		return nil
 	}
 
 	task := getTaskFromStatus(statusMsg)
 	if task == nil || task.Done {
-		return
+		return nil
 	}
 
-	// New path: check instance heartbeat when task has an owner instance
+	// Check instance heartbeat when task has an owner instance
 	if task.OwnerInstanceId != "" {
 		// Skip KV lookup when the task belongs to this instance — we know we're alive.
 		if task.OwnerInstanceId == c.instanceID {
 			task.UpdatedAt = timestamppb.Now()
-			return
+			return nil
 		}
 		heartbeat := &InstanceHeartbeat{}
 		_, err := kv.GetMsg(ctx, c.KVStore, instancesPartition, instanceHeartbeatPath(task.OwnerInstanceId), heartbeat)
-		if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
 			// Instance heartbeat not found -> instance is gone -> task is stale
 			task.Done = true
 			task.ErrorMsg = "Task owner instance no longer available. Please retry."
 			task.StatusCode = http.StatusRequestTimeout
-			return
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("get instance heartbeat for %s: %w", task.OwnerInstanceId, err)
 		}
 		if time.Since(heartbeat.UpdatedAt.AsTime()) > expiryDuration {
 			task.Done = true
@@ -2940,18 +2945,19 @@ func (c *Catalog) markTaskExpiredIfStale(ctx context.Context, statusMsg protoref
 			// that check UpdatedAt for staleness see a recent value.
 			task.UpdatedAt = heartbeat.UpdatedAt
 		}
-		return
+		return nil
 	}
 
 	// Legacy path: tasks without OwnerInstanceId (backwards compat)
 	if task.UpdatedAt == nil {
-		return
+		return nil
 	}
 	if time.Since(task.UpdatedAt.AsTime()) > expiryDuration {
 		task.Done = true
 		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %s. Please retry the operation.", expiryDuration)
 		task.StatusCode = http.StatusRequestTimeout
 	}
+	return nil
 }
 
 func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
@@ -3330,7 +3336,7 @@ func (c *Catalog) Close() error {
 			_ = multierror.Append(errs, err)
 		}
 	}
-	// Delete heartbeat entry so tasks are immediately detected as stale
+	// Delete instance id used by heartbeat as we are closing the catalog
 	if c.instanceID != "" {
 		_ = c.KVStore.Delete(context.Background(), []byte(instancesPartition), instanceHeartbeatPath(c.instanceID))
 	}
