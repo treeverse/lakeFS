@@ -16,6 +16,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/go-test/deep"
@@ -93,153 +94,144 @@ func (o *Ordering[T]) Slice() []T {
 // Own() call should wait until the first is released.  But Own() never
 // times out on its own.
 func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
-	// Fail quickly on deadlock
-	ctx, finish := context.WithTimeout(t.Context(), 2*time.Second)
-	defer finish()
-	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer store.Close()
-	log := logging.FromContext(ctx).WithField("test", t.Name())
-
-	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
-	events := Ordering[string]{}
-
-	releaseA, err := w.Own(ctx, "me", "xyz")
-	if err != nil {
-		t.Fatalf("Own main me: %s", err)
-	}
-	events.Add("owner: me")
-
-	wg := sync.WaitGroup{}
-
-	wg.Add(1)
-	errChan := make(chan error, 1)
-	go func() {
-		log.Info("Goroutine start")
-		defer wg.Done()
-		releaseB, err := w.Own(ctx, "us", "xyz")
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
 		if err != nil {
-			errChan <- fmt.Errorf("Own goroutine us: %s", err)
-			return
+			t.Fatal(err)
 		}
-		defer func() {
-			releaseB()
-			events.Add("released: us")
+		defer store.Close()
+		log := logging.FromContext(ctx).WithField("test", t.Name())
+
+		w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
+		events := Ordering[string]{}
+
+		releaseA, err := w.Own(ctx, "me", "xyz")
+		if err != nil {
+			t.Fatalf("Own main me: %s", err)
+		}
+		events.Add("owner: me")
+
+		wg := sync.WaitGroup{}
+
+		wg.Add(1)
+		errChan := make(chan error, 1)
+		go func() {
+			log.Info("Goroutine start")
+			defer wg.Done()
+			releaseB, err := w.Own(ctx, "us", "xyz")
+			if err != nil {
+				errChan <- fmt.Errorf("Own goroutine us: %s", err)
+				return
+			}
+			defer func() {
+				releaseB()
+				events.Add("released: us")
+			}()
+			events.Add("owner: us")
 		}()
-		events.Add("owner: us")
-	}()
 
-	time.Sleep(150 * time.Millisecond)
-	events.Add("release: me")
-	releaseA()
-	wg.Wait()
+		synctest.Wait()
+		events.Add("release: me")
+		releaseA()
+		wg.Wait()
 
-	select {
-	case err := <-errChan:
-		t.Fatal(err)
-	default:
-	}
+		select {
+		case err := <-errChan:
+			t.Fatal(err)
+		default:
+		}
 
-	if diffs := deep.Equal(events.Slice(), []string{
-		"owner: me",
-		"release: me",
-		"owner: us",
-		"released: us",
-	}); diffs != nil {
-		t.Errorf("Bad events ordering: diffs %s", diffs)
-	}
+		if diffs := deep.Equal(events.Slice(), []string{
+			"owner: me",
+			"release: me",
+			"owner: us",
+			"released: us",
+		}); diffs != nil {
+			t.Errorf("Bad events ordering: diffs %s", diffs)
+		}
+	})
 }
 
 func TestMostlyCorrectOwnerConsecutiveCancelled(t *testing.T) {
-	ctx, finish := context.WithTimeout(t.Context(), 2*time.Second)
-	defer finish()
-	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer store.Close()
-	log := logging.FromContext(ctx).WithField("test", t.Name())
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer store.Close()
+		log := logging.FromContext(ctx).WithField("test", t.Name())
 
-	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
-	releaseA, err := w.Own(ctx, "me", "xyz")
-	if err != nil {
-		t.Fatalf("Own main me: %s", err)
-	}
-	defer releaseA()
+		w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
+		releaseA, err := w.Own(ctx, "me", "xyz")
+		if err != nil {
+			t.Fatalf("Own main me: %s", err)
+		}
+		defer releaseA()
 
-	waitCtx, waitCancel := context.WithTimeout(ctx, 50*time.Millisecond)
-	defer waitCancel()
-	_, err = w.Own(waitCtx, "us", "xyz")
-	if err == nil {
-		t.Fatal("expected cancellation error while waiting for ownership")
-	}
-	if err != context.DeadlineExceeded {
-		t.Fatalf("Own should fail with deadline exceeded, got: %v", err)
-	}
+		waitCtx, waitCancel := context.WithTimeout(ctx, 50*time.Millisecond)
+		defer waitCancel()
+		_, err = w.Own(waitCtx, "us", "xyz")
+		if err == nil {
+			t.Fatal("expected cancellation error while waiting for ownership")
+		}
+		if err != context.DeadlineExceeded {
+			t.Fatalf("Own should fail with deadline exceeded, got: %v", err)
+		}
+	})
 }
 
 // TestMostlyCorrectOwnerFIFOOrdering verifies that multiple waiters on the
 // same key are granted ownership in FIFO order.
 func TestMostlyCorrectOwnerFIFOOrdering(t *testing.T) {
-	ctx, finish := context.WithTimeout(t.Context(), 5*time.Second)
-	defer finish()
-	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer store.Close()
-	log := logging.FromContext(ctx).WithField("test", t.Name())
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer store.Close()
+		log := logging.FromContext(ctx).WithField("test", t.Name())
 
-	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
-	events := Ordering[string]{}
+		w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
+		events := Ordering[string]{}
 
-	// First owner holds the key.
-	releaseA, err := w.Own(ctx, "A", "key")
-	if err != nil {
-		t.Fatalf("Own A: %s", err)
-	}
+		// First owner holds the key.
+		releaseA, err := w.Own(ctx, "A", "key")
+		if err != nil {
+			t.Fatalf("Own A: %s", err)
+		}
 
-	const n = 3
-	ready := make([]chan struct{}, n)
-	for i := range ready {
-		ready[i] = make(chan struct{})
-	}
+		const n = 3
+		var wg sync.WaitGroup
+		errChan := make(chan error, n)
+		for i := 0; i < n; i++ {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				release, err := w.Own(ctx, fmt.Sprintf("W%d", idx), "key")
+				if err != nil {
+					errChan <- fmt.Errorf("Own W%d: %w", idx, err)
+					return
+				}
+				events.Add(fmt.Sprintf("owner: W%d", idx))
+				release()
+			}(i)
+			synctest.Wait()
+		}
 
-	var wg sync.WaitGroup
-	errChan := make(chan error, n)
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-			// Signal that this goroutine is about to call Own.
-			close(ready[idx])
-			release, err := w.Own(ctx, fmt.Sprintf("W%d", idx), "key")
-			if err != nil {
-				errChan <- fmt.Errorf("Own W%d: %w", idx, err)
-				return
-			}
-			events.Add(fmt.Sprintf("owner: W%d", idx))
-			release()
-		}(i)
-		// Wait for the goroutine to be ready before launching the next,
-		// so they enqueue in order W0, W1, W2.
-		<-ready[i]
-		// Give the goroutine time to actually block inside Acquire.
-		time.Sleep(10 * time.Millisecond)
-	}
+		// Release the first owner — waiters should proceed in FIFO order.
+		releaseA()
+		wg.Wait()
+		close(errChan)
+		for err := range errChan {
+			t.Fatal(err)
+		}
 
-	// Release the first owner — waiters should proceed in FIFO order.
-	releaseA()
-	wg.Wait()
-	close(errChan)
-	for err := range errChan {
-		t.Fatal(err)
-	}
-
-	expected := []string{"owner: W0", "owner: W1", "owner: W2"}
-	if diffs := deep.Equal(events.Slice(), expected); diffs != nil {
-		t.Errorf("Expected FIFO ordering %v, got %v (diffs: %s)", expected, events.Slice(), diffs)
-	}
+		expected := []string{"owner: W0", "owner: W1", "owner: W2"}
+		if diffs := deep.Equal(events.Slice(), expected); diffs != nil {
+			t.Errorf("Expected FIFO ordering %v, got %v (diffs: %s)", expected, events.Slice(), diffs)
+		}
+	})
 }
