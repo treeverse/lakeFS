@@ -152,6 +152,123 @@ func TestInProcessKeyedLock_CancelledMiddleWaiter(t *testing.T) {
 	})
 }
 
+func TestInProcessKeyedLock_HandoffToCancelledWaiter(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		l := distributed.NewInProcessKeyedLock()
+
+		events := Ordering[string]{}
+
+		r1, err := l.Acquire(ctx, "k")
+		if err != nil {
+			t.Fatalf("Acquire holder: %v", err)
+		}
+
+		cancelCtx, cancelA := context.WithCancel(ctx)
+		var wg sync.WaitGroup
+
+		// A waits (will be cancelled concurrently with handoff).
+		wg.Go(func() {
+			release, err := l.Acquire(cancelCtx, "k")
+			if err != nil {
+				events.Add("A:cancelled")
+				return
+			}
+			events.Add("A:acquired")
+			release()
+		})
+		synctest.Wait()
+
+		// B waits.
+		wg.Go(func() {
+			release, err := l.Acquire(ctx, "k")
+			if err != nil {
+				t.Errorf("B Acquire: %v", err)
+				return
+			}
+			events.Add("B:acquired")
+			release()
+		})
+		synctest.Wait()
+
+		// Release the holder (hands off to A by closing A's w.ch)
+		// AND cancel A's context, both before A has a chance to run.
+		// This puts A in the state where both w.ch and ctx.Done() are
+		// ready: if the runtime select picks ctx.Done(), A must detect
+		// the handoff in the inner select and propagate to B.
+		r1()
+		cancelA()
+		wg.Wait()
+
+		// Regardless of which select branch A takes, B must acquire.
+		got := events.Slice()
+		foundB := false
+		for _, e := range got {
+			if e == "B:acquired" {
+				foundB = true
+			}
+		}
+		if !foundB {
+			t.Errorf("B never acquired the lock; events: %v", got)
+		}
+	})
+}
+
+func TestInProcessKeyedLock_Stress(t *testing.T) {
+	l := distributed.NewInProcessKeyedLock()
+	const (
+		workers = 20
+		iters   = 100
+		numKeys = 3
+	)
+
+	// Per-key counters protected only by the keyed lock (not a mutex).
+	// The race detector will catch any violation.
+	type counter struct{ n int }
+	counters := make([]*counter, numKeys)
+	for i := range counters {
+		counters[i] = &counter{}
+	}
+
+	var wg sync.WaitGroup
+	for w := range workers {
+		wg.Go(func() {
+			for i := range iters {
+				ki := w % numKeys
+				key := fmt.Sprintf("key-%d", ki)
+
+				var (
+					ctx    = context.Background()
+					cancel context.CancelFunc
+				)
+				if i%7 == 0 {
+					ctx, cancel = context.WithTimeout(ctx, time.Millisecond)
+				}
+
+				release, err := l.Acquire(ctx, key)
+				if cancel != nil {
+					cancel()
+				}
+				if err != nil {
+					continue
+				}
+				counters[ki].n++
+				release()
+			}
+		})
+	}
+	wg.Wait()
+
+	total := 0
+	for _, c := range counters {
+		total += c.n
+	}
+	if total == 0 {
+		t.Fatal("no acquisitions succeeded")
+	}
+	t.Logf("completed %d/%d acquisitions across %d keys", total, workers*iters, numKeys)
+}
+
 func TestInProcessKeyedLock_ReleaseAndReacquire(t *testing.T) {
 	ctx := t.Context()
 	l := distributed.NewInProcessKeyedLock()
