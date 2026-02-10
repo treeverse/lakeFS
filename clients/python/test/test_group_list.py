@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.group_list import GroupList  # noqa: E501
+from lakefs_sdk.models.group_list import GroupList
 
 class TestGroupList(unittest.TestCase):
     """GroupList unit test stubs"""
@@ -34,7 +34,7 @@ class TestGroupList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `GroupList`
         """
-        model = GroupList()  # noqa: E501
+        model = GroupList()
         if include_optional:
             return GroupList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

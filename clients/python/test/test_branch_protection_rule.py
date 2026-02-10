@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule  # noqa: E501
+from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 
 class TestBranchProtectionRule(unittest.TestCase):
     """BranchProtectionRule unit test stubs"""
@@ -34,7 +34,7 @@ class TestBranchProtectionRule(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `BranchProtectionRule`
         """
-        model = BranchProtectionRule()  # noqa: E501
+        model = BranchProtectionRule()
         if include_optional:
             return BranchProtectionRule(
                 pattern = 'stable_*'

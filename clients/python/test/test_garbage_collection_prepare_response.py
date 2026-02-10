@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.garbage_collection_prepare_response import GarbageCollectionPrepareResponse  # noqa: E501
+from lakefs_sdk.models.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 
 class TestGarbageCollectionPrepareResponse(unittest.TestCase):
     """GarbageCollectionPrepareResponse unit test stubs"""
@@ -34,7 +34,7 @@ class TestGarbageCollectionPrepareResponse(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `GarbageCollectionPrepareResponse`
         """
-        model = GarbageCollectionPrepareResponse()  # noqa: E501
+        model = GarbageCollectionPrepareResponse()
         if include_optional:
             return GarbageCollectionPrepareResponse(
                 run_id = '64eaa103-d726-4a33-bcb8-7c0b4abfe09e',

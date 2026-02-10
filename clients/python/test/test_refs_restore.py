@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.refs_restore import RefsRestore  # noqa: E501
+from lakefs_sdk.models.refs_restore import RefsRestore
 
 class TestRefsRestore(unittest.TestCase):
     """RefsRestore unit test stubs"""
@@ -34,7 +34,7 @@ class TestRefsRestore(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RefsRestore`
         """
-        model = RefsRestore()  # noqa: E501
+        model = RefsRestore()
         if include_optional:
             return RefsRestore(
                 commits_meta_range_id = '',

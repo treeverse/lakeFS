@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.task_info import TaskInfo  # noqa: E501
+from lakefs_sdk.models.task_info import TaskInfo
 
 class TestTaskInfo(unittest.TestCase):
     """TaskInfo unit test stubs"""
@@ -34,7 +34,7 @@ class TestTaskInfo(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `TaskInfo`
         """
-        model = TaskInfo()  # noqa: E501
+        model = TaskInfo()
         if include_optional:
             return TaskInfo(
                 id = ''

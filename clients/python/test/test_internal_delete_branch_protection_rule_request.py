@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.internal_delete_branch_protection_rule_request import InternalDeleteBranchProtectionRuleRequest  # noqa: E501
+from lakefs_sdk.models.internal_delete_branch_protection_rule_request import InternalDeleteBranchProtectionRuleRequest
 
 class TestInternalDeleteBranchProtectionRuleRequest(unittest.TestCase):
     """InternalDeleteBranchProtectionRuleRequest unit test stubs"""
@@ -34,7 +34,7 @@ class TestInternalDeleteBranchProtectionRuleRequest(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `InternalDeleteBranchProtectionRuleRequest`
         """
-        model = InternalDeleteBranchProtectionRuleRequest()  # noqa: E501
+        model = InternalDeleteBranchProtectionRuleRequest()
         if include_optional:
             return InternalDeleteBranchProtectionRuleRequest(
                 pattern = ''

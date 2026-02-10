@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.policy_list import PolicyList  # noqa: E501
+from lakefs_sdk.models.policy_list import PolicyList
 
 class TestPolicyList(unittest.TestCase):
     """PolicyList unit test stubs"""
@@ -34,7 +34,7 @@ class TestPolicyList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PolicyList`
         """
-        model = PolicyList()  # noqa: E501
+        model = PolicyList()
         if include_optional:
             return PolicyList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

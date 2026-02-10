@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.hook_run_list import HookRunList  # noqa: E501
+from lakefs_sdk.models.hook_run_list import HookRunList
 
 class TestHookRunList(unittest.TestCase):
     """HookRunList unit test stubs"""
@@ -34,7 +34,7 @@ class TestHookRunList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `HookRunList`
         """
-        model = HookRunList()  # noqa: E501
+        model = HookRunList()
         if include_optional:
             return HookRunList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

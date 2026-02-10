@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.login_information import LoginInformation  # noqa: E501
+from lakefs_sdk.models.login_information import LoginInformation
 
 class TestLoginInformation(unittest.TestCase):
     """LoginInformation unit test stubs"""
@@ -34,7 +34,7 @@ class TestLoginInformation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `LoginInformation`
         """
-        model = LoginInformation()  # noqa: E501
+        model = LoginInformation()
         if include_optional:
             return LoginInformation(
                 access_key_id = '',

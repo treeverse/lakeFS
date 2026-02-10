@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.repository_dump_status import RepositoryDumpStatus  # noqa: E501
+from lakefs_sdk.models.repository_dump_status import RepositoryDumpStatus
 
 class TestRepositoryDumpStatus(unittest.TestCase):
     """RepositoryDumpStatus unit test stubs"""
@@ -34,7 +34,7 @@ class TestRepositoryDumpStatus(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RepositoryDumpStatus`
         """
-        model = RepositoryDumpStatus()  # noqa: E501
+        model = RepositoryDumpStatus()
         if include_optional:
             return RepositoryDumpStatus(
                 id = '',

@@ -19,50 +19,64 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from typing import Optional
-try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictInt, StrictStr
-except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, StrictBool, StrictInt, StrictStr
+from pydantic import Field
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.models.error import Error
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 class ImportStatus(BaseModel):
     """
     ImportStatus
-    """
-    completed: StrictBool = Field(...)
-    update_time: datetime = Field(...)
-    ingested_objects: Optional[StrictInt] = Field(None, description="Number of objects processed so far")
+    """ # noqa: E501
+    completed: StrictBool
+    update_time: datetime
+    ingested_objects: Optional[StrictInt] = Field(default=None, description="Number of objects processed so far")
     metarange_id: Optional[StrictStr] = None
     commit: Optional[Commit] = None
     error: Optional[Error] = None
-    __properties = ["completed", "update_time", "ingested_objects", "metarange_id", "commit", "error"]
+    __properties: ClassVar[List[str]] = ["completed", "update_time", "ingested_objects", "metarange_id", "commit", "error"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = {
+        "populate_by_name": True,
+        "validate_assignment": True
+    }
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> ImportStatus:
+    def from_json(cls, json_str: str) -> Self:
         """Create an instance of ImportStatus from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude={
+            },
+            exclude_none=True,
+        )
         # override the default output from pydantic by calling `to_dict()` of commit
         if self.commit:
             _dict['commit'] = self.commit.to_dict()
@@ -72,15 +86,15 @@ class ImportStatus(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> ImportStatus:
+    def from_dict(cls, obj: Dict) -> Self:
         """Create an instance of ImportStatus from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return ImportStatus.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = ImportStatus.parse_obj({
+        _obj = cls.model_validate({
             "completed": obj.get("completed"),
             "update_time": obj.get("update_time"),
             "ingested_objects": obj.get("ingested_objects"),

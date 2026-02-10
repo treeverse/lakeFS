@@ -39,9 +39,9 @@ class ServerConfiguration:
             if self._conf.storage_config_list is not None:
                 for storage in self._conf.storage_config_list:
                     self._storage_conf[storage.blockstore_id] = ServerStorageConfiguration(
-                        **self._conf.storage_config.dict())
+                        **self._conf.storage_config.model_dump())
             if self._conf.storage_config is not None:
-                self._storage_conf[SINGLE_STORAGE_ID] = ServerStorageConfiguration(**self._conf.storage_config.dict())
+                self._storage_conf[SINGLE_STORAGE_ID] = ServerStorageConfiguration(**self._conf.storage_config.model_dump())
 
         except lakefs_sdk.exceptions.ApiException as e:
             if isinstance(e, lakefs_sdk.exceptions.ApiException):

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.storage_uri import StorageURI  # noqa: E501
+from lakefs_sdk.models.storage_uri import StorageURI
 
 class TestStorageURI(unittest.TestCase):
     """StorageURI unit test stubs"""
@@ -34,7 +34,7 @@ class TestStorageURI(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `StorageURI`
         """
-        model = StorageURI()  # noqa: E501
+        model = StorageURI()
         if include_optional:
             return StorageURI(
                 location = ''

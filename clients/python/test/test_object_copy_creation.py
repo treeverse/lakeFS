@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation  # noqa: E501
+from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation
 
 class TestObjectCopyCreation(unittest.TestCase):
     """ObjectCopyCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestObjectCopyCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ObjectCopyCreation`
         """
-        model = ObjectCopyCreation()  # noqa: E501
+        model = ObjectCopyCreation()
         if include_optional:
             return ObjectCopyCreation(
                 src_path = '',

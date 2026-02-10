@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.task_creation import TaskCreation  # noqa: E501
+from lakefs_sdk.models.task_creation import TaskCreation
 
 class TestTaskCreation(unittest.TestCase):
     """TaskCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestTaskCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `TaskCreation`
         """
-        model = TaskCreation()  # noqa: E501
+        model = TaskCreation()
         if include_optional:
             return TaskCreation(
                 id = ''

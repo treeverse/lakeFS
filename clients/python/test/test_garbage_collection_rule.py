@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.garbage_collection_rule import GarbageCollectionRule  # noqa: E501
+from lakefs_sdk.models.garbage_collection_rule import GarbageCollectionRule
 
 class TestGarbageCollectionRule(unittest.TestCase):
     """GarbageCollectionRule unit test stubs"""
@@ -34,7 +34,7 @@ class TestGarbageCollectionRule(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `GarbageCollectionRule`
         """
-        model = GarbageCollectionRule()  # noqa: E501
+        model = GarbageCollectionRule()
         if include_optional:
             return GarbageCollectionRule(
                 branch_id = '',

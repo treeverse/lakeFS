@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable  # noqa: E501
+from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
 
 class TestIcebergRemoteTable(unittest.TestCase):
     """IcebergRemoteTable unit test stubs"""
@@ -34,7 +34,7 @@ class TestIcebergRemoteTable(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `IcebergRemoteTable`
         """
-        model = IcebergRemoteTable()  # noqa: E501
+        model = IcebergRemoteTable()
         if include_optional:
             return IcebergRemoteTable(
                 namespace = ["accounting","tax"],

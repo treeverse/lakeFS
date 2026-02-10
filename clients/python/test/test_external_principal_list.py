@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.external_principal_list import ExternalPrincipalList  # noqa: E501
+from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
 
 class TestExternalPrincipalList(unittest.TestCase):
     """ExternalPrincipalList unit test stubs"""
@@ -34,7 +34,7 @@ class TestExternalPrincipalList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ExternalPrincipalList`
         """
-        model = ExternalPrincipalList()  # noqa: E501
+        model = ExternalPrincipalList()
         if include_optional:
             return ExternalPrincipalList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.repository_list import RepositoryList  # noqa: E501
+from lakefs_sdk.models.repository_list import RepositoryList
 
 class TestRepositoryList(unittest.TestCase):
     """RepositoryList unit test stubs"""
@@ -34,7 +34,7 @@ class TestRepositoryList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RepositoryList`
         """
-        model = RepositoryList()  # noqa: E501
+        model = RepositoryList()
         if include_optional:
             return RepositoryList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

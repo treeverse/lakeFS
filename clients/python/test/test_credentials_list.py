@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.credentials_list import CredentialsList  # noqa: E501
+from lakefs_sdk.models.credentials_list import CredentialsList
 
 class TestCredentialsList(unittest.TestCase):
     """CredentialsList unit test stubs"""
@@ -34,7 +34,7 @@ class TestCredentialsList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CredentialsList`
         """
-        model = CredentialsList()  # noqa: E501
+        model = CredentialsList()
         if include_optional:
             return CredentialsList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

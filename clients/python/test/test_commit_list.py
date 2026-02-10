@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit_list import CommitList  # noqa: E501
+from lakefs_sdk.models.commit_list import CommitList
 
 class TestCommitList(unittest.TestCase):
     """CommitList unit test stubs"""
@@ -34,7 +34,7 @@ class TestCommitList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CommitList`
         """
-        model = CommitList()  # noqa: E501
+        model = CommitList()
         if include_optional:
             return CommitList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

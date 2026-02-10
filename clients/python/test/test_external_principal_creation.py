@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation  # noqa: E501
+from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
 
 class TestExternalPrincipalCreation(unittest.TestCase):
     """ExternalPrincipalCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestExternalPrincipalCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ExternalPrincipalCreation`
         """
-        model = ExternalPrincipalCreation()  # noqa: E501
+        model = ExternalPrincipalCreation()
         if include_optional:
             return ExternalPrincipalCreation(
                 settings = [

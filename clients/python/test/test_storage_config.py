@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.storage_config import StorageConfig  # noqa: E501
+from lakefs_sdk.models.storage_config import StorageConfig
 
 class TestStorageConfig(unittest.TestCase):
     """StorageConfig unit test stubs"""
@@ -34,7 +34,7 @@ class TestStorageConfig(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `StorageConfig`
         """
-        model = StorageConfig()  # noqa: E501
+        model = StorageConfig()
         if include_optional:
             return StorageConfig(
                 blockstore_type = '',

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.sts_auth_request import StsAuthRequest  # noqa: E501
+from lakefs_sdk.models.sts_auth_request import StsAuthRequest
 
 class TestStsAuthRequest(unittest.TestCase):
     """StsAuthRequest unit test stubs"""
@@ -34,7 +34,7 @@ class TestStsAuthRequest(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `StsAuthRequest`
         """
-        model = StsAuthRequest()  # noqa: E501
+        model = StsAuthRequest()
         if include_optional:
             return StsAuthRequest(
                 code = '',

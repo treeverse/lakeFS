@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.external_login_information import ExternalLoginInformation  # noqa: E501
+from lakefs_sdk.models.external_login_information import ExternalLoginInformation
 
 class TestExternalLoginInformation(unittest.TestCase):
     """ExternalLoginInformation unit test stubs"""
@@ -34,7 +34,7 @@ class TestExternalLoginInformation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ExternalLoginInformation`
         """
-        model = ExternalLoginInformation()  # noqa: E501
+        model = ExternalLoginInformation()
         if include_optional:
             return ExternalLoginInformation(
                 token_expiration_duration = 56,

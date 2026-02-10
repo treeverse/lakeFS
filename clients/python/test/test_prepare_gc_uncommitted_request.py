@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest  # noqa: E501
+from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 
 class TestPrepareGCUncommittedRequest(unittest.TestCase):
     """PrepareGCUncommittedRequest unit test stubs"""
@@ -34,7 +34,7 @@ class TestPrepareGCUncommittedRequest(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PrepareGCUncommittedRequest`
         """
-        model = PrepareGCUncommittedRequest()  # noqa: E501
+        model = PrepareGCUncommittedRequest()
         if include_optional:
             return PrepareGCUncommittedRequest(
                 continuation_token = ''

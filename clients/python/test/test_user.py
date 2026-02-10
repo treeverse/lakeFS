@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.user import User  # noqa: E501
+from lakefs_sdk.models.user import User
 
 class TestUser(unittest.TestCase):
     """User unit test stubs"""
@@ -34,7 +34,7 @@ class TestUser(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `User`
         """
-        model = User()  # noqa: E501
+        model = User()
         if include_optional:
             return User(
                 id = '',

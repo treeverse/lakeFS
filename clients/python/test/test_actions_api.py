@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.actions_api import ActionsApi  # noqa: E501
+from lakefs_sdk.api.actions_api import ActionsApi
 
 
 class TestActionsApi(unittest.TestCase):
     """ActionsApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = ActionsApi()  # noqa: E501
+        self.api = ActionsApi()
 
     def tearDown(self) -> None:
         pass
@@ -30,28 +30,28 @@ class TestActionsApi(unittest.TestCase):
     def test_get_run(self) -> None:
         """Test case for get_run
 
-        get a run  # noqa: E501
+        get a run
         """
         pass
 
     def test_get_run_hook_output(self) -> None:
         """Test case for get_run_hook_output
 
-        get run hook output  # noqa: E501
+        get run hook output
         """
         pass
 
     def test_list_repository_runs(self) -> None:
         """Test case for list_repository_runs
 
-        list runs  # noqa: E501
+        list runs
         """
         pass
 
     def test_list_run_hooks(self) -> None:
         """Test case for list_run_hooks
 
-        list run hooks  # noqa: E501
+        list run hooks
         """
         pass
 

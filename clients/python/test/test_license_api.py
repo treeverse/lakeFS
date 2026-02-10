@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.license_api import LicenseApi  # noqa: E501
+from lakefs_sdk.api.license_api import LicenseApi
 
 
 class TestLicenseApi(unittest.TestCase):
     """LicenseApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = LicenseApi()  # noqa: E501
+        self.api = LicenseApi()
 
     def tearDown(self) -> None:
         pass

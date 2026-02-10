@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.acl import ACL  # noqa: E501
+from lakefs_sdk.models.acl import ACL
 
 class TestACL(unittest.TestCase):
     """ACL unit test stubs"""
@@ -34,7 +34,7 @@ class TestACL(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ACL`
         """
-        model = ACL()  # noqa: E501
+        model = ACL()
         if include_optional:
             return ACL(
                 permission = ''

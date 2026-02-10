@@ -19,77 +19,91 @@ import re  # noqa: F401
 import json
 
 
-from typing import Optional
-try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, validator
-except ImportError:
-    from pydantic import BaseModel, Field, StrictInt, StrictStr, validator
+from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, StrictInt, StrictStr, field_validator
+from pydantic import Field
 from lakefs_sdk.models.diff_object_stat import DiffObjectStat
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 class Diff(BaseModel):
     """
     Diff
-    """
-    type: StrictStr = Field(...)
-    path: StrictStr = Field(...)
-    path_type: StrictStr = Field(...)
-    size_bytes: Optional[StrictInt] = Field(None, description="represents the size of the added/changed/deleted entry")
+    """ # noqa: E501
+    type: StrictStr
+    path: StrictStr
+    path_type: StrictStr
+    size_bytes: Optional[StrictInt] = Field(default=None, description="represents the size of the added/changed/deleted entry")
     right: Optional[DiffObjectStat] = None
-    __properties = ["type", "path", "path_type", "size_bytes", "right"]
+    __properties: ClassVar[List[str]] = ["type", "path", "path_type", "size_bytes", "right"]
 
-    @validator('type')
+    @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
         if value not in ('added', 'removed', 'changed', 'conflict', 'prefix_changed'):
             raise ValueError("must be one of enum values ('added', 'removed', 'changed', 'conflict', 'prefix_changed')")
         return value
 
-    @validator('path_type')
+    @field_validator('path_type')
     def path_type_validate_enum(cls, value):
         """Validates the enum"""
         if value not in ('common_prefix', 'object'):
             raise ValueError("must be one of enum values ('common_prefix', 'object')")
         return value
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = {
+        "populate_by_name": True,
+        "validate_assignment": True
+    }
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> Diff:
+    def from_json(cls, json_str: str) -> Self:
         """Create an instance of Diff from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude={
+            },
+            exclude_none=True,
+        )
         # override the default output from pydantic by calling `to_dict()` of right
         if self.right:
             _dict['right'] = self.right.to_dict()
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> Diff:
+    def from_dict(cls, obj: Dict) -> Self:
         """Create an instance of Diff from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return Diff.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = Diff.parse_obj({
+        _obj = cls.model_validate({
             "type": obj.get("type"),
             "path": obj.get("path"),
             "path_type": obj.get("path_type"),

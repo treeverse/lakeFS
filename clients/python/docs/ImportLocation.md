@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **str** | Path type, can either be &#39;common_prefix&#39; or &#39;object&#39; | 

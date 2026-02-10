@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.group import Group  # noqa: E501
+from lakefs_sdk.models.group import Group
 
 class TestGroup(unittest.TestCase):
     """Group unit test stubs"""
@@ -34,7 +34,7 @@ class TestGroup(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Group`
         """
-        model = Group()  # noqa: E501
+        model = Group()
         if include_optional:
             return Group(
                 id = '',

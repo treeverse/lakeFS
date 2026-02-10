@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit_record_creation import CommitRecordCreation  # noqa: E501
+from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
 
 class TestCommitRecordCreation(unittest.TestCase):
     """CommitRecordCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestCommitRecordCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CommitRecordCreation`
         """
-        model = CommitRecordCreation()  # noqa: E501
+        model = CommitRecordCreation()
         if include_optional:
             return CommitRecordCreation(
                 commit_id = '',

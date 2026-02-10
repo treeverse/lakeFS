@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.tag_creation import TagCreation  # noqa: E501
+from lakefs_sdk.models.tag_creation import TagCreation
 
 class TestTagCreation(unittest.TestCase):
     """TagCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestTagCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `TagCreation`
         """
-        model = TagCreation()  # noqa: E501
+        model = TagCreation()
         if include_optional:
             return TagCreation(
                 id = '',

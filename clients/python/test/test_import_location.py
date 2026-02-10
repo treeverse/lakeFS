@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.import_location import ImportLocation  # noqa: E501
+from lakefs_sdk.models.import_location import ImportLocation
 
 class TestImportLocation(unittest.TestCase):
     """ImportLocation unit test stubs"""
@@ -34,7 +34,7 @@ class TestImportLocation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ImportLocation`
         """
-        model = ImportLocation()  # noqa: E501
+        model = ImportLocation()
         if include_optional:
             return ImportLocation(
                 type = 'common_prefix',

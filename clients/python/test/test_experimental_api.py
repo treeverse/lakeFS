@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.experimental_api import ExperimentalApi  # noqa: E501
+from lakefs_sdk.api.experimental_api import ExperimentalApi
 
 
 class TestExperimentalApi(unittest.TestCase):
     """ExperimentalApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = ExperimentalApi()  # noqa: E501
+        self.api = ExperimentalApi()
 
     def tearDown(self) -> None:
         pass
@@ -30,70 +30,70 @@ class TestExperimentalApi(unittest.TestCase):
     def test_abort_presign_multipart_upload(self) -> None:
         """Test case for abort_presign_multipart_upload
 
-        Abort a presign multipart upload  # noqa: E501
+        Abort a presign multipart upload
         """
         pass
 
     def test_commit_async(self) -> None:
         """Test case for commit_async
 
-        create commit asynchronously  # noqa: E501
+        create commit asynchronously
         """
         pass
 
     def test_commit_async_status(self) -> None:
         """Test case for commit_async_status
 
-        get status of async commit operation  # noqa: E501
+        get status of async commit operation
         """
         pass
 
     def test_complete_presign_multipart_upload(self) -> None:
         """Test case for complete_presign_multipart_upload
 
-        Complete a presign multipart upload request  # noqa: E501
+        Complete a presign multipart upload request
         """
         pass
 
     def test_create_presign_multipart_upload(self) -> None:
         """Test case for create_presign_multipart_upload
 
-        Initiate a multipart upload  # noqa: E501
+        Initiate a multipart upload
         """
         pass
 
     def test_create_pull_request(self) -> None:
         """Test case for create_pull_request
 
-        create pull request  # noqa: E501
+        create pull request
         """
         pass
 
     def test_create_user_external_principal(self) -> None:
         """Test case for create_user_external_principal
 
-        attach external principal to user  # noqa: E501
+        attach external principal to user
         """
         pass
 
     def test_delete_user_external_principal(self) -> None:
         """Test case for delete_user_external_principal
 
-        delete external principal from user  # noqa: E501
+        delete external principal from user
         """
         pass
 
     def test_external_principal_login(self) -> None:
         """Test case for external_principal_login
 
-        perform a login using an external authenticator  # noqa: E501
+        perform a login using an external authenticator
         """
         pass
 
     def test_get_external_principal(self) -> None:
         """Test case for get_external_principal
 
-        describe external principal by id  # noqa: E501
+        describe external principal by id
         """
         pass
 
@@ -106,91 +106,91 @@ class TestExperimentalApi(unittest.TestCase):
     def test_get_pull_request(self) -> None:
         """Test case for get_pull_request
 
-        get pull request  # noqa: E501
+        get pull request
         """
         pass
 
     def test_get_token_from_mailbox(self) -> None:
         """Test case for get_token_from_mailbox
 
-        receive the token after user has authenticated on redirect URL.  # noqa: E501
+        receive the token after user has authenticated on redirect URL.
         """
         pass
 
     def test_get_token_redirect(self) -> None:
         """Test case for get_token_redirect
 
-        start acquiring a token by logging in on a browser  # noqa: E501
+        start acquiring a token by logging in on a browser
         """
         pass
 
     def test_hard_reset_branch(self) -> None:
         """Test case for hard_reset_branch
 
-        hard reset branch  # noqa: E501
+        hard reset branch
         """
         pass
 
     def test_list_pull_requests(self) -> None:
         """Test case for list_pull_requests
 
-        list pull requests  # noqa: E501
+        list pull requests
         """
         pass
 
     def test_list_user_external_principals(self) -> None:
         """Test case for list_user_external_principals
 
-        list user external policies attached to a user  # noqa: E501
+        list user external policies attached to a user
         """
         pass
 
     def test_merge_into_branch_async(self) -> None:
         """Test case for merge_into_branch_async
 
-        merge references asynchronously  # noqa: E501
+        merge references asynchronously
         """
         pass
 
     def test_merge_into_branch_async_status(self) -> None:
         """Test case for merge_into_branch_async_status
 
-        get status of async merge operation  # noqa: E501
+        get status of async merge operation
         """
         pass
 
     def test_merge_pull_request(self) -> None:
         """Test case for merge_pull_request
 
-        merge pull request  # noqa: E501
+        merge pull request
         """
         pass
 
     def test_release_token_to_mailbox(self) -> None:
         """Test case for release_token_to_mailbox
 
-        release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
+        release a token for the current (authenticated) user to the mailbox of this login request.
         """
         pass
 
     def test_sts_login(self) -> None:
         """Test case for sts_login
 
-        perform a login with STS  # noqa: E501
+        perform a login with STS
         """
         pass
 
     def test_update_object_user_metadata(self) -> None:
         """Test case for update_object_user_metadata
 
-        rewrite (all) object metadata  # noqa: E501
+        rewrite (all) object metadata
         """
         pass
 
     def test_update_pull_request(self) -> None:
         """Test case for update_pull_request
 
-        update pull request  # noqa: E501
+        update pull request
         """
         pass
 

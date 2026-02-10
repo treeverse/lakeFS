@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.copy_part_source import CopyPartSource  # noqa: E501
+from lakefs_sdk.models.copy_part_source import CopyPartSource
 
 class TestCopyPartSource(unittest.TestCase):
     """CopyPartSource unit test stubs"""
@@ -34,7 +34,7 @@ class TestCopyPartSource(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CopyPartSource`
         """
-        model = CopyPartSource()  # noqa: E501
+        model = CopyPartSource()
         if include_optional:
             return CopyPartSource(
                 repository = '',

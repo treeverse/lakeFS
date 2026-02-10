@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.merge_async_status import MergeAsyncStatus  # noqa: E501
+from lakefs_sdk.models.merge_async_status import MergeAsyncStatus
 
 class TestMergeAsyncStatus(unittest.TestCase):
     """MergeAsyncStatus unit test stubs"""
@@ -34,7 +34,7 @@ class TestMergeAsyncStatus(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `MergeAsyncStatus`
         """
-        model = MergeAsyncStatus()  # noqa: E501
+        model = MergeAsyncStatus()
         if include_optional:
             return MergeAsyncStatus(
                 task_id = '',

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit_async_status import CommitAsyncStatus  # noqa: E501
+from lakefs_sdk.models.commit_async_status import CommitAsyncStatus
 
 class TestCommitAsyncStatus(unittest.TestCase):
     """CommitAsyncStatus unit test stubs"""
@@ -34,7 +34,7 @@ class TestCommitAsyncStatus(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CommitAsyncStatus`
         """
-        model = CommitAsyncStatus()  # noqa: E501
+        model = CommitAsyncStatus()
         if include_optional:
             return CommitAsyncStatus(
                 task_id = '',

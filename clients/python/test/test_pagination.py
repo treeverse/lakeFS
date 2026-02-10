@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.pagination import Pagination  # noqa: E501
+from lakefs_sdk.models.pagination import Pagination
 
 class TestPagination(unittest.TestCase):
     """Pagination unit test stubs"""
@@ -34,7 +34,7 @@ class TestPagination(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Pagination`
         """
-        model = Pagination()  # noqa: E501
+        model = Pagination()
         if include_optional:
             return Pagination(
                 has_more = True,

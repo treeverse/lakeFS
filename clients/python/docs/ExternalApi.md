@@ -23,7 +23,6 @@ attach external principal to user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -91,7 +90,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  | 
@@ -112,7 +110,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | external principal attached successfully |  -  |
@@ -137,7 +134,6 @@ delete external principal from user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -203,7 +199,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  | 
@@ -223,7 +218,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | external principal detached successfully |  -  |
@@ -241,7 +235,6 @@ void (empty response body)
 perform a login using an external authenticator
 
 ### Example
-
 
 ```python
 import time
@@ -278,7 +271,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **external_login_information** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional] 
@@ -297,7 +289,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | successful external login |  -  |
@@ -322,7 +313,6 @@ describe external principal by id
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -390,7 +380,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **principal_id** | **str**|  | 
@@ -409,7 +398,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | external principal |  -  |
@@ -433,7 +421,6 @@ list user external policies attached to a user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -504,7 +491,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  | 
@@ -526,7 +512,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | external principals list |  -  |

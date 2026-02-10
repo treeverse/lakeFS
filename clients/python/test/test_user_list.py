@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.user_list import UserList  # noqa: E501
+from lakefs_sdk.models.user_list import UserList
 
 class TestUserList(unittest.TestCase):
     """UserList unit test stubs"""
@@ -34,7 +34,7 @@ class TestUserList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UserList`
         """
-        model = UserList()  # noqa: E501
+        model = UserList()
         if include_optional:
             return UserList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

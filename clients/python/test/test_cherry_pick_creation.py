@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.cherry_pick_creation import CherryPickCreation  # noqa: E501
+from lakefs_sdk.models.cherry_pick_creation import CherryPickCreation
 
 class TestCherryPickCreation(unittest.TestCase):
     """CherryPickCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestCherryPickCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CherryPickCreation`
         """
-        model = CherryPickCreation()  # noqa: E501
+        model = CherryPickCreation()
         if include_optional:
             return CherryPickCreation(
                 ref = '',

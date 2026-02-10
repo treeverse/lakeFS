@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.pulls_api import PullsApi  # noqa: E501
+from lakefs_sdk.api.pulls_api import PullsApi
 
 
 class TestPullsApi(unittest.TestCase):
     """PullsApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = PullsApi()  # noqa: E501
+        self.api = PullsApi()
 
     def tearDown(self) -> None:
         pass
@@ -30,35 +30,35 @@ class TestPullsApi(unittest.TestCase):
     def test_create_pull_request(self) -> None:
         """Test case for create_pull_request
 
-        create pull request  # noqa: E501
+        create pull request
         """
         pass
 
     def test_get_pull_request(self) -> None:
         """Test case for get_pull_request
 
-        get pull request  # noqa: E501
+        get pull request
         """
         pass
 
     def test_list_pull_requests(self) -> None:
         """Test case for list_pull_requests
 
-        list pull requests  # noqa: E501
+        list pull requests
         """
         pass
 
     def test_merge_pull_request(self) -> None:
         """Test case for merge_pull_request
 
-        merge pull request  # noqa: E501
+        merge pull request
         """
         pass
 
     def test_update_pull_request(self) -> None:
         """Test case for update_pull_request
 
-        update pull request  # noqa: E501
+        update pull request
         """
         pass
 

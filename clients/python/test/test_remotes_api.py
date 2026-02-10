@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.remotes_api import RemotesApi  # noqa: E501
+from lakefs_sdk.api.remotes_api import RemotesApi
 
 
 class TestRemotesApi(unittest.TestCase):
     """RemotesApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = RemotesApi()  # noqa: E501
+        self.api = RemotesApi()
 
     def tearDown(self) -> None:
         pass
@@ -30,14 +30,14 @@ class TestRemotesApi(unittest.TestCase):
     def test_pull_iceberg_table(self) -> None:
         """Test case for pull_iceberg_table
 
-        take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository  # noqa: E501
+        take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
         """
         pass
 
     def test_push_iceberg_table(self) -> None:
         """Test case for push_iceberg_table
 
-        register existing lakeFS table in remote catalog  # noqa: E501
+        register existing lakeFS table in remote catalog
         """
         pass
 

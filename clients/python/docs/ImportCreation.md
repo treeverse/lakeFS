@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **paths** | [**List[ImportLocation]**](ImportLocation.md) |  | 

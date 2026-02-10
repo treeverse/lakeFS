@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.ui_config import UIConfig  # noqa: E501
+from lakefs_sdk.models.ui_config import UIConfig
 
 class TestUIConfig(unittest.TestCase):
     """UIConfig unit test stubs"""
@@ -34,7 +34,7 @@ class TestUIConfig(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UIConfig`
         """
-        model = UIConfig()  # noqa: E501
+        model = UIConfig()
         if include_optional:
             return UIConfig(
                 custom_viewers = [

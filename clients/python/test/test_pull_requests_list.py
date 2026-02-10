@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.pull_requests_list import PullRequestsList  # noqa: E501
+from lakefs_sdk.models.pull_requests_list import PullRequestsList
 
 class TestPullRequestsList(unittest.TestCase):
     """PullRequestsList unit test stubs"""
@@ -34,7 +34,7 @@ class TestPullRequestsList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PullRequestsList`
         """
-        model = PullRequestsList()  # noqa: E501
+        model = PullRequestsList()
         if include_optional:
             return PullRequestsList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

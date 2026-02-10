@@ -26,7 +26,6 @@ Replay the changes from the given commit on the branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -97,7 +96,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -118,7 +116,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | the cherry-pick commit |  -  |
@@ -144,7 +141,6 @@ create branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -213,7 +209,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -233,7 +228,6 @@ Name | Type | Description  | Notes
  - **Accept**: text/html, application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | reference |  -  |
@@ -259,7 +253,6 @@ delete branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -326,7 +319,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -347,7 +339,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | branch deleted successfully |  -  |
@@ -372,7 +363,6 @@ diff branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -445,7 +435,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -469,7 +458,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | diff of branch uncommitted changes |  -  |
@@ -493,7 +481,6 @@ get branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -562,7 +549,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -582,7 +568,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | branch |  -  |
@@ -606,7 +591,6 @@ list branches
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -678,7 +662,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -701,7 +684,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | branch list |  -  |
@@ -725,7 +707,6 @@ reset branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -793,7 +774,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -814,7 +794,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | reset successful |  -  |
@@ -839,7 +818,6 @@ revert
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -907,7 +885,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -928,7 +905,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | revert successful |  -  |

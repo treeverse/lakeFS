@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.config_api import ConfigApi  # noqa: E501
+from lakefs_sdk.api.config_api import ConfigApi
 
 
 class TestConfigApi(unittest.TestCase):
     """ConfigApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = ConfigApi()  # noqa: E501
+        self.api = ConfigApi()
 
     def tearDown(self) -> None:
         pass

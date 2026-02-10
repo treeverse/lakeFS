@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.action_run import ActionRun  # noqa: E501
+from lakefs_sdk.models.action_run import ActionRun
 
 class TestActionRun(unittest.TestCase):
     """ActionRun unit test stubs"""
@@ -34,7 +34,7 @@ class TestActionRun(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ActionRun`
         """
-        model = ActionRun()  # noqa: E501
+        model = ActionRun()
         if include_optional:
             return ActionRun(
                 run_id = '',

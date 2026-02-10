@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.version_config import VersionConfig  # noqa: E501
+from lakefs_sdk.models.version_config import VersionConfig
 
 class TestVersionConfig(unittest.TestCase):
     """VersionConfig unit test stubs"""
@@ -34,7 +34,7 @@ class TestVersionConfig(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `VersionConfig`
         """
-        model = VersionConfig()  # noqa: E501
+        model = VersionConfig()
         if include_optional:
             return VersionConfig(
                 version = '',

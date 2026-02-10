@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.setup_state import SetupState  # noqa: E501
+from lakefs_sdk.models.setup_state import SetupState
 
 class TestSetupState(unittest.TestCase):
     """SetupState unit test stubs"""
@@ -34,7 +34,7 @@ class TestSetupState(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `SetupState`
         """
-        model = SetupState()  # noqa: E501
+        model = SetupState()
         if include_optional:
             return SetupState(
                 state = 'initialized',

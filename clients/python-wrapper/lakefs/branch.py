@@ -62,7 +62,7 @@ class _BaseBranch(Reference):
         for diff in generate_listing(self._client.sdk_client.branches_api.diff_branch,
                                      self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix,
                                      **kwargs):
-            yield Change(**diff.dict())
+            yield Change(**diff.model_dump())
 
     def delete_objects(self, object_paths: str | StoredObject | Iterable[str | StoredObject]) -> None:
         """
@@ -154,7 +154,7 @@ class Branch(_BaseBranch):
         with api_exception_handler():
             res = self._client.sdk_client.branches_api.cherry_pick(
                 self._repo_id, self._id, cherry_pick_creation, **kwargs)
-            return Commit(**res.dict())
+            return Commit(**res.model_dump())
 
     def create(self, source_reference: ReferenceType, exist_ok: bool = False, **kwargs) -> Branch:
         """
@@ -281,7 +281,7 @@ class Branch(_BaseBranch):
                 **kwargs
             )
             commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
-            return Commit(**commit.dict())
+            return Commit(**commit.model_dump())
 
     def import_data(self, commit_message: str = "", metadata: Optional[dict] = None) -> ImportManager:
         """

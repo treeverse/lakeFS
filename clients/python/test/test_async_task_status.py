@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.async_task_status import AsyncTaskStatus  # noqa: E501
+from lakefs_sdk.models.async_task_status import AsyncTaskStatus
 
 class TestAsyncTaskStatus(unittest.TestCase):
     """AsyncTaskStatus unit test stubs"""
@@ -34,7 +34,7 @@ class TestAsyncTaskStatus(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `AsyncTaskStatus`
         """
-        model = AsyncTaskStatus()  # noqa: E501
+        model = AsyncTaskStatus()
         if include_optional:
             return AsyncTaskStatus(
                 task_id = '',

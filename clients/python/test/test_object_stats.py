@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.object_stats import ObjectStats  # noqa: E501
+from lakefs_sdk.models.object_stats import ObjectStats
 
 class TestObjectStats(unittest.TestCase):
     """ObjectStats unit test stubs"""
@@ -34,7 +34,7 @@ class TestObjectStats(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ObjectStats`
         """
-        model = ObjectStats()  # noqa: E501
+        model = ObjectStats()
         if include_optional:
             return ObjectStats(
                 path = '',

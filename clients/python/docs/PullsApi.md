@@ -23,7 +23,6 @@ create pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -93,7 +92,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -113,7 +111,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | pull request created |  -  |
@@ -139,7 +136,6 @@ get pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -208,7 +204,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -228,7 +223,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | pull request |  -  |
@@ -252,7 +246,6 @@ list pull requests
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -324,7 +317,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -347,7 +339,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | list of pull requests |  -  |
@@ -371,7 +362,6 @@ merge pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -440,7 +430,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -460,7 +449,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | merge completed |  -  |
@@ -487,7 +475,6 @@ update pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -555,7 +542,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -576,7 +562,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | pull request updated successfully |  -  |

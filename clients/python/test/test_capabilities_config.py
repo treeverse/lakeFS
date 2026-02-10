@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.capabilities_config import CapabilitiesConfig  # noqa: E501
+from lakefs_sdk.models.capabilities_config import CapabilitiesConfig
 
 class TestCapabilitiesConfig(unittest.TestCase):
     """CapabilitiesConfig unit test stubs"""
@@ -34,7 +34,7 @@ class TestCapabilitiesConfig(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CapabilitiesConfig`
         """
-        model = CapabilitiesConfig()  # noqa: E501
+        model = CapabilitiesConfig()
         if include_optional:
             return CapabilitiesConfig(
                 async_ops = True

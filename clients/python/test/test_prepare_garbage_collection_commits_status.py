@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus  # noqa: E501
+from lakefs_sdk.models.prepare_garbage_collection_commits_status import PrepareGarbageCollectionCommitsStatus
 
 class TestPrepareGarbageCollectionCommitsStatus(unittest.TestCase):
     """PrepareGarbageCollectionCommitsStatus unit test stubs"""
@@ -34,7 +34,7 @@ class TestPrepareGarbageCollectionCommitsStatus(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PrepareGarbageCollectionCommitsStatus`
         """
-        model = PrepareGarbageCollectionCommitsStatus()  # noqa: E501
+        model = PrepareGarbageCollectionCommitsStatus()
         if include_optional:
             return PrepareGarbageCollectionCommitsStatus(
                 task_id = '',

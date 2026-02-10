@@ -10,7 +10,8 @@ CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.4
 OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
-PY_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python-static/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+PY_OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.1.0
+PY_OPENAPI_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(PY_OPENAPI_GENERATOR_IMAGE)
 
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run -e JAVA_OPTS="-Dlog.level=error" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
@@ -87,7 +88,7 @@ gen-docs: ## Generate CLI docs automatically
 tools: ## Install tools
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
-client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
+client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.1.0 (pydantic v2)
 	@rm -rf clients/python
 	@mkdir -p clients/python
 	@cp clients/python-static/.openapi-generator-ignore clients/python
@@ -97,7 +98,6 @@ client-python: api/swagger.yml  ## Generate SDK for Python client - openapi gene
 		-g python \
 		-t /mnt/clients/python-static/templates \
 		-c /mnt/clients/python-static/python-codegen-config.yaml \
-		--enable-post-process-file \
 		--package-name lakefs_sdk \
 		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \

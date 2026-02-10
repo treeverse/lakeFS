@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret  # noqa: E501
+from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 
 class TestCredentialsWithSecret(unittest.TestCase):
     """CredentialsWithSecret unit test stubs"""
@@ -34,7 +34,7 @@ class TestCredentialsWithSecret(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CredentialsWithSecret`
         """
-        model = CredentialsWithSecret()  # noqa: E501
+        model = CredentialsWithSecret()
         if include_optional:
             return CredentialsWithSecret(
                 access_key_id = '',

@@ -19,67 +19,80 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, StrictStr, field_validator
 try:
-    from pydantic.v1 import BaseModel, Field, StrictStr, validator
+    from typing import Self
 except ImportError:
-    from pydantic import BaseModel, Field, StrictStr, validator
+    from typing_extensions import Self
 
 class HookRun(BaseModel):
     """
     HookRun
-    """
-    hook_run_id: StrictStr = Field(...)
-    action: StrictStr = Field(...)
-    hook_id: StrictStr = Field(...)
-    start_time: datetime = Field(...)
+    """ # noqa: E501
+    hook_run_id: StrictStr
+    action: StrictStr
+    hook_id: StrictStr
+    start_time: datetime
     end_time: Optional[datetime] = None
-    status: StrictStr = Field(...)
-    __properties = ["hook_run_id", "action", "hook_id", "start_time", "end_time", "status"]
+    status: StrictStr
+    __properties: ClassVar[List[str]] = ["hook_run_id", "action", "hook_id", "start_time", "end_time", "status"]
 
-    @validator('status')
+    @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
         if value not in ('failed', 'completed'):
             raise ValueError("must be one of enum values ('failed', 'completed')")
         return value
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = {
+        "populate_by_name": True,
+        "validate_assignment": True
+    }
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> HookRun:
+    def from_json(cls, json_str: str) -> Self:
         """Create an instance of HookRun from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude={
+            },
+            exclude_none=True,
+        )
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> HookRun:
+    def from_dict(cls, obj: Dict) -> Self:
         """Create an instance of HookRun from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return HookRun.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = HookRun.parse_obj({
+        _obj = cls.model_validate({
             "hook_run_id": obj.get("hook_run_id"),
             "action": obj.get("action"),
             "hook_id": obj.get("hook_id"),

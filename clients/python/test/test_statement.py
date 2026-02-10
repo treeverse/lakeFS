@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.statement import Statement  # noqa: E501
+from lakefs_sdk.models.statement import Statement
 
 class TestStatement(unittest.TestCase):
     """Statement unit test stubs"""
@@ -34,7 +34,7 @@ class TestStatement(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Statement`
         """
-        model = Statement()  # noqa: E501
+        model = Statement()
         if include_optional:
             return Statement(
                 effect = 'allow',

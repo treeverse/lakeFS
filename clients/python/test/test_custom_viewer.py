@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.custom_viewer import CustomViewer  # noqa: E501
+from lakefs_sdk.models.custom_viewer import CustomViewer
 
 class TestCustomViewer(unittest.TestCase):
     """CustomViewer unit test stubs"""
@@ -34,7 +34,7 @@ class TestCustomViewer(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CustomViewer`
         """
-        model = CustomViewer()  # noqa: E501
+        model = CustomViewer()
         if include_optional:
             return CustomViewer(
                 name = '',

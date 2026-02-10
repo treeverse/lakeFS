@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit_creation import CommitCreation  # noqa: E501
+from lakefs_sdk.models.commit_creation import CommitCreation
 
 class TestCommitCreation(unittest.TestCase):
     """CommitCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestCommitCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CommitCreation`
         """
-        model = CommitCreation()  # noqa: E501
+        model = CommitCreation()
         if include_optional:
             return CommitCreation(
                 message = '',

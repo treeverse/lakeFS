@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.import_status import ImportStatus  # noqa: E501
+from lakefs_sdk.models.import_status import ImportStatus
 
 class TestImportStatus(unittest.TestCase):
     """ImportStatus unit test stubs"""
@@ -34,7 +34,7 @@ class TestImportStatus(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ImportStatus`
         """
-        model = ImportStatus()  # noqa: E501
+        model = ImportStatus()
         if include_optional:
             return ImportStatus(
                 completed = True,

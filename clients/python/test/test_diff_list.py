@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.diff_list import DiffList  # noqa: E501
+from lakefs_sdk.models.diff_list import DiffList
 
 class TestDiffList(unittest.TestCase):
     """DiffList unit test stubs"""
@@ -34,7 +34,7 @@ class TestDiffList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `DiffList`
         """
-        model = DiffList()  # noqa: E501
+        model = DiffList()
         if include_optional:
             return DiffList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

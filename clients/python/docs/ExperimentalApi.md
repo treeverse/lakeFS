@@ -46,7 +46,6 @@ Aborts a presign multipart upload.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -116,7 +115,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -139,7 +137,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | Presign multipart upload aborted |  -  |
@@ -163,7 +160,6 @@ create commit asynchronously
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -235,7 +231,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -257,7 +252,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **202** | commit task started |  -  |
@@ -283,7 +277,6 @@ get status of async commit operation
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -353,7 +346,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -374,7 +366,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | commit task status |  -  |
@@ -404,7 +395,6 @@ Completes a presign multipart upload by assembling the uploaded parts.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -477,7 +467,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -500,7 +489,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | Presign multipart upload completed |  -  |
@@ -527,7 +515,6 @@ Initiates a multipart upload and returns an upload ID with presigned URLs for ea
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -598,7 +585,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -620,7 +606,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | Presign multipart upload initiated |  -  |
@@ -644,7 +629,6 @@ create pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -714,7 +698,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -734,7 +717,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | pull request created |  -  |
@@ -760,7 +742,6 @@ attach external principal to user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -828,7 +809,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  | 
@@ -849,7 +829,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | external principal attached successfully |  -  |
@@ -874,7 +853,6 @@ delete external principal from user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -940,7 +918,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  | 
@@ -960,7 +937,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | external principal detached successfully |  -  |
@@ -978,7 +954,6 @@ void (empty response body)
 perform a login using an external authenticator
 
 ### Example
-
 
 ```python
 import time
@@ -1015,7 +990,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **external_login_information** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional] 
@@ -1034,7 +1008,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | successful external login |  -  |
@@ -1059,7 +1032,6 @@ describe external principal by id
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1127,7 +1099,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **principal_id** | **str**|  | 
@@ -1146,7 +1117,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | external principal |  -  |
@@ -1172,7 +1142,6 @@ retrieve lakeFS license information
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1237,7 +1206,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -1254,7 +1222,6 @@ This endpoint does not need any parameter.
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS configuration |  -  |
@@ -1276,7 +1243,6 @@ get pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1345,7 +1311,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1365,7 +1330,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | pull request |  -  |
@@ -1383,7 +1347,6 @@ Name | Type | Description  | Notes
 receive the token after user has authenticated on redirect URL.
 
 ### Example
-
 
 ```python
 import time
@@ -1419,7 +1382,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **mailbox** | **str**| mailbox returned by getTokenRedirect | 
@@ -1438,7 +1400,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user successfully logged in |  -  |
@@ -1457,7 +1418,6 @@ No authorization required
 start acquiring a token by logging in on a browser
 
 ### Example
-
 
 ```python
 import time
@@ -1491,7 +1451,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -1508,7 +1467,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **303** | login on this page, await results on the mailbox URL |  * Location - redirect to S3 <br>  * X-LakeFS-Mailbox - GET the token from this mailbox.  Keep the mailbox SECRET! <br>  |
@@ -1533,7 +1491,6 @@ Relocate branch to refer to ref.  Branch must not contain uncommitted data.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1601,7 +1558,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1623,7 +1579,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | reset successful |  -  |
@@ -1648,7 +1603,6 @@ list pull requests
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1720,7 +1674,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1743,7 +1696,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | list of pull requests |  -  |
@@ -1767,7 +1719,6 @@ list user external policies attached to a user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1838,7 +1789,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  | 
@@ -1860,7 +1810,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | external principals list |  -  |
@@ -1884,7 +1833,6 @@ merge references asynchronously
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1956,7 +1904,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1978,7 +1925,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **202** | merge task started |  -  |
@@ -2004,7 +1950,6 @@ get status of async merge operation
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2075,7 +2020,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2097,7 +2041,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | merge task status |  -  |
@@ -2125,7 +2068,6 @@ merge pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2194,7 +2136,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2214,7 +2155,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | merge completed |  -  |
@@ -2241,7 +2181,6 @@ release a token for the current (authenticated) user to the mailbox of this logi
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2306,7 +2245,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **login_request_token** | **str**| login request token returned by getTokenRedirect. | 
@@ -2325,7 +2263,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | token released |  -  |
@@ -2342,7 +2279,6 @@ void (empty response body)
 perform a login with STS
 
 ### Example
-
 
 ```python
 import time
@@ -2379,7 +2315,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **sts_auth_request** | [**StsAuthRequest**](StsAuthRequest.md)|  | 
@@ -2398,7 +2333,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | successful STS login |  -  |
@@ -2421,7 +2355,6 @@ rewrite (all) object metadata
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2490,7 +2423,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2512,7 +2444,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | User metadata updated |  -  |
@@ -2536,7 +2467,6 @@ update pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2604,7 +2534,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2625,7 +2554,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | pull request updated successfully |  -  |
@@ -2652,7 +2580,6 @@ Return a presigned URL to upload into a presigned multipart upload.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2725,7 +2652,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2749,7 +2675,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | presigned URL to use for upload |  -  |
@@ -2775,7 +2700,6 @@ Upload a part by copying part of another object.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2845,7 +2769,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2869,7 +2792,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | part copied |  * ETag -  <br>  |

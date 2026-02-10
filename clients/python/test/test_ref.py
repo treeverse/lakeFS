@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.ref import Ref  # noqa: E501
+from lakefs_sdk.models.ref import Ref
 
 class TestRef(unittest.TestCase):
     """Ref unit test stubs"""
@@ -34,7 +34,7 @@ class TestRef(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Ref`
         """
-        model = Ref()  # noqa: E501
+        model = Ref()
         if include_optional:
             return Ref(
                 id = '',

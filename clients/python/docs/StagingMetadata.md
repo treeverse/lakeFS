@@ -3,7 +3,6 @@
 information about uploaded object
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **staging** | [**StagingLocation**](StagingLocation.md) |  | 

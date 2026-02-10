@@ -508,7 +508,7 @@ class ObjectWriter(LakeFSIOBase):
 
     def _upload(self) -> ObjectInfo:
         stats = self._upload_presign() if self.pre_sign else self._upload_raw()
-        return ObjectInfo(**stats.dict())
+        return ObjectInfo(**stats.model_dump())
 
     def close(self) -> None:
         """
@@ -580,7 +580,7 @@ class ObjectWriter(LakeFSIOBase):
 
     def _upload_presign(self) -> lakefs_sdk.ObjectStats:
         # Extract staging-specific kwargs
-        staging_kwargs = {k: v for k, v in self._kwargs.items() if k in ['_request_timeout', 'async_req']}
+        staging_kwargs = {k: v for k, v in self._kwargs.items() if k in ['_request_timeout']}
         staging_location = self._client.sdk_client.staging_api.get_physical_address(self._obj.repo,
                                                                                     self._obj.ref,
                                                                                     self._obj.path,
@@ -733,7 +733,7 @@ class StoredObject(_BaseLakeFSObject):
             with api_exception_handler(_io_exception_handler):
                 stat = self._client.sdk_client.objects_api.stat_object(
                     self._repo_id, self._ref_id, self._path, presign=pre_sign, **kwargs)
-                self._stats = ObjectInfo(**stat.dict())
+                self._stats = ObjectInfo(**stat.model_dump())
         return self._stats
 
     def storage_id(self) -> str:

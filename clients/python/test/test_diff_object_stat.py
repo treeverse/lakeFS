@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.diff_object_stat import DiffObjectStat  # noqa: E501
+from lakefs_sdk.models.diff_object_stat import DiffObjectStat
 
 class TestDiffObjectStat(unittest.TestCase):
     """DiffObjectStat unit test stubs"""
@@ -34,7 +34,7 @@ class TestDiffObjectStat(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `DiffObjectStat`
         """
-        model = DiffObjectStat()  # noqa: E501
+        model = DiffObjectStat()
         if include_optional:
             return DiffObjectStat(
                 checksum = '',

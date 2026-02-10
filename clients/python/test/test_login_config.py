@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.login_config import LoginConfig  # noqa: E501
+from lakefs_sdk.models.login_config import LoginConfig
 
 class TestLoginConfig(unittest.TestCase):
     """LoginConfig unit test stubs"""
@@ -34,7 +34,7 @@ class TestLoginConfig(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `LoginConfig`
         """
-        model = LoginConfig()  # noqa: E501
+        model = LoginConfig()
         if include_optional:
             return LoginConfig(
                 rbac = 'none',

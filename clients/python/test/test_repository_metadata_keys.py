@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.repository_metadata_keys import RepositoryMetadataKeys  # noqa: E501
+from lakefs_sdk.models.repository_metadata_keys import RepositoryMetadataKeys
 
 class TestRepositoryMetadataKeys(unittest.TestCase):
     """RepositoryMetadataKeys unit test stubs"""
@@ -34,7 +34,7 @@ class TestRepositoryMetadataKeys(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RepositoryMetadataKeys`
         """
-        model = RepositoryMetadataKeys()  # noqa: E501
+        model = RepositoryMetadataKeys()
         if include_optional:
             return RepositoryMetadataKeys(
                 keys = [

@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **pattern** | **str** | fnmatch pattern for the branch name, supporting * and ? wildcards | 

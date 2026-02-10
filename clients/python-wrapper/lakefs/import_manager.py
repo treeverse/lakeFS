@@ -148,7 +148,7 @@ class ImportManager(_BaseLakeFSObject):
 
         res = asyncio.run(self._wait_for_completion(poll_interval))
         self._in_progress = False
-        return ImportStatus(**res.dict())
+        return ImportStatus(**res.model_dump())
 
     def run(self, poll_interval: Optional[timedelta] = None) -> ImportStatus:
         """
@@ -201,4 +201,4 @@ class ImportManager(_BaseLakeFSObject):
 
             if res.completed:
                 self._in_progress = False
-            return ImportStatus(**res.dict())
+            return ImportStatus(**res.model_dump())

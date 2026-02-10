@@ -13,19 +13,18 @@
 """  # noqa: E501
 
 
-import re  # noqa: F401
 import io
 import warnings
 
-try:
-    from pydantic.v1 import validate_arguments, ValidationError
-except ImportError:
-    from pydantic import validate_arguments, ValidationError
+from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
+from typing import Dict, List, Optional, Tuple, Union, Any
 
 try:
-    from pydantic.v1 import StrictStr
+    from typing import Annotated
 except ImportError:
-    from pydantic import StrictStr
+    from typing_extensions import Annotated
+
+from pydantic import StrictStr
 
 from typing import Optional
 
@@ -34,10 +33,7 @@ from lakefs_sdk.models.iceberg_push_request import IcebergPushRequest
 
 from lakefs_sdk.api_client import ApiClient
 from lakefs_sdk.api_response import ApiResponse
-from lakefs_sdk.exceptions import (  # noqa: F401
-    ApiTypeError,
-    ApiValueError
-)
+from lakefs_sdk.rest import RESTResponseType
 
 
 class RemotesApi:
@@ -52,304 +48,578 @@ class RemotesApi:
             api_client = ApiClient.get_default()
         self.api_client = api_client
 
-    @validate_arguments
-    def pull_iceberg_table(self, catalog : StrictStr, iceberg_pull_request : Optional[IcebergPullRequest] = None, **kwargs) -> None:  # noqa: E501
-        """take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def pull_iceberg_table(
+        self,
+        catalog: StrictStr,
+        iceberg_pull_request: Optional[IcebergPullRequest] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
 
-        >>> thread = api.pull_iceberg_table(catalog, iceberg_pull_request, async_req=True)
-        >>> result = thread.get()
 
         :param catalog: (required)
         :type catalog: str
         :param iceberg_pull_request:
         :type iceberg_pull_request: IcebergPullRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the pull_iceberg_table_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.pull_iceberg_table_with_http_info(catalog, iceberg_pull_request, **kwargs)  # noqa: E501
+        """ # noqa: E501
 
-    @validate_arguments
-    def pull_iceberg_table_with_http_info(self, catalog : StrictStr, iceberg_pull_request : Optional[IcebergPullRequest] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository  # noqa: E501
+        _param = self._pull_iceberg_table_serialize(
+            catalog=catalog,
+            iceberg_pull_request=iceberg_pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
 
-        >>> thread = api.pull_iceberg_table_with_http_info(catalog, iceberg_pull_request, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def pull_iceberg_table_with_http_info(
+        self,
+        catalog: StrictStr,
+        iceberg_pull_request: Optional[IcebergPullRequest] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
+
 
         :param catalog: (required)
         :type catalog: str
         :param iceberg_pull_request:
         :type iceberg_pull_request: IcebergPullRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'catalog',
-            'iceberg_pull_request'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._pull_iceberg_table_serialize(
+            catalog=catalog,
+            iceberg_pull_request=iceberg_pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method pull_iceberg_table" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def pull_iceberg_table_without_preload_content(
+        self,
+        catalog: StrictStr,
+        iceberg_pull_request: Optional[IcebergPullRequest] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
+
+
+        :param catalog: (required)
+        :type catalog: str
+        :param iceberg_pull_request:
+        :type iceberg_pull_request: IcebergPullRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._pull_iceberg_table_serialize(
+            catalog=catalog,
+            iceberg_pull_request=iceberg_pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _pull_iceberg_table_serialize(
+        self,
+        catalog,
+        iceberg_pull_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['catalog']:
-            _path_params['catalog'] = _params['catalog']
-
-
+        if catalog is not None:
+            _path_params['catalog'] = catalog
         # process the query parameters
-        _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['iceberg_pull_request'] is not None:
-            _body_params = _params['iceberg_pull_request']
+        if iceberg_pull_request is not None:
+            _body_params = iceberg_pull_request
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/iceberg/remotes/{catalog}/pull', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/iceberg/remotes/{catalog}/pull',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def push_iceberg_table(self, catalog : StrictStr, iceberg_push_request : Optional[IcebergPushRequest] = None, **kwargs) -> None:  # noqa: E501
-        """register existing lakeFS table in remote catalog  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.push_iceberg_table(catalog, iceberg_push_request, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def push_iceberg_table(
+        self,
+        catalog: StrictStr,
+        iceberg_push_request: Optional[IcebergPushRequest] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """register existing lakeFS table in remote catalog
+
 
         :param catalog: (required)
         :type catalog: str
         :param iceberg_push_request:
         :type iceberg_push_request: IcebergPushRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the push_iceberg_table_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.push_iceberg_table_with_http_info(catalog, iceberg_push_request, **kwargs)  # noqa: E501
+        """ # noqa: E501
 
-    @validate_arguments
-    def push_iceberg_table_with_http_info(self, catalog : StrictStr, iceberg_push_request : Optional[IcebergPushRequest] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """register existing lakeFS table in remote catalog  # noqa: E501
+        _param = self._push_iceberg_table_serialize(
+            catalog=catalog,
+            iceberg_push_request=iceberg_push_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
 
-        >>> thread = api.push_iceberg_table_with_http_info(catalog, iceberg_push_request, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def push_iceberg_table_with_http_info(
+        self,
+        catalog: StrictStr,
+        iceberg_push_request: Optional[IcebergPushRequest] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """register existing lakeFS table in remote catalog
+
 
         :param catalog: (required)
         :type catalog: str
         :param iceberg_push_request:
         :type iceberg_push_request: IcebergPushRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'catalog',
-            'iceberg_push_request'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._push_iceberg_table_serialize(
+            catalog=catalog,
+            iceberg_push_request=iceberg_push_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method push_iceberg_table" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def push_iceberg_table_without_preload_content(
+        self,
+        catalog: StrictStr,
+        iceberg_push_request: Optional[IcebergPushRequest] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """register existing lakeFS table in remote catalog
+
+
+        :param catalog: (required)
+        :type catalog: str
+        :param iceberg_push_request:
+        :type iceberg_push_request: IcebergPushRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._push_iceberg_table_serialize(
+            catalog=catalog,
+            iceberg_push_request=iceberg_push_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _push_iceberg_table_serialize(
+        self,
+        catalog,
+        iceberg_push_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['catalog']:
-            _path_params['catalog'] = _params['catalog']
-
-
+        if catalog is not None:
+            _path_params['catalog'] = catalog
         # process the query parameters
-        _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['iceberg_push_request'] is not None:
-            _body_params = _params['iceberg_push_request']
+        if iceberg_push_request is not None:
+            _body_params = iceberg_push_request
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/iceberg/remotes/{catalog}/push', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/iceberg/remotes/{catalog}/push',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+

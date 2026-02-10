@@ -57,10 +57,10 @@ class _WrappedApiClient(ApiClient):
         return super().files_parameters(files_to_read) + params
 
 class LakeFSClient:
-    def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None, pool_threads=1):
+    def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None):
         configuration = LakeFSClient._ensure_endpoint(configuration)
         self._api = _WrappedApiClient(configuration=configuration, header_name=header_name,
-                                          header_value=header_value, cookie=cookie, pool_threads=pool_threads)
+                                          header_value=header_value, cookie=cookie)
         self.actions_api = actions_api.ActionsApi(self._api)
         self.auth_api = auth_api.AuthApi(self._api)
         self.branches_api = branches_api.BranchesApi(self._api)

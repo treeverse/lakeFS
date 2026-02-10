@@ -48,7 +48,6 @@ Method | HTTP request | Description
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -112,7 +111,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -131,7 +129,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | User has permissions to create a branch protection rule in this repository |  -  |
@@ -156,7 +153,6 @@ create commit record
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -223,7 +219,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -243,7 +238,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | commit record created |  -  |
@@ -268,7 +262,6 @@ creates symlink files corresponding to the given directory
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -338,7 +331,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -359,7 +351,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | location created |  -  |
@@ -385,7 +376,6 @@ Delete specified keys from the repository's metadata.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -452,7 +442,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -472,7 +461,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | repository metadata keys deleted successfully |  -  |
@@ -495,7 +483,6 @@ Dump repository refs (tags, commits, branches) to object store Deprecated: a new
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -563,7 +550,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -582,7 +568,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | refs dump |  -  |
@@ -600,7 +585,6 @@ Name | Type | Description  | Notes
 list authentication capabilities supported
 
 ### Example
-
 
 ```python
 import time
@@ -634,7 +618,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -651,7 +634,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | auth capabilities |  -  |
@@ -674,7 +656,6 @@ get information of gc settings
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -739,7 +720,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -756,7 +736,6 @@ This endpoint does not need any parameter.
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS garbage collection config |  -  |
@@ -778,7 +757,6 @@ get version of lakeFS server
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -843,7 +821,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -860,7 +837,6 @@ This endpoint does not need any parameter.
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS version |  -  |
@@ -880,7 +856,6 @@ return a lakeFS metadata object by ID
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -950,7 +925,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -972,7 +946,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/octet-stream, application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object content |  * Content-Length -  <br>  |
@@ -991,7 +964,6 @@ Name | Type | Description  | Notes
 check if the lakeFS installation is already set up
 
 ### Example
-
 
 ```python
 import time
@@ -1025,7 +997,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -1042,7 +1013,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS setup state |  -  |
@@ -1065,7 +1035,6 @@ retrieve lakeFS storage configuration
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1130,7 +1099,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -1147,7 +1115,6 @@ This endpoint does not need any parameter.
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | lakeFS storage configuration |  -  |
@@ -1167,7 +1134,6 @@ get usage report summary
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1233,7 +1199,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type
@@ -1250,7 +1215,6 @@ This endpoint does not need any parameter.
  - **Accept**: application/json, application/text
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | Usage report |  -  |
@@ -1273,7 +1237,6 @@ This endpoint does not need any parameter.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1339,7 +1302,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1359,7 +1321,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | branch protection rule created successfully |  -  |
@@ -1383,7 +1344,6 @@ void (empty response body)
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1449,7 +1409,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1469,7 +1428,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | branch protection rule deleted successfully |  -  |
@@ -1495,7 +1453,6 @@ Deprecated; use deleteGCRules.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1559,7 +1516,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1578,7 +1534,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | deleted garbage collection rules successfully |  -  |
@@ -1602,7 +1557,6 @@ get branch protection rules
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1670,7 +1624,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1689,7 +1642,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | branch protection rules |  -  |
@@ -1715,7 +1667,6 @@ Deprecated; use getGCRules.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1782,7 +1733,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1801,7 +1751,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | gc rule list |  -  |
@@ -1827,7 +1776,6 @@ Deprecated; use setGCRules.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -1893,7 +1841,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -1913,7 +1860,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | set garbage collection rules successfully |  -  |
@@ -1937,7 +1883,6 @@ post stats events, this endpoint is meant for internal use only
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2003,7 +1948,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **stats_events_list** | [**StatsEventsList**](StatsEventsList.md)|  | 
@@ -2022,7 +1966,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | reported successfully |  -  |
@@ -2045,7 +1988,6 @@ save lists of active commits for garbage collection
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2113,7 +2055,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2132,7 +2073,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | paths to commit dataset |  -  |
@@ -2157,7 +2097,6 @@ prepare gc commits
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2225,7 +2164,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2244,7 +2182,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **202** | GC prepare task started |  -  |
@@ -2269,7 +2206,6 @@ get status of prepare gc commits operation
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2338,7 +2274,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2358,7 +2293,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | prepare GC commits task status |  -  |
@@ -2383,7 +2317,6 @@ save repository uncommitted metadata for garbage collection
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2453,7 +2386,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2473,7 +2405,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | paths to commit dataset |  -  |
@@ -2498,7 +2429,6 @@ Restore repository refs (tags, commits, branches) from object store. Deprecated:
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2565,7 +2495,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2585,7 +2514,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | refs successfully loaded |  -  |
@@ -2609,7 +2537,6 @@ void (empty response body)
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2673,7 +2600,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2692,7 +2618,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | User has permissions to set garbage collection rules on this repository |  -  |
@@ -2718,7 +2643,6 @@ Set repository metadata. This will only add or update the provided keys, and wil
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -2785,7 +2709,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -2805,7 +2728,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | repository metadata set successfully |  -  |
@@ -2823,7 +2745,6 @@ void (empty response body)
 setup lakeFS and create a first user
 
 ### Example
-
 
 ```python
 import time
@@ -2860,7 +2781,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **setup** | [**Setup**](Setup.md)|  | 
@@ -2879,7 +2799,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user created successfully |  -  |
@@ -2896,7 +2815,6 @@ No authorization required
 setup communications preferences
 
 ### Example
-
 
 ```python
 import time
@@ -2930,7 +2848,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **comm_prefs_input** | [**CommPrefsInput**](CommPrefsInput.md)|  | 
@@ -2949,7 +2866,6 @@ No authorization required
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | communication preferences saved successfully |  -  |
@@ -2973,7 +2889,6 @@ stage an object's metadata for the given branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -3045,7 +2960,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -3067,7 +2981,6 @@ Name | Type | Description  | Notes
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | object metadata |  -  |
@@ -3092,7 +3005,6 @@ Name | Type | Description  | Notes
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -3158,7 +3070,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
@@ -3179,7 +3090,6 @@ void (empty response body)
  - **Accept**: application/json
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint |  -  |

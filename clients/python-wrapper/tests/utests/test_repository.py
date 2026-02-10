@@ -68,7 +68,7 @@ def test_repository_creation_already_exists(monkeypatch):
                           include_samples=TEST_REPO_ARGS.sample_data,
                           exist_ok=True)
 
-        assert res.properties == RepositoryProperties(**existing.dict())
+        assert res.properties == RepositoryProperties(**existing.model_dump())
 
     # Expect fail on exists
     with expect_exception_context(ConflictException):

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit_overrides import CommitOverrides  # noqa: E501
+from lakefs_sdk.models.commit_overrides import CommitOverrides
 
 class TestCommitOverrides(unittest.TestCase):
     """CommitOverrides unit test stubs"""
@@ -34,7 +34,7 @@ class TestCommitOverrides(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CommitOverrides`
         """
-        model = CommitOverrides()  # noqa: E501
+        model = CommitOverrides()
         if include_optional:
             return CommitOverrides(
                 message = '',

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.iceberg_pull_request import IcebergPullRequest  # noqa: E501
+from lakefs_sdk.models.iceberg_pull_request import IcebergPullRequest
 
 class TestIcebergPullRequest(unittest.TestCase):
     """IcebergPullRequest unit test stubs"""
@@ -34,7 +34,7 @@ class TestIcebergPullRequest(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `IcebergPullRequest`
         """
-        model = IcebergPullRequest()  # noqa: E501
+        model = IcebergPullRequest()
         if include_optional:
             return IcebergPullRequest(
                 source = lakefs_sdk.models.iceberg_remote_table.IcebergRemoteTable(

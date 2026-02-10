@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.merge_result import MergeResult  # noqa: E501
+from lakefs_sdk.models.merge_result import MergeResult
 
 class TestMergeResult(unittest.TestCase):
     """MergeResult unit test stubs"""
@@ -34,7 +34,7 @@ class TestMergeResult(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `MergeResult`
         """
-        model = MergeResult()  # noqa: E501
+        model = MergeResult()
         if include_optional:
             return MergeResult(
                 reference = ''

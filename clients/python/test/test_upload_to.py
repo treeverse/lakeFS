@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.upload_to import UploadTo  # noqa: E501
+from lakefs_sdk.models.upload_to import UploadTo
 
 class TestUploadTo(unittest.TestCase):
     """UploadTo unit test stubs"""
@@ -34,7 +34,7 @@ class TestUploadTo(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UploadTo`
         """
-        model = UploadTo()  # noqa: E501
+        model = UploadTo()
         if include_optional:
             return UploadTo(
                 presigned_url = ''

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.range_metadata import RangeMetadata  # noqa: E501
+from lakefs_sdk.models.range_metadata import RangeMetadata
 
 class TestRangeMetadata(unittest.TestCase):
     """RangeMetadata unit test stubs"""
@@ -34,7 +34,7 @@ class TestRangeMetadata(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RangeMetadata`
         """
-        model = RangeMetadata()  # noqa: E501
+        model = RangeMetadata()
         if include_optional:
             return RangeMetadata(
                 id = '480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c',

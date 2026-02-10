@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.revert_creation import RevertCreation  # noqa: E501
+from lakefs_sdk.models.revert_creation import RevertCreation
 
 class TestRevertCreation(unittest.TestCase):
     """RevertCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestRevertCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RevertCreation`
         """
-        model = RevertCreation()  # noqa: E501
+        model = RevertCreation()
         if include_optional:
             return RevertCreation(
                 ref = '',

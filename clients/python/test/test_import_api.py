@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.import_api import ImportApi  # noqa: E501
+from lakefs_sdk.api.import_api import ImportApi
 
 
 class TestImportApi(unittest.TestCase):
     """ImportApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = ImportApi()  # noqa: E501
+        self.api = ImportApi()
 
     def tearDown(self) -> None:
         pass
@@ -30,21 +30,21 @@ class TestImportApi(unittest.TestCase):
     def test_import_cancel(self) -> None:
         """Test case for import_cancel
 
-        cancel ongoing import  # noqa: E501
+        cancel ongoing import
         """
         pass
 
     def test_import_start(self) -> None:
         """Test case for import_start
 
-        import data from object store  # noqa: E501
+        import data from object store
         """
         pass
 
     def test_import_status(self) -> None:
         """Test case for import_status
 
-        get import status  # noqa: E501
+        get import status
         """
         pass
 

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.merge import Merge  # noqa: E501
+from lakefs_sdk.models.merge import Merge
 
 class TestMerge(unittest.TestCase):
     """Merge unit test stubs"""
@@ -34,7 +34,7 @@ class TestMerge(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Merge`
         """
-        model = Merge()  # noqa: E501
+        model = Merge()
         if include_optional:
             return Merge(
                 message = '',

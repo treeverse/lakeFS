@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.refs_dump import RefsDump  # noqa: E501
+from lakefs_sdk.models.refs_dump import RefsDump
 
 class TestRefsDump(unittest.TestCase):
     """RefsDump unit test stubs"""
@@ -34,7 +34,7 @@ class TestRefsDump(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RefsDump`
         """
-        model = RefsDump()  # noqa: E501
+        model = RefsDump()
         if include_optional:
             return RefsDump(
                 commits_meta_range_id = '',

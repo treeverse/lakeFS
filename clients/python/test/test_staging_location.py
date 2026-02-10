@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.staging_location import StagingLocation  # noqa: E501
+from lakefs_sdk.models.staging_location import StagingLocation
 
 class TestStagingLocation(unittest.TestCase):
     """StagingLocation unit test stubs"""
@@ -34,7 +34,7 @@ class TestStagingLocation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `StagingLocation`
         """
-        model = StagingLocation()  # noqa: E501
+        model = StagingLocation()
         if include_optional:
             return StagingLocation(
                 physical_address = '',

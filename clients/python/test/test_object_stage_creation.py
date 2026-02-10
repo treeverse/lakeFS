@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.object_stage_creation import ObjectStageCreation  # noqa: E501
+from lakefs_sdk.models.object_stage_creation import ObjectStageCreation
 
 class TestObjectStageCreation(unittest.TestCase):
     """ObjectStageCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestObjectStageCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ObjectStageCreation`
         """
-        model = ObjectStageCreation()  # noqa: E501
+        model = ObjectStageCreation()
         if include_optional:
             return ObjectStageCreation(
                 physical_address = '',

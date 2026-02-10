@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata  # noqa: E501
+from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 
 class TestUpdateObjectUserMetadata(unittest.TestCase):
     """UpdateObjectUserMetadata unit test stubs"""
@@ -34,7 +34,7 @@ class TestUpdateObjectUserMetadata(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UpdateObjectUserMetadata`
         """
-        model = UpdateObjectUserMetadata()  # noqa: E501
+        model = UpdateObjectUserMetadata()
         if include_optional:
             return UpdateObjectUserMetadata(
                 set = {

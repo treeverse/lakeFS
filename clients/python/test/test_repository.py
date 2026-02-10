@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.repository import Repository  # noqa: E501
+from lakefs_sdk.models.repository import Repository
 
 class TestRepository(unittest.TestCase):
     """Repository unit test stubs"""
@@ -34,7 +34,7 @@ class TestRepository(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Repository`
         """
-        model = Repository()  # noqa: E501
+        model = Repository()
         if include_optional:
             return Repository(
                 id = '',

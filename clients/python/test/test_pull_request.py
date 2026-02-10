@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.pull_request import PullRequest  # noqa: E501
+from lakefs_sdk.models.pull_request import PullRequest
 
 class TestPullRequest(unittest.TestCase):
     """PullRequest unit test stubs"""
@@ -34,7 +34,7 @@ class TestPullRequest(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PullRequest`
         """
-        model = PullRequest()  # noqa: E501
+        model = PullRequest()
         if include_optional:
             return PullRequest(
                 status = 'open',

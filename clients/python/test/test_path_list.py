@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.path_list import PathList  # noqa: E501
+from lakefs_sdk.models.path_list import PathList
 
 class TestPathList(unittest.TestCase):
     """PathList unit test stubs"""
@@ -34,7 +34,7 @@ class TestPathList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PathList`
         """
-        model = PathList()  # noqa: E501
+        model = PathList()
         if include_optional:
             return PathList(
                 paths = [

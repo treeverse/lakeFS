@@ -84,7 +84,7 @@ class Reference(_BaseLakeFSObject):
                                     delimiter=delimiter,
                                     **kwargs):
             type_class = ObjectInfo if res.path_type == _OBJECT else CommonPrefix
-            yield type_class(**res.dict())
+            yield type_class(**res.model_dump())
 
     def log(self, max_amount: Optional[int] = None, **kwargs) -> Generator[Commit]:
         """
@@ -98,7 +98,7 @@ class Reference(_BaseLakeFSObject):
         """
         for res in generate_listing(self._client.sdk_client.refs_api.log_commits, self._repo_id, self._id,
                                     max_amount=max_amount, **kwargs):
-            yield Commit(**res.dict())
+            yield Commit(**res.model_dump())
 
     def get_commit(self) -> Commit:
         """
@@ -111,7 +111,7 @@ class Reference(_BaseLakeFSObject):
         if self._commit is None:
             with api_exception_handler():
                 commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
-                self._commit = Commit(**commit.dict())
+                self._commit = Commit(**commit.model_dump())
         return self._commit
 
     def diff(self,
@@ -144,7 +144,7 @@ class Reference(_BaseLakeFSObject):
                                      prefix=prefix,
                                      delimiter=delimiter,
                                      **kwargs):
-            yield Change(**diff.dict())
+            yield Change(**diff.model_dump())
 
     def merge_into(self, destination_branch: ReferenceType, **kwargs) -> str:
         """

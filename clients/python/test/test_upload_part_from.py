@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.upload_part_from import UploadPartFrom  # noqa: E501
+from lakefs_sdk.models.upload_part_from import UploadPartFrom
 
 class TestUploadPartFrom(unittest.TestCase):
     """UploadPartFrom unit test stubs"""
@@ -34,7 +34,7 @@ class TestUploadPartFrom(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UploadPartFrom`
         """
-        model = UploadPartFrom()  # noqa: E501
+        model = UploadPartFrom()
         if include_optional:
             return UploadPartFrom(
                 physical_address = ''

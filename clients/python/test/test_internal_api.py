@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.internal_api import InternalApi  # noqa: E501
+from lakefs_sdk.api.internal_api import InternalApi
 
 
 class TestInternalApi(unittest.TestCase):
     """InternalApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = InternalApi()  # noqa: E501
+        self.api = InternalApi()
 
     def tearDown(self) -> None:
         pass
@@ -36,35 +36,35 @@ class TestInternalApi(unittest.TestCase):
     def test_create_commit_record(self) -> None:
         """Test case for create_commit_record
 
-        create commit record  # noqa: E501
+        create commit record
         """
         pass
 
     def test_create_symlink_file(self) -> None:
         """Test case for create_symlink_file
 
-        creates symlink files corresponding to the given directory  # noqa: E501
+        creates symlink files corresponding to the given directory
         """
         pass
 
     def test_delete_repository_metadata(self) -> None:
         """Test case for delete_repository_metadata
 
-        delete repository metadata  # noqa: E501
+        delete repository metadata
         """
         pass
 
     def test_dump_refs(self) -> None:
         """Test case for dump_refs
 
-        Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations   # noqa: E501
+        Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
         """
         pass
 
     def test_get_auth_capabilities(self) -> None:
         """Test case for get_auth_capabilities
 
-        list authentication capabilities supported  # noqa: E501
+        list authentication capabilities supported
         """
         pass
 
@@ -83,14 +83,14 @@ class TestInternalApi(unittest.TestCase):
     def test_get_metadata_object(self) -> None:
         """Test case for get_metadata_object
 
-        return a lakeFS metadata object by ID  # noqa: E501
+        return a lakeFS metadata object by ID
         """
         pass
 
     def test_get_setup_state(self) -> None:
         """Test case for get_setup_state
 
-        check if the lakeFS installation is already set up  # noqa: E501
+        check if the lakeFS installation is already set up
         """
         pass
 
@@ -103,7 +103,7 @@ class TestInternalApi(unittest.TestCase):
     def test_get_usage_report_summary(self) -> None:
         """Test case for get_usage_report_summary
 
-        get usage report summary  # noqa: E501
+        get usage report summary
         """
         pass
 
@@ -128,7 +128,7 @@ class TestInternalApi(unittest.TestCase):
     def test_internal_get_branch_protection_rules(self) -> None:
         """Test case for internal_get_branch_protection_rules
 
-        get branch protection rules  # noqa: E501
+        get branch protection rules
         """
         pass
 
@@ -147,42 +147,42 @@ class TestInternalApi(unittest.TestCase):
     def test_post_stats_events(self) -> None:
         """Test case for post_stats_events
 
-        post stats events, this endpoint is meant for internal use only  # noqa: E501
+        post stats events, this endpoint is meant for internal use only
         """
         pass
 
     def test_prepare_garbage_collection_commits(self) -> None:
         """Test case for prepare_garbage_collection_commits
 
-        save lists of active commits for garbage collection  # noqa: E501
+        save lists of active commits for garbage collection
         """
         pass
 
     def test_prepare_garbage_collection_commits_async(self) -> None:
         """Test case for prepare_garbage_collection_commits_async
 
-        prepare gc commits  # noqa: E501
+        prepare gc commits
         """
         pass
 
     def test_prepare_garbage_collection_commits_status(self) -> None:
         """Test case for prepare_garbage_collection_commits_status
 
-        get status of prepare gc commits operation  # noqa: E501
+        get status of prepare gc commits operation
         """
         pass
 
     def test_prepare_garbage_collection_uncommitted(self) -> None:
         """Test case for prepare_garbage_collection_uncommitted
 
-        save repository uncommitted metadata for garbage collection  # noqa: E501
+        save repository uncommitted metadata for garbage collection
         """
         pass
 
     def test_restore_refs(self) -> None:
         """Test case for restore_refs
 
-        Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations   # noqa: E501
+        Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
         """
         pass
 
@@ -195,28 +195,28 @@ class TestInternalApi(unittest.TestCase):
     def test_set_repository_metadata(self) -> None:
         """Test case for set_repository_metadata
 
-        set repository metadata  # noqa: E501
+        set repository metadata
         """
         pass
 
     def test_setup(self) -> None:
         """Test case for setup
 
-        setup lakeFS and create a first user  # noqa: E501
+        setup lakeFS and create a first user
         """
         pass
 
     def test_setup_comm_prefs(self) -> None:
         """Test case for setup_comm_prefs
 
-        setup communications preferences  # noqa: E501
+        setup communications preferences
         """
         pass
 
     def test_stage_object(self) -> None:
         """Test case for stage_object
 
-        stage an object's metadata for the given branch  # noqa: E501
+        stage an object's metadata for the given branch
         """
         pass
 

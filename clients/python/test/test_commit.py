@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.commit import Commit  # noqa: E501
+from lakefs_sdk.models.commit import Commit
 
 class TestCommit(unittest.TestCase):
     """Commit unit test stubs"""
@@ -34,7 +34,7 @@ class TestCommit(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Commit`
         """
-        model = Commit()  # noqa: E501
+        model = Commit()
         if include_optional:
             return Commit(
                 id = '',

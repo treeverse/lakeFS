@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable  # noqa: E501
+from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
 
 class TestIcebergLocalTable(unittest.TestCase):
     """IcebergLocalTable unit test stubs"""
@@ -34,7 +34,7 @@ class TestIcebergLocalTable(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `IcebergLocalTable`
         """
-        model = IcebergLocalTable()  # noqa: E501
+        model = IcebergLocalTable()
         if include_optional:
             return IcebergLocalTable(
                 namespace = ["accounting","tax"],

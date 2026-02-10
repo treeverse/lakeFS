@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.branch_creation import BranchCreation  # noqa: E501
+from lakefs_sdk.models.branch_creation import BranchCreation
 
 class TestBranchCreation(unittest.TestCase):
     """BranchCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestBranchCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `BranchCreation`
         """
-        model = BranchCreation()  # noqa: E501
+        model = BranchCreation()
         if include_optional:
             return BranchCreation(
                 name = '',

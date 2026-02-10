@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials  # noqa: E501
+from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials
 
 class TestAccessKeyCredentials(unittest.TestCase):
     """AccessKeyCredentials unit test stubs"""
@@ -34,7 +34,7 @@ class TestAccessKeyCredentials(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `AccessKeyCredentials`
         """
-        model = AccessKeyCredentials()  # noqa: E501
+        model = AccessKeyCredentials()
         if include_optional:
             return AccessKeyCredentials(
                 access_key_id = 'AKIAIOSFODNN7EXAMPLE',

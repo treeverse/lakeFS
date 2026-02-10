@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.find_merge_base_result import FindMergeBaseResult  # noqa: E501
+from lakefs_sdk.models.find_merge_base_result import FindMergeBaseResult
 
 class TestFindMergeBaseResult(unittest.TestCase):
     """FindMergeBaseResult unit test stubs"""
@@ -34,7 +34,7 @@ class TestFindMergeBaseResult(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `FindMergeBaseResult`
         """
-        model = FindMergeBaseResult()  # noqa: E501
+        model = FindMergeBaseResult()
         if include_optional:
             return FindMergeBaseResult(
                 source_commit_id = '',

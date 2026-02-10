@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.policy import Policy  # noqa: E501
+from lakefs_sdk.models.policy import Policy
 
 class TestPolicy(unittest.TestCase):
     """Policy unit test stubs"""
@@ -34,7 +34,7 @@ class TestPolicy(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Policy`
         """
-        model = Policy()  # noqa: E501
+        model = Policy()
         if include_optional:
             return Policy(
                 id = '',

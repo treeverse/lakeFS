@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.authentication_token import AuthenticationToken  # noqa: E501
+from lakefs_sdk.models.authentication_token import AuthenticationToken
 
 class TestAuthenticationToken(unittest.TestCase):
     """AuthenticationToken unit test stubs"""
@@ -34,7 +34,7 @@ class TestAuthenticationToken(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `AuthenticationToken`
         """
-        model = AuthenticationToken()  # noqa: E501
+        model = AuthenticationToken()
         if include_optional:
             return AuthenticationToken(
                 token = '',

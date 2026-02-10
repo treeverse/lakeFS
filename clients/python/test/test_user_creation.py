@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.user_creation import UserCreation  # noqa: E501
+from lakefs_sdk.models.user_creation import UserCreation
 
 class TestUserCreation(unittest.TestCase):
     """UserCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestUserCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UserCreation`
         """
-        model = UserCreation()  # noqa: E501
+        model = UserCreation()
         if include_optional:
             return UserCreation(
                 id = '',

@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **custom_viewers** | [**List[CustomViewer]**](CustomViewer.md) |  | [optional] 

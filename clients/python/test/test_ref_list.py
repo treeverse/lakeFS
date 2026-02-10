@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.ref_list import RefList  # noqa: E501
+from lakefs_sdk.models.ref_list import RefList
 
 class TestRefList(unittest.TestCase):
     """RefList unit test stubs"""
@@ -34,7 +34,7 @@ class TestRefList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `RefList`
         """
-        model = RefList()  # noqa: E501
+        model = RefList()
         if include_optional:
             return RefList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

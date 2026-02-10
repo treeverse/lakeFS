@@ -13,20 +13,20 @@
 """  # noqa: E501
 
 
-import re  # noqa: F401
 import io
 import warnings
 
-try:
-    from pydantic.v1 import validate_arguments, ValidationError
-except ImportError:
-    from pydantic import validate_arguments, ValidationError
+from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
+from typing import Dict, List, Optional, Tuple, Union, Any
 
-from typing_extensions import Annotated
 try:
-    from pydantic.v1 import Field, StrictBool, StrictStr
+    from typing import Annotated
 except ImportError:
-    from pydantic import Field, StrictBool, StrictStr
+    from typing_extensions import Annotated
+
+from pydantic import Field
+from typing_extensions import Annotated
+from pydantic import StrictBool, StrictStr
 
 from typing import Optional
 
@@ -36,10 +36,7 @@ from lakefs_sdk.models.staging_metadata import StagingMetadata
 
 from lakefs_sdk.api_client import ApiClient
 from lakefs_sdk.api_response import ApiResponse
-from lakefs_sdk.exceptions import (  # noqa: F401
-    ApiTypeError,
-    ApiValueError
-)
+from lakefs_sdk.rest import RESTResponseType
 
 
 class StagingApi:
@@ -54,50 +51,29 @@ class StagingApi:
             api_client = ApiClient.get_default()
         self.api_client = api_client
 
-    @validate_arguments
-    def get_physical_address(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], presign : Optional[StrictBool] = None, **kwargs) -> StagingLocation:  # noqa: E501
-        """generate an address to which the client can upload an object  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def get_physical_address(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        presign: Optional[StrictBool] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> StagingLocation:
+        """generate an address to which the client can upload an object
 
-        >>> thread = api.get_physical_address(repository, branch, path, presign, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param path: relative to the branch (required)
-        :type path: str
-        :param presign:
-        :type presign: bool
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: StagingLocation
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the get_physical_address_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.get_physical_address_with_http_info(repository, branch, path, presign, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def get_physical_address_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """generate an address to which the client can upload an object  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_physical_address_with_http_info(repository, branch, path, presign, async_req=True)
-        >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
@@ -107,169 +83,81 @@ class StagingApi:
         :type path: str
         :param presign:
         :type presign: bool
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(StagingLocation, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'path',
-            'presign'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._get_physical_address_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            presign=presign,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_physical_address" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
-        if _params.get('presign') is not None:  # noqa: E501
-            _query_params.append(('presign', _params['presign']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "StagingLocation",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/staging/backing', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def link_physical_address(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], staging_metadata : StagingMetadata, if_none_match : Annotated[Optional[StrictStr], Field(description="Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.")] = None, if_match : Annotated[Optional[StrictStr], Field(description="Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.")] = None, **kwargs) -> ObjectStats:  # noqa: E501
-        """associate staging on this physical address with a path  # noqa: E501
 
-        Link the physical address with the path in lakeFS, creating an uncommitted change. The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace.   # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def get_physical_address_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        presign: Optional[StrictBool] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[StagingLocation]:
+        """generate an address to which the client can upload an object
 
-        >>> thread = api.link_physical_address(repository, branch, path, staging_metadata, if_none_match, if_match, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param path: relative to the branch (required)
-        :type path: str
-        :param staging_metadata: (required)
-        :type staging_metadata: StagingMetadata
-        :param if_none_match: Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
-        :type if_none_match: str
-        :param if_match: Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
-        :type if_match: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: ObjectStats
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the link_physical_address_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.link_physical_address_with_http_info(repository, branch, path, staging_metadata, if_none_match, if_match, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def link_physical_address_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], staging_metadata : StagingMetadata, if_none_match : Annotated[Optional[StrictStr], Field(description="Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.")] = None, if_match : Annotated[Optional[StrictStr], Field(description="Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.")] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """associate staging on this physical address with a path  # noqa: E501
-
-        Link the physical address with the path in lakeFS, creating an uncommitted change. The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace.   # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.link_physical_address_with_http_info(repository, branch, path, staging_metadata, if_none_match, if_match, async_req=True)
-        >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
@@ -277,116 +165,294 @@ class StagingApi:
         :type branch: str
         :param path: relative to the branch (required)
         :type path: str
-        :param staging_metadata: (required)
-        :type staging_metadata: StagingMetadata
-        :param if_none_match: Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
-        :type if_none_match: str
-        :param if_match: Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
-        :type if_match: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param presign:
+        :type presign: bool
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(ObjectStats, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'path',
-            'staging_metadata',
-            'if_none_match',
-            'if_match'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._get_physical_address_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            presign=presign,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method link_physical_address" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "StagingLocation",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def get_physical_address_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        presign: Optional[StrictBool] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """generate an address to which the client can upload an object
+
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param presign:
+        :type presign: bool
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_physical_address_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            presign=presign,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "StagingLocation",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_physical_address_serialize(
+        self,
+        repository,
+        branch,
+        path,
+        presign,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
         # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
+        if presign is not None:
+            
+            _query_params.append(('presign', presign))
+            
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        if _params['if_none_match']:
-            _header_params['If-None-Match'] = _params['if_none_match']
-
-        if _params['if_match']:
-            _header_params['If-Match'] = _params['if_match']
-
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['staging_metadata'] is not None:
-            _body_params = _params['staging_metadata']
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/repositories/{repository}/branches/{branch}/staging/backing',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def link_physical_address(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        staging_metadata: StagingMetadata,
+        if_none_match: Annotated[Optional[StrictStr], Field(description="Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.")] = None,
+        if_match: Annotated[Optional[StrictStr], Field(description="Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ObjectStats:
+        """associate staging on this physical address with a path
+
+        Link the physical address with the path in lakeFS, creating an uncommitted change. The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace. 
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param staging_metadata: (required)
+        :type staging_metadata: StagingMetadata
+        :param if_none_match: Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+        :type if_none_match: str
+        :param if_match: Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
+        :type if_match: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._link_physical_address_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            staging_metadata=staging_metadata,
+            if_none_match=if_none_match,
+            if_match=if_match,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "ObjectStats",
             '400': "Error",
             '401': "Error",
@@ -396,21 +462,301 @@ class StagingApi:
             '412': "Error",
             '429': None,
             '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def link_physical_address_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        staging_metadata: StagingMetadata,
+        if_none_match: Annotated[Optional[StrictStr], Field(description="Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.")] = None,
+        if_match: Annotated[Optional[StrictStr], Field(description="Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ObjectStats]:
+        """associate staging on this physical address with a path
+
+        Link the physical address with the path in lakeFS, creating an uncommitted change. The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace. 
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param staging_metadata: (required)
+        :type staging_metadata: StagingMetadata
+        :param if_none_match: Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+        :type if_none_match: str
+        :param if_match: Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
+        :type if_match: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._link_physical_address_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            staging_metadata=staging_metadata,
+            if_none_match=if_none_match,
+            if_match=if_match,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ObjectStats",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "StagingLocation",
+            '412': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def link_physical_address_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        staging_metadata: StagingMetadata,
+        if_none_match: Annotated[Optional[StrictStr], Field(description="Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.")] = None,
+        if_match: Annotated[Optional[StrictStr], Field(description="Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """associate staging on this physical address with a path
+
+        Link the physical address with the path in lakeFS, creating an uncommitted change. The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace. 
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param staging_metadata: (required)
+        :type staging_metadata: StagingMetadata
+        :param if_none_match: Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+        :type if_none_match: str
+        :param if_match: Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
+        :type if_match: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._link_physical_address_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            staging_metadata=staging_metadata,
+            if_none_match=if_none_match,
+            if_match=if_match,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ObjectStats",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "StagingLocation",
+            '412': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _link_physical_address_serialize(
+        self,
+        repository,
+        branch,
+        path,
+        staging_metadata,
+        if_none_match,
+        if_match,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
         }
 
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/staging/backing', 'PUT',
-            _path_params,
-            _query_params,
-            _header_params,
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        # process the query parameters
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
+        # process the header parameters
+        if if_none_match is not None:
+            _header_params['If-None-Match'] = if_none_match
+        if if_match is not None:
+            _header_params['If-Match'] = if_match
+        # process the form parameters
+        # process the body parameter
+        if staging_metadata is not None:
+            _body_params = staging_metadata
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            [
+                'application/json'
+            ]
+        )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
+
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/repositories/{repository}/branches/{branch}/staging/backing',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+

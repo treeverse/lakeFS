@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **grace_period** | **int** | Duration in seconds. Objects created in the recent grace_period will not be collected. | [optional] 

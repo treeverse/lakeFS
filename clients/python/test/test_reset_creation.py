@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.reset_creation import ResetCreation  # noqa: E501
+from lakefs_sdk.models.reset_creation import ResetCreation
 
 class TestResetCreation(unittest.TestCase):
     """ResetCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestResetCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ResetCreation`
         """
-        model = ResetCreation()  # noqa: E501
+        model = ResetCreation()
         if include_optional:
             return ResetCreation(
                 type = 'object',

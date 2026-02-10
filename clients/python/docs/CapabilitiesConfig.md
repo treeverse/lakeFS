@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **async_ops** | **bool** | are async operations enabled in server. *EXPERIMENTAL* | [optional] 

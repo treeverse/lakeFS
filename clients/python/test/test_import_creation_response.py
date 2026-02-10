@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.import_creation_response import ImportCreationResponse  # noqa: E501
+from lakefs_sdk.models.import_creation_response import ImportCreationResponse
 
 class TestImportCreationResponse(unittest.TestCase):
     """ImportCreationResponse unit test stubs"""
@@ -34,7 +34,7 @@ class TestImportCreationResponse(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ImportCreationResponse`
         """
-        model = ImportCreationResponse()  # noqa: E501
+        model = ImportCreationResponse()
         if include_optional:
             return ImportCreationResponse(
                 id = ''

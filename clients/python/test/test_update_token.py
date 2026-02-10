@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.update_token import UpdateToken  # noqa: E501
+from lakefs_sdk.models.update_token import UpdateToken
 
 class TestUpdateToken(unittest.TestCase):
     """UpdateToken unit test stubs"""
@@ -34,7 +34,7 @@ class TestUpdateToken(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UpdateToken`
         """
-        model = UpdateToken()  # noqa: E501
+        model = UpdateToken()
         if include_optional:
             return UpdateToken(
                 staging_token = ''

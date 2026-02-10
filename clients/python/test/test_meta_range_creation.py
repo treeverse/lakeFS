@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.meta_range_creation import MetaRangeCreation  # noqa: E501
+from lakefs_sdk.models.meta_range_creation import MetaRangeCreation
 
 class TestMetaRangeCreation(unittest.TestCase):
     """MetaRangeCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestMetaRangeCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `MetaRangeCreation`
         """
-        model = MetaRangeCreation()  # noqa: E501
+        model = MetaRangeCreation()
         if include_optional:
             return MetaRangeCreation(
                 ranges = [

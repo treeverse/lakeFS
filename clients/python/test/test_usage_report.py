@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.usage_report import UsageReport  # noqa: E501
+from lakefs_sdk.models.usage_report import UsageReport
 
 class TestUsageReport(unittest.TestCase):
     """UsageReport unit test stubs"""
@@ -34,7 +34,7 @@ class TestUsageReport(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UsageReport`
         """
-        model = UsageReport()  # noqa: E501
+        model = UsageReport()
         if include_optional:
             return UsageReport(
                 year = 56,

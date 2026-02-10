@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.staging_metadata import StagingMetadata  # noqa: E501
+from lakefs_sdk.models.staging_metadata import StagingMetadata
 
 class TestStagingMetadata(unittest.TestCase):
     """StagingMetadata unit test stubs"""
@@ -34,7 +34,7 @@ class TestStagingMetadata(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `StagingMetadata`
         """
-        model = StagingMetadata()  # noqa: E501
+        model = StagingMetadata()
         if include_optional:
             return StagingMetadata(
                 staging = lakefs_sdk.models.staging_location.StagingLocation(

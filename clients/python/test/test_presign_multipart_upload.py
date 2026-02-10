@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload  # noqa: E501
+from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 
 class TestPresignMultipartUpload(unittest.TestCase):
     """PresignMultipartUpload unit test stubs"""
@@ -34,7 +34,7 @@ class TestPresignMultipartUpload(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PresignMultipartUpload`
         """
-        model = PresignMultipartUpload()  # noqa: E501
+        model = PresignMultipartUpload()
         if include_optional:
             return PresignMultipartUpload(
                 upload_id = '',

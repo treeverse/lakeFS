@@ -19,51 +19,64 @@ import re  # noqa: F401
 import json
 
 
-from typing import List, Optional
-try:
-    from pydantic.v1 import BaseModel, conlist
-except ImportError:
-    from pydantic import BaseModel, conlist
+from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel
 from lakefs_sdk.models.capabilities_config import CapabilitiesConfig
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.ui_config import UIConfig
 from lakefs_sdk.models.version_config import VersionConfig
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 class Config(BaseModel):
     """
     Config
-    """
+    """ # noqa: E501
     version_config: Optional[VersionConfig] = None
     storage_config: Optional[StorageConfig] = None
-    storage_config_list: Optional[conlist(StorageConfig)] = None
+    storage_config_list: Optional[List[StorageConfig]] = None
     ui_config: Optional[UIConfig] = None
     capabilities_config: Optional[CapabilitiesConfig] = None
-    __properties = ["version_config", "storage_config", "storage_config_list", "ui_config", "capabilities_config"]
+    __properties: ClassVar[List[str]] = ["version_config", "storage_config", "storage_config_list", "ui_config", "capabilities_config"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = {
+        "populate_by_name": True,
+        "validate_assignment": True
+    }
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> Config:
+    def from_json(cls, json_str: str) -> Self:
         """Create an instance of Config from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude={
+            },
+            exclude_none=True,
+        )
         # override the default output from pydantic by calling `to_dict()` of version_config
         if self.version_config:
             _dict['version_config'] = self.version_config.to_dict()
@@ -86,15 +99,15 @@ class Config(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> Config:
+    def from_dict(cls, obj: Dict) -> Self:
         """Create an instance of Config from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return Config.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = Config.parse_obj({
+        _obj = cls.model_validate({
             "version_config": VersionConfig.from_dict(obj.get("version_config")) if obj.get("version_config") is not None else None,
             "storage_config": StorageConfig.from_dict(obj.get("storage_config")) if obj.get("storage_config") is not None else None,
             "storage_config_list": [StorageConfig.from_dict(_item) for _item in obj.get("storage_config_list")] if obj.get("storage_config_list") is not None else None,

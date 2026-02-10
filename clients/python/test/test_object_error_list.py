@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.object_error_list import ObjectErrorList  # noqa: E501
+from lakefs_sdk.models.object_error_list import ObjectErrorList
 
 class TestObjectErrorList(unittest.TestCase):
     """ObjectErrorList unit test stubs"""
@@ -34,7 +34,7 @@ class TestObjectErrorList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ObjectErrorList`
         """
-        model = ObjectErrorList()  # noqa: E501
+        model = ObjectErrorList()
         if include_optional:
             return ObjectErrorList(
                 errors = [

@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **version_config** | [**VersionConfig**](VersionConfig.md) |  | [optional] 

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.hook_run import HookRun  # noqa: E501
+from lakefs_sdk.models.hook_run import HookRun
 
 class TestHookRun(unittest.TestCase):
     """HookRun unit test stubs"""
@@ -34,7 +34,7 @@ class TestHookRun(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `HookRun`
         """
-        model = HookRun()  # noqa: E501
+        model = HookRun()
         if include_optional:
             return HookRun(
                 hook_run_id = '',

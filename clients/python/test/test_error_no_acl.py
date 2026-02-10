@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.error_no_acl import ErrorNoACL  # noqa: E501
+from lakefs_sdk.models.error_no_acl import ErrorNoACL
 
 class TestErrorNoACL(unittest.TestCase):
     """ErrorNoACL unit test stubs"""
@@ -34,7 +34,7 @@ class TestErrorNoACL(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ErrorNoACL`
         """
-        model = ErrorNoACL()  # noqa: E501
+        model = ErrorNoACL()
         if include_optional:
             return ErrorNoACL(
                 message = '',

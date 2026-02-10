@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.stats_event import StatsEvent  # noqa: E501
+from lakefs_sdk.models.stats_event import StatsEvent
 
 class TestStatsEvent(unittest.TestCase):
     """StatsEvent unit test stubs"""
@@ -34,7 +34,7 @@ class TestStatsEvent(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `StatsEvent`
         """
-        model = StatsEvent()  # noqa: E501
+        model = StatsEvent()
         if include_optional:
             return StatsEvent(
                 var_class = '',

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.current_user import CurrentUser  # noqa: E501
+from lakefs_sdk.models.current_user import CurrentUser
 
 class TestCurrentUser(unittest.TestCase):
     """CurrentUser unit test stubs"""
@@ -34,7 +34,7 @@ class TestCurrentUser(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CurrentUser`
         """
-        model = CurrentUser()  # noqa: E501
+        model = CurrentUser()
         if include_optional:
             return CurrentUser(
                 user = lakefs_sdk.models.user.User(

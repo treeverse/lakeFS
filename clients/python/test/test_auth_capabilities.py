@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.auth_capabilities import AuthCapabilities  # noqa: E501
+from lakefs_sdk.models.auth_capabilities import AuthCapabilities
 
 class TestAuthCapabilities(unittest.TestCase):
     """AuthCapabilities unit test stubs"""
@@ -34,7 +34,7 @@ class TestAuthCapabilities(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `AuthCapabilities`
         """
-        model = AuthCapabilities()  # noqa: E501
+        model = AuthCapabilities()
         if include_optional:
             return AuthCapabilities(
                 invite_user = True,

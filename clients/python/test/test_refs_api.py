@@ -15,14 +15,14 @@
 
 import unittest
 
-from lakefs_sdk.api.refs_api import RefsApi  # noqa: E501
+from lakefs_sdk.api.refs_api import RefsApi
 
 
 class TestRefsApi(unittest.TestCase):
     """RefsApi unit test stubs"""
 
     def setUp(self) -> None:
-        self.api = RefsApi()  # noqa: E501
+        self.api = RefsApi()
 
     def tearDown(self) -> None:
         pass
@@ -30,28 +30,28 @@ class TestRefsApi(unittest.TestCase):
     def test_diff_refs(self) -> None:
         """Test case for diff_refs
 
-        diff references  # noqa: E501
+        diff references
         """
         pass
 
     def test_find_merge_base(self) -> None:
         """Test case for find_merge_base
 
-        find the merge base for 2 references  # noqa: E501
+        find the merge base for 2 references
         """
         pass
 
     def test_log_commits(self) -> None:
         """Test case for log_commits
 
-        get commit log from ref. If both objects and prefixes are empty, return all commits.  # noqa: E501
+        get commit log from ref. If both objects and prefixes are empty, return all commits.
         """
         pass
 
     def test_merge_into_branch(self) -> None:
         """Test case for merge_into_branch
 
-        merge references  # noqa: E501
+        merge references
         """
         pass
 

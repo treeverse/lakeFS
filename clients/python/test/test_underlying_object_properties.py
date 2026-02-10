@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties  # noqa: E501
+from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties
 
 class TestUnderlyingObjectProperties(unittest.TestCase):
     """UnderlyingObjectProperties unit test stubs"""
@@ -34,7 +34,7 @@ class TestUnderlyingObjectProperties(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `UnderlyingObjectProperties`
         """
-        model = UnderlyingObjectProperties()  # noqa: E501
+        model = UnderlyingObjectProperties()
         if include_optional:
             return UnderlyingObjectProperties(
                 storage_class = ''

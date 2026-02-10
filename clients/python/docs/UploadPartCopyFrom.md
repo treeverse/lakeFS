@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **physical_address** | **str** | The physical address (of the entire intended object) returned from createPresignMultipartUpload.  | 

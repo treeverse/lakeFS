@@ -19,48 +19,62 @@ import re  # noqa: F401
 import json
 
 
-from typing import Optional
-try:
-    from pydantic.v1 import BaseModel, Field, StrictBool
-except ImportError:
-    from pydantic import BaseModel, Field, StrictBool
+from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, StrictBool
+from pydantic import Field
 from lakefs_sdk.models.iceberg_local_table import IcebergLocalTable
 from lakefs_sdk.models.iceberg_remote_table import IcebergRemoteTable
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 class IcebergPullRequest(BaseModel):
     """
     IcebergPullRequest
-    """
-    source: IcebergRemoteTable = Field(...)
-    destination: IcebergLocalTable = Field(...)
-    force_update: Optional[StrictBool] = Field(False, description="Override exiting local table if exists")
-    create_namespace: Optional[StrictBool] = Field(False, description="Creates namespace in local catalog if not exist")
-    __properties = ["source", "destination", "force_update", "create_namespace"]
+    """ # noqa: E501
+    source: IcebergRemoteTable
+    destination: IcebergLocalTable
+    force_update: Optional[StrictBool] = Field(default=False, description="Override exiting local table if exists")
+    create_namespace: Optional[StrictBool] = Field(default=False, description="Creates namespace in local catalog if not exist")
+    __properties: ClassVar[List[str]] = ["source", "destination", "force_update", "create_namespace"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = {
+        "populate_by_name": True,
+        "validate_assignment": True
+    }
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> IcebergPullRequest:
+    def from_json(cls, json_str: str) -> Self:
         """Create an instance of IcebergPullRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude={
+            },
+            exclude_none=True,
+        )
         # override the default output from pydantic by calling `to_dict()` of source
         if self.source:
             _dict['source'] = self.source.to_dict()
@@ -70,15 +84,15 @@ class IcebergPullRequest(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> IcebergPullRequest:
+    def from_dict(cls, obj: Dict) -> Self:
         """Create an instance of IcebergPullRequest from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return IcebergPullRequest.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = IcebergPullRequest.parse_obj({
+        _obj = cls.model_validate({
             "source": IcebergRemoteTable.from_dict(obj.get("source")) if obj.get("source") is not None else None,
             "destination": IcebergLocalTable.from_dict(obj.get("destination")) if obj.get("destination") is not None else None,
             "force_update": obj.get("force_update") if obj.get("force_update") is not None else False,

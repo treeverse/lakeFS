@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.action_run_list import ActionRunList  # noqa: E501
+from lakefs_sdk.models.action_run_list import ActionRunList
 
 class TestActionRunList(unittest.TestCase):
     """ActionRunList unit test stubs"""
@@ -34,7 +34,7 @@ class TestActionRunList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ActionRunList`
         """
-        model = ActionRunList()  # noqa: E501
+        model = ActionRunList()
         if include_optional:
             return ActionRunList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

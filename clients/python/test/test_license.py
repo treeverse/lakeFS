@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.license import License  # noqa: E501
+from lakefs_sdk.models.license import License
 
 class TestLicense(unittest.TestCase):
     """License unit test stubs"""
@@ -34,7 +34,7 @@ class TestLicense(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `License`
         """
-        model = License()  # noqa: E501
+        model = License()
         if include_optional:
             return License(
                 token = ''

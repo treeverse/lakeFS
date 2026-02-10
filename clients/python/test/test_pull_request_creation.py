@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.pull_request_creation import PullRequestCreation  # noqa: E501
+from lakefs_sdk.models.pull_request_creation import PullRequestCreation
 
 class TestPullRequestCreation(unittest.TestCase):
     """PullRequestCreation unit test stubs"""
@@ -34,7 +34,7 @@ class TestPullRequestCreation(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `PullRequestCreation`
         """
-        model = PullRequestCreation()  # noqa: E501
+        model = PullRequestCreation()
         if include_optional:
             return PullRequestCreation(
                 title = '',

@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.object_stats_list import ObjectStatsList  # noqa: E501
+from lakefs_sdk.models.object_stats_list import ObjectStatsList
 
 class TestObjectStatsList(unittest.TestCase):
     """ObjectStatsList unit test stubs"""
@@ -34,7 +34,7 @@ class TestObjectStatsList(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `ObjectStatsList`
         """
-        model = ObjectStatsList()  # noqa: E501
+        model = ObjectStatsList()
         if include_optional:
             return ObjectStatsList(
                 pagination = lakefs_sdk.models.pagination.Pagination(

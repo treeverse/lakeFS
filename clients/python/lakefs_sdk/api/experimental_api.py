@@ -13,20 +13,20 @@
 """  # noqa: E501
 
 
-import re  # noqa: F401
 import io
 import warnings
 
-try:
-    from pydantic.v1 import validate_arguments, ValidationError
-except ImportError:
-    from pydantic import validate_arguments, ValidationError
+from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
+from typing import Dict, List, Optional, Tuple, Union, Any
 
-from typing_extensions import Annotated
 try:
-    from pydantic.v1 import Field, StrictBool, StrictInt, StrictStr, conint, constr
+    from typing import Annotated
 except ImportError:
-    from pydantic import Field, StrictBool, StrictInt, StrictStr, conint, constr
+    from typing_extensions import Annotated
+
+from pydantic import Field
+from typing_extensions import Annotated
+from pydantic import StrictBool, StrictInt, StrictStr, field_validator
 
 from typing import Optional
 
@@ -60,10 +60,7 @@ from lakefs_sdk.models.upload_to import UploadTo
 
 from lakefs_sdk.api_client import ApiClient
 from lakefs_sdk.api_response import ApiResponse
-from lakefs_sdk.exceptions import (  # noqa: F401
-    ApiTypeError,
-    ApiValueError
-)
+from lakefs_sdk.rest import RESTResponseType
 
 
 class ExperimentalApi:
@@ -78,54 +75,31 @@ class ExperimentalApi:
             api_client = ApiClient.get_default()
         self.api_client = api_client
 
-    @validate_arguments
-    def abort_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], abort_presign_multipart_upload : Optional[AbortPresignMultipartUpload] = None, **kwargs) -> None:  # noqa: E501
-        """Abort a presign multipart upload  # noqa: E501
 
-        Aborts a presign multipart upload.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def abort_presign_multipart_upload(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        abort_presign_multipart_upload: Optional[AbortPresignMultipartUpload] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """Abort a presign multipart upload
 
-        >>> thread = api.abort_presign_multipart_upload(repository, branch, upload_id, path, abort_presign_multipart_upload, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param upload_id: (required)
-        :type upload_id: str
-        :param path: relative to the branch (required)
-        :type path: str
-        :param abort_presign_multipart_upload:
-        :type abort_presign_multipart_upload: AbortPresignMultipartUpload
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the abort_presign_multipart_upload_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.abort_presign_multipart_upload_with_http_info(repository, branch, upload_id, path, abort_presign_multipart_upload, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def abort_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], abort_presign_multipart_upload : Optional[AbortPresignMultipartUpload] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """Abort a presign multipart upload  # noqa: E501
-
-        Aborts a presign multipart upload.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.abort_presign_multipart_upload_with_http_info(repository, branch, upload_id, path, abort_presign_multipart_upload, async_req=True)
-        >>> result = thread.get()
+        Aborts a presign multipart upload.
 
         :param repository: (required)
         :type repository: str
@@ -137,168 +111,331 @@ class ExperimentalApi:
         :type path: str
         :param abort_presign_multipart_upload:
         :type abort_presign_multipart_upload: AbortPresignMultipartUpload
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'upload_id',
-            'path',
-            'abort_presign_multipart_upload'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._abort_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            abort_presign_multipart_upload=abort_presign_multipart_upload,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method abort_presign_multipart_upload" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
 
-        _collection_formats = {}
+
+    @validate_call
+    def abort_presign_multipart_upload_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        abort_presign_multipart_upload: Optional[AbortPresignMultipartUpload] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """Abort a presign multipart upload
+
+        Aborts a presign multipart upload.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param abort_presign_multipart_upload:
+        :type abort_presign_multipart_upload: AbortPresignMultipartUpload
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._abort_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            abort_presign_multipart_upload=abort_presign_multipart_upload,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def abort_presign_multipart_upload_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        abort_presign_multipart_upload: Optional[AbortPresignMultipartUpload] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Abort a presign multipart upload
+
+        Aborts a presign multipart upload.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param abort_presign_multipart_upload:
+        :type abort_presign_multipart_upload: AbortPresignMultipartUpload
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._abort_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            abort_presign_multipart_upload=abort_presign_multipart_upload,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _abort_presign_multipart_upload_serialize(
+        self,
+        repository,
+        branch,
+        upload_id,
+        path,
+        abort_presign_multipart_upload,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-        if _params['upload_id']:
-            _path_params['uploadId'] = _params['upload_id']
-
-
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        if upload_id is not None:
+            _path_params['uploadId'] = upload_id
         # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['abort_presign_multipart_upload'] is not None:
-            _body_params = _params['abort_presign_multipart_upload']
+        if abort_presign_multipart_upload is not None:
+            _body_params = abort_presign_multipart_upload
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}', 'DELETE',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='DELETE',
+            resource_path='/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def commit_async(self, repository : StrictStr, branch : StrictStr, commit_creation : CommitCreation, source_metarange : Annotated[Optional[StrictStr], Field(description="The source metarange to commit. Branch must not have uncommitted changes.")] = None, **kwargs) -> TaskCreation:  # noqa: E501
-        """create commit asynchronously  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.commit_async(repository, branch, commit_creation, source_metarange, async_req=True)
-        >>> result = thread.get()
 
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param commit_creation: (required)
-        :type commit_creation: CommitCreation
-        :param source_metarange: The source metarange to commit. Branch must not have uncommitted changes.
-        :type source_metarange: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: TaskCreation
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the commit_async_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.commit_async_with_http_info(repository, branch, commit_creation, source_metarange, **kwargs)  # noqa: E501
+    @validate_call
+    def commit_async(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        commit_creation: CommitCreation,
+        source_metarange: Annotated[Optional[StrictStr], Field(description="The source metarange to commit. Branch must not have uncommitted changes.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> TaskCreation:
+        """create commit asynchronously
 
-    @validate_arguments
-    def commit_async_with_http_info(self, repository : StrictStr, branch : StrictStr, commit_creation : CommitCreation, source_metarange : Annotated[Optional[StrictStr], Field(description="The source metarange to commit. Branch must not have uncommitted changes.")] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """create commit asynchronously  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.commit_async_with_http_info(repository, branch, commit_creation, source_metarange, async_req=True)
-        >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
@@ -308,102 +445,40 @@ class ExperimentalApi:
         :type commit_creation: CommitCreation
         :param source_metarange: The source metarange to commit. Branch must not have uncommitted changes.
         :type source_metarange: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(TaskCreation, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'commit_creation',
-            'source_metarange'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._commit_async_serialize(
+            repository=repository,
+            branch=branch,
+            commit_creation=commit_creation,
+            source_metarange=source_metarange,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method commit_async" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('source_metarange') is not None:  # noqa: E501
-            _query_params.append(('source_metarange', _params['source_metarange']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        if _params['commit_creation'] is not None:
-            _body_params = _params['commit_creation']
-
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {
+        _response_types_map: Dict[str, Optional[str]] = {
             '202': "TaskCreation",
             '400': "Error",
             '401': "Error",
@@ -411,159 +486,339 @@ class ExperimentalApi:
             '404': "Error",
             '429': None,
             '501': "Error",
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/commits/async', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def commit_async_status(self, repository : StrictStr, branch : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the commit async task")], **kwargs) -> CommitAsyncStatus:  # noqa: E501
-        """get status of async commit operation  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def commit_async_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        commit_creation: CommitCreation,
+        source_metarange: Annotated[Optional[StrictStr], Field(description="The source metarange to commit. Branch must not have uncommitted changes.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[TaskCreation]:
+        """create commit asynchronously
 
-        >>> thread = api.commit_async_status(repository, branch, id, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param id: Unique identifier of the commit async task (required)
-        :type id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: CommitAsyncStatus
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the commit_async_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.commit_async_status_with_http_info(repository, branch, id, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def commit_async_status_with_http_info(self, repository : StrictStr, branch : StrictStr, id : Annotated[StrictStr, Field(..., description="Unique identifier of the commit async task")], **kwargs) -> ApiResponse:  # noqa: E501
-        """get status of async commit operation  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.commit_async_status_with_http_info(repository, branch, id, async_req=True)
-        >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param branch: (required)
         :type branch: str
-        :param id: Unique identifier of the commit async task (required)
-        :type id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param commit_creation: (required)
+        :type commit_creation: CommitCreation
+        :param source_metarange: The source metarange to commit. Branch must not have uncommitted changes.
+        :type source_metarange: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(CommitAsyncStatus, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._commit_async_serialize(
+            repository=repository,
+            branch=branch,
+            commit_creation=commit_creation,
+            source_metarange=source_metarange,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'repository',
-            'branch',
-            'id'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '202': "TaskCreation",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def commit_async_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        commit_creation: CommitCreation,
+        source_metarange: Annotated[Optional[StrictStr], Field(description="The source metarange to commit. Branch must not have uncommitted changes.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """create commit asynchronously
+
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param commit_creation: (required)
+        :type commit_creation: CommitCreation
+        :param source_metarange: The source metarange to commit. Branch must not have uncommitted changes.
+        :type source_metarange: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._commit_async_serialize(
+            repository=repository,
+            branch=branch,
+            commit_creation=commit_creation,
+            source_metarange=source_metarange,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '202': "TaskCreation",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _commit_async_serialize(
+        self,
+        repository,
+        branch,
+        commit_creation,
+        source_metarange,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        # process the query parameters
+        if source_metarange is not None:
+            
+            _query_params.append(('source_metarange', source_metarange))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if commit_creation is not None:
+            _body_params = commit_creation
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method commit_async_status" % _key
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
                 )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-        if _params['id']:
-            _path_params['id'] = _params['id']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/repositories/{repository}/branches/{branch}/commits/async',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def commit_async_status(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        id: Annotated[StrictStr, Field(description="Unique identifier of the commit async task")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> CommitAsyncStatus:
+        """get status of async commit operation
+
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param id: Unique identifier of the commit async task (required)
+        :type id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._commit_async_status_serialize(
+            repository=repository,
+            branch=branch,
+            id=id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "CommitAsyncStatus",
             '400': "Error",
             '401': "Error",
@@ -573,510 +828,1002 @@ class ExperimentalApi:
             '412': "Error",
             '429': None,
             '501': "Error",
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/commits/async/{id}/status', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def complete_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : Optional[CompletePresignMultipartUpload] = None, **kwargs) -> ObjectStats:  # noqa: E501
-        """Complete a presign multipart upload request  # noqa: E501
 
-        Completes a presign multipart upload by assembling the uploaded parts.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def commit_async_status_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        id: Annotated[StrictStr, Field(description="Unique identifier of the commit async task")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[CommitAsyncStatus]:
+        """get status of async commit operation
 
-        >>> thread = api.complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param upload_id: (required)
-        :type upload_id: str
-        :param path: relative to the branch (required)
-        :type path: str
-        :param complete_presign_multipart_upload:
-        :type complete_presign_multipart_upload: CompletePresignMultipartUpload
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: ObjectStats
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the complete_presign_multipart_upload_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.complete_presign_multipart_upload_with_http_info(repository, branch, upload_id, path, complete_presign_multipart_upload, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def complete_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : Optional[CompletePresignMultipartUpload] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """Complete a presign multipart upload request  # noqa: E501
-
-        Completes a presign multipart upload by assembling the uploaded parts.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.complete_presign_multipart_upload_with_http_info(repository, branch, upload_id, path, complete_presign_multipart_upload, async_req=True)
-        >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param branch: (required)
         :type branch: str
-        :param upload_id: (required)
-        :type upload_id: str
-        :param path: relative to the branch (required)
-        :type path: str
-        :param complete_presign_multipart_upload:
-        :type complete_presign_multipart_upload: CompletePresignMultipartUpload
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param id: Unique identifier of the commit async task (required)
+        :type id: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(ObjectStats, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'upload_id',
-            'path',
-            'complete_presign_multipart_upload'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._commit_async_status_serialize(
+            repository=repository,
+            branch=branch,
+            id=id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method complete_presign_multipart_upload" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CommitAsyncStatus",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "Error",
+            '412': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def commit_async_status_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        id: Annotated[StrictStr, Field(description="Unique identifier of the commit async task")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """get status of async commit operation
+
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param id: Unique identifier of the commit async task (required)
+        :type id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._commit_async_status_serialize(
+            repository=repository,
+            branch=branch,
+            id=id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CommitAsyncStatus",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "Error",
+            '412': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _commit_async_status_serialize(
+        self,
+        repository,
+        branch,
+        id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-        if _params['upload_id']:
-            _path_params['uploadId'] = _params['upload_id']
-
-
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        if id is not None:
+            _path_params['id'] = id
         # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['complete_presign_multipart_upload'] is not None:
-            _body_params = _params['complete_presign_multipart_upload']
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/repositories/{repository}/branches/{branch}/commits/async/{id}/status',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def complete_presign_multipart_upload(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        complete_presign_multipart_upload: Optional[CompletePresignMultipartUpload] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ObjectStats:
+        """Complete a presign multipart upload request
+
+        Completes a presign multipart upload by assembling the uploaded parts.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param complete_presign_multipart_upload:
+        :type complete_presign_multipart_upload: CompletePresignMultipartUpload
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._complete_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            complete_presign_multipart_upload=complete_presign_multipart_upload,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "ObjectStats",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '409': "StagingLocation",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}', 'PUT',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def create_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, **kwargs) -> PresignMultipartUpload:  # noqa: E501
-        """Initiate a multipart upload  # noqa: E501
 
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).   # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def complete_presign_multipart_upload_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        complete_presign_multipart_upload: Optional[CompletePresignMultipartUpload] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ObjectStats]:
+        """Complete a presign multipart upload request
 
-        >>> thread = api.create_presign_multipart_upload(repository, branch, path, parts, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param path: relative to the branch (required)
-        :type path: str
-        :param parts: number of presigned URL parts required to upload
-        :type parts: int
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: PresignMultipartUpload
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the create_presign_multipart_upload_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.create_presign_multipart_upload_with_http_info(repository, branch, path, parts, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def create_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """Initiate a multipart upload  # noqa: E501
-
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).   # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.create_presign_multipart_upload_with_http_info(repository, branch, path, parts, async_req=True)
-        >>> result = thread.get()
+        Completes a presign multipart upload by assembling the uploaded parts.
 
         :param repository: (required)
         :type repository: str
         :param branch: (required)
         :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
         :param path: relative to the branch (required)
         :type path: str
-        :param parts: number of presigned URL parts required to upload
-        :type parts: int
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param complete_presign_multipart_upload:
+        :type complete_presign_multipart_upload: CompletePresignMultipartUpload
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(PresignMultipartUpload, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._complete_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            complete_presign_multipart_upload=complete_presign_multipart_upload,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'repository',
-            'branch',
-            'path',
-            'parts'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ObjectStats",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '409': "StagingLocation",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def complete_presign_multipart_upload_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        complete_presign_multipart_upload: Optional[CompletePresignMultipartUpload] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Complete a presign multipart upload request
+
+        Completes a presign multipart upload by assembling the uploaded parts.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param complete_presign_multipart_upload:
+        :type complete_presign_multipart_upload: CompletePresignMultipartUpload
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._complete_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            complete_presign_multipart_upload=complete_presign_multipart_upload,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ObjectStats",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '409': "StagingLocation",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _complete_presign_multipart_upload_serialize(
+        self,
+        repository,
+        branch,
+        upload_id,
+        path,
+        complete_presign_multipart_upload,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        if upload_id is not None:
+            _path_params['uploadId'] = upload_id
+        # process the query parameters
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if complete_presign_multipart_upload is not None:
+            _body_params = complete_presign_multipart_upload
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method create_presign_multipart_upload" % _key
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
                 )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
-        if _params.get('parts') is not None:  # noqa: E501
-            _query_params.append(('parts', _params['parts']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def create_presign_multipart_upload(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        parts: Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> PresignMultipartUpload:
+        """Initiate a multipart upload
+
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param parts: number of presigned URL parts required to upload
+        :type parts: int
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            parts=parts,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '201': "PresignMultipartUpload",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/staging/pmpu', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def create_pull_request(self, repository : StrictStr, pull_request_creation : PullRequestCreation, **kwargs) -> PullRequestCreationResponse:  # noqa: E501
-        """create pull request  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def create_presign_multipart_upload_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        parts: Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[PresignMultipartUpload]:
+        """Initiate a multipart upload
 
-        >>> thread = api.create_pull_request(repository, pull_request_creation, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param pull_request_creation: (required)
-        :type pull_request_creation: PullRequestCreation
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: PullRequestCreationResponse
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the create_pull_request_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.create_pull_request_with_http_info(repository, pull_request_creation, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def create_pull_request_with_http_info(self, repository : StrictStr, pull_request_creation : PullRequestCreation, **kwargs) -> ApiResponse:  # noqa: E501
-        """create pull request  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.create_pull_request_with_http_info(repository, pull_request_creation, async_req=True)
-        >>> result = thread.get()
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
 
         :param repository: (required)
         :type repository: str
-        :param pull_request_creation: (required)
-        :type pull_request_creation: PullRequestCreation
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param branch: (required)
+        :type branch: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param parts: number of presigned URL parts required to upload
+        :type parts: int
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(PullRequestCreationResponse, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'pull_request_creation'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._create_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            parts=parts,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method create_pull_request" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            '201': "PresignMultipartUpload",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def create_presign_multipart_upload_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        path: Annotated[StrictStr, Field(description="relative to the branch")],
+        parts: Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Initiate a multipart upload
+
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param path: relative to the branch (required)
+        :type path: str
+        :param parts: number of presigned URL parts required to upload
+        :type parts: int
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_presign_multipart_upload_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            parts=parts,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '201': "PresignMultipartUpload",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _create_presign_multipart_upload_serialize(
+        self,
+        repository,
+        branch,
+        path,
+        parts,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
         # process the query parameters
-        _query_params = []
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
+        if parts is not None:
+            
+            _query_params.append(('parts', parts))
+            
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['pull_request_creation'] is not None:
-            _body_params = _params['pull_request_creation']
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/repositories/{repository}/branches/{branch}/staging/pmpu',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def create_pull_request(
+        self,
+        repository: StrictStr,
+        pull_request_creation: PullRequestCreation,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> PullRequestCreationResponse:
+        """create pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request_creation: (required)
+        :type pull_request_creation: PullRequestCreation
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_pull_request_serialize(
+            repository=repository,
+            pull_request_creation=pull_request_creation,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '201': "PullRequestCreationResponse",
             '400': "Error",
             '401': "Error",
@@ -1084,34 +1831,275 @@ class ExperimentalApi:
             '404': "Error",
             '409': "Error",
             '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def create_pull_request_with_http_info(
+        self,
+        repository: StrictStr,
+        pull_request_creation: PullRequestCreation,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[PullRequestCreationResponse]:
+        """create pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request_creation: (required)
+        :type pull_request_creation: PullRequestCreation
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_pull_request_serialize(
+            repository=repository,
+            pull_request_creation=pull_request_creation,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '201': "PullRequestCreationResponse",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def create_pull_request_without_preload_content(
+        self,
+        repository: StrictStr,
+        pull_request_creation: PullRequestCreation,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """create pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request_creation: (required)
+        :type pull_request_creation: PullRequestCreation
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_pull_request_serialize(
+            repository=repository,
+            pull_request_creation=pull_request_creation,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '201': "PullRequestCreationResponse",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _create_pull_request_serialize(
+        self,
+        repository,
+        pull_request_creation,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
         }
 
-        return self.api_client.call_api(
-            '/repositories/{repository}/pulls', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if pull_request_creation is not None:
+            _body_params = pull_request_creation
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            [
+                'application/json'
+            ]
+        )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/repositories/{repository}/pulls',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def create_user_external_principal(self, user_id : StrictStr, principal_id : StrictStr, external_principal_creation : Optional[ExternalPrincipalCreation] = None, **kwargs) -> None:  # noqa: E501
-        """attach external principal to user  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.create_user_external_principal(user_id, principal_id, external_principal_creation, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def create_user_external_principal(
+        self,
+        user_id: StrictStr,
+        principal_id: StrictStr,
+        external_principal_creation: Optional[ExternalPrincipalCreation] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """attach external principal to user
+
 
         :param user_id: (required)
         :type user_id: str
@@ -1119,32 +2107,73 @@ class ExperimentalApi:
         :type principal_id: str
         :param external_principal_creation:
         :type external_principal_creation: ExternalPrincipalCreation
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the create_user_external_principal_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.create_user_external_principal_with_http_info(user_id, principal_id, external_principal_creation, **kwargs)  # noqa: E501
+        """ # noqa: E501
 
-    @validate_arguments
-    def create_user_external_principal_with_http_info(self, user_id : StrictStr, principal_id : StrictStr, external_principal_creation : Optional[ExternalPrincipalCreation] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """attach external principal to user  # noqa: E501
+        _param = self._create_user_external_principal_serialize(
+            user_id=user_id,
+            principal_id=principal_id,
+            external_principal_creation=external_principal_creation,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
 
-        >>> thread = api.create_user_external_principal_with_http_info(user_id, principal_id, external_principal_creation, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def create_user_external_principal_with_http_info(
+        self,
+        user_id: StrictStr,
+        principal_id: StrictStr,
+        external_principal_creation: Optional[ExternalPrincipalCreation] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """attach external principal to user
+
 
         :param user_id: (required)
         :type user_id: str
@@ -1152,1158 +2181,2162 @@ class ExperimentalApi:
         :type principal_id: str
         :param external_principal_creation:
         :type external_principal_creation: ExternalPrincipalCreation
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'user_id',
-            'principal_id',
-            'external_principal_creation'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._create_user_external_principal_serialize(
+            user_id=user_id,
+            principal_id=principal_id,
+            external_principal_creation=external_principal_creation,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method create_user_external_principal" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['user_id']:
-            _path_params['userId'] = _params['user_id']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('principal_id') is not None:  # noqa: E501
-            _query_params.append(('principalId', _params['principal_id']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        if _params['external_principal_creation'] is not None:
-            _body_params = _params['external_principal_creation']
-
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/auth/users/{userId}/external/principals', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        )
 
-    @validate_arguments
-    def delete_user_external_principal(self, user_id : StrictStr, principal_id : StrictStr, **kwargs) -> None:  # noqa: E501
-        """delete external principal from user  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def create_user_external_principal_without_preload_content(
+        self,
+        user_id: StrictStr,
+        principal_id: StrictStr,
+        external_principal_creation: Optional[ExternalPrincipalCreation] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """attach external principal to user
 
-        >>> thread = api.delete_user_external_principal(user_id, principal_id, async_req=True)
-        >>> result = thread.get()
 
         :param user_id: (required)
         :type user_id: str
         :param principal_id: (required)
         :type principal_id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
+        :param external_principal_creation:
+        :type external_principal_creation: ExternalPrincipalCreation
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the delete_user_external_principal_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.delete_user_external_principal_with_http_info(user_id, principal_id, **kwargs)  # noqa: E501
+        """ # noqa: E501
 
-    @validate_arguments
-    def delete_user_external_principal_with_http_info(self, user_id : StrictStr, principal_id : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
-        """delete external principal from user  # noqa: E501
+        _param = self._create_user_external_principal_serialize(
+            user_id=user_id,
+            principal_id=principal_id,
+            external_principal_creation=external_principal_creation,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
 
-        >>> thread = api.delete_user_external_principal_with_http_info(user_id, principal_id, async_req=True)
-        >>> result = thread.get()
+
+    def _create_user_external_principal_serialize(
+        self,
+        user_id,
+        principal_id,
+        external_principal_creation,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if user_id is not None:
+            _path_params['userId'] = user_id
+        # process the query parameters
+        if principal_id is not None:
+            
+            _query_params.append(('principalId', principal_id))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if external_principal_creation is not None:
+            _body_params = external_principal_creation
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            [
+                'application/json'
+            ]
+        )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/auth/users/{userId}/external/principals',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def delete_user_external_principal(
+        self,
+        user_id: StrictStr,
+        principal_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """delete external principal from user
+
 
         :param user_id: (required)
         :type user_id: str
         :param principal_id: (required)
         :type principal_id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._delete_user_external_principal_serialize(
+            user_id=user_id,
+            principal_id=principal_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'user_id',
-            'principal_id'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def delete_user_external_principal_with_http_info(
+        self,
+        user_id: StrictStr,
+        principal_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """delete external principal from user
+
+
+        :param user_id: (required)
+        :type user_id: str
+        :param principal_id: (required)
+        :type principal_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._delete_user_external_principal_serialize(
+            user_id=user_id,
+            principal_id=principal_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def delete_user_external_principal_without_preload_content(
+        self,
+        user_id: StrictStr,
+        principal_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """delete external principal from user
+
+
+        :param user_id: (required)
+        :type user_id: str
+        :param principal_id: (required)
+        :type principal_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._delete_user_external_principal_serialize(
+            user_id=user_id,
+            principal_id=principal_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _delete_user_external_principal_serialize(
+        self,
+        user_id,
+        principal_id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if user_id is not None:
+            _path_params['userId'] = user_id
+        # process the query parameters
+        if principal_id is not None:
+            
+            _query_params.append(('principalId', principal_id))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method delete_user_external_principal" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['user_id']:
-            _path_params['userId'] = _params['user_id']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('principal_id') is not None:  # noqa: E501
-            _query_params.append(('principalId', _params['principal_id']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/auth/users/{userId}/external/principals', 'DELETE',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='DELETE',
+            resource_path='/auth/users/{userId}/external/principals',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def external_principal_login(self, external_login_information : Optional[ExternalLoginInformation] = None, **kwargs) -> AuthenticationToken:  # noqa: E501
-        """perform a login using an external authenticator  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.external_principal_login(external_login_information, async_req=True)
-        >>> result = thread.get()
 
-        :param external_login_information:
-        :type external_login_information: ExternalLoginInformation
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: AuthenticationToken
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the external_principal_login_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.external_principal_login_with_http_info(external_login_information, **kwargs)  # noqa: E501
+    @validate_call
+    def external_principal_login(
+        self,
+        external_login_information: Optional[ExternalLoginInformation] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> AuthenticationToken:
+        """perform a login using an external authenticator
 
-    @validate_arguments
-    def external_principal_login_with_http_info(self, external_login_information : Optional[ExternalLoginInformation] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """perform a login using an external authenticator  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.external_principal_login_with_http_info(external_login_information, async_req=True)
-        >>> result = thread.get()
 
         :param external_login_information:
         :type external_login_information: ExternalLoginInformation
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(AuthenticationToken, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'external_login_information'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._external_principal_login_serialize(
+            external_login_information=external_login_information,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method external_principal_login" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        if _params['external_login_information'] is not None:
-            _body_params = _params['external_login_information']
-
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
-
-        # authentication setting
-        _auth_settings = []  # noqa: E501
-
-        _response_types_map = {
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "AuthenticationToken",
             '400': "Error",
             '401': "Error",
             '403': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/auth/external/principal/login', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def get_external_principal(self, principal_id : StrictStr, **kwargs) -> ExternalPrincipal:  # noqa: E501
-        """describe external principal by id  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def external_principal_login_with_http_info(
+        self,
+        external_login_information: Optional[ExternalLoginInformation] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[AuthenticationToken]:
+        """perform a login using an external authenticator
 
-        >>> thread = api.get_external_principal(principal_id, async_req=True)
-        >>> result = thread.get()
 
-        :param principal_id: (required)
-        :type principal_id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: ExternalPrincipal
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the get_external_principal_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.get_external_principal_with_http_info(principal_id, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def get_external_principal_with_http_info(self, principal_id : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
-        """describe external principal by id  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_external_principal_with_http_info(principal_id, async_req=True)
-        >>> result = thread.get()
-
-        :param principal_id: (required)
-        :type principal_id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param external_login_information:
+        :type external_login_information: ExternalLoginInformation
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(ExternalPrincipal, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._external_principal_login_serialize(
+            external_login_information=external_login_information,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'principal_id'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "AuthenticationToken",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def external_principal_login_without_preload_content(
+        self,
+        external_login_information: Optional[ExternalLoginInformation] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """perform a login using an external authenticator
+
+
+        :param external_login_information:
+        :type external_login_information: ExternalLoginInformation
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._external_principal_login_serialize(
+            external_login_information=external_login_information,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "AuthenticationToken",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _external_principal_login_serialize(
+        self,
+        external_login_information,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if external_login_information is not None:
+            _body_params = external_login_information
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_external_principal" % _key
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
                 )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('principal_id') is not None:  # noqa: E501
-            _query_params.append(('principalId', _params['principal_id']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/auth/external/principal/login',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_external_principal(
+        self,
+        principal_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ExternalPrincipal:
+        """describe external principal by id
+
+
+        :param principal_id: (required)
+        :type principal_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_external_principal_serialize(
+            principal_id=principal_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "ExternalPrincipal",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/auth/external/principals', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def get_license(self, **kwargs) -> License:  # noqa: E501
-        """get_license  # noqa: E501
 
-        retrieve lakeFS license information  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def get_external_principal_with_http_info(
+        self,
+        principal_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ExternalPrincipal]:
+        """describe external principal by id
 
-        >>> thread = api.get_license(async_req=True)
-        >>> result = thread.get()
 
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: License
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the get_license_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.get_license_with_http_info(**kwargs)  # noqa: E501
-
-    @validate_arguments
-    def get_license_with_http_info(self, **kwargs) -> ApiResponse:  # noqa: E501
-        """get_license  # noqa: E501
-
-        retrieve lakeFS license information  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_license_with_http_info(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param principal_id: (required)
+        :type principal_id: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(License, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._get_external_principal_serialize(
+            principal_id=principal_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ExternalPrincipal",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_external_principal_without_preload_content(
+        self,
+        principal_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """describe external principal by id
+
+
+        :param principal_id: (required)
+        :type principal_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_external_principal_serialize(
+            principal_id=principal_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ExternalPrincipal",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_external_principal_serialize(
+        self,
+        principal_id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        if principal_id is not None:
+            
+            _query_params.append(('principalId', principal_id))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_license" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/auth/external/principals',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_license(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> License:
+        """get_license
+
+        retrieve lakeFS license information
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_license_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "License",
             '401': "Error",
             '501': "Error",
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/license', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def get_pull_request(self, repository : StrictStr, pull_request : Annotated[StrictStr, Field(..., description="pull request id")], **kwargs) -> PullRequest:  # noqa: E501
-        """get pull request  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def get_license_with_http_info(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[License]:
+        """get_license
 
-        >>> thread = api.get_pull_request(repository, pull_request, async_req=True)
-        >>> result = thread.get()
+        retrieve lakeFS license information
 
-        :param repository: (required)
-        :type repository: str
-        :param pull_request: pull request id (required)
-        :type pull_request: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: PullRequest
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the get_pull_request_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.get_pull_request_with_http_info(repository, pull_request, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def get_pull_request_with_http_info(self, repository : StrictStr, pull_request : Annotated[StrictStr, Field(..., description="pull request id")], **kwargs) -> ApiResponse:  # noqa: E501
-        """get pull request  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_pull_request_with_http_info(repository, pull_request, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param pull_request: pull request id (required)
-        :type pull_request: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(PullRequest, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._get_license_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'repository',
-            'pull_request'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "License",
+            '401': "Error",
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_license_without_preload_content(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """get_license
+
+        retrieve lakeFS license information
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_license_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "License",
+            '401': "Error",
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_license_serialize(
+        self,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_pull_request" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['pull_request']:
-            _path_params['pull_request'] = _params['pull_request']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/license',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_pull_request(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> PullRequest:
+        """get pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request: pull request id (required)
+        :type pull_request: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "PullRequest",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/pulls/{pull_request}', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def get_token_from_mailbox(self, mailbox : Annotated[StrictStr, Field(..., description="mailbox returned by getTokenRedirect")], **kwargs) -> AuthenticationToken:  # noqa: E501
-        """receive the token after user has authenticated on redirect URL.  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def get_pull_request_with_http_info(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[PullRequest]:
+        """get pull request
 
-        >>> thread = api.get_token_from_mailbox(mailbox, async_req=True)
-        >>> result = thread.get()
 
-        :param mailbox: mailbox returned by getTokenRedirect (required)
-        :type mailbox: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: AuthenticationToken
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the get_token_from_mailbox_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.get_token_from_mailbox_with_http_info(mailbox, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def get_token_from_mailbox_with_http_info(self, mailbox : Annotated[StrictStr, Field(..., description="mailbox returned by getTokenRedirect")], **kwargs) -> ApiResponse:  # noqa: E501
-        """receive the token after user has authenticated on redirect URL.  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_token_from_mailbox_with_http_info(mailbox, async_req=True)
-        >>> result = thread.get()
-
-        :param mailbox: mailbox returned by getTokenRedirect (required)
-        :type mailbox: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param repository: (required)
+        :type repository: str
+        :param pull_request: pull request id (required)
+        :type pull_request: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(AuthenticationToken, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._get_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'mailbox'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "PullRequest",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_pull_request_without_preload_content(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """get pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request: pull request id (required)
+        :type pull_request: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "PullRequest",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_pull_request_serialize(
+        self,
+        repository,
+        pull_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if pull_request is not None:
+            _path_params['pull_request'] = pull_request
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_token_from_mailbox" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['mailbox']:
-            _path_params['mailbox'] = _params['mailbox']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = []  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/repositories/{repository}/pulls/{pull_request}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_token_from_mailbox(
+        self,
+        mailbox: Annotated[StrictStr, Field(description="mailbox returned by getTokenRedirect")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> AuthenticationToken:
+        """receive the token after user has authenticated on redirect URL.
+
+
+        :param mailbox: mailbox returned by getTokenRedirect (required)
+        :type mailbox: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_token_from_mailbox_serialize(
+            mailbox=mailbox,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "AuthenticationToken",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
             '501': "Error",
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/auth/get-token/mailboxes/{mailbox}', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def get_token_redirect(self, **kwargs) -> Error:  # noqa: E501
-        """start acquiring a token by logging in on a browser  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def get_token_from_mailbox_with_http_info(
+        self,
+        mailbox: Annotated[StrictStr, Field(description="mailbox returned by getTokenRedirect")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[AuthenticationToken]:
+        """receive the token after user has authenticated on redirect URL.
 
-        >>> thread = api.get_token_redirect(async_req=True)
-        >>> result = thread.get()
 
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: Error
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the get_token_redirect_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.get_token_redirect_with_http_info(**kwargs)  # noqa: E501
-
-    @validate_arguments
-    def get_token_redirect_with_http_info(self, **kwargs) -> ApiResponse:  # noqa: E501
-        """start acquiring a token by logging in on a browser  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_token_redirect_with_http_info(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param mailbox: mailbox returned by getTokenRedirect (required)
+        :type mailbox: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(Error, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._get_token_from_mailbox_serialize(
+            mailbox=mailbox,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "AuthenticationToken",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_token_from_mailbox_without_preload_content(
+        self,
+        mailbox: Annotated[StrictStr, Field(description="mailbox returned by getTokenRedirect")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """receive the token after user has authenticated on redirect URL.
+
+
+        :param mailbox: mailbox returned by getTokenRedirect (required)
+        :type mailbox: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_token_from_mailbox_serialize(
+            mailbox=mailbox,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "AuthenticationToken",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_token_from_mailbox_serialize(
+        self,
+        mailbox,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if mailbox is not None:
+            _path_params['mailbox'] = mailbox
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_token_redirect" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = []  # noqa: E501
+        _auth_settings: List[str] = [
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/auth/get-token/mailboxes/{mailbox}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_token_redirect(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> Error:
+        """start acquiring a token by logging in on a browser
+
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_token_redirect_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '303': None,
             '401': "Error",
             '429': None,
             '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_token_redirect_with_http_info(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[Error]:
+        """start acquiring a token by logging in on a browser
+
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_token_redirect_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '303': None,
+            '401': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_token_redirect_without_preload_content(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """start acquiring a token by logging in on a browser
+
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_token_redirect_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '303': None,
+            '401': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_token_redirect_serialize(
+        self,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
         }
 
-        return self.api_client.call_api(
-            '/auth/get-token/start', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            [
+                'application/json'
+            ]
+        )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/auth/get-token/start',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def hard_reset_branch(self, repository : StrictStr, branch : StrictStr, ref : Annotated[StrictStr, Field(..., description="After reset, branch will point at this reference.")], force : Optional[StrictBool] = None, **kwargs) -> None:  # noqa: E501
-        """hard reset branch  # noqa: E501
 
-        Relocate branch to refer to ref.  Branch must not contain uncommitted data.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.hard_reset_branch(repository, branch, ref, force, async_req=True)
-        >>> result = thread.get()
 
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param ref: After reset, branch will point at this reference. (required)
-        :type ref: str
-        :param force:
-        :type force: bool
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the hard_reset_branch_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.hard_reset_branch_with_http_info(repository, branch, ref, force, **kwargs)  # noqa: E501
+    @validate_call
+    def hard_reset_branch(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        ref: Annotated[StrictStr, Field(description="After reset, branch will point at this reference.")],
+        force: Optional[StrictBool] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """hard reset branch
 
-    @validate_arguments
-    def hard_reset_branch_with_http_info(self, repository : StrictStr, branch : StrictStr, ref : Annotated[StrictStr, Field(..., description="After reset, branch will point at this reference.")], force : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """hard reset branch  # noqa: E501
-
-        Relocate branch to refer to ref.  Branch must not contain uncommitted data.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.hard_reset_branch_with_http_info(repository, branch, ref, force, async_req=True)
-        >>> result = thread.get()
+        Relocate branch to refer to ref.  Branch must not contain uncommitted data.
 
         :param repository: (required)
         :type repository: str
@@ -2313,122 +4346,309 @@ class ExperimentalApi:
         :type ref: str
         :param force:
         :type force: bool
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._hard_reset_branch_serialize(
+            repository=repository,
+            branch=branch,
+            ref=ref,
+            force=force,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'repository',
-            'branch',
-            'ref',
-            'force'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def hard_reset_branch_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        ref: Annotated[StrictStr, Field(description="After reset, branch will point at this reference.")],
+        force: Optional[StrictBool] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """hard reset branch
+
+        Relocate branch to refer to ref.  Branch must not contain uncommitted data.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param ref: After reset, branch will point at this reference. (required)
+        :type ref: str
+        :param force:
+        :type force: bool
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._hard_reset_branch_serialize(
+            repository=repository,
+            branch=branch,
+            ref=ref,
+            force=force,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def hard_reset_branch_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        ref: Annotated[StrictStr, Field(description="After reset, branch will point at this reference.")],
+        force: Optional[StrictBool] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """hard reset branch
+
+        Relocate branch to refer to ref.  Branch must not contain uncommitted data.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param ref: After reset, branch will point at this reference. (required)
+        :type ref: str
+        :param force:
+        :type force: bool
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._hard_reset_branch_serialize(
+            repository=repository,
+            branch=branch,
+            ref=ref,
+            force=force,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _hard_reset_branch_serialize(
+        self,
+        repository,
+        branch,
+        ref,
+        force,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        # process the query parameters
+        if ref is not None:
+            
+            _query_params.append(('ref', ref))
+            
+        if force is not None:
+            
+            _query_params.append(('force', force))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method hard_reset_branch" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('ref') is not None:  # noqa: E501
-            _query_params.append(('ref', _params['ref']))
-
-        if _params.get('force') is not None:  # noqa: E501
-            _query_params.append(('force', _params['force']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/hard_reset', 'PUT',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/repositories/{repository}/branches/{branch}/hard_reset',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def list_pull_requests(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, status : Optional[StrictStr] = None, **kwargs) -> PullRequestsList:  # noqa: E501
-        """list pull requests  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.list_pull_requests(repository, prefix, after, amount, status, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def list_pull_requests(
+        self,
+        repository: StrictStr,
+        prefix: Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None,
+        after: Annotated[Optional[StrictStr], Field(description="return items after this value")] = None,
+        amount: Annotated[Optional[Annotated[int, Field(le=1000, strict=True, ge=-1)]], Field(description="how many items to return")] = None,
+        status: Optional[StrictStr] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> PullRequestsList:
+        """list pull requests
+
 
         :param repository: (required)
         :type repository: str
@@ -2440,475 +4660,712 @@ class ExperimentalApi:
         :type amount: int
         :param status:
         :type status: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: PullRequestsList
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the list_pull_requests_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.list_pull_requests_with_http_info(repository, prefix, after, amount, status, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def list_pull_requests_with_http_info(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, status : Optional[StrictStr] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """list pull requests  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.list_pull_requests_with_http_info(repository, prefix, after, amount, status, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param prefix: return items prefixed with this value
-        :type prefix: str
-        :param after: return items after this value
-        :type after: str
-        :param amount: how many items to return
-        :type amount: int
-        :param status:
-        :type status: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(PullRequestsList, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'prefix',
-            'after',
-            'amount',
-            'status'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._list_pull_requests_serialize(
+            repository=repository,
+            prefix=prefix,
+            after=after,
+            amount=amount,
+            status=status,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method list_pull_requests" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('prefix') is not None:  # noqa: E501
-            _query_params.append(('prefix', _params['prefix']))
-
-        if _params.get('after') is not None:  # noqa: E501
-            _query_params.append(('after', _params['after']))
-
-        if _params.get('amount') is not None:  # noqa: E501
-            _query_params.append(('amount', _params['amount']))
-
-        if _params.get('status') is not None:  # noqa: E501
-            _query_params.append(('status', _params['status']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "PullRequestsList",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/pulls', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def list_user_external_principals(self, user_id : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, **kwargs) -> ExternalPrincipalList:  # noqa: E501
-        """list user external policies attached to a user  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def list_pull_requests_with_http_info(
+        self,
+        repository: StrictStr,
+        prefix: Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None,
+        after: Annotated[Optional[StrictStr], Field(description="return items after this value")] = None,
+        amount: Annotated[Optional[Annotated[int, Field(le=1000, strict=True, ge=-1)]], Field(description="how many items to return")] = None,
+        status: Optional[StrictStr] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[PullRequestsList]:
+        """list pull requests
 
-        >>> thread = api.list_user_external_principals(user_id, prefix, after, amount, async_req=True)
-        >>> result = thread.get()
 
-        :param user_id: (required)
-        :type user_id: str
+        :param repository: (required)
+        :type repository: str
         :param prefix: return items prefixed with this value
         :type prefix: str
         :param after: return items after this value
         :type after: str
         :param amount: how many items to return
         :type amount: int
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: ExternalPrincipalList
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the list_user_external_principals_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.list_user_external_principals_with_http_info(user_id, prefix, after, amount, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def list_user_external_principals_with_http_info(self, user_id : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """list user external policies attached to a user  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.list_user_external_principals_with_http_info(user_id, prefix, after, amount, async_req=True)
-        >>> result = thread.get()
-
-        :param user_id: (required)
-        :type user_id: str
-        :param prefix: return items prefixed with this value
-        :type prefix: str
-        :param after: return items after this value
-        :type after: str
-        :param amount: how many items to return
-        :type amount: int
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param status:
+        :type status: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(ExternalPrincipalList, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._list_pull_requests_serialize(
+            repository=repository,
+            prefix=prefix,
+            after=after,
+            amount=amount,
+            status=status,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'user_id',
-            'prefix',
-            'after',
-            'amount'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "PullRequestsList",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def list_pull_requests_without_preload_content(
+        self,
+        repository: StrictStr,
+        prefix: Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None,
+        after: Annotated[Optional[StrictStr], Field(description="return items after this value")] = None,
+        amount: Annotated[Optional[Annotated[int, Field(le=1000, strict=True, ge=-1)]], Field(description="how many items to return")] = None,
+        status: Optional[StrictStr] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """list pull requests
+
+
+        :param repository: (required)
+        :type repository: str
+        :param prefix: return items prefixed with this value
+        :type prefix: str
+        :param after: return items after this value
+        :type after: str
+        :param amount: how many items to return
+        :type amount: int
+        :param status:
+        :type status: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._list_pull_requests_serialize(
+            repository=repository,
+            prefix=prefix,
+            after=after,
+            amount=amount,
+            status=status,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "PullRequestsList",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _list_pull_requests_serialize(
+        self,
+        repository,
+        prefix,
+        after,
+        amount,
+        status,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        # process the query parameters
+        if prefix is not None:
+            
+            _query_params.append(('prefix', prefix))
+            
+        if after is not None:
+            
+            _query_params.append(('after', after))
+            
+        if amount is not None:
+            
+            _query_params.append(('amount', amount))
+            
+        if status is not None:
+            
+            _query_params.append(('status', status))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method list_user_external_principals" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['user_id']:
-            _path_params['userId'] = _params['user_id']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('prefix') is not None:  # noqa: E501
-            _query_params.append(('prefix', _params['prefix']))
-
-        if _params.get('after') is not None:  # noqa: E501
-            _query_params.append(('after', _params['after']))
-
-        if _params.get('amount') is not None:  # noqa: E501
-            _query_params.append(('amount', _params['amount']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/repositories/{repository}/pulls',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def list_user_external_principals(
+        self,
+        user_id: StrictStr,
+        prefix: Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None,
+        after: Annotated[Optional[StrictStr], Field(description="return items after this value")] = None,
+        amount: Annotated[Optional[Annotated[int, Field(le=1000, strict=True, ge=-1)]], Field(description="how many items to return")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ExternalPrincipalList:
+        """list user external policies attached to a user
+
+
+        :param user_id: (required)
+        :type user_id: str
+        :param prefix: return items prefixed with this value
+        :type prefix: str
+        :param after: return items after this value
+        :type after: str
+        :param amount: how many items to return
+        :type amount: int
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._list_user_external_principals_serialize(
+            user_id=user_id,
+            prefix=prefix,
+            after=after,
+            amount=amount,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "ExternalPrincipalList",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/auth/users/{userId}/external/principals/ls', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def merge_into_branch_async(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], merge : Optional[Merge] = None, **kwargs) -> TaskCreation:  # noqa: E501
-        """merge references asynchronously  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def list_user_external_principals_with_http_info(
+        self,
+        user_id: StrictStr,
+        prefix: Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None,
+        after: Annotated[Optional[StrictStr], Field(description="return items after this value")] = None,
+        amount: Annotated[Optional[Annotated[int, Field(le=1000, strict=True, ge=-1)]], Field(description="how many items to return")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ExternalPrincipalList]:
+        """list user external policies attached to a user
 
-        >>> thread = api.merge_into_branch_async(repository, source_ref, destination_branch, merge, async_req=True)
-        >>> result = thread.get()
 
-        :param repository: (required)
-        :type repository: str
-        :param source_ref: source ref (required)
-        :type source_ref: str
-        :param destination_branch: destination branch name (required)
-        :type destination_branch: str
-        :param merge:
-        :type merge: Merge
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: TaskCreation
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the merge_into_branch_async_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.merge_into_branch_async_with_http_info(repository, source_ref, destination_branch, merge, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def merge_into_branch_async_with_http_info(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], merge : Optional[Merge] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """merge references asynchronously  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.merge_into_branch_async_with_http_info(repository, source_ref, destination_branch, merge, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param source_ref: source ref (required)
-        :type source_ref: str
-        :param destination_branch: destination branch name (required)
-        :type destination_branch: str
-        :param merge:
-        :type merge: Merge
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param user_id: (required)
+        :type user_id: str
+        :param prefix: return items prefixed with this value
+        :type prefix: str
+        :param after: return items after this value
+        :type after: str
+        :param amount: how many items to return
+        :type amount: int
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(TaskCreation, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'source_ref',
-            'destination_branch',
-            'merge'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._list_user_external_principals_serialize(
+            user_id=user_id,
+            prefix=prefix,
+            after=after,
+            amount=amount,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method merge_into_branch_async" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ExternalPrincipalList",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def list_user_external_principals_without_preload_content(
+        self,
+        user_id: StrictStr,
+        prefix: Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None,
+        after: Annotated[Optional[StrictStr], Field(description="return items after this value")] = None,
+        amount: Annotated[Optional[Annotated[int, Field(le=1000, strict=True, ge=-1)]], Field(description="how many items to return")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """list user external policies attached to a user
+
+
+        :param user_id: (required)
+        :type user_id: str
+        :param prefix: return items prefixed with this value
+        :type prefix: str
+        :param after: return items after this value
+        :type after: str
+        :param amount: how many items to return
+        :type amount: int
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._list_user_external_principals_serialize(
+            user_id=user_id,
+            prefix=prefix,
+            after=after,
+            amount=amount,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ExternalPrincipalList",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _list_user_external_principals_serialize(
+        self,
+        user_id,
+        prefix,
+        after,
+        amount,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['source_ref']:
-            _path_params['sourceRef'] = _params['source_ref']
-
-        if _params['destination_branch']:
-            _path_params['destinationBranch'] = _params['destination_branch']
-
-
+        if user_id is not None:
+            _path_params['userId'] = user_id
         # process the query parameters
-        _query_params = []
+        if prefix is not None:
+            
+            _query_params.append(('prefix', prefix))
+            
+        if after is not None:
+            
+            _query_params.append(('after', after))
+            
+        if amount is not None:
+            
+            _query_params.append(('amount', amount))
+            
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['merge'] is not None:
-            _body_params = _params['merge']
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/auth/users/{userId}/external/principals/ls',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def merge_into_branch_async(
+        self,
+        repository: StrictStr,
+        source_ref: Annotated[StrictStr, Field(description="source ref")],
+        destination_branch: Annotated[StrictStr, Field(description="destination branch name")],
+        merge: Optional[Merge] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> TaskCreation:
+        """merge references asynchronously
+
+
+        :param repository: (required)
+        :type repository: str
+        :param source_ref: source ref (required)
+        :type source_ref: str
+        :param destination_branch: destination branch name (required)
+        :type destination_branch: str
+        :param merge:
+        :type merge: Merge
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._merge_into_branch_async_serialize(
+            repository=repository,
+            source_ref=source_ref,
+            destination_branch=destination_branch,
+            merge=merge,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '202': "TaskCreation",
             '400': "Error",
             '401': "Error",
@@ -2916,69 +5373,42 @@ class ExperimentalApi:
             '404': "Error",
             '429': None,
             '501': "Error",
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def merge_into_branch_async_status(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge async task")], **kwargs) -> MergeAsyncStatus:  # noqa: E501
-        """get status of async merge operation  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def merge_into_branch_async_with_http_info(
+        self,
+        repository: StrictStr,
+        source_ref: Annotated[StrictStr, Field(description="source ref")],
+        destination_branch: Annotated[StrictStr, Field(description="destination branch name")],
+        merge: Optional[Merge] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[TaskCreation]:
+        """merge references asynchronously
 
-        >>> thread = api.merge_into_branch_async_status(repository, source_ref, destination_branch, id, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param source_ref: source ref (required)
-        :type source_ref: str
-        :param destination_branch: destination branch name (required)
-        :type destination_branch: str
-        :param id: Unique identifier of the merge async task (required)
-        :type id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: MergeAsyncStatus
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the merge_into_branch_async_status_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.merge_into_branch_async_status_with_http_info(repository, source_ref, destination_branch, id, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def merge_into_branch_async_status_with_http_info(self, repository : StrictStr, source_ref : Annotated[StrictStr, Field(..., description="source ref")], destination_branch : Annotated[StrictStr, Field(..., description="destination branch name")], id : Annotated[StrictStr, Field(..., description="Unique identifier of the merge async task")], **kwargs) -> ApiResponse:  # noqa: E501
-        """get status of async merge operation  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.merge_into_branch_async_status_with_http_info(repository, source_ref, destination_branch, id, async_req=True)
-        >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
@@ -2986,97 +5416,298 @@ class ExperimentalApi:
         :type source_ref: str
         :param destination_branch: destination branch name (required)
         :type destination_branch: str
-        :param id: Unique identifier of the merge async task (required)
-        :type id: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param merge:
+        :type merge: Merge
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(MergeAsyncStatus, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._merge_into_branch_async_serialize(
+            repository=repository,
+            source_ref=source_ref,
+            destination_branch=destination_branch,
+            merge=merge,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'repository',
-            'source_ref',
-            'destination_branch',
-            'id'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '202': "TaskCreation",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def merge_into_branch_async_without_preload_content(
+        self,
+        repository: StrictStr,
+        source_ref: Annotated[StrictStr, Field(description="source ref")],
+        destination_branch: Annotated[StrictStr, Field(description="destination branch name")],
+        merge: Optional[Merge] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """merge references asynchronously
+
+
+        :param repository: (required)
+        :type repository: str
+        :param source_ref: source ref (required)
+        :type source_ref: str
+        :param destination_branch: destination branch name (required)
+        :type destination_branch: str
+        :param merge:
+        :type merge: Merge
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._merge_into_branch_async_serialize(
+            repository=repository,
+            source_ref=source_ref,
+            destination_branch=destination_branch,
+            merge=merge,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '202': "TaskCreation",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _merge_into_branch_async_serialize(
+        self,
+        repository,
+        source_ref,
+        destination_branch,
+        merge,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if source_ref is not None:
+            _path_params['sourceRef'] = source_ref
+        if destination_branch is not None:
+            _path_params['destinationBranch'] = destination_branch
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if merge is not None:
+            _body_params = merge
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method merge_into_branch_async_status" % _key
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
                 )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['source_ref']:
-            _path_params['sourceRef'] = _params['source_ref']
-
-        if _params['destination_branch']:
-            _path_params['destinationBranch'] = _params['destination_branch']
-
-        if _params['id']:
-            _path_params['id'] = _params['id']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def merge_into_branch_async_status(
+        self,
+        repository: StrictStr,
+        source_ref: Annotated[StrictStr, Field(description="source ref")],
+        destination_branch: Annotated[StrictStr, Field(description="destination branch name")],
+        id: Annotated[StrictStr, Field(description="Unique identifier of the merge async task")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> MergeAsyncStatus:
+        """get status of async merge operation
+
+
+        :param repository: (required)
+        :type repository: str
+        :param source_ref: source ref (required)
+        :type source_ref: str
+        :param destination_branch: destination branch name (required)
+        :type destination_branch: str
+        :param id: Unique identifier of the merge async task (required)
+        :type id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._merge_into_branch_async_status_serialize(
+            repository=repository,
+            source_ref=source_ref,
+            destination_branch=destination_branch,
+            id=id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "MergeAsyncStatus",
             '400': "Error",
             '401': "Error",
@@ -3086,151 +5717,324 @@ class ExperimentalApi:
             '412': "Error",
             '429': None,
             '501': "Error",
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def merge_pull_request(self, repository : StrictStr, pull_request : Annotated[StrictStr, Field(..., description="pull request id")], **kwargs) -> MergeResult:  # noqa: E501
-        """merge pull request  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def merge_into_branch_async_status_with_http_info(
+        self,
+        repository: StrictStr,
+        source_ref: Annotated[StrictStr, Field(description="source ref")],
+        destination_branch: Annotated[StrictStr, Field(description="destination branch name")],
+        id: Annotated[StrictStr, Field(description="Unique identifier of the merge async task")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[MergeAsyncStatus]:
+        """get status of async merge operation
 
-        >>> thread = api.merge_pull_request(repository, pull_request, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param pull_request: pull request id (required)
-        :type pull_request: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: MergeResult
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the merge_pull_request_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.merge_pull_request_with_http_info(repository, pull_request, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def merge_pull_request_with_http_info(self, repository : StrictStr, pull_request : Annotated[StrictStr, Field(..., description="pull request id")], **kwargs) -> ApiResponse:  # noqa: E501
-        """merge pull request  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.merge_pull_request_with_http_info(repository, pull_request, async_req=True)
-        >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
-        :param pull_request: pull request id (required)
-        :type pull_request: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param source_ref: source ref (required)
+        :type source_ref: str
+        :param destination_branch: destination branch name (required)
+        :type destination_branch: str
+        :param id: Unique identifier of the merge async task (required)
+        :type id: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(MergeResult, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
+        _param = self._merge_into_branch_async_status_serialize(
+            repository=repository,
+            source_ref=source_ref,
+            destination_branch=destination_branch,
+            id=id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        _all_params = [
-            'repository',
-            'pull_request'
-        ]
-        _all_params.extend(
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "MergeAsyncStatus",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "Error",
+            '412': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def merge_into_branch_async_status_without_preload_content(
+        self,
+        repository: StrictStr,
+        source_ref: Annotated[StrictStr, Field(description="source ref")],
+        destination_branch: Annotated[StrictStr, Field(description="destination branch name")],
+        id: Annotated[StrictStr, Field(description="Unique identifier of the merge async task")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """get status of async merge operation
+
+
+        :param repository: (required)
+        :type repository: str
+        :param source_ref: source ref (required)
+        :type source_ref: str
+        :param destination_branch: destination branch name (required)
+        :type destination_branch: str
+        :param id: Unique identifier of the merge async task (required)
+        :type id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._merge_into_branch_async_status_serialize(
+            repository=repository,
+            source_ref=source_ref,
+            destination_branch=destination_branch,
+            id=id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "MergeAsyncStatus",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "Error",
+            '412': "Error",
+            '429': None,
+            '501': "Error",
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _merge_into_branch_async_status_serialize(
+        self,
+        repository,
+        source_ref,
+        destination_branch,
+        id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if source_ref is not None:
+            _path_params['sourceRef'] = source_ref
+        if destination_branch is not None:
+            _path_params['destinationBranch'] = destination_branch
+        if id is not None:
+            _path_params['id'] = id
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
             [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
+                'application/json'
             ]
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method merge_pull_request" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['pull_request']:
-            _path_params['pull_request'] = _params['pull_request']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def merge_pull_request(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> MergeResult:
+        """merge pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request: pull request id (required)
+        :type pull_request: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._merge_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "MergeResult",
             '400': "Error",
             '401': "Error",
@@ -3239,318 +6043,808 @@ class ExperimentalApi:
             '409': "MergeResult",
             '412': "Error",
             '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def merge_pull_request_with_http_info(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[MergeResult]:
+        """merge pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request: pull request id (required)
+        :type pull_request: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._merge_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "MergeResult",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "MergeResult",
+            '412': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def merge_pull_request_without_preload_content(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """merge pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request: pull request id (required)
+        :type pull_request: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._merge_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "MergeResult",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '409': "MergeResult",
+            '412': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _merge_pull_request_serialize(
+        self,
+        repository,
+        pull_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
         }
 
-        return self.api_client.call_api(
-            '/repositories/{repository}/pulls/{pull_request}/merge', 'PUT',
-            _path_params,
-            _query_params,
-            _header_params,
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if pull_request is not None:
+            _path_params['pull_request'] = pull_request
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            [
+                'application/json'
+            ]
+        )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
+
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/repositories/{repository}/pulls/{pull_request}/merge',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def release_token_to_mailbox(self, login_request_token : Annotated[constr(strict=True, max_length=1024), Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> None:  # noqa: E501
-        """release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.release_token_to_mailbox(login_request_token, async_req=True)
-        >>> result = thread.get()
 
-        :param login_request_token: login request token returned by getTokenRedirect. (required)
-        :type login_request_token: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the release_token_to_mailbox_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.release_token_to_mailbox_with_http_info(login_request_token, **kwargs)  # noqa: E501
+    @validate_call
+    def release_token_to_mailbox(
+        self,
+        login_request_token: Annotated[str, Field(strict=True, max_length=1024, description="login request token returned by getTokenRedirect.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """release a token for the current (authenticated) user to the mailbox of this login request.
 
-    @validate_arguments
-    def release_token_to_mailbox_with_http_info(self, login_request_token : Annotated[constr(strict=True, max_length=1024), Field(..., description="login request token returned by getTokenRedirect.")], **kwargs) -> ApiResponse:  # noqa: E501
-        """release a token for the current (authenticated) user to the mailbox of this login request.  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.release_token_to_mailbox_with_http_info(login_request_token, async_req=True)
-        >>> result = thread.get()
 
         :param login_request_token: login request token returned by getTokenRedirect. (required)
         :type login_request_token: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'login_request_token'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._release_token_to_mailbox_serialize(
+            login_request_token=login_request_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method release_token_to_mailbox" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['login_request_token']:
-            _path_params['loginRequestToken'] = _params['login_request_token']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/auth/get-token/release-token/{loginRequestToken}', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def sts_login(self, sts_auth_request : StsAuthRequest, **kwargs) -> AuthenticationToken:  # noqa: E501
-        """perform a login with STS  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def release_token_to_mailbox_with_http_info(
+        self,
+        login_request_token: Annotated[str, Field(strict=True, max_length=1024, description="login request token returned by getTokenRedirect.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """release a token for the current (authenticated) user to the mailbox of this login request.
 
-        >>> thread = api.sts_login(sts_auth_request, async_req=True)
-        >>> result = thread.get()
 
-        :param sts_auth_request: (required)
-        :type sts_auth_request: StsAuthRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: AuthenticationToken
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the sts_login_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.sts_login_with_http_info(sts_auth_request, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def sts_login_with_http_info(self, sts_auth_request : StsAuthRequest, **kwargs) -> ApiResponse:  # noqa: E501
-        """perform a login with STS  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.sts_login_with_http_info(sts_auth_request, async_req=True)
-        >>> result = thread.get()
-
-        :param sts_auth_request: (required)
-        :type sts_auth_request: StsAuthRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param login_request_token: login request token returned by getTokenRedirect. (required)
+        :type login_request_token: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(AuthenticationToken, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'sts_auth_request'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._release_token_to_mailbox_serialize(
+            login_request_token=login_request_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method sts_login" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def release_token_to_mailbox_without_preload_content(
+        self,
+        login_request_token: Annotated[str, Field(strict=True, max_length=1024, description="login request token returned by getTokenRedirect.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """release a token for the current (authenticated) user to the mailbox of this login request.
+
+
+        :param login_request_token: login request token returned by getTokenRedirect. (required)
+        :type login_request_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._release_token_to_mailbox_serialize(
+            login_request_token=login_request_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _release_token_to_mailbox_serialize(
+        self,
+        login_request_token,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-
+        if login_request_token is not None:
+            _path_params['loginRequestToken'] = login_request_token
         # process the query parameters
-        _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['sts_auth_request'] is not None:
-            _body_params = _params['sts_auth_request']
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = []  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/auth/get-token/release-token/{loginRequestToken}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def sts_login(
+        self,
+        sts_auth_request: StsAuthRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> AuthenticationToken:
+        """perform a login with STS
+
+
+        :param sts_auth_request: (required)
+        :type sts_auth_request: StsAuthRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._sts_login_serialize(
+            sts_auth_request=sts_auth_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "AuthenticationToken",
             '400': "Error",
             '401': "Error",
             '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def sts_login_with_http_info(
+        self,
+        sts_auth_request: StsAuthRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[AuthenticationToken]:
+        """perform a login with STS
+
+
+        :param sts_auth_request: (required)
+        :type sts_auth_request: StsAuthRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._sts_login_serialize(
+            sts_auth_request=sts_auth_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "AuthenticationToken",
+            '400': "Error",
+            '401': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def sts_login_without_preload_content(
+        self,
+        sts_auth_request: StsAuthRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """perform a login with STS
+
+
+        :param sts_auth_request: (required)
+        :type sts_auth_request: StsAuthRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._sts_login_serialize(
+            sts_auth_request=sts_auth_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "AuthenticationToken",
+            '400': "Error",
+            '401': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _sts_login_serialize(
+        self,
+        sts_auth_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
         }
 
-        return self.api_client.call_api(
-            '/sts/login', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if sts_auth_request is not None:
+            _body_params = sts_auth_request
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            [
+                'application/json'
+            ]
+        )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/sts/login',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def update_object_user_metadata(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="branch to update")], path : Annotated[StrictStr, Field(..., description="path to object relative to the branch")], update_object_user_metadata : UpdateObjectUserMetadata, **kwargs) -> None:  # noqa: E501
-        """rewrite (all) object metadata  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.update_object_user_metadata(repository, branch, path, update_object_user_metadata, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def update_object_user_metadata(
+        self,
+        repository: StrictStr,
+        branch: Annotated[StrictStr, Field(description="branch to update")],
+        path: Annotated[StrictStr, Field(description="path to object relative to the branch")],
+        update_object_user_metadata: UpdateObjectUserMetadata,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """rewrite (all) object metadata
+
 
         :param repository: (required)
         :type repository: str
@@ -3560,32 +6854,75 @@ class ExperimentalApi:
         :type path: str
         :param update_object_user_metadata: (required)
         :type update_object_user_metadata: UpdateObjectUserMetadata
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the update_object_user_metadata_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.update_object_user_metadata_with_http_info(repository, branch, path, update_object_user_metadata, **kwargs)  # noqa: E501
+        """ # noqa: E501
 
-    @validate_arguments
-    def update_object_user_metadata_with_http_info(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="branch to update")], path : Annotated[StrictStr, Field(..., description="path to object relative to the branch")], update_object_user_metadata : UpdateObjectUserMetadata, **kwargs) -> ApiResponse:  # noqa: E501
-        """rewrite (all) object metadata  # noqa: E501
+        _param = self._update_object_user_metadata_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            update_object_user_metadata=update_object_user_metadata,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
 
-        >>> thread = api.update_object_user_metadata_with_http_info(repository, branch, path, update_object_user_metadata, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def update_object_user_metadata_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: Annotated[StrictStr, Field(description="branch to update")],
+        path: Annotated[StrictStr, Field(description="path to object relative to the branch")],
+        update_object_user_metadata: UpdateObjectUserMetadata,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """rewrite (all) object metadata
+
 
         :param repository: (required)
         :type repository: str
@@ -3595,129 +6932,238 @@ class ExperimentalApi:
         :type path: str
         :param update_object_user_metadata: (required)
         :type update_object_user_metadata: UpdateObjectUserMetadata
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'path',
-            'update_object_user_metadata'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._update_object_user_metadata_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            update_object_user_metadata=update_object_user_metadata,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method update_object_user_metadata" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def update_object_user_metadata_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: Annotated[StrictStr, Field(description="branch to update")],
+        path: Annotated[StrictStr, Field(description="path to object relative to the branch")],
+        update_object_user_metadata: UpdateObjectUserMetadata,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """rewrite (all) object metadata
+
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: branch to update (required)
+        :type branch: str
+        :param path: path to object relative to the branch (required)
+        :type path: str
+        :param update_object_user_metadata: (required)
+        :type update_object_user_metadata: UpdateObjectUserMetadata
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_object_user_metadata_serialize(
+            repository=repository,
+            branch=branch,
+            path=path,
+            update_object_user_metadata=update_object_user_metadata,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _update_object_user_metadata_serialize(
+        self,
+        repository,
+        branch,
+        path,
+        update_object_user_metadata,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
         # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['update_object_user_metadata'] is not None:
-            _body_params = _params['update_object_user_metadata']
+        if update_object_user_metadata is not None:
+            _body_params = update_object_user_metadata
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/objects/stat/user_metadata', 'PUT',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/repositories/{repository}/branches/{branch}/objects/stat/user_metadata',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def update_pull_request(self, repository : StrictStr, pull_request : Annotated[StrictStr, Field(..., description="pull request id")], pull_request_basic : PullRequestBasic, **kwargs) -> None:  # noqa: E501
-        """update pull request  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.update_pull_request(repository, pull_request, pull_request_basic, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def update_pull_request(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        pull_request_basic: PullRequestBasic,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """update pull request
+
 
         :param repository: (required)
         :type repository: str
@@ -3725,32 +7171,73 @@ class ExperimentalApi:
         :type pull_request: str
         :param pull_request_basic: (required)
         :type pull_request_basic: PullRequestBasic
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the update_pull_request_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.update_pull_request_with_http_info(repository, pull_request, pull_request_basic, **kwargs)  # noqa: E501
+        """ # noqa: E501
 
-    @validate_arguments
-    def update_pull_request_with_http_info(self, repository : StrictStr, pull_request : Annotated[StrictStr, Field(..., description="pull request id")], pull_request_basic : PullRequestBasic, **kwargs) -> ApiResponse:  # noqa: E501
-        """update pull request  # noqa: E501
+        _param = self._update_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            pull_request_basic=pull_request_basic,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
 
-        >>> thread = api.update_pull_request_with_http_info(repository, pull_request, pull_request_basic, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def update_pull_request_with_http_info(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        pull_request_basic: PullRequestBasic,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """update pull request
+
 
         :param repository: (required)
         :type repository: str
@@ -3758,126 +7245,232 @@ class ExperimentalApi:
         :type pull_request: str
         :param pull_request_basic: (required)
         :type pull_request_basic: PullRequestBasic
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'pull_request',
-            'pull_request_basic'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._update_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            pull_request_basic=pull_request_basic,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method update_pull_request" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def update_pull_request_without_preload_content(
+        self,
+        repository: StrictStr,
+        pull_request: Annotated[StrictStr, Field(description="pull request id")],
+        pull_request_basic: PullRequestBasic,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """update pull request
+
+
+        :param repository: (required)
+        :type repository: str
+        :param pull_request: pull request id (required)
+        :type pull_request: str
+        :param pull_request_basic: (required)
+        :type pull_request_basic: PullRequestBasic
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_pull_request_serialize(
+            repository=repository,
+            pull_request=pull_request,
+            pull_request_basic=pull_request_basic,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _update_pull_request_serialize(
+        self,
+        repository,
+        pull_request,
+        pull_request_basic,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['pull_request']:
-            _path_params['pull_request'] = _params['pull_request']
-
-
+        if repository is not None:
+            _path_params['repository'] = repository
+        if pull_request is not None:
+            _path_params['pull_request'] = pull_request
         # process the query parameters
-        _query_params = []
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['pull_request_basic'] is not None:
-            _body_params = _params['pull_request_basic']
+        if pull_request_basic is not None:
+            _body_params = pull_request_basic
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/pulls/{pull_request}', 'PATCH',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='PATCH',
+            resource_path='/repositories/{repository}/pulls/{pull_request}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
 
-    @validate_arguments
-    def upload_part(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> UploadTo:  # noqa: E501
-        """upload_part  # noqa: E501
 
-        Return a presigned URL to upload into a presigned multipart upload.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.upload_part(repository, branch, upload_id, path, part_number, upload_part_from, async_req=True)
-        >>> result = thread.get()
+
+    @validate_call
+    def upload_part(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: StrictStr,
+        part_number: Annotated[int, Field(le=1000, strict=True, ge=1)],
+        upload_part_from: UploadPartFrom,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> UploadTo:
+        """upload_part
+
+        Return a presigned URL to upload into a presigned multipart upload.
 
         :param repository: (required)
         :type repository: str
@@ -3891,224 +7484,86 @@ class ExperimentalApi:
         :type part_number: int
         :param upload_part_from: (required)
         :type upload_part_from: UploadPartFrom
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: UploadTo
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the upload_part_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.upload_part_with_http_info(repository, branch, upload_id, path, part_number, upload_part_from, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def upload_part_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> ApiResponse:  # noqa: E501
-        """upload_part  # noqa: E501
-
-        Return a presigned URL to upload into a presigned multipart upload.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.upload_part_with_http_info(repository, branch, upload_id, path, part_number, upload_part_from, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param upload_id: (required)
-        :type upload_id: str
-        :param path: (required)
-        :type path: str
-        :param part_number: (required)
-        :type part_number: int
-        :param upload_part_from: (required)
-        :type upload_part_from: UploadPartFrom
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(UploadTo, status_code(int), headers(HTTPHeaderDict))
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'upload_id',
-            'path',
-            'part_number',
-            'upload_part_from'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._upload_part_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            part_number=part_number,
+            upload_part_from=upload_part_from,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method upload_part" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-        if _params['upload_id']:
-            _path_params['uploadId'] = _params['upload_id']
-
-        if _params['part_number']:
-            _path_params['partNumber'] = _params['part_number']
-
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        if _params['upload_part_from'] is not None:
-            _body_params = _params['upload_part_from']
-
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {
+        _response_types_map: Dict[str, Optional[str]] = {
             '200': "UploadTo",
             '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
+            
+            
         }
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}', 'PUT',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
             response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+        ).data
 
-    @validate_arguments
-    def upload_part_copy(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> None:  # noqa: E501
-        """upload_part_copy  # noqa: E501
 
-        Upload a part by copying part of another object.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
+    @validate_call
+    def upload_part_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: StrictStr,
+        part_number: Annotated[int, Field(le=1000, strict=True, ge=1)],
+        upload_part_from: UploadPartFrom,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[UploadTo]:
+        """upload_part
 
-        >>> thread = api.upload_part_copy(repository, branch, upload_id, path, part_number, upload_part_copy_from, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch: (required)
-        :type branch: str
-        :param upload_id: (required)
-        :type upload_id: str
-        :param path: (required)
-        :type path: str
-        :param part_number: (required)
-        :type part_number: int
-        :param upload_part_copy_from: (required)
-        :type upload_part_copy_from: UploadPartCopyFrom
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request.
-               If one number provided, it will be total request
-               timeout. It can also be a pair (tuple) of
-               (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            message = "Error! Please call the upload_part_copy_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
-            raise ValueError(message)
-        return self.upload_part_copy_with_http_info(repository, branch, upload_id, path, part_number, upload_part_copy_from, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def upload_part_copy_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> ApiResponse:  # noqa: E501
-        """upload_part_copy  # noqa: E501
-
-        Upload a part by copying part of another object.  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.upload_part_copy_with_http_info(repository, branch, upload_id, path, part_number, upload_part_copy_from, async_req=True)
-        >>> result = thread.get()
+        Return a presigned URL to upload into a presigned multipart upload.
 
         :param repository: (required)
         :type repository: str
@@ -4120,126 +7575,596 @@ class ExperimentalApi:
         :type path: str
         :param part_number: (required)
         :type part_number: int
-        :param upload_part_copy_from: (required)
-        :type upload_part_copy_from: UploadPartCopyFrom
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
+        :param upload_part_from: (required)
+        :type upload_part_from: UploadPartFrom
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
         :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
         :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
         :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
+        """ # noqa: E501
 
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch',
-            'upload_id',
-            'path',
-            'part_number',
-            'upload_part_copy_from'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
+        _param = self._upload_part_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            part_number=part_number,
+            upload_part_from=upload_part_from,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
         )
 
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method upload_part_copy" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UploadTo",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
 
-        _collection_formats = {}
+
+    @validate_call
+    def upload_part_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: StrictStr,
+        part_number: Annotated[int, Field(le=1000, strict=True, ge=1)],
+        upload_part_from: UploadPartFrom,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """upload_part
+
+        Return a presigned URL to upload into a presigned multipart upload.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_from: (required)
+        :type upload_part_from: UploadPartFrom
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._upload_part_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            part_number=part_number,
+            upload_part_from=upload_part_from,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UploadTo",
+            '400': "Error",
+            '401': "Error",
+            '404': "Error",
+            '429': None,
+            
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _upload_part_serialize(
+        self,
+        repository,
+        branch,
+        upload_id,
+        path,
+        part_number,
+        upload_part_from,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
 
         # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-        if _params['branch']:
-            _path_params['branch'] = _params['branch']
-
-        if _params['upload_id']:
-            _path_params['uploadId'] = _params['upload_id']
-
-        if _params['part_number']:
-            _path_params['partNumber'] = _params['part_number']
-
-
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        if upload_id is not None:
+            _path_params['uploadId'] = upload_id
+        if part_number is not None:
+            _path_params['partNumber'] = part_number
         # process the query parameters
-        _query_params = []
-        if _params.get('path') is not None:  # noqa: E501
-            _query_params.append(('path', _params['path']))
-
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
         # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
-        _form_params = []
-        _files = {}
         # process the body parameter
-        _body_params = None
-        if _params['upload_part_copy_from'] is not None:
-            _body_params = _params['upload_part_copy_from']
+        if upload_part_from is not None:
+            _body_params = upload_part_from
+
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
+            [
+                'application/json'
+            ]
+        )
 
         # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
 
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy', 'PUT',
-            _path_params,
-            _query_params,
-            _header_params,
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
             body=_body_params,
             post_params=_form_params,
             files=_files,
-            response_types_map=_response_types_map,
             auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
             collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def upload_part_copy(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: StrictStr,
+        part_number: Annotated[int, Field(le=1000, strict=True, ge=1)],
+        upload_part_copy_from: UploadPartCopyFrom,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> None:
+        """upload_part_copy
+
+        Upload a part by copying part of another object.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_copy_from: (required)
+        :type upload_part_copy_from: UploadPartCopyFrom
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._upload_part_copy_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            part_number=part_number,
+            upload_part_copy_from=upload_part_copy_from,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def upload_part_copy_with_http_info(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: StrictStr,
+        part_number: Annotated[int, Field(le=1000, strict=True, ge=1)],
+        upload_part_copy_from: UploadPartCopyFrom,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[None]:
+        """upload_part_copy
+
+        Upload a part by copying part of another object.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_copy_from: (required)
+        :type upload_part_copy_from: UploadPartCopyFrom
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._upload_part_copy_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            part_number=part_number,
+            upload_part_copy_from=upload_part_copy_from,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def upload_part_copy_without_preload_content(
+        self,
+        repository: StrictStr,
+        branch: StrictStr,
+        upload_id: StrictStr,
+        path: StrictStr,
+        part_number: Annotated[int, Field(le=1000, strict=True, ge=1)],
+        upload_part_copy_from: UploadPartCopyFrom,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """upload_part_copy
+
+        Upload a part by copying part of another object.
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_copy_from: (required)
+        :type upload_part_copy_from: UploadPartCopyFrom
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._upload_part_copy_serialize(
+            repository=repository,
+            branch=branch,
+            upload_id=upload_id,
+            path=path,
+            part_number=part_number,
+            upload_part_copy_from=upload_part_copy_from,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _upload_part_copy_serialize(
+        self,
+        repository,
+        branch,
+        upload_id,
+        path,
+        part_number,
+        upload_part_copy_from,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> Tuple:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+            
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[str, str] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if repository is not None:
+            _path_params['repository'] = repository
+        if branch is not None:
+            _path_params['branch'] = branch
+        if upload_id is not None:
+            _path_params['uploadId'] = upload_id
+        if part_number is not None:
+            _path_params['partNumber'] = part_number
+        # process the query parameters
+        if path is not None:
+            
+            _query_params.append(('path', path))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if upload_part_copy_from is not None:
+            _body_params = upload_part_copy_from
+
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            [
+                'application/json'
+            ]
+        )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'basic_auth', 
+            'cookie_auth', 
+            'oidc_auth', 
+            'saml_auth', 
+            'jwt_token'
+        ]
+
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+

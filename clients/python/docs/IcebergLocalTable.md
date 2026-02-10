@@ -2,7 +2,6 @@
 
 
 ## Properties
-
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **namespace** | **List[str]** | Reference to one or more levels of a namespace | 

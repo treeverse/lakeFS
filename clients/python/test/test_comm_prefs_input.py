@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.comm_prefs_input import CommPrefsInput  # noqa: E501
+from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 
 class TestCommPrefsInput(unittest.TestCase):
     """CommPrefsInput unit test stubs"""
@@ -34,7 +34,7 @@ class TestCommPrefsInput(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `CommPrefsInput`
         """
-        model = CommPrefsInput()  # noqa: E501
+        model = CommPrefsInput()
         if include_optional:
             return CommPrefsInput(
                 email = '',

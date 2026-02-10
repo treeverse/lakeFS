@@ -16,7 +16,7 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.diff import Diff  # noqa: E501
+from lakefs_sdk.models.diff import Diff
 
 class TestDiff(unittest.TestCase):
     """Diff unit test stubs"""
@@ -34,7 +34,7 @@ class TestDiff(unittest.TestCase):
             optional params are included """
         # uncomment below to create an instance of `Diff`
         """
-        model = Diff()  # noqa: E501
+        model = Diff()
         if include_optional:
             return Diff(
                 type = 'added',
