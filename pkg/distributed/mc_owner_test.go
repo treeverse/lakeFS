@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
-
 	"github.com/treeverse/lakefs/pkg/distributed"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
@@ -112,13 +111,10 @@ func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 		}
 		events.Add("owner: me")
 
-		wg := sync.WaitGroup{}
-
-		wg.Add(1)
+		var wg sync.WaitGroup
 		errChan := make(chan error, 1)
-		go func() {
+		wg.Go(func() {
 			log.Info("Goroutine start")
-			defer wg.Done()
 			releaseB, err := w.Own(ctx, "us", "xyz")
 			if err != nil {
 				errChan <- fmt.Errorf("Own goroutine us: %s", err)
@@ -129,7 +125,7 @@ func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 				events.Add("released: us")
 			}()
 			events.Add("owner: us")
-		}()
+		})
 
 		synctest.Wait()
 		events.Add("release: me")
@@ -206,10 +202,8 @@ func TestMostlyCorrectOwnerFIFOOrdering(t *testing.T) {
 		const n = 3
 		var wg sync.WaitGroup
 		errChan := make(chan error, n)
-		for i := 0; i < n; i++ {
-			wg.Add(1)
-			go func(idx int) {
-				defer wg.Done()
+		for idx := range n {
+			wg.Go(func() {
 				release, err := w.Own(ctx, fmt.Sprintf("W%d", idx), "key")
 				if err != nil {
 					errChan <- fmt.Errorf("Own W%d: %w", idx, err)
@@ -217,7 +211,7 @@ func TestMostlyCorrectOwnerFIFOOrdering(t *testing.T) {
 				}
 				events.Add(fmt.Sprintf("owner: W%d", idx))
 				release()
-			}(i)
+			})
 			synctest.Wait()
 		}
 
