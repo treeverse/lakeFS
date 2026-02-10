@@ -79,10 +79,8 @@ func TestInProcessKeyedLock_FIFOOrdering(t *testing.T) {
 
 		const n = 5
 		var wg sync.WaitGroup
-		for i := 0; i < n; i++ {
-			wg.Add(1)
-			go func(idx int) {
-				defer wg.Done()
+		for idx := range n {
+			wg.Go(func() {
 				release, err := l.Acquire(ctx, "k")
 				if err != nil {
 					t.Errorf("Acquire W%d: %v", idx, err)
@@ -90,7 +88,7 @@ func TestInProcessKeyedLock_FIFOOrdering(t *testing.T) {
 				}
 				events.Add(fmt.Sprintf("W%d", idx))
 				release()
-			}(i)
+			})
 			synctest.Wait()
 		}
 
