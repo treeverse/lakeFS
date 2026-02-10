@@ -130,7 +130,7 @@ test.describe("Quickstart", () => {
         await test.step("verify empty pull requests list", async () => {
             await repositoryPage.gotoPullRequestsTab();
             await expect(page.getByText("Create Pull Request")).toBeVisible();
-            await expect.poll(() => pullsPage.getPullsListCount()).toEqual(0);
+            await expect.poll(() => pullsPage.getPullsListCount(), { timeout: TIMEOUT_ELEMENT_VISIBLE }).toEqual(0);
         });
 
         const pullDetails = { title: "PR for branch 1", description: "A description for PR 1" };

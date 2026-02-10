@@ -1,11 +1,14 @@
 import { Page } from "@playwright/test";
+import { TIMEOUT_NAVIGATION } from "../timeouts";
 
 export class PullsPage {
     constructor(private page: Page) {}
 
     async getPullsListCount(): Promise<number> {
         const pullsList = this.page.locator("div.pulls-list");
-        if (!(await pullsList.isVisible())) {
+        try {
+            await pullsList.waitFor({ state: "visible", timeout: TIMEOUT_NAVIGATION });
+        } catch {
             return 0;
         }
         return pullsList.locator("div.pull-row").count();

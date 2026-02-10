@@ -15,6 +15,6 @@ test.describe("Read Only Repository", () => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(READ_ONLY_REPO_NAME);
         await expect(repositoryPage.readOnlyIndicatorLocator).toBeVisible();
-        await expect(repositoriesPage.uploadButtonLocator).toBeDisabled();
+        await expect(repositoryPage.objects.uploadButtonLocator).toBeDisabled();
     });
 });

@@ -18,7 +18,12 @@ export const getCredentials = async (): Promise<LakeFSCredentials|null> => {
     }
 }
 
+export const ensureStorageDir = async (): Promise<void> => {
+    await fs.mkdir(path.dirname(STORAGE_STATE_PATH), { recursive: true });
+}
+
 export const writeCredentials = async (credentials: LakeFSCredentials): Promise<void> => {
+    await fs.mkdir(path.dirname(CREDENTIALS_PATH), { recursive: true });
     const jsonCredentials = JSON.stringify(credentials);
     await fs.writeFile(CREDENTIALS_PATH, jsonCredentials);
 }

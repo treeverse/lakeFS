@@ -2,7 +2,11 @@ import { Page } from "@playwright/test";
 import { TIMEOUT_ELEMENT_VISIBLE, TIMEOUT_NAVIGATION } from "../timeouts";
 
 export class ObjectOperations {
-    constructor(private page: Page) {}
+    public uploadButtonLocator;
+
+    constructor(private page: Page) {
+        this.uploadButtonLocator = this.page.getByRole("button", { name: "Upload", exact: true });
+    }
 
     async clickObject(objectName: string): Promise<void> {
         await this.page

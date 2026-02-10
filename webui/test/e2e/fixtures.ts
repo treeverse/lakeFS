@@ -34,14 +34,20 @@ export const test = base.extend<E2EFixtures, E2EWorkerFixtures>({
         }
         const baseUrl = process.env.BASE_URL || "http://localhost:8000";
         const request = await playwright.request.newContext();
-        const resp = await request.get(`${baseUrl}/api/v1/setup_lakefs`);
-        const state = await resp.json();
-        if (state.state === "initialized" && state.comm_prefs_missing) {
-            await request.post(`${baseUrl}/api/v1/setup_comm_prefs`, {
-                data: { email: "test@example.com", featureUpdates: false, securityUpdates: false },
-            });
+        try {
+            const resp = await request.get(`${baseUrl}/api/v1/setup_lakefs`);
+            if (!resp.ok()) {
+                throw new Error(`setup_lakefs returned ${resp.status()}: ${resp.statusText()}`);
+            }
+            const state = await resp.json();
+            if (state.state === "initialized" && state.comm_prefs_missing) {
+                await request.post(`${baseUrl}/api/v1/setup_comm_prefs`, {
+                    data: { email: "test@example.com", featureUpdates: false, securityUpdates: false },
+                });
+            }
+        } finally {
+            await request.dispose();
         }
-        await request.dispose();
         await use();
     }, { auto: true, scope: "worker" }],
     repositoriesPage: async ({ page }, use) => { await use(new RepositoriesPage(page)); },

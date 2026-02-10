@@ -1,4 +1,5 @@
 import { expect, Page } from "@playwright/test";
+import { TIMEOUT_NAVIGATION, TIMEOUT_LONG_OPERATION } from "../timeouts";
 
 export class ObjectViewerPage {
   constructor(private page: Page) {}
@@ -13,8 +14,8 @@ export class ObjectViewerPage {
     // Wait for the query to complete: button shows "Executing..." (disabled) while loading,
     // then reverts to "Execute" (enabled) when done. Try to observe the loading state first;
     // if the query completes before we can check, that's fine.
-    await expect(submitBtn).toBeDisabled({ timeout: 2000 }).catch(() => {});
-    await expect(submitBtn).toBeEnabled({ timeout: 30000 });
+    await expect(submitBtn).toBeDisabled({ timeout: TIMEOUT_NAVIGATION }).catch(() => {});
+    await expect(submitBtn).toBeEnabled({ timeout: TIMEOUT_LONG_OPERATION });
   }
 
   async getResultRowCount(): Promise<number> {
