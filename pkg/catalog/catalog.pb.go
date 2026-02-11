@@ -169,16 +169,17 @@ func (x *Entry) GetContentType() string {
 
 // Task is a generic task status message
 type Task struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Done          bool                   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	Progress      int64                  `protobuf:"varint,4,opt,name=progress,proto3" json:"progress,omitempty"`
-	ErrorMsg      string                 `protobuf:"bytes,5,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
-	StatusCode    int32                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
-	Operation     string                 `protobuf:"bytes,7,opt,name=operation,proto3" json:"operation,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Done            bool                   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Progress        int64                  `protobuf:"varint,4,opt,name=progress,proto3" json:"progress,omitempty"`
+	ErrorMsg        string                 `protobuf:"bytes,5,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
+	StatusCode      int32                  `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
+	Operation       string                 `protobuf:"bytes,7,opt,name=operation,proto3" json:"operation,omitempty"`
+	OwnerInstanceId string                 `protobuf:"bytes,8,opt,name=owner_instance_id,json=ownerInstanceId,proto3" json:"owner_instance_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Task) Reset() {
@@ -260,6 +261,60 @@ func (x *Task) GetOperation() string {
 	return ""
 }
 
+func (x *Task) GetOwnerInstanceId() string {
+	if x != nil {
+		return x.OwnerInstanceId
+	}
+	return ""
+}
+
+// InstanceHeartbeat tracks the liveness of a lakeFS server instance.
+// One entry per instance is written periodically to the KV store.
+// The instance ID is encoded in the KV key (instances/{instanceID}).
+type InstanceHeartbeat struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstanceHeartbeat) Reset() {
+	*x = InstanceHeartbeat{}
+	mi := &file_catalog_catalog_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstanceHeartbeat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstanceHeartbeat) ProtoMessage() {}
+
+func (x *InstanceHeartbeat) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstanceHeartbeat.ProtoReflect.Descriptor instead.
+func (*InstanceHeartbeat) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *InstanceHeartbeat) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
 type RepositoryDumpInfo struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
@@ -272,7 +327,7 @@ type RepositoryDumpInfo struct {
 
 func (x *RepositoryDumpInfo) Reset() {
 	*x = RepositoryDumpInfo{}
-	mi := &file_catalog_catalog_proto_msgTypes[2]
+	mi := &file_catalog_catalog_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -284,7 +339,7 @@ func (x *RepositoryDumpInfo) String() string {
 func (*RepositoryDumpInfo) ProtoMessage() {}
 
 func (x *RepositoryDumpInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[2]
+	mi := &file_catalog_catalog_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -297,7 +352,7 @@ func (x *RepositoryDumpInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryDumpInfo.ProtoReflect.Descriptor instead.
 func (*RepositoryDumpInfo) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{2}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RepositoryDumpInfo) GetCommitsMetarangeId() string {
@@ -332,7 +387,7 @@ type RepositoryDumpStatus struct {
 
 func (x *RepositoryDumpStatus) Reset() {
 	*x = RepositoryDumpStatus{}
-	mi := &file_catalog_catalog_proto_msgTypes[3]
+	mi := &file_catalog_catalog_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -344,7 +399,7 @@ func (x *RepositoryDumpStatus) String() string {
 func (*RepositoryDumpStatus) ProtoMessage() {}
 
 func (x *RepositoryDumpStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[3]
+	mi := &file_catalog_catalog_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -357,7 +412,7 @@ func (x *RepositoryDumpStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryDumpStatus.ProtoReflect.Descriptor instead.
 func (*RepositoryDumpStatus) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{3}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RepositoryDumpStatus) GetTask() *Task {
@@ -384,7 +439,7 @@ type RepositoryRestoreStatus struct {
 
 func (x *RepositoryRestoreStatus) Reset() {
 	*x = RepositoryRestoreStatus{}
-	mi := &file_catalog_catalog_proto_msgTypes[4]
+	mi := &file_catalog_catalog_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -396,7 +451,7 @@ func (x *RepositoryRestoreStatus) String() string {
 func (*RepositoryRestoreStatus) ProtoMessage() {}
 
 func (x *RepositoryRestoreStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[4]
+	mi := &file_catalog_catalog_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -409,7 +464,7 @@ func (x *RepositoryRestoreStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryRestoreStatus.ProtoReflect.Descriptor instead.
 func (*RepositoryRestoreStatus) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{4}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RepositoryRestoreStatus) GetTask() *Task {
@@ -432,7 +487,7 @@ type GarbageCollectionPrepareCommitsInfo struct {
 
 func (x *GarbageCollectionPrepareCommitsInfo) Reset() {
 	*x = GarbageCollectionPrepareCommitsInfo{}
-	mi := &file_catalog_catalog_proto_msgTypes[5]
+	mi := &file_catalog_catalog_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -444,7 +499,7 @@ func (x *GarbageCollectionPrepareCommitsInfo) String() string {
 func (*GarbageCollectionPrepareCommitsInfo) ProtoMessage() {}
 
 func (x *GarbageCollectionPrepareCommitsInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[5]
+	mi := &file_catalog_catalog_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -457,7 +512,7 @@ func (x *GarbageCollectionPrepareCommitsInfo) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use GarbageCollectionPrepareCommitsInfo.ProtoReflect.Descriptor instead.
 func (*GarbageCollectionPrepareCommitsInfo) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{5}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GarbageCollectionPrepareCommitsInfo) GetRunId() string {
@@ -492,7 +547,7 @@ type GarbageCollectionPrepareStatus struct {
 
 func (x *GarbageCollectionPrepareStatus) Reset() {
 	*x = GarbageCollectionPrepareStatus{}
-	mi := &file_catalog_catalog_proto_msgTypes[6]
+	mi := &file_catalog_catalog_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -504,7 +559,7 @@ func (x *GarbageCollectionPrepareStatus) String() string {
 func (*GarbageCollectionPrepareStatus) ProtoMessage() {}
 
 func (x *GarbageCollectionPrepareStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[6]
+	mi := &file_catalog_catalog_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +572,7 @@ func (x *GarbageCollectionPrepareStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GarbageCollectionPrepareStatus.ProtoReflect.Descriptor instead.
 func (*GarbageCollectionPrepareStatus) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{6}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GarbageCollectionPrepareStatus) GetTask() *Task {
@@ -544,7 +599,7 @@ type CommitAsyncStatusData struct {
 
 func (x *CommitAsyncStatusData) Reset() {
 	*x = CommitAsyncStatusData{}
-	mi := &file_catalog_catalog_proto_msgTypes[7]
+	mi := &file_catalog_catalog_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +611,7 @@ func (x *CommitAsyncStatusData) String() string {
 func (*CommitAsyncStatusData) ProtoMessage() {}
 
 func (x *CommitAsyncStatusData) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[7]
+	mi := &file_catalog_catalog_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +624,7 @@ func (x *CommitAsyncStatusData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitAsyncStatusData.ProtoReflect.Descriptor instead.
 func (*CommitAsyncStatusData) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{7}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CommitAsyncStatusData) GetTask() *Task {
@@ -595,7 +650,7 @@ type MergeData struct {
 
 func (x *MergeData) Reset() {
 	*x = MergeData{}
-	mi := &file_catalog_catalog_proto_msgTypes[8]
+	mi := &file_catalog_catalog_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -607,7 +662,7 @@ func (x *MergeData) String() string {
 func (*MergeData) ProtoMessage() {}
 
 func (x *MergeData) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[8]
+	mi := &file_catalog_catalog_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -620,7 +675,7 @@ func (x *MergeData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MergeData.ProtoReflect.Descriptor instead.
 func (*MergeData) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{8}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *MergeData) GetReference() string {
@@ -640,7 +695,7 @@ type MergeAsyncStatusData struct {
 
 func (x *MergeAsyncStatusData) Reset() {
 	*x = MergeAsyncStatusData{}
-	mi := &file_catalog_catalog_proto_msgTypes[9]
+	mi := &file_catalog_catalog_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -652,7 +707,7 @@ func (x *MergeAsyncStatusData) String() string {
 func (*MergeAsyncStatusData) ProtoMessage() {}
 
 func (x *MergeAsyncStatusData) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[9]
+	mi := &file_catalog_catalog_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -665,7 +720,7 @@ func (x *MergeAsyncStatusData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MergeAsyncStatusData.ProtoReflect.Descriptor instead.
 func (*MergeAsyncStatusData) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{9}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *MergeAsyncStatusData) GetTask() *Task {
@@ -693,7 +748,7 @@ type TaskMsg struct {
 
 func (x *TaskMsg) Reset() {
 	*x = TaskMsg{}
-	mi := &file_catalog_catalog_proto_msgTypes[10]
+	mi := &file_catalog_catalog_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -705,7 +760,7 @@ func (x *TaskMsg) String() string {
 func (*TaskMsg) ProtoMessage() {}
 
 func (x *TaskMsg) ProtoReflect() protoreflect.Message {
-	mi := &file_catalog_catalog_proto_msgTypes[10]
+	mi := &file_catalog_catalog_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -718,7 +773,7 @@ func (x *TaskMsg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskMsg.ProtoReflect.Descriptor instead.
 func (*TaskMsg) Descriptor() ([]byte, []int) {
-	return file_catalog_catalog_proto_rawDescGZIP(), []int{10}
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *TaskMsg) GetTask() *Task {
@@ -747,7 +802,7 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\vAddressType\x12\x18\n" +
 	"\x14BY_PREFIX_DEPRECATED\x10\x00\x12\f\n" +
 	"\bRELATIVE\x10\x01\x12\b\n" +
-	"\x04FULL\x10\x02\"\xdd\x01\n" +
+	"\x04FULL\x10\x02\"\x89\x02\n" +
 	"\x04Task\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04done\x18\x02 \x01(\bR\x04done\x129\n" +
@@ -757,7 +812,11 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\terror_msg\x18\x05 \x01(\tR\berrorMsg\x12\x1f\n" +
 	"\vstatus_code\x18\x06 \x01(\x05R\n" +
 	"statusCode\x12\x1c\n" +
-	"\toperation\x18\a \x01(\tR\toperation\"\xa6\x01\n" +
+	"\toperation\x18\a \x01(\tR\toperation\x12*\n" +
+	"\x11owner_instance_id\x18\b \x01(\tR\x0fownerInstanceId\"N\n" +
+	"\x11InstanceHeartbeat\x129\n" +
+	"\n" +
+	"updated_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xa6\x01\n" +
 	"\x12RepositoryDumpInfo\x120\n" +
 	"\x14commits_metarange_id\x18\x01 \x01(\tR\x12commitsMetarangeId\x12*\n" +
 	"\x11tags_metarange_id\x18\x02 \x01(\tR\x0ftagsMetarangeId\x122\n" +
@@ -798,44 +857,46 @@ func file_catalog_catalog_proto_rawDescGZIP() []byte {
 }
 
 var file_catalog_catalog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_catalog_catalog_proto_goTypes = []any{
 	(Entry_AddressType)(0),                      // 0: catalog.Entry.AddressType
 	(*Entry)(nil),                               // 1: catalog.Entry
 	(*Task)(nil),                                // 2: catalog.Task
-	(*RepositoryDumpInfo)(nil),                  // 3: catalog.RepositoryDumpInfo
-	(*RepositoryDumpStatus)(nil),                // 4: catalog.RepositoryDumpStatus
-	(*RepositoryRestoreStatus)(nil),             // 5: catalog.RepositoryRestoreStatus
-	(*GarbageCollectionPrepareCommitsInfo)(nil), // 6: catalog.GarbageCollectionPrepareCommitsInfo
-	(*GarbageCollectionPrepareStatus)(nil),      // 7: catalog.GarbageCollectionPrepareStatus
-	(*CommitAsyncStatusData)(nil),               // 8: catalog.CommitAsyncStatusData
-	(*MergeData)(nil),                           // 9: catalog.MergeData
-	(*MergeAsyncStatusData)(nil),                // 10: catalog.MergeAsyncStatusData
-	(*TaskMsg)(nil),                             // 11: catalog.TaskMsg
-	nil,                                         // 12: catalog.Entry.MetadataEntry
-	(*timestamppb.Timestamp)(nil),               // 13: google.protobuf.Timestamp
-	(*graveler.CommitData)(nil),                 // 14: io.treeverse.lakefs.graveler.CommitData
+	(*InstanceHeartbeat)(nil),                   // 3: catalog.InstanceHeartbeat
+	(*RepositoryDumpInfo)(nil),                  // 4: catalog.RepositoryDumpInfo
+	(*RepositoryDumpStatus)(nil),                // 5: catalog.RepositoryDumpStatus
+	(*RepositoryRestoreStatus)(nil),             // 6: catalog.RepositoryRestoreStatus
+	(*GarbageCollectionPrepareCommitsInfo)(nil), // 7: catalog.GarbageCollectionPrepareCommitsInfo
+	(*GarbageCollectionPrepareStatus)(nil),      // 8: catalog.GarbageCollectionPrepareStatus
+	(*CommitAsyncStatusData)(nil),               // 9: catalog.CommitAsyncStatusData
+	(*MergeData)(nil),                           // 10: catalog.MergeData
+	(*MergeAsyncStatusData)(nil),                // 11: catalog.MergeAsyncStatusData
+	(*TaskMsg)(nil),                             // 12: catalog.TaskMsg
+	nil,                                         // 13: catalog.Entry.MetadataEntry
+	(*timestamppb.Timestamp)(nil),               // 14: google.protobuf.Timestamp
+	(*graveler.CommitData)(nil),                 // 15: io.treeverse.lakefs.graveler.CommitData
 }
 var file_catalog_catalog_proto_depIdxs = []int32{
-	13, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
-	12, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
+	14, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
+	13, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
 	0,  // 2: catalog.Entry.address_type:type_name -> catalog.Entry.AddressType
-	13, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
-	2,  // 4: catalog.RepositoryDumpStatus.task:type_name -> catalog.Task
-	3,  // 5: catalog.RepositoryDumpStatus.info:type_name -> catalog.RepositoryDumpInfo
-	2,  // 6: catalog.RepositoryRestoreStatus.task:type_name -> catalog.Task
-	2,  // 7: catalog.GarbageCollectionPrepareStatus.task:type_name -> catalog.Task
-	6,  // 8: catalog.GarbageCollectionPrepareStatus.info:type_name -> catalog.GarbageCollectionPrepareCommitsInfo
-	2,  // 9: catalog.CommitAsyncStatusData.task:type_name -> catalog.Task
-	14, // 10: catalog.CommitAsyncStatusData.info:type_name -> io.treeverse.lakefs.graveler.CommitData
-	2,  // 11: catalog.MergeAsyncStatusData.task:type_name -> catalog.Task
-	9,  // 12: catalog.MergeAsyncStatusData.info:type_name -> catalog.MergeData
-	2,  // 13: catalog.TaskMsg.task:type_name -> catalog.Task
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	14, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
+	14, // 4: catalog.InstanceHeartbeat.updated_at:type_name -> google.protobuf.Timestamp
+	2,  // 5: catalog.RepositoryDumpStatus.task:type_name -> catalog.Task
+	4,  // 6: catalog.RepositoryDumpStatus.info:type_name -> catalog.RepositoryDumpInfo
+	2,  // 7: catalog.RepositoryRestoreStatus.task:type_name -> catalog.Task
+	2,  // 8: catalog.GarbageCollectionPrepareStatus.task:type_name -> catalog.Task
+	7,  // 9: catalog.GarbageCollectionPrepareStatus.info:type_name -> catalog.GarbageCollectionPrepareCommitsInfo
+	2,  // 10: catalog.CommitAsyncStatusData.task:type_name -> catalog.Task
+	15, // 11: catalog.CommitAsyncStatusData.info:type_name -> io.treeverse.lakefs.graveler.CommitData
+	2,  // 12: catalog.MergeAsyncStatusData.task:type_name -> catalog.Task
+	10, // 13: catalog.MergeAsyncStatusData.info:type_name -> catalog.MergeData
+	2,  // 14: catalog.TaskMsg.task:type_name -> catalog.Task
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_catalog_catalog_proto_init() }
@@ -849,7 +910,7 @@ func file_catalog_catalog_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_catalog_catalog_proto_rawDesc), len(file_catalog_catalog_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

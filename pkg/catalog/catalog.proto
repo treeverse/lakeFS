@@ -34,6 +34,14 @@ message Task {
   string error_msg = 5;
   int32 status_code = 6;
   string operation = 7;
+  string owner_instance_id = 8;
+}
+
+// InstanceHeartbeat tracks the liveness of a lakeFS server instance.
+// One entry per instance is written periodically to the KV store.
+// The instance ID is encoded in the KV key (instances/{instanceID}).
+message InstanceHeartbeat {
+  google.protobuf.Timestamp updated_at = 1;
 }
 
 // RepositoryDumpInfo holds the metarange IDs for a repository dump
