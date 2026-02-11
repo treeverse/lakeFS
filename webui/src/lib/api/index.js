@@ -559,6 +559,37 @@ class Repositories {
             throw new Error(await extractError(response));
         }
     }
+
+    async getMetadata(repoId) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/metadata`);
+        if (response.status === 404) {
+            throw new NotFoundError('metadata not found');
+        }
+        if (response.status !== 200) {
+            throw new Error(`could not get metadata: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
+
+    async setMetadata(repoId, metadata) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/metadata`, {
+            method: 'POST',
+            body: JSON.stringify({ metadata }),
+        });
+        if (response.status !== 204) {
+            throw new Error(`could not set metadata: ${await extractError(response)}`);
+        }
+    }
+
+    async deleteMetadata(repoId, keys) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/metadata`, {
+            method: 'DELETE',
+            body: JSON.stringify({ keys }),
+        });
+        if (response.status !== 204) {
+            throw new Error(`could not delete metadata: ${await extractError(response)}`);
+        }
+    }
 }
 
 class Branches {

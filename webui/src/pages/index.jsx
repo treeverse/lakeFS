@@ -22,6 +22,7 @@ import RepositoryActionsPage from './repositories/repository/actions';
 import RepositoryGeneralSettingsPage from './repositories/repository/settings/general';
 import RepositoryRetentionPage from './repositories/repository/settings/retention';
 import RepositorySettingsBranchesPage from './repositories/repository/settings/branches';
+import RepositoryMetadataPage from './repositories/repository/settings/metadata';
 import { SettingsLayout } from './repositories/repository/settings/layout';
 import Layout from '../lib/components/layout';
 import CredentialsPage from './auth/credentials';
@@ -93,6 +94,7 @@ export const IndexPage = () => {
                                             <Route index element={<Navigate to="general" />} />
                                             <Route path="general" element={<RepositoryGeneralSettingsPage />} />
                                             <Route path="retention" element={<RepositoryRetentionPage />} />
+                                            <Route path="metadata" element={<RepositoryMetadataPage />} />
                                             <Route path="branches" element={<RepositorySettingsBranchesPage />} />
                                         </Route>
                                         <Route index element={<Navigate to="objects" />} />

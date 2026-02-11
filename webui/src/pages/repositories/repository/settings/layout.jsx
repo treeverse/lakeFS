@@ -57,6 +57,18 @@ export const SettingsLayout = () => {
                                 <Link
                                     component={Nav.Link}
                                     href={{
+                                        pathname: '/repositories/:repoId/settings/metadata',
+                                        params: { repoId },
+                                    }}
+                                    active={activeTab === 'metadata'}
+                                >
+                                    Metadata
+                                </Link>
+                            </Nav>
+                            <Nav variant="pills" className="flex-column">
+                                <Link
+                                    component={Nav.Link}
+                                    href={{
                                         pathname: '/repositories/:repoId/settings/branches',
                                         params: { repoId },
                                     }}

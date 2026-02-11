@@ -14,8 +14,9 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
 import { ActionsBar, AlertError, Loading, useDebouncedState } from '../../lib/components/controls';
+import Badge from 'react-bootstrap/Badge';
 import { repositories } from '../../lib/api';
-import { useAPIWithPagination } from '../../lib/hooks/api';
+import { useAPI, useAPIWithPagination } from '../../lib/hooks/api';
 import { Paginator } from '../../lib/components/pagination';
 import Container from 'react-bootstrap/Container';
 import { Link } from '../../lib/components/nav';
@@ -28,6 +29,27 @@ import Alert from 'react-bootstrap/Alert';
 import { usePluginManager } from '../../extendable/plugins/pluginsContext';
 
 dayjs.extend(relativeTime);
+
+const RepoMetadataTags = ({ repoId }) => {
+    const { response, loading, error } = useAPI(async () => {
+        return await repositories.getMetadata(repoId);
+    }, [repoId]);
+
+    if (loading || error || !response) return null;
+
+    const entries = Object.entries(response);
+    if (entries.length === 0) return null;
+
+    return (
+        <div className="mt-2">
+            {entries.map(([key, value]) => (
+                <Badge key={key} bg="light" text="dark" className="me-1 mb-1 border">
+                    {key}: {value}
+                </Badge>
+            ))}
+        </div>
+    );
+};
 
 const LOCAL_BLOCKSTORE_TYPE = 'local';
 const LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME = 'quickstart';
@@ -279,6 +301,7 @@ const RepositoryList = ({
                                         </div>
                                     </div>
                                 </div>
+                                <RepoMetadataTags repoId={repo.id} />
                             </Card.Body>
                         </Card>
                     </Col>
