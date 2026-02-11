@@ -17,7 +17,13 @@ This means the current SDK will not work on Python 3.14+. At the same time, we c
 2. Supporting Pydantic V1 in the new SDK - the new package requires Pydantic >= 2.0
 3. Supporting Python < 3.10 in the new SDK
 
-## Current Architecture  
+## Why a Separate Package (Not a Major Version Bump)
+An alternative approach is to release this as `lakefs-sdk` 2.0.0 rather than creating a new package.
+However, `lakefs-sdk` versions are coupled to lakeFS server releases (e.g., `lakefs-sdk` 1.50.x is generated from the lakeFS 1.50.x OpenAPI spec). Bumping the SDK to 2.0.0 would break this convention and suggest a new major version of lakeFS itself, which is not the case - the lakeFS API is unchanged.
+
+Publishing a separate package keeps the Pydantic V2 migration independent of the lakeFS release cycle and allows both SDKs to coexist during the transition.
+
+## Current Architecture
 ```
 ┌─────────────────────────────────────────────────┐
 │  lakefs (PyPI: lakefs)                          │
@@ -69,7 +75,40 @@ The following changes are introduced by the Pydantic V1 → V2 migration in the 
 | Constrained types     | `conint()`, `constr()`         | `Annotated[int, Field(ge=...)]`               |
 | Async support         | `async_req=True` (thread pool) | Native `asyncio` (`library=asyncio`)          |
 
-## Implementation Plan  
+## User-Visible API Changes
+This section describes what changes from the perspective of a user of the generated SDK (`lakefs_sdk`).
+The high-level wrapper (`lakefs` package) is unaffected - its public API does not change.
+
+### What Stays the Same
+- **All API classes and method names** - `RepositoriesApi.create_repository()`, `BranchesApi.create_branch()`, etc. are identical
+- **Business parameters** - method parameters that correspond to API fields (e.g., `repository`, `branch`, `bare`) are unchanged
+- **All model classes** - `Repository`, `Commit`, `ObjectStats`, etc. are all present with the same fields
+- **All exports** - the same classes, models, and exceptions are exported from the top-level package
+
+### What Changes
+
+**Pydantic V1 model methods are replaced by V2 equivalents**
+`.dict()`, `.json()`, `.parse_obj()`, `.parse_raw()` are replaced by `.model_dump()`, `.model_dump_json()`, `.model_validate()`, `.model_validate_json()`. While Pydantic V2 still supports these old methods for backward compatibility, they are deprecated and subject to removal in a future release - code should be migrated to the V2 methods.
+
+**Internal parameters are now explicit instead of `**kwargs`**
+The old SDK accepted parameters like `_request_timeout` and `_headers` via `**kwargs`. The new SDK declares them as explicit keyword arguments with proper type annotations. Existing code that passes these parameters by name continues to work unchanged.
+
+**`async_req` is removed**
+The old SDK offered thread-pool-based async via `async_req=True`, returning a thread handle. This is removed in the new SDK. Users who rely on this can use `concurrent.futures.ThreadPoolExecutor` or `asyncio.to_thread()` instead.
+
+**New `*_without_preload_content()` method variants**
+Each endpoint gains a third method variant (in addition to the existing `*_with_http_info()`) that returns the raw HTTP response without deserializing the body, useful for streaming large responses.
+
+**Configuration gains new options**
+`Configuration` adds `retries` (retry count), `debug` (debug mode), and `ignore_operation_servers` (bypass per-operation server URLs). Existing configuration code is unaffected.
+
+**`pool_threads` removed from `ApiClient`**
+The `ApiClient` constructor no longer accepts `pool_threads` since thread-pool async is removed.
+
+**Enhanced exceptions**
+`ApiException` gains a `data` field with parsed error response data, and a `from_response()` factory method that returns typed subclasses (`BadRequestException`, `NotFoundException`, etc.) based on HTTP status codes.
+
+## Implementation Plan
 ### Phase 1: New SDK alongside old (this branch)  
 **Status: Done** (`claude/update-python-sdk-KyIG4`)
 
