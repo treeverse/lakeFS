@@ -12,6 +12,7 @@
   - Web UI: Lock commit/merge inputs during API calls (#10103)
   - Add tracing regions to KV store operations (#10023)
   - Trace all lakeFS API and gateway tasks (#10016)
+- Delta tables export: support change data feed (#10127)
 
 :bug: Bugs Fixed
 
