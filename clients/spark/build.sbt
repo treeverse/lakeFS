@@ -53,6 +53,7 @@ dependencyOverrides ++= Seq(
 libraryDependencies ++= Seq(
   "io.lakefs" % "sdk" % "1.72.0",
   "org.apache.spark" %% "spark-sql" % "3.1.2" % "provided",
+  "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
   "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",

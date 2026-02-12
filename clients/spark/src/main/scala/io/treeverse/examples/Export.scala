@@ -16,7 +16,7 @@ import io.treeverse.clients.LakeFSContext.{
 // This example supports continuous exports - provided with <prev_commit_id>, it will handle only the files
 // that were changed since that commit and avoid copying unnecessary data.
 object Export extends App {
-  override def main(args: Array[String]) {
+  override def main(args: Array[String]): Unit = {
     if (args.length != 4) {
       Console.err.println(
         "Usage: ... <repo_name> <branch_id> <prev_commit_id> s3://path/to/output/du"

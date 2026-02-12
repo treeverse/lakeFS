@@ -11,7 +11,7 @@ object List extends App {
       .dropRight(1)
       .scanLeft("")((a, b: String) => (if (a.isEmpty) "" else a + "/") + b)
 
-  override def main(args: Array[String]) {
+  override def main(args: Array[String]): Unit = {
     if (args.length != 3) {
       Console.err.println("Usage: ... <repo_name> <commit_id> s3://path/to/output/du")
       System.exit(1)

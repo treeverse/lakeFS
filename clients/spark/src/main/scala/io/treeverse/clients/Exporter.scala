@@ -8,7 +8,7 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.util.Random
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.rogach.scallop._
 import io.treeverse.clients.LakeFSContext.{
   LAKEFS_CONF_API_ACCESS_KEY_KEY,
@@ -186,7 +186,7 @@ object Exporter {
  *    submit example-repo s3://example-bucket/prefix/ --branch=main --prev_commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
  */
 object Main {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val conf = new Conf(args)
 
     val spark = SparkSession.builder().getOrCreate()

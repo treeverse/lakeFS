@@ -14,7 +14,7 @@ import org.json4s.native.JsonMethods._
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.util.Date
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 

@@ -13,7 +13,7 @@ import io.treeverse.clients.StorageUtils.S3._
 import java.net.URI
 import java.nio.charset.Charset
 import java.util.stream.Collectors
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
@@ -66,7 +66,7 @@ object BulkRemoverFactory {
       storageNamespace: String,
       client: StorageClients.S3
   ) extends BulkRemover {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     private val uri = new URI(storageNamespace)
     private val bucket = uri.getHost
