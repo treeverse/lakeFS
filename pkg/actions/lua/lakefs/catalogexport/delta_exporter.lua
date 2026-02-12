@@ -115,6 +115,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     p = entry.add.path
                 elseif entry.remove ~= nil then
                     p = entry.remove.path
+                elseif entry.cdc ~= nil then
+                    p = entry.cdc.path
                 end
                 if p ~= "" then
                     local unescaped_path = url.query_unescape(p)
@@ -139,6 +141,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                             entry.add.path = physical_path
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
+                        elseif entry.cdc ~= nil then
+                            entry.cdc.path = physical_path
                         end
                     elseif code == 404 then
                         if entry.remove ~= nil then
