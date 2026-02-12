@@ -2,6 +2,26 @@
 
 ## next
 
+## v1.77.0          
+                                                                            
+:new: What's new:
+
+  - Web UI: Responsive collapsible breadcrumb for URI navigation (#10078)
+  - Web UI: LRU caching for recently accessed refs (#10093)                 
+  - Web UI: Improved discoverability of refs (#10090)
+  - Web UI: Lock commit/merge inputs during API calls (#10103)
+  - Add tracing regions to KV store operations (#10023)
+  - Trace all lakeFS API and gateway tasks (#10016)
+
+:bug: Bugs Fixed
+
+  - Fix: Replace per-task heartbeat with instance-level heartbeat in cataloger (#10118)
+  - Fix: Return 400 instead of 500 for DeleteObjects size limit (#10097)
+  - Fix: Report per-object errors correctly in lakectl recursive rm and batch deletions (#10095)
+  - Fix: Expired status override on completed cataloger tasks (#10080)
+  - Fix: Handle special characters in file paths for DuckDB queries in WebUI (#10076)
+  - Fix: Stuck goroutines in cataloger (#10055)
+
 ## v1.76.0
 
 :new: What's new:
