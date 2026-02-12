@@ -541,5 +541,8 @@ func checkerCatalog(kvStore kv.Store, repository *graveler.RepositoryRecord) *Ca
 		KVStore:    kvStore,
 		Store:      &fakeGravelerForTaskTest{repository: repository},
 		instanceID: xid.New().String(),
+		errorToStatusCodeAndMsg: func(logger logging.Logger, err error) (int, string, bool) {
+			return http.StatusInternalServerError, err.Error(), true
+		},
 	}
 }
