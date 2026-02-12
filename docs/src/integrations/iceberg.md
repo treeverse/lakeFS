@@ -288,6 +288,7 @@ Namespaces in the ARN use dot-separated notation (e.g., `my.namespace`). Wildcar
 | `catalog:ReadTable`        | Table      | Read table metadata                            |
 | `catalog:UpdateTable`      | Table      | Update or rename a table (commit, schema, etc) |
 | `catalog:DeleteTable`      | Table      | Delete a table                                 |
+| `catalog:ListViews`        | Namespace  | List views within a namespace                  |
 | `catalog:CreateView`       | View       | Create a view                                  |
 | `catalog:ReadView`         | View       | Read view metadata                             |
 | `catalog:UpdateView`       | View       | Update, replace or rename a view               |
