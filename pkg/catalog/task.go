@@ -14,7 +14,7 @@ import (
 const (
 	taskIDNanoLength   = 20
 	tasksPrefix        = "tasks"
-	instancesPartition = "instances"
+	instancesPartition = "catalog"
 )
 
 type TaskStep struct {
