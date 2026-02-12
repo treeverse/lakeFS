@@ -109,9 +109,7 @@ The `ApiClient` constructor no longer accepts `pool_threads` since thread-pool a
 `ApiException` gains a `data` field with parsed error response data, and a `from_response()` factory method that returns typed subclasses (`BadRequestException`, `NotFoundException`, etc.) based on HTTP status codes.
 
 ## Implementation Plan
-### Phase 1: New SDK alongside old (this branch)  
-**Status: Done** (`claude/update-python-sdk-KyIG4`)
-
+### Phase 1: New SDK alongside old (this branch)
 Create the new auto-generated SDK as a separate package that coexists with the old one, and publish it.
 
 #### Deliverables  
