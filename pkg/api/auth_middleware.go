@@ -144,14 +144,14 @@ func checkSecurityRequirements(r *http.Request,
 					continue
 				}
 				token := parts[1]
-				user, err = userByToken(ctx, logger, authService, token)
+				user, err = auth.UserByToken(ctx, logger, authService, token)
 			case "basic_auth":
 				// validate using basic auth
 				accessKey, secretKey, ok := r.BasicAuth()
 				if !ok {
 					continue
 				}
-				user, err = userByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
+				user, err = auth.UserByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
 				var internalAuthSession *sessions.Session
 				internalAuthSession, _ = sessionStore.Get(r, InternalAuthSessionName)
@@ -162,7 +162,7 @@ func checkSecurityRequirements(r *http.Request,
 				if token == "" {
 					continue
 				}
-				user, err = userByToken(ctx, logger, authService, token)
+				user, err = auth.UserByToken(ctx, logger, authService, token)
 			case "oidc_auth":
 				var oidcSession *sessions.Session
 				oidcSession, err = sessionStore.Get(r, OIDCAuthSessionName)
@@ -401,45 +401,6 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	// The user was just created.
 	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
 	return enhanceWithFriendlyName(ctx, &u, friendlyName, false, authService, logger), nil
-}
-
-func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
-	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
-	// make sure audience is set correctly for login token
-	if err != nil {
-		return nil, ErrAuthenticatingRequest
-	}
-
-	username := claims.Subject
-	userData, err := authService.GetUser(ctx, username)
-	if err != nil {
-		logger.WithFields(logging.Fields{
-			"token_id": claims.ID,
-			"username": username,
-			"subject":  username,
-		}).Debug("could not find user id by credentials")
-		return nil, fmt.Errorf("get user: %w", err)
-	}
-	return userData, nil
-}
-
-func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, accessKey string, secretKey string) (*model.User, error) {
-	// TODO(ariels): Rename keys.
-	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
-	if err != nil {
-		logger.WithError(err).WithField("user", accessKey).Error("authenticate")
-		// Wrap authentication-specific errors to ensure they return 401 instead of 404/500
-		if errors.Is(err, auth.ErrNotFound) || errors.Is(err, auth.ErrInvalidSecretAccessKey) {
-			return nil, fmt.Errorf("%w: %w", ErrAuthenticatingRequest, err)
-		}
-		return nil, err
-	}
-	user, err := authService.GetUser(ctx, username)
-	if err != nil {
-		logger.WithError(err).WithFields(logging.Fields{"user_name": username}).Debug("could not find user id by credentials")
-		return nil, err
-	}
-	return user, nil
 }
 
 // initialGroupsFromClaims extracts initial groups from the claim.
