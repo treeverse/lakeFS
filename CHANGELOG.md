@@ -15,6 +15,7 @@
 
 :bug: Bugs Fixed
 
+  - CVE: Path traversal vulnerabilities in local block adapter allow cross-namespace and sibling directory access
   - Fix: Replace per-task heartbeat with instance-level heartbeat in cataloger (#10118)
   - Fix: Return 400 instead of 500 for DeleteObjects size limit (#10097)
   - Fix: Report per-object errors correctly in lakectl recursive rm and batch deletions (#10095)
