@@ -18,6 +18,13 @@ const metadataToFields = (metadata) => {
     }));
 };
 
+const hasMetadataChanged = (fields, original) => {
+    const currentEntries = fields.filter(f => f.key !== '' || f.value !== '');
+    const originalEntries = Object.entries(original);
+    if (currentEntries.length !== originalEntries.length) return true;
+    return currentEntries.some(f => original[f.key] !== f.value);
+};
+
 const RepoMetadata = ({ repo }) => {
     const [metadataFields, setMetadataFields] = useState([]);
     const [originalMetadata, setOriginalMetadata] = useState({});
@@ -37,6 +44,11 @@ const RepoMetadata = ({ repo }) => {
             setSaveError(null);
         }
     }, [response]);
+
+    useEffect(() => {
+        setSaveSuccess(false);
+        setSaveError(null);
+    }, [metadataFields]);
 
     const onSave = async () => {
         const metadata = getMetadataIfValid(metadataFields);
@@ -101,7 +113,7 @@ const RepoMetadata = ({ repo }) => {
                     </Alert>
                 )}
                 {!isReadOnly && (
-                    <Button className="mt-2" disabled={isSaving} onClick={onSave}>
+                    <Button className="mt-2" disabled={isSaving || !hasMetadataChanged(metadataFields, originalMetadata)} onClick={onSave}>
                         {isSaving ? 'Saving...' : 'Save'}
                     </Button>
                 )}
