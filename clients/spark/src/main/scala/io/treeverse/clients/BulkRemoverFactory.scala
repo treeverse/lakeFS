@@ -84,7 +84,7 @@ object BulkRemoverFactory {
       val s3Client = client.s3Client
       try {
         val res = s3Client.deleteObjects(delObjReq)
-        res.getDeletedObjects.asScala.map(_.getKey())
+        res.getDeletedObjects.asScala.map(_.getKey()).toSeq
       } catch {
         case mde: MultiObjectDeleteException => {
           // TODO(ariels): Delete one-by-one?!
@@ -95,7 +95,7 @@ object BulkRemoverFactory {
           errors.asScala.foreach(de =>
             logger.info(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}")
           )
-          mde.getDeletedObjects.asScala.map(_.getKey)
+          mde.getDeletedObjects.asScala.map(_.getKey).toSeq
         }
         case e: Exception => {
           logger.info(s"deleteObjects failed: $e")
@@ -144,6 +144,7 @@ object BulkRemoverFactory {
           .filter(isNonEmptyString)
           .collect(Collectors.toList())
           .asScala
+          .toSeq
       } catch {
         case e: Throwable =>
           e.printStackTrace()

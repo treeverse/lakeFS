@@ -4,14 +4,14 @@ import io.treeverse.clients.LakeFSContext
 import org.apache.spark.sql.SparkSession
 import io.treeverse.clients.LakeFSJobParams
 
-object List extends App {
+object List {
   private def dirs(path: String): Seq[String] =
     path
       .split("/")
       .dropRight(1)
       .scanLeft("")((a, b: String) => (if (a.isEmpty) "" else a + "/") + b)
 
-  override def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
     if (args.length != 3) {
       Console.err.println("Usage: ... <repo_name> <commit_id> s3://path/to/output/du")
       System.exit(1)

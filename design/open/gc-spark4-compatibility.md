@@ -90,8 +90,8 @@ Configure sbt to produce both `_2.12` and `_2.13` artifacts.
    ```scala
    "org.apache.spark" %% "spark-sql" % (if (scalaBinaryVersion.value == "2.12") "3.5.4" else "4.0.0") % "provided"
    ```
-3. Update `javacOptions` and `scalacOptions` — drop the Java 8 target, set Java 11 as minimum (compatible with both Spark 3.5 and 4.0)
-4. Remove or update the Jackson `dependencyOverrides` (pinned for "scala 2.12.12 compatibility" per comment — not needed on 2.13, and 2.12.18 may not need them either)
+3. Vary `scalacOptions` by Scala version — keep Java 8 target for 2.12 (Spark 3.x backward compatibility), use Java 11 target for 2.13 (Scala 2.13 minimum)
+4. Conditionally apply Jackson `dependencyOverrides` only for 2.12 (not needed on 2.13)
 5. Verify `sbt +test` passes on both versions
 
 ### Phase 3: CI and publishing
@@ -99,7 +99,7 @@ Configure sbt to produce both `_2.12` and `_2.13` artifacts.
 1. Update `spark.yaml` — use Java 17 for builds, run `sbt +test` to test both Scala versions
 2. Update publish workflows to produce both `_2.12` and `_2.13` assembly jars
 3. Update the S3 upload task to upload both jars with appropriate names
-4. Update Maven publishing to push both cross-compiled artifacts
+4. Upd[lakefs-spark-client-assembly-0.19.0-expr.jar](../../clients/spark/target/scala-2.13/lakefs-spark-client-assembly-0.19.0-expr.jar)ate Maven publishing to push both cross-compiled artifacts
 
 ### Phase 4: Documentation
 
