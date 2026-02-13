@@ -18,10 +18,10 @@ licenses := List(
 homepage := Some(url("https://lakefs.io"))
 
 javacOptions ++= Seq("-source", "1.11", "-target", "1.8")
-scalacOptions ++= {
-  if (scalaBinaryVersion.value == "2.12") Seq("-target:jvm-1.8", "-Ywarn-unused-import")
-  else Seq("-target:11", "-Wunused:imports")
-}
+scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  case Some((2, 12)) => Seq("-target:jvm-1.8", "-Ywarn-unused-import")
+  case _             => Seq("-Wunused:imports")
+})
 semanticdbEnabled := true // enable SemanticDB
 semanticdbVersion := scalafixSemanticdb.revision
 Compile / PB.includePaths += (Compile / resourceDirectory).value
@@ -30,7 +30,11 @@ Compile / PB.targets := Seq(
   scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
 )
 
-testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
+// ScalaMeter uses URLClassLoader introspection which is incompatible with Java 17+
+testFrameworks ++= {
+  if (scala.util.Properties.isJavaAtLeast("17")) Seq.empty
+  else Seq(new TestFramework("org.scalameter.ScalaMeterFramework"))
+}
 Test / logBuffered := false
 Test / fork := true
 
@@ -75,26 +79,32 @@ buildInfoPackage := "io.treeverse.clients"
 enablePlugins(BuildInfoPlugin)
 
 // Jackson overrides only needed for Scala 2.12
-dependencyOverrides ++= {
-  if (scalaBinaryVersion.value == "2.12")
+dependencyOverrides ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  case Some((2, 12)) =>
     Seq(
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.12.7",
       "com.fasterxml.jackson.core" % "jackson-core" % "2.12.7",
       "com.fasterxml.jackson.core" % "jackson-annotations" % "2.12.7",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.7"
     )
-  else Seq.empty
-}
+  case _ => Seq.empty
+})
 
 libraryDependencies ++= Seq(
   "io.lakefs" % "sdk" % "1.72.0",
-  "org.apache.spark" %% "spark-sql" % (if (scalaBinaryVersion.value == "2.12") "3.1.2" else "4.0.0") % "provided",
+  "org.apache.spark" %% "spark-sql" % (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 12)) => "3.1.2"
+    case _             => "4.0.0"
+  }) % "provided",
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
   "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
   "org.apache.hadoop" % "hadoop-azure" % hadoopVersion % "provided",
-  "org.json4s" %% "json4s-native" % (if (scalaBinaryVersion.value == "2.12") "3.6.12" else "4.0.7"),
+  "org.json4s" %% "json4s-native" % (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 12)) => "3.6.12"
+    case _             => "4.0.7"
+  }),
   "org.rogach" %% "scallop" % "4.0.3",
   "com.azure" % "azure-core" % "1.10.0",
   "com.azure" % "azure-storage-blob" % "12.9.0",
