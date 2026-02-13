@@ -1,23 +1,29 @@
 import fs from "fs/promises";
-import {RAW_CREDENTIALS_FILE_PATH} from "./consts";
+import path from "path";
+import { fileURLToPath } from "url";
+import { LakeFSCredentials } from "./types";
 
-interface Credentials {
-    accessKeyId: string;
-    secretAccessKey: string;
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CREDENTIALS_PATH = path.join(__dirname, "../playwright/credentials.json");
+export const STORAGE_STATE_PATH = path.join(__dirname, "../playwright/common-storage-state.json");
 
-export const getCredentials = async (): Promise<Credentials|null> => {
+export const getCredentials = async (): Promise<LakeFSCredentials|null> => {
     try {
-        return JSON.parse(await fs.readFile(RAW_CREDENTIALS_FILE_PATH, "utf-8"));
-    } catch (e) {
-        if (e.code === "ENOENT") {
+        return JSON.parse(await fs.readFile(CREDENTIALS_PATH, "utf-8"));
+    } catch (e: unknown) {
+        if (e instanceof Error && (e as NodeJS.ErrnoException).code === "ENOENT") {
             return null;
         }
         throw e;
     }
 }
 
-export const writeCredentials = async (credentials: Credentials): Promise<void> => {
+export const ensureStorageDir = async (): Promise<void> => {
+    await fs.mkdir(path.dirname(STORAGE_STATE_PATH), { recursive: true });
+}
+
+export const writeCredentials = async (credentials: LakeFSCredentials): Promise<void> => {
+    await fs.mkdir(path.dirname(CREDENTIALS_PATH), { recursive: true });
     const jsonCredentials = JSON.stringify(credentials);
-    await fs.writeFile(RAW_CREDENTIALS_FILE_PATH, jsonCredentials);
+    await fs.writeFile(CREDENTIALS_PATH, jsonCredentials);
 }

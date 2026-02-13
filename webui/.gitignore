@@ -3,6 +3,7 @@ node_modules
 dist-ssr
 *.local
 /test-results/
+test/playwright/*.json
 
 # Ignore built UI but keep .gitkeep
 dist/*

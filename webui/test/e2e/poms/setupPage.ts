@@ -2,8 +2,6 @@ import { Download, Locator, Page } from "@playwright/test";
 import { LakeFSCredentials } from "../types";
 
 export class SetupPage {
-    private page: Page;
-
     public emailErrorSelectorText = "Please enter your email address.";
     public usernameErrorSelectorText = "Please enter your admin username.";
     public usernameInputLocator: Locator;
@@ -11,8 +9,7 @@ export class SetupPage {
     public goToLoginButtonLocator: Locator;
     public setupFinishedTitleLocator: Locator;
 
-    constructor(page: Page) {
-        this.page = page;
+    constructor(private page: Page) {
         this.usernameInputLocator = this.page.getByPlaceholder("Admin Username");
         this.downloadCredentialsButtonLocator = this.page.getByRole("link", { name: "Download credentials" });
         this.goToLoginButtonLocator = this.page.getByRole("button", { name: "Go To Login" });

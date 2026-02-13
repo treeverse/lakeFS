@@ -1,7 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { RepositoriesPage } from "../poms/repositoriesPage";
-import { RepositoryPage } from "../poms/repositoryPage";
-import { ObjectViewerPage } from "../poms/objectViewerPage";
+import { test, expect } from "../fixtures";
+import { TIMEOUT_ELEMENT_VISIBLE } from "../timeouts";
 
 const TEST_REPO_NAME = "revert-test-repo";
 const TEST_BRANCH_NAME = "feature-branch";
@@ -9,309 +7,227 @@ const TEST_BRANCH_NAME = "feature-branch";
 test.describe("Revert Commit", () => {
     test.describe.configure({ mode: "serial" });
 
-    test("setup: create repository with sample data", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
-        await repositoriesPage.goto();
-        await repositoriesPage.createRepository(TEST_REPO_NAME, true);
-
-        const repositoryPage = new RepositoryPage(page);
-        const repoHeaderLink = repositoryPage.breadcrumbsLocator.getByRole("link", {
-            name: TEST_REPO_NAME,
-            exact: true,
+    test("setup: create repository and branch with changes", async ({ page, repositoriesPage, repositoryPage }) => {
+        await test.step("create repository with sample data", async () => {
+            await repositoriesPage.goto();
+            await repositoriesPage.createRepository(TEST_REPO_NAME, true);
+            const repoHeaderLink = repositoryPage.breadcrumbsLocator.getByRole("link", {
+                name: TEST_REPO_NAME,
+                exact: true,
+            });
+            await expect(repoHeaderLink).toBeVisible();
         });
-        await expect(repoHeaderLink).toBeVisible();
+
+        await test.step("create branch and delete a file", async () => {
+            await repositoryPage.branches.createBranch(TEST_BRANCH_NAME);
+            await repositoryPage.gotoObjectsTab();
+            await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
+            await repositoryPage.objects.deleteFirstObjectInDirectory("images/");
+        });
+
+        await test.step("commit the change", async () => {
+            await repositoryPage.changes.showOnlyChanges();
+            await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
+            await repositoryPage.changes.commitChanges("Delete image file");
+            await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
+        });
     });
 
-    test("setup: create branch and make changes", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("revert single commit", async ({ page, repositoriesPage, repositoryPage }) => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
-
-        const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.createBranch(TEST_BRANCH_NAME);
-
-        // Make a change - delete a file
-        await repositoryPage.gotoObjectsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
-        await repositoryPage.deleteFirstObjectInDirectory("images/");
-
-        // Commit the change
-        await repositoryPage.showOnlyChanges();
-        expect(await repositoryPage.getUncommittedCount()).toEqual(1);
-        await repositoryPage.commitChanges("Delete image file");
-        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
-    });
-
-    test("revert single commit", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
-        await repositoriesPage.goto();
-        await repositoriesPage.goToRepository(TEST_REPO_NAME);
-
-        const repositoryPage = new RepositoryPage(page);
         await repositoryPage.gotoCommitsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
 
-        // Wait for commits to load
-        await page.waitForSelector(".list-group-item", { timeout: 10000 });
+        await page.waitForSelector(".list-group-item", { timeout: TIMEOUT_ELEMENT_VISIBLE });
 
-        // Get the initial commit count
-        const initialCommitCount = await repositoryPage.getCommitsCount();
-        expect(initialCommitCount).toBeGreaterThan(0);
+        const initialCommitCount = await test.step("get initial commit count", async () => {
+            const count = await repositoryPage.commits.getCommitsCount();
+            expect(count).toBeGreaterThan(0);
+            return count;
+        });
 
-        // Enter revert mode
-        await repositoryPage.clickRevertButton();
-        await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+        await test.step("enter revert mode and select commit", async () => {
+            await repositoryPage.revert.clickRevertButton();
+            await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+            await repositoryPage.revert.selectCommitsForRevert(1);
+            await expect(page.getByRole("button", { name: /Continue/ })).toBeVisible();
+            await repositoryPage.revert.clickContinueRevert();
+        });
 
-        // Select the first commit (most recent)
-        await repositoryPage.selectCommitsForRevert(1);
+        await test.step("fill revert message and apply", async () => {
+            await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
+            await expect(page.getByText("Commits to Revert (in order)")).toBeVisible();
+            await repositoryPage.revert.fillRevertMessage("Revert: Delete image file");
+            await repositoryPage.revert.clickApplyRevert();
+            await expect(page.getByText(/Are you sure you want to revert/)).toBeVisible();
+            await repositoryPage.revert.confirmRevert();
+        });
 
-        // Continue to preview page
-        await expect(page.getByRole("button", { name: /Continue/ })).toBeVisible();
-        await repositoryPage.clickContinueRevert();
-
-        // Verify we're on the revert preview page
-        await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
-        await expect(page.getByText("Commits to Revert (in order)")).toBeVisible();
-
-        // Fill in commit message
-        await repositoryPage.fillRevertMessage("Revert: Delete image file");
-
-        // Apply the revert
-        await repositoryPage.clickApplyRevert();
-
-        // Confirm in the modal
-        await expect(page.getByText(/Are you sure you want to revert/)).toBeVisible();
-        await repositoryPage.confirmRevert();
-
-        // Wait for redirect back to commits page
-        await page.waitForURL(/.*\/commits.*/);
-
-        // Verify the new commit was created
-        const newCommitCount = await repositoryPage.getCommitsCount();
-        expect(newCommitCount).toBe(initialCommitCount + 1);
-
-        // Verify the first commit message contains "Revert"
-        const firstCommitMessage = await repositoryPage.getFirstCommitMessage();
-        expect(firstCommitMessage).toContain("Revert");
+        await test.step("verify revert commit was created", async () => {
+            await page.waitForURL(/.*\/commits.*/);
+            const newCommitCount = await repositoryPage.commits.getCommitsCount();
+            expect(newCommitCount).toBe(initialCommitCount + 1);
+            const firstCommitMessage = await repositoryPage.commits.getFirstCommitMessage();
+            expect(firstCommitMessage).toContain("Revert");
+        });
     });
 
-    test("revert multiple commits", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
-        await repositoriesPage.goto();
-        await repositoriesPage.goToRepository(TEST_REPO_NAME);
+    test("revert multiple commits", async ({ page, repositoriesPage, repositoryPage }) => {
+        await test.step("make two more changes", async () => {
+            await repositoriesPage.goto();
+            await repositoriesPage.goToRepository(TEST_REPO_NAME);
+            await repositoryPage.gotoObjectsTab();
+            await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
 
-        const repositoryPage = new RepositoryPage(page);
-        // Navigate to objects tab first to establish a known starting point
-        await repositoryPage.gotoObjectsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+            await repositoryPage.objects.deleteFirstObjectInDirectory("images/");
+            await repositoryPage.changes.showOnlyChanges();
+            await repositoryPage.changes.commitChanges("Second deletion");
 
-        // Make two more changes and commit them
-        await repositoryPage.deleteFirstObjectInDirectory("images/");
-        await repositoryPage.showOnlyChanges();
-        await repositoryPage.commitChanges("Second deletion");
+            await repositoryPage.gotoObjectsTab();
+            await repositoryPage.objects.deleteFirstObjectInDirectory("images/");
+            await repositoryPage.changes.showOnlyChanges();
+            await repositoryPage.changes.commitChanges("Third deletion");
+        });
 
-        await repositoryPage.gotoObjectsTab();
-        await repositoryPage.deleteFirstObjectInDirectory("images/");
-        await repositoryPage.showOnlyChanges();
-        await repositoryPage.commitChanges("Third deletion");
-
-        // Go to commits tab
         await repositoryPage.gotoCommitsTab();
+        await page.waitForSelector(".list-group-item", { timeout: TIMEOUT_ELEMENT_VISIBLE });
+        const initialCommitCount = await repositoryPage.commits.getCommitsCount();
 
-        // Wait for commits to load
-        await page.waitForSelector(".list-group-item", { timeout: 10000 });
+        await test.step("select and revert 2 commits", async () => {
+            await repositoryPage.revert.clickRevertButton();
+            await repositoryPage.revert.selectCommitsForRevert(2);
+            await repositoryPage.revert.clickContinueRevert();
 
-        const initialCommitCount = await repositoryPage.getCommitsCount();
+            await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
+            await expect(page.getByText("Commits to Revert (in order)")).toBeVisible();
+            await expect(page.getByPlaceholder(/Describe the revert|Revert commit/)).not.toBeVisible();
 
-        // Enter revert mode and select 2 commits
-        await repositoryPage.clickRevertButton();
-        await repositoryPage.selectCommitsForRevert(2);
+            await repositoryPage.revert.clickApplyRevert();
+            await expect(page.getByText(/Are you sure you want to revert/)).toBeVisible();
+            await repositoryPage.revert.confirmRevert();
+        });
 
-        // Continue to preview page
-        await repositoryPage.clickContinueRevert();
-
-        // Verify we're on the revert preview page
-        await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
-
-        // Verify we're reverting 2 commits - check in the commits list header
-        await expect(page.getByText("Commits to Revert (in order)")).toBeVisible();
-
-        // For multiple commits, commit message field is hidden - each commit gets default message
-        // Verify the commit message field is NOT visible
-        await expect(page.getByPlaceholder(/Describe the revert|Revert commit/)).not.toBeVisible();
-
-        // Apply the revert
-        await repositoryPage.clickApplyRevert();
-
-        // Confirm in the modal - check for specific text in modal
-        await expect(page.getByText(/Are you sure you want to revert/)).toBeVisible();
-        await repositoryPage.confirmRevert();
-
-        // Wait for redirect
-        await page.waitForURL(/.*\/commits.*/);
-
-        // Verify 2 new revert commits were created
-        const newCommitCount = await repositoryPage.getCommitsCount();
-        expect(newCommitCount).toBe(initialCommitCount + 2);
+        await test.step("verify 2 revert commits were created", async () => {
+            await page.waitForURL(/.*\/commits.*/);
+            const newCommitCount = await repositoryPage.commits.getCommitsCount();
+            expect(newCommitCount).toBe(initialCommitCount + 2);
+        });
     });
 
-    test("cancel revert operation", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("cancel revert operation", async ({ page, repositoriesPage, repositoryPage }) => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
-
-        const repositoryPage = new RepositoryPage(page);
         await repositoryPage.gotoCommitsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
 
-        // Wait for commits to load
-        await page.waitForSelector(".list-group-item", { timeout: 10000 });
+        await page.waitForSelector(".list-group-item", { timeout: TIMEOUT_ELEMENT_VISIBLE });
+        const initialCommitCount = await repositoryPage.commits.getCommitsCount();
 
-        const initialCommitCount = await repositoryPage.getCommitsCount();
+        await test.step("enter revert mode and cancel", async () => {
+            await repositoryPage.revert.clickRevertButton();
+            await repositoryPage.revert.selectCommitsForRevert(1);
+            await repositoryPage.revert.clickContinueRevert();
+            await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
+            await repositoryPage.revert.cancelRevert();
+        });
 
-        // Enter revert mode
-        await repositoryPage.clickRevertButton();
-        await repositoryPage.selectCommitsForRevert(1);
-        await repositoryPage.clickContinueRevert();
-
-        // Cancel on the preview page
-        await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
-        await repositoryPage.cancelRevert();
-
-        // Verify we're back on commits page
-        await page.waitForURL(/.*\/commits.*/);
-
-        // Verify no new commits were created
-        const finalCommitCount = await repositoryPage.getCommitsCount();
-        expect(finalCommitCount).toBe(initialCommitCount);
+        await test.step("verify no new commits", async () => {
+            await page.waitForURL(/.*\/commits.*/);
+            const finalCommitCount = await repositoryPage.commits.getCommitsCount();
+            expect(finalCommitCount).toBe(initialCommitCount);
+        });
     });
 
-    test("test allow empty commit option", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("test allow empty commit option", async ({ page, repositoriesPage, repositoryPage }) => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
-
-        const repositoryPage = new RepositoryPage(page);
         await repositoryPage.gotoCommitsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
 
-        // Enter revert mode and select a commit
-        await repositoryPage.clickRevertButton();
-        await repositoryPage.selectCommitsForRevert(1);
-        await repositoryPage.clickContinueRevert();
+        await repositoryPage.revert.clickRevertButton();
+        await repositoryPage.revert.selectCommitsForRevert(1);
+        await repositoryPage.revert.clickContinueRevert();
 
-        // Verify the allow empty commit checkbox is present
         await expect(page.getByLabel(/Allow empty commit/)).toBeVisible();
-
-        // Check the allow empty commit checkbox
-        await repositoryPage.setAllowEmptyCommit(true);
-
-        // Verify it's checked
+        await repositoryPage.revert.setAllowEmptyCommit(true);
         await expect(page.getByLabel(/Allow empty commit/)).toBeChecked();
 
-        // Cancel without applying
-        await repositoryPage.cancelRevert();
+        await repositoryPage.revert.cancelRevert();
     });
 
-    test("revert mode toggle", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("revert mode toggle", async ({ page, repositoriesPage, repositoryPage }) => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
-
-        const repositoryPage = new RepositoryPage(page);
         await repositoryPage.gotoCommitsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
 
-        // Enter revert mode
-        await repositoryPage.clickRevertButton();
+        await test.step("enter revert mode", async () => {
+            await repositoryPage.revert.clickRevertButton();
+            await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+            const checkboxes = page.locator('input[type="checkbox"]');
+            await expect.poll(() => checkboxes.count()).toBeGreaterThan(0);
+        });
 
-        // Verify Cancel button appears
-        await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
-
-        // Verify checkboxes are visible
-        const checkboxes = page.locator('input[type="checkbox"]');
-        expect(await checkboxes.count()).toBeGreaterThan(0);
-
-        // Click Cancel to exit revert mode
-        await repositoryPage.clickRevertButton(); // Now it's "Cancel"
-
-        // Verify Revert button is back
-        await expect(page.getByRole("button", { name: "Revert" })).toBeVisible();
-        await expect(page.getByRole("button", { name: "Cancel" })).not.toBeVisible();
+        await test.step("exit revert mode", async () => {
+            await repositoryPage.revert.clickRevertButton();
+            await expect(page.getByRole("button", { name: "Revert" })).toBeVisible();
+            await expect(page.getByRole("button", { name: "Cancel" })).not.toBeVisible();
+        });
     });
 
-    test("revert with metadata fields", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("revert with metadata fields", async ({ page, repositoriesPage, repositoryPage }) => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
-
-        const repositoryPage = new RepositoryPage(page);
         await repositoryPage.gotoCommitsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
 
-        // Enter revert mode and select a commit
-        await repositoryPage.clickRevertButton();
-        await repositoryPage.selectCommitsForRevert(1);
-        await repositoryPage.clickContinueRevert();
+        await repositoryPage.revert.clickRevertButton();
+        await repositoryPage.revert.selectCommitsForRevert(1);
+        await repositoryPage.revert.clickContinueRevert();
 
-        // Verify we're on the revert preview page
-        await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
+        await test.step("fill message and add metadata", async () => {
+            await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
+            await repositoryPage.revert.fillRevertMessage("Revert with metadata");
+            await repositoryPage.revert.addRevertMetadata("environment", "production");
+            await repositoryPage.revert.addRevertMetadata("ticket", "ISSUE-123");
 
-        // Fill in commit message
-        await repositoryPage.fillRevertMessage("Revert with metadata");
+            await expect(page.getByPlaceholder("Key").nth(0)).toHaveValue("environment");
+            await expect(page.getByPlaceholder("Value").nth(0)).toHaveValue("production");
+            await expect(page.getByPlaceholder("Key").nth(1)).toHaveValue("ticket");
+            await expect(page.getByPlaceholder("Value").nth(1)).toHaveValue("ISSUE-123");
+        });
 
-        // Add metadata fields
-        await repositoryPage.addRevertMetadata("environment", "production");
-        await repositoryPage.addRevertMetadata("ticket", "ISSUE-123");
-
-        // Verify metadata fields are present
-        await expect(page.getByPlaceholder("Key").nth(0)).toHaveValue("environment");
-        await expect(page.getByPlaceholder("Value").nth(0)).toHaveValue("production");
-        await expect(page.getByPlaceholder("Key").nth(1)).toHaveValue("ticket");
-        await expect(page.getByPlaceholder("Value").nth(1)).toHaveValue("ISSUE-123");
-
-        // Apply the revert
-        await repositoryPage.clickApplyRevert();
-        await repositoryPage.confirmRevert();
-
-        // Wait for redirect
-        await page.waitForURL(/.*\/commits.*/);
-
-        // Verify successful completion
-        await expect(page.getByRole("button", { name: "Revert" })).toBeVisible();
+        await test.step("apply and verify", async () => {
+            await repositoryPage.revert.clickApplyRevert();
+            await repositoryPage.revert.confirmRevert();
+            await page.waitForURL(/.*\/commits.*/);
+            await expect(page.getByRole("button", { name: "Revert" })).toBeVisible();
+        });
     });
 
-    test("metadata validation - empty key error", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("metadata validation - empty key error", async ({ page, repositoriesPage, repositoryPage }) => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(TEST_REPO_NAME);
-
-        const repositoryPage = new RepositoryPage(page);
         await repositoryPage.gotoCommitsTab();
-        await repositoryPage.switchBranch(TEST_BRANCH_NAME);
+        await repositoryPage.branches.switchBranch(TEST_BRANCH_NAME);
 
-        // Enter revert mode and select a commit
-        await repositoryPage.clickRevertButton();
-        await repositoryPage.selectCommitsForRevert(1);
-        await repositoryPage.clickContinueRevert();
+        await repositoryPage.revert.clickRevertButton();
+        await repositoryPage.revert.selectCommitsForRevert(1);
+        await repositoryPage.revert.clickContinueRevert();
 
-        // Fill in commit message
-        await repositoryPage.fillRevertMessage("Test validation");
+        await repositoryPage.revert.fillRevertMessage("Test validation");
 
-        // Add metadata field with empty key
-        await page.getByRole("button", { name: /Add Metadata field/ }).click();
-        await page.getByPlaceholder("Value").last().fill("some value");
+        await test.step("add empty key and verify validation error", async () => {
+            await page.getByRole("button", { name: /Add Metadata field/ }).click();
+            await page.getByPlaceholder("Value").last().fill("some value");
+            await repositoryPage.revert.clickApplyRevert();
 
-        // Try to apply without filling key
-        await repositoryPage.clickApplyRevert();
+            await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
 
-        // The modal should not open because validation failed
-        // Verify we're still on the revert page (not showing confirmation modal)
-        await expect(page.getByRole("heading", { name: "Revert Commits" })).toBeVisible();
-
-        // The error should be shown after blur
-        await page.getByPlaceholder("Key").last().click();
-        await page.getByPlaceholder("Value").last().click(); // Blur the key field
-        await expect(page.getByText("Key is required")).toBeVisible();
+            await page.getByPlaceholder("Key").last().click();
+            await page.getByPlaceholder("Value").last().click();
+            await expect(page.getByText("Key is required")).toBeVisible();
+        });
     });
 });

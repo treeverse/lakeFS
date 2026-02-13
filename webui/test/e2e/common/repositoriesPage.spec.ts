@@ -1,15 +1,12 @@
-import { test, expect } from "@playwright/test";
-import { RepositoriesPage } from "../poms/repositoriesPage";
+import { test, expect } from "../fixtures";
 
 test.describe("Repositories Page", () => {
-    test("create repository button", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("create repository button", async ({ repositoriesPage }) => {
         await repositoriesPage.goto();
         await expect(repositoriesPage.createRepositoryButtonLocator).toBeVisible();
     });
 
-    test("search input", async ({ page }) => {
-        const repositoriesPage = new RepositoriesPage(page);
+    test("search input", async ({ repositoriesPage }) => {
         await repositoriesPage.goto();
         await expect(repositoriesPage.searchInputLocator).toBeVisible();
     });
