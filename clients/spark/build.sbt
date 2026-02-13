@@ -123,6 +123,8 @@ libraryDependencies ++= Seq(
 
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
 
+assembly / assemblyJarName := s"${name.value}_${scalaBinaryVersion.value}-assembly-${version.value}.jar"
+
 assembly / assemblyShadeRules := Seq(
   rename("org.apache.http.**").inAll,
   rename("scalapb.**").inAll,
