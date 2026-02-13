@@ -24,7 +24,7 @@ class NaiveDataLister extends DataLister {
       val fileStatus = dataIt.next()
       dataList += ((fileStatus.getPath.getName, fileStatus.getModificationTime))
     }
-    dataList.toDF("base_address", "last_modified").repartition(parallelism)
+    dataList.toSeq.toDF("base_address", "last_modified").repartition(parallelism)
   }
 }
 

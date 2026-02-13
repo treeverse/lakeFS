@@ -296,7 +296,7 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
       ci.count should be(0)
       ci.next
       ci.count should be(1)
-      ci.foreach((_) => Unit)
+      ci.foreach((_) => ())
       ci.count should be(base.length)
     }
   }
@@ -462,7 +462,7 @@ class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
     try {
       val jsonString = os.read(os.Path(tmpJsonFile.getAbsolutePath))
       val data = ujson.read(jsonString)
-      val expected = data.arr.map(e => (e("Key").str, e("Value").str))
+      val expected = data.arr.map(e => (e("Key").str, e("Value").str)).toSeq
       test(in, expected, tmpSstFile.length())
     } finally {
       in.close()

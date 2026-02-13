@@ -1,8 +1,11 @@
-lazy val projectVersion = "0.18.0"
+lazy val projectVersion = "0.19.0-expr"
 ThisBuild / version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
-ThisBuild / scalaVersion := "2.12.12"
+ThisBuild / scalaVersion := "2.12.18"
+lazy val scala212 = "2.12.18"
+lazy val scala213 = "2.13.14"
+crossScalaVersions := Seq(scala212, scala213)
 
 name := "lakefs-spark-client"
 organization := "io.lakefs"
@@ -15,18 +18,51 @@ licenses := List(
 homepage := Some(url("https://lakefs.io"))
 
 javacOptions ++= Seq("-source", "1.11", "-target", "1.8")
-scalacOptions += "-target:jvm-1.8"
+scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  case Some((2, 12)) => Seq("-target:jvm-1.8", "-Ywarn-unused-import")
+  case _             => Seq("-Wunused:imports")
+})
 semanticdbEnabled := true // enable SemanticDB
 semanticdbVersion := scalafixSemanticdb.revision
-scalacOptions += "-Ywarn-unused-import"
 Compile / PB.includePaths += (Compile / resourceDirectory).value
 Compile / PB.protoSources += (Compile / resourceDirectory).value
 Compile / PB.targets := Seq(
   scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
 )
 
-testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
+// ScalaMeter uses URLClassLoader introspection which is incompatible with Java 17+
+testFrameworks ++= {
+  if (scala.util.Properties.isJavaAtLeast("17")) Seq.empty
+  else Seq(new TestFramework("org.scalameter.ScalaMeterFramework"))
+}
 Test / logBuffered := false
+Test / fork := true
+
+// Java 17+ module access flags required by Spark (from Spark 4.0's JavaModuleOptions)
+Test / javaOptions ++= {
+  if (scala.util.Properties.isJavaAtLeast("17"))
+    Seq(
+      "-XX:+IgnoreUnrecognizedVMOptions",
+      "--add-opens=java.base/java.lang=ALL-UNNAMED",
+      "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+      "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+      "--add-opens=java.base/java.io=ALL-UNNAMED",
+      "--add-opens=java.base/java.net=ALL-UNNAMED",
+      "--add-opens=java.base/java.nio=ALL-UNNAMED",
+      "--add-opens=java.base/java.util=ALL-UNNAMED",
+      "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+      "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+      "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED",
+      "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+      "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED",
+      "--add-opens=java.base/sun.security.action=ALL-UNNAMED",
+      "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED",
+      "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED",
+      "-Djdk.reflect.useDirectMethodHandle=false",
+      "-Dio.netty.tryReflectionSetAccessible=true"
+    )
+  else Seq.empty
+}
 
 // Uncomment to get accurate benchmarks with just "sbt test".
 // Otherwise tell sbt to
@@ -42,22 +78,33 @@ buildInfoPackage := "io.treeverse.clients"
 
 enablePlugins(BuildInfoPlugin)
 
-// Required for scala 2.12.12 compatibility
-dependencyOverrides ++= Seq(
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.12.7",
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.12.7",
-  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.12.7",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.7"
-)
+// Jackson overrides only needed for Scala 2.12
+dependencyOverrides ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  case Some((2, 12)) =>
+    Seq(
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.12.7",
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.12.7",
+      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.12.7",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.7"
+    )
+  case _ => Seq.empty
+})
 
 libraryDependencies ++= Seq(
   "io.lakefs" % "sdk" % "1.72.0",
-  "org.apache.spark" %% "spark-sql" % "3.1.2" % "provided",
+  "org.apache.spark" %% "spark-sql" % (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 12)) => "3.1.2"
+    case _             => "4.0.0"
+  }) % "provided",
+  "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
   "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
   "org.apache.hadoop" % "hadoop-azure" % hadoopVersion % "provided",
-  "org.json4s" %% "json4s-native" % "3.6.12",
+  "org.json4s" %% "json4s-native" % (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 12)) => "3.6.12"
+    case _             => "4.0.7"
+  }),
   "org.rogach" %% "scallop" % "4.0.3",
   "com.azure" % "azure-core" % "1.10.0",
   "com.azure" % "azure-storage-blob" % "12.9.0",
@@ -85,6 +132,8 @@ libraryDependencies ++= Seq(
 )
 
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
+
+assembly / assemblyJarName := s"${name.value}_${scalaBinaryVersion.value}-assembly-${version.value}.jar"
 
 assembly / assemblyShadeRules := Seq(
   rename("org.apache.http.**").inAll,
