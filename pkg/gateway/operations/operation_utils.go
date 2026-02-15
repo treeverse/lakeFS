@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -27,29 +26,37 @@ var (
 	rfc2047Decoder = new(mime.WordDecoder)
 )
 
-// isValidMetadataKey checks if a metadata key can be sent as an HTTP header name
-// Valid characters match S3 behavior for HTTP headers:
+// isValidMetadataKey checks if a metadata key can be sent as an HTTP header name.
+// Valid characters are HTTP token characters per RFC 7230, which S3 also accepts:
 // - Letters: 'A'-'Z', 'a'-'z'
 // - Digits: '0'-'9'
-// - Special characters: '-', '_', '.', '#'
+// - Special characters: ! # $ % & ' * + - . ^ _ ` | ~
+// Note: S3 accepts ( but Go's HTTP server rejects it as it's not a valid token char.
+// Characters like ) / < > ? @ [ \ ] { } " and control chars cause S3 to
+// return x-amz-missing-meta header, indicating the metadata was not stored.
 func isValidMetadataKey(key string) bool {
 	// Empty keys are invalid
 	if len(key) == 0 {
 		return false
 	}
 
-	for _, r := range key {
-		// Only allow ASCII characters
-		if r > unicode.MaxASCII {
-			return false
-		}
+	for i := 0; i < len(key); i++ {
+		c := key[i]
 
-		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		// Allow letters
+		if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') {
 			continue
 		}
 
-		// Allow specific special characters that S3 accepts
-		if r == '-' || r == '_' || r == '.' || r == '#' {
+		// Allow digits
+		if c >= '0' && c <= '9' {
+			continue
+		}
+
+		// Allow HTTP token special characters (RFC 7230) that S3 accepts in metadata keys
+		// Note: ( and ) are NOT included as Go's HTTP server rejects them
+		switch c {
+		case '-', '_', '.', '#', '!', '$', '%', '&', '\'', '*', '+', '^', '`', '|', '~':
 			continue
 		}
 

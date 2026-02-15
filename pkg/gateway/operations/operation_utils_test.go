@@ -10,6 +10,80 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 )
 
+func TestIsValidMetadataKey(t *testing.T) {
+	tests := []struct {
+		name  string
+		key   string
+		valid bool
+	}{
+		// Empty key
+		{name: "empty key", key: "", valid: false},
+
+		// Basic alphanumeric
+		{name: "lowercase letters", key: "abc", valid: true},
+		{name: "uppercase letters", key: "ABC", valid: true},
+		{name: "mixed case", key: "AbC", valid: true},
+		{name: "digits", key: "123", valid: true},
+		{name: "alphanumeric", key: "abc123", valid: true},
+
+		// Special characters that are valid HTTP token chars (RFC 7230) and S3 accepts
+		{name: "hyphen", key: "test-key", valid: true},
+		{name: "underscore", key: "test_key", valid: true},
+		{name: "dot", key: "test.key", valid: true},
+		{name: "hash", key: "test#key", valid: true},
+		{name: "exclamation", key: "test!key", valid: true},
+		{name: "dollar", key: "test$key", valid: true},
+		{name: "percent", key: "test%key", valid: true},
+		{name: "ampersand", key: "test&key", valid: true},
+		{name: "single quote", key: "test'key", valid: true},
+		{name: "asterisk", key: "test*key", valid: true},
+		{name: "plus", key: "test+key", valid: true},
+		{name: "caret", key: "test^key", valid: true},
+		{name: "backtick", key: "test`key", valid: true},
+		{name: "pipe", key: "test|key", valid: true},
+		{name: "tilde", key: "test~key", valid: true},
+
+		// Characters that should be rejected
+		// Note: ( and ) are accepted by S3 but rejected by Go's HTTP server (not valid token chars)
+		{name: "open paren", key: "test(key", valid: false},
+		{name: "close paren", key: "test)key", valid: false},
+		{name: "space", key: "test key", valid: false},
+		{name: "slash", key: "test/key", valid: false},
+		{name: "colon", key: "test:key", valid: false},
+		{name: "semicolon", key: "test;key", valid: false},
+		{name: "less than", key: "test<key", valid: false},
+		{name: "equals", key: "test=key", valid: false},
+		{name: "greater than", key: "test>key", valid: false},
+		{name: "question mark", key: "test?key", valid: false},
+		{name: "at sign", key: "test@key", valid: false},
+		{name: "open bracket", key: "test[key", valid: false},
+		{name: "backslash", key: "test\\key", valid: false},
+		{name: "close bracket", key: "test]key", valid: false},
+		{name: "open brace", key: "test{key", valid: false},
+		{name: "close brace", key: "test}key", valid: false},
+		{name: "double quote", key: "test\"key", valid: false},
+		{name: "comma", key: "test,key", valid: false},
+
+		// Control characters
+		{name: "null byte", key: "test\x00key", valid: false},
+		{name: "tab", key: "test\tkey", valid: false},
+		{name: "newline", key: "test\nkey", valid: false},
+		{name: "carriage return", key: "test\rkey", valid: false},
+		{name: "delete", key: "test\x7fkey", valid: false},
+
+		// Non-ASCII characters
+		{name: "unicode", key: "testékey", valid: false},
+		{name: "high byte", key: "test\x80key", valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isValidMetadataKey(tt.key)
+			require.Equal(t, tt.valid, got, "isValidMetadataKey(%q) = %v, want %v", tt.key, got, tt.valid)
+		})
+	}
+}
+
 func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 	tests := []struct {
 		name         string
