@@ -172,7 +172,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     print(p)
                 end
             end
-            error("The following objects were not found: " .. unfound_paths)
+            error("The following objects were not found: " .. unfound_paths_str)
         end
 
         local table_export_prefix = utils.get_storage_uri_prefix(ns, commit_id, action)
