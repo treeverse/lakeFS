@@ -10,6 +10,31 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 )
 
+func TestIsValidMetadataKey(t *testing.T) {
+	tests := []struct {
+		name  string
+		key   string
+		valid bool
+	}{
+		{name: "empty key", key: "", valid: false},
+		{name: "alphanumeric mixed case", key: "AbC123", valid: true},
+		// All valid HTTP token special chars (RFC 7230) in a single key
+		{name: "all valid special chars", key: "-_.#!$%&'*+^`|~", valid: true},
+		// ( and ) are accepted by S3 but rejected by Go's HTTP server
+		{name: "parens rejected", key: "test(key", valid: false},
+		{name: "space rejected", key: "test key", valid: false},
+		{name: "control char rejected", key: "test\x00key", valid: false},
+		{name: "non-ascii rejected", key: "testékey", valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isValidMetadataKey(tt.key)
+			require.Equal(t, tt.valid, got, "isValidMetadataKey(%q) = %v, want %v", tt.key, got, tt.valid)
+		})
+	}
+}
+
 func TestAmzMetaAsMetadata_KeyLowercasing(t *testing.T) {
 	tests := []struct {
 		name         string
