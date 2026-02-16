@@ -258,7 +258,7 @@ To authenticate, clients must provide their lakeFS access key and secret in the 
 
 ### Authorization
 
-The Iceberg REST Catalog has its own set of RBAC actions and resources, as described in the [Authorization](#authorization) section.
+The Iceberg REST Catalog defines its own set of RBAC actions and resources, as described in the [Authorization](#authorization) section. When using lakeFS with Iceberg, permissions must be managed through Iceberg RBAC - repository or object-level permissions alone are not sufficient.
 Iceberg catalog permissions supersede any related object permissions — for example, having `fs:ReadObject` on a 
 repository does not grant `catalog:ReadTable` on tables in that repository.
 
