@@ -1,30 +1,40 @@
 ---
-title: ETL Testing Environment
+title: Isolated Dev & Test Environments
 description: In this tutorial, we will explore how to safely run ETL testing using lakeFS to create isolated dev/test data environments to run data pipelines.
 ---
 
-# ETL Testing with Isolated Dev/Test Environments
+# Isolated Dev & Test Environments
 
-## Why are multiple environments so important?
+## Why are isolated environments so important?
 
-When working with a data lake, it's useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting the consumers of the production data.
+When making changes to a data lake, teams must test those changes against real production data to ensure reliable results. This requires isolated environments
+that provide access to production data without impacting it, or the consumers who depend on it.
 
-Running ETL and transformation jobs directly in production without proper ETL testing presents a huge risk of having data issues flow into dashboards, ML models, and other consumers sooner or later.
+Running pipelines, transformation jobs, or model updates directly in production without proper testing introduces significant risk.
+Sooner or later, data issues can propagate into dashboards, ML models, and downstream systems, leading to costly errors and loss of trust.
 
-The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environments give you a space in which to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production.
+The most common way to avoid changing production directly is to create separate development and testing environments. In practice, 
+this usually means copying large volumes of data into dedicated dev environments for experimentation and validation.
 
-Without lakeFS, the challenge with this approach is that it can be time-consuming and costly to maintain these separate dev/test environments to enable thorough effective ETL testing. And for larger teams it forces multiple people to share these environments, requiring significant coordination. Depending on the size of the data involved there can also be high costs due to the duplication of data.
+However, without lakeFS, creating and maintaining these environments is time-consuming and expensive. Large datasets must be duplicated, 
+increasing storage costs. Teams often end up sharing limited dev environments, which creates coordination overhead and slows development. 
+And because these environments rely on data copies rather than true isolation, they still don’t guarantee hermetic separation from production.
 
 ## How does lakeFS help with Dev/Test environments?
 
-lakeFS makes creating isolated dev/test environments for ETL testing quick and cheap. lakeFS uses zero-copy branching which means that there is no duplication of data when you create a new environment. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
+lakeFS makes it fast and cost-effective to create truly isolated dev and test environments for ETL jobs, transformations, and ML workflows.
+Instead of copying large volumes of data, lakeFS uses zero-copy branching to create new environments instantly - without duplicating objects.
 
-In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
+In a lakeFS repository, all data lives on a branch. You can think of each branch as an independent environment. Branches are fully isolated: 
+changes made on one branch do not affect other branches unless you explicitly merge them. This allows teams to experiment, validate changes,
+and iterate safely — without impacting production or other developers.
 
-!!! info
-    Objects that remain unchanged between two branches are not copied, but rather shared to both branches via metadata pointers that lakeFS manages.
+Because lakeFS creates branches using metadata pointers rather than physical copies, unchanged objects are shared across branches. 
+**Only new or modified data consumes additional storage**. This eliminates the high costs and operational burden of maintaining multiple 
+copied environments.
 
-    If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
+When changes are validated and ready to be promoted, you can use a merge operation to apply them to another branch (for example,
+from a dev branch into production). This makes the promotion process controlled, explicit, and versioned.
 
 ## Using branches as development and testing environments
 
@@ -34,7 +44,7 @@ This is different from creating a long-living test environment used as a staging
 
 ![dev/test branches as environments](../../assets/img/iso_env_dev_test_branching.png)
 
-## Try it out! Creating Dev/Test Environments with lakeFS for ETL Testing
+## Try it out: Creating Dev/Test Environments with lakeFS
 
 lakeFS supports UI, CLI (`lakectl` command-line utility) and several clients for the [API](../../reference/api.md) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
