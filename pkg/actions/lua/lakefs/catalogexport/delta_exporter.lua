@@ -145,8 +145,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                             entry.cdc.path = physical_path
                         end
                     elseif code == 404 then
-                        if entry.remove ~= nil then
-                            -- If the object is not found, and the entry is a remove entry, we can assume it was vacuumed
+                        if entry.remove ~= nil or entry.cdc ~= nil then
+                            -- If the object is not found, and the entry is a remove or a cdc entry, we can assume it was vacuumed
                             print(string.format(
                                 "Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.",
                                 unescaped_path))
@@ -172,7 +172,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     print(p)
                 end
             end
-            error("The following objects were not found: " .. unfound_paths)
+            error("The following objects were not found: " .. unfound_paths_str)
         end
 
         local table_export_prefix = utils.get_storage_uri_prefix(ns, commit_id, action)
