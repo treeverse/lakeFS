@@ -156,18 +156,12 @@ func (w *MostlyCorrectOwner) refreshKey(ctx context.Context, owner string, prefi
 
 // sleepFor sleeps for duration or until ctx is Done.  If Done, it returns
 // the error from ctx or finished.
-//
-// TODO(ariels): Rewrite once on Go 1.23, which no longer leaks time.After.
 func sleepFor(ctx context.Context, duration time.Duration) error {
-	timer := time.NewTimer(duration)
-	defer timer.Stop()
-	for {
-		select {
-		case <-timer.C:
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
+	select {
+	case <-time.After(duration):
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 

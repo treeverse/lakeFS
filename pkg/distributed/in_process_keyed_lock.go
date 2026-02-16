@@ -45,6 +45,12 @@ func NewInProcessKeyedLock() *InProcessKeyedLock {
 func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), error) {
 	l.mu.Lock()
 
+	// Check for early cancellation before taking the lock or enqueuing.
+	if err := ctx.Err(); err != nil {
+		l.mu.Unlock()
+		return nil, err
+	}
+
 	kq := l.getOrCreateLocked(key)
 
 	if !kq.held {
@@ -117,7 +123,7 @@ func (l *InProcessKeyedLock) getOrCreateLocked(key string) *keyQueue {
 	kq, ok := l.keys[key]
 	if !ok {
 		kq = &keyQueue{
-			waiters: NewRingBuffer[*waiter](4),
+			waiters: NewRingBuffer[*waiter](0),
 		}
 		l.keys[key] = kq
 	}

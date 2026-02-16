@@ -89,6 +89,12 @@ func (r *RingBuffer[T]) Remove(match func(T) bool) bool {
 
 // removeAt removes the element at logical index i (0 = head).
 func (r *RingBuffer[T]) removeAt(i int) {
+	if i == 0 {
+		// Removing the head is equivalent to a Pop.
+		_ = r.Pop()
+		return
+	}
+
 	// Shift elements after i toward head to fill the gap.
 	for j := i; j < r.len-1; j++ {
 		cur := (r.head + j) % len(r.buf)
