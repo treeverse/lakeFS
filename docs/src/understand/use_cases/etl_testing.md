@@ -5,7 +5,7 @@ description: In this tutorial, we will explore how to safely run ETL testing usi
 
 # Isolated Dev & Test Environments
 
-## Why are isolated environments so important?
+## Why are Isolated Environments Important?
 
 When making changes to a data lake, teams must test those changes against real production data to ensure reliable results. This requires isolated environments
 that provide access to production data without impacting it, or the consumers who depend on it.
@@ -20,7 +20,7 @@ However, without lakeFS, creating and maintaining these environments is time-con
 increasing storage costs. Teams often end up sharing limited dev environments, which creates coordination overhead and slows development. 
 And because these environments rely on data copies rather than true isolation, they still don’t guarantee hermetic separation from production.
 
-## How does lakeFS help with Dev/Test environments?
+## How does lakeFS Help with Dev/Test Environments?
 
 lakeFS makes it fast and cost-effective to create truly isolated dev and test environments for ETL jobs, transformations, and ML workflows.
 Instead of copying large volumes of data, lakeFS uses zero-copy branching to create new environments instantly - without duplicating objects.
@@ -36,7 +36,7 @@ copied environments.
 When changes are validated and ready to be promoted, you can use a merge operation to apply them to another branch (for example,
 from a dev branch into production). This makes the promotion process controlled, explicit, and versioned.
 
-## Using branches as development and testing environments
+## Using Branches as Development and Testing Environments
 
 The key difference when using lakeFS for isolated data environments is that you can create them immediately before testing a change. And once new data is merged into production, you can delete the branch - effectively deleting the old environment.
 
@@ -50,11 +50,11 @@ lakeFS supports UI, CLI (`lakectl` command-line utility) and several clients for
 
 There are two ways that you can try out lakeFS:
 
-* The lakeFS Playground on lakeFS Cloud - fully managed lakeFS with a 30-day free trial
+* lakeFS Cloud - fully managed lakeFS with a 30-day free trial
 * Local Docker-based [quickstart](../../quickstart/index.md) and [samples](https://github.com/treeverse/lakeFS-samples/)
 * Self-hosted lakeFS Enterprise [quickstart](../../enterprise/getstarted/quickstart.md)
 
-### Using lakeFS Playground on lakeFS Cloud
+### Example: Using lakeFS Cloud
 
 In this tutorial, we will use [a lakeFS playground environment](https://lakefs.cloud/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
 
