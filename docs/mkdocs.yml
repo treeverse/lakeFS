@@ -129,6 +129,7 @@ nav:
       - Data Quality:
         - Isolated Dev & Test Environments: understand/use_cases/etl_testing.md
         - Data Contract Enforcement: understand/use_cases/cicd_for_data.md
+        - Rollback: understand/use_cases/rollback.md
       - Reproducibility: understand/use_cases/reproducibility.md
   - User Guides:
       - Installing:
@@ -144,7 +145,6 @@ nav:
       - Git-Like Versioning:
           - Pull Requests: howto/pull-requests.md
           - Branch Protection: howto/protect-branches.md
-          - Rollback & Revert: understand/use_cases/rollback.md
           - Merge Strategies: understand/how/merge.md
       - Import & Export Data:
           - Importing Data: howto/import.md
