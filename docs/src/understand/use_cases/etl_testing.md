@@ -54,9 +54,6 @@ There are two ways that you can try out lakeFS:
 * Local Docker-based [quickstart](../../quickstart/index.md) and [samples](https://github.com/treeverse/lakeFS-samples/)
 * Self-hosted lakeFS Enterprise [quickstart](../../enterprise/getstarted/quickstart.md)
 
-
-You can also [deploy lakeFS](../../howto/deploy/index.md) locally or self-managed on your cloud of choice.
-
 ### Using lakeFS Playground on lakeFS Cloud
 
 In this tutorial, we will use [a lakeFS playground environment](https://lakefs.cloud/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
