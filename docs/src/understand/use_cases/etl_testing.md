@@ -52,6 +52,8 @@ There are two ways that you can try out lakeFS:
 
 * The lakeFS Playground on lakeFS Cloud - fully managed lakeFS with a 30-day free trial
 * Local Docker-based [quickstart](../../quickstart/index.md) and [samples](https://github.com/treeverse/lakeFS-samples/)
+* Self-hosted lakeFS Enterprise [quickstart](../../enterprise/getstarted/quickstart.md)
+
 
 You can also [deploy lakeFS](../../howto/deploy/index.md) locally or self-managed on your cloud of choice.
 
