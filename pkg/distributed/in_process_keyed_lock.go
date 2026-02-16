@@ -1,7 +1,6 @@
 package distributed
 
 import (
-	"container/list"
 	"context"
 	"sync"
 )
@@ -25,7 +24,7 @@ type InProcessKeyedLock struct {
 // keyQueue tracks the current holder and ordered waiters for a single key.
 type keyQueue struct {
 	held    bool
-	waiters list.List // elements are *waiter
+	waiters *RingBuffer[*waiter]
 }
 
 // waiter is a slot in the FIFO queue.  Its channel is closed exactly once
@@ -57,12 +56,12 @@ func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), e
 
 	// Slow path: key is held — enqueue ourselves and wait.
 	w := &waiter{ch: make(chan struct{})}
-	elem := kq.waiters.PushBack(w)
+	kq.waiters.Push(w)
 	l.mu.Unlock()
 
 	select {
 	case <-w.ch:
-		// We were signaled — we now hold the lock.
+		// The previous holder closed our channel, transferring ownership to us.
 		return l.makeRelease(key), nil
 
 	case <-ctx.Done():
@@ -76,7 +75,7 @@ func (l *InProcessKeyedLock) Acquire(ctx context.Context, key string) (func(), e
 			l.handoffLocked(key)
 		default:
 			// We were not signaled yet — remove ourselves.
-			kq.waiters.Remove(elem)
+			kq.waiters.Remove(func(x *waiter) bool { return x == w })
 			l.cleanupLocked(key)
 		}
 		l.mu.Unlock()
@@ -102,9 +101,7 @@ func (l *InProcessKeyedLock) handoffLocked(key string) {
 		panic("InProcessKeyedLock: release called twice for key " + key)
 	}
 	if kq.waiters.Len() > 0 {
-		front := kq.waiters.Front()
-		kq.waiters.Remove(front)
-		w := front.Value.(*waiter)
+		w := kq.waiters.Pop()
 		close(w.ch)
 		// The signaled waiter now holds the lock.
 		return
@@ -119,7 +116,9 @@ func (l *InProcessKeyedLock) handoffLocked(key string) {
 func (l *InProcessKeyedLock) getOrCreateLocked(key string) *keyQueue {
 	kq, ok := l.keys[key]
 	if !ok {
-		kq = &keyQueue{}
+		kq = &keyQueue{
+			waiters: NewRingBuffer[*waiter](4),
+		}
 		l.keys[key] = kq
 	}
 	return kq
