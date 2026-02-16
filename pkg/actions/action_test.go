@@ -31,6 +31,13 @@ func TestAction_ReadAction(t *testing.T) {
 		{name: "invalid event type", filename: "action_invalid_event.yaml", errStr: "event 'not-a-valid-event' is not supported: invalid action"},
 		{name: "invalid yaml", filename: "action_invalid_yaml.yaml", errStr: "yaml: unmarshal errors"},
 		{name: "invalid parameter in tag event", filename: "action_invalid_param_tag_actions.yaml", errStr: "'branches' is not supported in tag event types"},
+		{name: "lua misplaced script", filename: "action_lua_missing_script.yaml", errStr: "missing properties for lua hook"},
+		{name: "lua empty properties", filename: "action_lua_empty_properties.yaml", errStr: "'script' or 'script_path' must be supplied in properties"},
+		{name: "lua no properties", filename: "action_lua_no_properties.yaml", errStr: "missing properties for lua hook"},
+		{name: "lua valid script", filename: "action_lua_valid_script.yaml"},
+		{name: "lua valid script_path", filename: "action_lua_valid_script_path.yaml"},
+		{name: "webhook missing url", filename: "action_webhook_missing_url.yaml", errStr: "'url' must be supplied in properties"},
+		{name: "airflow missing props", filename: "action_airflow_missing_props.yaml", errStr: "'dag_id' must be supplied in properties"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -302,8 +309,9 @@ func TestLoadActions(t *testing.T) {
 					},
 					Hooks: []actions.ActionHook{
 						{
-							ID:   "hook_id",
-							Type: "webhook",
+							ID:         "hook_id",
+							Type:       "webhook",
+							Properties: map[string]any{"url": "https://example.com/hook"},
 						},
 					},
 				}))
@@ -326,12 +334,14 @@ func TestLoadActions(t *testing.T) {
 					},
 					Hooks: []actions.ActionHook{
 						{
-							ID:   "hook_id_1",
-							Type: "webhook",
+							ID:         "hook_id_1",
+							Type:       "webhook",
+							Properties: map[string]any{"url": "https://example.com/hook1"},
 						},
 						{
-							ID:   "hook_id_2",
-							Type: "webhook",
+							ID:         "hook_id_2",
+							Type:       "webhook",
+							Properties: map[string]any{"url": "https://example.com/hook2"},
 						},
 					},
 				}))
@@ -347,12 +357,12 @@ func TestLoadActions(t *testing.T) {
 						{
 							ID:         "hook_id_1",
 							Type:       "webhook",
-							Properties: map[string]any{},
+							Properties: map[string]any{"url": "https://example.com/hook1"},
 						},
 						{
 							ID:         "hook_id_2",
 							Type:       "webhook",
-							Properties: map[string]any{},
+							Properties: map[string]any{"url": "https://example.com/hook2"},
 						},
 					},
 				},
