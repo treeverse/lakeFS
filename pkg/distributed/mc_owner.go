@@ -297,7 +297,6 @@ func (w *MostlyCorrectOwner) Own(ctx context.Context, owner, key string) (func()
 	stopOwning := func() {
 		defer releaseInProcess()
 		defer refreshCancel()
-		// This func might be called twice, so use the original ctx not refreshCtx.
 		err := w.releaseIf(ctx, owner, prefixedKey)
 		if err != nil {
 			w.Log.
