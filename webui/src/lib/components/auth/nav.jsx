@@ -55,19 +55,13 @@ export const UserNav = ({ userId, page = 'groups' }) => {
     );
 };
 
-export const GroupNav = ({ groupId, page = 'groups' }) => {
+export const GroupNav = ({ groupId, group, loading, error, page = 'groups' }) => {
     const { RBAC: rbac } = useLoginConfigContext();
-
-    const { response, loading, error } = useAPI(() => {
-        return auth.getGroup(groupId);
-    }, [groupId]);
-
-    const group = response;
 
     function getDescription() {
         if (loading) return <span>...</span>;
         if (error) return <span className="text-danger">{error.message}</span>;
-        return group && group.description;
+        return group?.description;
     }
 
     return (
@@ -134,6 +128,11 @@ export const UserHeader = ({ userDisplayName, userId, page }) => {
 };
 
 export const GroupHeader = ({ groupId, page }) => {
+    const { response, loading, error } = useAPI(() => {
+        return auth.getGroup(groupId);
+    }, [groupId]);
+    const resolvedGroupId = loading ? groupId : response?.id || groupId;
+
     return (
         <div className="mb-4">
             <Breadcrumb>
@@ -142,15 +141,21 @@ export const GroupHeader = ({ groupId, page }) => {
                 </Link>
                 <Link
                     component={BreadcrumbItem}
-                    href={{ pathname: '/auth/groups/:groupId', params: { groupId } }}
+                    href={{ pathname: '/auth/groups/:groupId', params: { groupId: resolvedGroupId } }}
                     className={truncatedHeaderClass}
-                    title={groupId}
+                    title={resolvedGroupId}
                 >
-                    {groupId}
+                    {resolvedGroupId}
                 </Link>
             </Breadcrumb>
 
-            <GroupNav groupId={groupId} page={page} />
+            <GroupNav
+                groupId={resolvedGroupId}
+                group={response}
+                loading={loading}
+                error={error}
+                page={page}
+            />
         </div>
     );
 };
