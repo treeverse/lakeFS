@@ -767,6 +767,8 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+//comment
+
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.LoginJSONRequestBody) {
 	ctx := r.Context()
 	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
