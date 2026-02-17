@@ -93,6 +93,8 @@ The high-level wrapper (`lakefs` package) is unaffected - its public API does no
 **Internal parameters are now explicit instead of `**kwargs`**
 The old SDK accepted parameters like `_request_timeout` and `_headers` via `**kwargs`. The new SDK declares them as explicit keyword arguments with proper type annotations. Existing code that passes these parameters by name continues to work unchanged.
 
+_May break backwards compatibility, but only around underscored parameters._
+
 **`async_req` is removed**
 The old SDK offered thread-pool-based async via `async_req=True`, returning a thread handle. This is removed in the new SDK. Users who rely on this can use `concurrent.futures.ThreadPoolExecutor` or `asyncio.to_thread()` instead.
 
