@@ -12,19 +12,13 @@ import (
 func UserByToken(ctx context.Context, logger logging.Logger, authService Service, tokenString string) (*model.User, error) {
 	claims, err := VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
 	if err != nil {
-		logger.WithError(err).Error("failed to verify bearer token")
-		return nil, ErrAuthenticatingRequest
+		return nil, fmt.Errorf("verify token: %w: %w", ErrAuthenticatingRequest, err)
 	}
 
 	username := claims.Subject
 	userData, err := authService.GetUser(ctx, username)
 	if err != nil {
-		logger.WithError(err).WithFields(logging.Fields{
-			"token_id": claims.ID,
-			"username": username,
-			"subject":  username,
-		}).Debug("could not find user id by credentials")
-		return nil, fmt.Errorf("get user: %w", err)
+		return nil, fmt.Errorf("get user %s (token %s): %w", username, claims.ID, err)
 	}
 	return userData, nil
 }
@@ -32,16 +26,15 @@ func UserByToken(ctx context.Context, logger logging.Logger, authService Service
 func UserByAuth(ctx context.Context, logger logging.Logger, authenticator Authenticator, authService Service, accessKey string, secretKey string) (*model.User, error) {
 	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {
-		logger.WithError(err).WithField("accessKey", accessKey).Error("authenticate")
+		// Wrap authentication-specific errors to ensure they return 401 instead of 404/500
 		if errors.Is(err, ErrNotFound) || errors.Is(err, ErrInvalidSecretAccessKey) {
-			return nil, fmt.Errorf("%w: %w", ErrAuthenticatingRequest, err)
+			return nil, fmt.Errorf("%w (access key %s): %w", ErrAuthenticatingRequest, accessKey, err)
 		}
-		return nil, err
+		return nil, fmt.Errorf("authenticate access key %s: %w", accessKey, err)
 	}
 	user, err := authService.GetUser(ctx, username)
 	if err != nil {
-		logger.WithError(err).WithFields(logging.Fields{"username": username}).Debug("could not find user id by credentials")
-		return nil, err
+		return nil, fmt.Errorf("get user %s: %w", username, err)
 	}
 	return user, nil
 }

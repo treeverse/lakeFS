@@ -434,6 +434,7 @@ func initialGroupsFromClaims(groupsClaim any, defaultInitialGroups []string) ([]
 
 // writeAuthError centralizes error handling logic and avoids duplication
 func writeAuthError(w http.ResponseWriter, r *http.Request, err error, defaultStatus int, defaultMsg string) {
+	logging.FromContext(r.Context()).WithError(err).Warn("authentication error")
 	// Only internal server errors are returned to the client to allow retries.
 	// Other errors are masked to avoid exposing sensitive information.
 	if errors.Is(err, auth.ErrInternalServerError) {
