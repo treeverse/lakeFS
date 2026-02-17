@@ -23,4 +23,5 @@ var (
 	ErrNotImplemented          = errors.New("not implemented")
 	ErrMigrationNotPossible    = errors.New("auth migration not possible")
 	ErrInternalServerError     = errors.New("internal server error")
+	ErrAuthenticatingRequest   = errors.New("error authenticating request")
 )
