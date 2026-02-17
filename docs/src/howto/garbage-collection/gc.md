@@ -90,8 +90,8 @@ Use the correct jar for your Spark version:
 
 | Spark version | Jar URL                                                                                                        |
 |---------------|--------------------------------------------------------------------------------------------------------------------|
-| 3.x           | `s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_2.12-assembly-0.19.0.jar`           |
-| 4.x           | `s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_2.13-assembly-0.19.0.jar`           |
+| 3.x           | `https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.19.0/lakefs-spark-client_2.12-assembly-0.19.0.jar` |
+| 4.x           | `https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.19.0/lakefs-spark-client_2.13-assembly-0.19.0.jar` |
 
 !!! note
     Spark 4.x requires Java 17+.
@@ -105,7 +105,7 @@ Use the correct jar for your Spark version:
         -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
         -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
         -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-        s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
         example-repo us-east-1
     ```
 
@@ -119,7 +119,7 @@ Use the correct jar for your Spark version:
         -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
         -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
         -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-        s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
         example-repo
     ```
 
@@ -136,7 +136,7 @@ Use the correct jar for your Spark version:
         -c spark.hadoop.fs.azure.account.oauth2.client.id.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<application-id> \
         -c spark.hadoop.fs.azure.account.oauth2.client.secret.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<service-credential-key> \
         -c spark.hadoop.fs.azure.account.oauth2.client.endpoint.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=https://login.microsoftonline.com/<directory-id>/oauth2/token \
-        s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
         example-repo
     ```
 
@@ -159,7 +159,7 @@ Use the correct jar for your Spark version:
         -c spark.hadoop.google.cloud.auth.service.account.json.keyfile=<PATH_TO_JSON_KEYFILE> \
         -c spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem \
         -c spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS \
-        s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.19.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.19.0.jar \
         example-repo
     ```
 

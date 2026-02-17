@@ -165,7 +165,7 @@ jobs:
         spark:
           - tag: "3.2.1"
             metaclient-jar: spark3-assembly.jar
-          - tag: "4"
+          - tag: "4.0.0"
             metaclient-jar: spark4-assembly.jar
     services:
       lakefs:
