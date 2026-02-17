@@ -15,30 +15,41 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 ## Getting Started
 
 !!! note
-    Please note that Spark **2.x** is no longer supported with the lakeFS metadata client.
+    Spark **2.x** is no longer supported with the lakeFS metadata client.
 
+The Spark metadata client is cross-compiled for Scala 2.12 and Scala 2.13, supporting both Spark 3.x and Spark 4.x:
 
-The Spark metadata client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but
-can work for other Spark versions and higher Hadoop versions.
-
+| Spark version | Scala version | Maven artifact                               | Java requirement |
+|---------------|---------------|----------------------------------------------|------------------|
+| 3.x           | 2.12          | `io.lakefs:lakefs-spark-client_2.12:0.19.0`  | Java 8+          |
+| 4.x           | 2.13          | `io.lakefs:lakefs-spark-client_2.13:0.19.0`  | Java 17+         |
 
 === "PySpark, spark-shell, spark-submit, spark-sql"
-    Start Spark Shell / PySpark with the `--packages` flag, for instance:
+    Start Spark Shell / PySpark with the `--packages` flag:
 
+    For **Spark 3.x**:
     ```bash
-    spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.17.0
+    spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.19.0
     ```
 
-    Alternatively use the assembled jar (an "Überjar") on S3, from
-    `s3://treeverse-clients-us-east/lakefs-spark-client/0.17.0/lakefs-spark-client-assembly-0.17.0.jar`
-    by passing its path to `--jars`.
+    For **Spark 4.x**:
+    ```bash
+    spark-shell --packages io.lakefs:lakefs-spark-client_2.13:0.19.0
+    ```
+
+    Alternatively use the assembled jar (an "Überjar") on S3 by passing its path to `--jars`:
+
+    * Spark 3.x: `s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_2.12-assembly-0.19.0.jar`
+    * Spark 4.x: `s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_2.13-assembly-0.19.0.jar`
 
     The assembled jar is larger but shades several common libraries.  Use it if Spark
     complains about bad classes or missing methods.
 
 === "Databricks"
-    Include this assembled jar (an "Überjar") from S3, from
-    `s3://treeverse-clients-us-east/lakefs-spark-client/0.17.0/lakefs-spark-client-assembly-0.17.0.jar`.
+    Include this assembled jar (an "Überjar") from S3:
+
+    * Spark 3.x: `s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_2.12-assembly-0.19.0.jar`
+    * Spark 4.x: `s3://treeverse-clients-us-east/lakefs-spark-client/0.19.0/lakefs-spark-client_2.13-assembly-0.19.0.jar`
 
 
 ## Configuration

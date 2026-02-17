@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.19.0
+
+* Add Spark 4.x support via Scala 2.13 cross-compilation (#10138)
+
+  The metadata client is now cross-compiled for both Scala 2.12 (Spark 3.x) and
+  Scala 2.13 (Spark 4.x). Spark 4.x requires Java 17+.
+
 ## v0.18.0
 
 * Parallelize scanning for very large GC runs (#9657)
