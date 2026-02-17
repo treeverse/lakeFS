@@ -62,6 +62,8 @@ jobs:
   compatibility-checks:
     name: Test lakectl ${{ matrix.lakectl }} compatibility against lakeFS ${{ matrix.lakefs }}
     needs: [build]
+    env:
+      GH_TOKEN: ${{ github.token }}
     strategy:
       fail-fast: false
       matrix:
@@ -99,15 +101,11 @@ jobs:
         if: matrix.lakefs != 'HEAD'
         run: |
           gh release download ${{ matrix.lakefs != 'latest' && matrix.lakefs || '' }} -R treeverse/lakeFS -p "lakeFS_*_Linux_x86_64.tar.gz" -O- | tar -xz -C bin lakefs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download lakectl from GitHub Release
         if: matrix.lakectl != 'HEAD'
         run: |
           gh release download ${{ matrix.lakectl != 'latest' && matrix.lakectl || '' }} -R treeverse/lakeFS -p "lakeFS_*_Linux_x86_64.tar.gz" -O- | tar -xz -C bin lakectl
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check binaries' versions
         run: |
