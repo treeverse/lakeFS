@@ -149,13 +149,7 @@ export const GroupHeader = ({ groupId, page }) => {
                 </Link>
             </Breadcrumb>
 
-            <GroupNav
-                groupId={resolvedGroupId}
-                group={response}
-                loading={loading}
-                error={error}
-                page={page}
-            />
+            <GroupNav groupId={resolvedGroupId} group={response} loading={loading} error={error} page={page} />
         </div>
     );
 };
