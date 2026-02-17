@@ -107,5 +107,3 @@ Open the [local Jupyter Notebook](http://localhost:8888) and go to the `hooks-de
 To explore different checks and validations on your data, refer to [pre-built hooks config](https://github.com/treeverse/lakeFS-hooks#included-webhooks) by the lakeFS team. 
 
 To understand the comprehensive list of hooks supported by lakeFS, refer to the [documentation](https://github.com/treeverse/lakeFS-hooks).
-
-[data-quality-gates]:  ../../howto/hooks/index.md

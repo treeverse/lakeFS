@@ -56,9 +56,12 @@ There are two ways that you can try out lakeFS:
 
 ### Example: Using lakeFS Cloud
 
-In this tutorial, we will use [a lakeFS playground environment](https://lakefs.cloud/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
+In this tutorial, we will use [a lakeFS Cloud environment](https://lakefs.cloud/) to create dev/test data environments for ETL testing. This 
+allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and 
+develop & test data pipelines in these isolated branches.
 
-First, let us spin up a [playground](https://lakefs.cloud/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
+First, let us spin up a [cloud](https://lakefs.cloud/) instance. Once you have a live environment, login to your instance
+with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
 ![sample repository](../../assets/img/iso_env_myrepo.png)
 
@@ -76,7 +79,7 @@ Now you can add, modify or delete objects under the `test-env` branch without af
 
 This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial provides a lakeFS environment, a Jupyter notebook, and Python SDK API to demonstrate integration of lakeFS with [Spark](../../integrations/spark.md). You can run this tutorial on your local machine.
 
-Follow the tutorial video below to get started with the playground and Jupyter notebook, or follow the instructions on this page.
+Follow the tutorial video below to get started with lakeFS Cloud and Jupyter notebook, or follow the instructions on this page.
 
 <iframe data-uc-allowed="true" width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
 
