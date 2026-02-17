@@ -8,6 +8,7 @@ import { useLoginConfigContext } from '../../hooks/conf';
 import { Link, NavItem } from '../nav';
 import { useAPI } from '../../hooks/api';
 import { auth } from '../../api';
+import { Loading } from '../controls';
 
 const truncatedHeaderClass = 'd-inline-block w-50 text-nowrap overflow-hidden text-truncate align-middle';
 
@@ -131,7 +132,10 @@ export const GroupHeader = ({ groupId, page }) => {
     const { response, loading, error } = useAPI(() => {
         return auth.getGroup(groupId);
     }, [groupId]);
-    const resolvedGroupId = loading ? groupId : response?.id || groupId;
+
+    if (loading) return <Loading />;
+
+    const resolvedGroupId = response?.id || groupId;
 
     return (
         <div className="mb-4">
@@ -141,7 +145,7 @@ export const GroupHeader = ({ groupId, page }) => {
                 </Link>
                 <Link
                     component={BreadcrumbItem}
-                    href={{ pathname: '/auth/groups/:groupId', params: { groupId: resolvedGroupId } }}
+                    href={{ pathname: '/auth/groups/:groupId', params: { groupId } }}
                     className={truncatedHeaderClass}
                     title={resolvedGroupId}
                 >
@@ -149,7 +153,7 @@ export const GroupHeader = ({ groupId, page }) => {
                 </Link>
             </Breadcrumb>
 
-            <GroupNav groupId={resolvedGroupId} group={response} loading={loading} error={error} page={page} />
+            <GroupNav groupId={groupId} group={response} loading={false} error={error} page={page} />
         </div>
     );
 };
