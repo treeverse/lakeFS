@@ -144,14 +144,14 @@ func checkSecurityRequirements(r *http.Request,
 					continue
 				}
 				token := parts[1]
-				user, err = auth.UserByToken(ctx, logger, authService, token)
+				user, err = auth.UserByToken(ctx, authService, token)
 			case "basic_auth":
 				// validate using basic auth
 				accessKey, secretKey, ok := r.BasicAuth()
 				if !ok {
 					continue
 				}
-				user, err = auth.UserByAuth(ctx, logger, authenticator, authService, accessKey, secretKey)
+				user, err = auth.UserByAuth(ctx, authenticator, authService, accessKey, secretKey)
 			case "cookie_auth":
 				var internalAuthSession *sessions.Session
 				internalAuthSession, _ = sessionStore.Get(r, InternalAuthSessionName)
@@ -162,7 +162,7 @@ func checkSecurityRequirements(r *http.Request,
 				if token == "" {
 					continue
 				}
-				user, err = auth.UserByToken(ctx, logger, authService, token)
+				user, err = auth.UserByToken(ctx, authService, token)
 			case "oidc_auth":
 				var oidcSession *sessions.Session
 				oidcSession, err = sessionStore.Get(r, OIDCAuthSessionName)
