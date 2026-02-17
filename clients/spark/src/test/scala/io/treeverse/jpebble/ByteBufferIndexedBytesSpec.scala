@@ -34,17 +34,17 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
       // Verify slices contents
       for (indices <- sliceIndices) {
         val slice = buffer.slice(indices._1, indices._2)
-        slice.iterator.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
-                                                                                    indices._2
-                                                                                   ))
+        slice.iterator.toSeq should contain theSameElementsInOrderAs (bytesSeq.slice(indices._1,
+                                                                                     indices._2
+                                                                                    ))
       }
 
       // Verify them _again_, ensuring no slice ruined a previous slice.
       for (indices <- sliceIndices) {
         val slice = buffer.slice(indices._1, indices._2)
-        slice.iterator.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
-                                                                                    indices._2
-                                                                                   ))
+        slice.iterator.toSeq should contain theSameElementsInOrderAs (bytesSeq.slice(indices._1,
+                                                                                     indices._2
+                                                                                    ))
       }
     }
 
@@ -55,7 +55,7 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
         forPairs(
           bytesSeq,
           (start: Int, end: Int) =>
-            bufferConcrete.sliceView(start, end)
+            bufferConcrete.sliceView(start, end).toSeq
               should contain theSameElementsInOrderAs (buffer.slice(start, end).iterator.toSeq)
         )
       }
@@ -97,13 +97,13 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
         // Verify slices contents
         for (indices <- sliceIndices) {
           val takenX = bytesSeq.iterator.drop(indices._1).take(indices._2 - indices._1)
-          takenX.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
+          takenX.toSeq should contain theSameElementsInOrderAs (bytesSeq.slice(indices._1,
+                                                                               indices._2
+                                                                              ))
+          val taken = buffer.iterator.drop(indices._1).take(indices._2 - indices._1)
+          taken.toSeq should contain theSameElementsInOrderAs (bytesSeq.slice(indices._1,
                                                                               indices._2
                                                                              ))
-          val taken = buffer.iterator.drop(indices._1).take(indices._2 - indices._1)
-          taken.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
-                                                                             indices._2
-                                                                            ))
         }
       }
     }

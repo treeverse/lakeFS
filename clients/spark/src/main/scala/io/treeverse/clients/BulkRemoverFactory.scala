@@ -13,7 +13,7 @@ import io.treeverse.clients.StorageUtils.S3._
 import java.net.URI
 import java.nio.charset.Charset
 import java.util.stream.Collectors
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
@@ -66,7 +66,7 @@ object BulkRemoverFactory {
       storageNamespace: String,
       client: StorageClients.S3
   ) extends BulkRemover {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     private val uri = new URI(storageNamespace)
     private val bucket = uri.getHost
@@ -84,7 +84,7 @@ object BulkRemoverFactory {
       val s3Client = client.s3Client
       try {
         val res = s3Client.deleteObjects(delObjReq)
-        res.getDeletedObjects.asScala.map(_.getKey())
+        res.getDeletedObjects.asScala.map(_.getKey()).toSeq
       } catch {
         case mde: MultiObjectDeleteException => {
           // TODO(ariels): Delete one-by-one?!
@@ -95,7 +95,7 @@ object BulkRemoverFactory {
           errors.asScala.foreach(de =>
             logger.info(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}")
           )
-          mde.getDeletedObjects.asScala.map(_.getKey)
+          mde.getDeletedObjects.asScala.map(_.getKey).toSeq
         }
         case e: Exception => {
           logger.info(s"deleteObjects failed: $e")
@@ -144,6 +144,7 @@ object BulkRemoverFactory {
           .filter(isNonEmptyString)
           .collect(Collectors.toList())
           .asScala
+          .toSeq
       } catch {
         case e: Throwable =>
           e.printStackTrace()
