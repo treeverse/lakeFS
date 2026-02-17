@@ -58,7 +58,10 @@ Instead of referencing a non-readable `commit_id`, you can reference the tag dir
 df = spark.read.parquet("s3://example/v1.0/training_dataset/")
 ```
 
-Here, `v1.0` is a tag that points to a specific commit. A tag is an immutable reference, it cannot be modified after creation
-(only deleted and recreated). Therefore, reading data through a tag will always return the exact same data state.
+Here, `v1.0` is a tag that points to a specific commit. While commits in lakeFS are immutable, a tag is simply a reference 
+to one of those immutable commits. Once created, a tag cannot be updated to point to a different commit (it can only be 
+deleted and recreated).
+
+As a result, reading data through a tag will always return the exact same data state for as long as that tag exists.
 
 Using tags makes it easier to work with reproducible datasets in a way that is readable, shareable, and stable over time.
