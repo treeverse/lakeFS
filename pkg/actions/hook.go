@@ -39,10 +39,10 @@ type ValidatePropertiesFunc func(Properties) error
 // requireProperties returns a ValidatePropertiesFunc that checks required property groups.
 // Each group is a slice of keys where at least one must be present (OR within a group).
 // All groups must be satisfied (AND between groups).
-func requireProperties(hookType string, groups ...[]string) ValidatePropertiesFunc {
+func requireProperties(groups ...[]string) ValidatePropertiesFunc {
 	return func(p Properties) error {
 		if p == nil {
-			return fmt.Errorf("missing properties for %s hook: %w", hookType, ErrInvalidAction)
+			return fmt.Errorf("missing hook properties: %w", ErrInvalidAction)
 		}
 		for _, group := range groups {
 			if !slices.ContainsFunc(group, func(key string) bool {
@@ -63,9 +63,9 @@ var hooks = map[HookType]NewHookFunc{
 }
 
 var hookValidators = map[HookType]ValidatePropertiesFunc{
-	HookTypeWebhook: requireProperties("webhook", []string{"url"}),
-	HookTypeAirflow: requireProperties("airflow", []string{"url"}, []string{"dag_id"}, []string{"username"}, []string{"password"}),
-	HookTypeLua:     requireProperties("lua", []string{"script", "script_path"}),
+	HookTypeWebhook: requireProperties([]string{"url"}),
+	HookTypeAirflow: requireProperties([]string{"url"}, []string{"dag_id"}, []string{"username"}, []string{"password"}),
+	HookTypeLua:     requireProperties([]string{"script", "script_path"}),
 }
 
 func NewHook(hook ActionHook, action *Action, cfg Config, server *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {

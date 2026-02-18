@@ -98,7 +98,7 @@ func (a *Action) Validate() error {
 		}
 		if validate, found := hookValidators[hook.Type]; found {
 			if err := validate(hook.Properties); err != nil {
-				return fmt.Errorf("hook[%d]: %w", i, err)
+				return fmt.Errorf("hook[%d] type '%s': %w", i, hook.Type, err)
 			}
 		}
 	}
