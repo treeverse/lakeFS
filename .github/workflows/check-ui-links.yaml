@@ -68,8 +68,6 @@ jobs:
           jobSummary: false
           format: markdown
           output: /tmp/lychee/results.md
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       - name: Check Lychee output
         run: |
