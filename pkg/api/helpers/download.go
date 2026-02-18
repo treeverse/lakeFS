@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	MinDownloadPartSize        int64 = 1024 * 64       // 64KB
-	DefaultDownloadPartSize    int64 = 1024 * 1024 * 8 // 8MB
-	DefaultDownloadConcurrency       = 10
+	MinDownloadPartSize        int64 = 1024 * 64 // 64KB
+	DefaultDownloadPartSize    int64 = 0         // 0 = disabled (single GET request, like s3api get-object)
+	DefaultDownloadConcurrency       = 1         // no parallelism by default (like s3api get-object)
 )
 
 // Backoff parameters for download retries
@@ -48,6 +48,7 @@ type Downloader struct {
 	PreSign             bool
 	HTTPClient          *http.Client
 	PartSize            int64
+	Concurrency         int // number of concurrent part downloads (used for multipart)
 	SkipNonRegularFiles bool
 	SymlinkSupport      bool
 }
@@ -75,6 +76,7 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		PreSign:             preSign,
 		HTTPClient:          httpClient,
 		PartSize:            DefaultDownloadPartSize,
+		Concurrency:         DefaultDownloadConcurrency,
 		SkipNonRegularFiles: false,
 		SymlinkSupport:      false,
 	}
@@ -82,9 +84,12 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 
 // downloadObjectCore handles the common download logic for both Download and DownloadWithObjectInfo
 func (d *Downloader) downloadObjectCore(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker, objectStat *apigen.ObjectStats) error {
-	// Validate that object stats are provided when required
-	if (d.SymlinkSupport || d.PreSign) && objectStat == nil {
-		return fmt.Errorf("object stats are required for symlink support or presign downloads but were not provided: %w", ErrValidation)
+	// Validate that object stats are provided when required:
+	// - SymlinkSupport: need metadata to check for symlink target
+	// - Presign + multipart (PartSize > 0): need size to decide if multipart is needed
+	needsObjectStat := d.SymlinkSupport || (d.PreSign && d.PartSize > 0)
+	if needsObjectStat && objectStat == nil {
+		return fmt.Errorf("object stats are required for symlink support or presign multipart downloads but were not provided: %w", ErrValidation)
 	}
 
 	// delete destination file if it exists
@@ -116,7 +121,7 @@ func (d *Downloader) downloadObjectCore(ctx context.Context, src uri.URI, dst st
 
 	// download object
 	var err error
-	if d.PreSign && objectStat != nil && swag.Int64Value(objectStat.SizeBytes) >= d.PartSize {
+	if d.PartSize > 0 && d.PreSign && objectStat != nil && swag.Int64Value(objectStat.SizeBytes) >= d.PartSize {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
 		err = d.downloadPresignMultipart(ctx, src, dst, tracker, objectStat)
 	} else {
@@ -136,9 +141,13 @@ func (d *Downloader) DownloadWithObjectInfo(ctx context.Context, src uri.URI, ds
 
 // Download downloads an object from lakeFS to a local file, create the destination directory if needed.
 func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
-	// Check if we need to call StatObjectWithResponse (for symlinks or presign multipart)
+	// Only call StatObject when needed:
+	// - SymlinkSupport: need metadata to check for symlink target
+	// - Presign + multipart enabled (PartSize > 0): need size to decide if multipart is needed
+	// For simple presigned downloads (PartSize=0), skip StatObject - GetObject handles the redirect
 	var objectStat *apigen.ObjectStats
-	if d.SymlinkSupport || d.PreSign {
+	needsStat := d.SymlinkSupport || (d.PreSign && d.PartSize > 0)
+	if needsStat {
 		statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
 			Path:         apiutil.Value(src.Path),
 			UserMetadata: swag.Bool(d.SymlinkSupport), // Only request metadata if symlink support is enabled
@@ -195,9 +204,13 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	physicalAddress := statResp.JSON200.PhysicalAddress
 
 	// start download workers
-	ch := make(chan downloadPart, DefaultDownloadConcurrency)
+	concurrency := d.Concurrency
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	ch := make(chan downloadPart, concurrency)
 	g, grpCtx := errgroup.WithContext(context.Background())
-	for range DefaultDownloadConcurrency {
+	for range concurrency {
 		g.Go(func() error {
 			buf := make([]byte, d.PartSize)
 			for part := range ch {

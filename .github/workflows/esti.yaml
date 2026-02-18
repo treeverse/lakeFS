@@ -703,22 +703,16 @@ jobs:
         working-directory: test/spark
         run: docker compose logs --tail=2500 lakefs
 
-  run-system-aws-s3-kv-dynamodb:
-    name: Run latest lakeFS app on AWS S3 DynamoDB KV
+  run-system-dynamodb-local:
+    name: Run latest lakeFS app on DynamoDB with local blockstore
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
-
-      - name: Generate uniquifying value
-        id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
@@ -737,44 +731,26 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
-      - name: Test lakeFS with S3 tests KV
+      - name: Test lakeFS with DynamoDB and local blockstore
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose-dynamodb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: dynamodb
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_BLOCKSTORE_TYPE: local
+          ESTI_STORAGE_NAMESPACE: local:///home/lakefs
           ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
 
-      - name: Check files in S3 bucket KV
-        run: |
-          FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
-          [ $FILES_COUNT -gt 5 ]
-
-      - name: lakeFS Logs on s3 failure KV
+      - name: lakeFS Logs on failure
         if: ${{ failure() }}
         continue-on-error: true
         run: docker compose -f esti/ops/docker-compose-dynamodb.yaml logs --tail=1000 lakefs
 
-      - name: Export DB KV
-        if: ${{ always() }}
-        working-directory: esti/ops
-        run: |
-          if docker compose ps -q postgres; then
-            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
-          fi
-
-  run-system-aws-s3:
-    name: Run latest lakeFS app on AWS S3
+  run-system-local-db-s3:
+    name: Run latest lakeFS app on local DB with S3
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     strategy:
@@ -810,10 +786,10 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
-      - name: Test lakeFS with S3 tests
+      - name: Test lakeFS with local DB and S3 blockstore
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-local-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
@@ -838,25 +814,15 @@ jobs:
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-local-db.yaml logs --tail=1000 lakefs
 
-      - name: Export DB
-        if: ${{ always() }}
-        working-directory: esti/ops
-        run: |
-          if docker compose ps -q postgres; then
-            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
-          fi
-
-  run-system-gcp-gs:
-    name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
+  run-system-local-db-gcs:
+    name: Run latest lakeFS app on local DB with Google Cloud Storage
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -882,10 +848,10 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
-      - name: Start lakeFS with GS tests
+      - name: Start lakeFS with GCS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-local-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -895,20 +861,18 @@ jobs:
           ESTI_BLOCKSTORE_TYPE: gs
           ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
 
-      - name: lakeFS Logs on GS failure
+      - name: lakeFS Logs on GCS failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-local-db.yaml logs --tail=1000 lakefs
 
-  run-system-azure-abfs:
-    name: Run latest lakeFS app on Azure with Azure blobstore
+  run-system-local-db-azure:
+    name: Run latest lakeFS app on local DB with Azure blobstore
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -940,7 +904,7 @@ jobs:
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-local-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -954,25 +918,18 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-local-db.yaml logs --tail=1000 lakefs
 
-      - name: See the env when we would have tried to publish coverage
-        run: env
-
-  run-system-azure-adls-gen2:
-    name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
+  run-system-local-db-azure-adls-gen2:
+    name: Run latest lakeFS app on local DB with Azure Data Lake Storage Gen2
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      COSMOSDB_DATABASE: esti-db
-      COSMOSDB_ACCOUNT: esti-e2e-tests
 
     steps:
       - name: Check-out code
@@ -999,42 +956,25 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
-      - name: Start lakeFS with Azure tests
+      - name: Start lakeFS with Azure ADLS Gen2 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose-external-db.yaml
+          compose-file: esti/ops/docker-compose-local-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
-          LAKEFS_DATABASE_TYPE: cosmosdb
-          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
-          LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
-          LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
-          LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
+          LAKEFS_BLOCKSTORE_TYPE: azure
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_LARGE_OBJECT_PATH: https://esti4hns.blob.core.windows.net/esti-system-testing-data/copy-test-data/data.6mib
           ESTI_AZURE_STORAGE_ACCOUNT: esti4hns
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
 
-      - name: Az CLI login
-        if: always()
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: cleanup cosmos db container
-        if: always()
-        run: |
-          echo "Delete database container: ${{ github.run_number }}-${{ steps.unique.outputs.value }}"
-          az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }} --yes
-
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-local-db.yaml logs --tail=1000 lakefs
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client
@@ -1317,8 +1257,8 @@ jobs:
           paths: webui/test-results.xml
           output: "quickstart-test-results.md"
 
-  run-system-aws-s3-basic-auth:
-    name: Run latest lakeFS app on AWS S3 + Basic Auth
+  run-system-local-db-s3-basic-auth:
+    name: Run latest lakeFS app on local DB with S3 + Basic Auth
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
@@ -1334,10 +1274,10 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      - name: Test lakeFS with S3 tests + Basic Auth
+      - name: Test lakeFS with local DB and S3 + Basic Auth
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-local-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_BLOCKSTORE_TYPE: s3
@@ -1355,15 +1295,124 @@ jobs:
           FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
           [ $FILES_COUNT -gt 5 ]
 
-      - name: lakeFS Logs on s3 failure
+      - name: lakeFS Logs on s3 basic auth failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker compose -f esti/ops/docker-compose-local-db.yaml logs --tail=1000 lakefs
+
+  run-system-postgres-local:
+    name: Run latest lakeFS app on PostgreSQL with local blockstore
+    needs: [deploy-image, login-to-amazon-ecr]
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
+
+      - name: Test lakeFS with PostgreSQL and local blockstore
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
+          REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+          ESTI_BLOCKSTORE_TYPE: local
+          ESTI_STORAGE_NAMESPACE: local:///home/lakefs
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
+
+      - name: lakeFS Logs on failure
         if: ${{ failure() }}
         continue-on-error: true
         run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
-      - name: Export DB
-        if: ${{ always() }}
-        working-directory: esti/ops
+  run-system-cosmosdb-local:
+    name: Run latest lakeFS app on CosmosDB with local blockstore
+    needs: [deploy-image, login-to-amazon-ecr]
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      COSMOSDB_DATABASE: esti-db
+      COSMOSDB_ACCOUNT: esti-e2e-tests
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
+
+      - name: Test lakeFS with CosmosDB and local blockstore
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose-external-db.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
+          LAKEFS_DATABASE_TYPE: cosmosdb
+          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
+          LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
+          LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
+          LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
+          ESTI_BLOCKSTORE_TYPE: local
+          ESTI_STORAGE_NAMESPACE: local:///home/lakefs
+
+      - name: Az CLI login
+        if: always()
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: cleanup cosmos db container
+        if: always()
         run: |
-          if docker compose ps -q postgres; then
-            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
-          fi
+          echo "Delete database container: ${{ github.run_number }}-${{ steps.unique.outputs.value }}"
+          az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }} --yes
+
+      - name: lakeFS Logs on CosmosDB failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker compose -f esti/ops/docker-compose-external-db.yaml logs --tail=1000 lakefs
