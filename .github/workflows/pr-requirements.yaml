@@ -61,13 +61,13 @@ jobs:
           echo "## :white_check_mark: Linked issues" >> "$GITHUB_STEP_SUMMARY"
           echo "$ISSUES" | while read -r url; do echo "- $url" >> "$GITHUB_STEP_SUMMARY"; done
 
-  all-requirements:
-    name: All requirements
+  all-pr-requirements:
+    name: All PR requirements
     runs-on: ubuntu-22.04
     if: always()
     needs: [changelog-label, ai-authorship-label, linked-issue]
     steps:
-      - name: Verify all requirements passed
+      - name: Verify all PR requirements passed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |
           echo "::error::Some PR requirements failed - see ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
