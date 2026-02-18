@@ -1,0 +1,74 @@
+name: PR Requirements
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, opened, edited, synchronize]
+
+jobs:
+  changelog-label:
+    name: Changelog label
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Require changelog label
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'include-changelog') &&
+          !contains(github.event.pull_request.labels.*.name, 'exclude-changelog')
+        run: |
+          echo "::error::PR must have one of: include-changelog, exclude-changelog"
+          echo "## :x: Missing changelog label" >> "$GITHUB_STEP_SUMMARY"
+          echo "PR must have one of: \`include-changelog\`, \`exclude-changelog\`" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  ai-authorship-label:
+    name: AI authorship label
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Require AI authorship label
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'mostly-ai') &&
+          !contains(github.event.pull_request.labels.*.name, 'mostly-human')
+        run: |
+          echo "::error::PR must have one of: mostly-ai, mostly-human"
+          echo "## :x: Missing AI authorship label" >> "$GITHUB_STEP_SUMMARY"
+          echo "PR must have one of: \`mostly-ai\`, \`mostly-human\`" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  linked-issue:
+    name: Linked issue
+    runs-on: ubuntu-22.04
+    if: >-
+      !startsWith(github.head_ref, 'dependabot/') &&
+      !contains(github.event.pull_request.labels.*.name, 'minor-change')
+    permissions:
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Require linked issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUES=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json closingIssuesReferences \
+            -q '.closingIssuesReferences[].url')
+          if [ -z "$ISSUES" ]; then
+            echo "::error::PR must have a linked issue (e.g. 'Fixes #123' in description or link via Development sidebar)"
+            echo "## :x: Missing linked issue" >> "$GITHUB_STEP_SUMMARY"
+            echo "PR must have a linked issue." >> "$GITHUB_STEP_SUMMARY"
+            echo "Use \`Fixes #123\` in the description or link via the Development sidebar." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "## :white_check_mark: Linked issues" >> "$GITHUB_STEP_SUMMARY"
+          echo "$ISSUES" | while read -r url; do echo "- $url" >> "$GITHUB_STEP_SUMMARY"; done
+
+  all-requirements:
+    name: All requirements
+    runs-on: ubuntu-22.04
+    if: always()
+    needs: [changelog-label, ai-authorship-label, linked-issue]
+    steps:
+      - name: Verify all requirements passed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "::error::Some PR requirements failed - see ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          exit 1
