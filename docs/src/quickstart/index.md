@@ -9,7 +9,7 @@ next: ["Launch the quickstart environment", "./launch.md.html"]
 **Welcome to lakeFS!**
 
 !!! tip
-    You can use the [30-day free trial of lakeFS Cloud](https://lakefs.io/cloud-registration) if you want to try out lakeFS without installing anything. 
+    You can use the [free trial of lakeFS Cloud](https://lakefs.io/cloud-registration) if you want to try out lakeFS without installing anything. 
 
 lakeFS provides a "Git for data" platform enabling you to implement best practices from software engineering on your data lake, including branching and merging, CI/CD, and production-like dev/test environments. 
 
