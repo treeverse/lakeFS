@@ -1,0 +1,9 @@
+name: Lua valid script
+on:
+  pre-commit:
+hooks:
+  - id: check_metadata
+    type: lua
+    properties:
+      script: |
+        print("hello")

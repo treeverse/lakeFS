@@ -1,0 +1,8 @@
+name: Lua valid script path
+on:
+  pre-commit:
+hooks:
+  - id: check_metadata
+    type: lua
+    properties:
+      script_path: scripts/check.lua

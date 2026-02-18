@@ -1,0 +1,8 @@
+name: Webhook missing url
+on:
+  pre-commit:
+hooks:
+  - id: my_webhook
+    type: webhook
+    properties:
+      timeout: 30s

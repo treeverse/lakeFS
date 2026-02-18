@@ -1,0 +1,8 @@
+name: Airflow missing props
+on:
+  pre-commit:
+hooks:
+  - id: my_airflow
+    type: airflow
+    properties:
+      url: "https://airflow.example.com"

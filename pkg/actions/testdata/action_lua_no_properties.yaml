@@ -1,0 +1,6 @@
+name: Lua no properties
+on:
+  pre-commit:
+hooks:
+  - id: check_metadata
+    type: lua
