@@ -24,6 +24,13 @@ func WithUser(ctx context.Context, user *model.User) context.Context {
 	return context.WithValue(ctx, userContextKey, user)
 }
 
+// WithoutUser removes any authenticated user from the context.
+// Unlike WithUser(ctx, nil) which stores a typed nil that passes type assertions,
+// this stores untyped nil so that GetUser will return ErrUserNotFound.
+func WithoutUser(ctx context.Context) context.Context {
+	return context.WithValue(ctx, userContextKey, nil) //nolint:staticcheck
+}
+
 func CopyUserFromContext(srcCtx, dstCtx context.Context) context.Context {
 	if user, _ := GetUser(srcCtx); user != nil {
 		return WithUser(dstCtx, user)
