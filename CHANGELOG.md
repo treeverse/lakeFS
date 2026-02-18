@@ -1,6 +1,15 @@
 # Changelog
 
-## next
+## v1.77.1
+                                                                            
+:new: What's new:
+
+  - Reduce the KV usage while using branch ownership feature (#10116)
+  - Improve lakectl actions valdiate by checking required properties (#10144)
+
+:bug: Bugs Fixed
+
+  - Delta tables export: skip vacuumed `.cdc` files (#10140)
 
 ## v1.77.0          
                                                                             
