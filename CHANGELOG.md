@@ -5,11 +5,14 @@
                                                                             
 :new: What's new:
 
-- Spark 4 metadata client (Add support for scala 2.13) (#10138)
-- Distributed: serialize ownership attempts per key in MostlyCorrectOwner (#10116)
-- Exported Auth User Functions (#10133)
-- Improve lakectl actions valdiate by checking required properties (#10144)
-- Delta Export: support `.cdc` files export
+  - Spark 4 metadata client (Add support for scala 2.13) (#10138)
+  - Distributed: serialize ownership attempts per key in MostlyCorrectOwner (#10116)
+  - Exported Auth User Functions (#10133)
+  - Improve lakectl actions valdiate by checking required properties (#10144)
+
+:bug: Bugs Fixed
+
+  - Delta tables export: skip vacuumed `.cdc` files
 
 ## v1.77.0          
                                                                             
