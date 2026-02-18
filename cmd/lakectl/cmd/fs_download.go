@@ -27,7 +27,6 @@ const (
 	fsDownloadCmdMinArgs = 1
 	fsDownloadCmdMaxArgs = 2
 	partSizeFlagName     = "part-size"
-	concurrencyFlagName  = "concurrency"
 )
 
 var fsDownloadCmd = &cobra.Command{
@@ -41,17 +40,12 @@ var fsDownloadCmd = &cobra.Command{
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		ctx := cmd.Context()
 		downloadPartSize := Must(cmd.Flags().GetInt64(partSizeFlagName))
-		if downloadPartSize != 0 && downloadPartSize < helpers.MinDownloadPartSize {
-			DieFmt("part size must be at least %d bytes (or 0 to disable multipart)", helpers.MinDownloadPartSize)
-		}
-		downloadConcurrency := Must(cmd.Flags().GetInt(concurrencyFlagName))
-		if downloadConcurrency < 1 {
-			DieFmt("concurrency must be at least 1")
+		if downloadPartSize < helpers.MinDownloadPartSize {
+			DieFmt("part size must be at least %d bytes", helpers.MinDownloadPartSize)
 		}
 
 		downloader := helpers.NewDownloader(client, syncFlags.Presign)
 		downloader.PartSize = downloadPartSize
-		downloader.Concurrency = downloadConcurrency
 		downloader.SymlinkSupport = cfg.Local.SymlinkSupport
 		downloader.SkipNonRegularFiles = cfg.Local.SkipNonRegularFiles
 
@@ -191,7 +185,6 @@ func newDownloadProgressWriter(noProgress bool) progress.Writer {
 func init() {
 	withSyncFlags(fsDownloadCmd)
 	withRecursiveFlag(fsDownloadCmd, "recursively download all objects under path")
-	fsDownloadCmd.Flags().Int64(partSizeFlagName, helpers.DefaultDownloadPartSize, "part size in bytes for multipart download (0 to disable)")
-	fsDownloadCmd.Flags().Int(concurrencyFlagName, helpers.DefaultDownloadConcurrency, "max concurrent part downloads for multipart download")
+	fsDownloadCmd.Flags().Int64(partSizeFlagName, helpers.DefaultDownloadPartSize, "part size in bytes for multipart download")
 	fsCmd.AddCommand(fsDownloadCmd)
 }
