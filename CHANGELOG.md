@@ -9,7 +9,7 @@
 
 :bug: Bugs Fixed
 
-  - Delta tables export: skip vacuumed `.cdc` files
+  - Delta tables export: skip vacuumed `.cdc` files (#10140)
 
 ## v1.77.0          
                                                                             
