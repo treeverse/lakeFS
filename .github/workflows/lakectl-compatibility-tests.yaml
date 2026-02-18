@@ -44,24 +44,8 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22.17.x"
-
       - name: Set version
         run: echo "VERSION=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_ENV
-
-      - name: Generate code
-        run: |
-          make -j3 gen-api gen-code gen-ui VERSION=${{ env.VERSION }}
-          tar -czf /tmp/generated.tar.gz .
-
-      - name: Store generated code
-        uses: actions/upload-artifact@v6
-        with:
-          name: generated-code
-          path: /tmp/generated.tar.gz
-          retention-days: 1
 
       - name: Build binaries
         run: make build-binaries VERSION=${{ env.VERSION }}
@@ -131,14 +115,6 @@ jobs:
           echo "ESTI_VERSION=$(lakefs --version | cut -d' ' -f3)" >> $GITHUB_ENV
           lakectl --version
 
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v7
-        with:
-          name: generated-code
-          path: /tmp/
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
-
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$(cat /proc/sys/kernel/random/uuid)" >> $GITHUB_OUTPUT
@@ -166,12 +142,11 @@ jobs:
     if: ${{ always() && contains(needs.*.result, 'failure') && github.ref == 'refs/heads/master' }}
     steps:
       - name: slack-send
-        uses: slackapi/slack-github-action@v1.23.0
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        uses: slackapi/slack-github-action@v2
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
-              "mrkdwn": true,
               "text": "Lakectl compatibility tests failure in master branch: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }

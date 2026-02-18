@@ -3,11 +3,11 @@ title: Rollback
 description: In this tutorial, we will explore how to use lakeFS for rollback operations.
 ---
 
-# Rollbacks
+# Rollback
 
 ## What Is a Rollback?
 
-A rollback operation is used to to fix critical data errors immediately.
+A rollback operation is used to fix critical data errors immediately.
 
 What is a critical data error? Think of a situation where erroneous or misformatted data causes a significant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
@@ -22,7 +22,7 @@ It can be a pressured, stressful situation to deal with a critical data error. H
 !!! example
     As a real world example, the [14-day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May 2022 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
 
-## Performing Rollbacks with lakeFS
+## Performing a Rollback with lakeFS
 
 lakeFS lets you develop in your data lake in such a way that rollbacks are simple to perform. This starts by taking a commit over your lakeFS repository whenever a change to its state occurs.
 

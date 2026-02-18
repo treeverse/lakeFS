@@ -20,12 +20,12 @@ jobs:
     outputs:
       python-sdk-change: ${{ steps.filter.outputs.python-sdk == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
-            python-sdk: 
+            python-sdk:
               - 'clients/python/**'
 
   check-secrets:
@@ -48,7 +48,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version
         id: version
@@ -56,7 +56,7 @@ jobs:
         run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
 
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
@@ -71,7 +71,7 @@ jobs:
 
       - name: Setup NodeJS
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -80,13 +80,13 @@ jobs:
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
-          make -j3 gen-api gen-code gen-ui VERSION=${{ steps.version.outputs.tag }}
+          make -j3 gen-ui VERSION=${{ steps.version.outputs.tag }}
           go build ./contrib/auth/acl/cmd/acl
-          tar -czf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/{client,service_wrapper,service_inviter_wrapper}.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go ./acl
+          tar -czf /tmp/generated.tar.gz ./webui/dist ./acl
 
         # must upload artifact in order to download generated later
       - name: Store generated code
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
@@ -100,7 +100,7 @@ jobs:
       tag: ${{ needs.gen-code.outputs.tag }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
@@ -109,10 +109,10 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -139,7 +139,7 @@ jobs:
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
@@ -156,9 +156,17 @@ jobs:
       docker_password: ${{ steps.login-ecr.outputs.docker_password_977611293394_dkr_ecr_us_east_1_amazonaws_com }}
 
   unified-gc-test:
-    name: Test unified gc
-    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
+    name: Test unified gc (Spark ${{ matrix.spark.tag }})
+    needs: [deploy-image, login-to-amazon-ecr, build-metadata-client]
     runs-on: ubuntu-22.04-8-cores
+    strategy:
+      fail-fast: false
+      matrix:
+        spark:
+          - tag: "3.2.1"
+            metaclient-jar: spark3-assembly.jar
+          - tag: "4.0.0"
+            metaclient-jar: spark4-assembly.jar
     services:
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
@@ -176,7 +184,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
 
       spark:
-        image: docker.io/treeverse/bitnami-spark:3.2.1
+        image: docker.io/treeverse/bitnami-spark:${{ matrix.spark.tag }}
         options: --name spark-master
         env:
           SPARK_MODE: master
@@ -192,7 +200,7 @@ jobs:
           - '7077:7077'
 
       spark-worker:
-        image: docker.io/treeverse/bitnami-spark:3.2.1
+        image: docker.io/treeverse/bitnami-spark:${{ matrix.spark.tag }}
         env:
           SPARK_MODE: worker
           SPARK_MASTER_URL: spark://spark:7077
@@ -207,7 +215,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -220,7 +228,7 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -230,7 +238,7 @@ jobs:
         run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -240,8 +248,8 @@ jobs:
         run: |
           go test -timeout 30m -v ./esti \
             -system-tests -use-local-credentials -run=TestUnifiedGC \
-            -spark-image-tag=3.2.1 \
-            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly.jar
+            -spark-image-tag=${{ matrix.spark.tag }} \
+            -metaclient-jar=$(pwd)/test/spark/metaclient/${{ matrix.spark.metaclient-jar }}
         env:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
@@ -260,18 +268,16 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-        with:
-          aws-region: us-east-1
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version
         shell: bash
@@ -296,7 +302,7 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -344,9 +350,9 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -398,9 +404,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -410,7 +416,7 @@ jobs:
         working-directory: clients/hadoopfs
         run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
       - name: Store lakeFS HadoopFS
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lakefs-hadoopfs
           path: clients/hadoopfs/target/client.jar
@@ -420,9 +426,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -432,7 +438,7 @@ jobs:
         working-directory: test/spark/app
         run: sbt package
       - name: Store Spark App
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: spark-apps
           path: test/spark/app/target/
@@ -454,22 +460,22 @@ jobs:
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download lakeFS HadoopFS
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: lakefs-hadoopfs
           path: clients/hadoopfs/target
 
       - name: Download Spark App
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: spark-apps
           path: test/spark/app/target/
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.11
           cache: 'pip'
@@ -520,7 +526,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker compose logs --tail=2500 lakefs
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS GW + Redirect
         if: env.SPARK_TAG == '3'
@@ -564,7 +570,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Start lakeFS for export tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -604,8 +610,8 @@ jobs:
         run: docker compose logs --tail=1000
 
 
-  build-spark3-metadata-client:
-    name: Build metadata client for Spark 3.x
+  build-metadata-client:
+    name: Build metadata client
     runs-on: ubuntu-22.04-8-cores
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
@@ -613,40 +619,38 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ hashFiles('./clients/spark/**') }}
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           distribution: "adopt-hotspot"
-          java-version: "8"
+          java-version: "17"
           cache: "sbt"
 
       - name: Package Metaclient
         if: steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: clients/spark
         run: |
-          sbt 'set assembly / test := {}' assembly
+          sbt 'set assembly / test := {}' +assembly
 
-      - name: Prepare Metaclient location for export
+      - name: Prepare Metaclient jars
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        # upload-artifact cannot take a working-directory option (that only
-        # applies to "run" steps), so copy the compiled metaclient to a
-        # known location.
         working-directory: clients/spark
         run: |
           mkdir -p ${{ github.workspace }}/test/spark/metaclient
-          cp target/scala-2.12/lakefs-spark-client-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
+          cp target/scala-2.12/lakefs-spark-client_2.12-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark3-assembly.jar
+          cp target/scala-2.13/lakefs-spark-client_2.13-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark4-assembly.jar
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
-    needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
+    needs: [deploy-image, build-metadata-client, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       SPARK_TAG: 3.2.1
@@ -654,9 +658,9 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -692,7 +696,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
+          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark3-assembly.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
@@ -712,11 +716,11 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -763,7 +767,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate uniquifying value
         id: unique
@@ -771,7 +775,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -825,7 +829,7 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate uniquifying value
         id: unique
@@ -833,7 +837,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -878,7 +882,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate uniquifying value
         id: unique
@@ -886,7 +890,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -933,7 +937,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate uniquifying value
         id: unique
@@ -941,7 +945,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v7
         with:
           name: generated-code
           path: /tmp/
@@ -1007,10 +1011,10 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python 3.9
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.9
 
@@ -1069,10 +1073,10 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python 3.9
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: 3.9
 
@@ -1133,8 +1137,8 @@ jobs:
           LAKEFS_STATS_ENABLED: false
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -1147,7 +1151,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: playwright-cache
         with:
           path: |
@@ -1169,7 +1173,7 @@ jobs:
           BASE_URL: http://localhost:8000
         working-directory: webui
         run: npx playwright test --project=common
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: (success() || failure())
         with:
           name: playwright-report
@@ -1209,8 +1213,8 @@ jobs:
           LAKEFS_STATS_ENABLED: false
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -1223,7 +1227,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: playwright-cache
         with:
           path: |
@@ -1245,7 +1249,7 @@ jobs:
           BASE_URL: http://localhost:8000
         working-directory: webui
         run: npx playwright test --project=quickstart
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: (success() || failure())
         with:
           name: playwright-report
@@ -1268,7 +1272,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate uniquifying value
         id: unique
@@ -1401,7 +1405,7 @@ jobs:
 
       - name: Az CLI login
         if: always()
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}

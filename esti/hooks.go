@@ -18,6 +18,18 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
+var LuaActionTmpl = template.Must(template.New("lua-action").Parse(`name: Test Lua {{.EventType}}
+on:
+  {{.EventType}}:
+    branches:
+      - {{.Branch}}
+hooks:
+  - id: lua_{{.HookID}}
+    type: lua
+    properties:
+      script: print("{{.EventType}} lua hook executed")
+`))
+
 type hooksValidationData struct {
 	data []*webhookEventInfo
 	mu   sync.RWMutex
@@ -29,7 +41,7 @@ func (h *hooksValidationData) appendRes(info *webhookEventInfo) {
 	h.mu.Unlock()
 }
 
-func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClient apigen.ClientWithResponsesInterface) {
+func WebhookHooksTest(ctx context.Context, t *testing.T, repo string, lakeFSClient apigen.ClientWithResponsesInterface) {
 	var hvd hooksValidationData
 	server := StartWebhookServer(t)
 	defer func() { _ = server.Server().Shutdown(ctx) }()
@@ -59,16 +71,16 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 	hvd.appendRes(&preCommitEvent)
 
 	t.Run("commit merge test", func(t *testing.T) {
-		testCommitMerge(t, ctx, repo, &hvd, server, lakeFSClient)
+		testCommitMergeWebhook(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 	t.Run("create delete branch test", func(t *testing.T) {
-		testCreateDeleteBranch(t, ctx, repo, &hvd, server, lakeFSClient)
+		testCreateDeleteBranchWebhook(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 	t.Run("create delete tag test", func(t *testing.T) {
-		testCreateDeleteTag(t, ctx, repo, &hvd, server, lakeFSClient)
+		testCreateDeleteTagWebhook(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 	t.Run("revert branch test", func(t *testing.T) {
-		testRevertBranch(t, ctx, repo, &hvd, server, lakeFSClient)
+		testRevertBranchWebhook(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 
 	t.Log("check runs are sorted in descending order")
@@ -90,7 +102,111 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 	}
 }
 
-func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
+func LuaHooksTest(ctx context.Context, t *testing.T, repo string, lakeFSClient apigen.ClientWithResponsesInterface) {
+	t.Run("commit and merge test", func(t *testing.T) {
+		testCommitMergeLua(t, ctx, repo, lakeFSClient)
+	})
+}
+
+func testCommitMergeLua(t *testing.T, ctx context.Context, repo string, lakeFSClient apigen.ClientWithResponsesInterface) {
+	const branch = "lua-test-branch"
+
+	t.Log("Create branch", branch)
+	createBranchResp, err := lakeFSClient.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: mainBranch,
+	})
+	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
+	ref := string(createBranchResp.Body)
+	t.Log("Branch created", ref)
+
+	t.Log("Upload Lua action files")
+	luaActions := []struct {
+		EventType string
+		HookID    string
+		Branch    string
+	}{
+		{"pre-commit", "pre_commit", branch},
+		{"post-commit", "post_commit", branch},
+		{"pre-merge", "pre_merge", mainBranch},
+		{"post-merge", "post_merge", mainBranch},
+	}
+	for _, action := range luaActions {
+		var buf bytes.Buffer
+		err := LuaActionTmpl.Execute(&buf, action)
+		require.NoError(t, err)
+		actionPath := path.Join("_lakefs_actions", fmt.Sprintf("action_%s_lua.yaml", action.HookID))
+		// Uploaded action files to the source branch (not action.Branch) since actions run only after commit,
+		// and this test avoids uploading and committing to main first.
+		// We upload and commit on the source branch, then merge into main which triggers merge-related hooks.
+		resp, err := UploadContent(ctx, repo, branch, actionPath, buf.String(), lakeFSClient)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode())
+	}
+
+	WaitForCacheExpiration(ctx, t)
+
+	t.Log("Upload test file")
+	resp, err := UploadContent(ctx, repo, branch, "test-file", "test content", lakeFSClient)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
+
+	t.Log("Commit content - triggers Lua pre/post commit hooks")
+	commitResp, err := lakeFSClient.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+		Message: "Test commit for Lua hooks",
+	})
+	require.NoError(t, err, "failed to commit")
+	require.NotNil(t, commitResp.JSON201)
+
+	commitID := commitResp.JSON201.Id
+	t.Log("Commit created successfully", commitID)
+
+	t.Log("Verify pre-commit and post-commit hooks ran successfully")
+	const expectedActionRunsCount = 2
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, commitID, expectedActionRunsCount, lakeFSClient)
+	require.Len(t, runs.Results, expectedActionRunsCount)
+
+	commitEventType := map[string]bool{
+		"pre-commit":  true,
+		"post-commit": true,
+	}
+	for _, run := range runs.Results {
+		require.Equal(t, commitID, run.CommitId)
+		require.True(t, commitEventType[run.EventType])
+		commitEventType[run.EventType] = false
+		require.Equal(t, "completed", run.Status)
+		require.Equal(t, branch, run.Branch)
+	}
+
+	t.Log("Merge - triggers pre-merge and post-merge hooks")
+	mergeResp, err := lakeFSClient.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})
+	require.NoError(t, err)
+	require.NotNil(t, mergeResp.JSON200)
+
+	mergeCommitID := mergeResp.JSON200.Reference
+	t.Log("Merge successful", mergeCommitID)
+
+	t.Log("Verify merge hooks ran successfully")
+	mergeRuns := WaitForListRepositoryRunsLen(ctx, t, repo, mergeCommitID, expectedActionRunsCount, lakeFSClient)
+	require.Len(t, mergeRuns.Results, expectedActionRunsCount)
+
+	mergeEventType := map[string]bool{
+		"pre-merge":  true,
+		"post-merge": true,
+	}
+	for _, run := range mergeRuns.Results {
+		require.Equal(t, mergeCommitID, run.CommitId)
+		require.True(t, mergeEventType[run.EventType])
+		mergeEventType[run.EventType] = false
+		require.Equal(t, "completed", run.Status)
+		require.Equal(t, mainBranch, run.Branch)
+	}
+
+	t.Log("All Lua hooks executed successfully")
+}
+
+func testCommitMergeWebhook(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	const branch = "feature-1"
 
 	t.Log("Create branch", branch)
@@ -250,7 +366,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	}
 }
 
-func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
+func testCreateDeleteBranchWebhook(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	const testBranch = "test_branch_delete"
 	createBranchResp, err := lakeFSClient.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   testBranch,
@@ -345,7 +461,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	}, postDeleteBranchEvent)
 }
 
-func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
+func testCreateDeleteTagWebhook(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	const tagID = "tag_test_hooks"
 
 	resp, err := lakeFSClient.GetBranchWithResponse(ctx, repo, mainBranch)
@@ -444,7 +560,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	}, postDeleteTagEvent)
 }
 
-func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakefsClient apigen.ClientWithResponsesInterface) {
+func testRevertBranchWebhook(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakefsClient apigen.ClientWithResponsesInterface) {
 	const branch = "revert-branch-test"
 
 	t.Log("Create branch", branch)
@@ -523,6 +639,17 @@ func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooks
 	hvd.appendRes(&postRevertEvent)
 }
 
+func WaitForCacheExpiration(ctx context.Context, t *testing.T) {
+	t.Helper()
+	t.Log("Wait for actions cache to expire")
+	const cacheExpireTime = 8 * time.Second
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(cacheExpireTime):
+	}
+}
+
 func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	t.Helper()
 	// render actions based on templates
@@ -550,12 +677,7 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
 
-	// wait 8 seconds to let the actions cache expire.
-	const cacheExpireTime = 8 * time.Second
-	select {
-	case <-ctx.Done():
-	case <-time.After(cacheExpireTime):
-	}
+	WaitForCacheExpiration(ctx, t)
 }
 
 type webhookEventInfo struct {

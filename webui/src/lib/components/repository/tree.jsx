@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 
 import dayjs from 'dayjs';
 import {
@@ -614,6 +614,145 @@ function pathParts(path, isPathToFile) {
     return resolved;
 }
 
+// Layout constants for CollapsibleBreadcrumb
+const DROPDOWN_BUTTON_WIDTH = 50; // Width of the [...] dropdown button
+const BREADCRUMB_PADDING = 20; // Safety padding for container
+
+/**
+ * CollapsibleBreadcrumb - A responsive breadcrumb component that collapses
+ * leftmost path segments into a dropdown when space is limited, always
+ * keeping the rightmost segments (current location) visible.
+ */
+const CollapsibleBreadcrumb = ({
+    items,
+    minVisibleItems = 2, // Minimum items to always show at the end
+}) => {
+    const containerRef = useRef(null);
+    const measureRef = useRef(null);
+    const [collapsedCount, setCollapsedCount] = useState(0);
+    const [measured, setMeasured] = useState(false);
+    const [itemWidths, setItemWidths] = useState([]);
+
+    // Measure all items' widths initially
+    useLayoutEffect(() => {
+        if (!measureRef.current) return;
+
+        const measureContainer = measureRef.current;
+        const itemElements = measureContainer.querySelectorAll('.breadcrumb-measure-item');
+        const widths = Array.from(itemElements).map((el) => el.getBoundingClientRect().width);
+        setItemWidths(widths);
+        setMeasured(true);
+    }, [items]);
+
+    // Calculate how many items to collapse based on available width
+    useEffect(() => {
+        if (!containerRef.current || !measured || itemWidths.length === 0) return;
+
+        const calculateCollapse = () => {
+            const container = containerRef.current;
+            if (!container) return;
+
+            const containerWidth = container.getBoundingClientRect().width;
+
+            // Calculate total width needed
+            const totalWidth = itemWidths.reduce((sum, w) => sum + w, 0);
+
+            if (totalWidth <= containerWidth - BREADCRUMB_PADDING) {
+                // Everything fits
+                setCollapsedCount(0);
+                return;
+            }
+
+            // Need to collapse - figure out how many items
+            // Always keep at least minVisibleItems visible at the end
+            const availableWidth = containerWidth - DROPDOWN_BUTTON_WIDTH - BREADCRUMB_PADDING;
+
+            // Start from the right (end of path) and work backwards
+            let visibleWidth = 0;
+            let visibleCount = 0;
+
+            for (let i = itemWidths.length - 1; i >= 0; i--) {
+                if (visibleWidth + itemWidths[i] <= availableWidth || visibleCount < minVisibleItems) {
+                    visibleWidth += itemWidths[i];
+                    visibleCount++;
+                } else {
+                    break;
+                }
+            }
+
+            const toCollapse = items.length - visibleCount;
+            setCollapsedCount(Math.max(0, toCollapse));
+        };
+
+        calculateCollapse();
+
+        // Observe container resize
+        const resizeObserver = new ResizeObserver(calculateCollapse);
+        resizeObserver.observe(containerRef.current);
+
+        return () => resizeObserver.disconnect();
+    }, [measured, itemWidths, items.length, minVisibleItems]);
+
+    // Items to show in dropdown (collapsed)
+    const collapsedItems = useMemo(() => {
+        return items.slice(0, collapsedCount);
+    }, [items, collapsedCount]);
+
+    // Items to show inline (visible)
+    const visibleItems = useMemo(() => {
+        return items.slice(collapsedCount);
+    }, [items, collapsedCount]);
+
+    return (
+        <>
+            {/* Hidden measurement container */}
+            <div ref={measureRef} className="breadcrumb-measure-container" aria-hidden="true">
+                {items.map((item) => (
+                    <span key={`measure-${item.path}`} className="breadcrumb-measure-item">
+                        {item.render()}
+                    </span>
+                ))}
+            </div>
+
+            {/* Actual breadcrumb display */}
+            <div ref={containerRef} className="collapsible-breadcrumb">
+                {collapsedCount > 0 && (
+                    <Dropdown className="breadcrumb-dropdown" align="start">
+                        <Dropdown.Toggle
+                            variant="link"
+                            size="sm"
+                            className="breadcrumb-dropdown-toggle"
+                            aria-label="Show collapsed path segments"
+                        >
+                            ...
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu
+                            className="breadcrumb-dropdown-menu"
+                            popperConfig={{ strategy: 'fixed' }}
+                            renderOnMount={true}
+                        >
+                            {collapsedItems.map((item) => (
+                                <Dropdown.Item
+                                    key={`collapsed-${item.path}`}
+                                    as="div"
+                                    className="breadcrumb-dropdown-item"
+                                >
+                                    {item.renderDropdown ? item.renderDropdown() : item.render()}
+                                </Dropdown.Item>
+                            ))}
+                        </Dropdown.Menu>
+                    </Dropdown>
+                )}
+                {visibleItems.map((item) => (
+                    <span key={`visible-${item.path}`} className="breadcrumb-visible-item">
+                        {item.render()}
+                    </span>
+                ))}
+            </div>
+        </>
+    );
+};
+
 const buildPathURL = (params, query) => {
     return { pathname: '/repositories/:repoId/objects', params, query };
 };
@@ -629,63 +768,72 @@ export const URINavigator = ({
     hasCopyButton = false,
 }) => {
     const parts = pathParts(path, isPathToFile);
-    const params = { repoId: repo.id };
+    const params = useMemo(() => ({ repoId: repo.id }), [repo.id]);
     const displayedReference = reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
+
+    // Build breadcrumb items for the CollapsibleBreadcrumb component
+    const breadcrumbItems = useMemo(() => {
+        return parts.map((part, i) => {
+            const partPath =
+                parts
+                    .slice(0, i + 1)
+                    .map((p) => p.name)
+                    .join('/') + '/';
+            const query = { path: partPath, ref: reference.id };
+            const isLast = i === parts.length - 1;
+            const isFile = isPathToFile && isLast;
+
+            return {
+                name: part.name,
+                path: partPath,
+                render: () =>
+                    isFile ? (
+                        <span>{part.name}</span>
+                    ) : (
+                        <>
+                            <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                            <strong>{'/'}</strong>
+                        </>
+                    ),
+                renderDropdown: () => (
+                    <Link href={pathURLBuilder(params, query)} className="breadcrumb-dropdown-link">
+                        {part.name}/
+                    </Link>
+                ),
+            };
+        });
+    }, [parts, reference.id, isPathToFile, params, pathURLBuilder]);
+
+    // Prefix elements (lakefs://repo/ref/) - always visible
+    const prefixElement = useMemo(() => {
+        if (relativeTo !== '') {
+            return (
+                <>
+                    <Link href={pathURLBuilder(params, { path: '' })}>{relativeTo}</Link>
+                    <strong>/</strong>
+                </>
+            );
+        }
+        return (
+            <>
+                <strong>lakefs://</strong>
+                <Link href={{ pathname: '/repositories/:repoId/objects', params, query: { ref: reference.id } }}>
+                    {repo.id}
+                </Link>
+                <strong>/</strong>
+                <Link href={{ pathname: '/repositories/:repoId/objects', params, query: { ref: reference.id } }}>
+                    {displayedReference}
+                </Link>
+                <strong>/</strong>
+            </>
+        );
+    }, [relativeTo, pathURLBuilder, params, reference.id, repo.id, displayedReference]);
 
     return (
         <div className="d-flex">
-            <div className="lakefs-uri flex-grow-1">
-                <div title={displayedReference} className="w-100 text-nowrap overflow-hidden text-truncate">
-                    {relativeTo === '' ? (
-                        <>
-                            <strong>lakefs://</strong>
-                            <Link
-                                href={{
-                                    pathname: '/repositories/:repoId/objects',
-                                    params,
-                                    query: { ref: reference.id },
-                                }}
-                            >
-                                {repo.id}
-                            </Link>
-                            <strong>/</strong>
-                            <Link
-                                href={{
-                                    pathname: '/repositories/:repoId/objects',
-                                    params,
-                                    query: { ref: reference.id },
-                                }}
-                            >
-                                {displayedReference}
-                            </Link>
-                            <strong>/</strong>
-                        </>
-                    ) : (
-                        <>
-                            <Link href={pathURLBuilder(params, { path: '' })}>{relativeTo}</Link>
-                            <strong>/</strong>
-                        </>
-                    )}
-
-                    {parts.map((part, i) => {
-                        const path =
-                            parts
-                                .slice(0, i + 1)
-                                .map((p) => p.name)
-                                .join('/') + '/';
-                        const query = { path, ref: reference.id };
-                        const edgeElement =
-                            isPathToFile && i === parts.length - 1 ? (
-                                <span>{part.name}</span>
-                            ) : (
-                                <>
-                                    <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                                    <strong>{'/'}</strong>
-                                </>
-                            );
-                        return <span key={part.name}>{edgeElement}</span>;
-                    })}
-                </div>
+            <div className="lakefs-uri uri-navigator-container flex-grow-1" title={displayedReference}>
+                <span className="uri-prefix">{prefixElement}</span>
+                {breadcrumbItems.length > 0 && <CollapsibleBreadcrumb items={breadcrumbItems} minVisibleItems={2} />}
             </div>
             <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
                 {hasCopyButton && (

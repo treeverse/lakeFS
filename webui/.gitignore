@@ -1,6 +1,9 @@
 node_modules
 .DS_Store
-dist
 dist-ssr
 *.local
 /test-results/
+
+# Ignore built UI but keep .gitkeep
+dist/*
+!dist/.gitkeep

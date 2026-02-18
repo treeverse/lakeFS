@@ -16,12 +16,29 @@ jobs:
     runs-on: ubuntu-22.04-8-cores
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: Notify LinearB Release Started
+        continue-on-error: true
+        env:
+          LINEARB_API_TOKEN: ${{ secrets.LINEARB_API_TOKEN }}
+          REPO_URL: https://github.com/${{ github.repository }}.git
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          curl -s -X POST https://public-api.linearb.io/api/v1/deployments \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $LINEARB_API_TOKEN" \
+            -d "{
+              \"repo_url\": \"$REPO_URL\",
+              \"ref_name\": \"$REF_NAME\",
+              \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",
+              \"stage\": \"oss_releasing\"
+            }"
+
       - name: Setup NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
 
@@ -31,13 +48,13 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: v1.26.2
           args: release --clean

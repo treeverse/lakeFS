@@ -15,6 +15,7 @@ import (
 func getSparkSubmitArgs(entryPoint string) []string {
 	return []string{
 		"--master", "spark://localhost:7077",
+		"--conf", "spark.jars.ivy=/opt/bitnami/spark/.ivy2", // Spark 4 requires an absolute ivy path; user.home is unset in the bitnami image
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000" + apiutil.BaseURL,
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",

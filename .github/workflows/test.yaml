@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -43,25 +43,22 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
       - name: Run Go tests
-        run: |
-          mkdir ./webui/dist
-          touch ./webui/dist/index.html
-          make test-go
+        run: make test-go
 
   test-webui:
     name: Run webui unit tests
     runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup NodeJS
-        uses: actions/setup-node@v6.1.0
+        uses: actions/setup-node@v6
         with:
           node-version-file: webui/package.json
           cache: npm

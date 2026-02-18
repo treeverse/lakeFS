@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	taskIDNanoLength = 20
-	tasksPrefix      = "tasks"
+	taskIDNanoLength   = 20
+	tasksPrefix        = "tasks"
+	instancesPartition = "catalog"
 )
 
 type TaskStep struct {
@@ -23,6 +24,10 @@ type TaskStep struct {
 
 func TaskPath(key string) string {
 	return kv.FormatPath(tasksPrefix, key)
+}
+
+func instanceHeartbeatPath(instanceID string) []byte {
+	return []byte(kv.FormatPath("instances", instanceID))
 }
 
 func NewTaskID(prefix string) string {

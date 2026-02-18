@@ -28,21 +28,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check-out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Install dependencies
         working-directory: docs
         run: pip install -r requirements-docs.txt
 
       - name: Checkout the documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: treeverse/docs-lakeFS
           fetch-depth: 1
@@ -98,3 +98,33 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
           mike deploy --config-file ../mkdocs.yml --branch main --push "${{ steps.setvars.outputs.VERSION }}" ${{ steps.setvars.outputs.ALIASES }}
+
+      - name: Notify Slack on failure
+        if: failure() && github.event_name != 'workflow_dispatch'
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Documentation deployment failed",
+              "blocks": [
+                {
+                  "type": "header", "text": { "type": "plain_text", "text": "📚 Documentation Deployment Failed" }
+                },
+                {
+                  "type": "section", "fields": [
+                    { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
+                    { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
+                    { "type": "mrkdwn", "text": "*Version:*\n${{ steps.setvars.outputs.VERSION }}" },
+                    { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    { "type": "button", "text": { "type": "plain_text", "text": "View Run" }, "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+                  ]
+                }
+              ]
+            }

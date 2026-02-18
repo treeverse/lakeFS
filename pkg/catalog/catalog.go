@@ -18,6 +18,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	stdatomic "sync/atomic"
 	"time"
 
 	"github.com/alitto/pond/v2"
@@ -48,7 +49,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -73,9 +73,16 @@ const (
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
 
+	// Task ID prefixes for async operations
 	DumpRefsTaskIDPrefix                  = "DR"
 	RestoreRefsTaskIDPrefix               = "RR"
 	GarbageCollectionPrepareCommitsPrefix = "GCPC"
+
+	// Operation names for async task metrics and logging.
+	// These are stored in Task.Operation field.
+	OpDumpRefs         = "dump_refs"
+	OpRestoreRefs      = "restore_refs"
+	OpGCPrepareCommits = "gc_prepare_commits"
 
 	TaskExpiryTime        = 24 * time.Hour
 	TaskHeartbeatInterval = 5 * time.Second
@@ -261,6 +268,8 @@ type Catalog struct {
 	UGCPrepareInterval      time.Duration
 	signingKey              config.SecureString
 	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
+	instanceID              string          // unique ID for this server process
+	activeTasks             stdatomic.Int64 // number of tasks currently queued or running
 }
 
 const (
@@ -436,7 +445,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		errToStatusFunc = defaultErrorToStatusCodeAndMsg
 	}
 
-	return &Catalog{
+	heartbeatCtx, heartbeatCancel := context.WithCancel(ctx)
+	closers = append(closers, &ctxCloser{heartbeatCancel})
+	cat := &Catalog{
 		BlockAdapter:            tierFSParams.Adapter,
 		Store:                   gStore,
 		UGCPrepareMaxFileSize:   baseCfg.UGC.PrepareMaxFileSize,
@@ -451,7 +462,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		deleteSensor:            deleteSensor,
 		signingKey:              cfg.Config.StorageConfig().SigningKey(),
 		errorToStatusCodeAndMsg: errToStatusFunc,
-	}, nil
+		instanceID:              xid.New().String(),
+	}
+	go cat.runInstanceHeartbeat(heartbeatCtx)
+	return cat, nil
 }
 
 func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS) (graveler.CommittedManager, []io.Closer, error) {
@@ -680,7 +694,11 @@ func (c *Catalog) DeleteRepositoryMetadata(ctx context.Context, repository strin
 // ListRepositories list repository information, the bool returned is true when more repositories can be listed.
 // In this case, pass the last repository name as 'after' on the next call to ListRepositories. Results can be
 // filtered by specifying a prefix or, more generally, a searchString.
-func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searchString, after string) ([]*Repository, bool, error) {
+// Optional ListRepositoriesOptionsFunc can be provided to further filter results (e.g., by RBAC policies).
+func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searchString, after string, opts ...ListRepositoriesOptionsFunc) ([]*Repository, bool, error) {
+	// Process options
+	options := NewListRepositoriesOptions(opts)
+
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -710,6 +728,10 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searc
 			continue
 		}
 		if record.RepositoryID == afterRepositoryID {
+			continue
+		}
+		// Apply permission filter if provided
+		if options.FilterFunc != nil && !options.FilterFunc(string(record.RepositoryID)) {
 			continue
 		}
 		repos = append(repos, &Repository{
@@ -2167,7 +2189,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 
 	// create refs dump task and update initial status.
 	taskID := NewTaskID(DumpRefsTaskIDPrefix)
-	err = c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
@@ -2221,7 +2243,7 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 		},
 	}
 	taskID := NewTaskID(RestoreRefsTaskIDPrefix)
-	if err := c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus); err != nil {
+	if err := c.RunBackgroundTaskSteps(ctx, repository, OpRestoreRefs, taskID, taskSteps, taskStatus); err != nil {
 		return "", err
 	}
 	return taskID, nil
@@ -2238,10 +2260,13 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 
 // RunBackgroundTaskSteps updates task status and executes each step in the background.
 // The task status is updated after each step and marked as completed on success or failure.
-func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
+// The operation parameter is used for metrics and logging (e.g., OpDumpRefs, OpRestoreRefs).
+func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, operation, taskID string, steps []TaskStep, taskStatus protoreflect.ProtoMessage) error {
 	task := &Task{
-		Id:        taskID,
-		UpdatedAt: timestamppb.Now(),
+		Id:              taskID,
+		Operation:       operation,
+		UpdatedAt:       timestamppb.Now(),
+		OwnerInstanceId: c.instanceID,
 	}
 	setTaskInStatus(taskStatus, task)
 
@@ -2255,19 +2280,22 @@ func (c *Catalog) RunBackgroundTaskSteps(ctx context.Context, repository *gravel
 	taskCtx = auth.CopyUserFromContext(ctx, taskCtx)
 	taskCtx = logging.CopyFieldsFromContext(ctx, taskCtx)
 
-	cancelCtx, cancel := context.WithCancel(taskCtx)
-	go c.runTaskHeartbeat(cancelCtx, repository, taskID, proto.Clone(taskStatus))
-
 	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
+	if c.activeTasks.Add(1) == 1 {
+		// First active task — write heartbeat immediately so it's available for staleness checks
+		c.writeInstanceHeartbeat(ctx)
+	}
 	c.workPool.Submit(func() {
-		defer cancel()
+		defer c.activeTasks.Add(-1)
 		c.executeTaskSteps(taskCtx, log, repository, taskID, task, taskStatus, steps)
 	})
 	return nil
 }
 
-// runTaskHeartbeat periodically updates the task's timestamp in KV store until the task is done or context is canceled.
-func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, taskStatus protoreflect.ProtoMessage) {
+// runInstanceHeartbeat periodically writes a single heartbeat entry for this lakeFS instance.
+// All tasks owned by this instance share this heartbeat, replacing per-task heartbeat goroutines.
+// The heartbeat is only written when there are active tasks queued or running.
+func (c *Catalog) runInstanceHeartbeat(ctx context.Context) {
 	ticker := time.NewTicker(TaskHeartbeatInterval)
 	defer ticker.Stop()
 	for {
@@ -2275,30 +2303,27 @@ func (c *Catalog) runTaskHeartbeat(ctx context.Context, repository *graveler.Rep
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			predicate, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus)
-			if err != nil {
-				c.log(ctx).WithError(err).Error("Catalog failed to get task status")
-				continue
-			}
-			task := getTaskFromStatus(taskStatus)
-			if task == nil {
-				c.log(ctx).Error("Catalog failed to get task")
-				continue
-			}
-			if task.Done {
-				return
-			}
-			task.UpdatedAt = timestamppb.Now()
-			err = kv.SetMsgIf(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(TaskPath(taskID)), taskStatus, predicate)
-			if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
-				c.log(ctx).WithError(err).Error("Catalog failed to update task status")
+			if c.activeTasks.Load() > 0 {
+				c.writeInstanceHeartbeat(ctx)
 			}
 		}
 	}
 }
 
+func (c *Catalog) writeInstanceHeartbeat(ctx context.Context) {
+	msg := &InstanceHeartbeat{
+		UpdatedAt: timestamppb.Now(),
+	}
+	if err := kv.SetMsg(ctx, c.KVStore, instancesPartition, instanceHeartbeatPath(c.instanceID), msg); err != nil {
+		c.log(ctx).WithError(err).WithField("instance_id", c.instanceID).Error("Failed to write instance heartbeat")
+	}
+}
+
 // executeTaskSteps runs each step sequentially, updating task status after each step.
 func (c *Catalog) executeTaskSteps(ctx context.Context, log logging.Logger, repository *graveler.RepositoryRecord, taskID string, task *Task, taskStatus protoreflect.ProtoMessage, steps []TaskStep) {
+	span := StartTaskSpan(log, task)
+	defer span.End()
+
 	// no steps to execute, we need to update the task status
 	if len(steps) == 0 {
 		task.Done = true
@@ -2358,7 +2383,11 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 	}
 	defer it.Close()
 
-	// iterate over all tasks and delete expired ones
+	// Iterate over all tasks and delete those whose UpdatedAt exceeds TaskExpiryTime.
+	// Note: with instance-level heartbeats, UpdatedAt is only updated on step completion,
+	// not periodically. This means a still-running single-step task will be cleaned up if
+	// it has been running for longer than TaskExpiryTime. This is acceptable since
+	// all current tasks complete in seconds to few minutes.
 	for it.Next() {
 		ent := it.Entry()
 		msg := ent.Value.(*TaskMsg)
@@ -2372,8 +2401,40 @@ func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *gravel
 		if err != nil {
 			return err
 		}
+		// Record metric for tasks that expired without completing
+		if !msg.Task.Done {
+			log := c.log(ctx).WithFields(logging.Fields{
+				"task_id":    msg.Task.Id,
+				"repository": repo.RepositoryID,
+			})
+			RecordExpiredTask(log, msg.Task)
+		}
 	}
 	return it.Err()
+}
+
+// deleteExpiredInstanceHeartbeats removes instance heartbeat entries older than TaskExpiryTime.
+func (c *Catalog) deleteExpiredInstanceHeartbeats(ctx context.Context) {
+	it, err := kv.NewPrimaryIterator(ctx, c.KVStore, (&InstanceHeartbeat{}).ProtoReflect().Type(),
+		instancesPartition, instanceHeartbeatPath(""), kv.IteratorOptionsFrom([]byte("")))
+	if err != nil {
+		c.log(ctx).WithError(err).Error("Failed to create iterator for instance heartbeats cleanup")
+		return
+	}
+	defer it.Close()
+
+	for it.Next() {
+		ent := it.Entry()
+		hb := ent.Value.(*InstanceHeartbeat)
+		if time.Since(hb.UpdatedAt.AsTime()) > TaskExpiryTime {
+			if err := c.KVStore.Delete(ctx, []byte(instancesPartition), ent.Key); err != nil {
+				c.log(ctx).WithError(err).WithField("key", string(ent.Key)).Error("Failed to delete expired instance heartbeat")
+			}
+		}
+	}
+	if err := it.Err(); err != nil {
+		c.log(ctx).WithError(err).Error("Iterator error during instance heartbeats cleanup")
+	}
 }
 
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
@@ -2822,7 +2883,7 @@ func (c *Catalog) PrepareExpiredCommitsAsync(ctx context.Context, repositoryID s
 	}
 
 	taskID := NewTaskID(GarbageCollectionPrepareCommitsPrefix)
-	err = c.RunBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus)
+	err = c.RunBackgroundTaskSteps(ctx, repository, OpGCPrepareCommits, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
@@ -2840,26 +2901,63 @@ func (c *Catalog) GetValidatedTaskStatus(ctx context.Context, repositoryID strin
 	if _, err := GetTaskStatus(ctx, c.KVStore, repository, taskID, statusMsg); err != nil {
 		return err
 	}
-	checkAndMarkTaskExpired(statusMsg, expiryDuration)
+	if err := c.markTaskExpiredIfStale(ctx, statusMsg, expiryDuration); err != nil {
+		return err
+	}
 	return nil
 }
 
-func checkAndMarkTaskExpired(statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) {
+func (c *Catalog) markTaskExpiredIfStale(ctx context.Context, statusMsg protoreflect.ProtoMessage, expiryDuration time.Duration) error {
 	if expiryDuration == 0 {
-		return
+		return nil
 	}
 
 	task := getTaskFromStatus(statusMsg)
-	if task == nil || task.UpdatedAt == nil {
-		return
+	if task == nil || task.Done {
+		return nil
 	}
 
-	updatedAt := task.UpdatedAt.AsTime()
-	if time.Since(updatedAt) > expiryDuration {
+	// Check instance heartbeat when task has an owner instance
+	if task.OwnerInstanceId != "" {
+		// Skip KV lookup when the task belongs to this instance — we know we're alive.
+		if task.OwnerInstanceId == c.instanceID {
+			task.UpdatedAt = timestamppb.Now()
+			return nil
+		}
+		heartbeat := &InstanceHeartbeat{}
+		_, err := kv.GetMsg(ctx, c.KVStore, instancesPartition, instanceHeartbeatPath(task.OwnerInstanceId), heartbeat)
+		if errors.Is(err, kv.ErrNotFound) {
+			// Instance heartbeat not found -> instance is gone -> task is stale
+			task.Done = true
+			task.ErrorMsg = "Task owner instance no longer available. Please retry."
+			task.StatusCode = http.StatusRequestTimeout
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("get instance heartbeat for %s: %w", task.OwnerInstanceId, err)
+		}
+		if time.Since(heartbeat.UpdatedAt.AsTime()) > expiryDuration {
+			task.Done = true
+			task.ErrorMsg = fmt.Sprintf("Task status expired: owner instance not responding for more than %s. Please retry.", expiryDuration)
+			task.StatusCode = http.StatusRequestTimeout
+		} else {
+			// Backfill task timestamp from instance heartbeat so old clients
+			// that check UpdatedAt for staleness see a recent value.
+			task.UpdatedAt = heartbeat.UpdatedAt
+		}
+		return nil
+	}
+
+	// Legacy path: tasks without OwnerInstanceId (backwards compat)
+	if task.UpdatedAt == nil {
+		return nil
+	}
+	if time.Since(task.UpdatedAt.AsTime()) > expiryDuration {
 		task.Done = true
 		task.ErrorMsg = fmt.Sprintf("Task status expired: no updates received for more than %s. Please retry the operation.", expiryDuration)
 		task.StatusCode = http.StatusRequestTimeout
 	}
+	return nil
 }
 
 func (c *Catalog) GetGarbageCollectionPrepareStatus(ctx context.Context, repositoryID string, id string) (*GarbageCollectionPrepareStatus, error) {
@@ -3141,6 +3239,8 @@ func (c *Catalog) DeleteExpiredTasks(ctx context.Context) {
 			c.log(ctx).WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired tasks failed")
 		}
 	}
+
+	c.deleteExpiredInstanceHeartbeats(ctx)
 }
 
 func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.RepositoryRecord, error) {
@@ -3235,6 +3335,10 @@ func (c *Catalog) Close() error {
 		if err != nil {
 			_ = multierror.Append(errs, err)
 		}
+	}
+	// Delete instance id used by heartbeat as we are closing the catalog
+	if c.instanceID != "" {
+		_ = c.KVStore.Delete(context.Background(), []byte(instancesPartition), instanceHeartbeatPath(c.instanceID))
 	}
 	c.workPool.StopAndWait()
 	if c.deleteSensor != nil {

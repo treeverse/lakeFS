@@ -103,7 +103,7 @@ func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ bl
 // verifyRelPath ensures that p is under the directory controlled by this adapter.  It does not
 // examine the filesystem and can mistakenly error out when symbolic links are involved.
 func (l *Adapter) verifyRelPath(p string) error {
-	if !strings.HasPrefix(filepath.Clean(p), l.path) {
+	if !strings.HasPrefix(filepath.Clean(p), l.path+string(filepath.Separator)) {
 		return fmt.Errorf("%s: %w", p, ErrBadPath)
 	}
 	return nil
@@ -122,9 +122,16 @@ func (l *Adapter) extractParamsFromObj(ptr block.ObjectPointer) (string, error) 
 	if !strings.HasPrefix(ptr.StorageNamespace, DefaultNamespacePrefix) {
 		return "", fmt.Errorf("%w: storage namespace", ErrBadPath)
 	}
-	p := path.Join(l.path, ptr.StorageNamespace[len(DefaultNamespacePrefix):], ptr.Identifier)
-	if err := l.verifyRelPath(p); err != nil {
+	// Verify namespace path is under adapter's base path
+	namespacePath := filepath.Clean(filepath.Join(l.path, ptr.StorageNamespace[len(DefaultNamespacePrefix):]))
+	if err := l.verifyRelPath(namespacePath); err != nil {
 		return "", err
+	}
+	// Verify resolved path is under the namespace path (not just the adapter path)
+	// Allow p == namespacePath (for namespace root access) or p under namespacePath
+	p := filepath.Clean(filepath.Join(namespacePath, ptr.Identifier))
+	if p != namespacePath && !strings.HasPrefix(p, namespacePath+string(filepath.Separator)) {
+		return "", fmt.Errorf("%s: %w", p, ErrBadPath)
 	}
 	return p, nil
 }

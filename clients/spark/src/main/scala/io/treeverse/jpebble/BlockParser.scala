@@ -120,7 +120,7 @@ object BlockParser {
   val INDEX_TYPE_KEY = "rocksdb.block.based.table.index.type".getBytes
   val INDEX_TYPE_TWO_LEVEL = 2
 
-  def update(checksum: Checksum, buf: Array[Byte], offset: Int, length: Int) {
+  def update(checksum: Checksum, buf: Array[Byte], offset: Int, length: Int): Unit = {
     checksum.update(buf.array, offset, length)
   }
 

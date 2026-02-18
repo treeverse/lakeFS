@@ -4,17 +4,16 @@ set -o pipefail
 
 filename=$1
 
-while IFS= read -r line; do
-    if [ -z "${line}" ]; then
-      echo "Nothing to do"
-      continue 
-    fi
-    echo $line
-    modules=$(echo $line | awk -F 'from pydantic import ' '{print $2}')
-    newline="try:\n    from pydantic.v1 import $modules\nexcept ImportError:\n    from pydantic import $modules"
-    
-    echo "$newline"
-    
-    echo "Replacing import statement"
-    sed -i "s/$line/$newline/g" "$filename"
-done <<< "$(sed -n '/^from pydantic import/p' $filename)"
+if grep -q '^from pydantic import' "$filename"; then
+    echo "Processing pydantic imports in $filename"
+    awk '/^from pydantic import/ {
+        modules = substr($0, 21)
+        print "try:"
+        print "    from pydantic.v1 import" modules
+        print "except ImportError:"
+        print "    " $0
+        next
+    } {print}' "$filename" > "$filename.tmp" && mv "$filename.tmp" "$filename"
+else
+    echo "Nothing to do"
+fi

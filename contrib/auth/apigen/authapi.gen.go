@@ -12,11 +12,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime/trace"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -25,6 +27,7 @@ const (
 
 // ClaimTokenId defines model for ClaimTokenId.
 type ClaimTokenId struct {
+
 	// Unix Epoch in seconds
 	ExpiresAt int64  `json:"expires_at"`
 	TokenId   string `json:"token_id"`
@@ -40,6 +43,8 @@ type Credentials struct {
 
 // CredentialsList defines model for CredentialsList.
 type CredentialsList struct {
+
+	// The pagination mechanism is used to retrieve a list of items.
 	Pagination Pagination    `json:"pagination"`
 	Results    []Credentials `json:"results"`
 }
@@ -48,18 +53,19 @@ type CredentialsList struct {
 type CredentialsWithSecret struct {
 	AccessKeyId string `json:"access_key_id"`
 
-	// Unix Epoch in seconds
+	// Unix Epoch in seconds.
 	CreationDate    int64  `json:"creation_date"`
 	SecretAccessKey string `json:"secret_access_key"`
 	UserId          int64  `json:"user_id"`
 
-	// A unique identifier for the user. In password-based authentication should be the email.
+	// Important - this filed is required instead of the user_id which is deprecated. A unique identifier for the user. In password-based authentication should be the email.
 	UserName *string `json:"user_name,omitempty"`
 }
 
 // Error defines model for Error.
 type Error struct {
-	// short message explaining the error
+
+	// The error message.
 	Message string `json:"message"`
 }
 
@@ -71,93 +77,136 @@ type ExternalPrincipal struct {
 
 // ExternalPrincipalList defines model for ExternalPrincipalList.
 type ExternalPrincipalList struct {
+
+	// The pagination mechanism is used to retrieve a list of items.
 	Pagination Pagination          `json:"pagination"`
 	Results    []ExternalPrincipal `json:"results"`
 }
 
 // Group defines model for Group.
 type Group struct {
-	// Unix Epoch in seconds
+
+	// Unix Epoch in seconds.
 	CreationDate int64   `json:"creation_date"`
 	Description  *string `json:"description,omitempty"`
-	Id           *string `json:"id,omitempty"`
-	Name         string  `json:"name"`
+
+	// A unique identifier of the group.
+	Id *string `json:"id,omitempty"`
+
+	// A unique identifier for the group, represented by a human-readable name.
+	Name string `json:"name"`
 }
 
 // GroupCreation defines model for GroupCreation.
 type GroupCreation struct {
 	Description *string `json:"description,omitempty"`
-	Id          string  `json:"id"`
+
+	// A unique identifier for the group, represented by a human-readable name.
+	Id string `json:"id"`
 }
 
 // GroupList defines model for GroupList.
 type GroupList struct {
+
+	// The pagination mechanism is used to retrieve a list of items.
 	Pagination Pagination `json:"pagination"`
 	Results    []Group    `json:"results"`
 }
 
 // Pagination defines model for Pagination.
 type Pagination struct {
-	// Next page is available
+
+	// A boolean indicating whether the Next page is available.
 	HasMore bool `json:"has_more"`
 
-	// Maximal number of entries per page
+	// Maximum number of entries per page.
 	MaxPerPage int `json:"max_per_page"`
 
-	// Token used to retrieve the next page
+	// A value used to retrieve the next page of results. This value is typically passed as the after parameter in the subsequent API call. The next page will include all items appearing after the specified next_offset.
 	NextOffset string `json:"next_offset"`
 
-	// Number of values found in the results
+	// Number of values in the results.
 	Results int `json:"results"`
 }
 
 // Policy defines model for Policy.
 type Policy struct {
-	// Access control list assigned to this policy (if exists)
+
+	// Represents the access control list assigned to this policy.
 	Acl *string `json:"acl,omitempty"`
 
-	// Unix Epoch in seconds
-	CreationDate *int64      `json:"creation_date,omitempty"`
-	Name         string      `json:"name"`
-	Statement    []Statement `json:"statement"`
+	// Unix Epoch in seconds.
+	CreationDate *int64 `json:"creation_date,omitempty"`
+
+	// A unique, human-readable name for the policy.
+	Name      string      `json:"name"`
+	Statement []Statement `json:"statement"`
+}
+
+// PolicyCondition defines model for PolicyCondition.
+type PolicyCondition struct {
+	AdditionalProperties map[string][]string `json:"-"`
 }
 
 // PolicyList defines model for PolicyList.
 type PolicyList struct {
+
+	// The pagination mechanism is used to retrieve a list of items.
 	Pagination Pagination `json:"pagination"`
 	Results    []Policy   `json:"results"`
 }
 
 // Statement defines model for Statement.
 type Statement struct {
-	Action   []string `json:"action"`
-	Effect   string   `json:"effect"`
-	Resource string   `json:"resource"`
+	Action []string `json:"action"`
+
+	// Optional conditions for when this statement applies.
+	Condition *Statement_Condition `json:"condition,omitempty"`
+	Effect    string               `json:"effect"`
+	Resource  string               `json:"resource"`
+}
+
+// Statement_Condition defines model for Statement.Condition.
+type Statement_Condition struct {
+	AdditionalProperties map[string]PolicyCondition `json:"-"`
 }
 
 // User defines model for User.
 type User struct {
-	// Unix Epoch in seconds
-	CreationDate      int64   `json:"creation_date"`
-	Email             *string `json:"email,omitempty"`
+
+	// Unix Epoch in seconds.
+	CreationDate int64   `json:"creation_date"`
+	Email        *string `json:"email,omitempty"`
+
+	// Represents an encrypted password as a string.
 	EncryptedPassword []byte  `json:"encryptedPassword"`
 	ExternalId        *string `json:"external_id,omitempty"`
-	FriendlyName      *string `json:"friendly_name,omitempty"`
-	Source            *string `json:"source,omitempty"`
 
-	// a unique identifier for the user
+	// A name for the user that is not necessarily unique.
+	FriendlyName *string `json:"friendly_name,omitempty"`
+
+	// User source. Based on implementation.
+	Source *string `json:"source,omitempty"`
+
+	// A unique identifier for the user.
 	Username string `json:"username"`
 }
 
 // UserCreation defines model for UserCreation.
 type UserCreation struct {
-	Email             *string `json:"email,omitempty"`
+
+	// If provided, the email is set to the same value as the username.
+	Email *string `json:"email,omitempty"`
+
+	// Represents an encrypted password as a string.
 	EncryptedPassword *[]byte `json:"encryptedPassword,omitempty"`
 	ExternalId        *string `json:"external_id,omitempty"`
 	FriendlyName      *string `json:"friendlyName,omitempty"`
 
-	// If true, send an invitation by email. Otherwise, only create the user.
-	Invite *bool   `json:"invite,omitempty"`
+	// A boolean that determines whether an invitation email should be sent to a user for account creation. If passed and set to true, the invitation email will be sent along with the user creation.
+	Invite *bool `json:"invite,omitempty"`
+
+	// User source. Based on implementation.
 	Source *string `json:"source,omitempty"`
 
 	// A unique identifier for the user. For password-based authentication, it is the email.
@@ -166,6 +215,8 @@ type UserCreation struct {
 
 // UserList defines model for UserList.
 type UserList struct {
+
+	// The pagination mechanism is used to retrieve a list of items.
 	Pagination Pagination `json:"pagination"`
 	Results    []User     `json:"results"`
 }
@@ -211,13 +262,14 @@ type GetExternalPrincipalParams struct {
 
 // ListGroupsParams defines parameters for ListGroups.
 type ListGroupsParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 }
 
@@ -226,37 +278,40 @@ type CreateGroupJSONBody GroupCreation
 
 // ListGroupMembersParams defines parameters for ListGroupMembers.
 type ListGroupMembersParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 }
 
 // ListGroupPoliciesParams defines parameters for ListGroupPolicies.
 type ListGroupPoliciesParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 }
 
 // ListPoliciesParams defines parameters for ListPolicies.
 type ListPoliciesParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 }
 
@@ -271,17 +326,20 @@ type ClaimTokenIdJSONBody ClaimTokenId
 
 // ListUsersParams defines parameters for ListUsers.
 type ListUsersParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
-	Amount     *PaginationAmount `json:"amount,omitempty"`
-	Id         *int64            `json:"id,omitempty"`
-	Email      *string           `json:"email,omitempty"`
-	ExternalId *string           `json:"external_id,omitempty"`
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
+	Amount *PaginationAmount `json:"amount,omitempty"`
+	Id     *int64            `json:"id,omitempty"`
+	Email  *string           `json:"email,omitempty"`
+
+	// Used only in lakeFS Enterprise; not applicable in the lakeFS OSS version.
+	ExternalId *string `json:"external_id,omitempty"`
 }
 
 // CreateUserJSONBody defines parameters for CreateUser.
@@ -289,13 +347,14 @@ type CreateUserJSONBody UserCreation
 
 // ListUserCredentialsParams defines parameters for ListUserCredentials.
 type ListUserCredentialsParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 }
 
@@ -317,13 +376,14 @@ type CreateUserExternalPrincipalParams struct {
 
 // ListUserExternalPrincipalsParams defines parameters for ListUserExternalPrincipals.
 type ListUserExternalPrincipalsParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 }
 
@@ -334,13 +394,14 @@ type UpdateUserFriendlyNameJSONBody struct {
 
 // ListUserGroupsParams defines parameters for ListUserGroups.
 type ListUserGroupsParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 }
 
@@ -349,16 +410,17 @@ type UpdatePasswordJSONBody UserPassword
 
 // ListUserPoliciesParams defines parameters for ListUserPolicies.
 type ListUserPoliciesParams struct {
-	// return items prefixed with this value
+
+	// Indicates the prefix that all returned items must start with for the purpose of filtering results.
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
-	// return items after this value
+	// Indicates the starting point for the returned items. Items must be sorted by a specific parameter, and the response should include only those that come after the "after" value in the sorted list. This is used for pagination, as the next page needs to start from a specific point in the ordered items list.
 	After *PaginationAfter `json:"after,omitempty"`
 
-	// how many items to return
+	// Specifies the number of items the server should return. It is used to determine how many results to display.
 	Amount *PaginationAmount `json:"amount,omitempty"`
 
-	// will return all distinct policies attached to the user or any of its groups
+	// If true, return all distinct policies attached to the user or any of the groups the user belongs to, otherwise, return only the policies directly attached to the user.
 	Effective *bool `json:"effective,omitempty"`
 }
 
@@ -382,6 +444,112 @@ type UpdateUserFriendlyNameJSONRequestBody UpdateUserFriendlyNameJSONBody
 
 // UpdatePasswordJSONRequestBody defines body for UpdatePassword for application/json ContentType.
 type UpdatePasswordJSONRequestBody UpdatePasswordJSONBody
+
+// Getter for additional properties for PolicyCondition. Returns the specified
+// element and whether it was found
+func (a PolicyCondition) Get(fieldName string) (value []string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PolicyCondition
+func (a *PolicyCondition) Set(fieldName string, value []string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string][]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PolicyCondition to handle AdditionalProperties
+func (a *PolicyCondition) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string][]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal []string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PolicyCondition to handle AdditionalProperties
+func (a PolicyCondition) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Statement_Condition. Returns the specified
+// element and whether it was found
+func (a Statement_Condition) Get(fieldName string) (value PolicyCondition, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Statement_Condition
+func (a *Statement_Condition) Set(fieldName string, value PolicyCondition) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]PolicyCondition)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Statement_Condition to handle AdditionalProperties
+func (a *Statement_Condition) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]PolicyCondition)
+		for fieldName, fieldBuf := range object {
+			var fieldVal PolicyCondition
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Statement_Condition to handle AdditionalProperties
+func (a Statement_Condition) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
 
 // chi-interface.tmpl based on https://github.com/deepmap/oapi-codegen/tree/master/pkg/codegen/templates
 
@@ -462,13 +630,13 @@ type ServerInterface interface {
 	// delete credentials
 	// (DELETE /auth/users/{userId}/credentials/{accessKeyId})
 	DeleteCredentials(w http.ResponseWriter, r *http.Request, userId string, accessKeyId string)
-	// get credentials
+	// get credentials for a user
 	// (GET /auth/users/{userId}/credentials/{accessKeyId})
 	GetCredentialsForUser(w http.ResponseWriter, r *http.Request, userId string, accessKeyId string)
 	// delete external principal from user's external principal list
 	// (DELETE /auth/users/{userId}/external/principals)
 	DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userId string, params DeleteUserExternalPrincipalParams)
-	// Create principal as external identity connected to lakeFS user
+	// Create principal as external identity connected to a user
 	// (POST /auth/users/{userId}/external/principals)
 	CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userId string, params CreateUserExternalPrincipalParams)
 	// list external principals for user
@@ -512,7 +680,8 @@ type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
 
 // GetCredentials operation middleware
 func (siw *ServerInterfaceWrapper) GetCredentials(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:GetCredentials")
+	defer task.End()
 
 	var err error
 
@@ -527,7 +696,7 @@ func (siw *ServerInterfaceWrapper) GetCredentials(w http.ResponseWriter, r *http
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCredentials(w, r, accessKeyId)
 	}
 
@@ -540,7 +709,8 @@ func (siw *ServerInterfaceWrapper) GetCredentials(w http.ResponseWriter, r *http
 
 // GetExternalPrincipal operation middleware
 func (siw *ServerInterfaceWrapper) GetExternalPrincipal(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:GetExternalPrincipal")
+	defer task.End()
 
 	var err error
 
@@ -551,6 +721,7 @@ func (siw *ServerInterfaceWrapper) GetExternalPrincipal(w http.ResponseWriter, r
 
 	// ------------- Required query parameter "principalId" -------------
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
+
 	} else {
 		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
@@ -562,7 +733,7 @@ func (siw *ServerInterfaceWrapper) GetExternalPrincipal(w http.ResponseWriter, r
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetExternalPrincipal(w, r, params)
 	}
 
@@ -575,7 +746,8 @@ func (siw *ServerInterfaceWrapper) GetExternalPrincipal(w http.ResponseWriter, r
 
 // ListGroups operation middleware
 func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListGroups")
+	defer task.End()
 
 	var err error
 
@@ -586,6 +758,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -596,6 +769,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -606,6 +780,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -614,7 +789,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGroups(w, r, params)
 	}
 
@@ -627,7 +802,8 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 // CreateGroup operation middleware
 func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:CreateGroup")
+	defer task.End()
 
 	// ------------- Body parse -------------
 	var body CreateGroupJSONRequestBody
@@ -641,7 +817,7 @@ func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Re
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateGroup(w, r, body)
 	}
 
@@ -654,7 +830,8 @@ func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Re
 
 // DeleteGroup operation middleware
 func (siw *ServerInterfaceWrapper) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DeleteGroup")
+	defer task.End()
 
 	var err error
 
@@ -669,7 +846,7 @@ func (siw *ServerInterfaceWrapper) DeleteGroup(w http.ResponseWriter, r *http.Re
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteGroup(w, r, groupId)
 	}
 
@@ -682,7 +859,8 @@ func (siw *ServerInterfaceWrapper) DeleteGroup(w http.ResponseWriter, r *http.Re
 
 // GetGroup operation middleware
 func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:GetGroup")
+	defer task.End()
 
 	var err error
 
@@ -697,7 +875,7 @@ func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Reque
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetGroup(w, r, groupId)
 	}
 
@@ -710,7 +888,8 @@ func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Reque
 
 // ListGroupMembers operation middleware
 func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListGroupMembers")
+	defer task.End()
 
 	var err error
 
@@ -730,6 +909,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -740,6 +920,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -750,6 +931,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -758,7 +940,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGroupMembers(w, r, groupId, params)
 	}
 
@@ -771,7 +953,8 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 // DeleteGroupMembership operation middleware
 func (siw *ServerInterfaceWrapper) DeleteGroupMembership(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DeleteGroupMembership")
+	defer task.End()
 
 	var err error
 
@@ -795,7 +978,7 @@ func (siw *ServerInterfaceWrapper) DeleteGroupMembership(w http.ResponseWriter, 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteGroupMembership(w, r, groupId, userId)
 	}
 
@@ -808,7 +991,8 @@ func (siw *ServerInterfaceWrapper) DeleteGroupMembership(w http.ResponseWriter, 
 
 // AddGroupMembership operation middleware
 func (siw *ServerInterfaceWrapper) AddGroupMembership(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:AddGroupMembership")
+	defer task.End()
 
 	var err error
 
@@ -832,7 +1016,7 @@ func (siw *ServerInterfaceWrapper) AddGroupMembership(w http.ResponseWriter, r *
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AddGroupMembership(w, r, groupId, userId)
 	}
 
@@ -845,7 +1029,8 @@ func (siw *ServerInterfaceWrapper) AddGroupMembership(w http.ResponseWriter, r *
 
 // ListGroupPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListGroupPolicies")
+	defer task.End()
 
 	var err error
 
@@ -865,6 +1050,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -875,6 +1061,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -885,6 +1072,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -893,7 +1081,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGroupPolicies(w, r, groupId, params)
 	}
 
@@ -906,7 +1094,8 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 // DetachPolicyFromGroup operation middleware
 func (siw *ServerInterfaceWrapper) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DetachPolicyFromGroup")
+	defer task.End()
 
 	var err error
 
@@ -930,7 +1119,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromGroup(w http.ResponseWriter, 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DetachPolicyFromGroup(w, r, groupId, policyId)
 	}
 
@@ -943,7 +1132,8 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromGroup(w http.ResponseWriter, 
 
 // AttachPolicyToGroup operation middleware
 func (siw *ServerInterfaceWrapper) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:AttachPolicyToGroup")
+	defer task.End()
 
 	var err error
 
@@ -967,7 +1157,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToGroup(w http.ResponseWriter, r 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AttachPolicyToGroup(w, r, groupId, policyId)
 	}
 
@@ -980,7 +1170,8 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToGroup(w http.ResponseWriter, r 
 
 // ListPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListPolicies")
+	defer task.End()
 
 	var err error
 
@@ -991,6 +1182,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1001,6 +1193,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1011,6 +1204,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1019,7 +1213,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListPolicies(w, r, params)
 	}
 
@@ -1032,7 +1226,8 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 // CreatePolicy operation middleware
 func (siw *ServerInterfaceWrapper) CreatePolicy(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:CreatePolicy")
+	defer task.End()
 
 	// ------------- Body parse -------------
 	var body CreatePolicyJSONRequestBody
@@ -1046,7 +1241,7 @@ func (siw *ServerInterfaceWrapper) CreatePolicy(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreatePolicy(w, r, body)
 	}
 
@@ -1059,7 +1254,8 @@ func (siw *ServerInterfaceWrapper) CreatePolicy(w http.ResponseWriter, r *http.R
 
 // DeletePolicy operation middleware
 func (siw *ServerInterfaceWrapper) DeletePolicy(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DeletePolicy")
+	defer task.End()
 
 	var err error
 
@@ -1074,7 +1270,7 @@ func (siw *ServerInterfaceWrapper) DeletePolicy(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeletePolicy(w, r, policyId)
 	}
 
@@ -1087,7 +1283,8 @@ func (siw *ServerInterfaceWrapper) DeletePolicy(w http.ResponseWriter, r *http.R
 
 // GetPolicy operation middleware
 func (siw *ServerInterfaceWrapper) GetPolicy(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:GetPolicy")
+	defer task.End()
 
 	var err error
 
@@ -1102,7 +1299,7 @@ func (siw *ServerInterfaceWrapper) GetPolicy(w http.ResponseWriter, r *http.Requ
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPolicy(w, r, policyId)
 	}
 
@@ -1115,7 +1312,8 @@ func (siw *ServerInterfaceWrapper) GetPolicy(w http.ResponseWriter, r *http.Requ
 
 // UpdatePolicy operation middleware
 func (siw *ServerInterfaceWrapper) UpdatePolicy(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:UpdatePolicy")
+	defer task.End()
 
 	var err error
 
@@ -1140,7 +1338,7 @@ func (siw *ServerInterfaceWrapper) UpdatePolicy(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdatePolicy(w, r, body, policyId)
 	}
 
@@ -1153,7 +1351,8 @@ func (siw *ServerInterfaceWrapper) UpdatePolicy(w http.ResponseWriter, r *http.R
 
 // ClaimTokenId operation middleware
 func (siw *ServerInterfaceWrapper) ClaimTokenId(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ClaimTokenId")
+	defer task.End()
 
 	// ------------- Body parse -------------
 	var body ClaimTokenIdJSONRequestBody
@@ -1167,7 +1366,7 @@ func (siw *ServerInterfaceWrapper) ClaimTokenId(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ClaimTokenId(w, r, body)
 	}
 
@@ -1180,7 +1379,8 @@ func (siw *ServerInterfaceWrapper) ClaimTokenId(w http.ResponseWriter, r *http.R
 
 // ListUsers operation middleware
 func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListUsers")
+	defer task.End()
 
 	var err error
 
@@ -1191,6 +1391,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1201,6 +1402,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1211,6 +1413,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1221,6 +1424,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "id" -------------
 	if paramValue := r.URL.Query().Get("id"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "id", r.URL.Query(), &params.Id)
@@ -1231,6 +1435,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "email" -------------
 	if paramValue := r.URL.Query().Get("email"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "email", r.URL.Query(), &params.Email)
@@ -1241,6 +1446,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "external_id" -------------
 	if paramValue := r.URL.Query().Get("external_id"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "external_id", r.URL.Query(), &params.ExternalId)
@@ -1249,7 +1455,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUsers(w, r, params)
 	}
 
@@ -1262,7 +1468,8 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 // CreateUser operation middleware
 func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:CreateUser")
+	defer task.End()
 
 	// ------------- Body parse -------------
 	var body CreateUserJSONRequestBody
@@ -1276,7 +1483,7 @@ func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Req
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateUser(w, r, body)
 	}
 
@@ -1289,7 +1496,8 @@ func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Req
 
 // DeleteUser operation middleware
 func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DeleteUser")
+	defer task.End()
 
 	var err error
 
@@ -1304,7 +1512,7 @@ func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Req
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteUser(w, r, userId)
 	}
 
@@ -1317,7 +1525,8 @@ func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Req
 
 // GetUser operation middleware
 func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:GetUser")
+	defer task.End()
 
 	var err error
 
@@ -1332,7 +1541,7 @@ func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Reques
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUser(w, r, userId)
 	}
 
@@ -1345,7 +1554,8 @@ func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Reques
 
 // ListUserCredentials operation middleware
 func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListUserCredentials")
+	defer task.End()
 
 	var err error
 
@@ -1365,6 +1575,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1375,6 +1586,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1385,6 +1597,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1393,7 +1606,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserCredentials(w, r, userId, params)
 	}
 
@@ -1406,7 +1619,8 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 // CreateCredentials operation middleware
 func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:CreateCredentials")
+	defer task.End()
 
 	var err error
 
@@ -1426,6 +1640,7 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "access_key" -------------
 	if paramValue := r.URL.Query().Get("access_key"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "access_key", r.URL.Query(), &params.AccessKey)
@@ -1436,6 +1651,7 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "secret_key" -------------
 	if paramValue := r.URL.Query().Get("secret_key"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "secret_key", r.URL.Query(), &params.SecretKey)
@@ -1444,7 +1660,7 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateCredentials(w, r, userId, params)
 	}
 
@@ -1457,7 +1673,8 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 // DeleteCredentials operation middleware
 func (siw *ServerInterfaceWrapper) DeleteCredentials(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DeleteCredentials")
+	defer task.End()
 
 	var err error
 
@@ -1481,7 +1698,7 @@ func (siw *ServerInterfaceWrapper) DeleteCredentials(w http.ResponseWriter, r *h
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteCredentials(w, r, userId, accessKeyId)
 	}
 
@@ -1494,7 +1711,8 @@ func (siw *ServerInterfaceWrapper) DeleteCredentials(w http.ResponseWriter, r *h
 
 // GetCredentialsForUser operation middleware
 func (siw *ServerInterfaceWrapper) GetCredentialsForUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:GetCredentialsForUser")
+	defer task.End()
 
 	var err error
 
@@ -1518,7 +1736,7 @@ func (siw *ServerInterfaceWrapper) GetCredentialsForUser(w http.ResponseWriter, 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCredentialsForUser(w, r, userId, accessKeyId)
 	}
 
@@ -1531,7 +1749,8 @@ func (siw *ServerInterfaceWrapper) GetCredentialsForUser(w http.ResponseWriter, 
 
 // DeleteUserExternalPrincipal operation middleware
 func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DeleteUserExternalPrincipal")
+	defer task.End()
 
 	var err error
 
@@ -1551,6 +1770,7 @@ func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWr
 
 	// ------------- Required query parameter "principalId" -------------
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
+
 	} else {
 		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
@@ -1562,7 +1782,7 @@ func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWr
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteUserExternalPrincipal(w, r, userId, params)
 	}
 
@@ -1575,7 +1795,8 @@ func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWr
 
 // CreateUserExternalPrincipal operation middleware
 func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:CreateUserExternalPrincipal")
+	defer task.End()
 
 	var err error
 
@@ -1595,6 +1816,7 @@ func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWr
 
 	// ------------- Required query parameter "principalId" -------------
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
+
 	} else {
 		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
@@ -1606,7 +1828,7 @@ func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWr
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateUserExternalPrincipal(w, r, userId, params)
 	}
 
@@ -1619,7 +1841,8 @@ func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWr
 
 // ListUserExternalPrincipals operation middleware
 func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListUserExternalPrincipals")
+	defer task.End()
 
 	var err error
 
@@ -1639,6 +1862,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1649,6 +1873,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1659,6 +1884,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1667,7 +1893,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserExternalPrincipals(w, r, userId, params)
 	}
 
@@ -1680,7 +1906,8 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 // UpdateUserFriendlyName operation middleware
 func (siw *ServerInterfaceWrapper) UpdateUserFriendlyName(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:UpdateUserFriendlyName")
+	defer task.End()
 
 	var err error
 
@@ -1705,7 +1932,7 @@ func (siw *ServerInterfaceWrapper) UpdateUserFriendlyName(w http.ResponseWriter,
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateUserFriendlyName(w, r, body, userId)
 	}
 
@@ -1718,7 +1945,8 @@ func (siw *ServerInterfaceWrapper) UpdateUserFriendlyName(w http.ResponseWriter,
 
 // ListUserGroups operation middleware
 func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListUserGroups")
+	defer task.End()
 
 	var err error
 
@@ -1738,6 +1966,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1748,6 +1977,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1758,6 +1988,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1766,7 +1997,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserGroups(w, r, userId, params)
 	}
 
@@ -1779,7 +2010,8 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 // UpdatePassword operation middleware
 func (siw *ServerInterfaceWrapper) UpdatePassword(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:UpdatePassword")
+	defer task.End()
 
 	var err error
 
@@ -1804,7 +2036,7 @@ func (siw *ServerInterfaceWrapper) UpdatePassword(w http.ResponseWriter, r *http
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdatePassword(w, r, body, userId)
 	}
 
@@ -1817,7 +2049,8 @@ func (siw *ServerInterfaceWrapper) UpdatePassword(w http.ResponseWriter, r *http
 
 // ListUserPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:ListUserPolicies")
+	defer task.End()
 
 	var err error
 
@@ -1837,6 +2070,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1847,6 +2081,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1857,6 +2092,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1867,6 +2103,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "effective" -------------
 	if paramValue := r.URL.Query().Get("effective"); paramValue != "" {
+
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "effective", r.URL.Query(), &params.Effective)
@@ -1875,7 +2112,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 		return
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserPolicies(w, r, userId, params)
 	}
 
@@ -1888,7 +2125,8 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 // DetachPolicyFromUser operation middleware
 func (siw *ServerInterfaceWrapper) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:DetachPolicyFromUser")
+	defer task.End()
 
 	var err error
 
@@ -1912,7 +2150,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromUser(w http.ResponseWriter, r
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DetachPolicyFromUser(w, r, userId, policyId)
 	}
 
@@ -1925,7 +2163,8 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromUser(w http.ResponseWriter, r
 
 // AttachPolicyToUser operation middleware
 func (siw *ServerInterfaceWrapper) AttachPolicyToUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:AttachPolicyToUser")
+	defer task.End()
 
 	var err error
 
@@ -1949,7 +2188,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToUser(w http.ResponseWriter, r *
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AttachPolicyToUser(w, r, userId, policyId)
 	}
 
@@ -1962,11 +2201,12 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToUser(w http.ResponseWriter, r *
 
 // GetVersion operation middleware
 func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:GetVersion")
+	defer task.End()
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetVersion(w, r)
 	}
 
@@ -1979,9 +2219,10 @@ func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Req
 
 // HealthCheck operation middleware
 func (siw *ServerInterfaceWrapper) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, task := trace.NewTask(r.Context(), "api:HealthCheck")
+	defer task.End()
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.HealthCheck(w, r)
 	}
 
@@ -2148,55 +2389,103 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-	"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",
+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",
 }
 
 // GetSwaggerSpecReader returns a reader to the Swagger specification corresponding to the generated code in this file.

@@ -74,6 +74,21 @@ const (
 	ReadPullRequestAction                     = "pr:ReadPullRequest"
 	WritePullRequestAction                    = "pr:WritePullRequest"
 	ListPullRequestsAction                    = "pr:ListPullRequests"
+	CatalogListNamespacesAction               = "catalog:ListNamespaces"
+	CatalogGetNamespaceAction                 = "catalog:GetNamespace"
+	CatalogCreateNamespaceAction              = "catalog:CreateNamespace"
+	CatalogUpdateNamespaceAction              = "catalog:UpdateNamespace"
+	CatalogDeleteNamespaceAction              = "catalog:DeleteNamespace"
+	CatalogListTablesAction                   = "catalog:ListTables"
+	CatalogReadTableAction                    = "catalog:ReadTable"
+	CatalogCreateTableAction                  = "catalog:CreateTable"
+	CatalogUpdateTableAction                  = "catalog:UpdateTable"
+	CatalogDeleteTableAction                  = "catalog:DeleteTable"
+	CatalogListViewsAction                    = "catalog:ListViews"
+	CatalogReadViewAction                     = "catalog:ReadView"
+	CatalogCreateViewAction                   = "catalog:CreateView"
+	CatalogUpdateViewAction                   = "catalog:UpdateView"
+	CatalogDeleteViewAction                   = "catalog:DeleteView"
 )
 
 var serviceSet = map[string]struct{}{
@@ -83,6 +98,7 @@ var serviceSet = map[string]struct{}{
 	"retention": {},
 	"branches":  {},
 	"pr":        {},
+	"catalog":   {},
 }
 
 func IsValidAction(name string) error {

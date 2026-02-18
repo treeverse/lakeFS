@@ -445,6 +445,10 @@ func (m *Manager) SetBranch(ctx context.Context, repository *graveler.Repository
 	return kv.SetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.BranchPath(branchID)), protoFromBranch(branchID, &branch))
 }
 
+func branchOwnershipKey(repositoryID graveler.RepositoryID, branchID graveler.BranchID) string {
+	return fmt.Sprintf("%d:%s/%s", len(repositoryID), repositoryID, branchID)
+}
+
 func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, f graveler.BranchUpdateFunc) error {
 	// TODO(ariels): Get request ID in a nicer way.
 	requestIDPtr := httputil.RequestIDFromContext(ctx)
@@ -453,7 +457,8 @@ func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.Reposit
 	// place a request ID anyways.)
 	if m.branchOwnership != nil && requestIDPtr != nil {
 		requestID := *requestIDPtr
-		release, err := m.branchOwnership.Own(ctx, requestID, string(branchID))
+		ownershipKey := branchOwnershipKey(repository.RepositoryID, branchID)
+		release, err := m.branchOwnership.Own(ctx, requestID, ownershipKey)
 		if err != nil {
 			logging.FromContext(ctx).
 				WithError(err).
