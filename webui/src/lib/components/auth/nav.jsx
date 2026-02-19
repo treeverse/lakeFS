@@ -8,6 +8,7 @@ import { useLoginConfigContext } from '../../hooks/conf';
 import { Link, NavItem } from '../nav';
 import { useAPI } from '../../hooks/api';
 import { auth } from '../../api';
+import { Loading } from '../controls';
 
 const truncatedHeaderClass = 'd-inline-block w-50 text-nowrap overflow-hidden text-truncate align-middle';
 
@@ -55,19 +56,13 @@ export const UserNav = ({ userId, page = 'groups' }) => {
     );
 };
 
-export const GroupNav = ({ groupId, page = 'groups' }) => {
+export const GroupNav = ({ groupId, group, loading, error, page = 'groups' }) => {
     const { RBAC: rbac } = useLoginConfigContext();
-
-    const { response, loading, error } = useAPI(() => {
-        return auth.getGroup(groupId);
-    }, [groupId]);
-
-    const group = response;
 
     function getDescription() {
         if (loading) return <span>...</span>;
         if (error) return <span className="text-danger">{error.message}</span>;
-        return group && group.description;
+        return group?.description;
     }
 
     return (
@@ -134,6 +129,14 @@ export const UserHeader = ({ userDisplayName, userId, page }) => {
 };
 
 export const GroupHeader = ({ groupId, page }) => {
+    const { response, loading, error } = useAPI(() => {
+        return auth.getGroup(groupId);
+    }, [groupId]);
+
+    if (loading) return <Loading />;
+
+    const resolvedGroupId = response?.id || groupId;
+
     return (
         <div className="mb-4">
             <Breadcrumb>
@@ -144,13 +147,13 @@ export const GroupHeader = ({ groupId, page }) => {
                     component={BreadcrumbItem}
                     href={{ pathname: '/auth/groups/:groupId', params: { groupId } }}
                     className={truncatedHeaderClass}
-                    title={groupId}
+                    title={resolvedGroupId}
                 >
-                    {groupId}
+                    {resolvedGroupId}
                 </Link>
             </Breadcrumb>
 
-            <GroupNav groupId={groupId} page={page} />
+            <GroupNav groupId={groupId} group={response} loading={false} error={error} page={page} />
         </div>
     );
 };
