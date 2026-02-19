@@ -105,8 +105,6 @@ jobs:
           fail: true
           jobSummary: true
           format: markdown
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - uses: actions/upload-artifact@v6
         name: Upload links report
