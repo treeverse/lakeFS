@@ -28,7 +28,7 @@ func WithUser(ctx context.Context, user *model.User) context.Context {
 // Unlike WithUser(ctx, nil) which stores a typed nil that passes type assertions,
 // this stores untyped nil so that GetUser will return ErrUserNotFound.
 func WithoutUser(ctx context.Context) context.Context {
-	return context.WithValue(ctx, userContextKey, nil) //nolint:staticcheck
+	return context.WithValue(ctx, userContextKey, nil)
 }
 
 func CopyUserFromContext(srcCtx, dstCtx context.Context) context.Context {
