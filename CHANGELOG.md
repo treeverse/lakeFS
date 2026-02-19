@@ -2,7 +2,7 @@
 
 ## v1.78.0
 
-Changes appear in the previous release 
+### Changes appear in the previous release 
 
 ## v1.77.1
                                                                             
