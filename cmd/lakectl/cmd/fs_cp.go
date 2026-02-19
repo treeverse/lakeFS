@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -17,11 +16,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
-const fsCopySummaryTemplate = `
+const (
+	fsCopySummaryTemplate = `
 Copy Summary:
 {{ if .Copied }}Copied: {{ .Copied }} object(s){{ end }}
 {{ if .Errors }}Errors: {{ .Errors }} object(s){{ end }}
 `
+	maxErrorMessages = 10 // Limit error output to avoid flooding
+)
 
 var fsCpCmd = &cobra.Command{
 	Use:               "cp <source URI> <dest URI>",
@@ -30,7 +32,6 @@ var fsCpCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
-		force := Must(cmd.Flags().GetBool("force"))
 		parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
 		if parallelism < 1 {
 			DieFmt("Invalid value for parallelism (%d), minimum is 1.", parallelism)
@@ -65,7 +66,7 @@ var fsCpCmd = &cobra.Command{
 
 		if !recursive {
 			// Single object copy
-			stat, err := copyObject(ctx, client, srcURI, destURI, force)
+			stat, err := copyObject(ctx, client, srcURI, destURI)
 			if err != nil {
 				DieErr(err)
 			}
@@ -74,7 +75,7 @@ var fsCpCmd = &cobra.Command{
 		}
 
 		// Recursive copy
-		copied, errors := recursiveCopy(ctx, client, srcURI, destURI, force, parallelism, noProgress)
+		copied, errors := recursiveCopyMove(ctx, client, srcURI, destURI, parallelism, noProgress, false)
 		Write(fsCopySummaryTemplate, struct {
 			Copied int64
 			Errors int64
@@ -86,7 +87,7 @@ var fsCpCmd = &cobra.Command{
 	},
 }
 
-func copyObject(ctx context.Context, client apigen.ClientWithResponsesInterface, srcURI, destURI *uri.URI, force bool) (*apigen.ObjectStats, error) {
+func copyObject(ctx context.Context, client apigen.ClientWithResponsesInterface, srcURI, destURI *uri.URI) (*apigen.ObjectStats, error) {
 	resp, err := client.CopyObjectWithResponse(ctx,
 		destURI.Repository,
 		destURI.Ref,
@@ -94,7 +95,6 @@ func copyObject(ctx context.Context, client apigen.ClientWithResponsesInterface,
 		apigen.CopyObjectJSONRequestBody{
 			SrcPath: *srcURI.Path,
 			SrcRef:  &srcURI.Ref,
-			Force:   &force,
 		})
 	if err != nil {
 		return nil, err
@@ -105,7 +105,15 @@ func copyObject(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	return resp.JSON201, nil
 }
 
-func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterface, srcURI, destURI *uri.URI, force bool, parallelism int, noProgress bool) (copied, errors int64) {
+// copyMoveTask represents a single object to copy or move
+type copyMoveTask struct {
+	srcPath  string
+	destPath string
+}
+
+// recursiveCopyMove handles recursive copy or move operations.
+// When deleteSource is true, source objects are deleted after successful copy (move behavior).
+func recursiveCopyMove(ctx context.Context, client apigen.ClientWithResponsesInterface, srcURI, destURI *uri.URI, parallelism int, noProgress bool, deleteSource bool) (successCount, errorCount int64) {
 	srcPrefix := *srcURI.Path
 	destPrefix := *destURI.Path
 
@@ -118,27 +126,28 @@ func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterfa
 	}
 
 	// Setup progress writer
-	pw := newCopyProgressWriter(noProgress)
+	pw := newProgressWriter(noProgress)
 	go pw.Render()
 
-	// Channel for objects to copy
-	type copyTask struct {
-		srcPath  string
-		destPath string
-	}
-	tasks := make(chan copyTask, parallelism*2)
+	tasks := make(chan copyMoveTask, parallelism*2)
 
-	// Error channel
+	// Track successfully copied paths for deletion (move only)
+	var copiedPaths []string
+	var copiedMu sync.Mutex
+
+	// Error handling
 	errorCh := make(chan error, parallelism)
 	var errorsWg sync.WaitGroup
-	errorsWg.Add(1)
-	go func() {
-		defer errorsWg.Done()
+	errorsWg.Go(func() {
 		for err := range errorCh {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			atomic.AddInt64(&errors, 1)
+			errorCount++
+			if errorCount <= maxErrorMessages {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+			} else if errorCount == maxErrorMessages+1 {
+				_, _ = fmt.Fprintln(os.Stderr, "(additional errors suppressed)")
+			}
 		}
-	}()
+	})
 
 	// Worker pool
 	var wg sync.WaitGroup
@@ -151,7 +160,6 @@ func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterfa
 				pw.AppendTracker(tracker)
 				tracker.Start()
 
-				forceVal := force
 				resp, err := client.CopyObjectWithResponse(ctx,
 					destURI.Repository,
 					destURI.Ref,
@@ -159,7 +167,6 @@ func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterfa
 					apigen.CopyObjectJSONRequestBody{
 						SrcPath: task.srcPath,
 						SrcRef:  &srcURI.Ref,
-						Force:   &forceVal,
 					})
 				if err != nil {
 					tracker.MarkAsErrored()
@@ -173,7 +180,10 @@ func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterfa
 				}
 				tracker.Increment(1)
 				tracker.MarkAsDone()
-				atomic.AddInt64(&copied, 1)
+
+				copiedMu.Lock()
+				copiedPaths = append(copiedPaths, task.srcPath)
+				copiedMu.Unlock()
 			}
 		}()
 	}
@@ -202,7 +212,7 @@ func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterfa
 			// Transform path: replace source prefix with dest prefix
 			relPath := strings.TrimPrefix(obj.Path, srcPrefix)
 			destPath := destPrefix + relPath
-			tasks <- copyTask{srcPath: obj.Path, destPath: destPath}
+			tasks <- copyMoveTask{srcPath: obj.Path, destPath: destPath}
 		}
 
 		pagination := resp.JSON200.Pagination
@@ -214,8 +224,6 @@ func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterfa
 
 	close(tasks)
 	wg.Wait()
-	close(errorCh)
-	errorsWg.Wait()
 
 	// Wait for progress to finish render
 	for pw.IsRenderInProgress() {
@@ -225,10 +233,21 @@ func recursiveCopy(ctx context.Context, client apigen.ClientWithResponsesInterfa
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return copied, errors
+	// Delete source objects if this is a move operation
+	if deleteSource && len(copiedPaths) > 0 {
+		deleteErrors := deleteObjectsBatch(ctx, client, srcURI.Repository, srcURI.Ref, copiedPaths)
+		for _, err := range deleteErrors {
+			errorCh <- err
+		}
+	}
+
+	close(errorCh)
+	errorsWg.Wait()
+
+	return int64(len(copiedPaths)), errorCount
 }
 
-func newCopyProgressWriter(noProgress bool) progress.Writer {
+func newProgressWriter(noProgress bool) progress.Writer {
 	pw := progress.NewWriter()
 	pw.SetAutoStop(false)
 	pw.SetSortBy(progress.SortByValue)
@@ -246,7 +265,6 @@ func newCopyProgressWriter(noProgress bool) progress.Writer {
 func init() {
 	withRecursiveFlag(fsCpCmd, "recursively copy all objects under the specified path")
 	withParallelismFlag(fsCpCmd)
-	fsCpCmd.Flags().BoolP("force", "f", false, "overwrite existing objects at destination")
 	withNoProgress(fsCpCmd)
 	fsCmd.AddCommand(fsCpCmd)
 }

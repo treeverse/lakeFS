@@ -27,7 +27,6 @@ type copyCall struct {
 	destPath string
 	srcRef   string
 	destRef  string
-	force    bool
 }
 
 func (m *mockCopyClient) CopyObjectWithResponse(ctx context.Context, repository string, branch string, params *apigen.CopyObjectParams, body apigen.CopyObjectJSONRequestBody, reqEditors ...apigen.RequestEditorFn) (*apigen.CopyObjectResponse, error) {
@@ -35,16 +34,11 @@ func (m *mockCopyClient) CopyObjectWithResponse(ctx context.Context, repository 
 	if body.SrcRef != nil {
 		srcRef = *body.SrcRef
 	}
-	force := false
-	if body.Force != nil {
-		force = *body.Force
-	}
 	m.copyCalls = append(m.copyCalls, copyCall{
 		srcPath:  body.SrcPath,
 		destPath: params.DestPath,
 		srcRef:   srcRef,
 		destRef:  branch,
-		force:    force,
 	})
 
 	key := fmt.Sprintf("%s:%s", body.SrcPath, params.DestPath)
@@ -106,7 +100,7 @@ func TestCopyObject(t *testing.T) {
 		srcURI := &uri.URI{Repository: "repo", Ref: "main", Path: &srcPath}
 		destURI := &uri.URI{Repository: "repo", Ref: "main", Path: &destPath}
 
-		stat, err := copyObject(ctx, client, srcURI, destURI, false)
+		stat, err := copyObject(ctx, client, srcURI, destURI)
 		require.NoError(t, err)
 		require.NotNil(t, stat)
 		require.Equal(t, destPath, stat.Path)
@@ -114,25 +108,6 @@ func TestCopyObject(t *testing.T) {
 		require.Len(t, client.copyCalls, 1)
 		require.Equal(t, srcPath, client.copyCalls[0].srcPath)
 		require.Equal(t, destPath, client.copyCalls[0].destPath)
-		require.False(t, client.copyCalls[0].force)
-	})
-
-	t.Run("single_copy_with_force", func(t *testing.T) {
-		client := &mockCopyClient{
-			copyResponses: make(map[string]*apigen.CopyObjectResponse),
-		}
-
-		srcPath := "path/to/source.txt"
-		destPath := "path/to/dest.txt"
-		srcURI := &uri.URI{Repository: "repo", Ref: "main", Path: &srcPath}
-		destURI := &uri.URI{Repository: "repo", Ref: "main", Path: &destPath}
-
-		stat, err := copyObject(ctx, client, srcURI, destURI, true)
-		require.NoError(t, err)
-		require.NotNil(t, stat)
-
-		require.Len(t, client.copyCalls, 1)
-		require.True(t, client.copyCalls[0].force)
 	})
 
 	t.Run("copy_different_refs", func(t *testing.T) {
@@ -145,7 +120,7 @@ func TestCopyObject(t *testing.T) {
 		srcURI := &uri.URI{Repository: "repo", Ref: "feature", Path: &srcPath}
 		destURI := &uri.URI{Repository: "repo", Ref: "main", Path: &destPath}
 
-		stat, err := copyObject(ctx, client, srcURI, destURI, false)
+		stat, err := copyObject(ctx, client, srcURI, destURI)
 		require.NoError(t, err)
 		require.NotNil(t, stat)
 
@@ -170,7 +145,7 @@ func TestCopyObject(t *testing.T) {
 		srcURI := &uri.URI{Repository: "repo", Ref: "main", Path: &srcPath}
 		destURI := &uri.URI{Repository: "repo", Ref: "main", Path: &destPath}
 
-		stat, err := copyObject(ctx, client, srcURI, destURI, false)
+		stat, err := copyObject(ctx, client, srcURI, destURI)
 		require.Error(t, err)
 		require.Nil(t, stat)
 	})
@@ -190,7 +165,7 @@ func TestMoveObject(t *testing.T) {
 		srcURI := &uri.URI{Repository: "repo", Ref: "main", Path: &srcPath}
 		destURI := &uri.URI{Repository: "repo", Ref: "main", Path: &destPath}
 
-		stat, err := moveObject(ctx, client, srcURI, destURI, false)
+		stat, err := moveObject(ctx, client, srcURI, destURI)
 		require.NoError(t, err)
 		require.NotNil(t, stat)
 		require.Equal(t, destPath, stat.Path)
@@ -222,7 +197,7 @@ func TestMoveObject(t *testing.T) {
 		srcURI := &uri.URI{Repository: "repo", Ref: "main", Path: &srcPath}
 		destURI := &uri.URI{Repository: "repo", Ref: "main", Path: &destPath}
 
-		stat, err := moveObject(ctx, client, srcURI, destURI, false)
+		stat, err := moveObject(ctx, client, srcURI, destURI)
 		require.Error(t, err)
 		require.Nil(t, stat)
 
@@ -246,7 +221,7 @@ func TestMoveObject(t *testing.T) {
 		srcURI := &uri.URI{Repository: "repo", Ref: "main", Path: &srcPath}
 		destURI := &uri.URI{Repository: "repo", Ref: "main", Path: &destPath}
 
-		stat, err := moveObject(ctx, client, srcURI, destURI, false)
+		stat, err := moveObject(ctx, client, srcURI, destURI)
 		require.Error(t, err)
 		require.Nil(t, stat)
 		require.Contains(t, err.Error(), "delete source after copy")
