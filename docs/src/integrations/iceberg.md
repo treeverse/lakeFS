@@ -258,11 +258,100 @@ To authenticate, clients must provide their lakeFS access key and secret in the 
 
 ### Authorization
 
-The authorization requirements are managed at the lakeFS level, meaning:
+The Iceberg REST Catalog defines its own set of RBAC actions and resources, as described in the [Authorization](#authorization) section. When using lakeFS with Iceberg, permissions must be managed through Iceberg RBAC - repository or object-level permissions alone are not sufficient.
+Iceberg catalog permissions supersede any related object permissions — for example, having `fs:ReadObject` on a 
+repository does not grant `catalog:ReadTable` on tables in that repository.
 
-- Users need appropriate lakeFS permissions to access repositories and branches
-- Table operations require lakeFS permissions on the underlying objects
-- The same lakeFS RBAC policies apply to Iceberg catalog operations
+For general information about lakeFS RBAC, see the [RBAC documentation](../security/rbac.md).
+
+#### Resources
+
+| Resource          | ARN Structure                                                   |
+|-------------------|-----------------------------------------------------------------|
+| Iceberg Namespace | `arn:lakefs:catalog:::namespace/{repositoryId}/{namespace}`     |
+| Iceberg Table     | `arn:lakefs:catalog:::table/{repositoryId}/{namespace}/{table}` |
+| Iceberg View      | `arn:lakefs:catalog:::view/{repositoryId}/{namespace}/{view}`   |
+
+Namespaces in the ARN use dot-separated notation (e.g., `my.namespace`). Wildcards (`*`) are supported for any path component.
+
+#### Actions
+
+| Action                     | Resource   | Description                                    |
+|----------------------------|------------|------------------------------------------------|
+| `catalog:CreateNamespace`  | Namespace  | Create a namespace                             |
+| `catalog:GetNamespace`     | Namespace  | Get namespace metadata                         |
+| `catalog:ListNamespaces`   | Namespace  | List child namespaces                          |
+| `catalog:UpdateNamespace`  | Namespace  | Update namespace properties                    |
+| `catalog:DeleteNamespace`  | Namespace  | Delete a namespace                             |
+| `catalog:ListTables`       | Namespace  | List tables within a namespace                 |
+| `catalog:CreateTable`      | Table      | Create a table                                 |
+| `catalog:ReadTable`        | Table      | Read table metadata                            |
+| `catalog:UpdateTable`      | Table      | Update or rename a table (commit, schema, etc) |
+| `catalog:DeleteTable`      | Table      | Delete a table                                 |
+| `catalog:ListViews`        | Namespace  | List views within a namespace                  |
+| `catalog:CreateView`       | View       | Create a view                                  |
+| `catalog:ReadView`         | View       | Read view metadata                             |
+| `catalog:UpdateView`       | View       | Update, replace or rename a view               |
+| `catalog:DeleteView`       | View       | Delete a view                                  |
+
+#### Example Policies
+
+**Read-only access to all tables and namespaces:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ReadTable"],
+      "resource": "arn:lakefs:catalog:::table/*/*/*"
+    },
+    {
+      "effect": "allow",
+      "action": ["catalog:ListNamespaces", "catalog:GetNamespace"],
+      "resource": "arn:lakefs:catalog:::namespace/*/*"
+    }
+  ]
+}
+```
+
+**Full access to tables in a specific repository:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:*"],
+      "resource": "arn:lakefs:catalog:::table/my-repo/*/*"
+    },
+    {
+      "effect": "allow",
+      "action": ["catalog:*"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/*"
+    }
+  ]
+}
+```
+
+**Allow reading all tables except a specific one:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ReadTable"],
+      "resource": "arn:lakefs:catalog:::table/my-repo/*/*"
+    },
+    {
+      "effect": "deny",
+      "action": ["catalog:ReadTable"],
+      "resource": "arn:lakefs:catalog:::table/my-repo/my.namespace/secret_table"
+    }
+  ]
+}
+```
 
 ### Limitations
 
