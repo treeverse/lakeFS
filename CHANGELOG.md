@@ -1,5 +1,7 @@
 # Changelog
 
+## v1.78.0
+
 ## v1.77.1
                                                                             
 :new: What's new:
