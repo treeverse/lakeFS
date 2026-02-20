@@ -1274,13 +1274,13 @@ func TestLakectlFsCp(t *testing.T) {
 		RunCmdAndVerifyFailure(t, Lakectl()+" fs cp lakefs://"+repoName+"/"+mainBranch+"/nonexistent.txt lakefs://"+repoName+"/"+mainBranch+"/dest.txt", false, "object not found\n404 Not Found\n", vars)
 	})
 
-	t.Run("single_copy_with_force", func(t *testing.T) {
+	t.Run("copy_overwrites_existing", func(t *testing.T) {
 		// First create target file
 		vars["FILE_PATH"] = "data/target.txt"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 
-		// Copy over existing file with force
-		sanitizedResult := runCmd(t, Lakectl()+" fs cp -f lakefs://"+repoName+"/"+mainBranch+"/data/file0.txt lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		// Copy over existing file (overwrites by default)
+		sanitizedResult := runCmd(t, Lakectl()+" fs cp lakefs://"+repoName+"/"+mainBranch+"/data/file0.txt lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 		require.Contains(t, sanitizedResult, "Path: "+vars["FILE_PATH"])
 	})
 
@@ -1368,20 +1368,20 @@ func TestLakectlFsMv(t *testing.T) {
 		require.Contains(t, sanitizedResult, "file2.txt")
 	})
 
-	t.Run("move_with_force", func(t *testing.T) {
+	t.Run("move_overwrites_existing", func(t *testing.T) {
 		// Upload source and target files
-		vars["FILE_PATH"] = "force-src.txt"
+		vars["FILE_PATH"] = "mv-src.txt"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 
-		targetPath := "force-target.txt"
+		targetPath := "mv-target.txt"
 		vars["FILE_PATH"] = targetPath
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+mainBranch+"/"+targetPath, false, "lakectl_fs_upload", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+targetPath, false, "lakectl_fs_upload", vars)
 
-		// Move with force flag
-		sanitizedResult := runCmd(t, Lakectl()+" fs mv -f lakefs://"+repoName+"/"+mainBranch+"/force-src.txt lakefs://"+repoName+"/"+mainBranch+"/"+targetPath, false, false, vars)
+		// Move overwrites existing file by default
+		sanitizedResult := runCmd(t, Lakectl()+" fs mv lakefs://"+repoName+"/"+mainBranch+"/mv-src.txt lakefs://"+repoName+"/"+mainBranch+"/"+targetPath, false, false, vars)
 		require.Contains(t, sanitizedResult, "Path: "+targetPath)
 
 		// Verify source no longer exists
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/force-src.txt", false, "object not found\n404 Not Found\n", vars)
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/mv-src.txt", false, "object not found\n404 Not Found\n", vars)
 	})
 }
