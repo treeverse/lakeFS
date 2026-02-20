@@ -1,9 +1,9 @@
 import { Locator, Page } from "@playwright/test";
-import { BranchOperations } from "./branchOperations";
-import { ObjectOperations } from "./objectOperations";
-import { ChangesOperations } from "./changesOperations";
-import { RevertOperations } from "./revertOperations";
-import { CommitsOperations } from "./commitsOperations";
+import { BranchOperations } from "../operations/branchOperations";
+import { ObjectOperations } from "../operations/objectOperations";
+import { ChangesOperations } from "../operations/changesOperations";
+import { RevertOperations } from "../operations/revertOperations";
+import { CommitsOperations } from "../operations/commitsOperations";
 
 export class RepositoryPage {
     public readOnlyIndicatorLocator: Locator;

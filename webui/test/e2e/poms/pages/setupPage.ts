@@ -1,5 +1,5 @@
 import { Download, Locator, Page } from "@playwright/test";
-import { LakeFSCredentials } from "../types";
+import { LakeFSCredentials } from "../../types";
 
 export class SetupPage {
     public emailErrorSelectorText = "Please enter your email address.";

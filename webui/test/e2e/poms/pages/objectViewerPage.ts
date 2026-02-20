@@ -1,5 +1,5 @@
 import { expect, Page } from "@playwright/test";
-import { TIMEOUT_NAVIGATION, TIMEOUT_LONG_OPERATION } from "../timeouts";
+import { TIMEOUT_NAVIGATION, TIMEOUT_LONG_OPERATION } from "../../timeouts";
 
 export class ObjectViewerPage {
   constructor(private page: Page) {}

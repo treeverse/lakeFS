@@ -1,5 +1,5 @@
 import { Locator, Page, expect } from "@playwright/test";
-import { TIMEOUT_LONG_OPERATION } from "../timeouts";
+import { TIMEOUT_LONG_OPERATION } from "../../timeouts";
 
 export const SAMPLE_REPO_README_TITLE = "Welcome to the Lake!";
 export const REGULAR_REPO_README_TITLE = "Your repository is ready!";

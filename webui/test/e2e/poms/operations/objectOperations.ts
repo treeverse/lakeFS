@@ -1,5 +1,5 @@
 import { Page } from "@playwright/test";
-import { TIMEOUT_ELEMENT_VISIBLE, TIMEOUT_NAVIGATION } from "../timeouts";
+import { TIMEOUT_ELEMENT_VISIBLE, TIMEOUT_NAVIGATION } from "../../timeouts";
 
 export class ObjectOperations {
     public uploadButtonLocator;

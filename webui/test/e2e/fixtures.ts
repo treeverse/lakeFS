@@ -1,10 +1,10 @@
 import { test as base, expect } from "@playwright/test";
-import { RepositoriesPage } from "./poms/repositoriesPage";
-import { RepositoryPage } from "./poms/repositoryPage";
-import { ObjectViewerPage } from "./poms/objectViewerPage";
-import { PullsPage } from "./poms/pullsPage";
-import { LoginPage } from "./poms/loginPage";
-import { SetupPage } from "./poms/setupPage";
+import { RepositoriesPage } from "./poms/pages/repositoriesPage";
+import { RepositoryPage } from "./poms/pages/repositoryPage";
+import { ObjectViewerPage } from "./poms/pages/objectViewerPage";
+import { PullsPage } from "./poms/pages/pullsPage";
+import { LoginPage } from "./poms/pages/loginPage";
+import { SetupPage } from "./poms/pages/setupPage";
 import { LakeFSApi } from "./lakeFSApi";
 import { getCredentials } from "./credentialsFile";
 

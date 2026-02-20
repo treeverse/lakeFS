@@ -1,5 +1,5 @@
 import { Page } from "@playwright/test";
-import { TIMEOUT_NAVIGATION } from "../timeouts";
+import { TIMEOUT_NAVIGATION } from "../../timeouts";
 
 export class PullsPage {
     constructor(private page: Page) {}

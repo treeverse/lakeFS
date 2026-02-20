@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { SetupPage } from "../poms/setupPage";
+import { SetupPage } from "../poms/pages/setupPage";
 
 test.describe("Setup Page Validation", () => {
     test("initial navigation to the base URL should redirect to /setup", async ({ page }) => {
