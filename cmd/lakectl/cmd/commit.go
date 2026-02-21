@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -67,15 +70,18 @@ var commitCmd = &cobra.Command{
 		}
 		// run asynchronous commit first
 		if isAsync {
-			startResp, err := client.CommitAsyncWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
+			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt)
+			defer stop()
+
+			startResp, err := client.CommitAsyncWithResponse(sigCtx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
 			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
 			if startResp.JSON202 == nil {
 				Die("Bad response from server", 1)
 			}
 
 			taskID := startResp.JSON202.Id
-			err = pollAsyncOperationStatus(ctx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
-				resp, err := client.CommitAsyncStatusWithResponse(ctx, branchURI.Repository, branchURI.Ref, taskID)
+			err = pollAsyncOperationStatus(sigCtx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
+				resp, err := client.CommitAsyncStatusWithResponse(sigCtx, branchURI.Repository, branchURI.Ref, taskID)
 				if err != nil {
 					return nil, err
 				}
@@ -86,6 +92,9 @@ var commitCmd = &cobra.Command{
 				return &resp.JSON200.AsyncTaskStatus, nil
 			})
 			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					DieFmt("Commit polling canceled. Async task ID: %s", taskID)
+				}
 				DieErr(err)
 			}
 		} else { // Regular commit
