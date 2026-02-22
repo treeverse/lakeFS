@@ -63,7 +63,7 @@ services:
       # TestLakectlAbuse/link-same-object fails on the local CosmosDB emulator because its low latency
       # causes frequent ETag conflicts on concurrent writes to the same key. This doesn't reproduce
       # against real CosmosDB where network latency naturally serializes most operations.
-      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC|TestLakectlAbuse}
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC|TestLakectlAbuse/link-same-object}
       - ESTI_LARGE_OBJECT_PATH
     working_dir: /lakefs
     command:
