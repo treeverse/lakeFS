@@ -1031,7 +1031,7 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose-cosmosdb.yaml logs --tail=1000 lakefs
+        run: docker compose --project-directory . -f esti/ops/docker-compose-cosmosdb.yaml logs --tail=1000 lakefs
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client

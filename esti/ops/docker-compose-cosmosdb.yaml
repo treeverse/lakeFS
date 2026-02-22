@@ -2,7 +2,7 @@ version: "3"
 services:
   lakefs:
     extends:
-      file: ${OSS_ESTI_OPS_PATH:-.}/docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: lakefs
     depends_on:
       - "cosmosdb"
@@ -29,7 +29,7 @@ services:
 
   esti:
     extends:
-      file: ${OSS_ESTI_OPS_PATH:-.}/docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
     command:
       - /bin/sh
