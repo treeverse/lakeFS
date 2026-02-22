@@ -130,11 +130,14 @@ jobs:
           CGO_ENABLED: "0"
           VERSION: ${{ needs.gen-code.outputs.tag }}
         run: |
-          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakefs ./cmd/lakefs
-          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
+          mkdir -p dist
+          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o dist/lakefs ./cmd/lakefs
+          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o dist/lakectl ./cmd/lakectl
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: Build and Push
         uses: docker/build-push-action@v6
