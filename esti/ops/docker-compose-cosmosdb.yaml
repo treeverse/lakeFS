@@ -1,17 +1,28 @@
-version: "3"
 services:
+  cosmosdb:
+    image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview"
+    ports:
+      - "8081:8081"
+      - "8000:8000"
+
   lakefs:
-    extends:
-      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
-      service: lakefs
+    image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-dev}"
+    command: "${COMMAND:-run}"
+    network_mode: "service:cosmosdb"
     depends_on:
       - "cosmosdb"
     volumes:
       - lakefs-app:/app:ro
     environment:
+      - LAKEFS_AUTH_API_ENDPOINT=http://host.docker.internal:8001/api/v1
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-simplified}
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_STATS_ENABLED=false
+      - LAKEFS_USAGE_REPORT_ENABLED=false
+      - LAKEFSACTION_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=cosmosdb
-      - LAKEFS_DATABASE_COSMOSDB_ENDPOINT=http://cosmosdb:8081
+      - LAKEFS_DATABASE_COSMOSDB_ENDPOINT=http://127.0.0.1:8081
       - LAKEFS_DATABASE_COSMOSDB_DATABASE=esti-db
       - LAKEFS_DATABASE_COSMOSDB_CONTAINER=esti-container
       - LAKEFS_DATABASE_COSMOSDB_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
@@ -20,17 +31,37 @@ services:
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
 
-  cosmosdb:
-    image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview"
-    ports:
-      - "8081:8081"
-    environment:
-      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=cosmosdb
-
   esti:
-    extends:
-      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
-      service: esti
+    image: "golang:1.25-alpine"
+    links:
+      - cosmosdb:s3.local.lakefs.io
+      - cosmosdb:testmultipartupload.s3.local.lakefs.io
+      - cosmosdb:testmultipartuploadabort.s3.local.lakefs.io
+      - cosmosdb:testdeleteobjects.s3.local.lakefs.io
+      - cosmosdb:testmigrate-testpremigratemultipart.s3.local.lakefs.io
+      - cosmosdb:migrate.s3.local.lakefs.io
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - CGO_ENABLED=0
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION=us-east-1
+      - ESTI_STORAGE_NAMESPACE
+      - ESTI_BLOCKSTORE_TYPE
+      - ESTI_AWS_ACCESS_KEY_ID
+      - ESTI_SETUP_LAKEFS
+      - ESTI_AWS_SECRET_ACCESS_KEY
+      - ESTI_ENDPOINT_URL=http://cosmosdb:8000
+      - ESTI_BINARIES_DIR=/app
+      - ESTI_GOTEST_FLAGS
+      - ESTI_FLAGS
+      - ESTI_FORCE_PATH_STYLE=${ESTI_FORCE_PATH_STYLE:-true}
+      - ESTI_AZURE_STORAGE_ACCOUNT
+      - ESTI_AZURE_STORAGE_ACCESS_KEY
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
+      - ESTI_LARGE_OBJECT_PATH
+    working_dir: /lakefs
     command:
       - /bin/sh
       - -c
