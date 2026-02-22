@@ -5,6 +5,16 @@ services:
       - "8081:8081"
       - "8000:8000"
 
+  azurite:
+    image: "mcr.microsoft.com/azure-storage/azurite:3.31.0"
+    environment:
+      - AZURITE_ACCOUNTS=account1:key1
+    command: ["azurite-blob", "--blobHost", "0.0.0.0"]
+    networks:
+      default:
+        aliases:
+          - account1.azurite.test
+
   lakefs:
     image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-dev}"
     command: "${COMMAND:-run}"
@@ -28,9 +38,10 @@ services:
       - LAKEFS_DATABASE_COSMOSDB_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
       - LAKEFS_DATABASE_COSMOSDB_STRONG_CONSISTENCY=true
       - LAKEFS_BLOCKSTORE_TYPE=azure
-      - AZURE_CLIENT_ID
-      - AZURE_CLIENT_SECRET
-      - AZURE_TENANT_ID
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT=account1
+      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY=key1
+      - LAKEFS_BLOCKSTORE_AZURE_TEST_ENDPOINT_URL=http://account1.azurite.test:10000
+      - LAKEFS_BLOCKSTORE_AZURE_DOMAIN=azurite.test
 
   esti:
     image: "golang:1.25-alpine"
@@ -41,6 +52,7 @@ services:
       - cosmosdb:testdeleteobjects.s3.local.lakefs.io
       - cosmosdb:testmigrate-testpremigratemultipart.s3.local.lakefs.io
       - cosmosdb:migrate.s3.local.lakefs.io
+      - azurite:account1.azurite.test
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -48,7 +60,7 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION=us-east-1
-      - ESTI_STORAGE_NAMESPACE
+      - ESTI_STORAGE_NAMESPACE=${ESTI_STORAGE_NAMESPACE:-https://account1.azurite.test/esti-system-testing}
       - ESTI_BLOCKSTORE_TYPE
       - ESTI_AWS_ACCESS_KEY_ID
       - ESTI_SETUP_LAKEFS
@@ -58,12 +70,14 @@ services:
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE=${ESTI_FORCE_PATH_STYLE:-true}
-      - ESTI_AZURE_STORAGE_ACCOUNT
-      - ESTI_AZURE_STORAGE_ACCESS_KEY
+      - ESTI_AZURE_STORAGE_ACCOUNT=${ESTI_AZURE_STORAGE_ACCOUNT:-account1}
+      - ESTI_AZURE_STORAGE_ACCESS_KEY=${ESTI_AZURE_STORAGE_ACCESS_KEY:-key1}
       # TestLakectlAbuse/link-same-object fails on the local CosmosDB emulator because its low latency
       # causes frequent ETag conflicts on concurrent writes to the same key. This doesn't reproduce
       # against real CosmosDB where network latency naturally serializes most operations.
-      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC|TestLakectlAbuse/link-same-object}
+      # TestDeltaCatalogExport and TestDeltaCatalogExportAbfss are skipped because their validation code
+      # creates Azure SDK clients without TestEndpointURL, so they'd try to connect to real Azure.
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC|TestLakectlAbuse/link-same-object|TestDeltaCatalogExport|TestDeltaCatalogExportAbfss}
       - ESTI_LARGE_OBJECT_PATH
     working_dir: /lakefs
     command:
@@ -71,6 +85,7 @@ services:
       - -c
       - |
         apk add --no-cache util-linux
+        go run ./esti/scripts/create_azurite_container
         go test -timeout 20m $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
