@@ -986,10 +986,17 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
@@ -1021,6 +1028,10 @@ jobs:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_AUTH_API_ENDPOINT: http://${{ steps.docker-host.outputs.ip }}:8001/api/v1
           ESTI_BLOCKSTORE_TYPE: azure
+          ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+          ESTI_LARGE_OBJECT_PATH: https://esti4hns.blob.core.windows.net/esti-system-testing-data/copy-test-data/data.6mib
+          ESTI_AZURE_STORAGE_ACCOUNT: esti4hns
+          ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
 
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
