@@ -24,6 +24,8 @@ services:
     image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview"
     ports:
       - "8081:8081"
+    environment:
+      - AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=cosmosdb
 
   esti:
     extends:
