@@ -120,6 +120,19 @@ jobs:
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
 
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build lakeFS binaries
+        env:
+          CGO_ENABLED: "0"
+          VERSION: ${{ needs.gen-code.outputs.tag }}
+        run: |
+          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakefs ./cmd/lakefs
+          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -128,10 +141,8 @@ jobs:
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.gen-code.outputs.tag }}
-          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
           context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          file: Dockerfile.ci
 
   login-to-amazon-ecr:
     runs-on: ubuntu-22.04
