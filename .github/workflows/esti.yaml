@@ -1015,6 +1015,10 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
+      - name: Get Docker host gateway IP
+        id: docker-host
+        run: echo "ip=$(docker network inspect bridge -f '{{(index .IPAM.Config 0).Gateway}}')" >> $GITHUB_OUTPUT
+
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -1022,6 +1026,7 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+          LAKEFS_AUTH_API_ENDPOINT: http://${{ steps.docker-host.outputs.ip }}:8001/api/v1
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_LARGE_OBJECT_PATH: https://esti4hns.blob.core.windows.net/esti-system-testing-data/copy-test-data/data.6mib
