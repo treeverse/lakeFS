@@ -1,0 +1,49 @@
+version: "3"
+services:
+  lakefs:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: lakefs
+    depends_on:
+      - "cosmosdb"
+    volumes:
+      - lakefs-app:/app:ro
+    environment:
+      - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-simplified}
+      - LAKEFS_DATABASE_TYPE=cosmosdb
+      - LAKEFS_DATABASE_COSMOSDB_ENDPOINT=http://cosmosdb:8081
+      - LAKEFS_DATABASE_COSMOSDB_DATABASE=esti-db
+      - LAKEFS_DATABASE_COSMOSDB_CONTAINER=esti-container
+      - LAKEFS_DATABASE_COSMOSDB_KEY=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+      - LAKEFS_BLOCKSTORE_TYPE=azure
+      - AZURE_CLIENT_ID
+      - AZURE_CLIENT_SECRET
+      - AZURE_TENANT_ID
+
+  cosmosdb:
+    image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview"
+    ports:
+      - "8081:8081"
+
+  esti:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: esti
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache util-linux
+        go test -timeout 20m $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
+    volumes:
+      - lakefs-code:/lakefs
+      - lakefs-app:/app:ro
+
+volumes:
+  lakefs-code:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${LAKEFS_ROOT:-.}
+  lakefs-app:

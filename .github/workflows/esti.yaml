@@ -975,8 +975,6 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      COSMOSDB_DATABASE: esti-db
-      COSMOSDB_ACCOUNT: esti-e2e-tests
 
     steps:
       - name: Check-out code
@@ -1006,39 +1004,20 @@ jobs:
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose-external-db.yaml
+          compose-file: esti/ops/docker-compose-cosmosdb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
-          LAKEFS_DATABASE_TYPE: cosmosdb
-          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
-          LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
-          LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
-          LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_LARGE_OBJECT_PATH: https://esti4hns.blob.core.windows.net/esti-system-testing-data/copy-test-data/data.6mib
           ESTI_AZURE_STORAGE_ACCOUNT: esti4hns
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
 
-      - name: Az CLI login
-        if: always()
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: cleanup cosmos db container
-        if: always()
-        run: |
-          echo "Delete database container: ${{ github.run_number }}-${{ steps.unique.outputs.value }}"
-          az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }} --yes
-
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-cosmosdb.yaml logs --tail=1000 lakefs
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client
