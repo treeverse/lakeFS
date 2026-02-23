@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -82,7 +83,7 @@ var mergeCmd = &cobra.Command{
 		var mergeResult *apigen.MergeResult
 		// asynchronous merge
 		if isAsync {
-			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt)
+			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 			defer stop()
 
 			startResp, err := client.MergeIntoBranchAsyncWithResponse(sigCtx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))

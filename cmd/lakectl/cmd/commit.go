@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -70,7 +71,7 @@ var commitCmd = &cobra.Command{
 		}
 		// run asynchronous commit first
 		if isAsync {
-			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt)
+			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 			defer stop()
 
 			startResp, err := client.CommitAsyncWithResponse(sigCtx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
