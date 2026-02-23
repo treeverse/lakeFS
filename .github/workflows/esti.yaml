@@ -434,9 +434,19 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - name: Package Spark App
+      - name: Package Spark 2 and 3 Apps
         working-directory: test/spark/app
-        run: sbt package
+        run: sbt sonnets-246/package sonnets-311/package
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "adopt-hotspot"
+          java-version: "17"
+
+      - name: Package Spark 4 App
+        working-directory: test/spark/app
+        run: sbt sonnets-400/package
+
       - name: Store Spark App
         uses: actions/upload-artifact@v6
         with:
@@ -454,6 +464,8 @@ jobs:
             sonnet_jar: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
           - tag: 3
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+          - tag: 4.0.0
+            sonnet_jar: sonnets-400/target/sonnets-400/scala-2.13/sonnets-400_2.13-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -529,7 +541,7 @@ jobs:
         run: docker compose logs --tail=2500 lakefs
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS GW + Redirect
-        if: env.SPARK_TAG == '3'
+        if: env.SPARK_TAG != '2'
         timeout-minutes: 8
         working-directory: test/spark
         run: |
