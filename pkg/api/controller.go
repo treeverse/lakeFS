@@ -3205,7 +3205,8 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
 		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
-		errors.Is(err, catalog.ErrInvalidImportSource):
+		errors.Is(err, catalog.ErrInvalidImportSource),
+		errors.Is(err, graveler.ErrCannotClone):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
@@ -4010,13 +4011,14 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		srcRef = branch
 	}
 
-	if swag.BoolValue(body.Shallow) {
-		writeError(w, r, http.StatusNotImplemented, "shallow copy not implemented yet")
+	// Handle preconditions
+	opts, err := apifactory.BuildOptsFromParams(body)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
 	// copy entry
-	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, graveler.WithForce(swag.BoolValue(body.Force)))
+	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, opts...)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

@@ -235,6 +235,8 @@ type (
 		// If the condition returns an error, the Set operation fails with that error.
 		// If the condition succeeds, the Set is performed using SetIf with the current value.
 		Condition ConditionFunc
+		// Shallow perform shallow copy only
+		Shallow bool
 	}
 )
 
@@ -1881,7 +1883,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		if options.Condition == nil {
 			err = g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		} else {
-			// setFunc is a update function that sets the value regardless of the current value
+			// setFunc is an update function that sets the value regardless of the current value
 			setFunc := func(_ *Value) (*Value, error) {
 				return &value, nil
 			}
