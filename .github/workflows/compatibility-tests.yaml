@@ -345,7 +345,7 @@ jobs:
     env:
       TAG: ${{ matrix.lakefs_version }}
       REGISTRY: treeverse
-      SPARK_TAG: 4.0.0
+      SPARK_TAG: 4
     steps:
       - name: Check-out code
         uses: actions/checkout@v6

@@ -461,13 +461,10 @@ jobs:
       matrix:
         spark:
           - tag: 2
-            repo_suffix: "2"
             sonnet_jar: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
           - tag: 3
-            repo_suffix: "3"
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-          - tag: 4.0.0
-            repo_suffix: "4"
+          - tag: 4
             sonnet_jar: sonnets-400/target/sonnets-400/scala-2.13/sonnets-400_2.13-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -518,7 +515,7 @@ jobs:
         run: |
           python ./run-test.py \
             --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-gw/${{ steps.unique.outputs.value }} \
-            --repository gateway-test-spark${{ matrix.spark.repo_suffix }} \
+            --repository gateway-test-spark${{ matrix.spark.tag }} \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }}
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
@@ -550,7 +547,7 @@ jobs:
         run: |
           python ./run-test.py \
             --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-gw-redirect/${{ steps.unique.outputs.value }} \
-            --repository gateway-redirect-test-spark${{ matrix.spark.repo_suffix }} \
+            --repository gateway-redirect-test-spark${{ matrix.spark.tag }} \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --redirect
       - name: lakeFS Logs on Spark with gateway redirect failure
