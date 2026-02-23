@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -78,15 +83,18 @@ var mergeCmd = &cobra.Command{
 		var mergeResult *apigen.MergeResult
 		// asynchronous merge
 		if isAsync {
-			startResp, err := client.MergeIntoBranchAsyncWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
+			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+			defer stop()
+
+			startResp, err := client.MergeIntoBranchAsyncWithResponse(sigCtx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
 			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
 			if startResp.JSON202 == nil {
 				Die("Bad response from server", 1)
 			}
 
 			taskID := startResp.JSON202.Id
-			err = pollAsyncOperationStatus(ctx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
-				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
+			err = pollAsyncOperationStatus(sigCtx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
+				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(sigCtx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
 				if err != nil {
 					return nil, err
 				}
@@ -100,6 +108,9 @@ var mergeCmd = &cobra.Command{
 				return &resp.JSON200.AsyncTaskStatus, nil
 			})
 			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					DieFmt("Merge polling canceled. Async task ID: %s", taskID)
+				}
 				DieErr(err)
 			}
 			if mergeResult == nil {
