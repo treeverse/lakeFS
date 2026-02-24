@@ -2,12 +2,14 @@ package api_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -332,32 +334,68 @@ func TestSwaggerSpecYAMLHandler(t *testing.T) {
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/openapi.yaml", nil)
+	// -- YAML endpoint --
+	yamlReq, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/openapi.yaml", nil)
 	if err != nil {
-		t.Fatal("failed to create request:", err)
+		t.Fatal("failed to create YAML request:", err)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	yamlResp, err := http.DefaultClient.Do(yamlReq)
 	if err != nil {
-		t.Fatal("failed to perform request:", err)
+		t.Fatal("failed to perform YAML request:", err)
 	}
-	defer resp.Body.Close()
+	defer yamlResp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+	if yamlResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, yamlResp.StatusCode)
 	}
-	if ct := resp.Header.Get("Content-Type"); ct != "text/plain; charset=utf-8" {
+	if ct := yamlResp.Header.Get("Content-Type"); ct != "text/plain; charset=utf-8" {
 		t.Fatalf("expected Content-Type %q, got %q", "text/plain; charset=utf-8", ct)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	yamlBody, err := io.ReadAll(yamlResp.Body)
 	if err != nil {
-		t.Fatal("failed to read response body:", err)
+		t.Fatal("failed to read YAML response body:", err)
 	}
-	var parsed map[string]any
-	if err := yaml.Unmarshal(body, &parsed); err != nil {
+	var yamlData any
+	if err := yaml.Unmarshal(yamlBody, &yamlData); err != nil {
 		t.Fatalf("response body is not valid YAML: %v", err)
 	}
-	if _, ok := parsed["openapi"]; !ok {
+	if _, ok := yamlData.(map[string]any)["openapi"]; !ok {
 		t.Fatal("expected top-level 'openapi' key in YAML response")
+	}
+
+	// -- JSON endpoint --
+	jsonReq, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/openapi.json", nil)
+	if err != nil {
+		t.Fatal("failed to create JSON request:", err)
+	}
+	jsonResp, err := http.DefaultClient.Do(jsonReq)
+	if err != nil {
+		t.Fatal("failed to perform JSON request:", err)
+	}
+	defer jsonResp.Body.Close()
+
+	jsonBody, err := io.ReadAll(jsonResp.Body)
+	if err != nil {
+		t.Fatal("failed to read JSON response body:", err)
+	}
+
+	// Normalize both to the same type system for comparison.
+	// yaml.v3 decodes integers as int, while encoding/json decodes all numbers as float64.
+	// Re-encoding yamlData to JSON and back aligns the types.
+	yamlAsJSON, err := json.Marshal(yamlData)
+	if err != nil {
+		t.Fatal("failed to re-encode YAML data as JSON:", err)
+	}
+	var normalizedYAML, normalizedJSON any
+	if err := json.Unmarshal(yamlAsJSON, &normalizedYAML); err != nil {
+		t.Fatal("failed to normalize YAML data:", err)
+	}
+	if err := json.Unmarshal(jsonBody, &normalizedJSON); err != nil {
+		t.Fatal("failed to unmarshal JSON response:", err)
+	}
+
+	if !reflect.DeepEqual(normalizedYAML, normalizedJSON) {
+		t.Fatal("/openapi.yaml and /openapi.json do not represent identical data")
 	}
 }
