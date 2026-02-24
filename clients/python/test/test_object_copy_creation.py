@@ -39,7 +39,8 @@ class TestObjectCopyCreation(unittest.TestCase):
             return ObjectCopyCreation(
                 src_path = '',
                 src_ref = '',
-                force = True
+                force = True,
+                shallow = True
             )
         else:
             return ObjectCopyCreation(
