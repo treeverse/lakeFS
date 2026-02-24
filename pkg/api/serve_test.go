@@ -343,7 +343,7 @@ func TestSwaggerSpecYAMLHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to perform YAML request:", err)
 	}
-	defer yamlResp.Body.Close()
+	defer func(Body io.ReadCloser) { _ = Body.Close() }(yamlResp.Body)
 
 	if yamlResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, yamlResp.StatusCode)
@@ -373,7 +373,7 @@ func TestSwaggerSpecYAMLHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to perform JSON request:", err)
 	}
-	defer jsonResp.Body.Close()
+	defer func(Body io.ReadCloser) { _ = Body.Close() }(jsonResp.Body)
 
 	jsonBody, err := io.ReadAll(jsonResp.Body)
 	if err != nil {
