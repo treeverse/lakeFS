@@ -164,7 +164,7 @@ func swaggerSpecYAMLHandler(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "application/yaml")
 	enc := yaml.NewEncoder(w)
 	_ = enc.Encode(data)
 	_ = enc.Close()
