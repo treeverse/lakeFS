@@ -79,6 +79,32 @@ const (
 	passwordPlaceholder = "Password"
 )
 
+// safeContentTypesForInline defines content types that are safe to display inline in browsers
+var safeContentTypesForInline = map[string]struct{}{
+	"image/jpeg":             {},
+	"image/jpg":              {},
+	"image/png":              {},
+	"image/gif":              {},
+	"image/webp":             {},
+	"image/svg+xml":          {},
+	"application/pdf":        {},
+	"text/plain":             {},
+	"text/markdown":          {},
+	"text/x-markdown":        {},
+	"text/html":              {},
+	"text/css":               {},
+	"text/javascript":        {},
+	"application/javascript": {},
+	"application/json":       {},
+	"application/xml":        {},
+	"text/xml":               {},
+	"video/mp4":              {},
+	"video/webm":             {},
+	"audio/mpeg":             {},
+	"audio/wav":              {},
+	"audio/webm":             {},
+}
+
 type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID, runID, hookRunID string) (*actions.TaskResult, error)
@@ -5196,7 +5222,13 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("Content-Type", entry.ContentType)
 	// for security, make sure the browser and any proxies en route don't cache the response
 	httputil.KeepPrivate(w)
-	w.Header().Set("Content-Disposition", "attachment")
+	
+	// set Content-Disposition: use "inline" for safe content types, "attachment" for others
+	disposition := "attachment"
+	if _, ok := safeContentTypesForInline[entry.ContentType]; ok {
+		disposition = "inline"
+	}
+	w.Header().Set("Content-Disposition", disposition)
 
 	// handle partial response if byte range supplied
 	var reader io.ReadCloser
