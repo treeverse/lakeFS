@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 
 import lakefs_client
@@ -91,8 +92,10 @@ def main():
                          "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"}
         if args.redirect:
             spark_configs["spark.hadoop.fs.s3a.path.style.access"] = "true"
-            spark_configs[f"spark.hadoop.fs.s3a.signing-algorithm"] = "QueryStringSignerType"
             spark_configs[f"spark.hadoop.fs.s3a.user.agent.prefix"] = "s3RedirectionSupport"
+            spark_tag = os.environ.get("SPARK_TAG", "")
+            if not spark_tag.startswith("4"):
+                spark_configs[f"spark.hadoop.fs.s3a.signing-algorithm"] = "QueryStringSignerType"
 
     generator = docker.compose.run("spark-submit",
                                    get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar,
