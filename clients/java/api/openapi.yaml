@@ -9355,6 +9355,7 @@ components:
     ObjectCopyCreation:
       example:
         force: false
+        shallow: false
         src_path: src_path
         src_ref: src_ref
       properties:
@@ -9366,6 +9367,13 @@ components:
           type: string
         force:
           default: false
+          type: boolean
+        shallow:
+          default: false
+          description: "Create a shallow copy of the object (without copying the actual\
+            \ data). At the moment shallow copy only works for same repository and\
+            \ branch. \nPlease note that shallow copied objects might be in contention\
+            \ with garbage collection and branch retention policies - use with caution.\n"
           type: boolean
       required:
       - src_path

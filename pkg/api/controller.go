@@ -4010,6 +4010,11 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		srcRef = branch
 	}
 
+	if swag.BoolValue(body.Shallow) {
+		writeError(w, r, http.StatusNotImplemented, "shallow copy not implemented yet")
+		return
+	}
+
 	// copy entry
 	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
