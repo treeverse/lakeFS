@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -164,10 +165,20 @@ func swaggerSpecYAMLHandler(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// encode into a buffer first so any encoding error can be returned as a 500
+	// before writing to w — once writing starts the status code can no longer be changed
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	if err := enc.Encode(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := enc.Close(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/yaml")
-	enc := yaml.NewEncoder(w)
-	_ = enc.Encode(data)
-	_ = enc.Close()
+	_, _ = io.Copy(w, &buf)
 }
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
