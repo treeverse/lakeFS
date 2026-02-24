@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -115,6 +117,7 @@ func Serve(
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
+	r.Mount("/openapi.yaml", http.HandlerFunc(swaggerSpecYAMLHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
 
@@ -146,6 +149,25 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = io.Copy(w, reader)
+}
+
+func swaggerSpecYAMLHandler(w http.ResponseWriter, _ *http.Request) {
+	// the embedded swagger spec is gzipped, base64-encoded JSON; decode it into an intermediate
+	// value so it can be re-encoded as YAML (yaml.Encoder cannot consume an io.Reader directly)
+	jsonSwaggerReader, err := apigen.GetSwaggerSpecReader()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var data any
+	if err := json.NewDecoder(jsonSwaggerReader).Decode(&data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	enc := yaml.NewEncoder(w)
+	_ = enc.Encode(data)
+	_ = enc.Close()
 }
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
