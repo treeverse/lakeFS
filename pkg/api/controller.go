@@ -4012,6 +4012,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 
 	if swag.BoolValue(body.Shallow) {
 		writeError(w, r, http.StatusNotImplemented, "shallow copy not implemented yet")
+		return
 	}
 
 	// copy entry
