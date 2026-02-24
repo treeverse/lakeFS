@@ -346,7 +346,7 @@ func TestSwaggerSpecYAMLHandler(t *testing.T) {
 	}
 
 	// -- YAML endpoint --
-	yamlResp := get("/openapi.yaml")
+	yamlResp := get("/openapi.yml")
 	if yamlResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, yamlResp.StatusCode)
 	}

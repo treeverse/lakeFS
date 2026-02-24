@@ -118,7 +118,7 @@ func Serve(
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
-	r.Mount("/openapi.yaml", http.HandlerFunc(swaggerSpecYAMLHandler))
+	r.Mount("/openapi.yml", http.HandlerFunc(swaggerSpecYAMLHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
 
