@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -41,6 +42,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -323,5 +325,39 @@ func TestNotImplementedAPI(t *testing.T) {
 		if resp.StatusCode != http.StatusNotImplemented {
 			t.Fatalf("expected status code %d, got %d for '%s'", http.StatusNotImplemented, resp.StatusCode, route)
 		}
+	}
+}
+
+func TestSwaggerSpecYAMLHandler(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/openapi.yaml", nil)
+	if err != nil {
+		t.Fatal("failed to create request:", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal("failed to perform request:", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+	if ct := resp.Header.Get("Content-Type"); ct != "text/plain; charset=utf-8" {
+		t.Fatalf("expected Content-Type %q, got %q", "text/plain; charset=utf-8", ct)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("failed to read response body:", err)
+	}
+	var parsed map[string]any
+	if err := yaml.Unmarshal(body, &parsed); err != nil {
+		t.Fatalf("response body is not valid YAML: %v", err)
+	}
+	if _, ok := parsed["openapi"]; !ok {
+		t.Fatal("expected top-level 'openapi' key in YAML response")
 	}
 }
