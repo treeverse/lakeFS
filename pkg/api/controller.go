@@ -5222,7 +5222,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("Content-Type", entry.ContentType)
 	// for security, make sure the browser and any proxies en route don't cache the response
 	httputil.KeepPrivate(w)
-	
+
 	// set Content-Disposition: use "inline" for safe content types, "attachment" for others
 	disposition := "attachment"
 	if _, ok := safeContentTypesForInline[entry.ContentType]; ok {
