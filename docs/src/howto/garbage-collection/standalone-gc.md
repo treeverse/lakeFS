@@ -94,6 +94,7 @@ The minimum required permissions for AWS or S3-compatible storage are:
   ]
 }
 ```
+
 In this example, the repository storage namespace is `s3://some-bucket/some/prefix`.
 
 #### lakeFS permissions
@@ -143,13 +144,13 @@ There are two ways to configure S3-compatible endpoints:
     endpoint_url = <MinIO URL>
     s3 =
         signature_version = s3v4
-     ```
+    ```
 1. Add an access and secret keys to your `~/.aws/credentials` file:
     ```
     [minio]
     aws_access_key_id     = <MinIO access key>
     aws_secret_access_key = <MinIO secret key>
-     ```
+    ```
 1. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
 
 #### Option 2: Using configuration file with custom endpoint
@@ -209,12 +210,6 @@ Example (minimalistic) config file:
 ```yaml
 logging:
   level: debug
-aws:
-  region: us-east-1
-lakefs:
-  endpoint_url: https://your.url/api/v1
-  access_key_id: <lakeFS access key>
-  secret_access_key: <lakeFS secret key>
 ```
 
 Example config file with custom S3 endpoint and static credentials:
@@ -312,7 +307,7 @@ _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in th
 In this prefix, you'll find 2 objects:
 
 - `deleted.csv` - Containing all marked objects in a CSV containing one `address` column.
-    
+
     !!! example
         ```
         address
@@ -321,7 +316,7 @@ In this prefix, you'll find 2 objects:
         ...
         ```
 - `summary.json` - A small json summarizing the GC run. 
-    
+
     !!! example
         ```json
         {
