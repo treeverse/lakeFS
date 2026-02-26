@@ -39,7 +39,7 @@ table.add([{'id': '1', 'embedding': generate_embedding('some data')}])
 df = db.open_table('vectors').search(generate_embedding('some other data')).limit(10).to_pandas()
 ```
 !!! tip
-    For more information on configuring and using LanceDB, see the [LanceDB documentation](https://lancedb.com/docs/storage/integrations/).
+    For more information on configuring object store access in LanceDB, see [Configuring Cloud Storage in LanceDB](https://docs.lancedb.com/storage/configuration).
 
 
 ## Use Cases
