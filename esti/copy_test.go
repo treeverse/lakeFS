@@ -26,6 +26,5 @@ func TestShallowCopyNotImplemented(t *testing.T) {
 		Shallow: swag.Bool(true),
 	})
 	require.NoError(t, err)
-	require.Equal(t, http.StatusNotImplemented, copyResp.StatusCode(),
-		"shallow copy should return 501 Not Implemented in OSS")
+	require.Equal(t, http.StatusNotImplemented, copyResp.StatusCode())
 }
