@@ -212,4 +212,3 @@ Use `lakeFSApi` (via the fixture) to set up preconditions like creating reposito
 | `common-setup` | Saves credentials and auth state | `setup-validation` |
 | `common` | All common tests (excludes quickstart) | `common-setup` |
 | `quickstart` | Quickstart tutorial tests (serial) | `common-setup` |
-| `integration` | Integration tests | None |

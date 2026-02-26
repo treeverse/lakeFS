@@ -7,7 +7,7 @@ lakeFS High Level SDK for Python, provides developers with the following feature
 
 ## Requirements
 
-Python 3.9+
+Python 3.10+
 
 ## Installation & Usage
 
