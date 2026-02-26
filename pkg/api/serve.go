@@ -39,6 +39,13 @@ const (
 
 var yamlSwagger []byte
 
+func init() {
+	var v any
+	r, _ := apigen.GetSwaggerSpecReader()
+	_ = json.NewDecoder(r).Decode(&v)
+	yamlSwagger, _ = yaml.Marshal(v)
+}
+
 func Serve(
 	cfg config.Config,
 	catalog *catalog.Catalog,
@@ -119,12 +126,6 @@ func Serve(
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
-
-	var v any
-	jsonSwagger, _ := apigen.GetSwaggerSpecReader()
-	_ = json.NewDecoder(jsonSwagger).Decode(&v)
-	yamlSwagger, _ = yaml.Marshal(v)
-
 	r.Mount("/openapi.yaml", http.HandlerFunc(swaggerSpecYAMLHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
