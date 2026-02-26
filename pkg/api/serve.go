@@ -40,6 +40,7 @@ const (
 var yamlSwagger []byte
 
 func init() {
+	// Pre-convert the embedded OpenAPI JSON spec to YAML for serving.
 	var v any
 	r, _ := apigen.GetSwaggerSpecReader()
 	_ = json.NewDecoder(r).Decode(&v)
