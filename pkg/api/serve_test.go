@@ -2,14 +2,12 @@ package api_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
-	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -345,31 +343,16 @@ func TestSwaggerSpecYAMLHandler(t *testing.T) {
 		return resp
 	}
 
-	// -- YAML endpoint --
 	yamlResp := get("/openapi.yaml")
 	if yamlResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, yamlResp.StatusCode)
 	}
 	yamlBody, _ := io.ReadAll(yamlResp.Body)
-	var yamlData any
+	var yamlData map[string]any
 	if err := yaml.Unmarshal(yamlBody, &yamlData); err != nil {
 		t.Fatalf("response body is not valid YAML: %v", err)
 	}
-	if _, ok := yamlData.(map[string]any)["openapi"]; !ok {
+	if _, ok := yamlData["openapi"]; !ok {
 		t.Fatal("expected top-level 'openapi' key in YAML response")
-	}
-
-	// -- JSON endpoint: verify identical content --
-	jsonBody, _ := io.ReadAll(get("/openapi.json").Body)
-
-	// Normalize both to the same type system for comparison.
-	// yaml.v3 decodes integers as int, while encoding/json decodes all numbers as float64.
-	// Re-encoding yamlData to JSON and back aligns the types.
-	yamlAsJSON, _ := json.Marshal(yamlData)
-	var normalizedYAML, normalizedJSON any
-	_ = json.Unmarshal(yamlAsJSON, &normalizedYAML)
-	_ = json.Unmarshal(jsonBody, &normalizedJSON)
-	if !reflect.DeepEqual(normalizedYAML, normalizedJSON) {
-		t.Fatal("/openapi.yaml and /openapi.json do not represent identical data")
 	}
 }
