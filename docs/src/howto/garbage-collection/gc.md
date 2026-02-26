@@ -194,6 +194,26 @@ spark.hadoop.lakefs.gc.do_mark=false
 spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with the identifier you obtained from a previous mark-only run
 ```
 
+## Garbage collection and shallow copy
+
+Shallow copy is an [Enterprise](../../enterprise/index.md) feature available through the [copy object API](../../reference/api.md#/objects/copyObject). It creates a new lakeFS entry that points to the **same physical object** in the underlying storage as the source entry, without duplicating the data. Because both the source and the shallow copy share a single physical address, garbage collection may delete the underlying object while it is still referenced by a shallow copy.
+
+### When does this happen?
+
+GC determines which physical objects to keep by scanning committed and uncommitted entries across all branches. An object is eligible for deletion when no entry references its physical address. The risk arises when:
+
+1. You shallow-copy an object (both source and copy now share the same physical address).
+2. The **source entry** is deleted or its branch is removed.
+3. GC runs and finds no remaining reference to the physical address — the shallow copy may be missed if it has not yet been committed or if the branch it lives on has been deleted.
+4. GC deletes the physical object, leaving the shallow copy pointing to a missing object (`410 Gone`).
+
+### How to avoid data loss
+
+- **Commit shallow copies promptly.** Committed entries are always scanned by GC. Shallow copies that remain uncommitted (staged) are more vulnerable during the window between GC mark and sweep phases.
+- **Do not delete the source entry before committing the shallow copy.** As long as either the source or the copy is committed and reachable from a branch HEAD, GC will retain the underlying object.
+- **Keep branches alive while they contain shallow copies.** Deleting a branch removes its entries from GC consideration. If the branch held the only remaining reference to a shared physical address, GC will delete the object.
+- **Set appropriate retention rules.** Branch retention days give you a safety buffer — even after a source entry is deleted from a branch, GC retains the object for the configured retention period.
+
 ## Garbage collection notes
 
 1. In order for an object to be removed, it must not exist on the HEAD of any branch.
