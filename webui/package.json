@@ -8,8 +8,7 @@
   "overrides": {
     "react": "$react",
     "react-dom": "$react",
-    "prismjs": "$prismjs",
-    "fast-xml-parser": "^5.3.6"
+    "prismjs": "$prismjs"
   },
   "scripts": {
     "dev": "vite",
@@ -69,10 +68,7 @@
     "@eslint/compat": "^2.0.2",
     "@playwright/test": "^1.40.1",
     "@rollup/plugin-replace": "^5.0.5",
-    "@stoplight/prism-cli": "^5.14.2",
-    "@stoplight/prism-core": "^5.8.0",
-    "@stoplight/prism-http-server": "^5.12.2",
-    "@testing-library/jest-dom": "^6.9.1",
+"@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/bootstrap": "^5.2.10",
