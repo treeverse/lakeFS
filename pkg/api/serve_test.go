@@ -355,4 +355,7 @@ func TestSwaggerSpecYAMLHandler(t *testing.T) {
 	if _, ok := yamlData["openapi"]; !ok {
 		t.Fatal("expected top-level 'openapi' key in YAML response")
 	}
+	if _, ok := yamlData["paths"]; !ok {
+		t.Fatal("expected top-level 'paths' key in YAML response")
+	}
 }
