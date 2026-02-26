@@ -8,7 +8,8 @@
   "overrides": {
     "react": "$react",
     "react-dom": "$react",
-    "prismjs": "$prismjs"
+    "prismjs": "$prismjs",
+    "fast-xml-parser": "^5.3.6"
   },
   "scripts": {
     "dev": "vite",
