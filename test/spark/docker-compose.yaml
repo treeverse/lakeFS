@@ -75,6 +75,8 @@ services:
       - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark4.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test-spark400.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test-spark411.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker:
     image: docker.io/treeverse/bitnami-spark:${SPARK_TAG:-3}
@@ -101,6 +103,8 @@ services:
       - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark4.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test-spark400.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test-spark411.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-submit:
     image: docker.io/treeverse/bitnami-spark:${SPARK_TAG:-3}
@@ -129,6 +133,8 @@ services:
       - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark4.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test-spark400.s3.docker.lakefs.io:10.5.0.55"
+      - "gateway-test-spark411.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
 
 networks:

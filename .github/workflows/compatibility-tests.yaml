@@ -77,14 +77,16 @@ jobs:
           path: /tmp/lakefs.tar
 
   compatibility-checks-client:
-    name: Test lakeFS Hadoop FileSystem compatibility
+    name: Test lakeFS Hadoop FileSystem compatibility (Spark ${{ matrix.spark.tag }})
     needs: [gen-code]
     strategy:
       fail-fast: false
       matrix:
-        # Removing a version from this list means the published client is no longer tested for
-        # compatibility with that lakeFS version.  Like any other client it can still rely on
-        # the lakeFS 1.0 API guarantees.
+        spark:
+          - tag: 3
+            java_version: "8"
+            sonnet_project: sonnets-311
+            sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         lakefs_version:
           - 0.113.0
           - 1.0.0
@@ -178,11 +180,24 @@ jobs:
           - 1.77.0
           - 1.77.1
           - 1.78.0
+        include:
+          - spark:
+              tag: "4.0.0"
+              java_version: "17"
+              sonnet_project: sonnets-400
+              sonnet_jar: sonnets-400/target/sonnets-400/scala-2.13/sonnets-400_2.13-0.1.0.jar
+            lakefs_version: 1.78.0
+          - spark:
+              tag: "4.1.1"
+              java_version: "17"
+              sonnet_project: sonnets-411
+              sonnet_jar: sonnets-411/target/sonnets-411/scala-2.13/sonnets-411_2.13-0.1.0.jar
+            lakefs_version: 1.78.0
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
       REGISTRY: treeverse
-      SPARK_TAG: 3
+      SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
@@ -190,14 +205,14 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: "adopt-hotspot"
-          java-version: "8"
+          java-version: ${{ matrix.spark.java_version }}
           cache: "sbt"
 
       - name: Package Spark App
         working-directory: test/spark/app
-        run: sbt sonnets-311/package
+        run: sbt ${{ matrix.spark.sonnet_project }}/package
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
@@ -230,14 +245,14 @@ jobs:
           name: client-assembly
           path: clients/hadoopfs/target
 
-      - name: Test lakeFS S3 with Spark 3.x thick client
+      - name: Test lakeFS S3 with Spark ${{ matrix.spark.tag }} thick client
         timeout-minutes: 8
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }} \
+            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
             --repository thick-client-test \
-            --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar \
+            --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --access_mode hadoopfs \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
             --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -333,86 +348,9 @@ jobs:
         working-directory: test/spark
         run: docker compose logs --tail=15000 lakefs
 
-  compatibility-checks-client-spark4:
-    name: Test lakeFS Hadoop FileSystem compatibility (Spark 4)
-    needs: [gen-code]
-    strategy:
-      fail-fast: false
-      matrix:
-        lakefs_version:
-          - 1.78.0
-    runs-on: ubuntu-22.04
-    env:
-      TAG: ${{ matrix.lakefs_version }}
-      REGISTRY: treeverse
-      SPARK_TAG: 4
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v6
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: "adopt-hotspot"
-          java-version: "17"
-          cache: "sbt"
-
-      - name: Package Spark App
-        working-directory: test/spark/app
-        run: sbt sonnets-400/package
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: 3.11
-          cache: "pip"
-      - run: pip install -r ./test/spark/requirements.txt
-
-      - name: Generate uniquifying value
-        id: unique
-        shell: bash
-        run: echo "value=$(cat /proc/sys/kernel/random/uuid)" >> $GITHUB_OUTPUT
-
-      - name: Start lakeFS for Spark tests
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-directory: test/spark
-          skip-generated-code: "true"
-        env:
-          REGISTRY: treeverse
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
-
-      - name: Retrieve client
-        uses: actions/download-artifact@v7
-        with:
-          name: client-assembly
-          path: clients/hadoopfs/target
-
-      - name: Test lakeFS S3 with Spark 4.x thick client
-        timeout-minutes: 8
-        working-directory: test/spark
-        run: |
-          python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark4-client/${{ steps.unique.outputs.value }} \
-            --repository thick-client-test-spark4 \
-            --sonnet_jar sonnets-400/target/sonnets-400/scala-2.13/sonnets-400_2.13-0.1.0.jar \
-            --access_mode hadoopfs \
-            --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
-            --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-      - name: lakeFS Logs on Spark with client failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/spark
-        run: docker compose logs --tail=15000 lakefs
-
   notify-slack:
     name: Notify slack on workflow failures
-    needs: [compatibility-checks-client, compatibility-checks-server, compatibility-checks-client-spark4]
+    needs: [compatibility-checks-client, compatibility-checks-server]
     runs-on: ubuntu-22.04
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     steps:

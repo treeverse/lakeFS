@@ -443,9 +443,9 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "17"
 
-      - name: Package Spark 4 App
+      - name: Package Spark 4 Apps
         working-directory: test/spark/app
-        run: sbt sonnets-400/package
+        run: sbt sonnets-400/package sonnets-411/package
 
       - name: Store Spark App
         uses: actions/upload-artifact@v6
@@ -454,18 +454,24 @@ jobs:
           path: test/spark/app/target/
 
   spark:
-    name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
+    name: Test lakeFS with Spark ${{ matrix.spark.tag }}
     needs: [spark-prep, build-lakefs-hadoopfs, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     strategy:
       matrix:
         spark:
           - tag: 2
+            repo_suffix: spark2
             sonnet_jar: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
           - tag: 3
+            repo_suffix: spark3
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-          - tag: 4
+          - tag: "4.0.0"
+            repo_suffix: spark400
             sonnet_jar: sonnets-400/target/sonnets-400/scala-2.13/sonnets-400_2.13-0.1.0.jar
+          - tag: "4.1.1"
+            repo_suffix: spark411
+            sonnet_jar: sonnets-411/target/sonnets-411/scala-2.13/sonnets-411_2.13-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -514,8 +520,8 @@ jobs:
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-gw/${{ steps.unique.outputs.value }} \
-            --repository gateway-test-spark${{ matrix.spark.tag }} \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-${{ matrix.spark.repo_suffix }}-gw/${{ steps.unique.outputs.value }} \
+            --repository gateway-test-${{ matrix.spark.repo_suffix }} \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }}
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
@@ -528,7 +534,7 @@ jobs:
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-lakefsfs/${{ steps.unique.outputs.value }} \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-${{ matrix.spark.repo_suffix }}-lakefsfs/${{ steps.unique.outputs.value }} \
             --repository lakefsfs-test-spark \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --access_mode hadoopfs \
@@ -541,13 +547,13 @@ jobs:
         run: docker compose logs --tail=2500 lakefs
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS GW + Redirect
-        if: env.SPARK_TAG == '3'
+        if: matrix.spark.tag == 3
         timeout-minutes: 8
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-gw-redirect/${{ steps.unique.outputs.value }} \
-            --repository gateway-redirect-test-spark${{ matrix.spark.tag }} \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-${{ matrix.spark.repo_suffix }}-gw-redirect/${{ steps.unique.outputs.value }} \
+            --repository gateway-redirect-test-${{ matrix.spark.repo_suffix }} \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --redirect
       - name: lakeFS Logs on Spark with gateway redirect failure
@@ -560,7 +566,7 @@ jobs:
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-presigned/${{ steps.unique.outputs.value }} \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-${{ matrix.spark.repo_suffix }}-presigned/${{ steps.unique.outputs.value }} \
             --repository thick-client-presigned-test \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --access_mode hadoopfs_presigned
