@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -37,6 +36,8 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 	sessionMaxAge                  = 30 * 24 * 60 * 60 // 30 days in seconds, the gorilla/sessions v1.4.0 default (for backward compatibility)
 )
+
+var yamlSwagger []byte
 
 func Serve(
 	cfg config.Config,
@@ -118,6 +119,12 @@ func Serve(
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
+
+	var v any
+	jsonSwagger, _ := apigen.GetSwaggerSpecReader()
+	_ = json.NewDecoder(jsonSwagger).Decode(&v)
+	yamlSwagger, _ = yaml.Marshal(v)
+
 	r.Mount("/openapi.yaml", http.HandlerFunc(swaggerSpecYAMLHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
@@ -153,32 +160,8 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func swaggerSpecYAMLHandler(w http.ResponseWriter, _ *http.Request) {
-	// the embedded swagger spec is gzipped, base64-encoded JSON; decode it into an intermediate
-	// value so it can be re-encoded as YAML (yaml.Encoder cannot consume an io.Reader directly)
-	jsonSwaggerReader, err := apigen.GetSwaggerSpecReader()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var data any
-	if err := json.NewDecoder(jsonSwaggerReader).Decode(&data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// encode into a buffer first so any encoding error can be returned as a 500
-	// before writing to w — once writing starts the status code can no longer be changed
-	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	if err := enc.Encode(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if err := enc.Close(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	w.Header().Set("Content-Type", "application/yaml")
-	_, _ = io.Copy(w, &buf)
+	_, _ = w.Write(yamlSwagger)
 }
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
