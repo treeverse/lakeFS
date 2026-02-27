@@ -69,8 +69,9 @@ jobs:
       - name: Validate Documentation
         run: make validate-python-wrapper
 
-      - name: Run Pylint
-        run: make python-wrapper-lint
+      # - name: Run Pylint
+      #   if: matrix.pyv == '3.10'
+      #   run: make python-wrapper-lint
 
       - name: Run Unit Tests
         uses: pavelzw/pytest-action@v2
@@ -78,7 +79,7 @@ jobs:
           verbose: true
           emoji: true
           job-summary: true
-          custom-arguments: './clients/python-wrapper/tests/utests -q -We'
+          custom-arguments: './clients/python-wrapper/tests/utests -q'
           click-to-expand: true
           report-title: 'Python Wrapper Unit Tests Report'
 

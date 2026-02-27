@@ -7,7 +7,7 @@ import sys
 if sys.version_info >= (3, 14):
     from annotationlib import get_annotations
 else:
-    get_annotations = None
+    get_annotations = None  # pylint: disable=invalid-name
 
 
 class LenientNamedTuple:
