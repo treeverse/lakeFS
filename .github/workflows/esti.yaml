@@ -334,6 +334,9 @@ jobs:
       - name: Build and test hadoopfs (hadoop3, presigned mode)
         working-directory: clients/hadoopfs
         run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop3-presigned verify
+      - name: Build and test hadoopfs (hadoop 3.4.2)
+        working-directory: clients/hadoopfs
+        run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop342 verify
       - name: logs on failure
         if: ${{ failure() }}
         continue-on-error: true

@@ -82,6 +82,48 @@ To export to S3:
             </build>
         </profile>
         <profile>
+            <id>contract-tests-hadoop342</id>
+            <properties>
+                <exclude.tests>io/lakefs/contract/hadoop2/**</exclude.tests>
+                <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
+                <hadoop.version>3.4.2</hadoop.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk-bundle</artifactId>
+                    <version>1.12.720</version>
+                    <scope>provided</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.assertj</groupId>
+                    <artifactId>assertj-core</artifactId>
+                    <version>3.12.2</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>3.1.2</version>
+                        <configuration>
+                            <excludes>
+                                <exclude>${exclude.tests}</exclude>
+                                <exclude>io/lakefs/LakeFSFileSystemServerS3Test.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+                <resources>
+                    <resource>
+                        <directory>${contract_tests.resource_dir}</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+        <profile>
             <id>contract-tests-hadoop3-presigned</id>
             <properties>
                 <exclude.tests>io/lakefs/contract/hadoop2/**</exclude.tests>
