@@ -2,6 +2,13 @@
 LenientNamedTuple Module
 """
 
+import sys
+
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+else:
+    get_annotations = None
+
 
 class LenientNamedTuple:
     """
@@ -13,7 +20,11 @@ class LenientNamedTuple:
     unknown: dict = {}
 
     def __init__(self, **kwargs):
-        fields = list(self.__class__.__dict__["__annotations__"].keys())
+        # https://docs.python.org/3/whatsnew/3.14.html#implications-for-readers-of-annotations
+        if get_annotations is not None:
+            fields = list(get_annotations(self.__class__))
+        else:
+            fields = list(self.__class__.__dict__["__annotations__"].keys())
         for k, v in kwargs.items():
             if k in fields:
                 setattr(self, k, v)
