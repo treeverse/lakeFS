@@ -245,6 +245,7 @@ Configuration section for the lakeFS key-value store database.
 * `graveler.ensure_readable_root_namespace` `(bool: true)` - When creating a new repository use this to verify that lakeFS has access to the root of the underlying storage namespace. Set `false` only if lakeFS should not have access (i.e pre-sign mode only).
 * `graveler.max_batch_delay` `(duration : 3ms)` - Controls the server batching period for references store operations.
 * `graveler.background.rate_limit` `(int : 0)` - Requests per seconds limit on background work performed (default: 0 - unlimited), like deleting committed staging tokens.
+* `graveler.link_address_expiration` `(duration : "6h")` - How long a pre-signed staging upload address remains valid. Set to `0` to disable the expiration check.
 
 #### graveler.repository_cache
 
