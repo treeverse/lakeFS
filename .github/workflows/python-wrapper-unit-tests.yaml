@@ -34,7 +34,6 @@ jobs:
 
   unit-tests:
     needs: paths-filter
-    if: ${{ needs.paths-filter.outputs.wrapper-change == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -85,31 +84,33 @@ jobs:
 
   unit-tests-new-sdk:
     needs: paths-filter
-    if: ${{ needs.paths-filter.outputs.sdk-change == 'true' }}
     strategy:
       fail-fast: false
       matrix:
         pydantic_v1: [ true, false ]
+        pyv: [ "3.10", "3.14" ]
     name: Unit Test Python SDK Wrapper - SDK Changes
     runs-on: ubuntu-22.04
     steps:
       - name: Check out code
         uses: actions/checkout@v6
 
-      # The minimal supported version of Python is 3.10, so we need to test it in this environment
-      - name: Set up Python 3.10
+      - name: Set up Python ${{ matrix.pyv }}
         uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
-      
+          python-version: ${{ matrix.pyv }}
+
       # When installed it will skip the installation of pydantic in the next step which will install the latest > 2
       - name: Install pydantic V1
         if: matrix.pydantic_v1
-        run: pip install pydantic==1.10.6
+        run: pip install pydantic==1.10.26
 
       - name: Install dependencies
         working-directory: ./clients/python-wrapper
         run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
+
+      - if: ${{ !matrix.pydantic_v1 && matrix.pyv == '3.14' }}
+        run: pip install pydantic==2.13.0b2
 
       - name: build and install lakeFS Python SDK
         run: |
@@ -122,6 +123,6 @@ jobs:
           verbose: true
           emoji: true
           job-summary: true
-          custom-arguments: './clients/python-wrapper/tests/utests -q -We'
+          custom-arguments: './clients/python-wrapper/tests/utests'
           click-to-expand: true
           report-title: 'Python Wrapper Unit Tests SDK Changes Report'
