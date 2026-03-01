@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -34,6 +36,15 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 	sessionMaxAge                  = 30 * 24 * 60 * 60 // 30 days in seconds, the gorilla/sessions v1.4.0 default (for backward compatibility)
 )
+
+// Pre-convert the embedded OpenAPI JSON spec to YAML for serving.
+var yamlSwagger = func() []byte {
+	var v any
+	r, _ := apigen.GetSwaggerSpecReader()
+	_ = json.NewDecoder(r).Decode(&v)
+	b, _ := yaml.Marshal(v)
+	return b
+}()
 
 func Serve(
 	cfg config.Config,
@@ -115,6 +126,7 @@ func Serve(
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
+	r.Mount("/openapi.yaml", http.HandlerFunc(swaggerSpecYAMLHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
 
@@ -146,6 +158,11 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = io.Copy(w, reader)
+}
+
+func swaggerSpecYAMLHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/yaml")
+	_, _ = w.Write(yamlSwagger)
 }
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
