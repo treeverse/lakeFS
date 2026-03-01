@@ -436,6 +436,74 @@ curl -X DELETE '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SO
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY>
 ```
 
+## Configuration Reference
+
+The replication service is configured via the `replication.config` section of the Helm chart values, or directly via a YAML config file. Configuration can also be set via environment variables with the `REPLICATION_` prefix (e.g., `REPLICATION_REGION=us-east-1`).
+
+### Required fields
+
+| Field | Description |
+|-------|-------------|
+| `region` | Region identifier for this lakeFS installation (e.g., `us-east-1`) |
+| `organization_id` | Organization identifier. Must be the same across all installations |
+| `organization_name` | Organization name |
+| `regional_endpoint` | URL of the lakeFS API in this region (e.g., `http://lakefs.default.svc.cluster.local:80`) |
+| `dst_endpoints` | Map of region identifier to lakeFS URL for each remote region |
+| `mirrors_database` | KV store configuration for mirror coordination. Must be shared across all regions |
+| `blockstore` | Block storage configuration. Must match the lakeFS blockstore config |
+| `auth.encrypt.secret_key` | Encryption secret. Must match the lakeFS `auth.encrypt.secret_key` |
+
+### Optional fields
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `listen_address` | `0.0.0.0:8008` | HTTP listen address for the replication service API |
+| `refstore_database` | lakeFS `database` config | KV store for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set |
+| `list_mirrors_page_size` | `1000` | Page size when listing mirrors |
+| `list_repositories_page_size` | `1000` | Page size when listing repositories |
+| `logging.level` | `INFO` | Log level (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
+| `logging.format` | `text` | Log format (`text`, `json`) |
+
+### Commit sensor
+
+Controls how the service detects and synchronizes new commits from source to destination.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `commit_sensor.process_branches_duration` | `1m` | How often to scan for branch changes |
+| `commit_sensor.branches_scanner_concurrency_limit` | `10` | Number of concurrent branch scanning workers |
+| `commit_sensor.list_branch_page_size` | `1000` | Page size when listing branches |
+| `commit_sensor.log_commit_page_size` | `1000` | Page size when fetching commit logs |
+
+### Mirrors manager
+
+Controls how the service reconciles mirror state (creates/deletes mirror repositories).
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `mirrors_manager.process_mirrors_interval_duration` | `20s` | Interval between mirror reconciliation runs |
+
+### Validator
+
+Controls how the service validates that all metadata for promoted commits exists in block storage before advancing the mirror.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `validator.run_interval` | `1m` | Interval between validation runs |
+| `validator.num_workers` | `3` | Number of concurrent metarange validation workers |
+| `validator.cooldown_on_missing` | `1m` | Cooldown before retrying validation of a missing metarange |
+| `validator.cooldown_on_error` | `1m` | Cooldown before retrying validation after an error |
+
+### Auth
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `auth.encrypt.secret_key` | _(required)_ | Encryption key for stored credentials. Must match the lakeFS installation |
+| `auth.api.endpoint` | _(empty)_ | When set, uses API-based auth against an external auth service. When empty (default), uses KV-based auth directly from the replication service's database |
+| `auth.cache.enabled` | `false` | Enable auth response caching |
+| `auth.cache.size` | | Number of cached auth entries |
+| `auth.cache.ttl` | | Cache entry time-to-live |
+
 ## Limitations
 
 1. Transactional Mirroring is currently only supported on [AWS S3](https://aws.amazon.com/s3/)
