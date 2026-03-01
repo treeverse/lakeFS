@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -201,7 +202,20 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 		logging.UploadIDFieldKey: uploadID,
 	}))
 
-	multiPart, err := o.MultipartTracker.Get(req.Context(), uploadID)
+	// Get repository record to compute the proper partition
+	repo, err := o.Catalog.Store.GetRepository(req.Context(), graveler.RepositoryID(o.Repository.Name))
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not get repository")
+		if errors.Is(err, kv.ErrNotFound) {
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+			return
+		}
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+
+	partition := graveler.RepoPartition(repo)
+	multiPart, err := o.MultipartTracker.Get(req.Context(), partition, o.Path, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read multipart record")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))

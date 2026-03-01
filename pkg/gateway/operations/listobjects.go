@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
@@ -418,62 +416,90 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		_ = o.EncodeError(w, req, gatewayerrors.ErrNotImplemented, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
 		return
 	}
-	opts := block.ListMultipartUploadsOpts{}
+
+	// Parse maxUploads for pagination
+	var maxUploads int32 = maxUploadsListMPU
 	if maxUploadsStr != "" {
-		maxUploads, err := strconv.ParseInt(maxUploadsStr, 10, 32)
-		maxUploads32 := int32(maxUploads)
-		if err != nil || maxUploads < 0 {
+		maxUploadsInt, err := strconv.ParseInt(maxUploadsStr, 10, 32)
+		if err != nil || maxUploadsInt < 0 {
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidMaxUploads))
 			return
 		}
-		if maxUploads > maxUploadsListMPU {
-			maxUploads32 = maxUploadsListMPU
+		maxUploads = int32(min(maxUploadsListMPU, maxUploadsInt)) //nolint:gosec
+	}
+
+	// Get repository record to compute the proper partition
+	repo, err := o.Catalog.Store.GetRepository(req.Context(), graveler.RepositoryID(o.Repository.Name))
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not get repository")
+		if errors.Is(err, kv.ErrNotFound) {
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
+			return
 		}
-		opts.MaxUploads = &maxUploads32
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
 	}
-	if uploadIDMarker != "" {
-		opts.UploadIDMarker = &uploadIDMarker
-	}
-	if keyMarker != "" {
-		opts.KeyMarker = &keyMarker
-	}
-	mpuResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
-		StorageID:        o.Repository.StorageID,
-		StorageNamespace: o.Repository.StorageNamespace,
-		IdentifierType:   block.IdentifierTypeRelative,
-	}, opts)
+	partition := graveler.RepoPartition(repo)
+
+	// Get sorted iterator from MultipartTracker
+	// The iterator is already sorted by logical path, then upload ID
+	iter, err := o.MultipartTracker.List(req.Context(), partition)
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+	defer iter.Close()
+
+	// Seek to pagination position if markers are provided
+	if keyMarker != "" {
+		iter.SeekGE(keyMarker, uploadIDMarker)
+	}
+
+	// Collect up to maxUploads items
+	var uploads []serde.Upload
+	for len(uploads) < int(maxUploads) && iter.Next() {
+		upload := iter.Value()
+		// Per AWS S3 spec: markers are excluded from results
+		// Skip the exact marker if it's the first item after seeking
+		if len(uploads) == 0 && keyMarker != "" && upload.Path == keyMarker && upload.UploadID == uploadIDMarker {
+			continue
+		}
+		uploads = append(uploads, serde.Upload{
+			Key:      upload.Path,
+			UploadID: upload.UploadID,
+		})
+	}
+
+	if err := iter.Err(); err != nil {
+		o.Log(req).WithError(err).Error("failed to iterate multipart uploads")
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
-	uploads := make([]serde.Upload, 0, len(mpuResp.Uploads))
-	for _, upload := range mpuResp.Uploads {
-		if upload.UploadId == nil {
-			continue
+	// Check if there are more uploads (for IsTruncated flag)
+	// If we exited the loop due to length limit, iter.Next() hasn't been called for the next item yet
+	isTruncated := iter.Next()
+
+	// Set pagination markers for next page
+	var nextKeyMarker, nextUploadIDMarker string
+	if isTruncated {
+		if len(uploads) > 0 {
+			last := uploads[len(uploads)-1]
+			nextKeyMarker = last.Key
+			nextUploadIDMarker = last.UploadID
+		} else {
+			isTruncated = false
 		}
-		mpu, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
-		if err != nil {
-			if errors.Is(err, kv.ErrNotFound) {
-				continue
-			}
-			o.Log(req).WithError(err).Error("could not read multipart record %s", *upload.UploadId)
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-			return
-		}
-		uploads = append(uploads, serde.Upload{
-			Key:      mpu.Path,
-			UploadID: *upload.UploadId,
-		})
 	}
+
 	resp := &serde.ListMultipartUploadsOutput{
 		Bucket:             o.Repository.Name,
 		Uploads:            uploads,
-		NextKeyMarker:      aws.ToString(mpuResp.NextKeyMarker),
-		NextUploadIDMarker: aws.ToString(mpuResp.NextUploadIDMarker),
-		IsTruncated:        mpuResp.IsTruncated,
-		MaxUploads:         aws.ToInt32(mpuResp.MaxUploads),
+		NextKeyMarker:      nextKeyMarker,
+		NextUploadIDMarker: nextUploadIDMarker,
+		IsTruncated:        isTruncated,
+		MaxUploads:         maxUploads,
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }
