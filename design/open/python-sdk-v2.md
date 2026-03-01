@@ -1,0 +1,173 @@
+# Python SDK V2 (V3...)
+
+## Problem Description  
+The current `lakefs-sdk` Python package (published as `lakefs_sdk`) is generated using OpenAPI Generator v7.0.1, which produces Pydantic V1 code.  
+Pydantic V1 is [not supported on Python 3.14+](https://github.com/treeverse/lakeFS/issues/10004) - Python 3.14 introduces new type annotation semantics (PEP 649 / PEP 749) that V1 cannot accommodate, making Python 3.13 the last supported version for Pydantic V1 ([reference](https://pydantic.dev/articles/pydantic-v2-12-release)).
+
+This means the current SDK will not work on Python 3.14+. At the same time, we cannot simply regenerate the existing `lakefs-sdk` package with Pydantic V2 code, because that would be a breaking change for users who depend on the current V1-based API (`.dict()`, `.json()`, `@validator`, etc.).
+
+## Goals  
+1. Publish a new Python SDK package (codename: `lakefs-sdk-next` / `lakefs_sdk_next`) generated with OpenAPI Generator v7.9.0, producing native Pydantic V2 code
+2. Migrate the high-level Python SDK wrapper (`lakefs`) from `lakefs-sdk` to `lakefs-sdk-next`
+3. Sunset the old `lakefs-sdk` package with a clear deprecation timeline
+4. Maintain backward compatibility throughout the transition period
+
+## Non-Goals  
+1. Changing the API surface of the high-level Python SDK wrapper (`lakefs` package) - the wrapper should continue to work identically from the user's perspective
+2. Supporting Pydantic V1 in the new SDK - the new package requires Pydantic >= 2.0
+3. Supporting Python < 3.10 in the new SDK
+
+## Why a Separate Package (Not a Major Version Bump)
+An alternative approach is to release this as `lakefs-sdk` 2.0.0 rather than creating a new package.
+However, `lakefs-sdk` versions are coupled to lakeFS server releases (e.g., `lakefs-sdk` 1.50.x is generated from the lakeFS 1.50.x OpenAPI spec). Bumping the SDK to 2.0.0 would break this convention and suggest a new major version of lakeFS itself, which is not the case - the lakeFS API is unchanged.
+
+Publishing a separate package keeps the Pydantic V2 migration independent of the lakeFS release cycle and allows both SDKs to coexist during the transition.
+
+## Current Architecture
+```
+┌─────────────────────────────────────────────────┐
+│  lakefs (PyPI: lakefs)                          │
+│  High-level Python SDK wrapper                  │
+│  clients/python-wrapper/                        │
+│  depends on: lakefs-sdk >= 1.50, < 2            │
+├─────────────────────────────────────────────────┤
+│  lakefs_sdk (PyPI: lakefs-sdk)                  │
+│  Auto-generated, OpenAPI Generator v7.0.1       │
+│  clients/python/                                │
+│  Pydantic V1 with V2 compat shim                │
+└─────────────────────────────────────────────────┘
+```
+
+## Target Architecture  
+```
+┌─────────────────────────────────────────────────┐
+│  lakefs (PyPI: lakefs)                          │
+│  High-level Python SDK wrapper                  │
+│  clients/python-wrapper/                        │
+│  depends on: lakefs-sdk-next >= 1.0, < 2        │
+├─────────────────────────────────────────────────┤
+│  lakefs_sdk_next (PyPI: lakefs-sdk-next)        │
+│  Auto-generated, OpenAPI Generator v7.9.0       │
+│  clients/python-next/                           │
+│  Native Pydantic V2                             │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│  lakefs_sdk (PyPI: lakefs-sdk)  [DEPRECATED]    │
+│  Frozen, no new features                        │
+│  clients/python/                                │
+└─────────────────────────────────────────────────┘
+```
+
+## Breaking Changes Between Old and New SDK  
+The following changes are introduced by the Pydantic V1 → V2 migration in the generated code:
+
+| Area                  | Old SDK (`lakefs_sdk`)         | New SDK (`lakefs_sdk_next`)                     |
+|-----------------------|--------------------------------|-----------------------------------------------|
+| Import path           | `import lakefs_sdk`            | `import lakefs_sdk_next`                        |
+| Pydantic requirement  | `pydantic >= 1.10.5`           | `pydantic >= 2.0`                             |
+| Python requirement    | `>= 3.7`                       | `>= 3.9`                                      |
+| Model serialization   | `.dict()`, `.json()`           | `.model_dump()`, `.model_dump_json()`         |
+| Model deserialization | `.parse_obj()`, `.parse_raw()` | `.model_validate()`, `.model_validate_json()` |
+| Model config          | `class Config:` inner class    | `model_config = ConfigDict(...)`              |
+| Validators            | `@validator`                   | `@field_validator`                            |
+| Argument validation   | `@validate_arguments`          | `@validate_call`                              |
+| Constrained types     | `conint()`, `constr()`         | `Annotated[int, Field(ge=...)]`               |
+| Async support         | `async_req=True` (thread pool) | Native `asyncio` (`library=asyncio`)          |
+
+## User-Visible API Changes
+This section describes what changes from the perspective of a user of the generated SDK (`lakefs_sdk`).
+The high-level wrapper (`lakefs` package) is unaffected - its public API does not change.
+
+### What Stays the Same
+- **All API classes and method names** - `RepositoriesApi.create_repository()`, `BranchesApi.create_branch()`, etc. are identical
+- **Business parameters** - method parameters that correspond to API fields (e.g., `repository`, `branch`, `bare`) are unchanged
+- **All model classes** - `Repository`, `Commit`, `ObjectStats`, etc. are all present with the same fields
+- **All exports** - the same classes, models, and exceptions are exported from the top-level package
+
+### What Changes
+
+**Pydantic V1 model methods are replaced by V2 equivalents**
+`.dict()`, `.json()`, `.parse_obj()`, `.parse_raw()` are replaced by `.model_dump()`, `.model_dump_json()`, `.model_validate()`, `.model_validate_json()`. While Pydantic V2 still supports these old methods for backward compatibility, they are deprecated and subject to removal in a future release - code should be migrated to the V2 methods.
+
+**Internal parameters are now explicit instead of `**kwargs`**
+The old SDK accepted parameters like `_request_timeout` and `_headers` via `**kwargs`. The new SDK declares them as explicit keyword arguments with proper type annotations. Existing code that passes these parameters by name continues to work unchanged.
+
+_May break backwards compatibility, but only around underscored parameters._
+
+**`async_req` is removed**
+The old SDK offered thread-pool-based async via `async_req=True`, returning a thread handle. This is removed in the new SDK. Users who rely on this can use `concurrent.futures.ThreadPoolExecutor` or `asyncio.to_thread()` instead.
+
+**New `*_without_preload_content()` method variants**
+Each endpoint gains a third method variant (in addition to the existing `*_with_http_info()`) that returns the raw HTTP response without deserializing the body, useful for streaming large responses.
+
+**Configuration gains new options**
+`Configuration` adds `retries` (retry count), `debug` (debug mode), and `ignore_operation_servers` (bypass per-operation server URLs). Existing configuration code is unaffected.
+
+**`pool_threads` removed from `ApiClient`**
+The `ApiClient` constructor no longer accepts `pool_threads` since thread-pool async is removed.
+
+**Enhanced exceptions**
+`ApiException` gains a `data` field with parsed error response data, and a `from_response()` factory method that returns typed subclasses (`BadRequestException`, `NotFoundException`, etc.) based on HTTP status codes.
+
+## Implementation Plan
+### Phase 1: New SDK alongside old (this branch)
+Create the new auto-generated SDK as a separate package that coexists with the old one, and publish it.
+
+#### Deliverables  
+- `clients/python-next-static/` - codegen templates and config
+- `clients/python-next/` - generated SDK (`lakefs_sdk_next` package, `lakefs-sdk-next` on PyPI)
+- Makefile targets for generation, packaging, and validation
+- CI workflows for publishing to PyPI and TestPyPI
+- Documentation website and migration guide
+
+#### Validation  
+- Functional parity - the new SDK exposes the same API endpoints and models as the old one
+- Pydantic V2 correctness - model serialization/deserialization works with `model_dump()` / `model_validate()`
+- Python 3.14 compatibility - no deprecation warnings on Python 3.14+
+
+### Phase 2: Migrate the high-level Python SDK wrapper  
+Move `clients/python-wrapper/` (`lakefs` package) from depending on `lakefs-sdk` to `lakefs-sdk-next`.
+
+1. Swap dependency from `lakefs-sdk` to `lakefs-sdk-next` and replace all `lakefs_sdk` imports
+2. Update any Pydantic V1 API usage (`.dict()`, `@validator`, etc.) to V2 equivalents
+3. Remove Pydantic V1 compatibility from tests and CI
+4. Version bump to signal the breaking dependency change
+
+### Phase 3: Sunset the old SDK  
+1. **Deprecation notice**: Publish a final release of `lakefs-sdk` with a deprecation warning:
+    - Add a runtime warning in `lakefs_sdk/__init__.py`:
+      ```python
+      import warnings
+      warnings.warn(
+          "lakefs-sdk is deprecated. Please migrate to lakefs-sdk-next. "
+          "See https://docs.lakefs.io/sdk-migration for details.",
+          DeprecationWarning,
+          stacklevel=2,
+      )
+      ```
+    - Update the PyPI description and README to point to the new package
+
+2. **Freeze**: Stop regenerating `clients/python/` on API changes. Remove `client-python` from the `clients` Make target. Keep the directory for historical reference but stop publishing new versions.
+
+3. **Cleanup** (after sufficient migration window):
+    - Remove `clients/python/` and `clients/python-static/` from the repository
+    - Remove `pydantic.sh`
+    - Remove old Makefile targets (`client-python`, `package-python-sdk`, `validate-python-sdk`)
+    - Remove old workflows (`python-api-client.yaml`, `python-api-client-test-pypi.yaml`)
+    - Rename `clients/python-next/` → `clients/python/` and `clients/python-next-static/` → `clients/python-static/` (optional, for cleanliness)
+
+## Timeline  
+| Phase | Description                          | Depends on | Time |
+|-------|--------------------------------------|------------|------|
+| 1     | New SDK alongside old, publish, docs | -          |      |
+| 2     | Migrate HL wrapper to new SDK        | Phase 1    |      |
+| 3     | Sunset old SDK                       | Phase 2    |      |
+
+## Risks and Mitigations  
+| Risk                                                            | Mitigation                                                                                     |
+|-----------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| HL wrapper breakage during migration                            | Run full unit + integration test suite against `lakefs-sdk-next` before merging Phase 2        |
+| Users on Pydantic V1 cannot upgrade                             | Old `lakefs-sdk` continues to work; no forced upgrade                                          |
+| OpenAPI Generator v7.9.0 generates subtly different API surface | Functional parity testing in Phase 1; diff generated code against old SDK                      |
+| Two SDK packages cause confusion                                | Clear documentation, deprecation warnings, and PyPI metadata pointing users to the new package |
