@@ -37,15 +37,14 @@ const (
 	sessionMaxAge                  = 30 * 24 * 60 * 60 // 30 days in seconds, the gorilla/sessions v1.4.0 default (for backward compatibility)
 )
 
-var yamlSwagger []byte
-
-func init() {
-	// Pre-convert the embedded OpenAPI JSON spec to YAML for serving.
+// Pre-convert the embedded OpenAPI JSON spec to YAML for serving.
+var yamlSwagger = func() []byte {
 	var v any
 	r, _ := apigen.GetSwaggerSpecReader()
 	_ = json.NewDecoder(r).Decode(&v)
-	yamlSwagger, _ = yaml.Marshal(v)
-}
+	b, _ := yaml.Marshal(v)
+	return b
+}()
 
 func Serve(
 	cfg config.Config,
