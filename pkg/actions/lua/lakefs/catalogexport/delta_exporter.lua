@@ -229,6 +229,7 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
         end
     end
     -- Initialize the result table for storing changed table definitions
+    local changed_table_def_set   = {}  -- dedup: table_name_yaml -> true
     local changed_table_def_names = {}
     while true do
         local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref, after)
@@ -249,16 +250,14 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
         -- Iterate through the table definitions and add to the result the ones that pass the filter
         for table_name_yaml, path in pairs(table_descriptors_paths) do
             if path ~= "" then
-                print("table_descriptor.path", path)
-                -- filter only the changed paths from the list
+                -- filter only the changed paths from the list; insert each table at most once
                 for changed_path, value in pairs(changed_path_set) do
-                    if value and strings.has_prefix(changed_path, path) then
+                    if value and strings.has_prefix(changed_path, path)
+                            and not changed_table_def_set[table_name_yaml] then
+                        changed_table_def_set[table_name_yaml] = true
                         table.insert(changed_table_def_names, table_name_yaml)
-                        print("  (inserted)")
                     end
                 end
-            else
-                print("  (skipped nil path)")
             end
         end
 
