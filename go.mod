@@ -441,6 +441,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260212134810-64b15ca0a7e2
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260224133108-0e019dfd0c2d
 
 tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
