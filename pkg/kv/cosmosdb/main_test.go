@@ -59,13 +59,7 @@ func TestCosmosDB(t *testing.T) {
 	})
 }
 
-// disable govet for this function because it's dead code
-//
-//nolint:govet
 func TestMain(m *testing.M) {
-	// SKIP CosmoDB tests until we find a bettwe way to test with the curret emulator which fail our tests
-	return
-
 	databaseURI, cleanupFunc, err := testutil.GetCosmosDBInstance()
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)

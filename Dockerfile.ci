@@ -1,0 +1,13 @@
+FROM alpine:3.21
+RUN apk add -U --no-cache ca-certificates
+RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
+WORKDIR /app
+ENV PATH=/app:$PATH
+COPY scripts/wait-for /app/
+COPY dist/lakefs /app/
+COPY dist/lakectl /app/
+EXPOSE 8000/tcp
+USER lakefs
+WORKDIR /home/lakefs
+ENTRYPOINT ["/app/lakefs"]
+CMD ["run"]

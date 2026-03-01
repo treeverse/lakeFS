@@ -120,18 +120,32 @@ jobs:
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
 
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build lakeFS binaries
+        env:
+          CGO_ENABLED: "0"
+          VERSION: ${{ needs.gen-code.outputs.tag }}
+        run: |
+          mkdir -p dist
+          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o dist/lakefs ./cmd/lakefs
+          go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o dist/lakectl ./cmd/lakectl
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: Build and Push
         uses: docker/build-push-action@v6
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.gen-code.outputs.tag }}
-          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
           context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          file: Dockerfile.ci
 
   login-to-amazon-ecr:
     runs-on: ubuntu-22.04
@@ -975,8 +989,6 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      COSMOSDB_DATABASE: esti-db
-      COSMOSDB_ACCOUNT: esti-e2e-tests
 
     steps:
       - name: Check-out code
@@ -1003,42 +1015,28 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
+      - name: Get Docker host gateway IP
+        id: docker-host
+        run: echo "ip=$(docker network inspect bridge -f '{{(index .IPAM.Config 0).Gateway}}')" >> $GITHUB_OUTPUT
+
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose-external-db.yaml
+          compose-file: esti/ops/docker-compose-cosmosdb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
-          LAKEFS_DATABASE_TYPE: cosmosdb
-          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
-          LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
-          LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
-          LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
+          LAKEFS_AUTH_API_ENDPOINT: http://${{ steps.docker-host.outputs.ip }}:8001/api/v1
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_LARGE_OBJECT_PATH: https://esti4hns.blob.core.windows.net/esti-system-testing-data/copy-test-data/data.6mib
           ESTI_AZURE_STORAGE_ACCOUNT: esti4hns
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
 
-      - name: Az CLI login
-        if: always()
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: cleanup cosmos db container
-        if: always()
-        run: |
-          echo "Delete database container: ${{ github.run_number }}-${{ steps.unique.outputs.value }}"
-          az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }} --yes
-
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose --project-directory . -f esti/ops/docker-compose-cosmosdb.yaml logs --tail=1000 lakefs
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client
