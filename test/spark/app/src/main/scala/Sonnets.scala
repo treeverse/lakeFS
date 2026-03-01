@@ -1,6 +1,6 @@
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.hadoop.fs.{Path, RemoteIterator}
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
@@ -25,7 +25,7 @@ object Sonnets {
     wrapper(underlying)
   }
 
-  val logger = Logger.getLogger(getClass.getName)
+  val logger = LoggerFactory.getLogger(getClass.getName)
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession

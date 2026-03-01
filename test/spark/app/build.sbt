@@ -12,6 +12,7 @@ val projectVersion = "0.1.0"
 // this version
 val scala211Version = "2.11.12"
 val scala212Version = "2.12.13"
+val scala213Version = "2.13.14"
 
 def settingsToCompileIn() = {
   Seq(
@@ -29,15 +30,18 @@ def generateProject(buildType: BuildType) =
         "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
         "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion,
         "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion,
+        "org.slf4j" % "slf4j-api" % "1.7.36" % "provided",
       ),
       target := { baseDirectory.value / "target" / s"${baseName}-${buildType.name}" }
     )
 
 lazy val proj24 = generateProject(new BuildType("246", scala211Version, "2.4.6", "2.7.7"))
 lazy val proj31 = generateProject(new BuildType("311", scala212Version, "3.1.1", "2.7.7"))
+lazy val proj400 = generateProject(new BuildType("400", scala213Version, "4.0.0", "3.4.1"))
+lazy val proj411 = generateProject(new BuildType("411", scala213Version, "4.1.1", "3.4.2"))
 
 lazy val root = (project in file("."))
-  .aggregate(proj24, proj31)
+  .aggregate(proj24, proj31, proj400, proj411)
   .settings(
       compile / skip := true,
       publish / skip := true,
@@ -46,9 +50,14 @@ lazy val root = (project in file("."))
 
 lazy val commonSettings = Seq(
   version := projectVersion,
-  // Use an older JDK to be Spark compatible
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-  scalacOptions ++= Seq("-target:jvm-1.8", "-deprecation", "-feature")
+  javacOptions ++= {
+    if (scalaBinaryVersion.value == "2.13") Seq("-source", "1.8")
+    else Seq("-source", "1.8", "-target", "1.8")
+  },
+  scalacOptions ++= {
+    if (scalaBinaryVersion.value == "2.13") Seq("-release", "8", "-deprecation", "-feature")
+    else Seq("-target:jvm-1.8", "-deprecation", "-feature")
+  }
 )
 
 lazy val sharedSettings = commonSettings
