@@ -49,7 +49,6 @@ Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it 
 1. [Iceberg REST Catalog](../integrations/iceberg.md) - Provides full support for managing Iceberg tables alongside other data formats in the same lakeFS repository. Built using open standards and works with any Iceberg client.
 1. [lakeFS for Snowflake](https://info.lakefs.io/lakefs-for-snowflake) - Provides full integration into the Snowflake ecosystem, including full support for Iceberg managed tables.
 1. [lakeFS Cross-Cloud](https://info.lakefs.io/cross-cloud) - Allows central management of repositories that span across multiple cloud providers including Azure, AWS, GCP and on-prem environments.
-1. [Transactional Mirroring](../howto/mirroring.md) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 
 
 | Feature                                   | OSS       | Cloud     |
@@ -68,7 +67,6 @@ Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it 
 | **[IAM Roles](../security/external-principals-aws.md)**                                  |            | ✅ <small>(AWS)</small>   |
 | **[Mount Capability](../reference/mount.md)**                           |            | ✅         |
 | **[Audit Logs](../reference/auditing.md)**                                 |            | ✅         |
-| **[Transactional Mirroring (cross-region)](../howto/mirroring.md)**     |            | ✅         |
 | **Managed Service (auto updates, scaling)**    |            | ✅         |
 | **[Managed Garbage Collection](../howto/garbage-collection/managed-gc.md)**                 |            | ✅         |
 | **[SOC2 Compliant](../security/index.md#soc2-compliance)**                             |            | ✅         |
