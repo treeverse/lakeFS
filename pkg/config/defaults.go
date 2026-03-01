@@ -105,6 +105,7 @@ func setBaseDefaults(cfgType string) {
 
 	// blockstore defaults
 	viper.SetDefault("blockstore.signing.secret_key", DefaultSigningSecretKey)
+	viper.SetDefault("graveler.link_address_expiration", 6*time.Hour)
 
 	viper.SetDefault("blockstore.local.path", DefaultBlockstoreLocalPath)
 

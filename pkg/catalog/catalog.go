@@ -88,8 +88,6 @@ const (
 	TaskExpiryTime        = 24 * time.Hour
 	TaskHeartbeatInterval = 5 * time.Second
 
-	// LinkAddressTime the time address is valid from get to link
-	LinkAddressTime             = 6 * time.Hour
 	LinkAddressSigningDelimiter = ","
 )
 
@@ -264,6 +262,7 @@ type Catalog struct {
 	UGCPrepareMaxFileSize   int64
 	UGCPrepareInterval      time.Duration
 	signingKey              config.SecureString
+	LinkAddressExpiration   time.Duration
 	errorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 	instanceID              string          // unique ID for this server process
 	activeTasks             stdatomic.Int64 // number of tasks currently queued or running
@@ -458,6 +457,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		addressProvider:         addressProvider,
 		deleteSensor:            deleteSensor,
 		signingKey:              cfg.Config.StorageConfig().SigningKey(),
+		LinkAddressExpiration:   baseCfg.Graveler.LinkAddressExpiration,
 		errorToStatusCodeAndMsg: errToStatusFunc,
 		instanceID:              xid.New().String(),
 	}
@@ -3271,13 +3271,14 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 	if !hmac.Equal(calculated, decodedSig) {
 		return fmt.Errorf("invalid address signature: %w", block.ErrInvalidAddress)
 	}
-	creationTime, err := c.PathProvider.ResolvePathTime(address)
-	if err != nil {
-		return err
-	}
-
-	if time.Since(creationTime) > LinkAddressTime {
-		return graveler.ErrLinkAddressExpired
+	if c.LinkAddressExpiration > 0 {
+		creationTime, err := c.PathProvider.ResolvePathTime(address)
+		if err != nil {
+			return err
+		}
+		if time.Since(creationTime) > c.LinkAddressExpiration {
+			return graveler.ErrLinkAddressExpired
+		}
 	}
 	return nil
 }

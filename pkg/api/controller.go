@@ -6067,7 +6067,7 @@ func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.R
 	}
 
 	writeResponse(w, r, http.StatusOK, apigen.GarbageCollectionConfig{
-		GracePeriod: swag.Int(int(catalog.LinkAddressTime.Seconds())),
+		GracePeriod: swag.Int(int(c.Catalog.LinkAddressExpiration.Seconds())),
 	})
 }
 
