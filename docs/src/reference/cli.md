@@ -1732,6 +1732,25 @@ lakectl fs cat <path URI> [flags]
 
 
 
+### lakectl fs cp
+
+Copy objects within a repository
+
+```
+lakectl fs cp <source URI> <dest URI> [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help              help for cp
+      --no-progress       Disable progress bar animation for IO operations
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+  -r, --recursive         recursively copy all objects under the specified path
+```
+
+
+
 ### lakectl fs download
 
 Download object(s) from a given repository path
@@ -1787,6 +1806,25 @@ lakectl fs ls <path URI> [flags]
 ```
   -h, --help        help for ls
   -r, --recursive   list all objects under the specified path
+```
+
+
+
+### lakectl fs mv
+
+Move objects within a repository
+
+```
+lakectl fs mv <source URI> <dest URI> [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help              help for mv
+      --no-progress       Disable progress bar animation for IO operations
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+  -r, --recursive         recursively move all objects under the specified path
 ```
 
 
