@@ -25,6 +25,7 @@ jobs:
         id: ai-authorship-label
         continue-on-error: true
         if: >-
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
           !contains(github.event.pull_request.labels.*.name, 'mostly-ai') &&
           !contains(github.event.pull_request.labels.*.name, 'mostly-human')
         run: exit 1
