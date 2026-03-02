@@ -1,3 +1,5 @@
+# MOVED TO REJECTED AS PYDANTIC WILL PROVIDE [BACKPORT](https://github.com/pydantic/pydantic/issues/12852) TO SUPPORT V1 COMPATIBILITY LAYER WITH PYTHON3.14
+
 # Python SDK V2 (V3...)
 
 ## Problem Description  
