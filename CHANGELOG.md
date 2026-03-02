@@ -1,41 +1,47 @@
 # Changelog
 
+## v1.79.0
+
+:new: What's new:
+
+- API: get object handle safe content types as inline content-disposition (#10184)
+
 ## v1.78.0
 
 ### Changes appear in the previous release 
 
 ## v1.77.1
-                                                                            
+
 :new: What's new:
 
-  - Reduce the KV usage while using branch ownership feature (#10116)
-  - Improve lakectl actions valdiate by checking required properties (#10144)
+- Reduce the KV usage while using branch ownership feature (#10116)
+- Improve lakectl actions valdiate by checking required properties (#10144)
 
 :bug: Bugs Fixed
 
-  - Delta tables export: skip vacuumed `.cdc` files (#10140)
+- Delta tables export: skip vacuumed `.cdc` files (#10140)
 
-## v1.77.0          
-                                                                            
+## v1.77.0
+
 :new: What's new:
 
-  - Web UI: Responsive collapsible breadcrumb for URI navigation (#10078)
-  - Web UI: LRU caching for recently accessed refs (#10093)                 
-  - Web UI: Improved discoverability of refs (#10090)
-  - Web UI: Lock commit/merge inputs during API calls (#10103)
-  - Add tracing regions to KV store operations (#10023)
-  - Trace all lakeFS API and gateway tasks (#10016)
+- Web UI: Responsive collapsible breadcrumb for URI navigation (#10078)
+- Web UI: LRU caching for recently accessed refs (#10093)                 
+- Web UI: Improved discoverability of refs (#10090)
+- Web UI: Lock commit/merge inputs during API calls (#10103)
+- Add tracing regions to KV store operations (#10023)
+- Trace all lakeFS API and gateway tasks (#10016)
 - Delta tables export: support change data feed (#10127)
 
 :bug: Bugs Fixed
 
-  - CVE: Path traversal vulnerabilities in local block adapter allow cross-namespace and sibling directory access
-  - Fix: Replace per-task heartbeat with instance-level heartbeat in cataloger (#10118)
-  - Fix: Return 400 instead of 500 for DeleteObjects size limit (#10097)
-  - Fix: Report per-object errors correctly in lakectl recursive rm and batch deletions (#10095)
-  - Fix: Expired status override on completed cataloger tasks (#10080)
-  - Fix: Handle special characters in file paths for DuckDB queries in WebUI (#10076)
-  - Fix: Stuck goroutines in cataloger (#10055)
+- CVE: Path traversal vulnerabilities in local block adapter allow cross-namespace and sibling directory access
+- Fix: Replace per-task heartbeat with instance-level heartbeat in cataloger (#10118)
+- Fix: Return 400 instead of 500 for DeleteObjects size limit (#10097)
+- Fix: Report per-object errors correctly in lakectl recursive rm and batch deletions (#10095)
+- Fix: Expired status override on completed cataloger tasks (#10080)
+- Fix: Handle special characters in file paths for DuckDB queries in WebUI (#10076)
+- Fix: Stuck goroutines in cataloger (#10055)
 
 ## v1.76.0
 
