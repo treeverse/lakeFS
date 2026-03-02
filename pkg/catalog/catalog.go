@@ -89,7 +89,7 @@ const (
 	TaskHeartbeatInterval = 5 * time.Second
 
 	// LinkAddressTime the time address is valid from get to link
-	LinkAddressTime             = 6 * time.Hour
+	LinkAddressTime             = 24 * time.Hour
 	LinkAddressSigningDelimiter = ","
 )
 
