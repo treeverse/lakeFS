@@ -5,7 +5,6 @@
 :new: What's new:
 
 - API: get object handle safe content types as inline content-disposition (#10184)
-- Drop Python 3.9 for python wrapper (#10193)
 
 ## v1.78.0
 
