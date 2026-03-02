@@ -31,8 +31,14 @@ async function getDuckDB(): Promise<duckdb.AsyncDuckDB> {
     const logger = new duckdb.VoidLogger();
     const db = new duckdb.AsyncDuckDB(logger, worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    await db.open({ allowUnsignedExtensions: true });
+
+    // Point DuckDB at locally-bundled extensions so it works in air-gapped
+    // environments without reaching out to extensions.duckdb.org.
     const conn = await db.connect();
+    await conn.query(`SET custom_extension_repository = '${window.location.origin}/duckdb-extensions';`);
     await conn.close();
+
     _db = db;
     return _db;
 }
@@ -89,11 +95,14 @@ export async function runDuckDBQuery(sql: string): Promise<arrow.Table<any>> {
         await Promise.all(
             fileNames.map((fileName) => db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)),
         );
-        // execute the query
-        result = await conn.query(sql);
-
-        // remove registrations
-        await Promise.all(fileNames.map((fileName) => db.dropFile(fileName)));
+        try {
+            // execute the query
+            result = await conn.query(sql);
+        } finally {
+            // remove registrations even if the query fails, otherwise
+            // subsequent queries fail with "File already registered".
+            await Promise.all(fileNames.map((fileName) => db.dropFile(fileName)));
+        }
     } finally {
         await conn.close();
     }

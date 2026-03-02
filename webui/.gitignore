@@ -5,6 +5,9 @@ dist-ssr
 /test-results/
 test/playwright/*.json
 
+# Downloaded DuckDB WASM extensions (fetched by scripts/download-duckdb-extensions.mjs)
+pub/duckdb-extensions/
+
 # Ignore built UI but keep .gitkeep
 dist/*
 !dist/.gitkeep

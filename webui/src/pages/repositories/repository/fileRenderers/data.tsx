@@ -20,11 +20,12 @@ export const DataLoader: FC = () => {
 export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fileExtension }) => {
     // Escape single quotes in path for SQL string safety
     const escapedPath = path.replace(/'/g, "''");
-    let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${escapedPath}', hive_partitioning=false) LIMIT 20`;
+    const lakefsUri = `lakefs://${repoId}/${refId}/${escapedPath}`;
+    let initialQuery = `SELECT * FROM READ_PARQUET('${lakefsUri}', hive_partitioning=false) LIMIT 20`;
     if (fileExtension === 'csv') {
-        initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${escapedPath}', AUTO_DETECT = TRUE) LIMIT 20`;
+        initialQuery = `SELECT * FROM READ_CSV('${lakefsUri}', AUTO_DETECT = TRUE) LIMIT 20`;
     } else if (fileExtension === 'tsv') {
-        initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${escapedPath}', DELIM='\t', AUTO_DETECT=TRUE) LIMIT 20`;
+        initialQuery = `SELECT * FROM READ_CSV('${lakefsUri}', DELIM='\t', AUTO_DETECT=TRUE) LIMIT 20`;
     }
     const [shouldSubmit, setShouldSubmit] = useState<boolean>(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
