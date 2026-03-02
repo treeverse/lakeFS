@@ -45,7 +45,7 @@ require (
 	github.com/xitongsys/parquet-go v1.6.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20241021075129-b732d2ac9c9b
 	golang.org/x/crypto v0.48.0
-	golang.org/x/oauth2 v0.35.0
+	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/term v0.40.0
 	google.golang.org/api v0.269.0
 	google.golang.org/protobuf v1.36.11

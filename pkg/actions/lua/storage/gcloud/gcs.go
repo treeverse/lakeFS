@@ -11,13 +11,7 @@ import (
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
-)
-
-const (
-	// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
-	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
 
 var ErrInvalidGCSURI = errors.New("invalid Google Cloud Storage URI")
@@ -57,11 +51,7 @@ type GSClient struct {
 }
 
 func (c *GSClient) client() (*storage.Client, error) {
-	cred, err := google.CredentialsFromJSON(c.ctx, []byte(c.JSON), googleAuthCloudPlatform)
-	if err != nil {
-		return nil, err
-	}
-	return storage.NewClient(c.ctx, option.WithCredentials(cred))
+	return storage.NewClient(c.ctx, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(c.JSON)))
 }
 
 var functions = map[string]func(client *GSClient) lua.Function{
