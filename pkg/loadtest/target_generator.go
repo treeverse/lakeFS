@@ -26,7 +26,7 @@ func randomFilepath(basename string) string {
 	for range depth {
 		// tests, safe
 		dirSuffix := rand.Intn(maxDirSuffixes) //nolint:gosec
-		sb.WriteString(fmt.Sprintf("dir%d/", dirSuffix))
+		fmt.Fprintf(&sb, "dir%d/", dirSuffix)
 	}
 	return sb.String() + basename
 }
