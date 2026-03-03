@@ -145,11 +145,20 @@ type CherryPickCreation struct {
 // CommPrefsInput defines model for CommPrefsInput.
 type CommPrefsInput struct {
 
+	// the provided company name
+	CompanyName *string `json:"companyName,omitempty"`
+
 	// the provided email
 	Email *string `json:"email,omitempty"`
 
 	// user preference to receive feature updates
 	FeatureUpdates bool `json:"featureUpdates"`
+
+	// the provided first name
+	FirstName *string `json:"firstName,omitempty"`
+
+	// the provided last name
+	LastName *string `json:"lastName,omitempty"`
 
 	// user preference to receive security updates
 	SecurityUpdates bool `json:"securityUpdates"`

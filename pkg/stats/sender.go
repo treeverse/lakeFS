@@ -154,6 +154,9 @@ func (s *DummySender) UpdateCommPrefs(_ context.Context, commPrefs *CommPrefsDat
 	}
 	s.WithFields(logging.Fields{
 		"email":           commPrefs.Email,
+		"firstName":       commPrefs.FirstName,
+		"lastName":        commPrefs.LastName,
+		"companyName":     commPrefs.CompanyName,
 		"featureUpdates":  commPrefs.FeatureUpdates,
 		"securityUpdates": commPrefs.SecurityUpdates,
 		"installationID":  commPrefs.InstallationID,

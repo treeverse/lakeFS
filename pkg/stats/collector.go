@@ -25,6 +25,9 @@ const (
 type CommPrefs struct {
 	InstallationID  string
 	Email           string
+	FirstName       string
+	LastName        string
+	CompanyName     string
 	FeatureUpdates  bool
 	SecurityUpdates bool
 	BlockstoreType  string
@@ -88,6 +91,9 @@ type InputEvent struct {
 type CommPrefsData struct {
 	InstallationID  string `json:"installation_id"`
 	Email           string `json:"email"`
+	FirstName       string `json:"firstName,omitempty"`
+	LastName        string `json:"lastName,omitempty"`
+	CompanyName     string `json:"companyName,omitempty"`
 	FeatureUpdates  bool   `json:"featureUpdates"`
 	SecurityUpdates bool   `json:"securityUpdates"`
 	BlockstoreType  string `json:"blockstoreType"`
