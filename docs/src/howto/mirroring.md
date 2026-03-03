@@ -55,23 +55,26 @@ We can train our model in region A, and a month later feed the same commit ID in
 
 ## Architecture Overview
 
-Transactional Mirroring involves two lakeFS Enterprise installations, each in a different region or location, connected by a **replication service** that runs alongside each installation:
+At minimum, Transactional Mirroring involves two lakeFS Enterprise installations, each in a different region or location, connected by a **replication service** that runs alongside each installation:
 
 1. **Source lakeFS** - The primary installation where data is written.
 2. **Destination lakeFS** - The installation hosting read-only mirror repositories.
-3. **Replication Service** - A sidecar service deployed alongside each lakeFS installation. It monitors source repositories, synchronizes commit metadata, and promotes branches on the destination once all data is available.
+3. **Replication Service** - A sidecar service deployed alongside each lakeFS installation. It monitors source repositories, synchronizes commit metadata, and promotes branches on the destination once all data is available. Only branches are replicated; tags are not mirrored.
 4. **Object Store Replication** - The underlying object store (e.g., S3) must be configured to replicate objects between the source and destination buckets. lakeFS does not copy object data itself.
-5. **Mirrors Database** - A shared KV store (e.g., DynamoDB global table) that both replication services use to coordinate mirror state.
+5. **Mirrors Database** - A shared database (e.g., DynamoDB global table) that all replication services use to coordinate mirror state.
+
+!!! note "Multi-region topologies"
+    The architecture is not limited to two regions. A source repository can be mirrored to multiple destinations (one-to-many), and each installation can participate in multiple mirroring relationships. Simply add additional `dst_endpoints` entries and configure object store replication for each destination.
 
 ## Setting up Transactional Mirroring
 
 ### Prerequisites
 
-1. Two [lakeFS Enterprise](../enterprise/index.md) installations, each in a different region/location.
+1. Two or more [lakeFS Enterprise](../enterprise/index.md) installations, each in a different region/location.
 1. A valid lakeFS Enterprise license with the **Transactional Mirroring** capability. See [License Configuration](../enterprise/getstarted/install.md#lakefs-enterprise-license).
 1. Object store replication configured between source and destination buckets (see [below](#configuring-object-store-replication)).
-1. A shared KV store accessible from both regions for mirror coordination (e.g., a DynamoDB global table).
-1. Network connectivity between the two lakeFS installations (the replication service in each region needs HTTP access to the lakeFS API in the other region).
+1. A shared database accessible from all regions for mirror coordination (e.g., a DynamoDB global table).
+1. Network connectivity between the lakeFS installations. The replication service in each region needs HTTP access to the lakeFS API in the other regions.
 
 ### Configuring object store replication
 
@@ -452,7 +455,7 @@ The replication service is configured via the `replication.config` section of th
 | Field | Description |
 |-------|-------------|
 | `region` | Region identifier for this lakeFS installation (e.g., `us-east-1`) |
-| `organization_id` | Organization identifier, used as a partition key in the mirrors database. Must be the same across all installations |
+| `organization_id` | Organization identifier, used internally as a partition key in the mirrors database. For on-prem deployments, use any consistent string (e.g., your company name). Must be the same across all installations |
 | `regional_endpoint` | URL of the lakeFS API in this region (e.g., `http://lakefs.default.svc.cluster.local:80`) |
 | `dst_endpoints` | Map of region identifier to lakeFS URL for each remote region |
 | `mirrors_database` | Database configuration for mirror coordination. Supports the same database types as lakeFS. Must be shared across all regions |
