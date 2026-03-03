@@ -45,31 +45,31 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
         
-      # The minimal supported version of Python is 3.9, so we need to test it in this environment
-      - name: Set up Python 3.9
+      # The minimal supported version of Python is 3.10, so we need to test it in this environment
+      - name: Set up Python 3.10
         uses: actions/setup-python@v6
         with:
-          python-version: 3.9
-      
+          python-version: "3.10"
+
       # When installed it will skip the installation of pydantic in the next step which will install the latest > 2
       - name: Install pydantic V1
         if: matrix.pydantic_v1
         run: pip install pydantic==1.10.6
-      
+
       - name: Install dependencies
         working-directory: ./clients/python-wrapper
         run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
 
       - name: Generate Documentation
         run: make python-wrapper-gen-docs
-        
+
       - name: Validate Documentation
         run: make validate-python-wrapper
 
       - name: Run Pylint
         run: make python-wrapper-lint
-      
-      - name: Run Unit Tests 
+
+      - name: Run Unit Tests
         uses: pavelzw/pytest-action@v2
         with:
           verbose: true
@@ -91,12 +91,12 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v6
-      
-      # The minimal supported version of Python is 3.9, so we need to test it in this environment
-      - name: Set up Python 3.9
+
+      # The minimal supported version of Python is 3.10, so we need to test it in this environment
+      - name: Set up Python 3.10
         uses: actions/setup-python@v6
         with:
-          python-version: 3.9
+          python-version: "3.10"
       
       # When installed it will skip the installation of pydantic in the next step which will install the latest > 2
       - name: Install pydantic V1

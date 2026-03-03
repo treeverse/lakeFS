@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -66,6 +68,15 @@ func BuildConditionFromParams(ifMatch, ifNoneMatch *string) (*graveler.Condition
 		}
 	}
 	return &condition, nil
+}
+
+// BuildOptsFromParams Builds copy object request from parameters
+func BuildOptsFromParams(params apigen.CopyObjectJSONRequestBody) ([]graveler.SetOptionsFunc, error) {
+	if apiutil.Value(params.Shallow) {
+		// Handle Shallow: not supported
+		return nil, catalog.ErrNotImplemented
+	}
+	return []graveler.SetOptionsFunc{graveler.WithForce(apiutil.Value(params.Force))}, nil
 }
 
 func NewIcebergSyncController(_ config.Config) icebergsync.Controller {

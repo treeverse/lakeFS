@@ -430,6 +430,12 @@ components:
         force:
           type: boolean
           default: false
+        shallow:
+          description: |
+            Create a shallow copy of the object (without copying the actual data). At the moment shallow copy only works for same repository and branch. 
+            Please note that shallow copied objects might be in contention with garbage collection and branch retention policies - use with caution.
+          type: boolean
+          default: false
 
     ObjectStageCreation:
       type: object
@@ -5854,6 +5860,7 @@ paths:
         required: true
         schema:
           type: string
+
     post:
       tags:
         - objects

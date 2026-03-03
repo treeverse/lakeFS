@@ -18,7 +18,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
@@ -46,11 +45,6 @@ func WithAdapterOptions(opts AdapterOptions) BuildOption {
 		}
 	}
 }
-
-const (
-	// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
-	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
-)
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig, opts ...BuildOption) (block.Adapter, error) {
 	// Apply options
@@ -157,13 +151,9 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, error) {
 	var opts []option.ClientOption
 	if params.CredentialsFile != "" {
-		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
+		opts = append(opts, option.WithAuthCredentialsFile(option.ServiceAccount, params.CredentialsFile))
 	} else if params.CredentialsJSON != "" {
-		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON), googleAuthCloudPlatform)
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, option.WithCredentials(cred))
+		opts = append(opts, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(params.CredentialsJSON)))
 	}
 	return storage.NewClient(ctx, opts...)
 }

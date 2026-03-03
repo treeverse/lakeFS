@@ -21,7 +21,7 @@ ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.0.0
 endif
 
-PYTHON_IMAGE=python:3.9
+PYTHON_IMAGE=python:3.10
 
 export PATH:= $(PATH):$(GOBINPATH)
 

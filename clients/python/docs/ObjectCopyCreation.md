@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **src_path** | **str** | path of the copied object relative to the ref | 
 **src_ref** | **str** | a reference, if empty uses the provided branch as ref | [optional] 
 **force** | **bool** |  | [optional] [default to False]
+**shallow** | **bool** | Create a shallow copy of the object (without copying the actual data). At the moment shallow copy only works for same repository and branch.  Please note that shallow copied objects might be in contention with garbage collection and branch retention policies - use with caution.  | [optional] [default to False]
 
 ## Example
 

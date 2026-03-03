@@ -63,6 +63,10 @@ public class ObjectCopyCreation {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
+  public static final String SERIALIZED_NAME_SHALLOW = "shallow";
+  @SerializedName(SERIALIZED_NAME_SHALLOW)
+  private Boolean shallow = false;
+
   public ObjectCopyCreation() {
   }
 
@@ -128,6 +132,27 @@ public class ObjectCopyCreation {
     this.force = force;
   }
 
+
+  public ObjectCopyCreation shallow(Boolean shallow) {
+    
+    this.shallow = shallow;
+    return this;
+  }
+
+   /**
+   * Create a shallow copy of the object (without copying the actual data). At the moment shallow copy only works for same repository and branch.  Please note that shallow copied objects might be in contention with garbage collection and branch retention policies - use with caution. 
+   * @return shallow
+  **/
+  @javax.annotation.Nullable
+  public Boolean getShallow() {
+    return shallow;
+  }
+
+
+  public void setShallow(Boolean shallow) {
+    this.shallow = shallow;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -185,13 +210,14 @@ public class ObjectCopyCreation {
     ObjectCopyCreation objectCopyCreation = (ObjectCopyCreation) o;
     return Objects.equals(this.srcPath, objectCopyCreation.srcPath) &&
         Objects.equals(this.srcRef, objectCopyCreation.srcRef) &&
-        Objects.equals(this.force, objectCopyCreation.force)&&
+        Objects.equals(this.force, objectCopyCreation.force) &&
+        Objects.equals(this.shallow, objectCopyCreation.shallow)&&
         Objects.equals(this.additionalProperties, objectCopyCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(srcPath, srcRef, force, additionalProperties);
+    return Objects.hash(srcPath, srcRef, force, shallow, additionalProperties);
   }
 
   @Override
@@ -201,6 +227,7 @@ public class ObjectCopyCreation {
     sb.append("    srcPath: ").append(toIndentedString(srcPath)).append("\n");
     sb.append("    srcRef: ").append(toIndentedString(srcRef)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
+    sb.append("    shallow: ").append(toIndentedString(shallow)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -227,6 +254,7 @@ public class ObjectCopyCreation {
     openapiFields.add("src_path");
     openapiFields.add("src_ref");
     openapiFields.add("force");
+    openapiFields.add("shallow");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

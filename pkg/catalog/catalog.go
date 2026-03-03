@@ -27,6 +27,7 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -90,10 +91,6 @@ const (
 	// LinkAddressTime the time address is valid from get to link
 	LinkAddressTime             = 6 * time.Hour
 	LinkAddressSigningDelimiter = ","
-
-	// CloneGracePeriod period during which we allow clone metadata as part of the object copy operation.
-	// Prevent the GC from collecting physical addresses that were not found while scanning uncommitted data.
-	CloneGracePeriod = 5 * time.Hour
 )
 
 type Path string
@@ -3083,48 +3080,36 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 // It may only clone within the same repository and is bound by the grace time from the object's creation—this ensures the GC does
 // not delete the underlying object.
 // ErrCannotClone is returned if any of the clone conditions are not satisfied.
-func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry *DBEntry, destRepository, destBranch, destPath string,
+func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string,
 	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
 ) (*DBEntry, error) {
-	// validate clone conditions in case we
+	// validate clone conditions
 	if srcRepo.Name != destRepository {
 		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
 	}
 
-	// An entry’s metadata can be cloned repeatedly, so we must verify that the
-	// entry’s grace‑period timestamp still precedes the actual object's
-	// last‑modified time—exactly the check performed by the garbage collector.
-	// Objects that are not part of the storage namespace (e.g., imported objects)
-	// are exempt from this validation, mirroring the GC’s behavior.
-	if srcEntry.AddressType == AddressTypeRelative || strings.HasPrefix(srcEntry.PhysicalAddress, srcRepo.StorageNamespace) {
-		// verify the metadata creation date is within the grace period
-		if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
-			return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
-		}
-
-		// verify the actual object last-modified is within the grace period
-		srcObject := block.ObjectPointer{
-			StorageID:        srcRepo.StorageID,
-			StorageNamespace: srcRepo.StorageNamespace,
-			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
-			Identifier:       srcEntry.PhysicalAddress,
-		}
-		props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
-		if err != nil {
-			return nil, err
-		}
-		if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
-			return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
-		}
+	if srcRef != destBranch {
+		return nil, fmt.Errorf("not on the same branch: %w", graveler.ErrCannotClone)
 	}
 
 	// copy the metadata into a new entry
 	dstEntry := *srcEntry
 	dstEntry.Path = destPath
 	dstEntry.CreationDate = time.Now()
+	srcMetaValue := srcEntry.Path
+	if dstEntry.Metadata == nil {
+		dstEntry.Metadata = make(map[string]string)
+	} else if value, ok := dstEntry.Metadata[apiutil.CloneMetadataKey]; ok {
+		// Check if src is also a shallow copy before replacing metadata
+		srcMetaValue = value
+	}
+
 	if replaceSrcMetadata {
 		dstEntry.Metadata = metadata
 	}
+
+	dstEntry.Metadata[apiutil.CloneMetadataKey] = srcMetaValue
+
 	if err := c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...); err != nil {
 		return nil, err
 	}
@@ -3162,13 +3147,10 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 		}
 	}
 
-	// Clone entry if possible, fallthrough to copy otherwise
-	clonedEntry, err := c.cloneEntry(ctx, srcRepo, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, opts...)
-	if err == nil {
-		return clonedEntry, nil
-	}
-	if !errors.Is(err, graveler.ErrCannotClone) {
-		return nil, err
+	options := graveler.NewSetOptions(opts)
+	// Clone entry
+	if options.Shallow {
+		return c.cloneEntry(ctx, srcRepo, srcRef, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, opts...)
 	}
 
 	// copy data to a new physical address

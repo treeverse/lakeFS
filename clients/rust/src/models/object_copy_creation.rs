@@ -20,6 +20,9 @@ pub struct ObjectCopyCreation {
     pub src_ref: Option<String>,
     #[serde(rename = "force", skip_serializing_if = "Option::is_none")]
     pub force: Option<bool>,
+    /// Create a shallow copy of the object (without copying the actual data). At the moment shallow copy only works for same repository and branch.  Please note that shallow copied objects might be in contention with garbage collection and branch retention policies - use with caution. 
+    #[serde(rename = "shallow", skip_serializing_if = "Option::is_none")]
+    pub shallow: Option<bool>,
 }
 
 impl ObjectCopyCreation {
@@ -28,6 +31,7 @@ impl ObjectCopyCreation {
             src_path,
             src_ref: None,
             force: None,
+            shallow: None,
         }
     }
 }
