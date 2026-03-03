@@ -190,7 +190,18 @@ The user should have the following [RBAC policy](../security/rbac.md) attached:
 }
 ```
 
-Once a user has been created and the replication policy attached to it, create an access key and secret to be used by the replication service.
+Once a user has been created and the replication policy attached to it, create an access key and secret for the replication service.
+
+!!! important "Same credentials on all installations"
+    The replication service authenticates requests across regions using the same lakeFS credentials. The replication user must have **the same access key ID and secret access key** on every lakeFS installation involved in mirroring.
+
+    Use `lakectl create-credentials` to create a user with specific credentials on each installation:
+
+    ```bash
+    lakectl create-credentials --access-key-id <ACCESS_KEY_ID> --secret-access-key <SECRET_ACCESS_KEY> <username>
+    ```
+
+    Run this command against each lakeFS installation to ensure the replication user has identical credentials everywhere.
 
 ### Deploying the Replication Service
 
@@ -198,18 +209,17 @@ The replication service is deployed alongside each lakeFS Enterprise installatio
 
 #### Mirrors database
 
-The replication service requires a shared KV store to coordinate mirror state between regions. This database must be accessible from both regions.
+The replication service requires a shared database to coordinate mirror state between regions. This database must be accessible from both regions. It supports the same database types as lakeFS (see [database configuration](../reference/configuration.md#database)). The table/schema is created automatically by the replication service on startup if it doesn't already exist.
 
-**DynamoDB global table** is the recommended option for AWS deployments. Create a DynamoDB table with the following schema:
+=== "DynamoDB"
 
-| Attribute    | Type   | Role          |
-|-------------|--------|---------------|
-| `PartitionKey` | Binary | Partition key |
-| `ItemKey`      | Binary | Sort key      |
+    Provide the table name in the `mirrors_database` configuration. The replication service will create the table automatically if it doesn't exist.
 
-Enable [DynamoDB Streams](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html) with `NEW_AND_OLD_IMAGES` view type, and add a [global table replica](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html) in the destination region.
+    To enable cross-region replication, you must configure the table as a [DynamoDB global table](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html) with a replica in the destination region. This requires enabling [DynamoDB Streams](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html) with `NEW_AND_OLD_IMAGES` view type on the table.
 
-Other supported database types (PostgreSQL, CockroachDB) can also be used as long as they are accessible from both regions.
+=== "PostgreSQL / CockroachDB"
+
+    Provide a PostgreSQL or CockroachDB database that is accessible from both regions. Use the same connection string in the `mirrors_database` configuration on each installation.
 
 #### Helm chart configuration
 
@@ -229,7 +239,6 @@ replication:
 
     # Organization identifiers
     organization_id: "my-org"
-    organization_name: "my-org"
 
     # The lakeFS endpoint in this region (accessible from within the cluster)
     regional_endpoint: "http://lakefs.default.svc.cluster.local:80"
@@ -299,7 +308,6 @@ replication:
   config:
     region: "us-east-1"
     organization_id: "my-org"
-    organization_name: "my-org"
     regional_endpoint: "http://lakefs-source.mirroring.svc.cluster.local:80"
     dst_endpoints:
       us-west-2: "http://lakefs-dest-internal.example.com:80"
@@ -327,7 +335,6 @@ replication:
   config:
     region: "us-west-2"
     organization_id: "my-org"
-    organization_name: "my-org"
     regional_endpoint: "http://lakefs-dest.mirroring.svc.cluster.local:80"
     dst_endpoints:
       us-east-1: "http://lakefs-source-internal.example.com:80"
@@ -445,11 +452,10 @@ The replication service is configured via the `replication.config` section of th
 | Field | Description |
 |-------|-------------|
 | `region` | Region identifier for this lakeFS installation (e.g., `us-east-1`) |
-| `organization_id` | Organization identifier. Must be the same across all installations |
-| `organization_name` | Organization name |
+| `organization_id` | Organization identifier, used as a partition key in the mirrors database. Must be the same across all installations |
 | `regional_endpoint` | URL of the lakeFS API in this region (e.g., `http://lakefs.default.svc.cluster.local:80`) |
 | `dst_endpoints` | Map of region identifier to lakeFS URL for each remote region |
-| `mirrors_database` | KV store configuration for mirror coordination. Must be shared across all regions |
+| `mirrors_database` | Database configuration for mirror coordination. Supports the same database types as lakeFS. Must be shared across all regions |
 | `blockstore` | Block storage configuration. Must match the lakeFS blockstore config |
 | `auth.encrypt.secret_key` | Encryption secret. Must match the lakeFS `auth.encrypt.secret_key` |
 
@@ -457,8 +463,9 @@ The replication service is configured via the `replication.config` section of th
 
 | Field | Default | Description |
 |-------|---------|-------------|
+| `organization_name` | | Organization name. Only used to auto-construct `regional_endpoint` for lakeFS Cloud. Not needed when `regional_endpoint` is set |
 | `listen_address` | `0.0.0.0:8008` | HTTP listen address for the replication service API |
-| `refstore_database` | lakeFS `database` config | KV store for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set |
+| `refstore_database` | lakeFS `database` config | Database for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set |
 | `list_mirrors_page_size` | `1000` | Page size when listing mirrors |
 | `list_repositories_page_size` | `1000` | Page size when listing repositories |
 | `logging.level` | `INFO` | Log level (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
@@ -510,4 +517,4 @@ Controls how the service validates that all metadata for promoted commits exists
 1. Read-only mirrors cannot be written to. Transactional Mirroring is one-way, from source to destination(s)
 1. Currently, only branches are mirrored. Tags and arbitrary commits that do not belong to any branch are not replicated
 1. [lakeFS Hooks](./hooks/index.md) will only run on the source repository, not its replicas
-1. Replication is still asynchronous: reading from a branch will always return a valid commit that the source has pointed to, but it is not guaranteed to be the **latest commit** the source branch is pointing to
+1. Replication is asynchronous: reading from a branch will always return a valid commit that the source has pointed to, but it is not guaranteed to be the **latest commit** the source branch is pointing to
