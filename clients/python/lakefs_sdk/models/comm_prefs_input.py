@@ -29,10 +29,13 @@ class CommPrefsInput(BaseModel):
     """
     CommPrefsInput
     """
+    first_name: Optional[StrictStr] = Field(None, alias="firstName", description="the provided first name")
+    last_name: Optional[StrictStr] = Field(None, alias="lastName", description="the provided last name")
     email: Optional[StrictStr] = Field(None, description="the provided email")
+    company_name: Optional[StrictStr] = Field(None, alias="companyName", description="the provided company name")
     feature_updates: StrictBool = Field(..., alias="featureUpdates", description="user preference to receive feature updates")
     security_updates: StrictBool = Field(..., alias="securityUpdates", description="user preference to receive security updates")
-    __properties = ["email", "featureUpdates", "securityUpdates"]
+    __properties = ["firstName", "lastName", "email", "companyName", "featureUpdates", "securityUpdates"]
 
     class Config:
         """Pydantic configuration"""
@@ -70,7 +73,10 @@ class CommPrefsInput(BaseModel):
             return CommPrefsInput.parse_obj(obj)
 
         _obj = CommPrefsInput.parse_obj({
+            "first_name": obj.get("firstName"),
+            "last_name": obj.get("lastName"),
             "email": obj.get("email"),
+            "company_name": obj.get("companyName"),
             "feature_updates": obj.get("featureUpdates"),
             "security_updates": obj.get("securityUpdates")
         })
