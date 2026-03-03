@@ -1,6 +1,6 @@
 module github.com/treeverse/lakefs
 
-go 1.25.5
+go 1.25.7
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
@@ -13,7 +13,7 @@ require (
 	github.com/dgraph-io/ristretto v0.2.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/getkin/kin-openapi v0.131.0 // no not upgrade until the read body bug intruduced by v0.132.0 is fixed
-	github.com/go-chi/chi/v5 v5.2.2
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/go-openapi/swag v0.23.0
 	github.com/go-test/deep v1.1.0
 	github.com/gobwas/glob v0.2.3
@@ -441,7 +441,7 @@ require (
 	go.uber.org/atomic v1.11.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/tools v0.41.0
