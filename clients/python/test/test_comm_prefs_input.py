@@ -37,7 +37,10 @@ class TestCommPrefsInput(unittest.TestCase):
         model = CommPrefsInput()  # noqa: E501
         if include_optional:
             return CommPrefsInput(
+                first_name = '',
+                last_name = '',
                 email = '',
+                company_name = '',
                 feature_updates = True,
                 security_updates = True
             )

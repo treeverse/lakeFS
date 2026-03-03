@@ -12,9 +12,18 @@ use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommPrefsInput {
+    /// the provided first name
+    #[serde(rename = "firstName", skip_serializing_if = "Option::is_none")]
+    pub first_name: Option<String>,
+    /// the provided last name
+    #[serde(rename = "lastName", skip_serializing_if = "Option::is_none")]
+    pub last_name: Option<String>,
     /// the provided email
     #[serde(rename = "email", skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// the provided company name
+    #[serde(rename = "companyName", skip_serializing_if = "Option::is_none")]
+    pub company_name: Option<String>,
     /// user preference to receive feature updates
     #[serde(rename = "featureUpdates")]
     pub feature_updates: bool,
@@ -26,7 +35,10 @@ pub struct CommPrefsInput {
 impl CommPrefsInput {
     pub fn new(feature_updates: bool, security_updates: bool) -> CommPrefsInput {
         CommPrefsInput {
+            first_name: None,
+            last_name: None,
             email: None,
+            company_name: None,
             feature_updates,
             security_updates,
         }
