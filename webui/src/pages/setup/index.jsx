@@ -26,14 +26,24 @@ const SetupContents = () => {
     }, [error, response]);
 
     const onSubmitUserConfiguration = useCallback(
-        async (adminUser, userEmail, checked) => {
+        async (adminUser, firstName, lastName, userEmail, companyName, checked) => {
             if (!adminUser) {
                 setSetupError('Please enter your admin username.');
                 return;
             }
-            if (commPrefsMissing && !userEmail) {
-                setSetupError('Please enter your email address.');
-                return;
+            if (commPrefsMissing) {
+                const requiredCommPrefsFields = [
+                    ['first name', firstName],
+                    ['last name', lastName],
+                    ['email address', userEmail],
+                    ['company name', companyName],
+                ];
+                for (const [field, value] of requiredCommPrefsFields) {
+                    if (!value.trim()) {
+                        setSetupError(`Please enter your ${field}.`);
+                        return;
+                    }
+                }
             }
 
             setDisabled(true);
@@ -43,7 +53,7 @@ const SetupContents = () => {
                     setSetupData(response);
                 }
                 if (commPrefsMissing) {
-                    await setup.commPrefs(userEmail, checked, checked);
+                    await setup.commPrefs(userEmail, firstName, lastName, companyName, checked, checked);
                     setCommPrefsMissing(false);
                 }
                 setSetupError(null);
