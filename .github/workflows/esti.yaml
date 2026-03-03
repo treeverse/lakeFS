@@ -167,6 +167,8 @@ jobs:
             metaclient-jar: spark3-assembly.jar
           - tag: "4.0.0"
             metaclient-jar: spark4-assembly.jar
+          - tag: "4.1.1"
+            metaclient-jar: spark4-assembly.jar
     services:
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
