@@ -125,5 +125,7 @@ public abstract class S3FSTestBase extends FSTestBase {
         conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
         conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
         conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
+        conf.set("fs.s3a.path.style.access", "true");
+        conf.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider");
     }
 }

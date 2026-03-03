@@ -77,14 +77,16 @@ jobs:
           path: /tmp/lakefs.tar
 
   compatibility-checks-client:
-    name: Test lakeFS Hadoop FileSystem compatibility
+    name: Test lakeFS Hadoop FileSystem compatibility (Spark ${{ matrix.spark.tag }})
     needs: [gen-code]
     strategy:
       fail-fast: false
       matrix:
-        # Removing a version from this list means the published client is no longer tested for
-        # compatibility with that lakeFS version.  Like any other client it can still rely on
-        # the lakeFS 1.0 API guarantees.
+        spark:
+          - tag: 3
+            java_version: "8"
+            sonnet_project: sonnets-311
+            sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         lakefs_version:
           - 0.113.0
           - 1.0.0
@@ -178,11 +180,24 @@ jobs:
           - 1.77.0
           - 1.77.1
           - 1.78.0
+        include:
+          - spark:
+              tag: "4.0.0"
+              java_version: "17"
+              sonnet_project: sonnets-400
+              sonnet_jar: sonnets-400/target/sonnets-400/scala-2.13/sonnets-400_2.13-0.1.0.jar
+            lakefs_version: 1.78.0
+          - spark:
+              tag: "4.1.1"
+              java_version: "17"
+              sonnet_project: sonnets-411
+              sonnet_jar: sonnets-411/target/sonnets-411/scala-2.13/sonnets-411_2.13-0.1.0.jar
+            lakefs_version: 1.78.0
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
       REGISTRY: treeverse
-      SPARK_TAG: 3
+      SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
@@ -190,14 +205,14 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: "adopt-hotspot"
-          java-version: "8"
+          java-version: ${{ matrix.spark.java_version }}
           cache: "sbt"
 
       - name: Package Spark App
         working-directory: test/spark/app
-        run: sbt sonnets-311/package
+        run: sbt ${{ matrix.spark.sonnet_project }}/package
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
@@ -230,14 +245,14 @@ jobs:
           name: client-assembly
           path: clients/hadoopfs/target
 
-      - name: Test lakeFS S3 with Spark 3.x thick client
+      - name: Test lakeFS S3 with Spark ${{ matrix.spark.tag }} thick client
         timeout-minutes: 8
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }} \
+            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
             --repository thick-client-test \
-            --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar \
+            --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --access_mode hadoopfs \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
             --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
