@@ -86,7 +86,13 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 
 		// first setup of lakeFS
 		mockEmail := "test@acme.co"
+		firstName := "Test"
+		lastName := "User"
+		companyName := "Acme Inc."
 		commResp, err := client.SetupCommPrefsWithResponse(context.Background(), apigen.SetupCommPrefsJSONRequestBody{
+			FirstName:       &firstName,
+			LastName:        &lastName,
+			CompanyName:     &companyName,
 			Email:           &mockEmail,
 			FeatureUpdates:  false,
 			SecurityUpdates: false,

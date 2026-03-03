@@ -3748,8 +3748,14 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 
 			ctx := t.Context()
 			mockEmail := "test@acme.co"
+			firstName := "Test"
+			lastName := "User"
+			companyName := "Acme Inc."
 			_, _ = clt.SetupCommPrefsWithResponse(ctx, apigen.SetupCommPrefsJSONRequestBody{
+				FirstName:       &firstName,
+				LastName:        &lastName,
 				Email:           &mockEmail,
+				CompanyName:     &companyName,
 				FeatureUpdates:  false,
 				SecurityUpdates: false,
 			})
@@ -3826,6 +3832,42 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 					t.Error("re-setup didn't got conflict response")
 				}
 			}
+		})
+	}
+}
+
+func TestController_SetupCommPrefs(t *testing.T) {
+	mockEmail := "test@acme.co"
+	cases := []struct {
+		name string
+		body apigen.SetupCommPrefsJSONRequestBody
+	}{
+		{
+			name: "omit all optional name fields",
+			body: apigen.SetupCommPrefsJSONRequestBody{
+				Email: &mockEmail,
+			},
+		},
+		{
+			name: "provides all optional name fields",
+			body: apigen.SetupCommPrefsJSONRequestBody{
+				FirstName:   swag.String("Test"),
+				Email:       &mockEmail,
+				LastName:    swag.String("User"),
+				CompanyName: swag.String("Acme Inc."),
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			handler, _ := setupHandler(t)
+			server := setupServer(t, handler)
+			clt := setupClientByEndpoint(t, server.URL, "", "")
+
+			resp, err := clt.SetupCommPrefsWithResponse(t.Context(), c.body)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, resp.StatusCode(), "unexpected status for %s", c.name)
 		})
 	}
 }
