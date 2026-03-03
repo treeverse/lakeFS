@@ -3696,7 +3696,7 @@ func TestController_ConfigHandlers(t *testing.T) {
 	})
 
 	t.Run("Get gc config", func(t *testing.T) {
-		expectedPeriod := int((6 * time.Hour).Seconds())
+		expectedPeriod := int((24 * time.Hour).Seconds())
 		resp, err := clt.GetGarbageCollectionConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
 		period := resp.JSON200.GracePeriod
