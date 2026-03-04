@@ -3,7 +3,6 @@
 ## v0.20.0
 
 * Verify link address expiration set to 24h (#10180)
-* Metadata Client: Add Spark 4 integration and docs (#10146)
 
 ## v0.19.0
 
