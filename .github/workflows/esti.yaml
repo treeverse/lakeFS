@@ -203,6 +203,9 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
           LAKEFS_STATS_ENABLED: false
 
@@ -224,6 +227,7 @@ jobs:
 
       spark-worker:
         image: docker.io/treeverse/bitnami-spark:${{ matrix.spark.tag }}
+        options: --name spark-worker
         env:
           SPARK_MODE: worker
           SPARK_MASTER_URL: spark://spark:7077
@@ -282,6 +286,15 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
           ESTI_SETUP_LAKEFS: true
+
+      - name: Setup GCS credentials on Spark worker
+        if: matrix.blockstore.type == 'gs'
+        run: |
+          echo "$LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON" > /tmp/gc-creds.json
+          docker cp /tmp/gc-creds.json spark-worker:/tmp/gc-creds.json
+          rm /tmp/gc-creds.json
+        env:
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
 
       - name: GC test (GCS)
         if: matrix.blockstore.type == 'gs'
