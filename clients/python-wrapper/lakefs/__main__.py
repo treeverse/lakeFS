@@ -144,7 +144,7 @@ def _find_binary(binary_name: str) -> Optional[str]:
 
     # Check the lakefs-cli companion package
     try:
-        from lakefs_cli import get_binary_path
+        from lakefs_cli import get_binary_path  # pylint: disable=import-outside-toplevel
         binary_path = get_binary_path(binary_name)
         if binary_path:
             return binary_path
