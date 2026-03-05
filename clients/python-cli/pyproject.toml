@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lakefs-cli"
 description = "Companion package shipping pre-built lakeFS and lakectl binaries"
-version = "0.1.0"
+version = "0.0.0"
 keywords = ["lakeFS", "lakectl", "CLI", "binary"]
 requires-python = ">=3.10"
 license = "Apache-2.0"
