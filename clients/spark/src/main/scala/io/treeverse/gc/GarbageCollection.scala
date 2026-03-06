@@ -248,7 +248,9 @@ object GarbageCollection {
         )
       }
 
-      spark.close()
+      if (hc.getBoolean(LAKEFS_CONF_GC_CLOSE_SPARK_SESSION, true)) {
+        spark.close()
+      }
     }
   }
 
