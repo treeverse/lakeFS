@@ -132,23 +132,34 @@ def _find_binary(binary_name: str) -> Optional[str]:
     '''
     Find the requested binary in the following by order of preference:
      - $PATH
+     - lakefs-cli companion package (if installed)
      - {sys.exec_prefix}/bin
      - {sys.exec_prefix}/Scripts (venv on windows)
      - ~/.lakefs/bin
     '''
-    bin_directory = _determine_binary_path()
-    bin_path = os.path.expanduser(f'{bin_directory}/{binary_name}')
     # Check if the binary is in the PATH
     binary_path = shutil.which(binary_name)
     if binary_path:
         return binary_path
+
+    # Check the lakefs-cli companion package
+    try:
+        from lakefs_cli import get_binary_path  # pylint: disable=import-outside-toplevel
+        binary_path = get_binary_path(binary_name)
+        if binary_path:
+            return binary_path
+    except ImportError:
+        pass
+
+    # Check expected install locations
+    bin_directory = _determine_binary_path()
+    bin_path = os.path.expanduser(f'{bin_directory}/{binary_name}')
     platform_info = _get_platform_info()
     if platform_info.system == 'windows':
         bin_path = bin_path + '.exe'
-    # If not found in PATH, check the home directory path
     if os.path.isfile(bin_path):
-        binary_path = bin_path
-    return binary_path
+        return bin_path
+    return None
 
 
 def run_binary(binary_path: str, args: list[str]) -> NoReturn:

@@ -30,6 +30,7 @@ classifiers = [
 [project.optional-dependencies]
 all = [ "boto3 >= 1.26.0" ]
 aws-iam = [ "boto3 >= 1.26.0" ]
+cli = [ "lakefs-cli" ]
 
 [dependency-groups]
 test = [

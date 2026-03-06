@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Binaries populated at build time
+lakefs_cli/bin/lakefs
+lakefs_cli/bin/lakectl
+lakefs_cli/bin/lakefs.exe
+lakefs_cli/bin/lakectl.exe

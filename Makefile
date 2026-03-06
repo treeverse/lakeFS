@@ -140,6 +140,9 @@ package-python-wrapper:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
+package-python-cli:
+	cd clients/python-cli && python build_wheels.py $(PACKAGE_VERSION)
+
 package: package-python
 
 .PHONY: gen-api
