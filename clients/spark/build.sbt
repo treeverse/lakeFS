@@ -145,13 +145,15 @@ assembly / assemblyShadeRules := Seq(
   // Spark's classpath which expects unshaded protobuf, causing NoSuchMethodError.
   // See: https://github.com/treeverse/lakeFS/issues/10136
   rename("com.google.api.**").inAll,
-  rename("com.google.cloud.**").inAll,
+  // Shade google-cloud-storage SDK and its internal dependencies, but NOT
+  // com.google.cloud.hadoop which is the GCS Hadoop connector — Spark loads
+  // it by class name (fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem).
+  rename("com.google.cloud.storage.**").inAll,
   rename("com.google.type.**").inAll,
   rename("com.google.rpc.**").inAll,
   rename("com.google.longrunning.**").inAll,
   rename("com.google.iam.**").inAll,
   rename("com.google.logging.**").inAll,
-  rename("com.google.auth.**").inAll,
   rename("com.google.common.**")
     .inLibrary("com.google.guava" % "guava" % "30.1-jre",
                "com.google.guava" % "failureaccess" % "1.0.1"
@@ -224,13 +226,12 @@ verifyShading := {
   // (e.g., Dataproc), because Spark's classloader will load its version first.
   val mustBeShaded = Seq(
     "com/google/api/",
-    "com/google/cloud/",
+    "com/google/cloud/storage/",
     "com/google/type/",
     "com/google/rpc/",
     "com/google/longrunning/",
     "com/google/iam/",
     "com/google/logging/",
-    "com/google/auth/",
     "com/google/protobuf/"
   )
 

@@ -36,6 +36,9 @@ func getSparkSubmitArgs(entryPoint string, blockstoreType string) []string {
 		azureStorageAccount := os.Getenv("ESTI_AZURE_STORAGE_ACCOUNT")
 		azureStorageAccessKey := os.Getenv("ESTI_AZURE_STORAGE_ACCESS_KEY")
 		args = append(args,
+			// hadoop-azure is "provided" in the assembly jar and not included in
+			// the bitnami-spark image; pull it at runtime for the ABFS driver.
+			"--packages", "org.apache.hadoop:hadoop-azure:3.3.6",
 			"--conf", fmt.Sprintf("spark.hadoop.fs.azure.account.key.%s.dfs.core.windows.net=%s", azureStorageAccount, azureStorageAccessKey),
 		)
 	}

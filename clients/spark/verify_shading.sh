@@ -15,15 +15,16 @@ JAR="${1:?Usage: $0 <assembly-jar-path>}"
 
 MUST_BE_SHADED=(
   "com/google/api/"
-  "com/google/cloud/"
+  "com/google/cloud/storage/"
   "com/google/type/"
   "com/google/rpc/"
   "com/google/longrunning/"
   "com/google/iam/"
   "com/google/logging/"
-  "com/google/auth/"
   "com/google/protobuf/"
 )
+# NOTE: com/google/cloud/hadoop/ is intentionally NOT shaded — Spark loads
+# the GCS connector by class name (fs.gs.impl=...GoogleHadoopFileSystem).
 
 # Build grep pattern
 PATTERN=$(printf "%s\n" "${MUST_BE_SHADED[@]}" | sed 's/\//\\\//g' | paste -sd'|' -)
