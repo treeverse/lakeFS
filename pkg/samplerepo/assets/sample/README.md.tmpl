@@ -463,8 +463,8 @@ _Hooks_ can be either a Lua script that lakeFS will execute itself, an external 
     ```bash
     docker exec lakefs \
         lakectl branch create \
-                lakefs://quickstart/add_action \
-                        --source lakefs://quickstart/{{.RepoDefaultBranch}}
+                lakefs://{{.RepoName}}/add_action \
+                        --source lakefs://{{.RepoName}}/{{.RepoDefaultBranch}}
     ```
 
 1. Open up your favorite text editor (or emacs), and paste the following YAML: 
@@ -516,7 +516,7 @@ _Hooks_ can be either a Lua script that lakeFS will execute itself, an external 
     ```bash
     docker exec lakefs \
         lakectl fs upload \
-            lakefs://quickstart/add_action/_lakefs_actions/check_commit_metadata.yml \
+            lakefs://{{.RepoName}}/add_action/_lakefs_actions/check_commit_metadata.yml \
             --source /tmp/check_commit_metadata.yml
     ```
 
@@ -557,9 +557,9 @@ We'll start by creating a branch that's going to match the `etl` pattern, and th
         WITH src AS (
             SELECT lake_name, country, depth_m,
                 RANK() OVER ( ORDER BY depth_m DESC) AS lake_rank
-            FROM READ_PARQUET('lakefs://quickstart/etl_20230504/lakes.parquet'))
+            FROM READ_PARQUET('lakefs://{{.RepoName}}/etl_20230504/lakes.parquet'))
         SELECT * FROM SRC WHERE lake_rank <= 10
-    ) TO 'lakefs://quickstart/etl_20230504/top10_lakes.parquet'    
+    ) TO 'lakefs://{{.RepoName}}/etl_20230504/top10_lakes.parquet'    
     ```
 
 1. Head to the **Uncommitted Changes** tab in the UI and notice that there is now a file called `top10_lakes.parquet` waiting to be committed. 
