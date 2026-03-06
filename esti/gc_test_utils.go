@@ -17,7 +17,7 @@ import (
 func getSparkSubmitArgs(entryPoint string, blockstoreType string) []string {
 	args := []string{
 		"--master", "spark://localhost:7077",
-		"--conf", "spark.jars.ivy=/opt/bitnami/spark/.ivy2", // Spark 4 requires an absolute ivy path; user.home is unset in the bitnami image
+		"--conf", "spark.jars.ivy=/tmp/ivy", // Use a writable path for ivy; the bitnami image runs as non-root user 1001
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000" + apiutil.BaseURL,
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
@@ -36,8 +36,8 @@ func getSparkSubmitArgs(entryPoint string, blockstoreType string) []string {
 		azureStorageAccount := os.Getenv("ESTI_AZURE_STORAGE_ACCOUNT")
 		azureStorageAccessKey := os.Getenv("ESTI_AZURE_STORAGE_ACCESS_KEY")
 		args = append(args,
-			// hadoop-azure is "provided" in the assembly jar and not included in
-			// the bitnami-spark image; pull it at runtime for the ABFS driver.
+			// hadoop-azure is "provided" in the assembly jar and not bundled in the
+			// bitnami-spark image; pull it at runtime so the ABFS driver is available.
 			"--packages", "org.apache.hadoop:hadoop-azure:3.3.6",
 			"--conf", fmt.Sprintf("spark.hadoop.fs.azure.account.key.%s.dfs.core.windows.net=%s", azureStorageAccount, azureStorageAccessKey),
 		)
@@ -45,11 +45,10 @@ func getSparkSubmitArgs(entryPoint string, blockstoreType string) []string {
 	return args
 }
 
-func getDockerArgs(t testing.TB, workingDirectory string, localJar string, blockstoreType string) []string {
+func getDockerArgs(t testing.TB, localJar string, blockstoreType string) []string {
 	t.Helper()
 	args := []string{
 		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
 		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", localJar),
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID",
@@ -158,12 +157,7 @@ func writeGCSCredentialsFile(t testing.TB) string {
 
 func RunSparkSubmit(t testing.TB, config *SparkSubmitConfig) error {
 	t.Helper()
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
-	}
-	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(t, workingDirectory, config.LocalJar, config.BlockstoreType)
+	dockerArgs := getDockerArgs(t, config.LocalJar, config.BlockstoreType)
 	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/treeverse/bitnami-spark:%s", config.SparkVersion), "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint, config.BlockstoreType)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
