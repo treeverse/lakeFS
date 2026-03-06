@@ -47,7 +47,7 @@ export const Loading: FC = () => {
 
 export const getFileExtension = (objectName: string): string => {
     const objectNameParts = objectName.split('.');
-    return objectNameParts[objectNameParts.length - 1];
+    return objectNameParts[objectNameParts.length - 1].toLowerCase();
 };
 
 export const getContentType = (headers: Headers): string | undefined => {
