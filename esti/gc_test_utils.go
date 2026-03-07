@@ -14,7 +14,28 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func getSparkSubmitArgs(entryPoint string, blockstoreType string) []string {
+// hadoopAzureVersion returns a hadoop-azure Maven coordinate version that
+// matches the Hadoop runtime bundled in the given Spark image.  Using a
+// mismatched version pulls conflicting transitive dependencies (e.g.
+// hadoop-common 3.3.6 vs the 3.3.1 already on the Spark 3.2.1 classpath).
+func hadoopAzureVersion(sparkVersion string) string {
+	switch {
+	case strings.HasPrefix(sparkVersion, "3.2"):
+		return "3.3.1"
+	case strings.HasPrefix(sparkVersion, "3.3"):
+		return "3.3.4"
+	case strings.HasPrefix(sparkVersion, "3.4"), strings.HasPrefix(sparkVersion, "3.5"):
+		return "3.3.6"
+	case strings.HasPrefix(sparkVersion, "4.0"):
+		return "3.4.0"
+	case strings.HasPrefix(sparkVersion, "4.1"):
+		return "3.4.1"
+	default:
+		return "3.3.6"
+	}
+}
+
+func getSparkSubmitArgs(entryPoint string, blockstoreType string, sparkVersion string) []string {
 	args := []string{
 		"--master", "spark://localhost:7077",
 		"--conf", "spark.jars.ivy=/tmp/ivy", // Use a writable path for ivy; the bitnami image runs as non-root user 1001
@@ -38,7 +59,9 @@ func getSparkSubmitArgs(entryPoint string, blockstoreType string) []string {
 		args = append(args,
 			// hadoop-azure is "provided" in the assembly jar and not bundled in the
 			// bitnami-spark image; pull it at runtime so the ABFS driver is available.
-			"--packages", "org.apache.hadoop:hadoop-azure:3.3.6",
+			// The version must match the Hadoop runtime in the Spark image to avoid
+			// classpath conflicts.
+			"--packages", fmt.Sprintf("org.apache.hadoop:hadoop-azure:%s", hadoopAzureVersion(sparkVersion)),
 			"--conf", fmt.Sprintf("spark.hadoop.fs.azure.account.key.%s.dfs.core.windows.net=%s", azureStorageAccount, azureStorageAccessKey),
 		)
 	}
@@ -159,7 +182,7 @@ func RunSparkSubmit(t testing.TB, config *SparkSubmitConfig) error {
 	t.Helper()
 	dockerArgs := getDockerArgs(t, config.LocalJar, config.BlockstoreType)
 	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/treeverse/bitnami-spark:%s", config.SparkVersion), "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint, config.BlockstoreType)
+	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint, config.BlockstoreType, config.SparkVersion)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
 	args := dockerArgs
 	args = append(args, sparkSubmitArgs...)
