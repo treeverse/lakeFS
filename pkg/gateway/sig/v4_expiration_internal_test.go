@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
-	"github.com/treeverse/lakefs/pkg/gateway/sig/sigtest"
 )
 
 func TestSigV4VerifyExpirationPresigned(t *testing.T) {
@@ -89,7 +88,7 @@ func TestSigV4VerifyExpirationPresigned(t *testing.T) {
 
 func TestSigV4VerifyExpirationNonPresigned(t *testing.T) {
 	// Test non-presigned requests using shared clock skew test cases
-	testCases := sigtest.CommonClockSkewTestCases(AmzMaxClockSkew)
+	testCases := CommonClockSkewTestCases(AmzMaxClockSkew)
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 
 	for _, tc := range testCases {
