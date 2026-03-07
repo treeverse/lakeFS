@@ -769,11 +769,12 @@ class Pulls {
         return response.json();
     }
 
-    async merge(repoId, pullId) {
+    async merge(repoId, pullId, squashMerge = false) {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}/merge`,
             {
                 method: 'PUT',
+                body: JSON.stringify({ squash_merge: squashMerge }),
             },
         );
         if (response.status !== 200) {
@@ -1116,12 +1117,12 @@ class Refs {
         return response.json();
     }
 
-    async merge(repoId, sourceBranch, destinationBranch, strategy = '', message = '', metadata = {}) {
+    async merge(repoId, sourceBranch, destinationBranch, strategy = '', message = '', metadata = {}, squashMerge = false) {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`,
             {
                 method: 'POST',
-                body: JSON.stringify({ strategy, message, metadata }),
+                body: JSON.stringify({ strategy, message, metadata, squash_merge: squashMerge }),
             },
         );
 
@@ -1138,11 +1139,12 @@ class Refs {
         }
     }
 
-    async mergeAsync(repoId, sourceRef, destinationBranch, strategy = '', message = '', metadata = {}) {
+    async mergeAsync(repoId, sourceRef, destinationBranch, strategy = '', message = '', metadata = {}, squashMerge = false) {
         const body = {
             strategy,
             message,
             metadata,
+            squash_merge: squashMerge,
         };
 
         const response = await apiRequest(
