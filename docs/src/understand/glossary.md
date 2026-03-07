@@ -77,6 +77,11 @@ enrich context.
 Like data itself, object metadata is versioned in lakeFS. This means metadata evolves alongside your data and can be easily
 managed, queried, and reproduced.
 
+**S3 Compatibility**: When using the S3 Gateway, lakeFS stores user-defined metadata keys in lowercase to comply with the
+[S3 specification](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingMetadata.html#UserMetadata), which states
+"Amazon S3 stores user-defined metadata keys in lowercase". For example, if you upload an object with metadata key `MyKey`,
+it will be stored and retrieved as `mykey`.
+
 ## Repository
 
 In lakeFS, a _repository_ is a set of related objects (or collections of objects). [Read More][repository].
