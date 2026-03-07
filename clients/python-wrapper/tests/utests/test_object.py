@@ -212,6 +212,34 @@ class TestObjectReader:
                 with obj.reader(mode="invalid"):
                     pass
 
+    def test_read_empty_object_range_request(self, monkeypatch, tmp_path):
+        """Test reading from an empty object with range request (issue #10208)"""
+        test_kwargs = ObjectTestKWArgs()
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            # Mock empty object stats (size = 0)
+            object_stats = ObjectTestStats()
+            object_stats.path = test_kwargs.path
+            object_stats.size_bytes = 0
+            monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args, **kwargs: object_stats)
+
+            # Mock 416 response for range request on empty object
+            def mock_get_object_with_http_info(*args, **kwargs):
+                raise lakefs_sdk.ApiException(
+                    status=http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                    reason="Requested Range Not Satisfiable"
+                )
+
+            monkeypatch.setattr(
+                lakefs_sdk.api.ObjectsApi,
+                "get_object_with_http_info",
+                mock_get_object_with_http_info
+            )
+
+            # Should not raise UnboundLocalError
+            with obj.reader(mode="rb") as fd:
+                data = fd.read(100)
+                assert data == b''  # Empty data for empty object
+
 
 class TestWriteableObject:
     def test_upload(self, monkeypatch, tmp_path):
