@@ -22,10 +22,8 @@ func hadoopAzureVersion(sparkVersion string) string {
 	switch {
 	case strings.HasPrefix(sparkVersion, "3."):
 		return "3.3.1" // Spark 3.2.1 ships Hadoop 3.3.1
-	case strings.HasPrefix(sparkVersion, "4.0"):
-		return "3.4.0"
-	case strings.HasPrefix(sparkVersion, "4.1"):
-		return "3.4.1"
+	case strings.HasPrefix(sparkVersion, "4."):
+		return "3.4.0" // Spark 4.x ships Hadoop 3.4.x
 	default:
 		return "3.3.6"
 	}
