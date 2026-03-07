@@ -1,0 +1,23 @@
+---
+name: unity_exports_shallow_clone
+on:
+  post-commit:
+    branches: ["main"]
+  post-merge:
+    branches:
+      - main
+hooks:
+  - id: unity_export_shallow_clone
+    type: lua
+    properties:
+      script_path: scripts/unity_exporter_shallow_clone.lua
+      args:
+        table_defs:
+          - <your-table-descriptor-name>
+        table_descriptors_path: _lakefs_tables
+        target_base_location: "<target-storage-uri>"
+        databricks_host: "<databricks-workspace-url>"
+        databricks_token: "<databricks-personal-access-token>"
+        cluster_id: "<cluster-id>"
+        notebook_path: "<workspace-path-to-shallow-clone-notebook>"
+        warehouse_id: "<sql-warehouse-id>"
