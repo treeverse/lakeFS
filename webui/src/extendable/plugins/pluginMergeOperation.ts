@@ -13,5 +13,6 @@ export interface PluginMergeOperation {
         message?: string,
         metadata?: { [key: string]: string },
         capabilitiesConfig?: CapabilitiesConfig,
+        squashMerge?: boolean,
     ): Promise<MergeResult>;
 }

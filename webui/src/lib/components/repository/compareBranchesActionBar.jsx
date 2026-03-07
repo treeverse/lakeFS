@@ -63,6 +63,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
         show: false,
         err: null,
         strategy: 'none',
+        squashMerge: false,
     };
     const [mergeState, setMergeState] = useState(initialMerge);
 
@@ -74,6 +75,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
             err: mergeState.err,
             show: true,
             strategy: mergeState.strategy,
+            squashMerge: mergeState.squashMerge,
         });
     });
 
@@ -83,6 +85,17 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
             err: mergeState.err,
             show: mergeState.show,
             strategy: event.target.value,
+            squashMerge: mergeState.squashMerge,
+        });
+    };
+
+    const onSquashMergeChange = (event) => {
+        setMergeState({
+            merging: mergeState.merging,
+            err: mergeState.err,
+            show: mergeState.show,
+            strategy: mergeState.strategy,
+            squashMerge: event.target.checked,
         });
     };
     const hide = () => {
@@ -110,6 +123,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
             show: mergeState.show,
             err: mergeState.err,
             strategy: mergeState.strategy,
+            squashMerge: mergeState.squashMerge,
         });
         try {
             await pluginManager.mergeOperation.merge(
@@ -120,12 +134,14 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                 message,
                 metadata,
                 capabilitiesConfig,
+                mergeState.squashMerge,
             );
             setMergeState({
                 merging: mergeState.merging,
                 show: mergeState.show,
                 err: null,
                 strategy: mergeState.strategy,
+                squashMerge: mergeState.squashMerge,
             });
             onDone();
             hide();
@@ -135,6 +151,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                 show: mergeState.show,
                 err: err,
                 strategy: mergeState.strategy,
+                squashMerge: mergeState.squashMerge,
             });
         }
     };
@@ -194,6 +211,19 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                         (&rdquo;source-wins&rdquo;). In case no selection is made, the merge process will fail in case
                         of a conflict.
                     </FormHelperText>
+                    <Form.Group className="mt-3">
+                        <Form.Check
+                            type="checkbox"
+                            id="squash-merge"
+                            label="Squash merge"
+                            checked={mergeState.squashMerge}
+                            onChange={onSquashMergeChange}
+                            disabled={mergeState.merging}
+                        />
+                        <FormHelperText className="text-secondary">
+                            Combine all commits into a single commit on the destination branch.
+                        </FormHelperText>
+                    </Form.Group>
                     {mergeState.merging && (
                         <Alert variant="info" className="d-flex align-items-center mt-3">
                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />

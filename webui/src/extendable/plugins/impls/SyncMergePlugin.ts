@@ -11,8 +11,9 @@ class SyncMergePlugin implements PluginMergeOperation {
         message?: string,
         metadata?: { [key: string]: string },
         _capabilitiesConfig?: CapabilitiesConfig,
+        squashMerge?: boolean,
     ): Promise<MergeResult> {
-        return refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata);
+        return refs.merge(repoId, sourceRef, destinationBranch, strategy, message, metadata, squashMerge);
     }
 }
 

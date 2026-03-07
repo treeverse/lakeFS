@@ -3,6 +3,8 @@ import { useOutletContext } from 'react-router-dom';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
+import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
 import { GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from '@primer/octicons-react';
 import dayjs from 'dayjs';
 import Markdown from 'react-markdown';
@@ -23,6 +25,8 @@ const PullDetailsContent = ({ repo, pull }) => {
     let [loading, setLoading] = useState(false);
     let [action, setAction] = useState(null);
     let [error, setError] = useState(null);
+    let [showMergeModal, setShowMergeModal] = useState(false);
+    let [squashMerge, setSquashMerge] = useState(false);
 
     const {
         state: { results: diffResults, loading: diffLoading, error: diffError },
@@ -35,7 +39,7 @@ const PullDetailsContent = ({ repo, pull }) => {
         setAction('merge');
         setLoading(true);
         try {
-            await pullsAPI.merge(repo.id, pull.id);
+            await pullsAPI.merge(repo.id, pull.id, squashMerge);
         } catch (error) {
             setError(error.message);
             setLoading(false);
@@ -43,6 +47,16 @@ const PullDetailsContent = ({ repo, pull }) => {
             return;
         }
         window.location.reload(); // TODO (gilo): replace with a more elegant solution
+    };
+
+    const openMergeModal = () => {
+        setShowMergeModal(true);
+    };
+
+    const closeMergeModal = () => {
+        if (loading) return;
+        setShowMergeModal(false);
+        setSquashMerge(false);
     };
 
     const changePullStatus = (status) => async () => {
@@ -90,7 +104,7 @@ const PullDetailsContent = ({ repo, pull }) => {
                             />
                             {!formattedDiffError && (
                                 <MergePullButton
-                                    onClick={mergePullRequest}
+                                    onClick={openMergeModal}
                                     isEmptyDiff={isEmptyDiff}
                                     loading={loading && action === 'merge'}
                                     disabled={loading}
@@ -114,6 +128,48 @@ const PullDetailsContent = ({ repo, pull }) => {
                         )}
                     </>
                 )}
+                <Modal show={showMergeModal} onHide={closeMergeModal}>
+                    <Modal.Header closeButton={!loading}>
+                        <Modal.Title>Merge pull request</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <p>
+                            Merge <strong>{pull.source_branch}</strong> into <strong>{pull.destination_branch}</strong>
+                        </p>
+                        <Form.Group>
+                            <Form.Check
+                                type="checkbox"
+                                id="pr-squash-merge"
+                                label="Squash merge"
+                                checked={squashMerge}
+                                onChange={(e) => setSquashMerge(e.target.checked)}
+                                disabled={loading}
+                            />
+                            <Form.Text className="text-muted">
+                                Combine all commits into a single commit on the destination branch.
+                            </Form.Text>
+                        </Form.Group>
+                        {loading && (
+                            <Alert variant="info" className="d-flex align-items-center mt-3 mb-0">
+                                <span
+                                    className="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                    aria-hidden="true"
+                                />
+                                Merging pull request...
+                            </Alert>
+                        )}
+                        {error && <AlertError error={error} onDismiss={() => setError(null)} />}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" disabled={loading} onClick={closeMergeModal}>
+                            Cancel
+                        </Button>
+                        <Button variant="success" disabled={loading || isEmptyDiff} onClick={mergePullRequest}>
+                            {loading ? 'Merging...' : 'Merge'}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </div>
             {isPullOpen() &&
                 !formattedDiffError && ( // in case of diff error, we show an error message above instead.
