@@ -17,7 +17,6 @@ import (
 )
 
 func TestAuthMiddleware(t *testing.T) {
-	t.Parallel()
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	apiEndpoint := server.URL + apiutil.BaseURL
