@@ -13,6 +13,7 @@ import (
 )
 
 func TestPullsIterator(t *testing.T) {
+	t.Parallel()
 	r, kvStore := testRefManager(t)
 	ctx := t.Context()
 	totalCount := 100
@@ -134,6 +135,7 @@ func TestPullsIterator(t *testing.T) {
 }
 
 func TestPullsIterator_CloseTwice(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -154,6 +156,7 @@ func TestPullsIterator_CloseTwice(t *testing.T) {
 }
 
 func TestPullsIterator_NextClosed(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)

@@ -13,6 +13,7 @@ import (
 )
 
 func TestPyramidWriteFile(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	filename := uuid.New().String()
 
@@ -63,6 +64,7 @@ func TestPyramidWriteFile(t *testing.T) {
 }
 
 func TestWriteValidate(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	filename := uuid.New().String()
 	fh, err := os.CreateTemp("", filename)
@@ -97,6 +99,7 @@ func TestWriteValidate(t *testing.T) {
 }
 
 func TestMultipleWriteCalls(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	filename := uuid.New().String()
 	fh, err := os.CreateTemp("", filename)
@@ -131,6 +134,7 @@ func TestMultipleWriteCalls(t *testing.T) {
 }
 
 func TestAbort(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	filename := uuid.New().String()
 	fh, err := os.CreateTemp("", filename)
@@ -174,6 +178,7 @@ func TestAbort(t *testing.T) {
 }
 
 func TestPyramidReadFile(t *testing.T) {
+	t.Parallel()
 	filename := uuid.New().String()
 	filepath := path.Join("/tmp", filename)
 	content := "some content to write to file"

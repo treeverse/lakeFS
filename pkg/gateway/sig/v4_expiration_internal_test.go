@@ -12,6 +12,7 @@ import (
 )
 
 func TestSigV4VerifyExpirationPresigned(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 
 	testCases := []struct {
@@ -88,6 +89,7 @@ func TestSigV4VerifyExpirationPresigned(t *testing.T) {
 }
 
 func TestSigV4VerifyExpirationNonPresigned(t *testing.T) {
+	t.Parallel()
 	// Test non-presigned requests using shared clock skew test cases
 	testCases := sigtest.CommonClockSkewTestCases(AmzMaxClockSkew)
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
@@ -115,6 +117,7 @@ func TestSigV4VerifyExpirationNonPresigned(t *testing.T) {
 }
 
 func TestGetAmzDate(t *testing.T) {
+	t.Parallel()
 	requestTime := time.Date(2025, 12, 15, 12, 30, 45, 0, time.UTC)
 	validAmzDate := requestTime.Format(v4timeFormat)             // "20240615T123045Z"
 	validCredentialDate := requestTime.Format(v4shortTimeFormat) // "20240615"
@@ -240,6 +243,7 @@ func TestGetAmzDate(t *testing.T) {
 }
 
 func TestParseExpires(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name          string
 		expiresStr    string
@@ -307,6 +311,7 @@ func TestParseExpires(t *testing.T) {
 }
 
 func TestIsV4PresignedRequest(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name          string
 		query         url.Values

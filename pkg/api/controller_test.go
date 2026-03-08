@@ -81,6 +81,7 @@ func onBlock(deps *dependencies, path string) string {
 }
 
 func TestController_ListRepositoriesHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -171,6 +172,7 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 }
 
 func TestController_GetRepoHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	t.Run("get missing repo", func(t *testing.T) {
@@ -254,6 +256,7 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat *catalog.Catalog, 
 }
 
 func TestController_LogCommitsMissingBranch(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -269,6 +272,7 @@ func TestController_LogCommitsMissingBranch(t *testing.T) {
 }
 
 func TestController_LogCommitsHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -352,6 +356,7 @@ func TestController_LogCommitsHandler(t *testing.T) {
 // TestController_LogCommitsParallelHandler sends concurrent requests to LogCommits.
 // LogCommits uses shared work pool, checking correctness for concurrent work is important.
 func TestController_LogCommitsParallelHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -399,6 +404,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 }
 
 func TestController_LogCommitsPredefinedData(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -554,6 +560,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 }
 
 func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	/*
@@ -743,6 +750,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 }
 
 func TestController_GetCommitHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -868,6 +876,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 }
 
 func TestController_CommitHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1024,6 +1033,7 @@ func TestController_CommitHandler(t *testing.T) {
 }
 
 func TestController_CreateRepositoryHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1237,6 +1247,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 }
 
 func TestController_DeleteRepositoryHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1310,6 +1321,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 }
 
 func TestController_SetRepositoryMetadataHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1408,6 +1420,7 @@ func TestController_SetRepositoryMetadataHandler(t *testing.T) {
 }
 
 func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1494,6 +1507,7 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 }
 
 func TestController_GetRepositoryMetadataHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1540,6 +1554,7 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 }
 
 func TestController_ListBranchesHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1628,6 +1643,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 }
 
 func TestController_ListTagsHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1710,6 +1726,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 }
 
 func TestController_GetBranchHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -1755,6 +1772,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 }
 
 func TestController_BranchesDiffBranchHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	const testBranch = "main"
@@ -1805,6 +1823,7 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 }
 
 func TestController_CreateBranchHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	for _, hidden := range []bool{true, false} {
@@ -1972,6 +1991,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 }
 
 func TestController_DiffRefsHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -2116,6 +2136,7 @@ func writeMultipart(fieldName, filename, content string) (string, io.Reader) {
 }
 
 func TestController_UploadObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -2326,6 +2347,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 }
 
 func TestController_DeleteBranchHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -2401,6 +2423,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 }
 
 func TestController_ObjectsStatObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -2498,6 +2521,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 }
 
 func TestController_UpdateObjectUserMetadataHander(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -2601,6 +2625,7 @@ func TestController_UpdateObjectUserMetadataHander(t *testing.T) {
 }
 
 func TestController_ObjectsListObjectsHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -2696,6 +2721,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 }
 
 func TestController_ObjectsHeadObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -2789,6 +2815,7 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 }
 
 func TestController_ObjectsGetObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -3007,6 +3034,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 }
 
 func TestController_ObjectsUploadObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -3141,6 +3169,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 }
 
 func TestController_ObjectsStageObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	ns := onBlock(deps, "bucket/prefix")
@@ -3326,6 +3355,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 }
 
 func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -3604,6 +3634,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 }
 
 func TestController_CreatePolicyHandler(t *testing.T) {
+	t.Parallel()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -3646,6 +3677,7 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 }
 
 func TestController_LogAction(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -3677,6 +3709,7 @@ func TestController_LogAction(t *testing.T) {
 }
 
 func TestController_ConfigHandlers(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	expectedExample := onBlock(deps, "example-bucket/")
@@ -3707,6 +3740,7 @@ func TestController_ConfigHandlers(t *testing.T) {
 }
 
 func TestController_SetupLakeFSHandler(t *testing.T) {
+	t.Parallel()
 	const validAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 	cases := []struct {
 		name               string
@@ -3873,6 +3907,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestController_LoginAuthenticationErrors(t *testing.T) {
+	t.Parallel()
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
@@ -3913,6 +3948,7 @@ func TestController_LoginAuthenticationErrors(t *testing.T) {
 }
 
 func TestController_STSLogin(t *testing.T) {
+	t.Parallel()
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
@@ -3940,6 +3976,7 @@ hooks:
 `))
 
 func TestController_ListRepositoryRuns(t *testing.T) {
+	t.Parallel()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := t.Context()
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -4036,6 +4073,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 }
 
 func TestController_MergeInvalidStrategy(t *testing.T) {
+	t.Parallel()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4067,6 +4105,7 @@ func TestController_MergeInvalidStrategy(t *testing.T) {
 }
 
 func TestController_MergeDiffWithParent(t *testing.T) {
+	t.Parallel()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4105,6 +4144,7 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 }
 
 func TestController_MergeIntoExplicitBranch(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4146,6 +4186,7 @@ func namer(number int) func(name string) string {
 }
 
 func TestController_MergeSquashing(t *testing.T) {
+	t.Parallel()
 	const numCommits = 3
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
@@ -4217,6 +4258,7 @@ func TestController_MergeSquashing(t *testing.T) {
 }
 
 func TestController_MergeDirtyBranch(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4242,6 +4284,7 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 }
 
 func TestController_MergeBranchWithNoChanges(t *testing.T) {
+	t.Parallel()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4281,6 +4324,7 @@ func TestController_MergeBranchWithNoChanges(t *testing.T) {
 }
 
 func TestController_CreateTag(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	// setup env
@@ -4537,6 +4581,7 @@ func TestController_Revert(t *testing.T) {
 }
 
 func TestController_RevertConflict(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	// setup env
@@ -4558,6 +4603,7 @@ func TestController_RevertConflict(t *testing.T) {
 }
 
 func TestController_CherryPick(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	// setup env
@@ -4741,6 +4787,7 @@ func TestController_CherryPick(t *testing.T) {
 }
 
 func TestController_Policy(t *testing.T) {
+	t.Parallel()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := t.Context()
 	const policyID = "TestPolicy"
@@ -4792,6 +4839,7 @@ func TestController_Policy(t *testing.T) {
 }
 
 func TestController_GetPhysicalAddress(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4848,6 +4896,7 @@ func TestController_GetPhysicalAddress(t *testing.T) {
 }
 
 func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4975,6 +5024,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 }
 
 func TestController_PrepareGarbageCollectionCommitted(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -4993,6 +5043,7 @@ func TestController_PrepareGarbageCollectionCommitted(t *testing.T) {
 }
 
 func TestController_ClientDisconnect(t *testing.T) {
+	t.Parallel()
 	handler, deps := setupHandler(t)
 
 	// setup lakefs
@@ -5070,6 +5121,7 @@ func TestController_ClientDisconnect(t *testing.T) {
 }
 
 func TestController_PostStatsEvents(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -5283,6 +5335,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 }
 
 func TestController_CopyObjectHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -5639,6 +5692,7 @@ func TestController_LocalAdapter_StageObject(t *testing.T) {
 }
 
 func TestController_BranchProtectionRules(t *testing.T) {
+	t.Parallel()
 	adminClt, deps := setupClientWithAdmin(t)
 
 	t.Run("admin", func(t *testing.T) {
@@ -5679,6 +5733,7 @@ func TestController_BranchProtectionRules(t *testing.T) {
 }
 
 func TestController_GarbageCollectionRules(t *testing.T) {
+	t.Parallel()
 	adminClt, deps := setupClientWithAdmin(t)
 
 	t.Run("admin", func(t *testing.T) {
@@ -5721,6 +5776,7 @@ func TestController_GarbageCollectionRules(t *testing.T) {
 }
 
 func TestController_DumpRestoreRepository(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 
@@ -5849,6 +5905,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 }
 
 func TestController_CreateCommitRecord(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	// expected commit ID for this commit record
@@ -5940,6 +5997,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 }
 
 func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	testCases := []struct {
 		name     string
@@ -6087,6 +6145,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 }
 
 func TestCheckPermissions_multipleResources(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	testCases := []struct {
 		name     string
@@ -6276,6 +6335,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 }
 
 func TestController_CreatePullRequest(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	repo := testUniqueRepoName()
@@ -6381,6 +6441,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 }
 
 func TestController_GetPullRequest(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	repo := testUniqueRepoName()
@@ -6402,6 +6463,7 @@ func TestController_GetPullRequest(t *testing.T) {
 }
 
 func TestController_ListPullRequestsHandler(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	repo := testUniqueRepoName()
@@ -6537,6 +6599,7 @@ func TestController_ListPullRequestsHandler(t *testing.T) {
 }
 
 func TestController_UpdatePullRequest(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	repo := testUniqueRepoName()
@@ -6689,6 +6752,7 @@ func TestController_UpdatePullRequest(t *testing.T) {
 }
 
 func TestController_MergePullRequest(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	repo := testUniqueRepoName()
@@ -6889,6 +6953,7 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 }
 
 func TestController_GetLicense(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	t.Run("not_implemented", func(t *testing.T) {
 		clt, _ := setupClientWithAdmin(t)
@@ -6942,6 +7007,7 @@ func TestController_ImportStart_Disabled(t *testing.T) {
 // TestController_ErrorHandling tests that different error types are properly mapped to HTTP status codes.
 // This is a regression test to ensure that errors from the graveler and KV layers are correctly handled.
 func TestController_UploadObject_ErrorHandling(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -7005,6 +7071,7 @@ func TestController_UploadObject_ErrorHandling(t *testing.T) {
 }
 
 func TestController_AsyncOperationsNotImplemented(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	clt, deps := setupClientWithAdmin(t)
 

@@ -24,6 +24,7 @@ func newTestStagingManager(t *testing.T) (context.Context, graveler.StagingManag
 }
 
 func TestUpdate(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 
 	key := "a/b/c/my-key-1234"
@@ -73,6 +74,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestSetGet(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	if !errors.Is(err, graveler.ErrNotFound) {
@@ -89,6 +91,7 @@ func TestSetGet(t *testing.T) {
 }
 
 func TestMultiToken(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("a/b/c/"))
 	if !errors.Is(err, graveler.ErrNotFound) {
@@ -116,6 +119,7 @@ func TestMultiToken(t *testing.T) {
 }
 
 func TestDrop(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	numOfValues := 1400
 	setupDrop(ctx, t, numOfValues, s)
@@ -154,6 +158,7 @@ func setupDrop(ctx context.Context, t *testing.T, numOfValues int, s graveler.St
 }
 
 func TestDropAsync(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	ch := make(chan bool)
@@ -178,6 +183,7 @@ func TestDropAsync(t *testing.T) {
 }
 
 func TestDropByPrefix(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	numOfValues := 2400
 	setupDrop(ctx, t, numOfValues, s)
@@ -213,6 +219,7 @@ func TestDropByPrefix(t *testing.T) {
 }
 
 func TestDropPrefixBytes(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	tests := map[string]struct {
 		keys                    []graveler.Key
@@ -315,6 +322,7 @@ func TestDropPrefixBytes(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	for _, numOfValues := range []int{1, 100, 1000, 1500, 2500} {
 		token := graveler.StagingToken(fmt.Sprintf("t_%d", numOfValues))
@@ -346,6 +354,7 @@ func TestList(t *testing.T) {
 }
 
 func TestSeek(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	numOfValues := 100
 	for i := range numOfValues {
@@ -384,6 +393,7 @@ func TestSeek(t *testing.T) {
 }
 
 func TestNilValue(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	err := s.Set(ctx, "t1", []byte("key1"), nil, false)
 	testutil.Must(t, err)
@@ -419,6 +429,7 @@ func TestNilValue(t *testing.T) {
 }
 
 func TestNilIdentity(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	err := s.Set(ctx, "t1", []byte("key1"), newTestValue("identity1", "value1"), false)
 	testutil.Must(t, err)
@@ -437,6 +448,7 @@ func TestNilIdentity(t *testing.T) {
 }
 
 func TestDeleteAndTombstone(t *testing.T) {
+	t.Parallel()
 	ctx, s := newTestStagingManager(t)
 	_, err := s.Get(ctx, "t1", []byte("key1"))
 	if !errors.Is(err, graveler.ErrNotFound) {

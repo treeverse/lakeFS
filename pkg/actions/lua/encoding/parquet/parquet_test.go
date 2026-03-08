@@ -36,6 +36,7 @@ coordinates	BYTE_ARRAY
 `
 
 func TestOpen(t *testing.T) {
+	t.Parallel()
 	out := bytes.Buffer{}
 	l := lua.NewState()
 	lualibs.OpenSafe(l, t.Context(), lualibs.OpenSafeConfig{}, &out)

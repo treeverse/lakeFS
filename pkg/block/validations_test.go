@@ -10,6 +10,7 @@ import (
 )
 
 func TestController_ValidateInterRegionStorage(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	t.Run("namespace with the same region as the storage", func(t *testing.T) {

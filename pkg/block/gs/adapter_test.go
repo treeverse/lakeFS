@@ -55,6 +55,7 @@ func newAdapter(opts ...gs.AdapterOption) *gs.Adapter {
 }
 
 func TestAdapter(t *testing.T) {
+	t.Parallel()
 	basePath, err := url.JoinPath("gs://", bucketName)
 	require.NoError(t, err)
 	localPath, err := url.JoinPath(basePath, "lakefs")
@@ -74,6 +75,7 @@ func TestAdapter(t *testing.T) {
 }
 
 func TestAdapterNamespace(t *testing.T) {
+	t.Parallel()
 	adapter := newAdapter()
 	defer func() {
 		require.NoError(t, adapter.Close())
@@ -121,6 +123,7 @@ func TestAdapterNamespace(t *testing.T) {
 }
 
 func TestMultipartUploadWithMD5(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	adapter := newAdapter()
 	defer require.NoError(t, adapter.Close())

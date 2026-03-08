@@ -29,6 +29,7 @@ import (
 
 // TestMostlyCorrectOwnerSingleThreaded tests behaviour with a single owner.
 func TestMostlyCorrectOwnerSingleThreaded(t *testing.T) {
+	t.Parallel()
 	// Fail quickly on deadlock
 	ctx, finish := context.WithTimeout(t.Context(), time.Second)
 	defer finish()
@@ -93,6 +94,7 @@ func (o *Ordering[T]) Slice() []T {
 // Own() call should wait until the first is released.  But Own() never
 // times out on its own.
 func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
@@ -150,6 +152,7 @@ func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 }
 
 func TestMostlyCorrectOwnerConsecutiveCancelled(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
@@ -181,6 +184,7 @@ func TestMostlyCorrectOwnerConsecutiveCancelled(t *testing.T) {
 // TestMostlyCorrectOwnerFIFOOrdering verifies that multiple waiters on the
 // same key are granted ownership in FIFO order.
 func TestMostlyCorrectOwnerFIFOOrdering(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})

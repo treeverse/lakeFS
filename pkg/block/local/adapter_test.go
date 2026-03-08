@@ -19,6 +19,7 @@ const testStorageNamespace = "local://test"
 
 // TestLocalAdapter tests the Local Storage Adapter for basic storage functionality
 func TestLocalAdapter(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	localPath := path.Join(tmpDir, "lakefs")
 	externalPath := block.BlockstoreTypeLocal + "://" + path.Join(tmpDir, "lakefs", "external")
@@ -31,6 +32,7 @@ func TestLocalAdapter(t *testing.T) {
 
 // TestAdapterNamespace tests the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	localPath := path.Join(tmpDir, "lakefs")
 	adapter, err := local.NewAdapter(localPath, local.WithRemoveEmptyDir(false))
@@ -74,6 +76,7 @@ func TestAdapterNamespace(t *testing.T) {
 // TestPathTraversalPrevention verifies that the adapter correctly blocks path traversal attacks,
 // including prefix-based bypass attempts where a malicious path shares a prefix with the base path.
 func TestPathTraversalPrevention(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	localPath := path.Join(tmpDir, "lakefs")
 	adapter, err := local.NewAdapter(localPath, local.WithRemoveEmptyDir(false))
@@ -141,6 +144,7 @@ func TestPathTraversalPrevention(t *testing.T) {
 // to access files outside the storage namespace. This test creates actual files to demonstrate
 // the vulnerability where an attacker can escape the namespace directory to read sibling files.
 func TestPathTraversalDataAccess(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	localPath := filepath.Join(tmpDir, "lakefs")
 	adapter, err := local.NewAdapter(localPath, local.WithRemoveEmptyDir(false))

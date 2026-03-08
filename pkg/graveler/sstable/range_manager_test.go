@@ -27,6 +27,7 @@ type NoCache struct{}
 func (n *NoCache) Unref() {}
 
 func TestGetEntrySuccess(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
@@ -51,6 +52,7 @@ func TestGetEntrySuccess(t *testing.T) {
 }
 
 func TestGetEntryCacheFailure(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
@@ -71,6 +73,7 @@ func TestGetEntryCacheFailure(t *testing.T) {
 }
 
 func TestGetEntryNotFound(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
@@ -95,6 +98,7 @@ func TestGetEntryNotFound(t *testing.T) {
 }
 
 func TestGetWriterSuccess(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
@@ -118,6 +122,7 @@ func TestGetWriterSuccess(t *testing.T) {
 }
 
 func TestNewPartIteratorSuccess(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 
@@ -147,6 +152,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 }
 
 func TestGetWriterRangeID(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 

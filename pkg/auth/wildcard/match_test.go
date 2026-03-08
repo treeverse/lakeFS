@@ -26,6 +26,7 @@ import (
 // `Match` supports '*' and '?' wildcards.
 // Sample usage: In resource matching for bucket policy validation.
 func TestMatch(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		pattern string
 		text    string

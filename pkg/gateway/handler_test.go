@@ -47,6 +47,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader) *http.Respon
 }
 
 func TestPathWithTrailingSlash(t *testing.T) {
+	t.Parallel()
 	result := setupTest(t, http.MethodHead, "/example/", nil)
 	testPathWithTrailingSlash(t, result)
 }
@@ -60,6 +61,7 @@ func testPathWithTrailingSlash(t *testing.T, result *http.Response) {
 }
 
 func TestContextCancellation(t *testing.T) {
+	t.Parallel()
 	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
 		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",

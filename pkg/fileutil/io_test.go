@@ -12,6 +12,7 @@ import (
 )
 
 func TestFindInParents(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	dirTree := filepath.Join(root, "foo", "bar", "baz", "taz")
 	require.NoError(t, os.MkdirAll(dirTree, fileutil.DefaultDirectoryMask))
@@ -85,6 +86,7 @@ func TestFindInParents(t *testing.T) {
 }
 
 func TestPruneEmptyDirectories(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 
 	cases := []struct {

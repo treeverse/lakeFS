@@ -158,6 +158,7 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 }
 
 func TestIsUnknownCommandError(t *testing.T) {
+	t.Parallel()
 	testRootCmd := &cobra.Command{Use: "lakectl"}
 	testRootCmd.AddCommand(&cobra.Command{Use: "known"})
 	testRootCmd.SetArgs([]string{"unknown-command"})

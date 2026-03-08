@@ -26,6 +26,7 @@ var params = committed.Params{
 }
 
 func TestWriter_WriteRecords(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -96,6 +97,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 }
 
 func TestWriter_OverlappingRanges(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -117,6 +119,7 @@ func TestWriter_OverlappingRanges(t *testing.T) {
 }
 
 func TestWriter_RecordRangeAndClose(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

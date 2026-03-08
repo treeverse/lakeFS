@@ -11,6 +11,7 @@ import (
 
 // TestSecurityMiddlewareIntegration tests that the security middleware is properly set on the UI handler
 func TestSecurityMiddlewareIntegration(t *testing.T) {
+	t.Parallel()
 	handler := api.NewUIHandler([]string{}, []params.CodeSnippet{})
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

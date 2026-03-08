@@ -29,6 +29,7 @@ var mockCreds = &model.Credential{
 }
 
 func TestV4AuthenticationFailures(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		Name               string
 		Header             http.Header
@@ -93,6 +94,7 @@ func TestV4AuthenticationFailures(t *testing.T) {
 }
 
 func TestV4SignedPayloadVerification(t *testing.T) {
+	t.Parallel()
 	// This test verifies successful V4 signature verification with a signed payload
 	// Based on the Amazon single chunk example from AWS documentation
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
@@ -154,6 +156,7 @@ func TestV4SignedPayloadVerification(t *testing.T) {
 }
 
 func TestSingleChunkPut(t *testing.T) {
+	t.Parallel()
 	tt := []struct {
 		Name              string
 		Host              string
@@ -279,6 +282,7 @@ func setupAndSignStreamingRequest(t *testing.T, accessKey, secretKey, host, path
 }
 
 func TestStreaming(t *testing.T) {
+	t.Parallel()
 	const (
 		ID      = "AKIAIOSFODNN7EXAMPLE"
 		SECRET  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
@@ -373,6 +377,7 @@ func TestStreaming(t *testing.T) {
 }
 
 func TestUnsignedPayload(t *testing.T) {
+	t.Parallel()
 	const (
 		testID     = "AKIAIOSFODNN7EXAMPLE"
 		testSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
@@ -420,6 +425,7 @@ func truncateForDisplay(s string) string {
 }
 
 func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name                string
 		method              string

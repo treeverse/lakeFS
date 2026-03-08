@@ -10,6 +10,7 @@ import (
 )
 
 func TestParseARN(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Input string
 		Arn   auth.Arn
@@ -82,6 +83,7 @@ func TestParseARN(t *testing.T) {
 }
 
 func TestParseResources(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		inputResource   string
 		outputResources []string
@@ -193,6 +195,7 @@ func sliceToJsonStrHelper(t *testing.T, s ...string) string {
 }
 
 func TestArnMatch(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		InputSource      string
 		InputDestination string
