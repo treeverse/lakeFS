@@ -14,7 +14,7 @@ permissions:
 jobs:
   gen-code:
     name: Generate code from latest lakeFS app
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
@@ -31,6 +31,8 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
+      - uses: sbt/setup-sbt@v1
+
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
         run: |
@@ -45,7 +47,7 @@ jobs:
   deploy-image:
     name: Build and cache Docker image
     needs: [gen-code]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       image_id: ${{ steps.build_export.outputs.ImageID }}
@@ -193,7 +195,7 @@ jobs:
               sonnet_project: sonnets-411
               sonnet_jar: sonnets-411/target/sonnets-411/scala-2.13/sonnets-411_2.13-0.1.0.jar
             lakefs_version: 1.78.0
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ matrix.lakefs_version }}
       REGISTRY: treeverse
@@ -207,6 +209,8 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: ${{ matrix.spark.java_version }}
           cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -237,7 +241,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
 
       - name: Retrieve client
         uses: actions/download-artifact@v8
@@ -271,7 +274,7 @@ jobs:
         # Removing a version from this list means the current lakeFS is no longer compatible with
         # that Hadoop lakeFS client version.
         client_version: [0.1.10, 0.1.11, 0.1.12, 0.1.13, 0.1.14, 0.1.15, 0.2.1, 0.2.2, 0.2.3, 0.2.4, 0.2.5]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       CLIENT_VERSION: ${{ matrix.client_version }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -299,6 +302,8 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -351,7 +356,7 @@ jobs:
   notify-slack:
     name: Notify slack on workflow failures
     needs: [compatibility-checks-client, compatibility-checks-server]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     steps:
       - name: slack-send

@@ -10,7 +10,7 @@ on:
 jobs:
   check-go-version:
     name: Check Go version change and notify
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
