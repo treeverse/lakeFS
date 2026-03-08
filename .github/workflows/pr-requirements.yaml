@@ -4,6 +4,7 @@ on:
   # trigger on pr specific events as the default does not include label changes
   pull_request:
     types: [labeled, unlabeled, opened, edited, synchronize]
+    branches: [master]
 
 jobs:
   pr-requirements:
@@ -17,6 +18,7 @@ jobs:
         id: changelog-label
         continue-on-error: true
         if: >-
+          github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
           !contains(github.event.pull_request.labels.*.name, 'include-changelog') &&
           !contains(github.event.pull_request.labels.*.name, 'exclude-changelog')
         run: exit 1
@@ -25,6 +27,8 @@ jobs:
         id: ai-authorship-label
         continue-on-error: true
         if: >-
+          github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
           !contains(github.event.pull_request.labels.*.name, 'mostly-ai') &&
           !contains(github.event.pull_request.labels.*.name, 'mostly-human')
         run: exit 1

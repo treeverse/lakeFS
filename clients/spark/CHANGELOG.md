@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.20.0
+
+* Verify link address expiration set to 24h (#10180)
+
 ## v0.19.0
 
 * Add Spark 4.x support via Scala 2.13 cross-compilation (#10138)
