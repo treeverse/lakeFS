@@ -29,6 +29,8 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: 'sbt'
 
+      - uses: sbt/setup-sbt@v1
+
       - name: validate format
         working-directory: clients/spark
         run: sbt "++${{ matrix.scala }} scalafmtCheck"

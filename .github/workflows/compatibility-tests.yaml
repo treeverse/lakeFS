@@ -31,6 +31,8 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
+      - uses: sbt/setup-sbt@v1
+
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
         run: |
@@ -208,6 +210,8 @@ jobs:
           java-version: ${{ matrix.spark.java_version }}
           cache: "sbt"
 
+      - uses: sbt/setup-sbt@v1
+
       - name: Package Spark App
         working-directory: test/spark/app
         run: sbt ${{ matrix.spark.sonnet_project }}/package
@@ -298,6 +302,8 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Package Spark App
         working-directory: test/spark/app

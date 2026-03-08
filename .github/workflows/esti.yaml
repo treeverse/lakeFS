@@ -379,6 +379,8 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
+      - uses: sbt/setup-sbt@v1
+
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -433,6 +435,8 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
+      - uses: sbt/setup-sbt@v1
+
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
         run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
@@ -454,6 +458,8 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Package Spark 2 and 3 Apps
         working-directory: test/spark/app
@@ -672,6 +678,9 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "17"
           cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
+        if: steps.restore-cache.outputs.cache-hit != 'true'
 
       - name: Package Metaclient
         if: steps.restore-cache.outputs.cache-hit != 'true'
