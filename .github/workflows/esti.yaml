@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   paths-filter:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       python-sdk-change: ${{ steps.filter.outputs.python-sdk == 'true' }}
     steps:
@@ -32,7 +32,7 @@ jobs:
     name: Check if secrets are available.
     outputs:
       secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - id: enablejobs
         env:
@@ -43,7 +43,7 @@ jobs:
 
   gen-code:
     name: Generate code from latest lakeFS app
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -95,7 +95,7 @@ jobs:
     name: Build and push Docker image
     needs: [ check-secrets, gen-code, login-to-amazon-ecr ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-22.04-16-cores
+    runs-on: ubuntu-24.04-16-cores
     outputs:
       tag: ${{ needs.gen-code.outputs.tag }}
     steps:
@@ -150,7 +150,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   login-to-amazon-ecr:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ check-secrets ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
@@ -174,7 +174,7 @@ jobs:
   unified-gc-test:
     name: Test unified gc (Spark ${{ matrix.spark.tag }})
     needs: [deploy-image, login-to-amazon-ecr, build-metadata-client]
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-24.04-8-cores
     strategy:
       fail-fast: false
       matrix:
@@ -281,7 +281,7 @@ jobs:
     name: Build and push rclone export Docker image
     needs: [check-secrets, login-to-amazon-ecr]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -314,7 +314,7 @@ jobs:
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -364,7 +364,7 @@ jobs:
   hadoopfs-s3a-mpu:
     name: Test lakeFS multipart upload with Hadoop S3A
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -422,7 +422,7 @@ jobs:
 
   build-lakefs-hadoopfs:
     name: Build lakeFS HadoopFS
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
@@ -444,7 +444,7 @@ jobs:
 
   spark-prep:
     name: Prepare Spark Apps
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
@@ -477,7 +477,7 @@ jobs:
   spark:
     name: Test lakeFS with Spark ${{ matrix.spark.tag }}
     needs: [spark-prep, build-lakefs-hadoopfs, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         spark:
@@ -600,7 +600,7 @@ jobs:
   export:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
@@ -651,7 +651,7 @@ jobs:
 
   build-metadata-client:
     name: Build metadata client
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-24.04-8-cores
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -690,7 +690,7 @@ jobs:
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
     needs: [deploy-image, build-metadata-client, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       SPARK_TAG: 3.2.1
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -749,7 +749,7 @@ jobs:
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -819,7 +819,7 @@ jobs:
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         branch_ownership: [false, true]
@@ -894,7 +894,7 @@ jobs:
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -946,7 +946,7 @@ jobs:
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1005,7 +1005,7 @@ jobs:
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1082,7 +1082,7 @@ jobs:
   python-wrapper:
     name: Test lakeFS against the python wrapper client
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1144,7 +1144,7 @@ jobs:
     needs: [deploy-image, login-to-amazon-ecr, paths-filter]
     if: ${{ needs.paths-filter.outputs.python-sdk-change == 'true' }}
     name: Test changes in SDK against the python wrapper
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1213,7 +1213,7 @@ jobs:
     needs:
       - deploy-image
       - login-to-amazon-ecr
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-24.04-8-cores
     timeout-minutes: 20
     services:
       dynamodb:
@@ -1289,7 +1289,7 @@ jobs:
     needs:
       - deploy-image
       - login-to-amazon-ecr
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-24.04-8-cores
     timeout-minutes: 20
     services:
       dynamodb:
@@ -1363,7 +1363,7 @@ jobs:
   run-system-aws-s3-basic-auth:
     name: Run latest lakeFS app on AWS S3 + Basic Auth
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
