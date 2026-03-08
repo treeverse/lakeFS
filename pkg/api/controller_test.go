@@ -3708,7 +3708,6 @@ func TestController_LogAction(t *testing.T) {
 }
 
 func TestController_ConfigHandlers(t *testing.T) {
-	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := t.Context()
 	expectedExample := onBlock(deps, "example-bucket/")
@@ -3739,7 +3738,6 @@ func TestController_ConfigHandlers(t *testing.T) {
 }
 
 func TestController_SetupLakeFSHandler(t *testing.T) {
-	t.Parallel()
 	const validAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 	cases := []struct {
 		name               string

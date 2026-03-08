@@ -272,7 +272,6 @@ func setupClientWithAdmin(t testing.TB) (apigen.ClientWithResponsesInterface, *d
 }
 
 func TestInvalidRoute(t *testing.T) {
-	t.Parallel()
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
@@ -307,7 +306,6 @@ func TestInvalidRoute(t *testing.T) {
 }
 
 func TestNotImplementedAPI(t *testing.T) {
-	t.Parallel()
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 
