@@ -102,6 +102,7 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_INCREMENTAL = "lakefs.gc.incremental"
   val LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL = "lakefs.gc.incremental.fallback_to_full"
   val LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN = "lakefs.gc.incremental.use-nth-previous-run"
+  val LAKEFS_CONF_GC_CLOSE_SPARK_SESSION = "lakefs.gc.close_spark_session"
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
   val MARK_ID_KEY = "mark_id"
