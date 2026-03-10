@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -68,10 +69,13 @@ func getDockerArgs(t testing.TB, localJar string, blockstoreType string) []strin
 		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
 		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", localJar),
 		"--rm",
-		"-e", "AWS_ACCESS_KEY_ID",
-		"-e", "AWS_SECRET_ACCESS_KEY",
 	}
 	switch blockstoreType {
+	case block.BlockstoreTypeS3:
+		args = append(args,
+			"-e", "AWS_ACCESS_KEY_ID",
+			"-e", "AWS_SECRET_ACCESS_KEY",
+		)
 	case block.BlockstoreTypeGS:
 		credsFile := writeGCSCredentialsFile(t)
 		args = append(args, "-v", fmt.Sprintf("%s:/tmp/gc-creds.json:ro", credsFile))
@@ -159,17 +163,12 @@ type SparkSubmitConfig struct {
 func writeGCSCredentialsFile(t testing.TB) string {
 	t.Helper()
 	credsJSON := os.Getenv("LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON")
-	f, err := os.CreateTemp("", "gc-gcs-creds-*.json")
+	credsPath := filepath.Join(t.TempDir(), "gc-gcs-creds.json")
+	err := os.WriteFile(credsPath, []byte(credsJSON), 0600)
 	if err != nil {
-		t.Fatalf("failed to create GCS credentials temp file: %v", err)
-	}
-	if _, err := f.WriteString(credsJSON); err != nil {
 		t.Fatalf("failed to write GCS credentials file: %v", err)
 	}
-	if err := f.Close(); err != nil {
-		t.Fatalf("failed to close GCS credentials file: %v", err)
-	}
-	return f.Name()
+	return credsPath
 }
 
 func RunSparkSubmit(t testing.TB, config *SparkSubmitConfig) error {

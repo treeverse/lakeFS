@@ -192,6 +192,7 @@ jobs:
     services:
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        options: --name lakefs
         credentials:
           username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
           password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
@@ -333,7 +334,7 @@ jobs:
       - name: lakeFS Logs on GC failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker logs $(docker ps -a --filter "ancestor=${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}" -q) --tail=1000 2>&1 || echo "Failed to get lakeFS logs"
+        run: docker logs lakefs --tail=1000 2>&1 || echo "Failed to get lakeFS logs"
 
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image
@@ -736,6 +737,11 @@ jobs:
         working-directory: clients/spark
         run: |
           sbt 'set assembly / test := {}' +assembly
+
+      - name: Verify shading
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        working-directory: clients/spark
+        run: sbt +verifyShading
 
       - name: Prepare Metaclient jars
         if: steps.restore-cache.outputs.cache-hit != 'true'
