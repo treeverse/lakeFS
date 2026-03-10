@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	OperatorNameIpAddress      = "IpAddress"
-	OperatorNameNotIpAddress   = "NotIpAddress"
-	OperatorNameStringLike     = "StringLike"
-	OperatorNameStringNotLike  = "StringNotLike"
+	OperatorNameIpAddress     = "IpAddress"
+	OperatorNameNotIpAddress  = "NotIpAddress"
+	OperatorNameStringLike    = "StringLike"
+	OperatorNameStringNotLike = "StringNotLike"
 )
 
 var (
