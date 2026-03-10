@@ -509,3 +509,18 @@ def test_large_file_object_write(setup_repo, w_mode):
     assert read_data == binary_data, "Written and read data do not match"
 
     writer.close()
+
+
+def test_read_empty_object_range_request(setup_repo):
+    _, repo = setup_repo
+    obj = repo.branch("main").object("test_object")
+    with obj.writer() as writer:
+        writer.write("")
+        
+    assert obj.stat().size_bytes == 0
+
+    # Should not raise UnboundLocalError
+    with obj.reader(mode="rb") as fd:
+        data = fd.read(100)
+        assert data == b''  # Empty data for empty object
+

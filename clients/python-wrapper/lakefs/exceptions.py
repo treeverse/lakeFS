@@ -3,6 +3,7 @@ Exceptions module
 """
 import http
 import json
+from xml.etree import ElementTree
 from contextlib import contextmanager
 from typing import Optional, Callable
 import logging
@@ -17,6 +18,22 @@ class LakeFSException(Exception):
     """
 
 
+def _parse_body(body):   
+    # Try JSON
+    try:  # Try to get message from body
+        return json.loads(body)
+    except json.JSONDecodeError:
+        pass
+    
+    # Try XML
+    try:
+        return ElementTree.fromstring(body)
+    except ElementTree.ParseError:
+        pass
+    
+    return {}
+
+
 class ServerException(LakeFSException):
     """
     Generic exception when no other exception is applicable
@@ -29,12 +46,7 @@ class ServerException(LakeFSException):
         self.status_code = status
         self.reason = reason
         if body is not None:
-            try:  # Try to get message from body
-                self.body = json.loads(body)
-            except json.JSONDecodeError:
-                logging.debug("failed to decode response body: status (%s), reason (%s), body (%s)",
-                              status, reason, body)
-                self.body = {}
+            self.body = _parse_body(body)
         else:
             self.body = {}
 
@@ -115,6 +127,13 @@ class InvalidRangeException(ServerException, OSError):
     """
     Raised when an object's read request start position exceeds file size 
     """
+    def __init__(self, status=None, reason=None, body=None):
+        ServerException.__init__(self, status, reason, body)
+        try:
+            self.object_size = int(self.body.findtext("ActualObjectSize"))
+        except (TypeError, ValueError):
+            pass
+
 
 
 class ImportManagerException(LakeFSException):

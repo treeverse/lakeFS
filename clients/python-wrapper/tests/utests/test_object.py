@@ -212,35 +212,62 @@ class TestObjectReader:
                 with obj.reader(mode="invalid"):
                     pass
 
-
-class TestWriteableObject:
-    def test_upload(self, monkeypatch, tmp_path):
+    def test_read_empty_object_range_request(self, monkeypatch, tmp_path):
+        """Test reading from an empty object with range request (issue #10208)"""
         test_kwargs = ObjectTestKWArgs()
-        with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
-            staging_location = StagingTestLocation()
-            monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
-            monkeypatch.setattr(urllib3.PoolManager, "request",
-                                lambda *args, **kwargs: urllib3.response.HTTPResponse(status=201))
-
-            def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
-                assert staging_metadata.size_bytes == len(data)
-                assert staging_metadata.staging == staging_location
-                return lakefs_sdk.ObjectStats(path=obj.path,
-                                              path_type="object",
-                                              physical_address=staging_location.physical_address,
-                                              checksum="",
-                                              mtime=12345)
-
-            monkeypatch.setattr(lakefs_sdk.api.StagingApi, "link_physical_address", monkey_link_physical_address)
-            # Test string
-            data = "test_data"
-            obj.upload(data=data)
-
-    def test_upload_invalid_mode(self, monkeypatch, tmp_path):
-        test_kwargs = ObjectTestKWArgs()
-        with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
-            with expect_exception_context(ValueError):
-                obj.upload(data="", mode="invalid")
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            # Mock empty object stats (size = 0)
+            object_stats = ObjectTestStats()
+            object_stats.path = test_kwargs.path
+            object_stats.size_bytes = 0
+            monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args, **kwargs: object_stats)
+    
+            # Mock 416 response for range request on empty object
+            def mock_get_object_with_http_info(*args, **kwargs):
+                raise lakefs_sdk.ApiException(
+                    status=http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                    reason="Requested Range Not Satisfiable"
+                )
+    
+            monkeypatch.setattr(
+                lakefs_sdk.api.ObjectsApi,
+                "get_object_with_http_info",
+                mock_get_object_with_http_info
+            )
+    
+            # Should not raise UnboundLocalError
+            with obj.reader(mode="rb") as fd:
+                data = fd.read(100)
+                assert data == b''  # Empty data for empty object
+    
+    class TestWriteableObject:
+        def test_upload(self, monkeypatch, tmp_path):
+            test_kwargs = ObjectTestKWArgs()
+            with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+                staging_location = StagingTestLocation()
+                monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
+                monkeypatch.setattr(urllib3.PoolManager, "request",
+                                    lambda *args, **kwargs: urllib3.response.HTTPResponse(status=201))
+    
+                def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
+                    assert staging_metadata.size_bytes == len(data)
+                    assert staging_metadata.staging == staging_location
+                    return lakefs_sdk.ObjectStats(path=obj.path,
+                                                  path_type="object",
+                                                  physical_address=staging_location.physical_address,
+                                                  checksum="",
+                                                  mtime=12345)
+    
+                monkeypatch.setattr(lakefs_sdk.api.StagingApi, "link_physical_address", monkey_link_physical_address)
+                # Test string
+                data = "test_data"
+                obj.upload(data=data)
+    
+        def test_upload_invalid_mode(self, monkeypatch, tmp_path):
+            test_kwargs = ObjectTestKWArgs()
+            with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+                with expect_exception_context(ValueError):
+                    obj.upload(data="", mode="invalid")
 
 
 class TestObjectWriter:

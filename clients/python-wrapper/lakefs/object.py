@@ -318,9 +318,9 @@ class ObjectReader(LakeFSIOBase):
                 self._update_object_size(response)
                 return response.data
 
-        except InvalidRangeException:
-            # Update object size from response
-            self._update_object_size(response)
+        except InvalidRangeException as e:
+            # Update object size from exception
+            self._size = e.object_size
             return b''
 
     def read(self, n: int = None) -> str | bytes:
