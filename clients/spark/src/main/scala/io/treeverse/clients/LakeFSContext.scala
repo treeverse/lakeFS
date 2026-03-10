@@ -1,7 +1,9 @@
 package io.treeverse.clients
 
 import io.treeverse.lakefs.catalog.Entry
+import io.treeverse.lakefs.graveler.committed.RangeData
 import org.apache.commons.lang3.StringUtils
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapred.InvalidJobConfException
 import org.apache.spark.{SparkContext, TaskContext}
@@ -38,13 +40,6 @@ object LakeFSJobParams {
   def forStorageNamespace(storageNamespace: String, sourceName: String = ""): LakeFSJobParams = {
     new LakeFSJobParams(storageNamespace = storageNamespace, sourceName = sourceName)
   }
-
-  /** Use these parameters to list all entries for in all ranges found in the repository.
-   *  The same entry may be listed multiple times if it is found in multiple ranges.
-   */
-  def forRepository(repoName: String, sourceName: String = ""): LakeFSJobParams = {
-    new LakeFSJobParams(repoName = repoName, sourceName = sourceName)
-  }
 }
 
 /** @param repoName the repository to list entries for. Mutually exclusive with `storageNamespace`.
@@ -79,17 +74,7 @@ object LakeFSContext {
   // Read parallelism.  Defaults to default parallelism.
   val LAKEFS_CONF_JOB_RANGE_READ_PARALLELISM = "lakefs.job.range_read_parallelism"
 
-  val LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = "lakefs.gc.commit.num_partitions"
-  val LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = "lakefs.gc.range.num_partitions"
-  val LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = "lakefs.gc.address.num_partitions"
-  val LAKEFS_CONF_GC_APPROX_NUM_RANGES_PER_PARTITION =
-    "lakefs.gc.address.approx_num_ranges_to_spread_per_partition"
-  val LAKEFS_CONF_GC_WRITE_EXPIRED_AS_TEXT = "lakefs.gc.address.write_as_text"
   val LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS = "lakefs.gc.prepare_commits.timeout_seconds"
-  val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
-  val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
-  val LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY = "lakefs.debug.gc.reproduce_run_id"
-  val LAKEFS_CONF_DEBUG_GC_SAMPLE_FRACTION = "lakefs.debug.gc.addresses_sample_fraction"
 
   //  Objects that are written during this duration are not collected
   val LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_MIN_AGE_SECONDS_KEY =
@@ -99,27 +84,14 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
   val LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = "lakefs.gc.s3.min_backoff_secs"
   val LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = "lakefs.gc.s3.max_backoff_secs"
-  val LAKEFS_CONF_GC_INCREMENTAL = "lakefs.gc.incremental"
-  val LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL = "lakefs.gc.incremental.fallback_to_full"
-  val LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN = "lakefs.gc.incremental.use-nth-previous-run"
-  val LAKEFS_CONF_GC_CLOSE_SPARK_SESSION = "lakefs.gc.close_spark_session"
-  val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
-  val MARK_ID_KEY = "mark_id"
-  val RUN_ID_KEY = "run_id"
-  val COMMITS_LOCATION_KEY = "commits_location"
-  val RUN_ID_MARKERS_LOCATION_FORMAT = "%s/_lakefs/retention/gc/run_ids/%s"
-  val DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = 24
-  val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
-  val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
-  val DEFAULT_LAKEFS_CONF_GC_APPROX_NUM_RANGES_PER_PARTITION = 1e5
   // By default, objects that are written in the last 24 hours are not collected
-  val DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS = 24 * 60 * 60
+  val DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS: Int = 24 * 60 * 60
   val DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = 1
   val DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = 120
   val DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS = 1200
 
-  val metarangeReaderGetter = SSTableReader.forMetaRange _
+  val metarangeReaderGetter: (Configuration, String, Boolean) => SSTableReader[RangeData] = SSTableReader.forMetaRange
 
   def newRDD(
       sc: SparkContext,
@@ -199,9 +171,8 @@ object LakeFSContext {
           try {
             sstableReader.close()
           } catch {
-            case e: Exception => {
+            case e: Exception =>
               logger.warn(s"close SSTable reader for $localFile (keep going): $e")
-            }
           }
           tc
         }))
@@ -209,7 +180,7 @@ object LakeFSContext {
         // not InputFormat code so it should have slightly nicer error reports.
         sstableReader
           .newIterator()
-          .map((entry) => (entry.key, new WithIdentifier(entry.id, entry.message, range.id)))
+          .map(entry => (entry.key, new WithIdentifier(entry.id, entry.message, range.id)))
       })
     })
   }
@@ -224,10 +195,6 @@ object LakeFSContext {
       repoName: String,
       commitID: String = ""
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
-    val inputFormatClass =
-      if (StringUtils.isNotBlank(commitID)) classOf[LakeFSCommitInputFormat]
-      else classOf[LakeFSAllRangesInputFormat]
-
     newRDD(sc, LakeFSJobParams.forCommit(repoName, commitID))
   }
 
