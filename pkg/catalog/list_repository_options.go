@@ -37,7 +37,7 @@ func WithListReposPermissionFilter(username string, policies []*model.Policy) Li
 			return
 		}
 		opts.FilterFunc = func(repoID string) bool {
-			return auth.CheckPermission(permissions.RepoArn(repoID), username, policies, permissions.ListRepositoriesAction)
+			return auth.CheckPermission(permissions.RepoArn(repoID), username, policies, permissions.ListRepositoriesAction, nil)
 		}
 	}
 }

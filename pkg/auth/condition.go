@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"net"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/auth/wildcard"
 )
 
 const (
-	OperatorNameIpAddress    = "IpAddress"
-	OperatorNameNotIpAddress = "NotIpAddress"
+	OperatorNameIpAddress      = "IpAddress"
+	OperatorNameNotIpAddress   = "NotIpAddress"
+	OperatorNameStringLike     = "StringLike"
+	OperatorNameStringNotLike  = "StringNotLike"
 )
 
 var (
@@ -129,6 +133,57 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 	return true, nil
 }
 
+// StringLikeOperator handles wildcard string matching.
+// Supports '*' for multi-character wildcards and '?' for single-character wildcards.
+type StringLikeOperator struct {
+	// negate determines whether to negate the matching result (for StringNotLike)
+	negate bool
+}
+
+// Validate implements ConditionOperator. Any string is a valid wildcard pattern.
+func (op *StringLikeOperator) Validate(fields map[string][]string) error {
+	for field := range fields {
+		if field == "" {
+			return ErrMissingFieldName
+		}
+	}
+	return nil
+}
+
+// Evaluate checks if the context value matches any of the wildcard patterns for each field.
+// AND logic between fields, OR logic within a field's values.
+func (op *StringLikeOperator) Evaluate(fields map[string][]string, conditionCtx *ConditionContext) (bool, error) {
+	if len(fields) == 0 {
+		return true, nil
+	}
+	if conditionCtx == nil {
+		return false, ErrInvalidConditionContext
+	}
+
+	for fieldName, patterns := range fields {
+		contextValue, hasField := conditionCtx.Fields[fieldName]
+		if !hasField {
+			return false, nil
+		}
+
+		fieldMatched := false
+		for _, pattern := range patterns {
+			if wildcard.Match(pattern, contextValue) {
+				fieldMatched = true
+				break
+			}
+		}
+
+		// For StringLike: fail if field didn't match
+		// For StringNotLike: fail if field matched
+		if fieldMatched == op.negate {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 // OperatorFactory returns the appropriate operator for a given operator name
 func OperatorFactory(operatorName string) (ConditionOperator, error) {
 	switch operatorName {
@@ -136,6 +191,10 @@ func OperatorFactory(operatorName string) (ConditionOperator, error) {
 		return &IpAddressOperator{negate: false}, nil
 	case OperatorNameNotIpAddress:
 		return &IpAddressOperator{negate: true}, nil
+	case OperatorNameStringLike:
+		return &StringLikeOperator{negate: false}, nil
+	case OperatorNameStringNotLike:
+		return &StringLikeOperator{negate: true}, nil
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedConditionOperator, operatorName)
 	}
