@@ -26,6 +26,7 @@ func SetupService(t *testing.T, secret string) (*auth.BasicAuthService, kv.Store
 }
 
 func TestBasicAuthService_Users(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	s, store := SetupService(t, secret)
 	username := "testUser"
@@ -75,6 +76,7 @@ func TestBasicAuthService_Users(t *testing.T) {
 }
 
 func TestBasicAuthService_Credentials(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	s, _ := SetupService(t, secret)
 	username := "testUser"
@@ -118,6 +120,7 @@ func TestBasicAuthService_Credentials(t *testing.T) {
 }
 
 func TestBasicAuthService_CredentialsImport(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	s, store := SetupService(t, secret)
 	username := "testUser"
@@ -173,6 +176,7 @@ func TestBasicAuthService_CredentialsImport(t *testing.T) {
 }
 
 func TestBasicAuthService_Migrate(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	accessKeyID := "SomeAccessKeyID"
 	secretAccessKey := "SomeSecretAccessKey"

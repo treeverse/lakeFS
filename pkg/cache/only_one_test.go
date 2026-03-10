@@ -10,6 +10,7 @@ import (
 )
 
 func TestOnlyOne_ComputeInSequence(t *testing.T) {
+	t.Parallel()
 	const (
 		one = "foo"
 		two = "bar"
@@ -28,6 +29,7 @@ func TestOnlyOne_ComputeInSequence(t *testing.T) {
 }
 
 func TestOnlyOne_ComputeConcurrentlyOnce(t *testing.T) {
+	t.Parallel()
 	c := cache.NewChanOnlyOne()
 
 	var wg sync.WaitGroup

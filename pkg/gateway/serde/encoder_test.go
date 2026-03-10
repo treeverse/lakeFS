@@ -78,6 +78,7 @@ func s3URLEncode(s string) string {
 }
 
 func TestEncoder(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Input    string
 		Expected string

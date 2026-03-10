@@ -9,6 +9,7 @@ import (
 )
 
 func TestSecretStore_Encrypt(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Secret string
 		Data   []byte

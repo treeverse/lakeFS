@@ -37,6 +37,7 @@ func getS3BlockAdapter(t *testing.T, opts []s3a.AdapterOption) *s3a.Adapter {
 
 // TestS3Adapter tests basic functionality of the S3 block adapter(backed by MinIO)
 func TestS3Adapter(t *testing.T) {
+	t.Parallel()
 	basePath, err := url.JoinPath("s3://", bucketName)
 	require.NoError(t, err)
 	localPath, err := url.JoinPath(basePath, "lakefs")
@@ -51,6 +52,7 @@ func TestS3Adapter(t *testing.T) {
 // TestS3AdapterPresignedOverride tests basic functionality of the S3 block adapter along with the desired behavior of
 // overriding the pre-signed URL endpoint
 func TestS3AdapterPresignedOverride(t *testing.T) {
+	t.Parallel()
 	basePath, err := url.JoinPath("s3://", bucketName)
 	require.NoError(t, err)
 	localPath, err := url.JoinPath(basePath, "lakefs")
@@ -65,6 +67,7 @@ func TestS3AdapterPresignedOverride(t *testing.T) {
 
 // TestAdapterNamespace tests the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
+	t.Parallel()
 	adapter := getS3BlockAdapter(t, nil)
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID).ValidityRegex)
 	require.NoError(t, err)

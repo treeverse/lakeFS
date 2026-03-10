@@ -9,6 +9,7 @@ import (
 )
 
 func TestEntryPrefixIterator(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		prefix          catalog.Path

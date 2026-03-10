@@ -96,11 +96,13 @@ func runHook(ctx context.Context, h actions.Hook) (string, error) {
 }
 
 func TestNewLuaHook(t *testing.T) {
+	t.Parallel()
 	const script = "print(tostring(1 + 2))"
 	_ = newLuaActionHook(t, nil, "", true, script)
 }
 
 func TestLuaRun(t *testing.T) {
+	t.Parallel()
 	const script = "print(tostring(350 * 239))"
 	h := newLuaActionHook(t, nil, "", true, script)
 	output, err := runHook(t.Context(), h)
@@ -114,6 +116,7 @@ func TestLuaRun(t *testing.T) {
 }
 
 func TestLuaRun_NetHttpDisabled(t *testing.T) {
+	t.Parallel()
 	const script = `local http = require("net/http")`
 	h := newLuaActionHook(t, nil, "", false, script)
 	_, err := runHook(t.Context(), h)
@@ -124,6 +127,7 @@ func TestLuaRun_NetHttpDisabled(t *testing.T) {
 }
 
 func TestLuaRun_NetHttp(t *testing.T) {
+	t.Parallel()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		codeVal := r.URL.Query().Get("code")
 		statusCode, _ := strconv.Atoi(codeVal)
@@ -248,6 +252,7 @@ print(code .. " " .. body .. " " .. status)
 }
 
 func TestLuaRunTable(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		Name   string
 		Input  string
@@ -888,6 +893,7 @@ func (s *testLakeFSServer) DiffBranch(w http.ResponseWriter, _ *http.Request, re
 
 // TestLuaRemoteAddr verifies that Lua requests have RemoteAddr set to "[internal (lua)]"
 func TestLuaRemoteAddr(t *testing.T) {
+	t.Parallel()
 	t.Run("lakefs_client_remote_addr", func(t *testing.T) {
 		// Create a test server that captures the request
 		var capturedRequest *http.Request

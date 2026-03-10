@@ -10,6 +10,7 @@ import (
 )
 
 func TestTimestamp(t *testing.T) {
+	t.Parallel()
 	var ts int64 = 1000197960
 	expected := "2001-09-11T08:46:00.000Z"
 	got := serde.Timestamp(time.Unix(ts, 0))
@@ -19,6 +20,7 @@ func TestTimestamp(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
+	t.Parallel()
 	response := serde.ListAllMyBucketsResult{
 		Buckets: serde.Buckets{
 			Bucket: []serde.Bucket{

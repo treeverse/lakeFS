@@ -5,6 +5,7 @@ import (
 )
 
 func Test_buildPath(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		host       string
 		bareDomain string

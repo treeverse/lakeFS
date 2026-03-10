@@ -9,6 +9,7 @@ import (
 )
 
 func TestParseRef(t *testing.T) {
+	t.Parallel()
 	table := []struct {
 		Name        string
 		Input       string

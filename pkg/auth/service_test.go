@@ -35,6 +35,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAPIAuthService_GetUserById(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -116,6 +117,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 }
 
 func TestAuthAPIUserPoliciesCache(t *testing.T) {
+	t.Parallel()
 	resPolicies := authPoliciesForTesting
 	policyList := auth.PolicyList{
 		Pagination: auth.Pagination{},
@@ -138,6 +140,7 @@ func TestAuthAPIUserPoliciesCache(t *testing.T) {
 }
 
 func TestAuthApiGetCredentialsCache(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	mockClient, s := NewTestApiService(t, true)
 	const username = "foo"
@@ -175,6 +178,7 @@ func TestAuthApiGetCredentialsCache(t *testing.T) {
 }
 
 func TestAuthApiGetUserCache(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	mockClient, s := NewTestApiService(t, true)
 	const userID = "123"
@@ -262,6 +266,7 @@ func TestAuthApiGetUserCache(t *testing.T) {
 }
 
 func TestAPIAuthService_CreateUser(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -356,6 +361,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteUser(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -394,6 +400,7 @@ func TestAPIAuthService_DeleteUser(t *testing.T) {
 }
 
 func TestAPIAuthService_GetUserByEmail(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 
 	tests := []struct {
@@ -492,6 +499,7 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 }
 
 func TestAPIAuthService_GetUser(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -588,6 +596,7 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 }
 
 func TestAPIAuthService_GetGroup(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name                string
@@ -650,6 +659,7 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_GetCredentials(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -726,6 +736,7 @@ func TestAPIAuthService_GetCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -787,6 +798,7 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 }
 
 func TestAPIAuthService_ListGroups(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
 	amounts := []int{0, 1, 5}
@@ -844,6 +856,7 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUsers(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
 	amounts := []int{0, 1, 5}
@@ -888,6 +901,7 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 }
 
 func TestAPIAuthService_ListGroupUsers(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
 	amounts := []int{0, 1, 5}
@@ -932,6 +946,7 @@ func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 }
 
 func TestAPIAuthService_AddUserToGroup(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
@@ -985,6 +1000,7 @@ func TestAPIAuthService_AddUserToGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteGroup(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
@@ -1034,6 +1050,7 @@ func TestAPIAuthService_DeleteGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
@@ -1087,6 +1104,7 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUserGroups(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
 	amounts := []int{0, 1, 5}
@@ -1132,6 +1150,7 @@ func TestAPIAuthService_ListUserGroups(t *testing.T) {
 }
 
 func TestAPIAuthService_ListUserCredentials(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	const accessKeyPrefix = "AKIA"
 	amounts := []int{0, 1, 5}
@@ -1173,6 +1192,7 @@ func TestAPIAuthService_ListUserCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_WritePolicy(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name                   string
@@ -1319,6 +1339,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 }
 
 func TestAPIAuthService_GetPolicy(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name                   string
@@ -1449,6 +1470,7 @@ func policyListsEquals(t *testing.T, authPolicies []auth.Policy, modelPolicies [
 }
 
 func TestAPIAuthService_ListUserPolicies(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	resPolicies := authPoliciesForTesting
 	policyList := auth.PolicyList{
@@ -1524,6 +1546,7 @@ func TestAPIAuthService_ListUserPolicies(t *testing.T) {
 }
 
 func TestAPIAuthService_DeletePolicy(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
@@ -1573,6 +1596,7 @@ func TestAPIAuthService_DeletePolicy(t *testing.T) {
 }
 
 func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
@@ -1639,6 +1663,7 @@ func TestAPIAuthService_DetachPolicyFrom(t *testing.T) {
 }
 
 func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
@@ -1705,6 +1730,7 @@ func TestAPIAuthService_AttachPolicyTo(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteCredentials(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	mockErr := errors.New("this is a mock error")
 	testTable := []struct {
@@ -1766,6 +1792,7 @@ func TestAPIAuthService_DeleteCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_CreateGroup(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name                string
@@ -1836,6 +1863,7 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 }
 
 func TestAPIAuthService_CreateCredentials(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -1925,6 +1953,7 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_AddCredentials(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
 		name               string
@@ -2040,6 +2069,7 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 }
 
 func TestAPIAuthService_CreateUserExternalPrincipal(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 
 	tests := []struct {
@@ -2104,6 +2134,7 @@ func TestAPIAuthService_CreateUserExternalPrincipal(t *testing.T) {
 }
 
 func TestAPIAuthService_ReusePrincipalAfterDelete(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	userA := "user_a"
 	userB := "user_b"
@@ -2141,6 +2172,7 @@ func TestAPIAuthService_ReusePrincipalAfterDelete(t *testing.T) {
 }
 
 func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, false)
 	userId := "user"
 	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
@@ -2180,6 +2212,7 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 }
 
 func TestAPIService_RequestIDPropagation(t *testing.T) {
+	t.Parallel()
 	const requestID = "the-quick-brown-fox-jumps-over-the-lazy-dog"
 	called := false
 	innerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -2206,6 +2239,7 @@ func TestAPIService_RequestIDPropagation(t *testing.T) {
 }
 
 func TestAPIAuthService_Authorize(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, true)
 
 	tests := []struct {
@@ -2418,6 +2452,7 @@ func TestAPIAuthService_Authorize(t *testing.T) {
 }
 
 func TestAPIAuthService_Authorize_ListPoliciesError(t *testing.T) {
+	t.Parallel()
 	mockClient, s := NewTestApiService(t, true)
 	ctx := t.Context()
 

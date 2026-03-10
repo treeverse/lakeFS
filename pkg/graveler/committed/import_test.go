@@ -13,6 +13,7 @@ import (
 
 // Tests for graveler.CommittedManager.Import
 func Test_import(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		sourceRange    *testMetaRange
