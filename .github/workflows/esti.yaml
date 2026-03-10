@@ -43,7 +43,7 @@ jobs:
 
   gen-code:
     name: Generate code from latest lakeFS app
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-8-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -314,7 +314,7 @@ jobs:
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-8-cores
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -424,7 +424,7 @@ jobs:
 
   build-lakefs-hadoopfs:
     name: Build lakeFS HadoopFS
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
@@ -448,7 +448,7 @@ jobs:
 
   spark-prep:
     name: Prepare Spark Apps
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
         uses: actions/checkout@v6
