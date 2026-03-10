@@ -91,7 +91,8 @@ object LakeFSContext {
   val DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = 120
   val DEFAULT_LAKEFS_CONF_GC_PREPARE_COMMITS_TIMEOUT_SECONDS = 1200
 
-  val metarangeReaderGetter: (Configuration, String, Boolean) => SSTableReader[RangeData] = SSTableReader.forMetaRange
+  val metarangeReaderGetter: (Configuration, String, Boolean) => SSTableReader[RangeData] =
+    SSTableReader.forMetaRange
 
   def newRDD(
       sc: SparkContext,
