@@ -198,10 +198,10 @@ Once a user has been created and the replication policy attached to it, create a
 !!! important "Same credentials on all installations"
     The replication service authenticates requests across regions using the same lakeFS credentials. The replication user must have **the same access key ID and secret access key** on every lakeFS installation involved in mirroring.
 
-    Use `lakectl create-credentials` to create a user with specific credentials on each installation:
+    Use `lakefs create-credentials` to create a user with specific credentials on each installation:
 
     ```bash
-    lakectl create-credentials --access-key-id <ACCESS_KEY_ID> --secret-access-key <SECRET_ACCESS_KEY> <username>
+    lakefs create-credentials --access-key-id <ACCESS_KEY_ID> --secret-access-key <SECRET_ACCESS_KEY> <username>
     ```
 
     Run this command against each lakeFS installation to ensure the replication user has identical credentials everywhere.
