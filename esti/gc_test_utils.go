@@ -164,7 +164,7 @@ func writeGCSCredentialsFile(t testing.TB) string {
 	t.Helper()
 	credsJSON := os.Getenv("LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON")
 	credsPath := filepath.Join(t.TempDir(), "gc-gcs-creds.json")
-	err := os.WriteFile(credsPath, []byte(credsJSON), 0600)
+	err := os.WriteFile(credsPath, []byte(credsJSON), 0o600) //nolint: mnd
 	if err != nil {
 		t.Fatalf("failed to write GCS credentials file: %v", err)
 	}
