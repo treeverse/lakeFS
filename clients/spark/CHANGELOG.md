@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.21.0
+
+* Avoid closing GC Spark session (#10246)
+
 ## v0.20.0
 
 * Verify link address expiration set to 24h (#10180)
