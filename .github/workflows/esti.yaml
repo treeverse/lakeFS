@@ -124,6 +124,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache: true
 
       - name: Build lakeFS binaries
         env:
@@ -251,7 +252,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-        id: go
+          cache: true
 
       - name: Generate uniquifying value
         id: unique
