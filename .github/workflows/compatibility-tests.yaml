@@ -47,7 +47,7 @@ jobs:
   deploy-image:
     name: Build and cache Docker image
     needs: [gen-code]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-8-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       image_id: ${{ steps.build_export.outputs.ImageID }}
