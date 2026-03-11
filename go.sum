@@ -1340,7 +1340,7 @@ github.com/tomarrell/wrapcheck/v2 v2.12.0 h1:H/qQ1aNWz/eeIhxKAFvkfIA+N7YDvq6TWVF
 github.com/tomarrell/wrapcheck/v2 v2.12.0/go.mod h1:AQhQuZd0p7b6rfW+vUwHm5OMCGgp63moQ9Qr/0BpIWo=
 github.com/tommy-muehle/go-mnd/v2 v2.5.1 h1:NowYhSdyE/1zwK9QCLeRb6USWdoif80Ie+v+yU8u1Zw=
 github.com/tommy-muehle/go-mnd/v2 v2.5.1/go.mod h1:WsUAkMJMYww6l/ufffCD3m+P7LEvr8TnZn9lwVDlgzw=
-github.com/treeverse/delta-go v0.0.0-20260311182212-b86fdf740f4a h1:s4Xpl0A3OQ+FGbFDvT8w9xAY7KmW2oYvFk4gR6uMJtU=
+github.com/treeverse/delta-go v0.0.0-20260311192507-4df58b676a21 h1:aZwKSYg4jfj+WKZ4udKJIuIHZqaTBE/HeUziX/zrXP0=
 github.com/treeverse/lakefs/modules/api/factory v0.0.0-20260302105446-91537729e473 h1:hEldKlzE4JN0YbTbC0TZnm/lk6Mbqy3Eu9ske4JMwHY=
 github.com/treeverse/lakefs/modules/api/factory v0.0.0-20260302105446-91537729e473/go.mod h1:RpzdBcu4A6SrawGT3N4SvN4vRLr1CqGOn6juEzydfdY=
 github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20260302105446-91537729e473 h1:WKDWVzvOM4rR/Yqnxh4ftE35K+Oh0DROiHLwG00W6xY=
