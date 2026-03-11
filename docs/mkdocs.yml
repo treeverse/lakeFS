@@ -96,6 +96,7 @@ markdown_extensions:
 plugins:
   - mike:
       version_selector: true
+      redirect_template: overrides/redirect.html
   - search
   - render_swagger:
       allow_arbitrary_locations: true
