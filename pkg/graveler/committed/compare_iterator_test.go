@@ -29,6 +29,7 @@ func testMergeNewDiff(typ graveler.DiffType, key string, newIdentity string, old
 }
 
 func TestCompare(t *testing.T) {
+	t.Parallel()
 	tests := map[string]struct {
 		baseKeys           []string
 		diffs              []graveler.Diff
@@ -162,6 +163,7 @@ func TestCompare(t *testing.T) {
 }
 
 func TestCompareSeek(t *testing.T) {
+	t.Parallel()
 	diffs := []graveler.Diff{
 		testMergeNewDiff(added, "k1", "i1", ""),
 		testMergeNewDiff(removed, "k2", "i2", "i2"),

@@ -10,6 +10,7 @@ import (
 )
 
 func TestResolveNamespace(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name             string
 		DefaultNamespace string
@@ -190,6 +191,7 @@ func TestResolveNamespace(t *testing.T) {
 }
 
 func TestFormatQualifiedKey(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name         string
 		QualifiedKey block.CommonQualifiedKey

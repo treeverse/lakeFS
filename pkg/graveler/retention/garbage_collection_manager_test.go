@@ -32,6 +32,7 @@ var cases = []struct {
 }
 
 func TestGarbageCollectionManager_GetUncommittedLocation(t *testing.T) {
+	t.Parallel()
 	blockAdapter := mem.New(t.Context())
 	refMgr := &testutil.RefsFake{}
 	const prefix = "test_prefix"
@@ -61,6 +62,7 @@ func createTestFile(t *testing.T, filename, testLine string, count int) {
 }
 
 func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	blockAdapter := mem.New(t.Context())
 	refMgr := &testutil.RefsFake{}

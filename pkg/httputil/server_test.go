@@ -7,6 +7,7 @@ import (
 )
 
 func TestHostSubdomainOf(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		v []string
 	}
@@ -49,6 +50,7 @@ func TestHostSubdomainOf(t *testing.T) {
 }
 
 func TestHostMatches(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		v []string
 	}

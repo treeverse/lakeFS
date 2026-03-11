@@ -24,6 +24,7 @@ a += "a"
 `
 
 func TestUnwrap(t *testing.T) {
+	t.Parallel()
 	t.Run("explicit fail", func(t *testing.T) {
 		l := lua.NewState()
 		lua.OpenLibraries(l)

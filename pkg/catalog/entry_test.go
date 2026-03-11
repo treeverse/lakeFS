@@ -9,6 +9,7 @@ import (
 )
 
 func TestEntryToValueAndBack(t *testing.T) {
+	t.Parallel()
 	// convert entry to value and back
 	now := time.Now()
 	entry := &Entry{

@@ -9,6 +9,7 @@ import (
 )
 
 func TestParseRange(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Spec          string
 		Length        int

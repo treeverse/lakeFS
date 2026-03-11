@@ -14,6 +14,7 @@ import (
 )
 
 func TestTagIterator(t *testing.T) {
+	t.Parallel()
 	r, kvStore := testRefManager(t)
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := t.Context()
@@ -119,6 +120,7 @@ func TestTagIterator(t *testing.T) {
 }
 
 func TestTagIterator_CloseTwice(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -141,6 +143,7 @@ func TestTagIterator_CloseTwice(t *testing.T) {
 }
 
 func TestTagIterator_NextClosed(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)

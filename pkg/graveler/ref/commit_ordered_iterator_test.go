@@ -31,6 +31,7 @@ type testCommit struct {
 }
 
 func TestOrderedCommitIterator(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	cases := []struct {
 		Name                   string
@@ -208,6 +209,7 @@ func TestOrderedCommitIterator(t *testing.T) {
 }
 
 func TestOrderedCommitIteratorGrid(t *testing.T) {
+	t.Parallel()
 	// Construct the following grid, taken from https://github.com/git/git/blob/master/t/t6600-test-reach.sh
 	//             (10,10)
 	//            /       \
@@ -300,6 +302,7 @@ func TestOrderedCommitIteratorGrid(t *testing.T) {
 }
 
 func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	ctx := t.Context()
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -326,6 +329,7 @@ func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 }
 
 func TestOrderedCommitIterator_NextAfterClose(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	ctx := t.Context()
 	entIt := mock.NewMockEntriesIterator(ctrl)

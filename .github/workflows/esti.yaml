@@ -124,6 +124,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache: true
 
       - name: Build lakeFS binaries
         env:
@@ -172,7 +173,7 @@ jobs:
       docker_password: ${{ steps.login-ecr.outputs.docker_password_977611293394_dkr_ecr_us_east_1_amazonaws_com }}
 
   unified-gc-test:
-    name: Test unified gc (Spark ${{ matrix.spark.tag }})
+    name: Test unified gc (Spark ${{ matrix.spark.tag }}, ${{ matrix.blockstore.type }})
     needs: [deploy-image, login-to-amazon-ecr, build-metadata-client]
     runs-on: ubuntu-24.04-8-cores
     strategy:
@@ -185,9 +186,14 @@ jobs:
             metaclient-jar: spark4-assembly.jar
           - tag: "4.1.1"
             metaclient-jar: spark4-assembly.jar
+        blockstore:
+          - type: s3
+          - type: gs
+          - type: azure
     services:
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        options: --name lakefs
         credentials:
           username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
           password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
@@ -195,9 +201,15 @@ jobs:
           - '8000:8000'
         env:
           LAKEFS_DATABASE_TYPE: local
-          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_TYPE: ${{ matrix.blockstore.type }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
           LAKEFS_STATS_ENABLED: false
 
@@ -219,6 +231,7 @@ jobs:
 
       spark-worker:
         image: docker.io/treeverse/bitnami-spark:${{ matrix.spark.tag }}
+        options: --name spark-worker
         env:
           SPARK_MODE: worker
           SPARK_MASTER_URL: spark://spark:7077
@@ -239,7 +252,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-        id: go
+          cache: true
 
       - name: Generate uniquifying value
         id: unique
@@ -262,7 +275,8 @@ jobs:
           path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ hashFiles('./clients/spark/**') }}
 
-      - name: GC test
+      - name: GC test (S3)
+        if: matrix.blockstore.type == 's3'
         run: |
           go test -timeout 30m -v ./esti \
             -system-tests -use-local-credentials -run=TestUnifiedGC \
@@ -276,6 +290,52 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
           ESTI_SETUP_LAKEFS: true
+
+      - name: Setup GCS credentials on Spark worker
+        if: matrix.blockstore.type == 'gs'
+        run: |
+          echo "$LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON" > /tmp/gc-creds.json
+          docker cp /tmp/gc-creds.json spark-worker:/tmp/gc-creds.json
+          rm /tmp/gc-creds.json
+        env:
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
+
+      - name: GC test (GCS)
+        if: matrix.blockstore.type == 'gs'
+        run: |
+          go test -timeout 30m -v ./esti \
+            -system-tests -use-local-credentials -run=TestUnifiedGC \
+            -spark-image-tag=${{ matrix.spark.tag }} \
+            -metaclient-jar=$(pwd)/test/spark/metaclient/${{ matrix.spark.metaclient-jar }}
+        env:
+          ESTI_BLOCKSTORE_TYPE: gs
+          ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
+          ESTI_SETUP_LAKEFS: true
+
+      - name: GC test (Azure)
+        if: matrix.blockstore.type == 'azure'
+        run: |
+          go test -timeout 30m -v ./esti \
+            -system-tests -use-local-credentials -run=TestUnifiedGC \
+            -spark-image-tag=${{ matrix.spark.tag }} \
+            -metaclient-jar=$(pwd)/test/spark/metaclient/${{ matrix.spark.metaclient-jar }}
+        env:
+          ESTI_BLOCKSTORE_TYPE: azure
+          ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
+          ESTI_AZURE_STORAGE_ACCOUNT: esti
+          ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
+          ESTI_SETUP_LAKEFS: true
+
+      - name: lakeFS Logs on GC failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker logs lakefs --tail=1000 2>&1 || echo "Failed to get lakeFS logs"
 
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image
@@ -687,6 +747,11 @@ jobs:
         working-directory: clients/spark
         run: |
           sbt 'set assembly / test := {}' +assembly
+
+      - name: Verify shading
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        working-directory: clients/spark
+        run: sbt +verifyShading
 
       - name: Prepare Metaclient jars
         if: steps.restore-cache.outputs.cache-hit != 'true'

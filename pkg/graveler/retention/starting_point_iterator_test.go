@@ -9,6 +9,7 @@ import (
 )
 
 func TestStartingPointIterator(t *testing.T) {
+	t.Parallel()
 	tests := map[string]struct {
 		branches []string
 		commits  []string

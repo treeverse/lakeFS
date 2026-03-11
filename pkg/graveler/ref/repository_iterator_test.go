@@ -15,6 +15,7 @@ import (
 )
 
 func TestStorageIDForRepositoryIterator(t *testing.T) {
+	t.Parallel()
 	tt := []struct {
 		name               string
 		repoNames          []string
@@ -74,6 +75,7 @@ func TestStorageIDForRepositoryIterator(t *testing.T) {
 }
 
 func TestRepositoryIterator(t *testing.T) {
+	t.Parallel()
 	r, store := testRefManager(t)
 	repos := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d", "f"}
 
@@ -162,6 +164,7 @@ func TestRepositoryIterator(t *testing.T) {
 }
 
 func TestRepositoryIterator_CloseTwice(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)
@@ -178,6 +181,7 @@ func TestRepositoryIterator_CloseTwice(t *testing.T) {
 }
 
 func TestRepositoryIterator_NextClosed(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	entIt := mock.NewMockEntriesIterator(ctrl)

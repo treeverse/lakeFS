@@ -5,6 +5,7 @@ import (
 )
 
 func TestWriterThenReader(t *testing.T) {
+	t.Parallel()
 	writer, err := NewFileWriterThenReader("testing-*.tmp")
 	if err != nil {
 		t.Fatalf("opening fileWriterThenReader: %s", err)

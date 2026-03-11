@@ -20,6 +20,7 @@ func (t *traceLimiter) Take() time.Time {
 
 // TestStoreLimiter verify limiter is used for all kv store operations
 func TestStoreLimiter(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)

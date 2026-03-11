@@ -11,6 +11,7 @@ import (
 )
 
 func TestMemKV(t *testing.T) {
+	t.Parallel()
 	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 		store, err := kv.Open(ctx, kvparams.Config{
