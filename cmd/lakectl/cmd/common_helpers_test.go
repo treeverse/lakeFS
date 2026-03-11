@@ -8,6 +8,7 @@ import (
 )
 
 func TestIsValidAccessKeyID(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		accessKeyID string
 	}
@@ -34,6 +35,7 @@ func TestIsValidAccessKeyID(t *testing.T) {
 }
 
 func TestIsValidSecretAccessKey(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		secretAccessKey string
 	}

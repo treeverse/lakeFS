@@ -11,6 +11,7 @@ import (
 )
 
 func TestConcurrentCreateDeleteDir(t *testing.T) {
+	t.Parallel()
 	name, err := os.MkdirTemp("", "test-dir-")
 	require.NoError(t, err)
 	defer os.RemoveAll(name) // clean up
@@ -46,6 +47,7 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 }
 
 func TestConcurrentRenameDeleteDir(t *testing.T) {
+	t.Parallel()
 	name, err := os.MkdirTemp("", "test-dir-")
 	require.NoError(t, err)
 	defer os.RemoveAll(name) // clean up

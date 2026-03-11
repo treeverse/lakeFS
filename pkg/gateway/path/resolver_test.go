@@ -6,6 +6,7 @@ import (
 )
 
 func TestResolvePath(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		encodedPath string
 	}

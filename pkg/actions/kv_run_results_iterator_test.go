@@ -28,6 +28,7 @@ const (
 )
 
 func TestRunResultsIterator(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 

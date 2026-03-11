@@ -618,6 +618,7 @@ func getSortedFilesAndDirs(fileList []string) []string {
 }
 
 func TestWalkS3(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name     string
 		FileList []string
@@ -695,6 +696,7 @@ func FuzzWalkS3(f *testing.F) {
 }
 
 func TestDiffLocal_symlinks(t *testing.T) {
+	t.Parallel()
 	// Helpers used to setup environment for each test
 	createRegularFile := func(t *testing.T, localPath string, filename string, content string) {
 		filePath := filepath.Join(localPath, filename)

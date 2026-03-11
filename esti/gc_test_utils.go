@@ -6,33 +6,87 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func getSparkSubmitArgs(entryPoint string) []string {
-	return []string{
+// hadoopAzureVersion returns a hadoop-azure Maven coordinate version that
+// matches the Hadoop runtime bundled in the given Spark image.  Using a
+// mismatched version pulls conflicting transitive dependencies (e.g.
+// hadoop-common 3.3.6 vs the 3.3.1 already on the Spark 3.2.1 classpath).
+func hadoopAzureVersion(sparkVersion string) string {
+	switch {
+	case strings.HasPrefix(sparkVersion, "3."):
+		return "3.3.1" // Spark 3.2.1 ships Hadoop 3.3.1
+	case strings.HasPrefix(sparkVersion, "4."):
+		return "3.4.0" // Spark 4.x ships Hadoop 3.4.x
+	default:
+		return "3.3.6"
+	}
+}
+
+func getSparkSubmitArgs(entryPoint string, blockstoreType string, sparkVersion string) []string {
+	args := []string{
 		"--master", "spark://localhost:7077",
-		"--conf", "spark.jars.ivy=/opt/bitnami/spark/.ivy2", // Spark 4 requires an absolute ivy path; user.home is unset in the bitnami image
+		"--conf", "spark.jars.ivy=/tmp/ivy", // Use a writable path for ivy; the bitnami image runs as non-root user 1001
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000" + apiutil.BaseURL,
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
 		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"--class", entryPoint,
 	}
+	switch blockstoreType {
+	case block.BlockstoreTypeGS:
+		args = append(args,
+			"--conf", "spark.hadoop.google.cloud.auth.service.account.enable=true",
+			"--conf", "spark.hadoop.google.cloud.auth.service.account.json.keyfile=/tmp/gc-creds.json",
+			"--conf", "spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem",
+			"--conf", "spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS",
+		)
+	case block.BlockstoreTypeAzure:
+		azureStorageAccount := os.Getenv("ESTI_AZURE_STORAGE_ACCOUNT")
+		azureStorageAccessKey := os.Getenv("ESTI_AZURE_STORAGE_ACCESS_KEY")
+		args = append(args,
+			// hadoop-azure is "provided" in the assembly jar and not bundled in the
+			// bitnami-spark image; pull it at runtime so the ABFS driver is available.
+			// The version must match the Hadoop runtime in the Spark image to avoid
+			// classpath conflicts.
+			"--packages", fmt.Sprintf("org.apache.hadoop:hadoop-azure:%s", hadoopAzureVersion(sparkVersion)),
+			"--conf", fmt.Sprintf("spark.hadoop.fs.azure.account.key.%s.dfs.core.windows.net=%s", azureStorageAccount, azureStorageAccessKey),
+		)
+	}
+	return args
 }
 
-func getDockerArgs(workingDirectory string, localJar string) []string {
-	return []string{
+func getDockerArgs(t testing.TB, localJar string, blockstoreType string) []string {
+	t.Helper()
+	args := []string{
 		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
 		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", localJar),
 		"--rm",
-		"-e", "AWS_ACCESS_KEY_ID",
-		"-e", "AWS_SECRET_ACCESS_KEY",
 	}
+	switch blockstoreType {
+	case block.BlockstoreTypeS3:
+		args = append(args,
+			"-e", "AWS_ACCESS_KEY_ID",
+			"-e", "AWS_SECRET_ACCESS_KEY",
+		)
+	case block.BlockstoreTypeGS:
+		credsFile := writeGCSCredentialsFile(t)
+		args = append(args, "-v", fmt.Sprintf("%s:/tmp/gc-creds.json:ro", credsFile))
+	case block.BlockstoreTypeAzure:
+		args = append(args,
+			"-e", "AZURE_CLIENT_ID",
+			"-e", "AZURE_CLIENT_SECRET",
+			"-e", "AZURE_TENANT_ID",
+		)
+	}
+	return args
 }
 
 // handlePipe calls log on each line of pipe, and writes nil or an error to
@@ -100,20 +154,28 @@ type SparkSubmitConfig struct {
 	LocalJar string
 	// EntryPoint is the class name to run
 	EntryPoint      string
+	BlockstoreType  string
 	ExtraSubmitArgs []string
 	ProgramArgs     []string
 	LogSource       string
 }
 
-func RunSparkSubmit(config *SparkSubmitConfig) error {
-	workingDirectory, err := os.Getwd()
+func writeGCSCredentialsFile(t testing.TB) string {
+	t.Helper()
+	credsJSON := os.Getenv("LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON")
+	credsPath := filepath.Join(t.TempDir(), "gc-gcs-creds.json")
+	err := os.WriteFile(credsPath, []byte(credsJSON), 0o600) //nolint: mnd
 	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
+		t.Fatalf("failed to write GCS credentials file: %v", err)
 	}
-	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
+	return credsPath
+}
+
+func RunSparkSubmit(t testing.TB, config *SparkSubmitConfig) error {
+	t.Helper()
+	dockerArgs := getDockerArgs(t, config.LocalJar, config.BlockstoreType)
 	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/treeverse/bitnami-spark:%s", config.SparkVersion), "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
+	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint, config.BlockstoreType, config.SparkVersion)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
 	args := dockerArgs
 	args = append(args, sparkSubmitArgs...)

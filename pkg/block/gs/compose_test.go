@@ -10,6 +10,7 @@ import (
 )
 
 func TestComposeAll(t *testing.T) {
+	t.Parallel()
 	const targetFile = "data.file"
 	numberOfPartsTests := []int{1, 10, 10000}
 	for _, numberOfParts := range numberOfPartsTests {

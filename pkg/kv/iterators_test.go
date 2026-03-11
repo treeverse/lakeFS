@@ -11,6 +11,7 @@ import (
 )
 
 func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)
@@ -29,6 +30,7 @@ func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
 }
 
 func TestPartitionIterator_CloseAfterSeekGEFailed(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)

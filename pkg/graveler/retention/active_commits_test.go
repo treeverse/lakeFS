@@ -96,6 +96,7 @@ func (c *fakeRepositoryCommitGetter) Get(_ context.Context, id graveler.CommitID
 }
 
 func TestCommitsMap(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	cases := []struct {
 		Name         string
@@ -175,6 +176,7 @@ func TestCommitsMap(t *testing.T) {
 }
 
 func TestActiveCommits(t *testing.T) {
+	t.Parallel()
 	tests := map[string]struct {
 		commits            map[graveler.CommitID]testCommit
 		headsRetentionDays map[graveler.CommitID]int32

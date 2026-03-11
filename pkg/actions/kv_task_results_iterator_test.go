@@ -11,6 +11,7 @@ import (
 )
 
 func TestTaskResultsIterator(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	_, keyList := createTestData(t, ctx, kvStore)

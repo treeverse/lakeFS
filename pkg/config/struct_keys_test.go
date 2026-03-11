@@ -14,6 +14,7 @@ const (
 )
 
 func TestStructKeys_Simple(t *testing.T) {
+	t.Parallel()
 	type s struct {
 		A int
 		B string
@@ -38,6 +39,7 @@ func TestStructKeys_Simple(t *testing.T) {
 }
 
 func TestStructKeys_Nested(t *testing.T) {
+	t.Parallel()
 	type s struct {
 		A struct {
 			X string
@@ -56,6 +58,7 @@ func TestStructKeys_Nested(t *testing.T) {
 }
 
 func TestStructKeys_SimpleTagged(t *testing.T) {
+	t.Parallel()
 	type s struct {
 		A int `test:"Aaa"`
 		B int `toast:"bee"`
@@ -71,6 +74,7 @@ func TestStructKeys_SimpleTagged(t *testing.T) {
 }
 
 func TestStructKeys_NestedTagged(t *testing.T) {
+	t.Parallel()
 	type s struct {
 		A struct {
 			X  int `test:"eks"`
@@ -89,6 +93,7 @@ func TestStructKeys_NestedTagged(t *testing.T) {
 }
 
 func TestStructKeys_Squash(t *testing.T) {
+	t.Parallel()
 	type I struct {
 		A int
 		B int
@@ -109,6 +114,7 @@ func TestStructKeys_Squash(t *testing.T) {
 }
 
 func TestValidateMissingRequired_SimpleRequired(t *testing.T) {
+	t.Parallel()
 	type s struct {
 		A  int `validate:"required"`
 		AA int
@@ -136,6 +142,7 @@ func TestValidateMissingRequired_SimpleRequired(t *testing.T) {
 }
 
 func TestValidateMissingRequired_SimpleNotMissing(t *testing.T) {
+	t.Parallel()
 	type s struct {
 		A  int `validate:"required"`
 		AA int
@@ -165,6 +172,7 @@ func TestValidateMissingRequired_SimpleNotMissing(t *testing.T) {
 }
 
 func TestValidateMissingRequired_Nested(t *testing.T) {
+	t.Parallel()
 	type B struct {
 		Z float32 `validate:"required"`
 		W float64
@@ -192,6 +200,7 @@ func TestValidateMissingRequired_Nested(t *testing.T) {
 }
 
 func TestValidateMissingRequired_NestedNotMissing(t *testing.T) {
+	t.Parallel()
 	type A struct {
 		X string
 		Y int `validate:"required"`
@@ -232,6 +241,7 @@ func TestValidateMissingRequired_NestedNotMissing(t *testing.T) {
 }
 
 func TestValidateMissingRequired_SimpleTagged(t *testing.T) {
+	t.Parallel()
 	type s struct {
 		A int `test:"Aaa" validate:"required"`
 		B int `toast:"bee" validate:"required"`
@@ -247,6 +257,7 @@ func TestValidateMissingRequired_SimpleTagged(t *testing.T) {
 }
 
 func TestValidateMissingRequired_NestedTagged(t *testing.T) {
+	t.Parallel()
 	type B struct {
 		Gamma int32 `validate:"required"`
 		Delta uint8 `test:"dee" validate:"required"`
@@ -272,6 +283,7 @@ func TestValidateMissingRequired_NestedTagged(t *testing.T) {
 }
 
 func TestValidateMissingRequired_Squash(t *testing.T) {
+	t.Parallel()
 	type I struct {
 		A int `validate:"required"`
 		B int `validate:"required"`

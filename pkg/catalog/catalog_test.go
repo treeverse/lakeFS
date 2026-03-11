@@ -28,6 +28,7 @@ import (
 )
 
 func TestGetStartPos(t *testing.T) {
+	t.Parallel()
 	/**
 	Here are the possible states for where to start iterating, given a prefix, an "after" and a delimiter:
 	delim	prefix	after	expected start position
@@ -71,6 +72,7 @@ func TestGetStartPos(t *testing.T) {
 }
 
 func TestCatalog_ListRepositories(t *testing.T) {
+	t.Parallel()
 	// prepare data tests
 	now := time.Now()
 	gravelerData := []*graveler.RepositoryRecord{
@@ -276,6 +278,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 }
 
 func TestCatalog_BranchExists(t *testing.T) {
+	t.Parallel()
 	// prepare branch data
 	gravelerData := []*graveler.BranchRecord{
 		{BranchID: "branch1", Branch: &graveler.Branch{CommitID: "commit1"}},
@@ -313,6 +316,7 @@ func TestCatalog_BranchExists(t *testing.T) {
 }
 
 func TestCatalog_ListBranches(t *testing.T) {
+	t.Parallel()
 	// prepare branch data
 	gravelerData := []*graveler.BranchRecord{
 		{BranchID: "branch1", Branch: &graveler.Branch{CommitID: "commit1"}},
@@ -429,6 +433,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 }
 
 func TestCatalog_ListTags(t *testing.T) {
+	t.Parallel()
 	gravelerData := []*graveler.TagRecord{
 		{TagID: "t1", CommitID: "c1"},
 		{TagID: "t2", CommitID: "c2"},
@@ -526,6 +531,7 @@ func TestCatalog_ListTags(t *testing.T) {
 }
 
 func TestCatalog_ListEntries(t *testing.T) {
+	t.Parallel()
 	// prepare branch data
 	now := time.Now()
 	gravelerData := []*graveler.ValueRecord{
@@ -648,6 +654,7 @@ func TestCatalog_ListEntries(t *testing.T) {
 }
 
 func TestCatalog_PrepareGCUncommitted(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	tests := []struct {
 		name                   string
@@ -945,6 +952,7 @@ func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, c
 }
 
 func TestEntryCondition(t *testing.T) {
+	t.Parallel()
 	// Helper to create a graveler.Value from an Entry
 	createValueFromEntry := func(entry *catalog.Entry) *graveler.Value {
 		value, err := catalog.EntryToValue(entry)

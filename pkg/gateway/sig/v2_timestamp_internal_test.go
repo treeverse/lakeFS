@@ -11,6 +11,7 @@ import (
 )
 
 func TestV2VerifyRequestDate(t *testing.T) {
+	t.Parallel()
 	// Use shared clock skew test cases
 	testCases := sigtest.CommonClockSkewTestCases(AmzMaxClockSkew)
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
@@ -33,6 +34,7 @@ func TestV2VerifyRequestDate(t *testing.T) {
 }
 
 func TestV2DateHeaderSelection(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 
 	testCases := []struct {
@@ -85,6 +87,7 @@ func TestV2DateHeaderSelection(t *testing.T) {
 }
 
 func TestV2InvalidDateHeader(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 	testCases := []struct {
 		name          string

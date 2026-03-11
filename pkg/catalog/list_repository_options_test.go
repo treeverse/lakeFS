@@ -8,6 +8,7 @@ import (
 )
 
 func TestWithListReposPermissionFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		username    string

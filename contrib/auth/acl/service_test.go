@@ -144,6 +144,7 @@ func describeAllowed(allowed bool) string {
 }
 
 func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	s := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
@@ -194,6 +195,7 @@ func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 }
 
 func TestAuthService_ListPaged(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	s := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
@@ -292,6 +294,7 @@ func benchmarkKVListEffectivePolicies(b *testing.B, s *authacl.AuthService, user
 }
 
 func TestAuthService_DeleteUserWithRelations(t *testing.T) {
+	t.Parallel()
 	userNames := []string{"first", "second"}
 	groupNames := []string{"groupA", "groupB"}
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
@@ -360,6 +363,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 }
 
 func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
+	t.Parallel()
 	userNames := []string{"first", "second", "third"}
 	groupNames := []string{"groupA", "groupB", "groupC"}
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
@@ -444,6 +448,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 }
 
 func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
+	t.Parallel()
 	userNames := []string{"first", "second", "third"}
 	groupNames := []string{"groupA", "groupB", "groupC"}
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
@@ -570,6 +575,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 }
 
 func TestACL(t *testing.T) {
+	t.Parallel()
 	hierarchy := []model.ACLPermission{authacl.ReadPermission, authacl.WritePermission, authacl.SuperPermission, authacl.AdminPermission}
 
 	type PermissionFrom map[model.ACLPermission][]permissions.Permission

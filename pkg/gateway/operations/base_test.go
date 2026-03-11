@@ -14,6 +14,7 @@ import (
 )
 
 func TestOperation_EncodeError_ContextCancelled(t *testing.T) {
+	t.Parallel()
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -35,6 +36,7 @@ func TestOperation_EncodeError_ContextCancelled(t *testing.T) {
 }
 
 func TestRepoOperation_EncodeError_ContextCancelled(t *testing.T) {
+	t.Parallel()
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -64,6 +66,7 @@ func TestRepoOperation_EncodeError_ContextCancelled(t *testing.T) {
 }
 
 func TestPathOperation_EncodeError_ContextCancelled(t *testing.T) {
+	t.Parallel()
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -99,6 +102,7 @@ func TestPathOperation_EncodeError_ContextCancelled(t *testing.T) {
 }
 
 func TestOperation_EncodeError_NormalError(t *testing.T) {
+	t.Parallel()
 	// Create a normal (non-cancelled) context
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
@@ -115,6 +119,7 @@ func TestOperation_EncodeError_NormalError(t *testing.T) {
 }
 
 func TestOperation_EncodeResponse_ContextCancelled(t *testing.T) {
+	t.Parallel()
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -136,6 +141,7 @@ func TestOperation_EncodeResponse_ContextCancelled(t *testing.T) {
 }
 
 func TestOperation_EncodeResponse_NormalResponse(t *testing.T) {
+	t.Parallel()
 	// Create a normal (non-cancelled) context
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
@@ -156,6 +162,7 @@ func TestOperation_EncodeResponse_NormalResponse(t *testing.T) {
 }
 
 func TestAmzMetaAsMetadata(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest(http.MethodPut, "/test", nil)
 	req.Header.Set("X-Amz-Meta-Key1", "Value1")
 	req.Header.Set("X-Amz-Meta-Key2", "Value2")
@@ -168,6 +175,7 @@ func TestAmzMetaAsMetadata(t *testing.T) {
 }
 
 func TestAmzMetaAsMetadata_ExactLimit(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest(http.MethodPut, "/test", nil)
 	// Create metadata that is exactly at the 2KB limit
 	// User key is "Key" (3 bytes), so we need value of 2048 - 3 = 2045 bytes
@@ -182,6 +190,7 @@ func TestAmzMetaAsMetadata_ExactLimit(t *testing.T) {
 }
 
 func TestAmzMetaAsMetadata_ExceedingLimit(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest(http.MethodPut, "/test", nil)
 	valueSize := maxUserMetadataSize - len("Key") + 1
 	req.Header.Set("X-Amz-Meta-Key", strings.Repeat("a", valueSize))
@@ -193,6 +202,7 @@ func TestAmzMetaAsMetadata_ExceedingLimit(t *testing.T) {
 }
 
 func TestAmzMetaAsMetadata_MultipleHeadersExceedingLimit(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest(http.MethodPut, "/test", nil)
 	value := strings.Repeat("a", 1000)
 	req.Header.Set("X-Amz-Meta-Key1", value)

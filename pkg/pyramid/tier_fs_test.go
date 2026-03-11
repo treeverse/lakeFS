@@ -112,6 +112,7 @@ func TestEvictionMultipleNamespaces(t *testing.T) {
 }
 
 func TestStartup(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	fsName := uniqueNamespace()
 	// cleanup
@@ -244,6 +245,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 }
 
 func TestRemoveTempFileOnStoreError(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	// Create a temporary directory for testing

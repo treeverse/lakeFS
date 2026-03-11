@@ -72,6 +72,7 @@ func NewStorageConfigMock(bcID string) config.StorageConfig {
 // TestManager_GetRepositoryCache test get repository information while using cache. Match the number of times we
 // call get repository vs number of times we fetch the data.
 func TestManager_GetRepositoryCache(t *testing.T) {
+	t.Parallel()
 	const (
 		times = 1
 		calls = 3
@@ -111,6 +112,7 @@ func TestManager_GetRepositoryCache(t *testing.T) {
 
 // TestManager_GetCommitCache test gets commit record while using cache. We match the number of times we call get repository vs number of times we fetch the data.
 func TestManager_GetCommitCache(t *testing.T) {
+	t.Parallel()
 	const (
 		times = 1
 		calls = 3
@@ -165,6 +167,7 @@ func TestManager_GetCommitCache(t *testing.T) {
 }
 
 func TestManager_GetRepository(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	t.Run("repo_doesnt_exist", func(t *testing.T) {
 		_, err := r.GetRepository(t.Context(), "example-repo")
@@ -214,6 +217,7 @@ func TestManager_GetRepository(t *testing.T) {
 }
 
 func TestManager_ListRepositories(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	repoIDs := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
 	for _, repoId := range repoIDs {
@@ -271,6 +275,7 @@ func TestManager_ListRepositories(t *testing.T) {
 }
 
 func TestManager_DeleteRepository(t *testing.T) {
+	t.Parallel()
 	r, store := testRefManager(t)
 	ctx := t.Context()
 	repoID := graveler.RepositoryID("example-repo")
@@ -349,6 +354,7 @@ func TestManager_DeleteRepository(t *testing.T) {
 }
 
 func TestManager_GetBranch(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(t.Context(), "repo1", graveler.Repository{
 		StorageID:        "sid",
@@ -377,6 +383,7 @@ func TestManager_GetBranch(t *testing.T) {
 }
 
 func TestManager_CreateBranch(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -442,6 +449,7 @@ func TestManager_CreateBranch(t *testing.T) {
 }
 
 func TestManager_SetBranch(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(t.Context(), "repo1", graveler.Repository{
 		StorageID:        "sid",
@@ -480,6 +488,7 @@ func TestManager_SetBranch(t *testing.T) {
 }
 
 func TestManager_BranchUpdate(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	r, _ := testRefManager(t)
 	const (
@@ -551,6 +560,7 @@ func TestManager_BranchUpdate(t *testing.T) {
 }
 
 func TestManager_BranchUpdateRaceCondition(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	kvStore := kvtest.GetStore(ctx, t)
 	executor := batch.NewExecutor(logging.Dummy())
@@ -612,6 +622,7 @@ func TestManager_BranchUpdateRaceCondition(t *testing.T) {
 }
 
 func TestManager_DeleteBranch(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -635,6 +646,7 @@ func TestManager_DeleteBranch(t *testing.T) {
 }
 
 func TestManager_ListBranches(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(t.Context(), "repo1", graveler.Repository{
 		StorageID:        "sid",
@@ -703,6 +715,7 @@ func TestManager_ListBranches(t *testing.T) {
 }
 
 func TestManager_GetTag(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -738,6 +751,7 @@ func TestManager_GetTag(t *testing.T) {
 }
 
 func TestManager_CreateTag(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -783,6 +797,7 @@ func TestManager_CreateTag(t *testing.T) {
 }
 
 func TestManager_DeleteTag(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -804,6 +819,7 @@ func TestManager_DeleteTag(t *testing.T) {
 }
 
 func TestManager_ListTags(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -841,6 +857,7 @@ func TestManager_ListTags(t *testing.T) {
 }
 
 func TestManager_AddCommit(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -886,6 +903,7 @@ func TestManager_AddCommit(t *testing.T) {
 }
 
 func TestManager_Log(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -961,6 +979,7 @@ func TestManager_Log(t *testing.T) {
 }
 
 func TestManager_LogGraph(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -1084,6 +1103,7 @@ func TestManager_LogGraph(t *testing.T) {
 }
 
 func TestConsistentCommitIdentity(t *testing.T) {
+	t.Parallel()
 	addressProvider := ident.NewHexAddressProvider()
 	commit := graveler.Commit{
 		Committer:    "some-committer",
@@ -1116,6 +1136,7 @@ func TestConsistentCommitIdentity(t *testing.T) {
 }
 
 func TestManager_GetCommitByPrefix(t *testing.T) {
+	t.Parallel()
 	commitIDs := []string{"c1234", "d1", "b1", "c1245", "a1"}
 	identityToFakeIdentity := make(map[string]string)
 
@@ -1184,6 +1205,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 }
 
 func TestManager_ListCommits(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -1251,6 +1273,7 @@ func TestManager_ListCommits(t *testing.T) {
 }
 
 func TestManager_DeleteExpiredImports(t *testing.T) {
+	t.Parallel()
 	r, store := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -1315,6 +1338,7 @@ func TestManager_DeleteExpiredImports(t *testing.T) {
 }
 
 func TestManager_GetRepositoryMetadata(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	r, _ := testRefManager(t)
 	const (
@@ -1341,6 +1365,7 @@ func TestManager_GetRepositoryMetadata(t *testing.T) {
 }
 
 func TestManager_SetRepositoryMetadata(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	r, store := testRefManager(t)
 	const (
@@ -1405,6 +1430,7 @@ func TestManager_SetRepositoryMetadata(t *testing.T) {
 }
 
 func TestManager_GetPullRequest(t *testing.T) {
+	t.Parallel()
 	r, store := testRefManager(t)
 	repository, err := r.CreateRepository(t.Context(), "repo1", graveler.Repository{
 		StorageID:        "sid",
@@ -1452,6 +1478,7 @@ func TestManager_GetPullRequest(t *testing.T) {
 }
 
 func TestManager_DeletePullRequest(t *testing.T) {
+	t.Parallel()
 	r, store := testRefManager(t)
 	repository, err := r.CreateRepository(t.Context(), "repo1", graveler.Repository{
 		StorageID:        "sid",
@@ -1494,6 +1521,7 @@ func TestManager_DeletePullRequest(t *testing.T) {
 }
 
 func TestManager_UpdatePullRequest(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(t.Context(), "repo1", graveler.Repository{
 		StorageID:        "sid",

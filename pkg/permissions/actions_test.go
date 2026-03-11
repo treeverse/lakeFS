@@ -8,6 +8,7 @@ import (
 )
 
 func TestAllActions(t *testing.T) {
+	t.Parallel()
 	actions := permissions.Actions
 
 	if !slices.Contains(actions, permissions.ReadUserAction) {

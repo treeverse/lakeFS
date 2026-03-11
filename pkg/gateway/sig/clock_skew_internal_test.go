@@ -10,6 +10,7 @@ import (
 )
 
 func TestValidateClockSkew(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 
 	testCases := sigtest.CommonClockSkewTestCases(sig.AmzMaxClockSkew)
