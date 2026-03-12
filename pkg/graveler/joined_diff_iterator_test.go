@@ -11,6 +11,7 @@ import (
 )
 
 func TestJoinedDiffIterator_NextValue(t *testing.T) {
+	t.Parallel()
 	type fields struct {
 		iterA graveler.DiffIterator
 		iterB graveler.DiffIterator
@@ -463,6 +464,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 }
 
 func TestJoinedDiffIterator_Error(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		iterAErr    error

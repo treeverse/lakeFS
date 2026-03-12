@@ -9,6 +9,7 @@ import (
 )
 
 func TestNewValueToEntryIterator(t *testing.T) {
+	t.Parallel()
 	var expectedRecords []*EntryRecord
 	var valueRecords []*graveler.ValueRecord
 

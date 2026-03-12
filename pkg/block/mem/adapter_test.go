@@ -8,6 +8,7 @@ import (
 )
 
 func TestMemAdapter(t *testing.T) {
+	t.Parallel()
 	adapter := mem.New(t.Context())
 	blocktest.AdapterTest(t, adapter, "mem://test", "mem://external")
 }

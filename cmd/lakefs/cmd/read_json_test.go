@@ -23,6 +23,7 @@ type element2 struct {
 }
 
 func TestReadJSONOneType(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name        string
 		JSON        string
@@ -64,6 +65,7 @@ func TestReadJSONOneType(t *testing.T) {
 }
 
 func TestReadJSONTwoTypes(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name        string
 		JSON        string
@@ -119,6 +121,7 @@ func TestReadJSONTwoTypes(t *testing.T) {
 }
 
 func TestReadJSONCallbackError(t *testing.T) {
+	t.Parallel()
 	r := bufio.NewReader(strings.NewReader(`{"a": 1, "b": "one"}`))
 	cbErr := errors.New("callback fail")
 	err := cmd.ReadJSON(r, func(obj element) error {

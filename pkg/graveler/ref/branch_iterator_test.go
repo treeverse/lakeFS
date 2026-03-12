@@ -12,6 +12,7 @@ import (
 )
 
 func TestBranchSimpleIterator(t *testing.T) {
+	t.Parallel()
 	r, kvStore := testRefManager(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := t.Context()
@@ -90,6 +91,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 }
 
 func TestBranchByCommitIterator(t *testing.T) {
+	t.Parallel()
 	r, kvStore := testRefManager(t)
 	branches := []graveler.BranchID{"a", "aa", "b", "c", "e", "d"}
 	ctx := t.Context()

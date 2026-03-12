@@ -13,6 +13,7 @@ import (
 )
 
 func TestInProcessKeyedLock_NoContention(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	l := distributed.NewInProcessKeyedLock()
 
@@ -24,6 +25,7 @@ func TestInProcessKeyedLock_NoContention(t *testing.T) {
 }
 
 func TestInProcessKeyedLock_DifferentKeysNoBlock(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 	l := distributed.NewInProcessKeyedLock()
@@ -42,6 +44,7 @@ func TestInProcessKeyedLock_DifferentKeysNoBlock(t *testing.T) {
 }
 
 func TestInProcessKeyedLock_ContextCancelled(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		l := distributed.NewInProcessKeyedLock()
 		ctx := t.Context()
@@ -66,6 +69,7 @@ func TestInProcessKeyedLock_ContextCancelled(t *testing.T) {
 }
 
 func TestInProcessKeyedLock_FIFOOrdering(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		l := distributed.NewInProcessKeyedLock()
@@ -103,6 +107,7 @@ func TestInProcessKeyedLock_FIFOOrdering(t *testing.T) {
 }
 
 func TestInProcessKeyedLock_CancelledMiddleWaiter(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		l := distributed.NewInProcessKeyedLock()
@@ -153,6 +158,7 @@ func TestInProcessKeyedLock_CancelledMiddleWaiter(t *testing.T) {
 }
 
 func TestInProcessKeyedLock_HandoffToCancelledWaiter(t *testing.T) {
+	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		l := distributed.NewInProcessKeyedLock()
@@ -215,6 +221,7 @@ func TestInProcessKeyedLock_HandoffToCancelledWaiter(t *testing.T) {
 }
 
 func TestInProcessKeyedLock_Stress(t *testing.T) {
+	t.Parallel()
 	l := distributed.NewInProcessKeyedLock()
 	const (
 		workers = 20
@@ -270,6 +277,7 @@ func TestInProcessKeyedLock_Stress(t *testing.T) {
 }
 
 func TestInProcessKeyedLock_ReleaseAndReacquire(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	l := distributed.NewInProcessKeyedLock()
 

@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.19.0"
+lazy val projectVersion = "0.21.0"
 ThisBuild / version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
@@ -139,6 +139,21 @@ assembly / assemblyShadeRules := Seq(
   rename("org.apache.http.**").inAll,
   rename("scalapb.**").inAll,
   rename("com.google.protobuf.**").inAll,
+  // Shade proto-google-common-protos classes (com.google.api, com.google.type, etc.)
+  // to prevent conflicts with versions on the Spark classpath (e.g., Dataproc's GCS connector).
+  // Without this, these classes reference shaded protobuf internally but are loaded from
+  // Spark's classpath which expects unshaded protobuf, causing NoSuchMethodError.
+  // See: https://github.com/treeverse/lakeFS/issues/10136
+  rename("com.google.api.**").inAll,
+  // Shade google-cloud-storage SDK and its internal dependencies, but NOT
+  // com.google.cloud.hadoop which is the GCS Hadoop connector — Spark loads
+  // it by class name (fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem).
+  rename("com.google.cloud.storage.**").inAll,
+  rename("com.google.type.**").inAll,
+  rename("com.google.rpc.**").inAll,
+  rename("com.google.longrunning.**").inAll,
+  rename("com.google.iam.**").inAll,
+  rename("com.google.logging.**").inAll,
   rename("com.google.common.**")
     .inLibrary("com.google.guava" % "guava" % "30.1-jre",
                "com.google.guava" % "failureaccess" % "1.0.1"
@@ -186,6 +201,58 @@ s3Upload := {
       throw new RuntimeException(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})", e)
   } finally {
     s3.close()
+  }
+}
+
+// Verify that the assembly jar has no shading leaks: classes that reference
+// unshaded com.google.protobuf when they should reference the shaded version.
+// This catches issues like https://github.com/treeverse/lakeFS/issues/10136
+// where com.google.api.* classes end up in the jar with references to the
+// original (unshaded) protobuf, causing NoSuchMethodError at runtime when
+// a GCS environment has its own protobuf on the classpath.
+val verifyShading = taskKey[Unit]("Verify assembly jar has no unshaded protobuf references")
+
+verifyShading := {
+  import java.util.jar.JarFile
+  import scala.jdk.CollectionConverters._
+
+  val log = streams.value.log
+  val jarPath = (assembly / assemblyOutputPath).value
+  val jar = new JarFile(jarPath)
+
+  // These Google packages must be shaded (relocated) in the assembly jar.
+  // If any .class files remain at the original (unshaded) paths, the jar will
+  // break on environments where the same classes exist on the Spark classpath
+  // (e.g., Dataproc), because Spark's classloader will load its version first.
+  val mustBeShaded = Seq(
+    "com/google/api/",
+    "com/google/cloud/storage/",
+    "com/google/type/",
+    "com/google/rpc/",
+    "com/google/longrunning/",
+    "com/google/iam/",
+    "com/google/logging/",
+    "com/google/protobuf/"
+  )
+
+  val unshadedClasses = jar.entries().asScala
+    .map(_.getName)
+    .filter(n => n.endsWith(".class") && mustBeShaded.exists(n.startsWith))
+    .toList
+
+  jar.close()
+
+  if (unshadedClasses.nonEmpty) {
+    log.error(s"Found ${unshadedClasses.size} unshaded Google classes in assembly jar:")
+    unshadedClasses.take(20).foreach(c => log.error(s"  $c"))
+    if (unshadedClasses.size > 20) log.error(s"  ... and ${unshadedClasses.size - 20} more")
+    throw new MessageOnlyException(
+      "Assembly jar shading verification failed: Google classes found at original (unshaded) paths. " +
+      "Add the missing packages to assemblyShadeRules in build.sbt. " +
+      "See: https://github.com/treeverse/lakeFS/issues/10136"
+    )
+  } else {
+    log.success("Shading verification passed: all checked Google packages are properly relocated.")
   }
 }
 

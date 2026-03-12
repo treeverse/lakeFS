@@ -9,6 +9,7 @@ import (
 )
 
 func TestMapLoggingFields(t *testing.T) {
+	t.Parallel()
 	f := 64.0
 	value := struct {
 		A  int

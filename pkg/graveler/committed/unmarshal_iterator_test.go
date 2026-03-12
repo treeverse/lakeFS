@@ -11,6 +11,7 @@ import (
 )
 
 func TestUnmarshalIterator(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		Name   string
 		Keys   []graveler.Key

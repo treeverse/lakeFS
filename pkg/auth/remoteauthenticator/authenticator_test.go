@@ -38,6 +38,7 @@ func (m *mockAuthService) AddUserToGroup(_ context.Context, _, _ string) error {
 }
 
 func TestAuthenticator_RequestIDPropagation(t *testing.T) {
+	t.Parallel()
 	const requestID = "test-request-id-remote-auth"
 	called := false
 

@@ -13,6 +13,7 @@ import (
 )
 
 func TestAzureAdapter(t *testing.T) {
+	t.Parallel()
 	basePath, err := url.JoinPath(blockURL, containerName)
 	require.NoError(t, err)
 	localPath, err := url.JoinPath(basePath, "lakefs")
@@ -31,6 +32,7 @@ func TestAzureAdapter(t *testing.T) {
 }
 
 func TestAdapterNamespace(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		Name          string
 		Namespace     string
@@ -145,6 +147,7 @@ func TestAdapterNamespace(t *testing.T) {
 }
 
 func TestAzureParseURL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		Name          string
 		Url           string

@@ -21,6 +21,7 @@ const (
 )
 
 func TestWalkEntryIterator(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		max  int

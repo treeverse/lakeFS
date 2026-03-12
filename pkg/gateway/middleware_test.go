@@ -8,6 +8,7 @@ import (
 )
 
 func TestParseRequestParts(t *testing.T) {
+	t.Parallel()
 	bareDomains := []string{"lakefs.example.com"}
 	cases := []struct {
 		Name           string

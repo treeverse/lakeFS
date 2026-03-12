@@ -199,7 +199,7 @@ func WriteTo(tpl string, data any, w io.Writer) {
 			var b strings.Builder
 			for _, row := range tab.Rows {
 				for ic, cell := range row {
-					b.WriteString(fmt.Sprint(cell))
+					fmt.Fprint(&b, cell)
 					if ic < len(row)-1 {
 						b.WriteString("\t")
 					}

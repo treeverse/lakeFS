@@ -14,6 +14,7 @@ import (
 )
 
 func TestGenerateJWTLogin(t *testing.T) {
+	t.Parallel()
 	secret := []byte("test-secret-key")
 	userID := "test-user"
 	now := time.Now()
@@ -41,6 +42,7 @@ func TestGenerateJWTLogin(t *testing.T) {
 }
 
 func TestVerifyToken(t *testing.T) {
+	t.Parallel()
 	secret := []byte("test-secret-key")
 	userID := "test-user"
 	now := time.Now()
@@ -75,6 +77,7 @@ func TestVerifyToken(t *testing.T) {
 }
 
 func TestVerifyToken_Specifics(t *testing.T) {
+	t.Parallel()
 	secret := []byte("test-secret-key")
 	userID := "test-user"
 	now := time.Now()
@@ -194,6 +197,7 @@ func TestVerifyToken_Specifics(t *testing.T) {
 }
 
 func TestLoginClaims_Methods(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	expiry := now.Add(time.Hour)
 	claims := LoginClaims{

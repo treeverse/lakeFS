@@ -16,6 +16,7 @@ import (
 var errRegion = errors.New("failed to get region")
 
 func TestClientCache(t *testing.T) {
+	t.Parallel()
 	const defaultRegion = "us-west-2"
 	ctx := t.Context()
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(defaultRegion))

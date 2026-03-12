@@ -12,6 +12,7 @@ import (
 )
 
 func TestDoMigrate(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	t.Run("not_initialized", func(t *testing.T) {

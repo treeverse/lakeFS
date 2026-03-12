@@ -201,6 +201,7 @@ func newGraveler(t *testing.T, committedManager graveler.CommittedManager, stagi
 }
 
 func TestGraveler_List(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	tests := []struct {
 		name        string
@@ -279,6 +280,7 @@ func TestGraveler_List(t *testing.T) {
 }
 
 func TestGraveler_Get(t *testing.T) {
+	t.Parallel()
 	errTest := errors.New("some kind of err")
 	tests := []struct {
 		name                string
@@ -386,6 +388,7 @@ func TestGraveler_Get(t *testing.T) {
 }
 
 func TestGraveler_Set(t *testing.T) {
+	t.Parallel()
 	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	tests := []struct {
 		name                string
@@ -429,6 +432,7 @@ func TestGraveler_Set(t *testing.T) {
 }
 
 func TestGravelerSet_Advanced(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	ctx := t.Context()
 	committedMgr := &testutil.CommittedFake{}
@@ -520,6 +524,7 @@ func TestGravelerSet_Advanced(t *testing.T) {
 }
 
 func TestGraveler_SetWithCondition(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	existingVal := &graveler.Value{Identity: []byte("existingIdentity"), Data: []byte("existingValue")}
@@ -685,6 +690,7 @@ func TestGraveler_SetWithCondition(t *testing.T) {
 }
 
 func TestGravelerGet_Advanced(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                string
 		r                   catalog.Store
@@ -808,6 +814,7 @@ func TestGravelerGet_Advanced(t *testing.T) {
 }
 
 func TestGraveler_Diff(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		r               catalog.Store
@@ -1178,6 +1185,7 @@ func TestGraveler_Diff(t *testing.T) {
 }
 
 func TestGraveler_DiffUncommitted(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		r               catalog.Store
@@ -1403,6 +1411,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 }
 
 func TestGravelerDiffUncommitted_Advanced(t *testing.T) {
+	t.Parallel()
 	committedFake := &testutil.CommittedFake{
 		ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{
 			{
@@ -1516,6 +1525,7 @@ func TestGravelerDiffUncommitted_Advanced(t *testing.T) {
 }
 
 func TestGraveler_CreateBranch(t *testing.T) {
+	t.Parallel()
 	gravel := newGraveler(t, nil, nil, &testutil.RefsFake{Err: graveler.ErrBranchNotFound, CommitID: "8888888798e3aeface8e62d1c7072a965314b4"}, nil, nil)
 	_, err := gravel.CreateBranch(t.Context(), repository, "", "")
 	if err != nil {
@@ -1530,6 +1540,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 }
 
 func TestGraveler_UpdateBranch(t *testing.T) {
+	t.Parallel()
 	gravel := newGraveler(t, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
 	testutil.ShortenBranchUpdateBackOff(gravel.(*graveler.Graveler))
@@ -1543,6 +1554,7 @@ func TestGraveler_UpdateBranch(t *testing.T) {
 }
 
 func TestGravelerCommit(t *testing.T) {
+	t.Parallel()
 	expectedCommitID := graveler.CommitID("expectedCommitId")
 	expectedRangeID := graveler.MetaRangeID("expectedRangeID")
 	values := testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: nil, Value: nil}})
@@ -1831,6 +1843,7 @@ func TestGravelerCommit(t *testing.T) {
 
 // TestGraveler_MergeInvalidRef test merge with invalid source reference in order
 func TestGraveler_MergeInvalidRef(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const destinationCommitID = graveler.CommitID("destinationCommitID")
@@ -1872,6 +1885,7 @@ func TestGraveler_MergeInvalidRef(t *testing.T) {
 }
 
 func TestGraveler_AddCommit(t *testing.T) {
+	t.Parallel()
 	const (
 		expectedCommitID       = graveler.CommitID("expectedCommitId")
 		expectedParentCommitID = graveler.CommitID("expectedParentCommitId")
@@ -2002,6 +2016,7 @@ func TestGraveler_AddCommit(t *testing.T) {
 }
 
 func TestGravelerDelete(t *testing.T) {
+	t.Parallel()
 	type fields struct {
 		CommittedManager graveler.CommittedManager
 		StagingManager   *testutil.StagingFake
@@ -2297,6 +2312,7 @@ func TestGravelerDelete(t *testing.T) {
 }
 
 func TestGraveler_PrepareCommitHook(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitId")
@@ -2398,6 +2414,7 @@ func TestGraveler_PrepareCommitHook(t *testing.T) {
 }
 
 func TestGraveler_PreCommitHook(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitId")
@@ -2499,6 +2516,7 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 }
 
 func TestGraveler_PreMergeHook(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
@@ -2636,6 +2654,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 }
 
 func TestGraveler_CreateTag(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const commitID = graveler.CommitID("commitID")
 	const tagID = graveler.TagID("tagID")
@@ -2683,6 +2702,7 @@ func TestGraveler_CreateTag(t *testing.T) {
 }
 
 func TestGraveler_PreCreateTagHook(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
@@ -2776,6 +2796,7 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 }
 
 func TestGraveler_PreDeleteTagHook(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")
@@ -2866,6 +2887,7 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 }
 
 func TestGraveler_PreCreateBranchHook(t *testing.T) {
+	t.Parallel()
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
 	const sourceBranchID = graveler.CommitID("sourceBranchID")
@@ -2968,6 +2990,7 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 }
 
 func TestGraveler_PreDeleteBranchHook(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const sourceCommitID = graveler.CommitID("sourceCommitID")
@@ -3065,6 +3088,7 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 }
 
 func TestGravelerCreateCommitRecord(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	t.Run("create commit record", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -3085,6 +3109,7 @@ func TestGravelerCreateCommitRecord(t *testing.T) {
 }
 
 func TestGraveler_Revert(t *testing.T) {
+	t.Parallel()
 	type deps struct {
 		CommittedManager *testutil.CommittedFake
 		RefManager       *testutil.RefsFake
@@ -3368,6 +3393,7 @@ func TestGraveler_Revert(t *testing.T) {
 }
 
 func TestGraveler_CherryPickHooks(t *testing.T) {
+	t.Parallel()
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
 	const expectedCommitID = graveler.CommitID("expectedCommitID")

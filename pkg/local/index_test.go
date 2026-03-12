@@ -34,6 +34,7 @@ func writeIndex(t *testing.T, dir string) {
 }
 
 func TestWriteIndex(t *testing.T) {
+	t.Parallel()
 	expectedContent := fmt.Sprintf("src: lakefs://%s/%s/%s\nat_head: %s\nactive_operation: \"\"\n", repo, ref, uPath, head)
 	tmpDir := t.TempDir()
 	writeIndex(t, tmpDir)
@@ -43,6 +44,7 @@ func TestWriteIndex(t *testing.T) {
 }
 
 func TestReadIndex(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	indexPath := filepath.Join(tmpDir, "path", "to", "index")
 	require.NoError(t, os.MkdirAll(indexPath, os.ModePerm))
@@ -61,6 +63,7 @@ func TestReadIndex(t *testing.T) {
 }
 
 func TestFindIndices(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	indicesFound := []string{
 		filepath.Join(root, "path", "one"),

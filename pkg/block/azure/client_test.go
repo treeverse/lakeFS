@@ -10,6 +10,7 @@ import (
 )
 
 func TestExtraction(t *testing.T) {
+	t.Parallel()
 	parse := func(p string) *url.URL {
 		u, err := url.Parse(p)
 		require.NoError(t, err)

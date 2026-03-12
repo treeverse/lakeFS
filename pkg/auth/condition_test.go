@@ -5,6 +5,7 @@ import (
 )
 
 func TestIpAddressOperators_Evaluate(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                 string
 		fields               map[string][]string
@@ -365,6 +366,7 @@ func TestStringMatchOperator_NilContext(t *testing.T) {
 }
 
 func TestEvaluateConditions(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		conditions map[string]map[string][]string
@@ -507,6 +509,7 @@ func TestEvaluateConditions(t *testing.T) {
 }
 
 func TestNewConditionContext(t *testing.T) {
+	t.Parallel()
 	clientIP := "203.0.113.5"
 	ctx := NewConditionContext(clientIP)
 
@@ -516,6 +519,7 @@ func TestNewConditionContext(t *testing.T) {
 }
 
 func TestNewConditionContextWithFields(t *testing.T) {
+	t.Parallel()
 	fields := map[string]string{
 		"SourceIp":      "10.1.2.3",
 		"ClientIp":      "192.168.1.1",
