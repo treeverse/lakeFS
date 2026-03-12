@@ -25,36 +25,6 @@ func HasActionOnAnyResource(policies []*model.Policy, action string) bool {
 	return false
 }
 
-// HasPermissionOnResource checks if a user has at least one Allow statement
-// matching the given action and resource ARN, ignoring conditions.
-// This is useful for fast-fail gates where we want to know if the user has
-// any policy granting access to this resource, regardless of conditions.
-func HasPermissionOnResource(resourceArn, username string, policies []*model.Policy, action string) bool {
-	for _, policy := range policies {
-		for _, stmt := range policy.Statement {
-			if stmt.Effect != model.StatementEffectAllow {
-				continue
-			}
-			resources, err := ParsePolicyResourceAsList(stmt.Resource)
-			if err != nil {
-				continue
-			}
-			for _, resource := range resources {
-				resource = interpolateUser(resource, username)
-				if !ArnMatch(resource, resourceArn) {
-					continue
-				}
-				for _, stmtAction := range stmt.Action {
-					if wildcard.Match(stmtAction, action) {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
 // CheckPermission checks if a user has a specific action permission on a resource.
 // Returns true if allowed, false if denied or not permitted.
 // This evaluates policies similar to CheckPermissions but optimized for filtering.
