@@ -318,9 +318,13 @@ class ObjectReader(LakeFSIOBase):
                 self._update_object_size(response)
                 return response.data
 
-        except InvalidRangeException:
-            # Update object size from response
-            self._update_object_size(response)
+        except InvalidRangeException as e:
+            # Get size from exception if available (parsed from Content-Range header)
+            if e.size is not None:
+                self._size = e.size
+            else:
+                # Fallback to current position if header is missing
+                self._size = self._pos
             return b''
 
     def read(self, n: int = None) -> str | bytes:
