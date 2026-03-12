@@ -10,6 +10,7 @@ import (
 )
 
 func TestCreateDumpWithPartitions(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	defer store.Close()
@@ -87,6 +88,7 @@ func TestCreateDumpWithPartitions(t *testing.T) {
 }
 
 func TestDumpPartition(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	defer store.Close()
@@ -125,6 +127,7 @@ func TestDumpPartition(t *testing.T) {
 }
 
 func TestCreateDump(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	defer store.Close()
@@ -154,6 +157,7 @@ func TestCreateDump(t *testing.T) {
 }
 
 func TestLoadEntries(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	defer store.Close()
@@ -220,6 +224,7 @@ func TestLoadEntries(t *testing.T) {
 }
 
 func TestLoadDump(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 	defer store.Close()

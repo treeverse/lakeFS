@@ -13,6 +13,7 @@ func sp(s string) *string {
 }
 
 func TestNewUncommittedDiffIterator(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                  string
 		CommittedKeys         []string

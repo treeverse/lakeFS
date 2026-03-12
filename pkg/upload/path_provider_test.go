@@ -10,6 +10,7 @@ import (
 )
 
 func TestPathPartitionProvider(t *testing.T) {
+	t.Parallel()
 	t.Run("by_time", func(t *testing.T) {
 		const (
 			times    = 3
@@ -109,6 +110,7 @@ func testValidUploadPath(t *testing.T, prefix, p string) []string {
 }
 
 func TestPathPartitionProvider_ResolvePathTime(t *testing.T) {
+	t.Parallel()
 	const (
 		size     = 5
 		interval = 24 * time.Hour
@@ -148,6 +150,7 @@ func TestPathPartitionProvider_ResolvePathTime(t *testing.T) {
 }
 
 func TestPathPartitionProvider_CommonPrefix(t *testing.T) {
+	t.Parallel()
 	t.Run("get_data_prefix", func(t *testing.T) {
 		const prefix = "data_prefix"
 		provider := NewPathPartitionProvider(

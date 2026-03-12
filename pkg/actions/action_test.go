@@ -16,6 +16,7 @@ import (
 )
 
 func TestAction_ReadAction(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		filename string
@@ -70,6 +71,7 @@ func validateActionFull(t *testing.T, act *actions.Action) {
 }
 
 func TestAction_Match(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		on      map[graveler.EventType]*actions.ActionOn
@@ -268,6 +270,7 @@ func TestAction_Match(t *testing.T) {
 }
 
 func TestLoadActions(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		configureSource func(*gomock.Controller) actions.Source
@@ -391,6 +394,7 @@ func TestLoadActions(t *testing.T) {
 }
 
 func TestMatchedActions(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		actions []*actions.Action

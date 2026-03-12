@@ -8,6 +8,7 @@ import (
 )
 
 func TestHasActionOnAnyResource(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		policies []*model.Policy
@@ -108,6 +109,7 @@ func TestHasActionOnAnyResource(t *testing.T) {
 }
 
 func TestCheckPermission(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		resourceArn string

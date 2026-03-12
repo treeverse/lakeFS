@@ -18,6 +18,7 @@ const (
 )
 
 func TestLakectlRetryPolicy(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name                string
 		getTestContext      func() context.Context

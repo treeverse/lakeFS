@@ -9,6 +9,7 @@ import (
 )
 
 func TestDeletedSensor(t *testing.T) {
+	t.Parallel()
 	type commandFlow struct {
 		repositoryID   graveler.RepositoryID
 		branchID       graveler.BranchID
@@ -124,6 +125,7 @@ func TestDeletedSensor(t *testing.T) {
 }
 
 func TestDeletedSensor_Close(t *testing.T) {
+	t.Parallel()
 	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 	}
 	sensor := graveler.NewDeleteSensor(10, cb)
@@ -131,6 +133,7 @@ func TestDeletedSensor_Close(t *testing.T) {
 }
 
 func TestDeletedSensor_CloseTwice(t *testing.T) {
+	t.Parallel()
 	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 	}
 	sensor := graveler.NewDeleteSensor(10, cb)
@@ -139,6 +142,7 @@ func TestDeletedSensor_CloseTwice(t *testing.T) {
 }
 
 func TestDeletedSensor_CountAfterClose(t *testing.T) {
+	t.Parallel()
 	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 	}
 	sensor := graveler.NewDeleteSensor(10, cb)
@@ -148,6 +152,7 @@ func TestDeletedSensor_CountAfterClose(t *testing.T) {
 }
 
 func TestDeletedSensor_CheckNonBlocking(t *testing.T) {
+	t.Parallel()
 	closerCall := sync.Once{}
 	closerCh := make(chan struct{})
 

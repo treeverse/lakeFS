@@ -11,6 +11,7 @@ import (
 )
 
 func TestNewEntryToValueIterator(t *testing.T) {
+	t.Parallel()
 	var expectedRecords []*graveler.ValueRecord
 	var entryRecords []*catalog.EntryRecord
 

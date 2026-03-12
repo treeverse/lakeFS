@@ -10,6 +10,7 @@ import (
 )
 
 func TestStringHeap(t *testing.T) {
+	t.Parallel()
 	// Some items and their priorities.
 	items := []string{"imported/0000/1", "imported../00000", "imported/00010/1", "imported./0000/1"}
 

@@ -21,6 +21,7 @@ func (m *mockDeleteClient) DeleteObjectsWithResponse(ctx context.Context, reposi
 }
 
 func TestFsRmRecursive_ObjectErrors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		response   *apigen.DeleteObjectsResponse

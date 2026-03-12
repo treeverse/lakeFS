@@ -85,6 +85,7 @@ func CaseInsensitiveFS() *PathMapFS {
 }
 
 func TestIsCaseInsensitiveLocationFalse(t *testing.T) {
+	t.Parallel()
 	fs := CaseSensitiveFS()
 
 	insensitive, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/dir", fatal(t))
@@ -97,6 +98,7 @@ func TestIsCaseInsensitiveLocationFalse(t *testing.T) {
 }
 
 func TestIsCaseInsensitiveLocationTrue(t *testing.T) {
+	t.Parallel()
 	fs := CaseInsensitiveFS()
 
 	insensitive, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/dir", fatal(t))
@@ -109,6 +111,7 @@ func TestIsCaseInsensitiveLocationTrue(t *testing.T) {
 }
 
 func TestIsCaseInsensitiveLocationError(t *testing.T) {
+	t.Parallel()
 	testingErr := errors.New("for testing")
 
 	fs := CaseSensitiveFS()
@@ -125,6 +128,7 @@ func TestIsCaseInsensitiveLocationError(t *testing.T) {
 // works on the OS.  It cannot test the result, as it does not know what to
 // expect.
 func TestOSIsCaseInsensitiveLocation(t *testing.T) {
+	t.Parallel()
 	fs := fileutil.NewOSFS()
 	tempDir := t.TempDir()
 	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fs, tempDir, fatal(t))

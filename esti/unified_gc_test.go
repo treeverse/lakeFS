@@ -7,8 +7,11 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -48,6 +51,8 @@ func gcTestCommit(t *testing.T, ctx context.Context, branch string, daysAgo int)
 }
 
 func TestUnifiedGC(t *testing.T) {
+	RequireBlockstoreType(t, block.BlockstoreTypeS3, block.BlockstoreTypeGS, block.BlockstoreTypeAzure)
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	ctx := t.Context()
 	prepareForUnifiedGC(t, ctx)
 	committedCreateEvents := []objectEvent{
@@ -154,10 +159,11 @@ func TestUnifiedGC(t *testing.T) {
 	revertRes, err := client.ResetBranchWithResponse(ctx, RepoName, "dev", apigen.ResetBranchJSONRequestBody{Type: "reset"})
 	require.Falsef(t, revertRes.StatusCode() > 299, "Unexpected status code %d in revert branch dev", revertRes.StatusCode())
 	testutil.MustDo(t, "Revert changes in dev branch", err)
-	err = RunSparkSubmit(&SparkSubmitConfig{
+	err = RunSparkSubmit(t, &SparkSubmitConfig{
 		SparkVersion:    sparkImageTag,
 		LocalJar:        metaClientJarPath,
 		EntryPoint:      "io.treeverse.gc.GarbageCollection",
+		BlockstoreType:  blockstoreType,
 		ProgramArgs:     []string{RepoName, "us-east-1"},
 		ExtraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
 		LogSource:       fmt.Sprintf("gc-%s", RepoName),

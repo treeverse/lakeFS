@@ -12,6 +12,7 @@ import (
 )
 
 func TestJavaV2VerifyRequestDate(t *testing.T) {
+	t.Parallel()
 	// Use shared clock skew test cases
 	testCases := sigtest.CommonClockSkewTestCases(AmzMaxClockSkew)
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
@@ -40,6 +41,7 @@ func TestJavaV2VerifyRequestDate(t *testing.T) {
 }
 
 func TestJavaV2InvalidTimestamp(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2025, 12, 12, 10, 0, 0, 0, time.UTC)
 
 	testCases := []struct {

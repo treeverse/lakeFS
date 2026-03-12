@@ -116,6 +116,7 @@ func keysByRanges(t testing.TB, it committed.Iterator) []rangeKeys {
 }
 
 func TestIterator(t *testing.T) {
+	t.Parallel()
 	namespace := committed.Namespace("ns")
 	tests := []struct {
 		Name string

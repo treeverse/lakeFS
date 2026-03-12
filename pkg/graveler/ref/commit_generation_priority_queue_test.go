@@ -10,6 +10,7 @@ import (
 )
 
 func TestCommitsGenerationPriorityQueue_Len(t *testing.T) {
+	t.Parallel()
 	const maxItems = 7
 	q := ref.NewCommitsGenerationPriorityQueue()
 	for i := range maxItems {
@@ -25,6 +26,7 @@ func TestCommitsGenerationPriorityQueue_Len(t *testing.T) {
 }
 
 func TestCommitsGenerationPriorityQueue_Swap(t *testing.T) {
+	t.Parallel()
 	rec1 := &graveler.CommitRecord{CommitID: "1"}
 	rec2 := &graveler.CommitRecord{CommitID: "2"}
 
@@ -38,6 +40,7 @@ func TestCommitsGenerationPriorityQueue_Swap(t *testing.T) {
 }
 
 func TestCommitsGenerationPriorityQueue_Push(t *testing.T) {
+	t.Parallel()
 	q := ref.NewCommitsGenerationPriorityQueue()
 	rec1 := &graveler.CommitRecord{CommitID: "1"}
 	q.Push(rec1)
@@ -52,6 +55,7 @@ func TestCommitsGenerationPriorityQueue_Push(t *testing.T) {
 }
 
 func TestCommitsGenerationPriorityQueue_Pop(t *testing.T) {
+	t.Parallel()
 	const maxItems = 7
 	q := ref.NewCommitsGenerationPriorityQueue()
 	for i := range maxItems {
@@ -71,6 +75,7 @@ func TestCommitsGenerationPriorityQueue_Pop(t *testing.T) {
 }
 
 func TestCommitsGenerationPriorityQueue_Less(t *testing.T) {
+	t.Parallel()
 	ts1 := time.Now()
 	ts2 := ts1.Add(time.Minute)
 	tests := []struct {

@@ -9,7 +9,7 @@ on:
 jobs:
   spark-metadata-client:
     name: Spark client (${{ matrix.scala }}, Java ${{ matrix.java }})
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-8-cores
     strategy:
       matrix:
         include:

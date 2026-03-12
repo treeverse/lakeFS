@@ -14,6 +14,7 @@ import (
 var testdataFS embed.FS
 
 func TestNewInjectIndexFS(t *testing.T) {
+	t.Parallel()
 	const (
 		name   = "testdata/first.html"
 		marker = "<!-- code snippets -->"

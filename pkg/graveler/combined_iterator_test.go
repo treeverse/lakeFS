@@ -10,6 +10,7 @@ import (
 )
 
 func TestCombinedIterator_NextValue(t *testing.T) {
+	t.Parallel()
 	type fields struct {
 		iters          []graveler.ValueIterator
 		withTombstones bool

@@ -46,6 +46,7 @@ func (m *mockCache) GetOrSetWithExpiry(k any, setFn cache.SetFnWithExpiry) (v an
 }
 
 func TestNonExistent(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	m := prepareTest(t, ctx, nil, nil)
 	setting := &settings.ExampleSettings{}
@@ -59,6 +60,7 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestSaveAndGet(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	mc := &mockCache{
 		c: make(map[any]any),
@@ -94,6 +96,7 @@ func TestSaveAndGet(t *testing.T) {
 }
 
 func TestGetLatest(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	m := prepareTest(t, ctx, nil, nil)
 	err := m.Save(ctx, repository, "settingKey", newSetting(5, 6, "hello"), nil)
@@ -110,6 +113,7 @@ func TestGetLatest(t *testing.T) {
 }
 
 func TestConditionalUpdate(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	mc := &mockCache{
 		c: make(map[any]any),

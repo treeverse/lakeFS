@@ -12,6 +12,7 @@ import (
 )
 
 func TestEnvVarHandler(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		Name            string
 		PrefixOverrides []string
@@ -112,6 +113,7 @@ LAKEFS_AWS_ACCESS_KEY_ID=<REDACTED>
 }
 
 func TestEnvVarBlacklist(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		Name      string
 		Blacklist []string
@@ -174,6 +176,7 @@ LAKEFS_TEST_OTHER=test2
 }
 
 func TestDefaultReplacerFunc(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		Name    string
 		EnvVars []string

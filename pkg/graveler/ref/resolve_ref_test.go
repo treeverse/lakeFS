@@ -14,6 +14,7 @@ import (
 )
 
 func TestResolveRawRef(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 
 	ctx := t.Context()
@@ -277,6 +278,7 @@ func TestResolveRawRef(t *testing.T) {
 }
 
 func TestResolveRef_SameDate(t *testing.T) {
+	t.Parallel()
 	r, _ := testRefManager(t)
 	ctx := t.Context()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -325,6 +327,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 }
 
 func TestResolveRef_DereferenceWithGraph(t *testing.T) {
+	t.Parallel()
 	/*
 		This is taken from `git help rev-parse` - let's run these tests
 
