@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.0
+
+* Add configurable retry mechanism with exponential backoff for lakeFS API calls
+
 ## 0.17.0
 
 * Support setting lakeFS SDK timeouts using `fs.lakefs.api.connect.timeout.ms`, `fs.lakefs.api.read.timeout.ms` and `fs.lakefs.api.write.timeout.ms`
