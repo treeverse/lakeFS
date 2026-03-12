@@ -5,6 +5,7 @@ import io.lakefs.auth.LakeFSTokenProviderFactory;
 import io.lakefs.clients.sdk.*;
 import io.lakefs.clients.sdk.auth.HttpBasicAuth;
 import io.lakefs.clients.sdk.auth.HttpBearerAuth;
+import okhttp3.OkHttpClient;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +76,25 @@ public class LakeFSClient {
         apiClient.setConnectTimeout(connectTimeout);
         apiClient.setReadTimeout(readTimeout);
         apiClient.setWriteTimeout(writeTimeout);
-        
+
+        // Configure retry interceptor
+        int maxRetries = FSConfiguration.getInt(conf, scheme, Constants.RETRY_MAX_RETRIES_KEY_SUFFIX, Constants.DEFAULT_RETRY_MAX_RETRIES);
+        int initialBackoffMs = FSConfiguration.getInt(conf, scheme, Constants.RETRY_INITIAL_BACKOFF_MS_KEY_SUFFIX, Constants.DEFAULT_RETRY_INITIAL_BACKOFF_MS);
+        int maxBackoffMs = FSConfiguration.getInt(conf, scheme, Constants.RETRY_MAX_BACKOFF_MS_KEY_SUFFIX, Constants.DEFAULT_RETRY_MAX_BACKOFF_MS);
+        String jitterStr = FSConfiguration.get(conf, scheme, Constants.RETRY_JITTER_FACTOR_KEY_SUFFIX);
+        double jitterFactor = (jitterStr != null) ? Double.parseDouble(jitterStr) : Constants.DEFAULT_RETRY_JITTER_FACTOR;
+
+        if (maxRetries > 0) {
+            RetryInterceptor retryInterceptor = new RetryInterceptor(maxRetries, initialBackoffMs, maxBackoffMs, jitterFactor);
+            OkHttpClient httpClient = apiClient.getHttpClient()
+                    .newBuilder()
+                    .addInterceptor(retryInterceptor)
+                    .build();
+            apiClient.setHttpClient(httpClient);
+            LOG.info("lakeFS API retry enabled: maxRetries={}, initialBackoff={}ms, maxBackoff={}ms, jitter={}",
+                    maxRetries, initialBackoffMs, maxBackoffMs, jitterFactor);
+        }
+
         String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith(Constants.SEPARATOR)) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
