@@ -49,6 +49,16 @@ public class Constants {
     public static final int DEFAULT_READ_TIMEOUT_MS = 30000;    // 30 seconds
     public static final int DEFAULT_WRITE_TIMEOUT_MS = 30000;   // 30 seconds
 
+    // Retry configuration
+    public static final String RETRY_MAX_RETRIES_KEY_SUFFIX = "api.retry.max-retries";
+    public static final String RETRY_INITIAL_BACKOFF_MS_KEY_SUFFIX = "api.retry.initial-backoff.ms";
+    public static final String RETRY_MAX_BACKOFF_MS_KEY_SUFFIX = "api.retry.max-backoff.ms";
+    public static final String RETRY_JITTER_FACTOR_KEY_SUFFIX = "api.retry.jitter-factor";
+    public static final int DEFAULT_RETRY_MAX_RETRIES = 5;
+    public static final int DEFAULT_RETRY_INITIAL_BACKOFF_MS = 1000; // 1 second
+    public static final int DEFAULT_RETRY_MAX_BACKOFF_MS = 20000;    // 20 seconds
+    public static final double DEFAULT_RETRY_JITTER_FACTOR = 0.25;
+
     public static enum AccessMode {
         SIMPLE,
         PRESIGNED;
