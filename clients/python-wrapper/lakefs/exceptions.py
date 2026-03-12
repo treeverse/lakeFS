@@ -117,10 +117,10 @@ class InvalidRangeException(ServerException, OSError):
     """
     Raised when an object's read request start position exceeds file size
     """
-    size: int = None
 
     def __init__(self, status=None, reason=None, body=None, headers=None):
         super().__init__(status, reason, body, headers)
+        self.size: int | None = None
         # Parse size from Content-Range header if present
         # Format: "bytes */<size>" (e.g., "bytes */0" for empty object)
         if self.headers:
@@ -168,7 +168,8 @@ def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], L
         yield
     except lakefs_sdk.ApiException as e:
         # Convert headers list of tuples to dict for easier access
-        headers_dict = dict(e.headers) if e.headers else None
+        headers = getattr(e, 'headers', None)
+        headers_dict = dict(headers) if headers else None
         lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason, e.body, headers_dict)
         if custom_handler is not None:
             lakefs_ex = custom_handler(lakefs_ex)
@@ -185,6 +186,7 @@ def handle_http_error(resp: HTTPResponse) -> None:
     """
     if not http.HTTPStatus.OK <= resp.status < http.HTTPStatus.MULTIPLE_CHOICES:
         # Convert headers to dict for consistent interface
-        headers_dict = dict(resp.headers) if hasattr(resp, 'headers') and resp.headers else None
+        headers = getattr(resp, 'headers', None)
+        headers_dict = dict(headers) if headers else None
         lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)(resp.status, resp.reason, resp.data, headers_dict)
         raise lakefs_ex

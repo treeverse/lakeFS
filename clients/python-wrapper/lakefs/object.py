@@ -322,6 +322,9 @@ class ObjectReader(LakeFSIOBase):
             # Get size from exception if available (parsed from Content-Range header)
             if e.size is not None:
                 self._size = e.size
+            else:
+                # Fallback to current position if header is missing
+                self._size = self._pos
             return b''
 
     def read(self, n: int = None) -> str | bytes:
