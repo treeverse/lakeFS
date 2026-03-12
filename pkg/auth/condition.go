@@ -133,15 +133,15 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 	return true, nil
 }
 
-// StringLikeOperator handles wildcard string matching.
+// StringMatchOperator implements string matching condition operators (StringLike, StringNotLike).
 // Supports '*' for multi-character wildcards and '?' for single-character wildcards.
-type StringLikeOperator struct {
+type StringMatchOperator struct {
 	// negate determines whether to negate the matching result (for StringNotLike)
 	negate bool
 }
 
 // Validate implements ConditionOperator. Any string is a valid wildcard pattern.
-func (op *StringLikeOperator) Validate(fields map[string][]string) error {
+func (op *StringMatchOperator) Validate(fields map[string][]string) error {
 	for field := range fields {
 		if field == "" {
 			return ErrMissingFieldName
@@ -152,7 +152,7 @@ func (op *StringLikeOperator) Validate(fields map[string][]string) error {
 
 // Evaluate checks if the context value matches any of the wildcard patterns for each field.
 // AND logic between fields, OR logic within a field's values.
-func (op *StringLikeOperator) Evaluate(fields map[string][]string, conditionCtx *ConditionContext) (bool, error) {
+func (op *StringMatchOperator) Evaluate(fields map[string][]string, conditionCtx *ConditionContext) (bool, error) {
 	if len(fields) == 0 {
 		return true, nil
 	}
@@ -192,9 +192,9 @@ func OperatorFactory(operatorName string) (ConditionOperator, error) {
 	case OperatorNameNotIpAddress:
 		return &IpAddressOperator{negate: true}, nil
 	case OperatorNameStringLike:
-		return &StringLikeOperator{negate: false}, nil
+		return &StringMatchOperator{negate: false}, nil
 	case OperatorNameStringNotLike:
-		return &StringLikeOperator{negate: true}, nil
+		return &StringMatchOperator{negate: true}, nil
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedConditionOperator, operatorName)
 	}

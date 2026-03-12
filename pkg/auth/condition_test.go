@@ -198,7 +198,7 @@ func TestIpAddressOperators_Evaluate(t *testing.T) {
 	}
 }
 
-func TestStringLikeOperators_Evaluate(t *testing.T) {
+func TestStringMatchOperators_Evaluate(t *testing.T) {
 	tests := []struct {
 		name                  string
 		fields                map[string][]string
@@ -332,7 +332,7 @@ func TestStringLikeOperators_Evaluate(t *testing.T) {
 			ctx := &ConditionContext{Fields: tt.contextMap}
 
 			t.Run("StringLike", func(t *testing.T) {
-				op := &StringLikeOperator{negate: false}
+				op := &StringMatchOperator{negate: false}
 				result, err := op.Evaluate(tt.fields, ctx)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
@@ -343,7 +343,7 @@ func TestStringLikeOperators_Evaluate(t *testing.T) {
 			})
 
 			t.Run("StringNotLike", func(t *testing.T) {
-				op := &StringLikeOperator{negate: true}
+				op := &StringMatchOperator{negate: true}
 				result, err := op.Evaluate(tt.fields, ctx)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
@@ -356,8 +356,8 @@ func TestStringLikeOperators_Evaluate(t *testing.T) {
 	}
 }
 
-func TestStringLikeOperator_NilContext(t *testing.T) {
-	op := &StringLikeOperator{negate: false}
+func TestStringMatchOperator_NilContext(t *testing.T) {
+	op := &StringMatchOperator{negate: false}
 	_, err := op.Evaluate(map[string][]string{"field": {"value"}}, nil)
 	if err == nil {
 		t.Error("Expected error for nil context")
