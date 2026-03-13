@@ -46,11 +46,12 @@ export function mergeResults(
         }
     });
 
-    // Add missing items only for removed entries or deleted prefixes
+    // Add missing items for removed entries, added entries, and prefixes
+    // When using committed-only ref (branch@) for objects.list, added entries are not in the list
     // Avoid adding items that come after the last result path (both are sorted lexicographically)
     const lastResultPath = last(results)?.path;
     const missingItems = changesData.results
-        .filter((change) => change.type === 'removed' || change.path_type === 'common_prefix')
+        .filter((change) => change.type === 'removed' || change.type === 'added' || change.path_type === 'common_prefix')
         .filter((change) => lastResultPath && change.path <= lastResultPath)
         .filter((change) => !results.find((result) => result.path === change.path));
 
