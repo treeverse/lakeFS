@@ -117,9 +117,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                     <Row>
                                         <Col md={6}>
                                             <Form.Group controlId="user-first-name" className="mt-4">
-                                                <Form.Label>
-                                                    First name <span className="required-field-label">*</span>
-                                                </Form.Label>
+                                                <Form.Label>First name</Form.Label>
                                                 <Form.Control
                                                     type="text"
                                                     name="firstName"
@@ -132,9 +130,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                         </Col>
                                         <Col md={6}>
                                             <Form.Group controlId="user-last-name" className="mt-4">
-                                                <Form.Label>
-                                                    Last name <span className="required-field-label">*</span>
-                                                </Form.Label>
+                                                <Form.Label>Last name</Form.Label>
                                                 <Form.Control
                                                     type="text"
                                                     name="lastName"
@@ -162,9 +158,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                     </Form.Group>
 
                                     <Form.Group controlId="company-name" className="mt-4">
-                                        <Form.Label>
-                                            Company name <span className="required-field-label">*</span>
-                                        </Form.Label>
+                                        <Form.Label>Company name</Form.Label>
                                         <Form.Control
                                             type="text"
                                             name="companyName"

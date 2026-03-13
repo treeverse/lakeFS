@@ -31,19 +31,9 @@ const SetupContents = () => {
                 setSetupError('Please enter your admin username.');
                 return;
             }
-            if (commPrefsMissing) {
-                const requiredCommPrefsFields = [
-                    ['first name', firstName],
-                    ['last name', lastName],
-                    ['email address', userEmail],
-                    ['company name', companyName],
-                ];
-                for (const [field, value] of requiredCommPrefsFields) {
-                    if (!value.trim()) {
-                        setSetupError(`Please enter your ${field}.`);
-                        return;
-                    }
-                }
+            if (commPrefsMissing && !userEmail) {
+                setSetupError('Please enter your email address.');
+                return;
             }
 
             setDisabled(true);

@@ -2,11 +2,8 @@ import { Download, Locator, Page } from "@playwright/test";
 import { LakeFSCredentials } from "../../types";
 
 export class SetupPage {
-    public usernameErrorSelectorText = "Please enter your admin username.";
-    public firstNameErrorSelectorText = "Please enter your first name.";
-    public lastNameErrorSelectorText = "Please enter your last name.";
     public emailErrorSelectorText = "Please enter your email address.";
-    public companyNameErrorSelectorText = "Please enter your company name.";
+    public usernameErrorSelectorText = "Please enter your admin username.";
     public usernameInputLocator: Locator;
     public downloadCredentialsButtonLocator: Locator;
     public goToLoginButtonLocator: Locator;
@@ -27,9 +24,9 @@ export class SetupPage {
         email: string,
         username = "admin",
         receiveUpdatesChecked = true,
-        firstName = "Test",
-        lastName = "User",
-        companyName = "Treeverse",
+        firstName = "",
+        lastName = "",
+        companyName = "",
     ): Promise<void> {
         await this.usernameInputLocator.fill(username);
         await this.page.getByLabel("First name").fill(firstName);
