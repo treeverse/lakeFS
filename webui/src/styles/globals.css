@@ -6,9 +6,9 @@
     --secondary: #ec4899;
     --secondary-light: #f472b6;
     --secondary-dark: #db2777;
-    --success: #10b981;
-    --success-light: #34d399;
-    --success-dark: #059669;
+    --success: #8b5cf6;
+    --success-light: #a78bfa;
+    --success-dark: #7c3aed;
 
     /* Bootstrap variable overrides */
     --bs-nav-pills-link-active-bg: #3b82f6;
@@ -87,9 +87,9 @@
     --secondary: #f472b6;
     --secondary-light: #fb7185;
     --secondary-dark: #ec4899;
-    --success: #34d399;
-    --success-light: #6ee7b7;
-    --success-dark: #10b981;
+    --success: #a78bfa;
+    --success-light: #c4b5fd;
+    --success-dark: #8b5cf6;
 
     /* Bootstrap variable overrides for dark mode */
     --bs-nav-pills-link-active-bg: #60a5fa;
