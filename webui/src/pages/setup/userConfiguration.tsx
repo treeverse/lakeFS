@@ -8,7 +8,14 @@ import Row from 'react-bootstrap/Row';
 import { AlertError } from '../../lib/components/controls';
 
 interface UserConfigurationProps {
-    onSubmit: (email: string, admin: string, checks: boolean) => Promise<void>;
+    onSubmit: (
+        admin: string,
+        firstName: string,
+        lastName: string,
+        email: string,
+        companyName: string,
+        checks: boolean,
+    ) => Promise<void>;
     setupError: Error;
     disabled: boolean;
     requireAdmin: boolean;
@@ -24,14 +31,17 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
 }) => {
     const [userEmail, setUserEmail] = useState<string>('');
     const [adminUser, setAdminUser] = useState<string>('admin');
+    const [firstName, setFirstName] = useState<string>('');
+    const [lastName, setLastName] = useState<string>('');
+    const [companyName, setCompanyName] = useState<string>('');
     const [checks, setChecks] = useState<boolean>(false);
 
     const submitHandler = useCallback(
         (e: FormEvent) => {
-            onSubmit(adminUser, userEmail, checks);
+            onSubmit(adminUser, firstName, lastName, userEmail, companyName, checks);
             e.preventDefault();
         },
-        [onSubmit, adminUser, userEmail, checks],
+        [onSubmit, adminUser, firstName, lastName, userEmail, companyName, checks],
     );
 
     const handleEmailChange = useCallback(
@@ -53,6 +63,27 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
             setChecks(e.target.checked);
         },
         [setChecks],
+    );
+
+    const handleFirstNameChange = useCallback(
+        (e: ChangeEvent<HTMLInputElement>) => {
+            setFirstName(e.target.value);
+        },
+        [setFirstName],
+    );
+
+    const handleLastNameChange = useCallback(
+        (e: ChangeEvent<HTMLInputElement>) => {
+            setLastName(e.target.value);
+        },
+        [setLastName],
+    );
+
+    const handleCompanyNameChange = useCallback(
+        (e: ChangeEvent<HTMLInputElement>) => {
+            setCompanyName(e.target.value);
+        },
+        [setCompanyName],
     );
 
     return (
@@ -82,28 +113,71 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                             )}
 
                             {requireCommPrefs && (
-                                <Form.Group controlId="user-email" className="mt-4">
-                                    <Form.Label>
-                                        Email <span className="required-field-label">*</span>
-                                    </Form.Label>
-                                    <Form.Control
-                                        type="email"
-                                        placeholder="name@company.com"
-                                        value={userEmail}
-                                        onChange={handleEmailChange}
-                                    />
-                                </Form.Group>
-                            )}
+                                <>
+                                    <Row>
+                                        <Col md={6}>
+                                            <Form.Group controlId="user-first-name" className="mt-4">
+                                                <Form.Label>First name</Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    name="firstName"
+                                                    placeholder="Jane"
+                                                    value={firstName}
+                                                    onChange={handleFirstNameChange}
+                                                    autoComplete="given-name"
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Group controlId="user-last-name" className="mt-4">
+                                                <Form.Label>Last name</Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    name="lastName"
+                                                    placeholder="Doe"
+                                                    value={lastName}
+                                                    onChange={handleLastNameChange}
+                                                    autoComplete="family-name"
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
 
-                            {requireCommPrefs && (
-                                <Form.Group controlId="security-check" className="mt-4 mb-3">
-                                    <Form.Check
-                                        type="checkbox"
-                                        checked={checks}
-                                        onChange={handleChecksChange}
-                                        label="I'd like to receive security, product and feature updates"
-                                    />
-                                </Form.Group>
+                                    <Form.Group controlId="user-email" className="mt-4">
+                                        <Form.Label>
+                                            Email <span className="required-field-label">*</span>
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="email"
+                                            name="email"
+                                            placeholder="name@company.com"
+                                            value={userEmail}
+                                            onChange={handleEmailChange}
+                                            autoComplete="email"
+                                        />
+                                    </Form.Group>
+
+                                    <Form.Group controlId="company-name" className="mt-4">
+                                        <Form.Label>Company name</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="companyName"
+                                            placeholder="Your Company"
+                                            value={companyName}
+                                            onChange={handleCompanyNameChange}
+                                            autoComplete="organization"
+                                        />
+                                    </Form.Group>
+
+                                    <Form.Group controlId="security-check" className="mt-4 mb-3">
+                                        <Form.Check
+                                            type="checkbox"
+                                            checked={checks}
+                                            onChange={handleChecksChange}
+                                            label="I'd like to receive security, product and feature updates"
+                                        />
+                                    </Form.Group>
+                                </>
                             )}
 
                             {!!setupError && <AlertError error={setupError} />}

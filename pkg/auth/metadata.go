@@ -22,6 +22,9 @@ const (
 	SetupAuthTypeKeyPrefix = "setup_auth_"
 	CommPrefsSetKeyName    = "comm_prefs_set"
 	EmailKeyName           = "encoded_user_email"
+	FirstNameKeyName       = "encoded_user_first_name"
+	LastNameKeyName        = "encoded_user_last_name"
+	CompanyNameKeyName     = "encoded_user_company_name"
 	FeatureUpdatesKeyName  = "feature_updates"
 	SecurityUpdatesKeyName = "security_updates"
 
@@ -61,6 +64,9 @@ type KVMetadataManager struct {
 
 type CommPrefs struct {
 	UserEmail       string
+	FirstName       string
+	LastName        string
+	CompanyName     string
 	FeatureUpdates  bool
 	SecurityUpdates bool
 	InstallationID  string
@@ -128,11 +134,38 @@ func (m *KVMetadataManager) GetCommPrefs(ctx context.Context) (CommPrefs, error)
 		return CommPrefs{}, err
 	}
 
+	firstName, err := m.getOptionalMetadataValue(ctx, FirstNameKeyName)
+	if err != nil {
+		return CommPrefs{}, err
+	}
+	lastName, err := m.getOptionalMetadataValue(ctx, LastNameKeyName)
+	if err != nil {
+		return CommPrefs{}, err
+	}
+	companyName, err := m.getOptionalMetadataValue(ctx, CompanyNameKeyName)
+	if err != nil {
+		return CommPrefs{}, err
+	}
+
 	return CommPrefs{
 		UserEmail:       string(email.Value),
+		FirstName:       firstName,
+		LastName:        lastName,
+		CompanyName:     companyName,
 		FeatureUpdates:  hasFeatureUpdates,
 		SecurityUpdates: hasSecurityUpdates,
 	}, nil
+}
+
+func (m *KVMetadataManager) getOptionalMetadataValue(ctx context.Context, key string) (string, error) {
+	value, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(key)))
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return "", nil
+		}
+		return "", err
+	}
+	return string(value.Value), nil
 }
 
 func (m *KVMetadataManager) IsCommPrefsSet(ctx context.Context) (bool, error) {
@@ -188,7 +221,10 @@ func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs *Comm
 	if commPrefs != nil {
 		// if commPrefs is not nil, we assume the setup is done and the user provided comm prefs
 		meta = map[string]string{
+			FirstNameKeyName:       base64.StdEncoding.EncodeToString([]byte(commPrefs.FirstName)),
+			LastNameKeyName:        base64.StdEncoding.EncodeToString([]byte(commPrefs.LastName)),
 			EmailKeyName:           base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail)),
+			CompanyNameKeyName:     base64.StdEncoding.EncodeToString([]byte(commPrefs.CompanyName)),
 			FeatureUpdatesKeyName:  strconv.FormatBool(commPrefs.FeatureUpdates),
 			SecurityUpdatesKeyName: strconv.FormatBool(commPrefs.SecurityUpdates),
 			CommPrefsSetKeyName:    strconv.FormatBool(true),
