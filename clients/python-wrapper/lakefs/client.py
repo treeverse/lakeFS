@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime
 from threading import Lock
-from typing import Optional
+from typing import Any, Optional
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -33,7 +33,7 @@ class ServerConfiguration:
     _conf: lakefs_sdk.Config
     _storage_conf: dict[str, ServerStorageConfiguration] = {}
 
-    def __init__(self, client: Optional[Client] = None):
+    def __init__(self, client: Optional[Client] = None) -> None:
         try:
             self._conf = client.sdk_client.config_api.get_config()
             if self._conf.storage_config_list is not None:
@@ -62,7 +62,7 @@ class ServerConfiguration:
         """
         return self.storage_config_by_id()
 
-    def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
+    def storage_config_by_id(self, storage_id: str = SINGLE_STORAGE_ID) -> ServerStorageConfiguration:
         """
         Returns the lakeFS server storage configuration by ID
         """
@@ -88,12 +88,47 @@ class Client:
     _conf: Optional[ClientConfig] = None
     _server_conf: Optional[ServerConfiguration] = None
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        *,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        host: Optional[str] = None,
+        access_token: Optional[str] = None,
+        verify_ssl: Optional[bool] = None,
+        proxy: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Initialize a lakeFS client.
+
+        :param username: Access key ID for authentication
+        :param password: Secret access key for authentication
+        :param host: The lakeFS server endpoint URL
+        :param access_token: Session token for authentication
+        :param verify_ssl: Whether to verify SSL certificates
+        :param proxy: Proxy URL to use for requests
+        :param kwargs: Additional arguments passed to lakefs_sdk.Configuration
+        """
+        # Merge explicit parameters with kwargs (explicit params take precedence)
+        if username is not None:
+            kwargs['username'] = username
+        if password is not None:
+            kwargs['password'] = password
+        if host is not None:
+            kwargs['host'] = host
+        if access_token is not None:
+            kwargs['access_token'] = access_token
+        if verify_ssl is not None:
+            kwargs['verify_ssl'] = verify_ssl
+        if proxy is not None:
+            kwargs['proxy'] = proxy
+
         self._conf = ClientConfig(**kwargs)
         self._client = LakeFSClient(self._conf, header_name='X-Lakefs-Client',
                                     header_value='python-lakefs')
         self._server_conf = None
-        self._reset_token_time = None
+        self._reset_token_time: Optional[datetime.datetime] = None
         self._session = None
 
         # Initialize auth if using IAM provider
@@ -116,7 +151,7 @@ class Client:
             object.__getattribute__(self, "_refresh_token_if_necessary")()
         return object.__getattribute__(self, name)
 
-    def _refresh_token_if_necessary(self):
+    def _refresh_token_if_necessary(self) -> None:
         """
         Refresh the token if necessary
         """
@@ -136,38 +171,38 @@ class Client:
                 )
 
     @property
-    def config(self):
+    def config(self) -> ClientConfig:
         """
         Return the underlying lakefs_sdk configuration
         """
         return self._conf
 
     @property
-    def sdk_client(self):
+    def sdk_client(self) -> LakeFSClient:
         """
         Return the underlying lakefs_sdk client
         """
         return self._client
 
     @property
-    def storage_config(self):
+    def storage_config(self) -> ServerStorageConfiguration:
         """
         lakeFS SDK storage config object, lazy evaluated.
         """
         return self.storage_config_by_id()
 
     @property
-    def reset_time(self):
+    def reset_time(self) -> Optional[datetime.datetime]:
         """
         The time when the access token will expire.
         """
         return self._reset_token_time
 
     @reset_time.setter
-    def reset_time(self, time: datetime):
+    def reset_time(self, time: Optional[datetime.datetime]) -> None:
         self._reset_token_time = time
 
-    def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
+    def storage_config_by_id(self, storage_id: str = SINGLE_STORAGE_ID) -> ServerStorageConfiguration:
         """
         Returns lakeFS SDK storage config object, defaults to a single storage ID.
         """
@@ -186,11 +221,11 @@ class Client:
 
 
 def from_aws_role(
-        session: boto3.Session,
+        session: "boto3.Session",
         ttl_seconds: int = 3600,
         presigned_ttl: int = 60,
-        additional_headers: dict[str, str] = None,
-        **kwargs) -> Client:
+        additional_headers: Optional[dict[str, str]] = None,
+        **kwargs: Any) -> Client:
     """
     Create a lakeFS client from an AWS role.
     :param session: : The boto3 session.
@@ -217,7 +252,12 @@ def from_aws_role(
     client.reset_time = reset_time
     return client
 
-def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int = 3600, **kwargs) -> Client:
+def from_web_identity(
+        code: str,
+        state: str,
+        redirect_uri: str,
+        ttl_seconds: int = 3600,
+        **kwargs: Any) -> Client:
     """
     Authenticate against lakeFS using a code received from an identity provider
 
@@ -245,11 +285,11 @@ class _BaseLakeFSObject:
     __mutex: Lock = Lock()
     __client: Optional[Client] = None
 
-    def __init__(self, client: Optional[Client]):
+    def __init__(self, client: Optional[Client]) -> None:
         self.__client = client
 
     @property
-    def _client(self):
+    def _client(self) -> Client:
         """
         If client is None due to missing authentication params, try to init again. If authentication method is still
         missing - will raise exception
