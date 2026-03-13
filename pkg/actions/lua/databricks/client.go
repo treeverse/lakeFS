@@ -7,11 +7,13 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Shopify/go-lua"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
@@ -190,6 +192,60 @@ func (client *Client) ExecuteStatement(l *lua.State) int {
 	return 1
 }
 
+const cloneRunTimeout = 30 * time.Minute
+
+// shallowCloneTable submits a Databricks notebook job that runs DeltaTable.clone()
+// from sourcePath to targetPath, then waits for the run to reach a terminal state.
+// The notebook receives "source_path" and "target_path" as base parameters.
+func (client *Client) shallowCloneTable(clusterID, notebookPath, sourcePath, targetPath string) (string, error) {
+	run, err := client.workspaceClient.Jobs.Submit(client.ctx, jobs.SubmitRun{
+		RunName: fmt.Sprintf("lakefs-shallow-clone-%d", time.Now().Unix()),
+		Tasks: []jobs.SubmitTask{{
+			TaskKey:           "shallow_clone",
+			ExistingClusterId: clusterID,
+			NotebookTask: &jobs.NotebookTask{
+				NotebookPath: notebookPath,
+				BaseParameters: map[string]string{
+					"source_path": sourcePath,
+					"target_path": targetPath,
+				},
+			},
+		}},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed submitting clone run: %w", err)
+	}
+
+	runInfo, err := client.workspaceClient.Jobs.WaitGetRunJobTerminatedOrSkipped(
+		client.ctx, run.RunId, cloneRunTimeout, nil)
+	if err != nil {
+		return "", fmt.Errorf("error waiting for clone run %d: %w", run.RunId, err)
+	}
+
+	resultState := runInfo.State.ResultState
+	if resultState != jobs.RunResultStateSuccess {
+		return "", fmt.Errorf("clone run %d finished with non-success state: %s", run.RunId, resultState)
+	}
+	return resultState.String(), nil
+}
+
+// ShallowCloneTable is the Lua binding for shallowCloneTable.
+// Lua signature: status = databricks_client.shallow_clone_table(cluster_id, notebook_path, source_path, target_path)
+func (client *Client) ShallowCloneTable(l *lua.State) int {
+	clusterID    := lua.CheckString(l, 1)
+	notebookPath := lua.CheckString(l, 2)
+	sourcePath   := lua.CheckString(l, 3)
+	targetPath   := lua.CheckString(l, 4)
+
+	status, err := client.shallowCloneTable(clusterID, notebookPath, sourcePath, targetPath)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	l.PushString(status)
+	return 1
+}
+
 func alreadyExists(e error) bool {
 	return strings.Contains(e.Error(), "already exists")
 }
@@ -207,6 +263,7 @@ func newClient(ctx context.Context) lua.Function {
 			"create_schema":           client.CreateSchema,
 			"register_external_table": client.RegisterExternalTable,
 			"execute_statement":       client.ExecuteStatement,
+			"shallow_clone_table":     client.ShallowCloneTable,
 		}
 		for name, goFn := range functions {
 			l.PushGoFunction(goFn)
