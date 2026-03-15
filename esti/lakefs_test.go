@@ -16,7 +16,7 @@ func TestLakefsHelp(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakefs()+" --help", true, "lakefs/help", emptyVars)
 }
 
-func TestDDD(t *testing.T) {
+func TestLakefsConfig(t *testing.T) {
 	// pointing to a non-existing config file should fail
 	tempDir := t.TempDir()
 	nonExistingConfigPath := tempDir + "/non-existong-config.yaml"
