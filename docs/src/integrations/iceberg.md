@@ -310,7 +310,7 @@ For `ListNamespaces`, the namespace itself is the resource in the ARN, so filter
 
 **Table and view filtering (using conditions):**
 
-For `ListTables` and `ListViews`, the namespace ARN alone is not enough to filter individual tables or views within that namespace. Policies can use the [`StringLike` condition operator](../security/rbac.md#stringlike--stringnotlike) with the `catalog:TableName` or `catalog:ViewName` fields to control which entities are visible.
+For `ListTables` and `ListViews`, the namespace ARN alone is not enough to filter individual tables or views within that namespace. Policies can use the `StringLike` condition operator with the `catalog:TableName` or `catalog:ViewName` fields to control which entities are visible.
 
 | Condition Field     | Used by     | Description                          |
 |---------------------|-------------|--------------------------------------|
