@@ -17,13 +17,14 @@ func TestLakefsHelp(t *testing.T) {
 }
 
 func TestDDD(t *testing.T) {
-	// assert failure when config file does not exists
+	// pointing to a non-existing config file should fail
 	tempDir := t.TempDir()
 	nonExistingConfigPath := tempDir + "/non-existong-config.yaml"
 	assert.NoFileExists(t, nonExistingConfigPath)
 	runCmdAndVerifyContainsText(t, Lakefs()+" --config "+nonExistingConfigPath+" run", true, false, "Failed to find a config file", nil)
 
-	// ensure config file is loaded by checking the output of the `flare` command
+	// write a config with a recognizable listen address, then verify it is loaded
+	// by checking that the address appears in the `flare --stdout` output
 	configPath := tempDir + "/custom-config.yaml"
 	customIP := "127.0.0.1:19991"
 	configContent := fmt.Sprintf(`listen_address: "%s"
@@ -40,8 +41,6 @@ blockstore:
     path: %s
 `, customIP, tempDir, tempDir)
 	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0600))
-
-	// ensure the custom address is in the log of `flare`
 	runCmdAndVerifyContainsText(t, Lakefs()+" --config "+configPath+" flare --stdout", false, false, customIP, nil)
 }
 
