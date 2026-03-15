@@ -317,7 +317,7 @@ For `ListTables` and `ListViews`, the namespace ARN alone is not enough to filte
 | `catalog:TableName` | ListTables  | The name of the table being listed   |
 | `catalog:ViewName`  | ListViews   | The name of the view being listed    |
 
-**Example: Allow listing only tables matching a prefix:**
+**Example - Allow listing only tables matching a prefix:**
 
 ```json
 {

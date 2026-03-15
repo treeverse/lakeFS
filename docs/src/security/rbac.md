@@ -82,6 +82,7 @@ Conditions are added to policy statements using the optional `condition` field:
 The `IpAddress` condition operator matches the client's source IP address against one or more IP addresses or CIDR blocks. The `NotIpAddress` condition operator matches when the client's source IP address does NOT match any of the specified IP addresses or CIDR blocks (negation of `IpAddress`).
 
 **Supported Fields:**
+
 - `SourceIp` - The IP address of the client making the request
 
 **Value Format:**
