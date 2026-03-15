@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -16,24 +15,10 @@ func TestLakefsHelp(t *testing.T) {
 }
 
 func TestLakefsConfig(t *testing.T) {
-	tempDir := t.TempDir()
 	// write a config with an invalid key; if --config is honored, run will fail mentioning it
-	configPath := tempDir + "/custom-config.yaml"
+	configPath := t.TempDir() + "/custom-config.yaml"
 	invalidKey := "invalid-key"
-	configContent := fmt.Sprintf(`database:
-  type: local
-  local:
-    path: %s
-auth:
-  encrypt:
-    secret_key: "some-test-secret"
-blockstore:
-  type: local
-  local:
-    path: %s
-%s : invalid
-`, tempDir, tempDir, invalidKey)
-	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0600))
+	require.NoError(t, os.WriteFile(configPath, []byte(invalidKey+": invalid\n"), 0600))
 	runCmdAndVerifyContainsText(t, Lakefs()+" --config "+configPath+" run", true, false, invalidKey, nil)
 }
 
