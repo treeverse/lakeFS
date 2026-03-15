@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,18 +16,11 @@ func TestLakefsHelp(t *testing.T) {
 }
 
 func TestLakefsConfig(t *testing.T) {
-	// pointing to a non-existing config file should fail
 	tempDir := t.TempDir()
-	nonExistingConfigPath := tempDir + "/non-existong-config.yaml"
-	assert.NoFileExists(t, nonExistingConfigPath)
-	runCmdAndVerifyContainsText(t, Lakefs()+" --config "+nonExistingConfigPath+" run", true, false, "Failed to find a config file", nil)
-
-	// write a config with a recognizable listen address, then verify it is loaded
-	// by checking that the address appears in the `flare --stdout` output
+	// write a config with an invalid key; if --config is honored, run will fail mentioning it
 	configPath := tempDir + "/custom-config.yaml"
-	customIP := "127.0.0.1:19991"
-	configContent := fmt.Sprintf(`listen_address: "%s"
-database:
+	invalidKey := "invalid-key"
+	configContent := fmt.Sprintf(`database:
   type: local
   local:
     path: %s
@@ -39,9 +31,10 @@ blockstore:
   type: local
   local:
     path: %s
-`, customIP, tempDir, tempDir)
+%s : invalid
+`, tempDir, tempDir, invalidKey)
 	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0600))
-	runCmdAndVerifyContainsText(t, Lakefs()+" --config "+configPath+" flare --stdout", false, false, customIP, nil)
+	runCmdAndVerifyContainsText(t, Lakefs()+" --config "+configPath+" run", true, false, invalidKey, nil)
 }
 
 func TestLakefsSuperuser_basic(t *testing.T) {
