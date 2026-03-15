@@ -156,6 +156,62 @@ lakeFS extracts the client IP address from the request using the following prior
 
 This ensures that IP-based conditions work correctly even when lakeFS is deployed behind a load balancer or reverse proxy.
 
+#### StringLike / StringNotLike
+
+The `StringLike` condition operator matches a context value against one or more wildcard patterns. The `StringNotLike` condition operator matches when the context value does NOT match any of the specified patterns (negation of `StringLike`).
+
+Wildcard characters: `*` matches zero or more characters, `?` matches exactly one character.
+
+**Supported Fields:**
+
+| Field               | Description                                                               |
+|---------------------|---------------------------------------------------------------------------|
+| `catalog:TableName` | The table name in Iceberg catalog list operations. |
+| `catalog:ViewName`  | The view name in Iceberg catalog list operations. |
+
+**Example - Allow listing only tables matching a pattern:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ListTables"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace",
+      "condition": {
+        "StringLike": {
+          "catalog:TableName": ["prod-*", "staging-*"]
+        }
+      }
+    }
+  ]
+}
+```
+
+**Example - Deny listing a specific view:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ListViews"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace"
+    },
+    {
+      "effect": "deny",
+      "action": ["catalog:ListViews"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace",
+      "condition": {
+        "StringLike": {
+          "catalog:ViewName": ["secret_view"]
+        }
+      }
+    }
+  ]
+}
+```
+
 
 ## Resource naming - ARNs
 
@@ -176,6 +232,8 @@ Here are a some **examples** of valid ARNs within lakeFS and their meaning:
 | `arn:lakefs:catalog:::namespace/{repositoryId}/{namespace}` | An Iceberg namespace              |
 | `arn:lakefs:catalog:::table/{repositoryId}/{namespace}/{table}` | An Iceberg table              |
 | `arn:lakefs:catalog:::view/{repositoryId}/{namespace}/{view}` | An Iceberg view                |
+
+Note that Iceberg catalog ARNs are **branch-agnostic** — the branch is not part of the ARN. A policy granting access to a namespace, a table or a view applies to that resource on every branch in the repository.
 
 Additionally, the current user's ID is interpolated in runtime into the ARN using the `${user}` placeholder.
 
