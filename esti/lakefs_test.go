@@ -2,6 +2,8 @@ package esti
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLakefsHelp(t *testing.T) {
@@ -9,6 +11,12 @@ func TestLakefsHelp(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakefs()+" --help", false, "lakefs/help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakefs(), true, "lakefs/help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakefs()+" --help", true, "lakefs/help", emptyVars)
+}
+
+func TestDDD(t *testing.T) {
+	path := "/tmp/non-existong-config.yaml"
+	assert.NoFileExists(t, path)
+	runCmdAndVerifyContainsText(t, Lakefs()+" --config "+path+" run", true, false, "Failed to find a config file", nil)
 }
 
 func TestLakefsSuperuser_basic(t *testing.T) {
