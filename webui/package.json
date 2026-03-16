@@ -8,7 +8,8 @@
   "overrides": {
     "react": "$react",
     "react-dom": "$react",
-    "prismjs": "$prismjs"
+    "prismjs": "$prismjs",
+    "immutable": ">=5.1.5"
   },
   "scripts": {
     "dev": "vite",
