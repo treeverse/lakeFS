@@ -207,6 +207,20 @@ details on how to reference `object_metadata` tables.
     To perform metadata search queries, ensure users have access to the appropriate metadata repository (see 
     [How it Works](#how-it-works)). 
 
+#### Authentication
+
+lakeFS automatically creates a dedicated service user called `mds-service-user` with a read-only policy that grants
+the minimum permissions needed for metadata search queries. To use it:
+
+1. Create credentials for the `mds-service-user` in the lakeFS API / lakectl / WebUI.
+2. Use the generated access key and secret key when initializing the Iceberg catalog (see [Search Steps](#search-steps) below).
+
+Using this service user ensures that metadata-search clients have least-privilege access to the Iceberg metadata tables.
+
+!!! tip
+    You can also use any other lakeFS user that has read access to both the data repository and its corresponding
+    metadata repository.
+
 #### Search Steps
  
 1. Initialize lakeFS Iceberg catalog, and authenticate.
