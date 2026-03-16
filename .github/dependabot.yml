@@ -13,3 +13,5 @@ updates:
       dependencies:
         patterns:
         - "*"
+    cooldown:
+      default-days: 7
