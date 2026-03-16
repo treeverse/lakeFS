@@ -217,7 +217,7 @@ the minimum permissions needed for metadata search queries. To use it:
 
 Using this service user ensures that metadata-search clients have least-privilege access to the Iceberg metadata tables.
 
-!!! tip
+!!! note
     You can also use any other lakeFS user that has read access to both the data repository and its corresponding
     metadata repository.
 
