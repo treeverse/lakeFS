@@ -75,7 +75,6 @@ func LakectlWithPosixPerms() string {
 func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, error) {
 	t.Helper()
 	t.Logf("Run shell command '%s'", command)
-	// Using sh to allow calling runShellCommand from Mac
 	sh, err := exec.LookPath("sh")
 	if err != nil {
 		t.Fatalf("shell not found: %v", err)
