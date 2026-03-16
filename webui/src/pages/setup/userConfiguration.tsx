@@ -143,40 +143,52 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                         </Col>
                                     </Row>
 
-                                    <Form.Group controlId="user-email" className="mt-4">
-                                        <Form.Label>
-                                            Email <span className="required-field-label">*</span>
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="email"
-                                            name="email"
-                                            placeholder="name@company.com"
-                                            value={userEmail}
-                                            onChange={handleEmailChange}
-                                            autoComplete="email"
-                                        />
-                                    </Form.Group>
+                                    <Row>
+                                        <Col>
+                                            <Form.Group controlId="user-email" className="mt-4">
+                                                <Form.Label>
+                                                    Email <span className="required-field-label">*</span>
+                                                </Form.Label>
+                                                <Form.Control
+                                                    type="email"
+                                                    name="email"
+                                                    placeholder="name@company.com"
+                                                    value={userEmail}
+                                                    onChange={handleEmailChange}
+                                                    autoComplete="email"
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
 
-                                    <Form.Group controlId="company-name" className="mt-4">
-                                        <Form.Label>Company name</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            name="companyName"
-                                            placeholder="Your Company"
-                                            value={companyName}
-                                            onChange={handleCompanyNameChange}
-                                            autoComplete="organization"
-                                        />
-                                    </Form.Group>
+                                    <Row>
+                                        <Col>
+                                            <Form.Group controlId="company-name" className="mt-4">
+                                                <Form.Label>Company name</Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    name="companyName"
+                                                    placeholder="Your Company"
+                                                    value={companyName}
+                                                    onChange={handleCompanyNameChange}
+                                                    autoComplete="organization"
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
 
-                                    <Form.Group controlId="security-check" className="mt-4 mb-3">
-                                        <Form.Check
-                                            type="checkbox"
-                                            checked={checks}
-                                            onChange={handleChecksChange}
-                                            label="I'd like to receive security, product and feature updates"
-                                        />
-                                    </Form.Group>
+                                    <Row>
+                                        <Col>
+                                            <Form.Group controlId="security-check" className="mt-4 mb-3">
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    checked={checks}
+                                                    onChange={handleChecksChange}
+                                                    label="I'd like to receive security, product and feature updates"
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
                                 </>
                             )}
 
