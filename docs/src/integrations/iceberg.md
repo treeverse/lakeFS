@@ -302,22 +302,36 @@ Namespaces in the ARN use dot-separated notation (e.g., `my.namespace`). Wildcar
 
 #### List Operations Filtering
 
-List operations such as `ListNamespaces`, `ListTables`, and `ListViews` support per-item RBAC filtering. Beyond verifying that the user has the required list action on the target resource, the catalog evaluates each entity in the result set against the user's policies and returns only the entities the user is authorized to access. This enables pattern-based access control using wildcards (`*` to match zero or more characters, `?` to match exactly one character) over which entities are visible to each user.
-
 **Namespace filtering:**
 
-For `ListNamespaces`, the namespace itself is the resource in the ARN, so filtering works directly through resource matching. For example, a policy that grants `catalog:ListNamespaces` on `arn:lakefs:catalog:::namespace/my-repo/analytics*` will only show namespaces starting with `analytics`, while other namespaces in the same repository are filtered out.
+For `ListNamespaces`, use wildcards in the resource ARN to control which namespaces are visible to the user.
+
+**Example - Allow listing only namespaces starting with `analytics`:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ListNamespaces"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/analytics*"
+    }
+  ]
+}
+```
+
+This policy allows the user to see only namespaces starting with `analytics` in `my-repo`. Other namespaces in the same repository are filtered out of the response.
 
 **Table and view filtering (using conditions):**
 
 For `ListTables` and `ListViews`, the namespace ARN alone is not enough to filter individual tables or views within that namespace. Policies can use the `StringLike` condition operator with the `catalog:TableName` or `catalog:ViewName` fields to control which entities are visible.
 
-| Condition Field     | Used by     | Description                          |
-|---------------------|-------------|--------------------------------------|
-| `catalog:TableName` | ListTables  | The name of the table being listed   |
-| `catalog:ViewName`  | ListViews   | The name of the view being listed    |
+| Condition Field     | Supported Action          | Description                          |
+|---------------------|---------------------------|--------------------------------------|
+| `catalog:TableName` | `catalog:ListTables`      | The name of the table being listed   |
+| `catalog:ViewName`  | `catalog:ListViews`       | The name of the view being listed    |
 
-**Example - Allow listing only tables matching a prefix:**
+**Example - Allow listing only tables matching a pattern:**
 
 ```json
 {
@@ -328,7 +342,7 @@ For `ListTables` and `ListViews`, the namespace ARN alone is not enough to filte
       "resource": "arn:lakefs:catalog:::namespace/my-repo/analytics",
       "condition": {
         "StringLike": {
-          "catalog:TableName": ["prod-*"]
+          "catalog:TableName": ["prod-*", "staging-*"]
         }
       }
     }
@@ -336,7 +350,33 @@ For `ListTables` and `ListViews`, the namespace ARN alone is not enough to filte
 }
 ```
 
-This policy allows the user to see only tables starting with `prod-` when listing tables in the `analytics` namespace of `my-repo`. Tables that do not match the pattern are filtered out of the response.
+This policy allows the user to see only tables starting with `prod-` or `staging-` when listing tables in the `analytics` namespace of `my-repo`. Tables that do not match the pattern are filtered out of the response.
+
+**Example - Deny listing a specific view:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ListViews"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace"
+    },
+    {
+      "effect": "deny",
+      "action": ["catalog:ListViews"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace",
+      "condition": {
+        "StringLike": {
+          "catalog:ViewName": ["secret_view"]
+        }
+      }
+    }
+  ]
+}
+```
+
+This policy allows the user to list all views in the `my.namespace` namespace, except for `secret_view` which is explicitly denied.
 
 #### Example Policies
 

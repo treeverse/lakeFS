@@ -163,55 +163,7 @@ The `StringLike` condition operator matches a context value against one or more 
 
 Wildcard characters: `*` matches zero or more characters, `?` matches exactly one character.
 
-**Supported Fields:**
-
-| Field               | Description                                                               |
-|---------------------|---------------------------------------------------------------------------|
-| `catalog:TableName` | The table name in Iceberg catalog list operations. |
-| `catalog:ViewName`  | The view name in Iceberg catalog list operations. |
-
-**Example - Allow listing only tables matching a pattern:**
-
-```json
-{
-  "statement": [
-    {
-      "effect": "allow",
-      "action": ["catalog:ListTables"],
-      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace",
-      "condition": {
-        "StringLike": {
-          "catalog:TableName": ["prod-*", "staging-*"]
-        }
-      }
-    }
-  ]
-}
-```
-
-**Example - Deny listing a specific view:**
-
-```json
-{
-  "statement": [
-    {
-      "effect": "allow",
-      "action": ["catalog:ListViews"],
-      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace"
-    },
-    {
-      "effect": "deny",
-      "action": ["catalog:ListViews"],
-      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace",
-      "condition": {
-        "StringLike": {
-          "catalog:ViewName": ["secret_view"]
-        }
-      }
-    }
-  ]
-}
-```
+For supported fields and examples of using `StringLike` conditions with Iceberg catalog operations, see [Iceberg List Operations Filtering](../integrations/iceberg.md#list-operations-filtering).
 
 
 ## Resource naming - ARNs
