@@ -186,7 +186,7 @@ Here are a some **examples** of valid ARNs within lakeFS and their meaning:
 | `arn:lakefs:catalog:::table/{repositoryId}/{namespace}/{table}` | An Iceberg table              |
 | `arn:lakefs:catalog:::view/{repositoryId}/{namespace}/{view}` | An Iceberg view                |
 
-Note that Iceberg catalog ARNs are **branch-agnostic** — the branch is not part of the ARN. A policy granting access to a namespace, a table or a view applies to that resource on every branch in the repository.
+Note that Iceberg catalog ARNs are **branch-agnostic**, the branch is not part of the ARN. A policy granting access to a namespace, a table or a view applies to that resource on every branch in the repository.
 
 Additionally, the current user's ID is interpolated in runtime into the ARN using the `${user}` placeholder.
 
