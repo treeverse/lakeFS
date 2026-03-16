@@ -13,7 +13,7 @@ import { getFieldError } from './metadataHelpers';
  * @param {Function} setMetadataFields - callback to update the metadata fields
  * @param rest - any other props to pass to the component
  */
-export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) => {
+export const MetadataFields = ({ metadataFields, setMetadataFields, disabled = false, ...rest }) => {
     const onChangeKey = (i) => {
         return (e) => {
             const newKey = e.currentTarget.value;
@@ -55,6 +55,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
                                     onChange={onChangeKey(i)}
                                     onBlur={onBlurKey(i)}
                                     isInvalid={fieldError}
+                                    disabled={disabled}
                                 />
                                 {fieldError && (
                                     <Form.Control.Feedback type="invalid">{fieldError}</Form.Control.Feedback>
@@ -66,6 +67,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
                                     placeholder="Value"
                                     value={f.value}
                                     onChange={onChangeValue(i)}
+                                    disabled={disabled}
                                 />
                             </Col>
                             <Col md={{ span: 1 }}>
@@ -75,6 +77,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
                                         variant="secondary"
                                         onClick={onRemoveKeyValue(i)}
                                         aria-label={`Remove metadata field ${i + 1}`}
+                                        disabled={disabled}
                                     >
                                         <XIcon />
                                     </Button>
@@ -84,7 +87,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest }) =
                     </Form.Group>
                 );
             })}
-            <Button onClick={onAddKeyValue} size="sm" variant="secondary">
+            <Button onClick={onAddKeyValue} size="sm" variant="secondary" disabled={disabled}>
                 <PlusIcon /> Add Metadata field
             </Button>
         </div>

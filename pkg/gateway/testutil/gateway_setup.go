@@ -116,3 +116,7 @@ func (m *FakeAuthService) GetUser(_ context.Context, _ string) (*model.User, err
 func (m *FakeAuthService) Authorize(_ context.Context, _ *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
 	return &auth.AuthorizationResponse{Allowed: true}, nil
 }
+
+func (m *FakeAuthService) ListEffectivePolicies(_ context.Context, _ string, _ *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	return nil, nil, auth.ErrNotImplemented
+}

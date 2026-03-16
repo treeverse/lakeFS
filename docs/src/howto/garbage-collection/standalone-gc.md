@@ -94,6 +94,7 @@ The minimum required permissions for AWS or S3-compatible storage are:
   ]
 }
 ```
+
 In this example, the repository storage namespace is `s3://some-bucket/some/prefix`.
 
 #### lakeFS permissions
@@ -121,30 +122,53 @@ The minimum required permissions for lakeFS are:
 
 ### Credentials
 
-Standalone GC supports S3 and S3-compatible storage backends and relies on AWS credentials for authentication. To set up
-credentials on the `lakefs-sgc` docker container, follow AWS guidelines, such as those outlined in [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
+Standalone GC supports S3 and S3-compatible storage backends and relies on AWS credentials for authentication. There are several ways to provide credentials:
+
+1. **AWS credentials file**: Follow AWS guidelines outlined in [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
+2. **AWS profile**: Use the `aws.profile` configuration option to specify an AWS profile.
+3. **Static credentials**: Provide credentials directly via configuration using `aws.s3.credentials.access_key_id`, `aws.s3.credentials.secret_access_key`, and optionally `aws.s3.credentials.session_token`.
+
 For details on how to pass credentials to `lakefs-sgc`, refer to the instructions in [How to Run Standalone GC](#how-to-run-standalone-gc).
 
 ### Using S3-compatible clients
 
 `lakefs-sgc` leverages AWS credentials to work seamlessly with S3-compatible storage solutions, such as [MinIO](https://min.io/). 
-Follow the steps below to set up and use `lakefs-sgc` with an S3-compatible client:
+There are two ways to configure S3-compatible endpoints:
+
+#### Option 1: Using AWS profile with credentials file
 
 1. Add a profile to your `~/.aws/config` file:
     ```
-   [profile minio]
-   region = us-east-1
-   endpoint_url = <MinIO URL>
-   s3 =
-       signature_version = s3v4
+    [profile minio]
+    region = us-east-1
+    endpoint_url = <MinIO URL>
+    s3 =
+        signature_version = s3v4
     ```
 1. Add an access and secret keys to your `~/.aws/credentials` file:
     ```
-   [minio]
-   aws_access_key_id     = <MinIO access key>
-   aws_secret_access_key = <MinIO secret key>
+    [minio]
+    aws_access_key_id     = <MinIO access key>
+    aws_secret_access_key = <MinIO secret key>
     ```
 1. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
+
+#### Option 2: Using configuration file with custom endpoint
+
+Alternatively, you can configure the S3-compatible endpoint directly in the configuration file:
+
+1. Create a config file with your S3-compatible endpoint details:
+    ```yaml
+    aws:
+      region: us-east-1
+      s3:
+        endpoint: https://your-minio-endpoint.example.com
+        addressing_path_style: true
+        credentials:
+          access_key_id: <access key>
+          secret_access_key: <secret key>
+    ```
+1. Run the docker image and pass the config file using the `--config` flag.
 
 ### Configuration
 
@@ -156,8 +180,14 @@ The following configuration keys are available:
 | `logging.level`                | Logs level                                                                                                                                                    | "info"             | "error","warn",info","debug","trace"                    |
 | `logging.output`               | Where to output the logs to                                                                                                                                   | "-"                | "-" (stdout), "=" (stderr), or any string for file path |
 | `cache_dir`                    | Directory to use for caching data during run                                                                                                                  | ~/.lakefs-sgc/data | string                                                  |
+| `aws.region`                   | AWS region for S3 operations                                                                                                                                   | NOT SET            | string (e.g., "us-east-1")                              |
+| `aws.profile`                  | AWS credentials profile to use                                                                                                                               | NOT SET            | string                                                  |
 | `aws.max_page_size`            | Max number of items per page when listing objects in AWS                                                                                                      | 1000               | number                                                  |
+| `aws.s3.endpoint`              | Custom S3-compatible endpoint URL (e.g., for MinIO)                                                                                                           | NOT SET            | URL                                                     |
 | `aws.s3.addressing_path_style` | Whether or not to use [path-style](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#path-style-access) when reading objects from AWS | true               | boolean                                                 |
+| `aws.s3.credentials.access_key_id`    | Static AWS access key ID for S3                                                                                                                             | NOT SET            | string                                                  |
+| `aws.s3.credentials.secret_access_key` | Static AWS secret access key for S3                                                                                                                        | NOT SET            | string                                                  |
+| `aws.s3.credentials.session_token`   | AWS session token for temporary credentials                                                                                                                  | NOT SET            | string                                                  |
 | `lakefs.endpoint_url`          | The URL to the lakeFS installation - should end with `/api/v1`                                                                                                | NOT SET            | URL                                                     |
 | `lakefs.access_key_id`         | Access key to the lakeFS installation                                                                                                                         | NOT SET            | string                                                  |
 | `lakefs.secret_access_key`     | Secret access key to the lakeFS installation                                                                                                                  | NOT SET            | string                                                  |
@@ -180,6 +210,21 @@ Example (minimalistic) config file:
 ```yaml
 logging:
   level: debug
+```
+
+Example config file with custom S3 endpoint and static credentials:
+```yaml
+logging:
+  level: debug
+aws:
+  region: us-east-1
+  s3:
+    endpoint: https://my-s3-endpoint.example.com
+    addressing_path_style: true
+    credentials:
+      access_key_id: <AWS access key>
+      secret_access_key: <AWS secret key>
+      session_token: <optional AWS session token>
 lakefs:
   endpoint_url: https://your.url/api/v1
   access_key_id: <lakeFS access key>
@@ -262,7 +307,7 @@ _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in th
 In this prefix, you'll find 2 objects:
 
 - `deleted.csv` - Containing all marked objects in a CSV containing one `address` column.
-    
+
     !!! example
         ```
         address
@@ -271,7 +316,7 @@ In this prefix, you'll find 2 objects:
         ...
         ```
 - `summary.json` - A small json summarizing the GC run. 
-    
+
     !!! example
         ```json
         {

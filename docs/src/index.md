@@ -26,7 +26,7 @@ With lakeFS, you can apply concepts to your data lake such as **branching** to c
 These include [branching](./quickstart/branch.md), [merging](./quickstart/commit-and-merge.md), and [rolling back changes](./quickstart/rollback.md) to data.
 
 !!! tip
-    You can use the [30-day free trial of lakeFS Cloud](https://lakefs.io/cloud-registration) if you want to try out lakeFS without installing anything.
+    You can use the [free trial of lakeFS Cloud](https://lakefs.io/cloud-registration) if you want to try out lakeFS without installing anything.
 
 ## Key lakeFS Features
 
@@ -143,7 +143,7 @@ Being able to look at data as it was at a given point is particularly useful in 
 
 With lakeFS, each member of the team can create their own branch, isolated from other people's changes.
 
-This allows to iterate on changes to an algorithm or transformation, without stepping on eachother's toes. These branches are centralized - they could be share among users for collaboration, and can even be merged.
+This allows you to iterate on changes to an algorithm or transformation, without stepping on each other's toes. These branches are centralized - they could be shared among users for collaboration, and can even be merged.
 
 With lakeFS you can even open [pull requests](./howto/pull-requests.md), allowing you to easily share changes with other members and collaborate on them.
 

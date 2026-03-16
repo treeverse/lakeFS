@@ -25,7 +25,7 @@ You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Mana
 
 lakeFS exposes an [S3 Gateway][s3-gateway] that enables applications to communicate
 with lakeFS the same way they would with Amazon S3.
-You can use Airbyte's [S3 Connector](https://airbyte.com/connectors/s3) to upload data to lakeFS.
+You can use Airbyte's [S3 Connector](https://docs.airbyte.com/integrations/destinations/s3) to upload data to lakeFS.
 
 !!! warning
     If using Airbyte OSS, please ensure you are using S3 destination connector version [0.3.17 or higher](https://docs.airbyte.com/integrations/destinations/s3#changelog).

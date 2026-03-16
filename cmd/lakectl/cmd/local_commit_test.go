@@ -45,6 +45,7 @@ func getTestClient(t *testing.T, endpoint string) *apigen.ClientWithResponses {
 }
 
 func TestUncommittedOutsideOfPrefix(t *testing.T) {
+	t.Parallel()
 	prefix := "xyzzy/"
 	remote := &uri.URI{
 		Repository: "test",

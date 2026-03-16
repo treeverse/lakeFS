@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react-swc';
-import eslintPlugin from 'vite-plugin-eslint';
+import eslintPlugin from 'vite-plugin-eslint2';
 import replace from '@rollup/plugin-replace';
 import * as http from "node:http";
 

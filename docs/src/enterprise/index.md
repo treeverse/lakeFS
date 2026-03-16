@@ -40,7 +40,8 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 1. [lakeFS for Snowflake](https://info.lakefs.io/lakefs-for-snowflake) - Provides full integration into the Snowflake ecosystem, including full support for Iceberg managed tables.
 1. [Transactional Mirroring](../howto/mirroring.md) - Allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 1. [Multiple Storage Backends](../howto/multiple-storage-backends.md) - Allows managing data stored across multiple storage locations: on-prem, hybrid, or multi-cloud.
-1. [Metadata Search](../datamanagment/metadata-search.md) - Enables powerful object search using object metadata, from system metadata (like path and size) to user-defined metadata.  
+1. [Metadata Search](../datamanagment/metadata-search.md) - Enables powerful object search using object metadata, from system metadata (like path and size) to user-defined metadata.
+1. [Async Commit & Merge](#async-commit-and-merge) - Non-blocking commit and merge operations for large repositories, improving responsiveness of the UI and CLI.  
 
 
 | Feature                                   | OSS       | Enterprise     |
@@ -62,9 +63,26 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 | **[Metadata Search](../datamanagment/metadata-search.md)**                           |            | ✅         |
 | **[Audit Logs](../reference/auditing.md)**                                 |            | ✅         |
 | **[Transactional Mirroring (cross-region)](../howto/mirroring.md)**     |            | ✅         |
+| **[Async Commit & Merge](#async-commit-and-merge)**                     |            | ✅         |
 | **Support SLA**                                |            | ✅         |
 
+## Async Commit and Merge {#async-commit-and-merge}
 
+lakeFS Enterprise provides asynchronous commit and merge operations for improved scalability when working with large repositories.
+
+**Atomicity guarantees are unchanged**: Async operations are still fully atomic. The only difference is that the API returns immediately while the operation executes in the background.
+
+### How it works
+
+- Operations return immediately with a task ID
+- Progress can be monitored by polling the task status
+- The UI and `lakectl` use async operations by default and handle polling automatically
+
+### Benefits
+
+- **Non-blocking**: UI and CLI remain responsive during long-running operations
+- **Scalability**: Handle large commits and merges without timeout issues
+- **Visibility**: Track operation progress in real-time
 
 !!! tip
     You can learn more about the [lakeFS Enterprise architecture](./architecture.md), or follow the examples in the [Quickstart guide](./getstarted/quickstart.md).

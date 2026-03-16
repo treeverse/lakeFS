@@ -18,7 +18,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/github-script@v6
+    - uses: actions/github-script@v8
       env:
         COMMENT_TITLE: ${{ inputs.comment-title }}
         COMMENT_CONTENT: ${{ inputs.results-content }}
@@ -40,7 +40,7 @@ runs:
           // 2. Prepare format of the comment
           const output = `
             # ${process.env.COMMENT_TITLE}
-            
+
             ${process.env.COMMENT_CONTENT}
           `;
 

@@ -13,6 +13,7 @@ import (
 )
 
 func TestManager_WriteRange(t *testing.T) {
+	t.Parallel()
 	const (
 		ns         = "some-ns"
 		maxRecords = 4
@@ -140,6 +141,7 @@ func TestManager_WriteRange(t *testing.T) {
 }
 
 func TestManager_WriteMetaRange(t *testing.T) {
+	t.Parallel()
 	const ns = "some-ns"
 
 	expectedMetarangeID := graveler.MetaRangeID("some-id")

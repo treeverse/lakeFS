@@ -7,15 +7,15 @@ on:
 jobs:
   validator:
     name: Run Linters and Checkers
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -40,33 +40,33 @@ jobs:
 
   test-go:
     name: Run Go tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04-16-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Run Go tests
-        run: |
-          mkdir ./webui/dist
-          touch ./webui/dist/index.html
-          make test-go
+        run: make test-go
 
   test-webui:
     name: Run webui unit tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup NodeJS
-        uses: actions/setup-node@v6.1.0
+        uses: actions/setup-node@v6
         with:
           node-version-file: webui/package.json
           cache: npm

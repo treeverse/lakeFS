@@ -19,7 +19,7 @@ import java.io.DataInput
 import java.io.DataOutput
 import java.io.File
 import java.net.URI
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
 

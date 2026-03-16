@@ -86,6 +86,16 @@ To define retention rules, either use the `lakectl` command, the lakeFS web UI, 
 
 To run the job, use the following `spark-submit` command (or using your preferred method of running Spark programs).
 
+Use the correct jar for your Spark version:
+
+| Spark version | Jar URL                                                                                                        |
+|---------------|--------------------------------------------------------------------------------------------------------------------|
+| 3.x           | `https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.21.0/lakefs-spark-client_2.12-assembly-0.21.0.jar` |
+| 4.x           | `https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.21.0/lakefs-spark-client_2.13-assembly-0.21.0.jar` |
+
+!!! note
+    Spark 4.x requires Java 17+.
+
 === "AWS"
     ```bash
     spark-submit --class io.treeverse.gc.GarbageCollection \
@@ -95,7 +105,7 @@ To run the job, use the following `spark-submit` command (or using your preferre
         -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
         -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
         -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-        http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client/0.17.0/lakefs-spark-client-assembly-0.17.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.21.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.21.0.jar \
         example-repo us-east-1
     ```
 
@@ -109,7 +119,7 @@ To run the job, use the following `spark-submit` command (or using your preferre
         -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
         -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
         -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-        http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client/0.17.0/lakefs-spark-client-assembly-0.17.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.21.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.21.0.jar \
         example-repo
     ```
 
@@ -126,7 +136,7 @@ To run the job, use the following `spark-submit` command (or using your preferre
         -c spark.hadoop.fs.azure.account.oauth2.client.id.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<application-id> \
         -c spark.hadoop.fs.azure.account.oauth2.client.secret.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<service-credential-key> \
         -c spark.hadoop.fs.azure.account.oauth2.client.endpoint.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=https://login.microsoftonline.com/<directory-id>/oauth2/token \
-        http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client/0.17.0/lakefs-spark-client-assembly-0.17.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.21.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.21.0.jar \
         example-repo
     ```
 
@@ -134,10 +144,10 @@ To run the job, use the following `spark-submit` command (or using your preferre
         * On Azure, GC was tested only on Spark 3.3.0, but may work with other Spark and Hadoop versions.
         * In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
         * For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
-        
+
 
 === "GCP"
-    For Garbage Collection to work with GCP, you must provide it with a service account key JSON file. 
+    For Garbage Collection to work with GCP, you must provide it with a service account key JSON file.
     The use service account must have `Storage Object User` permissions for the repository namespace (bucket).
 
     ```bash
@@ -149,7 +159,7 @@ To run the job, use the following `spark-submit` command (or using your preferre
         -c spark.hadoop.google.cloud.auth.service.account.json.keyfile=<PATH_TO_JSON_KEYFILE> \
         -c spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem \
         -c spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS \
-        http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client/0.17.0/lakefs-spark-client-assembly-0.17.0.jar \
+        https://treeverse-clients-us-east.s3.amazonaws.com/lakefs-spark-client/0.21.0/lakefs-spark-client_<SCALA_VERSION>-assembly-0.21.0.jar \
         example-repo
     ```
 
@@ -183,6 +193,26 @@ To make GC run the sweep stage only, add the following properties to your spark-
 spark.hadoop.lakefs.gc.do_mark=false
 spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with the identifier you obtained from a previous mark-only run
 ```
+
+## Garbage collection and shallow copy
+
+Shallow copy is an [Enterprise](../../enterprise/index.md) feature available through the [copy object API](../../reference/api.md#/objects/copyObject). It creates a new lakeFS entry that points to the **same physical object** in the underlying storage as the source entry, without duplicating the data. Because both the source and the shallow copy share a single physical address, garbage collection may delete the underlying object while it is still referenced by a shallow copy.
+
+### When does this happen?
+
+GC determines which physical objects to keep by scanning committed and uncommitted entries across all branches. An object is eligible for deletion when no entry references its physical address. The risk arises when:
+
+1. You shallow-copy an object (both source and copy now share the same physical address).
+2. The **source entry** is deleted or its branch is removed.
+3. GC runs and finds no remaining reference to the physical address — the shallow copy may be missed if it has not yet been committed or if the branch it lives on has been deleted.
+4. GC deletes the physical object, leaving the shallow copy pointing to a missing object (`410 Gone`).
+
+### How to avoid data loss
+
+- **Commit shallow copies promptly.** Committed entries are always scanned by GC. Shallow copies that remain uncommitted (staged) are more vulnerable during the window between GC mark and sweep phases.
+- **Do not delete the source entry before committing the shallow copy.** As long as either the source or the copy is committed and reachable from a branch HEAD, GC will retain the underlying object.
+- **Keep branches alive while they contain shallow copies.** Deleting a branch removes its entries from GC consideration. If the branch held the only remaining reference to a shared physical address, GC will delete the object.
+- **Set appropriate retention rules.** Branch retention days give you a safety buffer — even after a source entry is deleted from a branch, GC retains the object for the configured retention period.
 
 ## Garbage collection notes
 

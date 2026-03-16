@@ -135,7 +135,21 @@ func (e *Executor) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			// Notify all pending waiters that we're shutting down
+			for _, waiters := range e.waitingOnKey {
+				for _, req := range waiters.requests {
+					req.onResponse <- &response{nil, ctx.Err()}
+				}
+			}
+			// Drain any requests still in the channel
+			for {
+				select {
+				case waitFor := <-e.requests:
+					waitFor.request.onResponse <- &response{nil, ctx.Err()}
+				default:
+					return
+				}
+			}
 		case waitFor := <-e.requests:
 			req := waitFor.request
 			// see if we have it scheduled already

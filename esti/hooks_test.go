@@ -1,12 +1,24 @@
 package esti
 
 import (
+	"context"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
-func TestHooksSuccess(t *testing.T) {
+func testHooksSuccess(t *testing.T, testFunc func(context.Context, *testing.T, string, apigen.ClientWithResponsesInterface)) {
 	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-	HooksSuccessTest(ctx, t, repo, client)
+	testFunc(ctx, t, repo, client)
+}
+
+func TestHooksSuccess(t *testing.T) {
+	t.Run("webhook", func(t *testing.T) {
+		testHooksSuccess(t, WebhookHooksTest)
+	})
+	t.Run("lua", func(t *testing.T) {
+		testHooksSuccess(t, LuaHooksTest)
+	})
 }

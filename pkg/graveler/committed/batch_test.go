@@ -94,10 +94,12 @@ func NewFakeRangeWriter(result *committed.WriteResult, err error) *FakeRangeWrit
 }
 
 func TestBatchCloserSuccess(t *testing.T) {
+	t.Parallel()
 	runSuccessScenario(t, 502, 5)
 }
 
 func TestBatchWriterFailed(t *testing.T) {
+	t.Parallel()
 	writerSuccess := NewFakeRangeWriter(
 		&committed.WriteResult{
 			RangeID: committed.ID(strconv.Itoa(1)),
@@ -121,6 +123,7 @@ func TestBatchWriterFailed(t *testing.T) {
 }
 
 func TestBatchCloserMultipleWaitCalls(t *testing.T) {
+	t.Parallel()
 	writer := NewFakeRangeWriter(&committed.WriteResult{
 		RangeID: "last",
 		First:   committed.Key("row_1"),

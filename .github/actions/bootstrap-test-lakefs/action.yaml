@@ -12,19 +12,25 @@ inputs:
     description: working directory for the docker compose step
     required: false
     default: "."
+  skip-generated-code:
+    description: skip downloading and unpacking generated code artifact
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
     - name: Retrieve generated code
-      uses: actions/download-artifact@v4.1.8
+      if: inputs.skip-generated-code != 'true'
+      uses: actions/download-artifact@v7
       with:
         name: generated-code
         path: /tmp/
     - name: Unpack generated code
+      if: inputs.skip-generated-code != 'true'
       shell: bash
       run: tar -xzvf /tmp/generated.tar.gz
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -36,7 +42,6 @@ runs:
       env:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
-        COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
       shell: bash
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"

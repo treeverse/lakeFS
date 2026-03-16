@@ -27,6 +27,7 @@ var repository = &graveler.RepositoryRecord{
 }
 
 func TestSetAndGet(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	bpm := prepareTest(t, ctx)
 	_, eTag, err := bpm.GetRules(ctx, repository)
@@ -58,6 +59,7 @@ func TestSetAndGet(t *testing.T) {
 }
 
 func TestSetWrongETag(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	bpm := prepareTest(t, ctx)
 	err := bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
@@ -75,6 +77,7 @@ func TestSetWrongETag(t *testing.T) {
 }
 
 func TestIsBlocked(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	var (
 		action1 = graveler.BranchProtectionBlockedAction_STAGING_WRITE

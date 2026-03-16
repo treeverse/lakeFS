@@ -10,6 +10,7 @@ import (
 )
 
 func TestHashingReaderRead(t *testing.T) {
+	t.Parallel()
 	origData := []byte{1, 2, 3, 4, 5, 6, 7}
 	hashReader := block.NewHashingReader(bytes.NewReader(origData), block.HashFunctionMD5, block.HashFunctionSHA256)
 

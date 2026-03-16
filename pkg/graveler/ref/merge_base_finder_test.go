@@ -55,6 +55,7 @@ func newReader(kv map[graveler.CommitID]*graveler.Commit) *MockCommitGetter {
 }
 
 func TestFindMergeBase(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name     string
 		Left     graveler.CommitID
@@ -342,6 +343,7 @@ func TestFindMergeBase(t *testing.T) {
 }
 
 func TestGrid(t *testing.T) {
+	t.Parallel()
 	// Construct the following grid, taken from https://github.com/git/git/blob/master/t/t6600-test-reach.sh
 	//             (10,10)
 	//            /       \

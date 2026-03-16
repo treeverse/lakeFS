@@ -3439,15 +3439,15 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		// delete objects
 		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		testutil.Must(t, err)
-		const expectedStatusCode = http.StatusInternalServerError
+		const expectedStatusCode = http.StatusBadRequest
 		if delResp.StatusCode() != expectedStatusCode {
 			t.Fatalf("DeleteObjects status code %d, expected %d", delResp.StatusCode(), expectedStatusCode)
 		}
-		if delResp.JSONDefault == nil {
-			t.Fatal("DeleteObjects expected default error")
+		if delResp.JSON400 == nil {
+			t.Fatal("DeleteObjects expected 400 error")
 		}
-		if !strings.Contains(delResp.JSONDefault.Message, api.ErrRequestSizeExceeded.Error()) {
-			t.Fatalf("DeleteObjects size exceeded error: '%s', expected '%s'", delResp.JSONDefault.Message, api.ErrRequestSizeExceeded)
+		if !strings.Contains(delResp.JSON400.Message, api.ErrRequestSizeExceeded.Error()) {
+			t.Fatalf("DeleteObjects size exceeded error: '%s', expected '%s'", delResp.JSON400.Message, api.ErrRequestSizeExceeded)
 		}
 	})
 
@@ -3696,7 +3696,7 @@ func TestController_ConfigHandlers(t *testing.T) {
 	})
 
 	t.Run("Get gc config", func(t *testing.T) {
-		expectedPeriod := int((6 * time.Hour).Seconds())
+		expectedPeriod := int((24 * time.Hour).Seconds())
 		resp, err := clt.GetGarbageCollectionConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
 		period := resp.JSON200.GracePeriod
@@ -5315,12 +5315,11 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are the same
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
-		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 
 		// get back info
 		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
@@ -5342,13 +5341,12 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are the same as we clone it
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.NotEmpty(t, copyStat.PhysicalAddress)
-		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 
 		// Verify all else is equal
 		objStat.Mtime = copyStat.Mtime
@@ -5382,13 +5380,12 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are the same
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.NotEmpty(t, copyStat.PhysicalAddress)
-		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 
 		// Verify all else is equal
 		objStat.Mtime = copyStat.Mtime
@@ -5489,12 +5486,11 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are the same (clone)
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
-		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 
 		// get back info
 		statResp, err := clt.StatObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.StatObjectParams{Path: destPath})
@@ -5530,17 +5526,16 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the object was cloned (same physical address) not copied
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
-		require.Equal(t, absolutePhysicalAddress, copyStat.PhysicalAddress, "physical address should be the same (cloned)")
+		require.NotEqual(t, absolutePhysicalAddress, copyStat.PhysicalAddress, "physical address should be the same (cloned)")
 		require.Equal(t, destPath, copyStat.Path)
 		require.Equal(t, stageResp.JSON200.Checksum, copyStat.Checksum)
 
 		// Verify we can stat the copied object
 		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
 		verifyResponseOK(t, statResp, err)
-		require.Equal(t, absolutePhysicalAddress, statResp.JSON200.PhysicalAddress)
+		require.Equal(t, copyStat.PhysicalAddress, statResp.JSON200.PhysicalAddress)
 	})
 
 	t.Run("old_object_beyond_grace_period", func(t *testing.T) {

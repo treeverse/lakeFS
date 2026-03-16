@@ -6,6 +6,7 @@ import (
 	gohttputil "net/http/httputil"
 	"net/url"
 	"regexp"
+	"runtime/trace"
 	"slices"
 	"strings"
 
@@ -143,6 +144,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	usageCounter.Add(1)
+	ctx, task := trace.NewTask(req.Context(), "s3:"+string(o.OperationID))
+	defer task.End()
+	req = req.WithContext(ctx)
 	operationHandler.ServeHTTP(w, req)
 }
 

@@ -61,4 +61,12 @@ public class ObjectCopyCreationTest {
         // TODO: test force
     }
 
+    /**
+     * Test the property 'shallow'
+     */
+    @Test
+    public void shallowTest() {
+        // TODO: test shallow
+    }
+
 }

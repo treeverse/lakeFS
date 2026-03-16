@@ -159,3 +159,13 @@
   font-weight: 600;
   margin-right: 1.4rem;
 }
+  .md-button-nav-warn,
+  .md-button-nav-warn:hover {
+    background-color: var(--md-warning-bg-color);
+    color: var(--md-warning-fg-color);
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-right: 1.4rem;
+  }

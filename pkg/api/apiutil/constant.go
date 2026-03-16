@@ -9,6 +9,7 @@ const (
 	ClientMtimeMetadataKey      = LakeFSMetadataPrefix + "client-mtime"
 	SymlinkMetadataKey          = LakeFSMetadataPrefix + "symlink-target"
 	POSIXPermissionsMetadataKey = LakeFSMetadataPrefix + "posix-permissions"
+	CloneMetadataKey            = LakeFSMetadataPrefix + "shallow-copy"
 )
 
 const (

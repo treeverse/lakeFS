@@ -1,15 +1,11 @@
-val nexus = "https://s01.oss.sonatype.org/"
-publishTo := {
-  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
-  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
-  else localStaging.value
-}
+// Configure for Maven Central Portal using sbt 1.11+ built-in support
+// sbt automatically reads SONATYPE_USERNAME and SONATYPE_PASSWORD env vars
+
+// Use local staging for publishSigned, then sonaUpload to upload
+publishTo := localStaging.value
+
 // Remove all additional repository other than Maven Central from POM
 pomIncludeRepository := { _ => false }
-credentials ++= Seq(
-  Credentials(Path.userHome / ".sbt" / "credentials"),
-  Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
-)
 
 ThisBuild / scmInfo := Some(
   ScmInfo(

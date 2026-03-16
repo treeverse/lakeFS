@@ -114,6 +114,7 @@ func createIter(tr *testMetaRange) committed.Iterator {
 }
 
 func Test_merge(t *testing.T) {
+	t.Parallel()
 	tests := testCases{
 		"dest range added before": {
 			baseRange: newTestMetaRange([]testRange{
@@ -1257,6 +1258,7 @@ func Test_merge(t *testing.T) {
 }
 
 func TestMergeStrategies(t *testing.T) {
+	t.Parallel()
 	tests := testCases{
 		// Base branch has a 2 records range, with the keys 'a' and 'b'. Source branch changes the value on key 'a' and leaves key 'b' unchanged
 		// Dest branch deletes both entries, creating a conflict on entry 'a'
@@ -1741,6 +1743,7 @@ func (r *MockConflictResolver) ResolveConflict(ctx context.Context, sCtx gravele
 }
 
 func TestMergeWithConflictResolver(t *testing.T) {
+	t.Parallel()
 	baseMetaRange := newTestMetaRange([]testRange{
 		{
 			rng:     committed.Range{ID: "base:b", MinKey: committed.Key("b"), MaxKey: committed.Key("b"), Count: 1},
@@ -1922,6 +1925,7 @@ func runMergeTests(tests testCases, t *testing.T) {
 }
 
 func TestMergeCancelContext(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

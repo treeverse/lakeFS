@@ -52,7 +52,7 @@ By default, when `if` is empty or omitted, the step will run only if no error oc
 
 | Property             | Description                                                                                                                                                                                                              | Data Type  | Required | Default Value                                                           |
 |----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
-| `name`               | Identifes the Action file                                                                                                                                                                                                | String     | no       | Action filename                                                         |
+| `name`               | Identifies the Action file                                                                                                                                                                                                | String     | no       | Action filename                                                         |
 | `on`                 | List of events that will trigger the hooks                                                                                                                                                                               | List       | yes      |                                                                         |
 | `on<event>.branches` | Glob pattern list of branches that triggers the hooks                                                                                                                                                                    | List       | no       | **Not applicable to Tag events.** If empty, Action runs on all branches |
 | `hooks`              | List of hooks to be executed                                                                                                                                                                                             | List       | yes      |                                                                         |
@@ -162,7 +162,7 @@ lakeFS will fetch, parse and filter the repository Action files and start to exe
 All executed Hooks (each with `hook_run_id`) exist in the context of that Run (`run_id`).
 
 The [lakeFS API](../../reference/api.md) and [lakectl][lakectl-actions] expose the results of executions per repository, branch, commit, and specific Action.
-The endpoint also allows to download the execution log of any executed Hook under each Run for observability.
+The endpoint also allows downloading the execution log of any executed Hook under each Run for observability.
 
 ## Result Files
 

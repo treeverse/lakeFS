@@ -10,11 +10,11 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     environment: Treeverse signing
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
         # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
       - name: Extract version
@@ -36,7 +36,7 @@ jobs:
           gpg --list-secret-keys --keyid-format LONG
 
       - name: Set up Java and Maven Central Repository
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v5
         with:
           java-version: '11'
           distribution: 'adopt'

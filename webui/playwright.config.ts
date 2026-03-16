@@ -4,9 +4,14 @@ import { defineConfig, devices } from "@playwright/test";
  * https://github.com/motdotla/dotenv
  */
 import "dotenv/config";
-import { COMMON_STORAGE_STATE_PATH } from "./test/e2e/consts";
+import { STORAGE_STATE_PATH } from "./test/e2e/credentialsFile";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:8000";
+const SKIP_SETUP = !!process.env.SKIP_SETUP;
+const SETUP_SPECS = [
+  "test/e2e/common/setup.spec.ts",
+  "test/e2e/common/setupInfra.spec.ts",
+];
 
 export default defineConfig({
   testDir: "test",
@@ -22,36 +27,43 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    {
-      name: "common-setup",
-      use: {
-        ...devices["Desktop Chrome"],
+    ...(!SKIP_SETUP ? [
+      {
+        name: "setup-validation",
+        use: {
+          ...devices["Desktop Chrome"],
+        },
+        testMatch: "test/e2e/common/setup.spec.ts",
       },
-      testMatch: "test/e2e/common/setup.spec.ts",
-    },
+      {
+        name: "common-setup",
+        dependencies: ["setup-validation"],
+        use: {
+          ...devices["Desktop Chrome"],
+        },
+        testMatch: "test/e2e/common/setupInfra.spec.ts",
+      },
+    ] : []),
     {
       // common tests are applicable to any combination of database and block adapter
       name: "common",
-      dependencies: ["common-setup"],
+      dependencies: SKIP_SETUP ? [] : ["common-setup"],
       use: {
         ...devices["Desktop Chrome"],
-        storageState: COMMON_STORAGE_STATE_PATH,
+        storageState: STORAGE_STATE_PATH,
       },
       testMatch: "test/e2e/common/**/*.spec.ts",
-      testIgnore: [
-        "test/e2e/common/setup.spec.ts",
-        "test/e2e/common/quickstart.spec.ts",
-      ],
+      testIgnore: [...SETUP_SPECS, "test/e2e/common/quickstart.spec.ts"],
     },
     {
       name: "quickstart",
-      dependencies: ["common-setup"],
+      dependencies: SKIP_SETUP ? [] : ["common-setup"],
       use: {
         ...devices["Desktop Chrome"],
-        storageState: COMMON_STORAGE_STATE_PATH,
+        storageState: STORAGE_STATE_PATH,
       },
       testMatch: "test/e2e/common/**/quickstart.spec.ts",
-      testIgnore: "test/e2e/common/setup.spec.ts",
+      testIgnore: SETUP_SPECS,
     },
     {
       name: "integration",
@@ -59,6 +71,6 @@ export default defineConfig({
           ...devices["Desktop Chrome"],
       },
       testMatch: "test/integration/**/*.spec.ts",
-  },
+    },
   ],
 });

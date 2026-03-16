@@ -67,6 +67,6 @@ services:
       POSTGRES_PASSWORD: lakefs
 
   dynamodb:
-    image: "amazon/dynamodb-local:2.5.2"
+    image: "amazon/dynamodb-local:3.3.0"
     ports:
       - "6432:8000"

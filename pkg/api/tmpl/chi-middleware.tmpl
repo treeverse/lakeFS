@@ -12,7 +12,8 @@ type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
 
 // {{$opid}} operation middleware
 func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Request) {
-  ctx := r.Context()
+  ctx, task := trace.NewTask(r.Context(), "api:{{$opid}}")
+  defer task.End()
   {{if or .RequiresParamObject (gt (len .PathParams) 0) }}
   var err error
   {{end}}

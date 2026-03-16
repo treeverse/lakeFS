@@ -542,7 +542,7 @@ There are 2 kinds of logs:
 - Regular logs like an API error or some event description used for debugging
 - Audit logs that describe user actions (i.e create branch)
 
-The distinction between regular logs and audit_logs is in the boolean field `log_audit`.
+The distinction between regular logs and audit_logs is in the boolean field `log_audit`, learn more in the [auditing reference](../../reference/auditing.md).
 
 ## Advanced Deployment Configurations
 

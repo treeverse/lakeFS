@@ -82,6 +82,16 @@ func CreateRBACBasePolicies(ctx context.Context, authService auth.Service, ts ti
 		},
 		{
 			CreatedAt:   ts,
+			DisplayName: "CatalogReadAll",
+			Statement:   auth.MakeStatementForPolicyTypeOrDie("CatalogRead", all),
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "CatalogReadWriteAll",
+			Statement:   auth.MakeStatementForPolicyTypeOrDie("CatalogReadWrite", all),
+		},
+		{
+			CreatedAt:   ts,
 			DisplayName: "RepoManagementReadAll",
 			Statement:   auth.MakeStatementForPolicyTypeOrDie("RepoManagementRead", all),
 		},
@@ -135,19 +145,19 @@ func CreateRBACBaseGroups(ctx context.Context, authService auth.Service, ts time
 		return err
 	}
 
-	err = attachPolicies(ctx, authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagementFullAccess"})
+	err = attachPolicies(ctx, authService, "Admins", []string{"FSFullAccess", "CatalogReadWriteAll", "AuthFullAccess", "RepoManagementFullAccess"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(ctx, authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials", "RepoManagementReadAll"})
+	err = attachPolicies(ctx, authService, "SuperUsers", []string{"FSFullAccess", "CatalogReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(ctx, authService, "Developers", []string{"FSReadWriteAll", "PRReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
+	err = attachPolicies(ctx, authService, "Developers", []string{"FSReadWriteAll", "PRReadWriteAll", "CatalogReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(ctx, authService, "Viewers", []string{"FSReadAll", "AuthManageOwnCredentials"})
+	err = attachPolicies(ctx, authService, "Viewers", []string{"FSReadAll", "CatalogReadAll", "AuthManageOwnCredentials"})
 	if err != nil {
 		return err
 	}

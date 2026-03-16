@@ -12,6 +12,7 @@ import (
 )
 
 func TestCommitIterator(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	baseTime, err := time.Parse(time.RFC3339, "1999-12-31T23:59:59Z")
 	if err != nil {

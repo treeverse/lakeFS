@@ -1,7 +1,7 @@
 package io.treeverse.clients
 
 import org.apache.hadoop.conf.Configuration
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object HadoopUtils {
   def getHadoopConfigurationValues(hc: Configuration, prefixes: String*) =

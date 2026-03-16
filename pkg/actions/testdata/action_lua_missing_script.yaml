@@ -1,0 +1,9 @@
+name: Lua missing script
+on:
+  pre-commit:
+hooks:
+  - id: check_metadata
+    type: lua
+    properties:
+    script: |
+        print("this is at the wrong indentation level")

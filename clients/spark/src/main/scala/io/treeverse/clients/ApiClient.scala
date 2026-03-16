@@ -25,7 +25,7 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 // The different types of storage clients the metadata client uses to access the object store.
 object StorageClientType extends Enumeration {

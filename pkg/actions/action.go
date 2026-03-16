@@ -96,6 +96,11 @@ func (a *Action) Validate() error {
 		if _, found := hooks[hook.Type]; !found {
 			return fmt.Errorf("hook[%d] type '%s' unknown: %w", i, hook.ID, ErrInvalidAction)
 		}
+		if validate, found := hookValidators[hook.Type]; found {
+			if err := validate(hook.Properties); err != nil {
+				return fmt.Errorf("hook[%d] type '%s': %w", i, hook.Type, err)
+			}
+		}
 	}
 	return nil
 }

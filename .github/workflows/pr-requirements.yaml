@@ -1,0 +1,88 @@
+name: PR Requirements
+
+on:
+  # trigger on pr specific events as the default does not include label changes
+  pull_request:
+    types: [labeled, unlabeled, opened, edited, synchronize]
+    branches: [master]
+
+jobs:
+  pr-requirements:
+    name: PR Requirements
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Changelog label
+        id: changelog-label
+        continue-on-error: true
+        if: >-
+          github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
+          !contains(github.event.pull_request.labels.*.name, 'include-changelog') &&
+          !contains(github.event.pull_request.labels.*.name, 'exclude-changelog')
+        run: exit 1
+
+      - name: AI authorship label
+        id: ai-authorship-label
+        continue-on-error: true
+        if: >-
+          github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
+          !contains(github.event.pull_request.labels.*.name, 'mostly-ai') &&
+          !contains(github.event.pull_request.labels.*.name, 'mostly-human')
+        run: exit 1
+
+      - name: Linked issue
+        id: linked-issue
+        continue-on-error: true
+        if: >-
+          !startsWith(github.head_ref, 'dependabot/') &&
+          !contains(github.event.pull_request.labels.*.name, 'minor-change')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! ISSUES=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json closingIssuesReferences \
+            -q '.closingIssuesReferences[].url'); then
+            echo "::error::Failed to query PR linked issues"
+            exit 1
+          fi
+          if [ -z "$ISSUES" ]; then
+            echo "::error::PR must have a linked issue (e.g. 'Fixes #123' in description or link via Development sidebar)"
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          FAILED=false
+
+          if [ "${{ steps.changelog-label.outcome }}" = "failure" ]; then
+            echo "::error::PR must have one of: include-changelog, exclude-changelog"
+            echo "## :x: Missing changelog label" >> "$GITHUB_STEP_SUMMARY"
+            echo "PR must have one of: \`include-changelog\`, \`exclude-changelog\`" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=true
+          fi
+
+          if [ "${{ steps.ai-authorship-label.outcome }}" = "failure" ]; then
+            echo "::error::PR must have one of: mostly-ai, mostly-human"
+            echo "## :x: Missing AI authorship label" >> "$GITHUB_STEP_SUMMARY"
+            echo "PR must have one of: \`mostly-ai\`, \`mostly-human\`" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=true
+          fi
+
+          if [ "${{ steps.linked-issue.outcome }}" = "failure" ]; then
+            echo "::error::PR must have a linked issue (use 'Fixes #123' in description or link via Development sidebar)"
+            echo "## :x: Missing linked issue" >> "$GITHUB_STEP_SUMMARY"
+            echo "PR must have a linked issue." >> "$GITHUB_STEP_SUMMARY"
+            echo "Use \`Fixes #123\` in the description or link via the Development sidebar." >> "$GITHUB_STEP_SUMMARY"
+            FAILED=true
+          fi
+
+          if [ "$FAILED" = "true" ]; then
+            exit 1
+          else
+            echo "## :white_check_mark: All PR requirements passed" >> "$GITHUB_STEP_SUMMARY"
+          fi

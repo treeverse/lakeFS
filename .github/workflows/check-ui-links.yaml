@@ -11,13 +11,13 @@ on:
 jobs:
   preview:
     name: Check links from UI
-    runs-on: ubuntu-22.04
-    if: github.event.pull_request.head.repo.fork == false
+    runs-on: ubuntu-24.04
+    if: github.event.pull_request.head.repo.fork == false && github.actor != 'dependabot[bot]'
     steps:
       - name: Check-out
         uses: actions/checkout@v6
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -68,9 +68,6 @@ jobs:
           jobSummary: false
           format: markdown
           output: /tmp/lychee/results.md
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
 
       - name: Check Lychee output
         run: |

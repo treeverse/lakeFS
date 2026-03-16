@@ -22,6 +22,7 @@ func makeTombstoneV(k string) *graveler.ValueRecord {
 }
 
 func TestCommitAdd(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -53,6 +54,7 @@ func TestCommitAdd(t *testing.T) {
 }
 
 func TestCommitChangeWithinBaseRange(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -85,6 +87,7 @@ func TestCommitChangeWithinBaseRange(t *testing.T) {
 }
 
 func TestCommitBaseRangesWithinChanges(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -113,6 +116,7 @@ func TestCommitBaseRangesWithinChanges(t *testing.T) {
 }
 
 func TestCommitReplace(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -146,6 +150,7 @@ func TestCommitReplace(t *testing.T) {
 // TestCommitOverrideNoChange verify that if we have changes include the same entry as in base (based on identity) we will take the one in base
 // and will not consider it as a change.
 func TestCommitOverrideNoChange(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -181,6 +186,7 @@ func TestCommitOverrideNoChange(t *testing.T) {
 }
 
 func TestCommitDelete(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -210,6 +216,7 @@ func TestCommitDelete(t *testing.T) {
 }
 
 func TestCommitCopiesLeftoverChanges(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -241,6 +248,7 @@ func TestCommitCopiesLeftoverChanges(t *testing.T) {
 }
 
 func TestCommitTombstoneNoBase(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator()
@@ -261,6 +269,7 @@ func TestCommitTombstoneNoBase(t *testing.T) {
 }
 
 func TestCommitDeleteNonExistingRecord(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -288,6 +297,7 @@ func TestCommitDeleteNonExistingRecord(t *testing.T) {
 }
 
 func TestCommitTombstonesBeforeRange(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	base := testutil.NewFakeIterator().
@@ -314,6 +324,7 @@ func TestCommitTombstonesBeforeRange(t *testing.T) {
 }
 
 func TestCommitCopiesLeftoverBase(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	range1 := &committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}
@@ -349,6 +360,7 @@ func TestCommitCopiesLeftoverBase(t *testing.T) {
 }
 
 func TestCommitNoChangesFails(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	range1 := &committed.Range{ID: "one", MinKey: committed.Key("a"), MaxKey: committed.Key("cz"), Count: 3}
@@ -369,6 +381,7 @@ func TestCommitNoChangesFails(t *testing.T) {
 }
 
 func TestCommitCancelContext(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 
 	t.Run("base", func(t *testing.T) {

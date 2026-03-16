@@ -23,6 +23,7 @@ const (
 )
 
 func TestWriteBlob(t *testing.T) {
+	t.Parallel()
 	tt := []struct {
 		name         string
 		size         int64

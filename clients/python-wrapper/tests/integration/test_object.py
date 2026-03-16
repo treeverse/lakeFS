@@ -139,7 +139,6 @@ def test_object_copy(setup_repo):
     assert copy_stat.metadata == obj_stat.metadata
     assert copy_stat.path != obj_stat.path
     assert copy_stat.content_type == obj_stat.content_type
-    assert copy_stat.physical_address == obj_stat.physical_address # same physical object when we clone
     assert copy_stat.mtime >= obj_stat.mtime
     assert copy_stat.size_bytes == obj_stat.size_bytes
     assert copy_stat.checksum == obj_stat.checksum

@@ -3,11 +3,13 @@ package catalog
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"testing/synctest"
 	"time"
 
 	"github.com/alitto/pond/v2"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -16,15 +18,20 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp verifies that the heartbeat
-// updates the task's UpdatedAt timestamp periodically
-func TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp(t *testing.T) {
+const (
+	testTaskPrefix = "Test"
+	syncTestSleep  = 500 * time.Millisecond
+)
+
+// TestRunBackgroundTaskSteps_InstanceHeartbeat verifies that the instance heartbeat
+// is written periodically and that tasks record the owner instance ID.
+func TestRunBackgroundTaskSteps_InstanceHeartbeat(t *testing.T) {
 	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		kvStore, c, repository := setupTaskTest(t)
 
 		taskID := NewTaskID("TEST")
-		taskStatus := &CommitAsyncStatusData{}
+		taskStatus := &TaskMsg{}
 
 		taskDuration := TaskHeartbeatInterval * 3
 		steps := []TaskStep{
@@ -38,100 +45,55 @@ func TestRunBackgroundTaskSteps_HeartbeatUpdatesTimestamp(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
-		time.Sleep(TaskHeartbeatInterval + 500*time.Millisecond)
-		synctest.Wait()
-
-		var status CommitAsyncStatusData
+		// Verify task has the owner instance ID
+		var status TaskMsg
 		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &status)
 		require.NoError(t, err)
 		require.NotNil(t, status.Task)
-		require.False(t, status.Task.Done)
-		require.NotNil(t, status.Task.UpdatedAt, "first UpdatedAt should not be nil")
-		firstUpdate := status.Task.UpdatedAt.AsTime()
+		require.Equal(t, c.instanceID, status.Task.OwnerInstanceId)
 
+		// Verify instance heartbeat is written
+		time.Sleep(TaskHeartbeatInterval + syncTestSleep)
+		synctest.Wait()
+
+		var hb InstanceHeartbeat
+		_, err = kv.GetMsg(ctx, kvStore, instancesPartition, instanceHeartbeatPath(c.instanceID), &hb)
+		require.NoError(t, err)
+		firstUpdate := hb.UpdatedAt.AsTime()
+
+		// Verify heartbeat is updated on next tick
 		time.Sleep(TaskHeartbeatInterval)
 		synctest.Wait()
 
-		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &status)
+		_, err = kv.GetMsg(ctx, kvStore, instancesPartition, instanceHeartbeatPath(c.instanceID), &hb)
 		require.NoError(t, err)
-		require.NotNil(t, status.Task)
-		require.False(t, status.Task.Done)
-		require.NotNil(t, status.Task.UpdatedAt, "second UpdatedAt should not be nil")
-		secondUpdate := status.Task.UpdatedAt.AsTime()
-
+		secondUpdate := hb.UpdatedAt.AsTime()
 		require.True(t, secondUpdate.After(firstUpdate),
-			"second heartbeat timestamp (%v) should be after first (%v)",
-			secondUpdate, firstUpdate)
+			"second heartbeat timestamp (%v) should be after first (%v)", secondUpdate, firstUpdate)
 
+		// Wait for task to complete
 		time.Sleep(taskDuration)
 		synctest.Wait()
 
-		var finalStatus CommitAsyncStatusData
+		var finalStatus TaskMsg
 		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &finalStatus)
 		require.NoError(t, err)
-		require.NotNil(t, finalStatus.Task)
 		require.True(t, finalStatus.Task.Done)
 	})
 }
 
-// TestRunBackgroundTaskSteps_HeartbeatWritesFullStatus verifies that the heartbeat
-// writes the full status message (CommitAsyncStatusData), not just the Task struct.
-// This is a regression test for the bug where heartbeat wrote only Task instead of
-// the full status, causing "proto: cannot parse invalid wire-format data" errors.
-func TestRunBackgroundTaskSteps_HeartbeatWritesFullStatus(t *testing.T) {
+// TestRunBackgroundTaskSteps_StatusReadableDuringExecution verifies that
+// status can be read correctly at any time during task execution.
+func TestRunBackgroundTaskSteps_StatusReadableDuringExecution(t *testing.T) {
 	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		kvStore, c, repository := setupTaskTest(t)
 
 		taskID := NewTaskID("TEST")
-		taskStatus := &CommitAsyncStatusData{}
-
-		steps := []TaskStep{
-			{
-				Name: "test task",
-				Func: func(ctx context.Context) error {
-					time.Sleep(TaskHeartbeatInterval * 2)
-					return nil
-				},
-			},
-		}
-
-		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
-		require.NoError(t, err)
-
-		time.Sleep(TaskHeartbeatInterval + 500*time.Millisecond)
-		synctest.Wait()
-
-		// Try to read the status as CommitAsyncStatusData (not just Task)
-		// This should NOT fail with "proto: cannot parse invalid wire-format data"
-		var readStatus CommitAsyncStatusData
-		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &readStatus)
-		require.NoError(t, err, "should be able to parse CommitAsyncStatusData after heartbeat update")
-
-		require.NotNil(t, readStatus.Task)
-		require.Equal(t, taskID, readStatus.Task.Id)
-		require.False(t, readStatus.Task.Done)
-		require.NotNil(t, readStatus.Task.UpdatedAt)
-
-		// Wait for task to complete before test ends
-		time.Sleep(TaskHeartbeatInterval)
-		synctest.Wait()
-	})
-}
-
-// TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat verifies that
-// status can be read correctly at any time during heartbeat updates
-func TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat(t *testing.T) {
-	t.Parallel()
-	synctest.Test(t, func(t *testing.T) {
-		kvStore, c, repository := setupTaskTest(t)
-
-		taskID := NewTaskID("TEST")
-		taskStatus := &CommitAsyncStatusData{}
+		taskStatus := &TaskMsg{}
 
 		taskDuration := TaskHeartbeatInterval * 4
 		steps := []TaskStep{
@@ -145,10 +107,10 @@ func TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
-		// Read status multiple times during heartbeat updates
+		// Read status multiple times during execution
 		readInterval := TaskHeartbeatInterval / 2
 		numReads := 6
 
@@ -156,7 +118,7 @@ func TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat(t *testing.T) {
 			time.Sleep(readInterval)
 			synctest.Wait()
 
-			var status CommitAsyncStatusData
+			var status TaskMsg
 			_, err := GetTaskStatus(ctx, kvStore, repository, taskID, &status)
 			require.NoError(t, err, "read %d: failed to parse status", i+1)
 
@@ -170,16 +132,17 @@ func TestRunBackgroundTaskSteps_StatusReadableDuringHeartbeat(t *testing.T) {
 	})
 }
 
-// TestRunBackgroundTaskSteps_HeartbeatLifecycle verifies the complete heartbeat lifecycle:
-// - Timestamp IS updated during task execution
-// - Timestamp stops updating after task completion
-func TestRunBackgroundTaskSteps_HeartbeatLifecycle(t *testing.T) {
+// TestRunBackgroundTaskSteps_TaskLifecycle verifies the complete task lifecycle:
+// - Task starts with correct fields
+// - Task UpdatedAt is set by executeTaskSteps on completion
+// - Timestamp does not change after task completion
+func TestRunBackgroundTaskSteps_TaskLifecycle(t *testing.T) {
 	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
 		kvStore, c, repository := setupTaskTest(t)
 
 		taskID := NewTaskID("TEST")
-		taskStatus := &CommitAsyncStatusData{}
+		taskStatus := &TaskMsg{}
 
 		taskDuration := 5 * time.Second
 		steps := []TaskStep{
@@ -193,95 +156,44 @@ func TestRunBackgroundTaskSteps_HeartbeatLifecycle(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
-		// After 2 seconds, task should still be running and timestamp should be updated
+		// After 2 seconds, task should still be running
 		time.Sleep(2 * time.Second)
 		synctest.Wait()
 
-		var statusDuring CommitAsyncStatusData
+		var statusDuring TaskMsg
 		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &statusDuring)
 		require.NoError(t, err)
 		require.NotNil(t, statusDuring.Task)
 		require.False(t, statusDuring.Task.Done, "task should still be running after 2 seconds")
 		require.NotNil(t, statusDuring.Task.UpdatedAt)
-		timestampDuringExecution := statusDuring.Task.UpdatedAt.AsTime()
 
-		// Wait for task to complete (3 more seconds + buffer)
+		// Wait for task to complete
 		time.Sleep(4 * time.Second)
 		synctest.Wait()
 
-		var statusAfterCompletion CommitAsyncStatusData
+		var statusAfterCompletion TaskMsg
 		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &statusAfterCompletion)
 		require.NoError(t, err)
 		require.True(t, statusAfterCompletion.Task.Done, "task should be done")
 		require.NotNil(t, statusAfterCompletion.Task.UpdatedAt)
 		completionTime := statusAfterCompletion.Task.UpdatedAt.AsTime()
 
-		// Verify timestamp was updated during execution
-		require.True(t, completionTime.After(timestampDuringExecution) || completionTime.Equal(timestampDuringExecution),
-			"completion timestamp (%v) should be after or equal to timestamp during execution (%v)",
-			completionTime, timestampDuringExecution)
-
 		// Wait 2 more seconds and verify timestamp is NOT updated anymore
 		time.Sleep(2 * time.Second)
 		synctest.Wait()
 
-		var statusAfterWait CommitAsyncStatusData
+		var statusAfterWait TaskMsg
 		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &statusAfterWait)
 		require.NoError(t, err)
 		require.True(t, statusAfterWait.Task.Done)
-		require.NotNil(t, statusAfterWait.Task.UpdatedAt)
 		finalTimestamp := statusAfterWait.Task.UpdatedAt.AsTime()
 
 		require.Equal(t, completionTime.UnixNano(), finalTimestamp.UnixNano(),
 			"timestamp should NOT change after task completion (completion: %v, after 2s wait: %v)",
 			completionTime, finalTimestamp)
-	})
-}
-
-// TestRunBackgroundTaskSteps_HeartbeatStopsWhenDone verifies that
-// the heartbeat stops updating once the task is marked as done
-func TestRunBackgroundTaskSteps_HeartbeatStopsWhenDone(t *testing.T) {
-	t.Parallel()
-	synctest.Test(t, func(t *testing.T) {
-		kvStore, c, repository := setupTaskTest(t)
-
-		taskID := NewTaskID("TEST")
-		taskStatus := &CommitAsyncStatusData{}
-
-		steps := []TaskStep{
-			{
-				Name: "quick task",
-				Func: func(ctx context.Context) error {
-					time.Sleep(500 * time.Millisecond)
-					return nil
-				},
-			},
-		}
-
-		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
-		require.NoError(t, err)
-
-		time.Sleep(1 * time.Second)
-		synctest.Wait()
-
-		var status CommitAsyncStatusData
-		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &status)
-		require.NoError(t, err)
-		require.True(t, status.Task.Done)
-		completionTime := status.Task.UpdatedAt.AsTime()
-
-		time.Sleep(TaskHeartbeatInterval + 500*time.Millisecond)
-		synctest.Wait()
-
-		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &status)
-		require.NoError(t, err)
-		require.True(t, status.Task.Done)
-		require.Equal(t, completionTime.UnixNano(), status.Task.UpdatedAt.AsTime().UnixNano(),
-			"timestamp should not change after task completion")
 	})
 }
 
@@ -293,7 +205,7 @@ func TestRunBackgroundTaskSteps_TaskFailure(t *testing.T) {
 		kvStore, c, repository := setupTaskTest(t)
 
 		taskID := NewTaskID("TEST")
-		taskStatus := &CommitAsyncStatusData{}
+		taskStatus := &TaskMsg{}
 
 		expectedErr := errors.New("task failed")
 		steps := []TaskStep{
@@ -306,13 +218,13 @@ func TestRunBackgroundTaskSteps_TaskFailure(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err) // RunBackgroundTaskSteps itself should not error
 
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(syncTestSleep)
 		synctest.Wait()
 
-		var status CommitAsyncStatusData
+		var status TaskMsg
 		_, err = GetTaskStatus(ctx, kvStore, repository, taskID, &status)
 		require.NoError(t, err)
 		require.True(t, status.Task.Done)
@@ -335,7 +247,7 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 			{
 				Name: "task with result",
 				Func: func(ctx context.Context) error {
-					time.Sleep(TaskHeartbeatInterval * 2)
+					time.Sleep(1 * time.Second)
 					taskStatus.Info = &graveler.CommitData{
 						Id:           expectedCommitID,
 						Message:      "test commit",
@@ -348,10 +260,10 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 		}
 
 		ctx := t.Context()
-		err := c.RunBackgroundTaskSteps(ctx, repository, taskID, steps, taskStatus)
+		err := c.RunBackgroundTaskSteps(ctx, repository, OpDumpRefs, taskID, steps, taskStatus)
 		require.NoError(t, err)
 
-		time.Sleep(TaskHeartbeatInterval + 500*time.Millisecond)
+		time.Sleep(syncTestSleep)
 		synctest.Wait()
 
 		var statusDuring CommitAsyncStatusData
@@ -359,7 +271,7 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 		require.NoError(t, err)
 		require.Nil(t, statusDuring.Info, "Info should be nil while task is running")
 
-		time.Sleep(TaskHeartbeatInterval + 1*time.Second)
+		time.Sleep(1 * time.Second)
 		synctest.Wait()
 
 		var statusAfter CommitAsyncStatusData
@@ -371,7 +283,202 @@ func TestRunBackgroundTaskSteps_WithStatusData(t *testing.T) {
 	})
 }
 
-// setupTaskTest creates the common test setup used by all task tests
+// TestGetValidatedTaskStatus_InstanceHeartbeatExpiry verifies task expiry behavior
+// based on instance heartbeat staleness
+func TestGetValidatedTaskStatus_InstanceHeartbeatExpiry(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		expiryDuration time.Duration
+		heartbeatAge   time.Duration
+		expectExpired  bool
+	}{
+		{
+			name:           "expired - instance heartbeat exceeds expiry window",
+			expiryDuration: 10 * time.Minute,
+			heartbeatAge:   11 * time.Minute,
+			expectExpired:  true,
+		},
+		{
+			name:           "not expired - instance heartbeat within expiry window",
+			expiryDuration: 10 * time.Minute,
+			heartbeatAge:   5 * time.Minute,
+			expectExpired:  false,
+		},
+		{
+			name:           "zero expiry - never expires",
+			expiryDuration: 0,
+			heartbeatAge:   1 * time.Hour,
+			expectExpired:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			const taskTime = 1 * time.Hour
+			synctest.Test(t, func(t *testing.T) {
+				t.Cleanup(func() {
+					// Let the task goroutine finish
+					time.Sleep(taskTime)
+					synctest.Wait()
+				})
+
+				kvStore, c, repository := setupTaskTest(t)
+				ctx := t.Context()
+
+				taskID := NewTaskID(testTaskPrefix)
+				taskStatus := &TaskMsg{}
+
+				steps := []TaskStep{
+					{
+						Name: "long task",
+						Func: func(ctx context.Context) error {
+							time.Sleep(taskTime)
+							return nil
+						},
+					},
+				}
+
+				err := c.RunBackgroundTaskSteps(ctx, repository, "operation", taskID, steps, taskStatus)
+				require.NoError(t, err)
+
+				time.Sleep(syncTestSleep)
+				synctest.Wait()
+
+				// Simulate stale instance heartbeat by overwriting the heartbeat entry
+				hb := &InstanceHeartbeat{
+					UpdatedAt: timestamppb.New(time.Now().Add(-tt.heartbeatAge)),
+				}
+				err = kv.SetMsg(ctx, kvStore, instancesPartition, instanceHeartbeatPath(c.instanceID), hb)
+				require.NoError(t, err)
+
+				// Use a different catalog instance to check status (simulates another server checking)
+				checker := checkerCatalog(kvStore, repository)
+				var resultStatus TaskMsg
+				err = checker.GetValidatedTaskStatus(ctx, repository.RepositoryID.String(), taskID, testTaskPrefix, &resultStatus, tt.expiryDuration)
+				require.NoError(t, err)
+
+				if tt.expectExpired {
+					require.True(t, resultStatus.Task.Done)
+					require.Contains(t, resultStatus.Task.ErrorMsg, "expired")
+					require.Equal(t, http.StatusRequestTimeout, int(resultStatus.Task.StatusCode))
+				} else {
+					require.False(t, resultStatus.Task.Done)
+					require.Empty(t, resultStatus.Task.ErrorMsg)
+					if tt.expiryDuration > 0 {
+						// UpdatedAt should be backfilled from the instance heartbeat
+						require.Equal(t, hb.UpdatedAt.AsTime().UnixNano(), resultStatus.Task.UpdatedAt.AsTime().UnixNano(),
+							"task UpdatedAt should be backfilled from instance heartbeat")
+					}
+				}
+			})
+		})
+	}
+}
+
+// TestGetValidatedTaskStatus_SameInstanceBackfillsTimestamp verifies that when the
+// same instance checks its own task status, UpdatedAt is set to the current time.
+func TestGetValidatedTaskStatus_SameInstanceBackfillsTimestamp(t *testing.T) {
+	t.Parallel()
+	const taskTime = 1 * time.Hour
+	synctest.Test(t, func(t *testing.T) {
+		t.Cleanup(func() {
+			time.Sleep(taskTime)
+			synctest.Wait()
+		})
+
+		_, c, repository := setupTaskTest(t)
+		ctx := t.Context()
+
+		taskID := NewTaskID(testTaskPrefix)
+		taskStatus := &TaskMsg{}
+
+		steps := []TaskStep{
+			{
+				Name: "long task",
+				Func: func(ctx context.Context) error {
+					time.Sleep(taskTime)
+					return nil
+				},
+			},
+		}
+
+		err := c.RunBackgroundTaskSteps(ctx, repository, "operation", taskID, steps, taskStatus)
+		require.NoError(t, err)
+
+		time.Sleep(syncTestSleep)
+		synctest.Wait()
+
+		// Advance time so the original task.UpdatedAt becomes stale
+		time.Sleep(5 * time.Minute)
+		synctest.Wait()
+
+		beforeCheck := time.Now()
+		var resultStatus TaskMsg
+		err = c.GetValidatedTaskStatus(ctx, repository.RepositoryID.String(), taskID, testTaskPrefix, &resultStatus, 2*time.Minute)
+		require.NoError(t, err)
+
+		require.False(t, resultStatus.Task.Done, "task should not be expired on same instance")
+		require.Empty(t, resultStatus.Task.ErrorMsg)
+		// UpdatedAt should be backfilled to current time, not the original creation time
+		require.False(t, resultStatus.Task.UpdatedAt.AsTime().Before(beforeCheck),
+			"task UpdatedAt (%v) should be at or after the check time (%v)",
+			resultStatus.Task.UpdatedAt.AsTime(), beforeCheck)
+	})
+}
+
+// TestGetValidatedTaskStatus_MissingInstanceHeartbeat verifies that a task whose
+// owner instance heartbeat entry is missing is marked as expired.
+func TestGetValidatedTaskStatus_MissingInstanceHeartbeat(t *testing.T) {
+	t.Parallel()
+	const taskTime = 1 * time.Hour
+	synctest.Test(t, func(t *testing.T) {
+		t.Cleanup(func() {
+			time.Sleep(taskTime)
+			synctest.Wait()
+		})
+
+		kvStore, c, repository := setupTaskTest(t)
+		ctx := t.Context()
+
+		taskID := NewTaskID(testTaskPrefix)
+		taskStatus := &TaskMsg{}
+
+		steps := []TaskStep{
+			{
+				Name: "long task",
+				Func: func(ctx context.Context) error {
+					time.Sleep(taskTime)
+					return nil
+				},
+			},
+		}
+
+		err := c.RunBackgroundTaskSteps(ctx, repository, "operation", taskID, steps, taskStatus)
+		require.NoError(t, err)
+
+		time.Sleep(syncTestSleep)
+		synctest.Wait()
+
+		// Delete the instance heartbeat to simulate instance gone
+		err = kvStore.Delete(ctx, []byte(instancesPartition), instanceHeartbeatPath(c.instanceID))
+		require.NoError(t, err)
+
+		// Use a different catalog instance to check status (simulates another server checking)
+		checker := checkerCatalog(kvStore, repository)
+		var resultStatus TaskMsg
+		err = checker.GetValidatedTaskStatus(ctx, repository.RepositoryID.String(), taskID, testTaskPrefix, &resultStatus, 10*time.Minute)
+		require.NoError(t, err)
+		require.True(t, resultStatus.Task.Done)
+		require.Contains(t, resultStatus.Task.ErrorMsg, "no longer available")
+		require.Equal(t, http.StatusRequestTimeout, int(resultStatus.Task.StatusCode))
+	})
+}
+
+// setupTaskTest creates the common test setup used by all task tests.
+// It creates a Catalog with an instance ID and starts the instance heartbeat.
 func setupTaskTest(t *testing.T) (kv.Store, *Catalog, *graveler.RepositoryRecord) {
 	t.Helper()
 	ctx := t.Context()
@@ -379,23 +486,63 @@ func setupTaskTest(t *testing.T) (kv.Store, *Catalog, *graveler.RepositoryRecord
 	// kv store
 	kvStore := kvtest.GetStore(ctx, t)
 
-	// catalog
-	workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
-	catalog := &Catalog{
-		KVStore:  kvStore,
-		workPool: workPool,
-		errorToStatusCodeAndMsg: func(logger logging.Logger, err error) (int, string, bool) {
-			return 500, err.Error(), true
-		},
-	}
-
 	// repository
 	repository := &graveler.RepositoryRecord{
 		RepositoryID: "test-repo",
 		Repository: &graveler.Repository{
+			StorageID:        "test-storage",
 			StorageNamespace: "s3://test-bucket",
 			DefaultBranchID:  "main",
 		},
 	}
+
+	// fake graveler store that returns the test repository
+	fakeStore := &fakeGravelerForTaskTest{
+		repository: repository,
+	}
+
+	// catalog with instance heartbeat
+	workPool := pond.NewPool(sharedWorkers, pond.WithContext(ctx))
+	heartbeatCtx, heartbeatCancel := context.WithCancel(ctx)
+	catalog := &Catalog{
+		KVStore:    kvStore,
+		Store:      fakeStore,
+		workPool:   workPool,
+		instanceID: xid.New().String(),
+		errorToStatusCodeAndMsg: func(logger logging.Logger, err error) (int, string, bool) {
+			return http.StatusInternalServerError, err.Error(), true
+		},
+	}
+	go catalog.runInstanceHeartbeat(heartbeatCtx)
+	t.Cleanup(func() {
+		heartbeatCancel()
+	})
+
 	return kvStore, catalog, repository
+}
+
+// fakeGravelerForTaskTest is a minimal fake that only implements GetRepository
+type fakeGravelerForTaskTest struct {
+	FakeGraveler
+	repository *graveler.RepositoryRecord
+}
+
+func (f *fakeGravelerForTaskTest) GetRepository(_ context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	if f.repository != nil && f.repository.RepositoryID == repositoryID {
+		return f.repository, nil
+	}
+	return nil, graveler.ErrNotFound
+}
+
+// checkerCatalog returns a minimal Catalog with a distinct instanceID, used to
+// call GetValidatedTaskStatus from a "different server" than the task owner.
+func checkerCatalog(kvStore kv.Store, repository *graveler.RepositoryRecord) *Catalog {
+	return &Catalog{
+		KVStore:    kvStore,
+		Store:      &fakeGravelerForTaskTest{repository: repository},
+		instanceID: xid.New().String(),
+		errorToStatusCodeAndMsg: func(logger logging.Logger, err error) (int, string, bool) {
+			return http.StatusInternalServerError, err.Error(), true
+		},
+	}
 }

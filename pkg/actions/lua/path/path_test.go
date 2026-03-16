@@ -8,6 +8,7 @@ import (
 )
 
 func TestIsHidden(t *testing.T) {
+	t.Parallel()
 	tbl := []struct {
 		Input    string
 		Expected bool
@@ -73,6 +74,7 @@ func TestIsHidden(t *testing.T) {
 }
 
 func TestJoin(t *testing.T) {
+	t.Parallel()
 	tbl := []struct {
 		Input    []string
 		Expected string
@@ -115,6 +117,7 @@ func TestJoin(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
+	t.Parallel()
 	tbl := []struct {
 		Input            string
 		ExpectedBasename string

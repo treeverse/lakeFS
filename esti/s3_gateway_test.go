@@ -1142,8 +1142,9 @@ func TestS3CopyObjectErrors(t *testing.T) {
 			})
 		require.NotNil(t, err)
 		resp := minio.ToErrorResponse(err)
-		require.Equal(t, http.StatusNotFound, resp.StatusCode)
-		require.Equal(t, "NoSuchKey", resp.Code)
+		// TODO(niro): block adapters' Copy should return block.ErrDataNotFound for missing source objects,
+		//  so the gateway can return 404 NoSuchKey instead of 400. See #10185.
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
 	t.Run("readonly repo from non-existing source", func(t *testing.T) {

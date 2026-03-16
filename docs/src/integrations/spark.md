@@ -64,14 +64,14 @@ interact with your data on lakeFS.
     Add the package to your `spark-submit` command:
 
     ```
-    --packages io.lakefs:hadoop-lakefs-assembly:0.2.5
+    --packages io.lakefs:hadoop-lakefs-assembly:0.18.0
     ```
 
 === "Databricks"
     In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
     ```
-    io.lakefs:hadoop-lakefs-assembly:0.2.5
+    io.lakefs:hadoop-lakefs-assembly:0.18.0
     ```
 
     Once installed, it should look something like this:
@@ -82,7 +82,7 @@ interact with your data on lakeFS.
     Add the package to your `pyspark` or `spark-submit` command:
 
     ```
-    --packages io.lakefs:hadoop-lakefs-assembly:0.2.5
+    --packages io.lakefs:hadoop-lakefs-assembly:0.18.0
     ```
 
     Add the configuration to access the S3 bucket used by lakeFS to your `pyspark` or `spark-submit` command or add this configuration at the Cloudera cluster level (see below):
@@ -136,6 +136,15 @@ When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the au
 * `fs.lakefs.token.duration_seconds`: Optional, the duration in seconds for the lakeFS token (default is set in the lakeFS configuration [auth.login_duration](../reference/configuration.md))
 * `fs.lakefs.token.sts.additional_headers`: Optional, comma separated list of `header:value` to attach when generating presigned sts request. Default is `X-Lakefs-Server-ID:fs.lakefs.endpoint`.
 
+**API Retry Configuration:**
+
+The lakeFS Hadoop client automatically retries API requests on transient failures (HTTP 408, 429, 500-504 and connection errors) using exponential backoff with jitter. The following optional properties control retry behavior:
+
+* `fs.lakefs.api.retry.max-retries`: Maximum number of retry attempts (default: `5`). Set to `0` to disable retries.
+* `fs.lakefs.api.retry.initial-backoff.ms`: Initial backoff duration in milliseconds (default: `1000`)
+* `fs.lakefs.api.retry.max-backoff.ms`: Maximum backoff duration in milliseconds (default: `20000`)
+* `fs.lakefs.api.retry.jitter-factor`: Jitter factor applied to backoff, between 0 and 1 (default: `0.25`)
+
 Configure the S3A FileSystem to access your S3 storage, for example using the `fs.s3a.*` configurations (these are **not** your lakeFS credentials):
 
 * `fs.s3a.access.key`: AWS S3 access key
@@ -154,7 +163,7 @@ Here are some configuration examples:
                 --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
                 --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
                 --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-                --packages io.lakefs:hadoop-lakefs-assembly:0.2.5 \
+                --packages io.lakefs:hadoop-lakefs-assembly:0.18.0 \
                 io.example.ExampleClass
     ```
     
@@ -312,7 +321,7 @@ When using this mode, you don't need to configure the client with access to your
                 --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
                 --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
                 --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-                --packages io.lakefs:hadoop-lakefs-assembly:0.2.5
+                --packages io.lakefs:hadoop-lakefs-assembly:0.18.0
     ```
 === "Scala"
     ```scala

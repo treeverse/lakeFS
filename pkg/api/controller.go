@@ -79,6 +79,32 @@ const (
 	passwordPlaceholder = "Password"
 )
 
+// safeContentTypesForInline defines content types that are safe to display inline in browsers
+var safeContentTypesForInline = map[string]struct{}{
+	"image/jpeg":             {},
+	"image/jpg":              {},
+	"image/png":              {},
+	"image/gif":              {},
+	"image/webp":             {},
+	"image/svg+xml":          {},
+	"application/pdf":        {},
+	"text/plain":             {},
+	"text/markdown":          {},
+	"text/x-markdown":        {},
+	"text/html":              {},
+	"text/css":               {},
+	"text/javascript":        {},
+	"application/javascript": {},
+	"application/json":       {},
+	"application/xml":        {},
+	"text/xml":               {},
+	"video/mp4":              {},
+	"video/webm":             {},
+	"audio/mpeg":             {},
+	"audio/wav":              {},
+	"audio/webm":             {},
+}
+
 type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID, runID, hookRunID string) (*actions.TaskResult, error)
@@ -696,7 +722,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 	// limit check
 	if len(body.Paths) > DefaultMaxDeleteObjects {
 		err := fmt.Errorf("%w, max paths is set to %d", ErrRequestSizeExceeded, DefaultMaxDeleteObjects)
-		writeError(w, r, http.StatusInternalServerError, err)
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
@@ -769,7 +795,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.LoginJSONRequestBody) {
 	ctx := r.Context()
-	user, err := userByAuth(ctx, c.Logger, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
+	user, err := auth.UserByAuth(ctx, c.Authenticator, c.Auth, body.AccessKeyId, body.SecretAccessKey)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2296,18 +2322,46 @@ func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, params apigen.ListRepositoriesParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ListRepositoriesAction,
-			Resource: permissions.All,
-		},
-	}) {
+	ctx := r.Context()
+
+	// Get user for policy-based filtering
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
-	ctx := r.Context()
+
+	// Fetch effective policies for the user to filter repositories.
+	// We skip the standard authorize() call because it requires Resource: "*",
+	// which fails for users with pattern-based policies (e.g., "repository/analytics-*").
+	// Instead, we check if the user has ListRepositories on at least one resource,
+	// then apply RBAC-based filtering to return only accessible repositories.
+	var opts []catalog.ListRepositoriesOptionsFunc
+	policies, _, err := c.Auth.ListEffectivePolicies(ctx, user.Username, &model.PaginationParams{Amount: -1})
+	// Check auth.ErrNotImplemented for BasicAuthService
+	if err != nil && !errors.Is(err, auth.ErrNotImplemented) {
+		c.Logger.WithContext(ctx).WithError(err).Error("failed to list effective policies")
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if err == nil {
+		if !auth.HasActionOnAnyResource(policies, permissions.ListRepositoriesAction) {
+			writeError(w, r, http.StatusUnauthorized, auth.ErrInsufficientPermissions)
+			return
+		}
+		opts = append(opts, catalog.WithListReposPermissionFilter(user.Username, policies))
+	}
+
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), search(params.Search), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(
+		ctx,
+		paginationAmount(params.Amount),
+		paginationPrefix(params.Prefix),
+		search(params.Search),
+		paginationAfter(params.After),
+		opts...,
+	)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3177,7 +3231,8 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
 		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
-		errors.Is(err, catalog.ErrInvalidImportSource):
+		errors.Is(err, catalog.ErrInvalidImportSource),
+		errors.Is(err, graveler.ErrCannotClone):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
@@ -3982,8 +4037,14 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		srcRef = branch
 	}
 
+	// Handle preconditions
+	opts, err := apifactory.BuildOptsFromParams(body)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
 	// copy entry
-	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, graveler.WithForce(swag.BoolValue(body.Force)))
+	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, opts...)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5163,7 +5224,13 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("Content-Type", entry.ContentType)
 	// for security, make sure the browser and any proxies en route don't cache the response
 	httputil.KeepPrivate(w)
-	w.Header().Set("Content-Disposition", "attachment")
+
+	// set Content-Disposition: use "inline" for safe content types, "attachment" for others
+	disposition := "attachment"
+	if _, ok := safeContentTypesForInline[entry.ContentType]; ok {
+		disposition = "inline"
+	}
+	w.Header().Set("Content-Disposition", disposition)
 
 	// handle partial response if byte range supplied
 	var reader io.ReadCloser

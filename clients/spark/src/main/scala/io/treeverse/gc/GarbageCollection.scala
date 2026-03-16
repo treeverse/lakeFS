@@ -14,13 +14,13 @@ import org.json4s.native.JsonMethods._
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.util.Date
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
 object GarbageCollection {
   private final val logger: Logger = LoggerFactory.getLogger(getClass.toString)
-  final val UNIFIED_GC_SOURCE_NAME = "unified_gc"
+  private final val UNIFIED_GC_SOURCE_NAME = "unified_gc"
   private final val DATA_PREFIX = "data/"
 
   lazy val spark: SparkSession =
@@ -112,7 +112,7 @@ object GarbageCollection {
     run(region, repo)
   }
 
-  def run(
+  private def run(
       region: String,
       repo: String,
       uncommittedOnly: Boolean = false,
@@ -247,12 +247,10 @@ object GarbageCollection {
           outputPrefix
         )
       }
-
-      spark.close()
     }
   }
 
-  def bulkRemove(
+  private def bulkRemove(
       configMapper: ConfigMapper,
       readKeysDF: DataFrame,
       storageNamespace: String,
@@ -368,7 +366,7 @@ object GarbageCollection {
     summary
   }
 
-  def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
+  private def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
     // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
     // a translated storage namespace that triggers processing by Hadoop FileSystems.
     var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)

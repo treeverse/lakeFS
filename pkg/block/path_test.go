@@ -21,6 +21,7 @@ func equalStrings(a, b []string) bool {
 }
 
 func TestPath_SplitParts_Objects(t *testing.T) {
+	t.Parallel()
 	testData := []struct {
 		Path  string
 		Parts []string
@@ -46,6 +47,7 @@ func TestPath_SplitParts_Objects(t *testing.T) {
 }
 
 func TestPath_SplitParts_Trees(t *testing.T) {
+	t.Parallel()
 	testData := []struct {
 		Path  string
 		Parts []string
@@ -67,6 +69,7 @@ func TestPath_SplitParts_Trees(t *testing.T) {
 }
 
 func TestPath_String(t *testing.T) {
+	t.Parallel()
 	var nilPath *block.Path
 	testData := []struct {
 		Path   *block.Path
@@ -85,6 +88,7 @@ func TestPath_String(t *testing.T) {
 }
 
 func TestJoin(t *testing.T) {
+	t.Parallel()
 	testData := []struct {
 		parts    []string
 		expected string
@@ -105,6 +109,7 @@ func TestJoin(t *testing.T) {
 }
 
 func TestPath_BaseName(t *testing.T) {
+	t.Parallel()
 	testData := []struct {
 		Path      string
 		BaseName  string
@@ -128,6 +133,7 @@ func TestPath_BaseName(t *testing.T) {
 }
 
 func TestPath_ParentPath(t *testing.T) {
+	t.Parallel()
 	testData := []struct {
 		Path       string
 		ParentPath string

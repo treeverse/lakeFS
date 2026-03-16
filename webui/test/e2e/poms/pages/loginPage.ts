@@ -1,11 +1,7 @@
 import { Page } from "@playwright/test";
 
 export class LoginPage {
-    private page: Page;
-
-    constructor(page: Page) {
-        this.page = page;
-    }
+    constructor(private page: Page) {}
 
     async goto(): Promise<void> {
         await this.page.goto("/login");
@@ -15,6 +11,6 @@ export class LoginPage {
         await this.page.getByPlaceholder("Access Key ID").fill(accessKeyId);
         await this.page.getByPlaceholder("Secret Access Key").fill(secretAccessKey);
         await this.page.getByRole("button", { name: "Login" }).click();
-        await this.page.waitForURL(/.*\/repositories/); // wait for redirect
+        await this.page.waitForURL(/.*\/repositories/);
     }
 }

@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -32,10 +34,38 @@ type HookBase struct {
 	Endpoint   *http.Server
 }
 
+type ValidatePropertiesFunc func(Properties) error
+
+// requireProperties returns a ValidatePropertiesFunc that checks required property groups.
+// Each group is a slice of keys where at least one must be present (OR within a group).
+// All groups must be satisfied (AND between groups).
+func requireProperties(groups ...[]string) ValidatePropertiesFunc {
+	return func(p Properties) error {
+		if p == nil {
+			return fmt.Errorf("missing hook properties: %w", ErrInvalidAction)
+		}
+		for _, group := range groups {
+			if !slices.ContainsFunc(group, func(key string) bool {
+				_, has := p[key]
+				return has
+			}) {
+				return fmt.Errorf("'%s' must be supplied in properties: %w", strings.Join(group, "' or '"), ErrInvalidAction)
+			}
+		}
+		return nil
+	}
+}
+
 var hooks = map[HookType]NewHookFunc{
 	HookTypeWebhook: NewWebhook,
 	HookTypeAirflow: NewAirflowHook,
 	HookTypeLua:     NewLuaHook,
+}
+
+var hookValidators = map[HookType]ValidatePropertiesFunc{
+	HookTypeWebhook: requireProperties([]string{"url"}),
+	HookTypeAirflow: requireProperties([]string{"url"}, []string{"dag_id"}, []string{"username"}, []string{"password"}),
+	HookTypeLua:     requireProperties([]string{"script", "script_path"}),
 }
 
 func NewHook(hook ActionHook, action *Action, cfg Config, server *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {

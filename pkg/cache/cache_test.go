@@ -9,6 +9,7 @@ import (
 )
 
 func TestCache(t *testing.T) {
+	t.Parallel()
 	const (
 		n = 200
 		// Thrash the cache by placing worldSize-1 every even iteration and the
@@ -48,6 +49,7 @@ func TestCache(t *testing.T) {
 }
 
 func TestCacheRace(t *testing.T) {
+	t.Parallel()
 	const (
 		parallelism = 25
 		n           = 200
@@ -120,6 +122,7 @@ func (s *Spy) Called() bool {
 }
 
 func TestCacheGetSetWithExpiry(t *testing.T) {
+	t.Parallel()
 	const (
 		cacheSize = 100
 		value     = 17

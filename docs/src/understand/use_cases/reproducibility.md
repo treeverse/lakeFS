@@ -9,9 +9,9 @@ Data changes frequently. This makes the task of keeping track of its exact state
 
 This has a negative impact on the work, as it becomes hard to:
 
-* Debug a data issue.
-* Validate machine learning training accuracy (re-running a model over different data gives different results).
-* Comply with data audits.
+* Debug a data issue
+* Validate machine learning training accuracy (re-running a model over different data gives different results) 
+* Comply with data audits, and model audits in particular
 
 In comparison, lakeFS exposes a Git-like interface to data that allows keeping track of more than just the current state of data. This makes reproducing its state at any point in time straightforward.
 
@@ -28,7 +28,9 @@ To read data at it’s current state, we can use a static path containing the re
     
     The code above assumes that all objects in the repository under this path are stored in parquet format. If a different format is used, the applicable Spark read method should be used.
 
-In a lakeFS repository, we are capable of taking many commits over the data, making many points in time reproducible. 
+### Using Commits 
+
+In a lakeFS repository, we are capable of taking many [commits](../../understand/glossary.md#commit) over the data, making many points in time reproducible. 
 
 ![Commit History](../../assets/img/reproduce-commit-history.png)
 
@@ -42,4 +44,24 @@ df = spark.read.parquet("s3://example/296e54fbee5e176f3f4f4aeb7e087f9d57515750e8
 
 The ability to reference a specific `commit_id` in code simplifies reproducing the specific state a data collection or even multiple collections. This has many applications that are common in data development, such as historical debugging, identifying deltas in a data collection, audit compliance, and more.
 
+### Using Tags 
 
+In addition to commits, lakeFS supports [tags](../../understand/glossary.md#tag). A tag is a human-readable label that points to a specific commit.
+
+Tags are useful when you want to mark important points in time, such as:
+* A production data release
+* A specific model training dataset
+* A dataset used for an audit
+
+Instead of referencing a non-readable `commit_id`, you can reference the tag directly in your code. For example:
+```python
+df = spark.read.parquet("s3://example/v1.0/training_dataset/")
+```
+
+Here, `v1.0` is a tag that points to a specific commit. While commits in lakeFS are immutable, a tag is simply a reference 
+to one of those immutable commits. Once created, a tag cannot be updated to point to a different commit (it can only be 
+deleted and recreated).
+
+As a result, reading data through a tag will always return the exact same data state for as long as that tag exists.
+
+Using tags makes it easier to work with reproducible datasets in a way that is readable, shareable, and stable over time.

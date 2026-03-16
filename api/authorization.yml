@@ -741,13 +741,13 @@ paths:
           $ref: "#/components/responses/ServerError"
     post:
       description: Creates a new policy. The input is provided in the request body, and the response returns a Policy
-        component. The response fields should match the input parameters. This endpoint is called during the setup 
-        phase to create default policies required for operation. The policy IDs (names) that are sent include 
-        "FSFullAccess", "FSReadWriteAll", "FSReadAll", "RepoManagementFullAccess", "PRReadWriteAll", 
-        "RepoManagementReadAll", "AuthFullAccess", and "AuthManageOwnCredentials". The output fields in the Policy 
-        schema must align with the input fields in the Policy schema. The acl property in the Policy component is for 
-        internal use only and is not needed when implementing an RBAC authentication server. This endpoint should be 
-        implemented in a function named createPolicy.
+        component. 
+        The response fields should match the input parameters. This endpoint is called during the setup phase to create 
+        default policies required for operation. The policy IDs (names) that are sent include "FSFullAccess", 
+        "FSReadWriteAll", "FSReadAll", etc. 
+        The output fields in the Policy schema must align with the input fields in the Policy schema. 
+        The acl property in the Policy component is for internal use only and is not needed when implementing an RBAC
+        authentication server. This endpoint should be implemented in a function named createPolicy.
       tags:
         - auth
       operationId: createPolicy

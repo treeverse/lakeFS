@@ -7,6 +7,7 @@ import (
 )
 
 func TestHistogram_Add(t *testing.T) {
+	t.Parallel()
 	tbl := []struct {
 		Name     string
 		Buckets  []int64

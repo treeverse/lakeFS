@@ -1,0 +1,7 @@
+name: Lua empty properties
+on:
+  pre-commit:
+hooks:
+  - id: check_metadata
+    type: lua
+    properties: {}

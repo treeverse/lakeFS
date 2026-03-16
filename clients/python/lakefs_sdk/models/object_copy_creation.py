@@ -32,7 +32,8 @@ class ObjectCopyCreation(BaseModel):
     src_path: StrictStr = Field(..., description="path of the copied object relative to the ref")
     src_ref: Optional[StrictStr] = Field(None, description="a reference, if empty uses the provided branch as ref")
     force: Optional[StrictBool] = False
-    __properties = ["src_path", "src_ref", "force"]
+    shallow: Optional[StrictBool] = Field(False, description="Create a shallow copy of the object (without copying the actual data). At the moment shallow copy only works for same repository and branch.  Please note that shallow copied objects might be in contention with garbage collection and branch retention policies - use with caution. ")
+    __properties = ["src_path", "src_ref", "force", "shallow"]
 
     class Config:
         """Pydantic configuration"""
@@ -72,7 +73,8 @@ class ObjectCopyCreation(BaseModel):
         _obj = ObjectCopyCreation.parse_obj({
             "src_path": obj.get("src_path"),
             "src_ref": obj.get("src_ref"),
-            "force": obj.get("force") if obj.get("force") is not None else False
+            "force": obj.get("force") if obj.get("force") is not None else False,
+            "shallow": obj.get("shallow") if obj.get("shallow") is not None else False
         })
         return _obj
 

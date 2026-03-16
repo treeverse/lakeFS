@@ -81,6 +81,7 @@ var (
 )
 
 func TestGravelerGet(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	setupGetFromBranch := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefBranch, nil)
@@ -322,6 +323,7 @@ func TestGravelerGet(t *testing.T) {
 }
 
 func TestGravelerMerge(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
@@ -506,6 +508,7 @@ func TestGravelerMerge(t *testing.T) {
 }
 
 func TestGravelerRevert(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
@@ -707,6 +710,7 @@ func TestGravelerRevert(t *testing.T) {
 }
 
 func TestGravelerCherryPick(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
@@ -851,6 +855,7 @@ func TestGravelerCherryPick(t *testing.T) {
 }
 
 func TestGravelerCommit_v2(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	t.Run("commit with sealed tokens", func(t *testing.T) {
@@ -1009,6 +1014,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 }
 
 func TestGravelerCreateCommitRecord_v2(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	t.Run("create commit record", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -1029,6 +1035,7 @@ func TestGravelerCreateCommitRecord_v2(t *testing.T) {
 }
 
 func TestGravelerImport(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	firstUpdateBranch := func(test *testutil.GravelerTest) {
@@ -1099,6 +1106,7 @@ func TestGravelerImport(t *testing.T) {
 }
 
 func TestGraveler_UpdatePullRequest(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	pullID := graveler.PullRequestID(xid.New().String())
 	ref := "ref"

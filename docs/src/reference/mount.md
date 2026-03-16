@@ -121,7 +121,7 @@ When you access a file through a mounted lakeFS path, Everest follows this proce
 
 1. **Lazy Fetching**: Files are only downloaded when their content is accessed (e.g., reading a file, not just listing it with `ls`).
 2. **Cache Storage**: When an object is not found in the local cache, Everest fetches the data from the object store and stores it in the cache for subsequent access.
-3. **Cache Reuse**: Subsequent reads of the same file are served directly from the cache, eliminating network requests and improving performance. Cached can't be shared between different instances of mount.
+3. **Cache Reuse**: Subsequent reads of the same file are served directly from the cache, eliminating network requests and improving performance. Caches can't be shared between different instances of mount.
 
 <h4>Default Cache Behavior</h4>
 
@@ -810,7 +810,7 @@ everest mount-server <remote_mount_uri> [flags]
 -   `--parallelism`: Number of parallel downloads for metadata.
 -   `--presign`: Use presign for downloading.
 -   `--write-mode`: Enable write mode (default: false).
--   `--root`: Directory to mount on the the filesystem (Windows only)
+-   `--root`: Directory to mount on the filesystem (Windows only)
 
 ---
 

@@ -87,6 +87,7 @@ type Redis struct {
 	Password      string
 	Database      int // Database number to select
 	PoolSize      int // Connection pool size
+	MinIdleConns  int // Minimum number of idle connections
 	DialTimeout   time.Duration
 	ReadTimeout   time.Duration
 	WriteTimeout  time.Duration
@@ -160,6 +161,7 @@ func NewConfig(cfg *config.Database) (Config, error) {
 			Password:      cfg.Redis.Password.SecureValue(),
 			Database:      cfg.Redis.Database,
 			PoolSize:      cfg.Redis.PoolSize,
+			MinIdleConns:  cfg.Redis.MinIdleConns,
 			DialTimeout:   cfg.Redis.DialTimeout,
 			ReadTimeout:   cfg.Redis.ReadTimeout,
 			WriteTimeout:  cfg.Redis.WriteTimeout,

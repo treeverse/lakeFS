@@ -56,6 +56,7 @@ type testValue struct {
 }
 
 func TestCombinedDiffIterator(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	tests := map[string]struct {
 		testValues    []testValue
@@ -167,6 +168,7 @@ func TestCombinedDiffIterator(t *testing.T) {
 }
 
 func TestCombinedDiffIterator_Seek(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	testValues := []testValue{
 		{key: "k01", leftValue: "a", rightValue: "a", stagingValue: swag.String("a")},
@@ -234,6 +236,7 @@ func TestCombinedDiffIterator_Seek(t *testing.T) {
 }
 
 func TestCombinedDiffIterator_ErrorOnStaging(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	testValues := []testValue{
 		{key: "k05", leftValue: "b", rightValue: "b1", stagingValue: swag.String("b1")},
@@ -254,6 +257,7 @@ func TestCombinedDiffIterator_ErrorOnStaging(t *testing.T) {
 }
 
 func TestCombinedDiffIterator_ErrorOnCommitted(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	testValues := []testValue{
 		{key: "k05", leftValue: "b", rightValue: "b1", stagingValue: swag.String("b1")},
@@ -274,6 +278,7 @@ func TestCombinedDiffIterator_ErrorOnCommitted(t *testing.T) {
 }
 
 func TestCombinedDiffIterator_ErrorOnLeft(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	testValues := []testValue{
 		{key: "k05", leftValue: "a", rightValue: "a", stagingValue: swag.String("a1")},
