@@ -43,7 +43,7 @@ export const test = base.extend<E2EFixtures, E2EWorkerFixtures>({
             if (state.state === "initialized" && state.comm_prefs_missing) {
                 await request.post(`${baseUrl}/api/v1/setup_comm_prefs`, {
                     data: {
-                        email: "test@example.com",
+                        email: "test@treeverse.io",
                         firstName: "Test",
                         lastName: "User",
                         companyName: "Treeverse",

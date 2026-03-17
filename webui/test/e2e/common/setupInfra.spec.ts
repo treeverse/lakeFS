@@ -8,7 +8,7 @@ test("setup lakeFS and save auth state", async ({ page }) => {
     await test.step("submit setup form", async () => {
         const setupPage = new SetupPage(page);
         await setupPage.goto();
-        await setupPage.fillForm("test@example.com");
+        await setupPage.fillForm("test@treeverse.io");
         await expect(setupPage.setupFinishedTitleLocator).toBeVisible();
         await expect(setupPage.downloadCredentialsButtonLocator).toBeVisible();
         await expect(setupPage.goToLoginButtonLocator).toBeVisible();
