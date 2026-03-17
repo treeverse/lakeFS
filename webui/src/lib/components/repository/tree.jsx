@@ -418,7 +418,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
                         <Link
                             className="me-2"
                             href={{
-                                pathname: '/repositories/:repoId/data',
+                                pathname: '/repositories/:repoId/objects',
                                 params: { repoId: repo.id },
                                 query: { ref: reference.id, showChanges: 'true' },
                             }}
@@ -480,7 +480,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
 
     let button;
     if (entry.path_type === 'common_prefix') {
-        button = <Link href={{ pathname: '/repositories/:repoId/data', query, params }}>{buttonText}</Link>;
+        button = <Link href={{ pathname: '/repositories/:repoId/objects', query, params }}>{buttonText}</Link>;
     } else if (entry.diff_type === 'removed') {
         button = <span>{buttonText}</span>;
     } else {
@@ -754,7 +754,7 @@ const CollapsibleBreadcrumb = ({
 };
 
 const buildPathURL = (params, query) => {
-    return { pathname: '/repositories/:repoId/data', params, query };
+    return { pathname: '/repositories/:repoId/objects', params, query };
 };
 
 export const URINavigator = ({
@@ -817,11 +817,11 @@ export const URINavigator = ({
         return (
             <>
                 <strong>lakefs://</strong>
-                <Link href={{ pathname: '/repositories/:repoId/data', params, query: { ref: reference.id } }}>
+                <Link href={{ pathname: '/repositories/:repoId/objects', params, query: { ref: reference.id } }}>
                     {repo.id}
                 </Link>
                 <strong>/</strong>
-                <Link href={{ pathname: '/repositories/:repoId/data', params, query: { ref: reference.id } }}>
+                <Link href={{ pathname: '/repositories/:repoId/objects', params, query: { ref: reference.id } }}>
                     {displayedReference}
                 </Link>
                 <strong>/</strong>

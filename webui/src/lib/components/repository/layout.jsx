@@ -21,7 +21,7 @@ const RepoNav = () => {
     }, [repo]);
 
     const repoLink = {
-        pathname: '/repositories/:repoId/data',
+        pathname: '/repositories/:repoId/objects',
         params: { repoId },
     };
     if (reference?.id) {

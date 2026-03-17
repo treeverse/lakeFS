@@ -104,7 +104,7 @@ const CommitWidget = ({
                                 <Link
                                     key={tagName}
                                     href={{
-                                        pathname: '/repositories/:repoId/data',
+                                        pathname: '/repositories/:repoId/objects',
                                         params: { repoId: repo.id },
                                         query: { ref: tagName },
                                     }}
@@ -156,7 +156,7 @@ const CommitWidget = ({
                         <LinkButton
                             buttonVariant={buttonVariant}
                             href={{
-                                pathname: '/repositories/:repoId/data',
+                                pathname: '/repositories/:repoId/objects',
                                 params: { repoId: repo.id },
                                 query: { ref: commit.id },
                             }}

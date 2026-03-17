@@ -925,7 +925,7 @@ export const EmptyChangesState = ({ repo, reference, toggleShowChanges }) => {
                     <p className="text-muted mb-4">Upload or modify files to see them appear here.</p>
                     <Link
                         href={{
-                            pathname: '/repositories/:repoId/data',
+                            pathname: '/repositories/:repoId/objects',
                             params: { repoId: repo.id },
                             query: { ref: reference.id, upload: true },
                         }}
@@ -1062,7 +1062,7 @@ const TreeContainer = ({
                 hasCopyButton={true}
                 pathURLBuilder={(params, query) => {
                     return {
-                        pathname: '/repositories/:repoId/data',
+                        pathname: '/repositories/:repoId/objects',
                         params: params,
                         query: { ...query, ref: reference.id, showChanges: 'true' },
                     };
@@ -1089,7 +1089,7 @@ const TreeContainer = ({
                     setLastSeenPath={setLastSeenPath}
                     onNavigate={(entry) => {
                         return {
-                            pathname: `/repositories/:repoId/data`,
+                            pathname: `/repositories/:repoId/objects`,
                             params: { repoId: repo.id },
                             query: {
                                 ref: reference.id,
@@ -1373,7 +1373,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
         if (newShowChanges) query.showChanges = 'true';
 
         router.push({
-            pathname: `/repositories/:repoId/data`,
+            pathname: `/repositories/:repoId/objects`,
             query,
             params: { repoId: repo.id },
         });
@@ -1395,7 +1395,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                         withWorkspace={true}
                         selectRef={(ref) =>
                             router.push({
-                                pathname: `/repositories/:repoId/data`,
+                                pathname: `/repositories/:repoId/objects`,
                                 params: {
                                     repoId: repo.id,
                                     path: path === undefined ? '' : path,
@@ -1433,7 +1433,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                                         const query = { path: path || '' };
                                         if (reference) query.ref = reference.id;
                                         router.push({
-                                            pathname: `/repositories/:repoId/data`,
+                                            pathname: `/repositories/:repoId/objects`,
                                             query,
                                             params: { repoId: repo.id },
                                         });
@@ -1470,7 +1470,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                                 if (prefix) query.path += prefix;
                                 if (reference) query.ref = reference.id;
                                 const url = {
-                                    pathname: `/repositories/:repoId/data`,
+                                    pathname: `/repositories/:repoId/objects`,
                                     query,
                                     params: { repoId: repo.id },
                                 };
@@ -1551,7 +1551,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             const query = { path: path || '' };
                             if (reference) query.ref = reference.id;
                             router.push({
-                                pathname: `/repositories/:repoId/data`,
+                                pathname: `/repositories/:repoId/objects`,
                                 query,
                                 params: { repoId: repo.id },
                             });
@@ -1587,7 +1587,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             if (reference) query.ref = reference.id;
                             if (showChangesOnly) query.showChanges = 'true';
                             const url = {
-                                pathname: `/repositories/:repoId/data`,
+                                pathname: `/repositories/:repoId/objects`,
                                 query,
                                 params: { repoId: repo.id },
                             };

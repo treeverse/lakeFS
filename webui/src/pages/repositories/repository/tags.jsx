@@ -41,7 +41,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                     <h6 className="mb-0">
                         <Link
                             href={{
-                                pathname: '/repositories/:repoId/data',
+                                pathname: '/repositories/:repoId/objects',
                                 params: { repoId: repo.id },
                                 query: { ref: tag.id },
                             }}

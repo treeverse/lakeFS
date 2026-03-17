@@ -230,7 +230,7 @@ const RepositoryList = ({
                                         <h5 className="repository-title mb-0">
                                             <Link
                                                 href={{
-                                                    pathname: `/repositories/:repoId/data`,
+                                                    pathname: `/repositories/:repoId/objects`,
                                                     params: { repoId: repo.id },
                                                 }}
                                             >
@@ -315,7 +315,7 @@ const RepositoriesPage = () => {
             setRefresh(!refresh);
             if (presentRepo) {
                 router.push({
-                    pathname: `/repositories/:repoId/data`,
+                    pathname: `/repositories/:repoId/objects`,
                     params: { repoId: repo.name },
                 });
             }
