@@ -517,7 +517,7 @@ These fields are set under `replication.config` in the Helm values.
 | `organization_name` | | Organization name. Only used to auto-construct `regional_endpoint` for lakeFS Cloud. Not needed when `regional_endpoint` is set |
 | `listen_address` | `0.0.0.0:8008` | HTTP listen address for the replication service API |
 | `refstore_database` | lakeFS `database` config | Database for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set |
-| `cloud_domain` | | Cloud domain for auto-constructing endpoints |
+| `cloud_domain` | | Cloud domain for auto-constructing endpoints (lakeFS Cloud only). Not needed when `regional_endpoint` is set |
 | `list_mirrors_page_size` | `1000` | Page size when listing mirrors |
 | `list_repositories_page_size` | `1000` | Page size when listing repositories |
 | `logging.level` | `INFO` | Log level (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
