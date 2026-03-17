@@ -154,26 +154,26 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                             print(string.format("Found deletionVector for %s action on file: %s", action_type, action_entry.path))
                             print(string.format("  storageType=%s, pathOrInlineDv=%s",
                                 tostring(dv.storageType), tostring(dv.pathOrInlineDv)))
-                            -- Only transform path-based (p) and UUID-based (u) deletion vectors
-                            -- Inline (i) has data embedded in JSON, no file to transform
+                            -- UUID-based (u): resolve Z85 UUID → .bin filename → stat_object → rewrite to physical URL
+                            -- Inline (i): no file to resolve; data is embedded in the JSON — pass through unchanged
+                            -- Path-based (p): absolute URI per Delta spec — unsupported in source tables (error below)
                             if dv.storageType == "p" then
-                                -- Path-based: pathOrInlineDv is the relative file path
-                                local dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
-                                print(string.format("Looking for DV file at: %s", dv_full_path))
-                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
-                                print(string.format("DV stat_object returned code: %d", dv_code))
-                                if dv_code == 200 then
-                                    local dv_stat = json.unmarshal(dv_obj)
-                                    local dv_u = url.parse(dv_stat["physical_address"])
-                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
-                                    if path_transformer ~= nil then
-                                        dv_physical = path_transformer(dv_physical)
-                                    end
-                                    print(string.format("Transformed DV path to: %s", dv_physical))
-                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
-                                else
-                                    print(string.format("WARNING: DV file not found at %s (code=%d)", dv_full_path, dv_code))
-                                end
+                                -- Per the Delta protocol spec, storageType="p" means pathOrInlineDv is
+                                -- an absolute URI (e.g. abfss://..., s3://...).  The exporter cannot
+                                -- resolve an absolute URI through the lakeFS stat_object API, which
+                                -- operates on logical repository paths.
+                                --
+                                -- In practice this storage type is never produced by Databricks (which
+                                -- always writes storageType="u").  If we encounter it in a source table,
+                                -- something unexpected has happened and exporting silently would yield a
+                                -- broken exported table (consumers would follow an S3A/ABFS gateway URL
+                                -- that they cannot authenticate against).
+                                error(string.format(
+                                    "unsupported deletion vector storageType=\"p\" on file %s: " ..
+                                    "pathOrInlineDv contains an absolute URI (%s) which cannot be " ..
+                                    "resolved through lakeFS. Databricks always writes storageType=\"u\"; " ..
+                                    "this entry may have been manually crafted.",
+                                    tostring(action_entry.path), tostring(dv.pathOrInlineDv)))
                             elseif dv.storageType == "u" then
                                 -- UUID-based: The pathOrInlineDv contains a Z85-encoded UUID (last 20 chars)
                                 -- with optional random prefix before it
