@@ -377,7 +377,7 @@ curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/m
 ```
 Using the following parameters:
 
-* `REPLICATION_ENDPOINT` - The URL of the replication service in the source region (default port 8008). This is **not** the lakeFS endpoint - the replication service runs as a separate process
+* `REPLICATION_ENDPOINT` - The URL of the replication service in the source region
 * `SOURCE_REPO` - Name of the repository acting as the replication source. It should exist on the source installation
 * `ACCESS_KEY_ID` & `SECRET_ACCESS_KEY` - Credentials for your lakeFS replication user (make sure you have the necessary RBAC permissions as [listed below](#rbac))
 * `MIRROR_NAME` - Name used for the read-only mirror to be created on the destination
