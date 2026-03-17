@@ -517,7 +517,7 @@ These fields are set under `replication.config` in the Helm values.
 | `organization_name` | | Organization name. Only used to auto-construct `regional_endpoint` for lakeFS Cloud. Not needed when `regional_endpoint` is set |
 | `listen_address` | `0.0.0.0:8008` | HTTP listen address for the replication service API |
 | `refstore_database` | lakeFS `database` config | Database for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set |
-| `cloud_domain` | | Cloud domain for auto-constructing endpoints (lakeFS Cloud only). Not needed when `regional_endpoint` is set |
+| `cloud_domain` | | Cloud domain for auto-constructing endpoints. Not needed when `regional_endpoint` is set |
 | `list_mirrors_page_size` | `1000` | Page size when listing mirrors |
 | `list_repositories_page_size` | `1000` | Page size when listing repositories |
 | `logging.level` | `INFO` | Log level (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
@@ -581,8 +581,6 @@ Controls how the service validates that all metadata for promoted commits exists
 | Field | Default | Description |
 |-------|---------|-------------|
 | `auth.encrypt.secret_key` | _(required)_ | Encryption key for stored credentials. Must match the lakeFS installation. Can also be provided via `extraEnvVarsSecret` (recommended) |
-| `auth.api.endpoint` | _(empty)_ | When set, uses API-based auth against an external auth service (legacy). When empty (default), uses KV-based auth directly from the replication service's database |
-| `auth.api.token` | | Auth token for the API auth service (only when `auth.api.endpoint` is set) |
 | `auth.cache.enabled` | `false` | Enable auth response caching |
 | `auth.cache.size` | | Number of cached auth entries |
 | `auth.cache.ttl` | | Cache entry time-to-live |
