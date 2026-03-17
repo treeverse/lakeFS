@@ -8,12 +8,11 @@ export class ChangesOperations {
     }
 
     async getUncommittedCount(): Promise<number> {
-        await expect(this.page.locator(".tree-container div.card")).toBeVisible();
+        await expect(this.page.locator(".tree-container .tree-listing-card")).toBeVisible();
         return this.page.locator("table.table tbody tr").count();
     }
 
     async commitChanges(commitMsg: string): Promise<void> {
-        await this.page.locator('button[id="changes-dropdown"]').click();
         await this.page.getByRole("button", { name: "Commit Changes" }).click();
         if (commitMsg?.length) {
             await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
