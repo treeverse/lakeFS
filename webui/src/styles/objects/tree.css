@@ -197,18 +197,18 @@ tr:hover .row-hover .btn-outline-danger {
     margin-right: 0 !important;
 }
 
-/* Tables enterprise upsell */
-.tables-upsell-content {
+/* Tables enterprise info */
+.tables-info-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 80px 40px;
     text-align: center;
-    min-height: 400px;
+    min-height: 50vh;
 }
 
-.tables-upsell-icon {
+.tables-info-icon {
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -220,22 +220,22 @@ tr:hover .row-hover .btn-outline-danger {
     color: #b45309;
 }
 
-[data-bs-theme='dark'] .tables-upsell-icon {
+[data-bs-theme='dark'] .tables-info-icon {
     background-color: rgba(251, 191, 36, 0.15);
     color: #fbbf24;
 }
 
-.tables-upsell-content h4 {
+.tables-info-content h4 {
     margin-bottom: 8px;
     font-weight: 600;
 }
 
-.tables-upsell-content p {
+.tables-info-content p {
     max-width: 400px;
     margin-bottom: 24px;
 }
 
-.tables-upsell-btn {
+.tables-info-btn {
     width: 280px;
     margin-bottom: 8px;
 }

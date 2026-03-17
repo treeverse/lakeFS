@@ -8,7 +8,7 @@ export class ChangesOperations {
     }
 
     async getUncommittedCount(): Promise<number> {
-        await expect(this.page.locator(".tree-container .tree-listing-card")).toBeVisible();
+        await expect(this.page.locator(".tree-container div.card")).toBeVisible();
         return this.page.locator("table.table tbody tr").count();
     }
 

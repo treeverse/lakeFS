@@ -69,6 +69,7 @@ export const IndexPage = () => {
                                     <Route index element={<RepositoriesPage />} />
                                     <Route path=":repoId" element={<RepositoryPageLayout />}>
                                         <Route path="objects" element={<RepositoryObjectsPage />} />
+                                        <Route path="data" element={<RepositoryObjectsPage />} />
                                         <Route path="object" element={<RepositoryObjectsViewPage />} />
                                         <Route path="commits">
                                             <Route index element={<RepositoryCommitsPage />} />

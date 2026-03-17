@@ -80,6 +80,8 @@ import { mergeResults } from '../../../lib/components/repository/mergeResults';
 const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
+const DATA_VIEW_OBJECTS = 'objects';
+const DATA_VIEW_TABLES = 'tables';
 
 export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
     let resultsFiltered = resultsState.results;
@@ -1233,8 +1235,8 @@ const DataViewToggle = ({ activeView, onChangeView }) => {
         <Nav variant="pills" className="data-view-toggle">
             <Nav.Item>
                 <Nav.Link
-                    active={activeView === 'objects'}
-                    onClick={() => onChangeView('objects')}
+                    active={activeView === DATA_VIEW_OBJECTS}
+                    onClick={() => onChangeView(DATA_VIEW_OBJECTS)}
                     className="d-flex align-items-center gap-1"
                 >
                     <FileDirectoryIcon size={16} /> Objects
@@ -1242,8 +1244,8 @@ const DataViewToggle = ({ activeView, onChangeView }) => {
             </Nav.Item>
             <Nav.Item>
                 <Nav.Link
-                    active={activeView === 'tables'}
-                    onClick={() => onChangeView('tables')}
+                    active={activeView === DATA_VIEW_TABLES}
+                    onClick={() => onChangeView(DATA_VIEW_TABLES)}
                     className="d-flex align-items-center gap-1"
                 >
                     <TableIcon size={16} /> Tables <span className="enterprise-badge">Enterprise</span>
@@ -1253,12 +1255,12 @@ const DataViewToggle = ({ activeView, onChangeView }) => {
     );
 };
 
-const TablesEnterpriseUpsell = () => {
+const TablesEnterpriseInfo = () => {
     return (
         <div className="tree-container tree-container-wide">
             <div className="tree-listing-card">
-                <div className="tables-upsell-content">
-                    <div className="tables-upsell-icon">
+                <div className="tables-info-content">
+                    <div className="tables-info-icon">
                         <TableIcon size={24} />
                     </div>
                     <h4>Tables is an Enterprise feature</h4>
@@ -1270,7 +1272,7 @@ const TablesEnterpriseUpsell = () => {
                         href="https://lakefs.io/enterprise/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-primary btn-lg tables-upsell-btn"
+                        className="btn btn-primary btn-lg tables-info-btn"
                     >
                         Try lakeFS Enterprise
                     </a>
@@ -1278,7 +1280,7 @@ const TablesEnterpriseUpsell = () => {
                         href="https://docs.lakefs.io/understand/enterprise/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-outline-secondary btn-lg tables-upsell-btn"
+                        className="btn btn-outline-secondary btn-lg tables-info-btn"
                     >
                         Learn More
                     </a>
@@ -1297,7 +1299,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const [showUpload, setShowUpload] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
-    const [dataView, setDataView] = useState('objects');
+    const [dataView, setDataView] = useState(DATA_VIEW_OBJECTS);
     const [showChangesOnly, setShowChangesOnly] = useState(showChanges === 'true');
     const [actionError, setActionError] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
@@ -1404,19 +1406,16 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                     />
 
                     {reference && reference.type === RefTypeBranch && hasChanges && (
-                        <Button
-                            variant={showChangesOnly ? 'secondary' : 'outline-secondary'}
-                            size="sm"
-                            onClick={handleToggleChanges}
-                            className="d-flex align-items-center"
-                        >
-                            <span className="changes-indicator-dot" />
-                            Uncommitted Changes
-                        </Button>
-                    )}
-
-                    {reference && reference.type === RefTypeBranch && hasChanges && (
                         <>
+                            <Button
+                                variant={showChangesOnly ? 'secondary' : 'outline-secondary'}
+                                size="sm"
+                                onClick={handleToggleChanges}
+                                className="d-flex align-items-center"
+                            >
+                                <span className="changes-indicator-dot" />
+                                Uncommitted Changes
+                            </Button>
                             <CommitButton
                                 repo={repo}
                                 enabled={hasChanges && !repo?.read_only}
@@ -1460,7 +1459,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
-                    {dataView === 'objects' && !showChangesOnly && (
+                    {dataView === DATA_VIEW_OBJECTS && !showChangesOnly && (
                         <PrefixSearchWidget
                             text="Search by Prefix"
                             key={path}
@@ -1486,7 +1485,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
             {/* Row 2: View Toggle & Data Actions */}
             <div className="data-view-row d-flex align-items-center mb-2">
                 <DataViewToggle activeView={dataView} onChangeView={setDataView} />
-                {dataView === 'objects' && (
+                {dataView === DATA_VIEW_OBJECTS && (
                     <div className="d-flex align-items-center gap-2 ms-auto">
                         <Button
                             variant={hasChanges ? 'outline-secondary' : 'success'}
@@ -1565,8 +1564,8 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
 
             <NoGCRulesWarning repoId={repo.id} />
 
-            {dataView === 'tables' ? (
-                <TablesEnterpriseUpsell />
+            {dataView === DATA_VIEW_TABLES ? (
+                <TablesEnterpriseInfo />
             ) : (
                 <Box
                     sx={{
