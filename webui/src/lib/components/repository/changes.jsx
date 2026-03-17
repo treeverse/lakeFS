@@ -7,7 +7,6 @@ import { useExpandCollapseDirs } from '../../hooks/useExpandCollapseDirs';
 import { AlertError, TooltipButton } from '../controls';
 import { ObjectsDiff } from './ObjectsDiff';
 import { ObjectTreeEntryRow, PrefixTreeEntryRow } from './treeRows';
-import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';
 import Alert from 'react-bootstrap/Alert';
 import { refs } from '../../api';
@@ -265,10 +264,10 @@ export const ChangesTreeContainer = ({
         );
     }
     return (
-        <div className="tree-container">
+        <div className="tree-container tree-container-wide">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
-            <Card>
-                <Card.Header className="d-flex justify-content-between align-items-center">
+            <div className="tree-listing-card">
+                <div className="tree-header d-flex justify-content-between align-items-center">
                     {delimiter !== '' && uriNavigator}
                     <div className="d-flex gap-2">
                         <TooltipButton tooltip="Expand All" size="sm" variant="outline-secondary" onClick={expandAll}>
@@ -285,9 +284,9 @@ export const ChangesTreeContainer = ({
                             <FoldUpIcon />
                         </TooltipButton>
                     </div>
-                </Card.Header>
+                </div>
 
-                <Card.Body>
+                <div className="tree-body">
                     <Table borderless size="sm">
                         <tbody>
                             {results.map((entry) => {
@@ -321,8 +320,8 @@ export const ChangesTreeContainer = ({
                             )}
                         </tbody>
                     </Table>
-                </Card.Body>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 };

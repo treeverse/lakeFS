@@ -959,7 +959,7 @@ export const Tree = ({
     } else {
         body = (
             <>
-                <Table borderless size="sm">
+                <Table borderless size="sm" className="tree-table">
                     <tbody>
                         {results.map((entry) => (
                             <EntryRow
@@ -980,13 +980,13 @@ export const Tree = ({
     }
 
     return (
-        <div className="tree-container">
-            <Card>
-                <Card.Header>
+        <div className="tree-container tree-container-wide">
+            <div className="tree-listing-card">
+                <div className="tree-header">
                     <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true} />
-                </Card.Header>
-                <Card.Body>{body}</Card.Body>
-            </Card>
+                </div>
+                <div className="tree-body">{body}</div>
+            </div>
 
             <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
         </div>

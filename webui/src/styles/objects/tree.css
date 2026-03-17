@@ -18,6 +18,109 @@
     padding: 0;
 }
 
+/* Wide tree layout with bordered card */
+.tree-container-wide .tree-listing-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.tree-container-wide .tree-header {
+    position: sticky;
+    top: 57px; /* Fixed navbar height */
+    z-index: 10;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    background-color: var(--bs-body-bg);
+}
+
+.tree-container-wide .tree-body {
+    padding: 0;
+}
+
+/* Column widths for balanced layout */
+.tree-table .tree-size {
+    width: 100px;
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+.tree-table .tree-modified {
+    width: 120px;
+    min-width: 120px;
+    white-space: nowrap;
+}
+
+.tree-table .change-entry-row-actions {
+    width: 50px;
+    min-width: 50px;
+}
+
+/* Data view row - fixed height to prevent layout shift when buttons appear/disappear */
+.data-view-row {
+    min-height: 39px;
+}
+
+/* Data view toggle (Objects / Tables) */
+.data-view-toggle {
+    gap: 2px;
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    padding: 2px;
+}
+
+[data-bs-theme='dark'] .data-view-toggle {
+    background-color: #1f2937;
+}
+
+.data-view-toggle .nav-item .nav-link {
+    border-radius: 6px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-weight: 500;
+    color: #6b7280;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+}
+
+[data-bs-theme='dark'] .data-view-toggle .nav-item .nav-link {
+    color: #9ca3af;
+}
+
+.data-view-toggle .nav-item .nav-link.active {
+    background-color: #fff;
+    color: #111827;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme='dark'] .data-view-toggle .nav-item .nav-link.active {
+    background-color: #374151;
+    color: #f9fafb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Enterprise badge on Tables toggle */
+.enterprise-badge {
+    display: inline-block;
+    padding: 0.05rem 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #b45309;
+    background-color: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 3px;
+    letter-spacing: 0.02em;
+    margin-left: 2px;
+}
+
+[data-bs-theme='dark'] .enterprise-badge {
+    color: #fbbf24;
+    background-color: rgba(251, 191, 36, 0.15);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
 .tree-entry-row,
 .change-entry-row {
     transition: background-color var(--transition-fast);
@@ -68,13 +171,14 @@
 /* Gear icon visibility and alignment */
 .change-entry-row-actions .dropdown-toggle,
 .row-hover .btn-outline-danger {
-    visibility: hidden;
     float: right;
+    opacity: 0.3;
+    transition: opacity 0.15s;
 }
 
 .change-entry-row:hover .change-entry-row-actions .dropdown-toggle,
 tr:hover .row-hover .btn-outline-danger {
-    visibility: visible;
+    opacity: 1;
 }
 
 /* Consistent width for diff indicator columns */
@@ -93,13 +197,58 @@ tr:hover .row-hover .btn-outline-danger {
     margin-right: 0 !important;
 }
 
-/* Changes dropdown styling */
-.changes-dropdown-menu {
-    min-width: 200px;
+/* Tables enterprise upsell */
+.tables-upsell-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
+    text-align: center;
+    min-height: 400px;
 }
 
-.changes-action-btn {
-    margin: 0 !important;
+.tables-upsell-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #fef3c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: #b45309;
+}
+
+[data-bs-theme='dark'] .tables-upsell-icon {
+    background-color: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
+.tables-upsell-content h4 {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.tables-upsell-content p {
+    max-width: 400px;
+    margin-bottom: 24px;
+}
+
+.tables-upsell-btn {
+    width: 280px;
+    margin-bottom: 8px;
+}
+
+/* Uncommitted changes indicator dot */
+.changes-indicator-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #e5a00d;
+    margin-right: 6px;
+    flex-shrink: 0;
 }
 
 /* Fix for object browser gear icon dropdown */
