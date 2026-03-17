@@ -210,6 +210,9 @@ Once a user has been created and the replication policy attached to it, create a
 
 The replication service is deployed alongside each lakeFS Enterprise installation using the [lakeFS Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs). It runs as a separate Deployment within the same Helm release.
 
+!!! important
+    The replication service must be deployed in **every** region participating in mirroring, not just the source.
+
 #### Mirrors database
 
 The replication service requires a shared database to coordinate mirror state between regions. This database must be accessible from both regions. It supports the same database types as lakeFS (see [database configuration](../reference/configuration.md#database)). The table/schema is created automatically by the replication service on startup if it doesn't already exist.
