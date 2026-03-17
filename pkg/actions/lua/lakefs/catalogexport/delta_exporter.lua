@@ -155,25 +155,40 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                             print(string.format("  storageType=%s, pathOrInlineDv=%s",
                                 tostring(dv.storageType), tostring(dv.pathOrInlineDv)))
                             -- UUID-based (u): resolve Z85 UUID → .bin filename → stat_object → rewrite to physical URL
-                            -- Inline (i): no file to resolve; data is embedded in the JSON — pass through unchanged
-                            -- Path-based (p): absolute URI per Delta spec — unsupported in source tables (error below)
+                            -- Path-based (p): relative path → stat_object → rewrite to physical URL
+                            --                 absolute URI → error (not tracked by lakeFS, cannot resolve)
+                            -- Inline (i): no file; data is embedded in the JSON — pass through unchanged
                             if dv.storageType == "p" then
-                                -- Per the Delta protocol spec, storageType="p" means pathOrInlineDv is
-                                -- an absolute URI (e.g. abfss://..., s3://...).  The exporter cannot
-                                -- resolve an absolute URI through the lakeFS stat_object API, which
-                                -- operates on logical repository paths.
-                                --
-                                -- In practice this storage type is never produced by Databricks (which
-                                -- always writes storageType="u").  If we encounter it in a source table,
-                                -- something unexpected has happened and exporting silently would yield a
-                                -- broken exported table (consumers would follow an S3A/ABFS gateway URL
-                                -- that they cannot authenticate against).
-                                error(string.format(
-                                    "unsupported deletion vector storageType=\"p\" on file %s: " ..
-                                    "pathOrInlineDv contains an absolute URI (%s) which cannot be " ..
-                                    "resolved through lakeFS. Databricks always writes storageType=\"u\"; " ..
-                                    "this entry may have been manually crafted.",
-                                    tostring(action_entry.path), tostring(dv.pathOrInlineDv)))
+                                -- Per the Delta spec, "p" means pathOrInlineDv can be either:
+                                --   - a relative path from the table root (e.g. "deletion_vector_abc.bin")
+                                --   - an absolute URI (e.g. "abfss://...", "s3://...")
+                                -- For relative paths, resolve via stat_object just like "u" type.
+                                -- For absolute URIs, the file is not tracked by lakeFS and cannot be
+                                -- resolved — error rather than silently producing a broken exported table.
+                                local parsed_dv = url.parse(dv.pathOrInlineDv)
+                                if parsed_dv ~= nil and parsed_dv["scheme"] ~= nil and parsed_dv["scheme"] ~= "" then
+                                    error(string.format(
+                                        "unsupported deletion vector storageType=\"p\" with absolute URI on file %s: " ..
+                                        "pathOrInlineDv=%s is an absolute URI and cannot be resolved through lakeFS. " ..
+                                        "Only relative paths are supported for storageType=\"p\".",
+                                        tostring(action_entry.path), tostring(dv.pathOrInlineDv)))
+                                end
+                                local dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
+                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+                                if dv_code == 200 then
+                                    local dv_stat = json.unmarshal(dv_obj)
+                                    local dv_u = url.parse(dv_stat["physical_address"])
+                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+                                    if path_transformer ~= nil then
+                                        dv_physical = path_transformer(dv_physical)
+                                    end
+                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
+                                else
+                                    error(string.format(
+                                        "deletion vector file not found for storageType=\"p\" on file %s: " ..
+                                        "path=%s (code=%d)",
+                                        tostring(action_entry.path), dv_full_path, dv_code))
+                                end
                             elseif dv.storageType == "u" then
                                 -- UUID-based: The pathOrInlineDv contains a Z85-encoded UUID (last 20 chars)
                                 -- with optional random prefix before it
