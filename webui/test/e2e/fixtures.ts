@@ -42,7 +42,14 @@ export const test = base.extend<E2EFixtures, E2EWorkerFixtures>({
             const state = await resp.json();
             if (state.state === "initialized" && state.comm_prefs_missing) {
                 await request.post(`${baseUrl}/api/v1/setup_comm_prefs`, {
-                    data: { email: "test@example.com", featureUpdates: false, securityUpdates: false },
+                    data: {
+                        email: "test@example.com",
+                        firstName: "Test",
+                        lastName: "User",
+                        companyName: "Treeverse",
+                        featureUpdates: false,
+                        securityUpdates: false,
+                    },
                 });
             }
         } finally {

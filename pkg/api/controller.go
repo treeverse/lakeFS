@@ -5912,6 +5912,9 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		writeResponse(w, r, http.StatusBadRequest, "email is required")
 		return
 	}
+	companyName := swag.StringValue(body.CompanyName)
+	firstName := swag.StringValue(body.FirstName)
+	lastName := swag.StringValue(body.LastName)
 
 	// validate email. if the user typed some value into the input, they might have a typo
 	// we assume the intent was to provide a valid email, so we'll return an error
@@ -5924,6 +5927,9 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
 	commPrefs := auth.CommPrefs{
 		UserEmail:       emailAddress,
+		FirstName:       firstName,
+		LastName:        lastName,
+		CompanyName:     companyName,
 		FeatureUpdates:  body.FeatureUpdates,
 		SecurityUpdates: body.SecurityUpdates,
 	}
@@ -5937,6 +5943,9 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 
 	commPrefsED := stats.CommPrefs{
 		Email:           commPrefs.UserEmail,
+		FirstName:       commPrefs.FirstName,
+		LastName:        commPrefs.LastName,
+		CompanyName:     commPrefs.CompanyName,
 		InstallationID:  installationID,
 		FeatureUpdates:  commPrefs.FeatureUpdates,
 		SecurityUpdates: commPrefs.SecurityUpdates,

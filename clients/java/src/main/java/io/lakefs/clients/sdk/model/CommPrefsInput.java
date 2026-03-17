@@ -51,9 +51,21 @@ import io.lakefs.clients.sdk.JSON;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CommPrefsInput {
+  public static final String SERIALIZED_NAME_FIRST_NAME = "firstName";
+  @SerializedName(SERIALIZED_NAME_FIRST_NAME)
+  private String firstName;
+
+  public static final String SERIALIZED_NAME_LAST_NAME = "lastName";
+  @SerializedName(SERIALIZED_NAME_LAST_NAME)
+  private String lastName;
+
   public static final String SERIALIZED_NAME_EMAIL = "email";
   @SerializedName(SERIALIZED_NAME_EMAIL)
   private String email;
+
+  public static final String SERIALIZED_NAME_COMPANY_NAME = "companyName";
+  @SerializedName(SERIALIZED_NAME_COMPANY_NAME)
+  private String companyName;
 
   public static final String SERIALIZED_NAME_FEATURE_UPDATES = "featureUpdates";
   @SerializedName(SERIALIZED_NAME_FEATURE_UPDATES)
@@ -65,6 +77,48 @@ public class CommPrefsInput {
 
   public CommPrefsInput() {
   }
+
+  public CommPrefsInput firstName(String firstName) {
+    
+    this.firstName = firstName;
+    return this;
+  }
+
+   /**
+   * the provided first name
+   * @return firstName
+  **/
+  @javax.annotation.Nullable
+  public String getFirstName() {
+    return firstName;
+  }
+
+
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+
+  public CommPrefsInput lastName(String lastName) {
+    
+    this.lastName = lastName;
+    return this;
+  }
+
+   /**
+   * the provided last name
+   * @return lastName
+  **/
+  @javax.annotation.Nullable
+  public String getLastName() {
+    return lastName;
+  }
+
+
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
+  }
+
 
   public CommPrefsInput email(String email) {
     
@@ -84,6 +138,27 @@ public class CommPrefsInput {
 
   public void setEmail(String email) {
     this.email = email;
+  }
+
+
+  public CommPrefsInput companyName(String companyName) {
+    
+    this.companyName = companyName;
+    return this;
+  }
+
+   /**
+   * the provided company name
+   * @return companyName
+  **/
+  @javax.annotation.Nullable
+  public String getCompanyName() {
+    return companyName;
+  }
+
+
+  public void setCompanyName(String companyName) {
+    this.companyName = companyName;
   }
 
 
@@ -183,7 +258,10 @@ public class CommPrefsInput {
       return false;
     }
     CommPrefsInput commPrefsInput = (CommPrefsInput) o;
-    return Objects.equals(this.email, commPrefsInput.email) &&
+    return Objects.equals(this.firstName, commPrefsInput.firstName) &&
+        Objects.equals(this.lastName, commPrefsInput.lastName) &&
+        Objects.equals(this.email, commPrefsInput.email) &&
+        Objects.equals(this.companyName, commPrefsInput.companyName) &&
         Objects.equals(this.featureUpdates, commPrefsInput.featureUpdates) &&
         Objects.equals(this.securityUpdates, commPrefsInput.securityUpdates)&&
         Objects.equals(this.additionalProperties, commPrefsInput.additionalProperties);
@@ -191,14 +269,17 @@ public class CommPrefsInput {
 
   @Override
   public int hashCode() {
-    return Objects.hash(email, featureUpdates, securityUpdates, additionalProperties);
+    return Objects.hash(firstName, lastName, email, companyName, featureUpdates, securityUpdates, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CommPrefsInput {\n");
+    sb.append("    firstName: ").append(toIndentedString(firstName)).append("\n");
+    sb.append("    lastName: ").append(toIndentedString(lastName)).append("\n");
     sb.append("    email: ").append(toIndentedString(email)).append("\n");
+    sb.append("    companyName: ").append(toIndentedString(companyName)).append("\n");
     sb.append("    featureUpdates: ").append(toIndentedString(featureUpdates)).append("\n");
     sb.append("    securityUpdates: ").append(toIndentedString(securityUpdates)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -224,7 +305,10 @@ public class CommPrefsInput {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
+    openapiFields.add("firstName");
+    openapiFields.add("lastName");
     openapiFields.add("email");
+    openapiFields.add("companyName");
     openapiFields.add("featureUpdates");
     openapiFields.add("securityUpdates");
 
@@ -254,8 +338,17 @@ public class CommPrefsInput {
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("firstName") != null && !jsonObj.get("firstName").isJsonNull()) && !jsonObj.get("firstName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `firstName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("firstName").toString()));
+      }
+      if ((jsonObj.get("lastName") != null && !jsonObj.get("lastName").isJsonNull()) && !jsonObj.get("lastName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `lastName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("lastName").toString()));
+      }
       if ((jsonObj.get("email") != null && !jsonObj.get("email").isJsonNull()) && !jsonObj.get("email").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `email` to be a primitive type in the JSON string but got `%s`", jsonObj.get("email").toString()));
+      }
+      if ((jsonObj.get("companyName") != null && !jsonObj.get("companyName").isJsonNull()) && !jsonObj.get("companyName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `companyName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("companyName").toString()));
       }
   }
 
