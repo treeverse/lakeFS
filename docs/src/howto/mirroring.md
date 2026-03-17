@@ -362,10 +362,10 @@ replication:
 
 ### Creating a mirror
 
-Once both lakeFS installations and their replication services are running, create a mirror using the replication API on the **source** installation:
+Once both lakeFS installations and their replication services are running, create a mirror using the replication API on the **source** region's replication service:
 
 ```bash
-curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
+curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
 --header 'Content-Type: application/json' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY> \
 -X POST \
@@ -377,7 +377,7 @@ curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>
 ```
 Using the following parameters:
 
-* `SOURCE_LAKEFS_ENDPOINT` - The URL of the source lakeFS installation (e.g. `https://lakefs-source.example.com`)
+* `REPLICATION_ENDPOINT` - The URL of the replication service in the source region (default port 8008). This is **not** the lakeFS endpoint - the replication service runs as a separate process
 * `SOURCE_REPO` - Name of the repository acting as the replication source. It should exist on the source installation
 * `ACCESS_KEY_ID` & `SECRET_ACCESS_KEY` - Credentials for your lakeFS replication user (make sure you have the necessary RBAC permissions as [listed below](#rbac))
 * `MIRROR_NAME` - Name used for the read-only mirror to be created on the destination
@@ -428,21 +428,21 @@ Listing/Getting Mirrors for a Repository:
 ### Listing all mirrors for a repository
 
 ```bash
-curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
+curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY> -s
 ```
 
 ### Getting a specific mirror
 
 ```bash
-curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
+curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY> -s
 ```
 
 ### Deleting a specific mirror
 
 ```bash
-curl -X DELETE '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
+curl -X DELETE '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY>
 ```
 
