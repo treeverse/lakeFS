@@ -28,9 +28,10 @@
     position: sticky;
     top: 57px; /* Fixed navbar height */
     z-index: 10;
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     border-bottom: 1px solid var(--border);
     background-color: var(--bs-body-bg);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .tree-container-wide .tree-body {
@@ -57,7 +58,7 @@
 
 /* Data view row - fixed height to prevent layout shift when buttons appear/disappear */
 .data-view-row {
-    min-height: 39px;
+    min-height: 44px;
 }
 
 /* Data view toggle (Objects / Tables) */
@@ -74,8 +75,8 @@
 
 .data-view-toggle .nav-item .nav-link {
     border-radius: 6px;
-    padding: 0.3rem 0.75rem;
-    font-size: 0.875rem;
+    padding: 0.35rem 0.85rem;
+    font-size: 1rem;
     line-height: 1.5;
     font-weight: 500;
     color: #6b7280;
@@ -113,6 +114,7 @@
     border-radius: 3px;
     letter-spacing: 0.02em;
     margin-left: 2px;
+    vertical-align: middle;
 }
 
 [data-bs-theme='dark'] .enterprise-badge {
@@ -190,6 +192,17 @@ tr:hover .row-hover .btn-outline-danger {
     text-align: center;
     vertical-align: middle;
     padding: 8px 12px 8px 16px !important; /* More left padding for spacing from border */
+}
+
+/* Branch selector border in light mode */
+.action-bar .btn-light {
+    border: 1px solid var(--border);
+}
+
+/* Allow action bar to wrap gracefully on narrow viewports / long branch names */
+.action-bar {
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 /* Override action-bar button margins for button groups */

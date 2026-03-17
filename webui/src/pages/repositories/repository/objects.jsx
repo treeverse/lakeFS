@@ -1100,7 +1100,7 @@ const TreeContainer = ({
                     }}
                     onRevert={onReset}
                     changesTreeMessage={
-                        <p>
+                        <p className="mt-2">
                             Showing {changesResults.length} change
                             {changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong>
                         </p>
@@ -1409,7 +1409,6 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                         <>
                             <Button
                                 variant={showChangesOnly ? 'secondary' : 'outline-secondary'}
-                                size="sm"
                                 onClick={handleToggleChanges}
                                 className="d-flex align-items-center"
                             >
@@ -1446,7 +1445,6 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             />
                             <Button
                                 variant="outline-secondary"
-                                size="sm"
                                 onClick={() => setShowRevertModal(true)}
                                 disabled={repo?.read_only}
                                 className="d-flex align-items-center"
@@ -1489,7 +1487,6 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                     <div className="d-flex align-items-center gap-2 ms-auto">
                         <Button
                             variant={hasChanges ? 'outline-secondary' : 'success'}
-                            size="sm"
                             disabled={repo?.read_only}
                             onClick={() => setShowUpload(true)}
                         >
@@ -1497,7 +1494,6 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                         </Button>
                         <Button
                             variant="outline-secondary"
-                            size="sm"
                             disabled={!storageConfig.import_support}
                             onClick={() => setShowImport(true)}
                         >
@@ -1564,17 +1560,18 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
 
             <NoGCRulesWarning repoId={repo.id} />
 
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    mb: '30px',
+                }}
+            >
             {dataView === DATA_VIEW_TABLES ? (
                 <TablesEnterpriseInfo />
             ) : (
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                        mb: '30px',
-                    }}
-                >
+                <>
                     <TreeContainer
                         config={storageConfig}
                         reference={reference}
@@ -1612,8 +1609,9 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                         path={path}
                         refreshDep={refreshToken}
                     />
-                </Box>
+                </>
             )}
+            </Box>
         </>
     );
 };
