@@ -17,7 +17,7 @@ const CommitActions = ({ repo, commit }) => {
                 <LinkButton
                     buttonVariant={buttonVariant}
                     href={{
-                        pathname: '/repositories/:repoId/objects',
+                        pathname: '/repositories/:repoId/data',
                         params: { repoId: repo.id },
                         query: { ref: commit.id },
                     }}

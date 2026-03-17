@@ -227,7 +227,7 @@ const MergedCommitDetails = ({ repo, pull }) => (
 const BranchLink = ({ repo, branch }) => (
     <Link
         href={{
-            pathname: '/repositories/:repoId/objects',
+            pathname: '/repositories/:repoId/data',
             params: { repoId: repo.id },
             query: { ref: branch },
         }}

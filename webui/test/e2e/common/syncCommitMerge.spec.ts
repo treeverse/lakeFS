@@ -97,7 +97,7 @@ test.describe('Commit and Merge Operations', () => {
             await expect(page.getByText(MERGE_MESSAGE)).toBeVisible({ timeout: TIMEOUT_ELEMENT_VISIBLE });
             await expect(page.getByRole('button', { name: `branch: ${DEST_BRANCH}` })).toBeVisible();
 
-            await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${DEST_BRANCH}`);
+            await page.goto(`/repositories/${TEST_REPO_NAME}/data?ref=${DEST_BRANCH}`);
             await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible();
         });
     });
@@ -176,7 +176,7 @@ test.describe('Commit and Merge Operations', () => {
             await expect(page.getByText('Merge with source-wins strategy')).toBeVisible({ timeout: TIMEOUT_ELEMENT_VISIBLE });
             await expect(page.getByRole('button', { name: `branch: ${DEST_BRANCH}` })).toBeVisible();
 
-            await page.goto(`/repositories/${TEST_REPO_NAME}/objects?ref=${DEST_BRANCH}`);
+            await page.goto(`/repositories/${TEST_REPO_NAME}/data?ref=${DEST_BRANCH}`);
             await expect(page.getByRole('cell', { name: CONFLICT_FILE_NAME })).toBeVisible();
             await page.getByRole('link', { name: CONFLICT_FILE_NAME }).click();
             await expect(page.getByText('Version on feature branch')).toBeVisible({ timeout: TIMEOUT_ELEMENT_VISIBLE });

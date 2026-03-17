@@ -85,7 +85,7 @@ const BranchWidget = ({ repo, branch, onDelete, selected = false, onSelect, onDe
                     <h6 className="mb-0">
                         <Link
                             href={{
-                                pathname: '/repositories/:repoId/objects',
+                                pathname: '/repositories/:repoId/data',
                                 params: { repoId: repo.id },
                                 query: { ref: branch.id },
                             }}

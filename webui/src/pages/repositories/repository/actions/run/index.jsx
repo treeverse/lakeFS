@@ -52,7 +52,7 @@ const RunSummary = ({ repo, run }) => {
                             <Link
                                 className="me-2"
                                 href={{
-                                    pathname: '/repositories/:repoId/objects',
+                                    pathname: '/repositories/:repoId/data',
                                     params: { repoId: repo.id },
                                     query: { ref: run.branch },
                                 }}
