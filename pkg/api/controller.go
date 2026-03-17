@@ -5851,6 +5851,25 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
+	// validate comm prefs email early
+	email := swag.StringValue(body.Email)
+	var commPrefs *auth.CommPrefs
+	if email != "" {
+		if err := validateEmail(email); err != nil {
+			c.Logger.WithError(err).WithField("email_domain", domainFromEmail(email)).Warn("Setup email validation failed")
+			writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+		commPrefs = &auth.CommPrefs{
+			UserEmail:       email,
+			FirstName:       swag.StringValue(body.FirstName),
+			LastName:        swag.StringValue(body.LastName),
+			CompanyName:     swag.StringValue(body.CompanyName),
+			FeatureUpdates:  swag.BoolValue(body.FeatureUpdates),
+			SecurityUpdates: swag.BoolValue(body.SecurityUpdates),
+		}
+	}
+
 	ctx := r.Context()
 	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
@@ -5865,6 +5884,18 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	// migrate the database if needed
 	err = c.Migrator.Migrate(ctx)
 	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
+	// Persist comm prefs state before creating user. If email is omitted,
+	// UpdateCommPrefs writes comm_prefs_set=false so GET /setup_lakefs returns
+	// comm_prefs_missing=true instead of treating this as a legacy install with
+	// the missing metadata. If email_subscription.enabled is turned on later, the
+	// UI will prompt this instance for comm prefs instead of silently skipping
+	// them.
+	if _, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs); err != nil {
+		c.Logger.WithError(err).Error("Setup failed to save comm prefs")
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
@@ -5896,6 +5927,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
+	if commPrefs != nil {
+		c.collectCommPrefs(commPrefs, meta.InstallationID)
+	}
 
 	response := apigen.CredentialsWithSecret{
 		AccessKeyId:     cred.AccessKeyID,
@@ -5905,43 +5939,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body apigen.SetupCommPrefsJSONRequestBody) {
-	ctx := r.Context()
-	emailAddress := swag.StringValue(body.Email)
-	if emailAddress == "" {
-		writeResponse(w, r, http.StatusBadRequest, "email is required")
-		return
-	}
-	companyName := swag.StringValue(body.CompanyName)
-	firstName := swag.StringValue(body.FirstName)
-	lastName := swag.StringValue(body.LastName)
-
-	// validate email. if the user typed some value into the input, they might have a typo
-	// we assume the intent was to provide a valid email, so we'll return an error
-	if _, err := mail.ParseAddress(emailAddress); err != nil {
-		c.Logger.WithError(err).WithField("email", emailAddress).Error("Setup comm prefs, invalid email address")
-		writeError(w, r, http.StatusBadRequest, "invalid email address")
-		return
-	}
-
-	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
-	commPrefs := auth.CommPrefs{
-		UserEmail:       emailAddress,
-		FirstName:       firstName,
-		LastName:        lastName,
-		CompanyName:     companyName,
-		FeatureUpdates:  body.FeatureUpdates,
-		SecurityUpdates: body.SecurityUpdates,
-	}
-
-	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, &commPrefs)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", emailAddress).Error("Setup comm prefs, failed to save comm prefs to metadata")
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-
-	commPrefsED := stats.CommPrefs{
+// collectCommPrefs fires a background stats event for the given comm prefs.
+func (c *Controller) collectCommPrefs(commPrefs *auth.CommPrefs, installationID string) {
+	go c.Collector.CollectCommPrefs(stats.CommPrefs{
 		Email:           commPrefs.UserEmail,
 		FirstName:       commPrefs.FirstName,
 		LastName:        commPrefs.LastName,
@@ -5950,10 +5950,31 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		FeatureUpdates:  commPrefs.FeatureUpdates,
 		SecurityUpdates: commPrefs.SecurityUpdates,
 		BlockstoreType:  c.BlockAdapter.BlockstoreType(),
-	}
-	// collect comm prefs
-	go c.Collector.CollectCommPrefs(commPrefsED)
+	})
+}
 
+func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body apigen.SetupCommPrefsJSONRequestBody) {
+	email := swag.StringValue(body.Email)
+	if err := validateEmail(email); err != nil {
+		c.Logger.WithError(err).WithField("email_domain", domainFromEmail(email)).Warn("Setup comm prefs validation failed")
+		writeError(w, r, http.StatusBadRequest, err)
+		return
+	}
+	commPrefs := &auth.CommPrefs{
+		UserEmail:       email,
+		FirstName:       swag.StringValue(body.FirstName),
+		LastName:        swag.StringValue(body.LastName),
+		CompanyName:     swag.StringValue(body.CompanyName),
+		FeatureUpdates:  body.FeatureUpdates,
+		SecurityUpdates: body.SecurityUpdates,
+	}
+	installationID, err := c.MetadataManager.UpdateCommPrefs(r.Context(), commPrefs)
+	if err != nil {
+		c.Logger.WithError(err).Error("Setup comm prefs failed")
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	c.collectCommPrefs(commPrefs, installationID)
 	writeResponse(w, r, http.StatusOK, nil)
 }
 

@@ -1271,14 +1271,18 @@ class Setup {
         }
     }
 
-    async lakeFS(username) {
+    async lakeFS({ username, email, firstName, lastName, companyName, featureUpdates, securityUpdates }) {
         const response = await apiRequest('/setup_lakefs', {
             method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username: username }),
+            body: JSON.stringify({
+                username,
+                email,
+                firstName,
+                lastName,
+                companyName,
+                featureUpdates,
+                securityUpdates,
+            }),
         });
         switch (response.status) {
             case 200:
@@ -1286,25 +1290,14 @@ class Setup {
             case 409:
                 throw new Error('Setup is already complete.');
             default:
-                throw new Error('Unknown');
+                throw new Error(await extractError(response));
         }
     }
 
-    async commPrefs(email, firstName, lastName, companyName, updates, security) {
+    async commPrefs({ email, firstName, lastName, companyName, featureUpdates, securityUpdates }) {
         const response = await apiRequest('/setup_comm_prefs', {
             method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email,
-                firstName,
-                lastName,
-                companyName,
-                featureUpdates: updates,
-                securityUpdates: security,
-            }),
+            body: JSON.stringify({ email, firstName, lastName, companyName, featureUpdates, securityUpdates }),
         });
 
         switch (response.status) {
@@ -1313,7 +1306,7 @@ class Setup {
             case 409:
                 throw new Error('Setup is already complete.');
             default:
-                throw new Error('Unknown');
+                throw new Error(await extractError(response));
         }
     }
 }
