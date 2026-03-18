@@ -185,7 +185,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                 </Modal.Footer>
             </Modal>
             <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
-                <GitCommitIcon /> Commit Changes
+                <GitCommitIcon /> Commit
             </Button>
         </>
     );
@@ -1100,7 +1100,7 @@ const TreeContainer = ({
                     }}
                     onRevert={onReset}
                     changesTreeMessage={
-                        <p className="mt-2">
+                        <p className="mt-2 ps-3">
                             Showing {changesResults.length} change
                             {changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong>
                         </p>
@@ -1258,7 +1258,7 @@ const DataViewToggle = ({ activeView, onChangeView }) => {
 const TablesEnterpriseInfo = () => {
     return (
         <div className="tree-container tree-container-wide">
-            <div className="tree-listing-card">
+            <Card>
                 <div className="tables-info-content">
                     <div className="tables-info-icon">
                         <TableIcon size={24} />
@@ -1272,7 +1272,7 @@ const TablesEnterpriseInfo = () => {
                         href="https://lakefs.io/enterprise/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-primary btn-lg tables-info-btn"
+                        className="btn btn-primary"
                     >
                         Try lakeFS Enterprise
                     </a>
@@ -1280,12 +1280,12 @@ const TablesEnterpriseInfo = () => {
                         href="https://docs.lakefs.io/understand/enterprise/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-outline-secondary btn-lg tables-info-btn"
+                        className="btn btn-outline-secondary"
                     >
                         Learn More
                     </a>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };
@@ -1413,7 +1413,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                                 className="d-flex align-items-center"
                             >
                                 <span className="changes-indicator-dot" />
-                                Uncommitted Changes
+                                Uncommitted
                             </Button>
                             <CommitButton
                                 repo={repo}
@@ -1568,49 +1568,49 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                     mb: '30px',
                 }}
             >
-            {dataView === DATA_VIEW_TABLES ? (
-                <TablesEnterpriseInfo />
-            ) : (
-                <>
-                    <TreeContainer
-                        config={storageConfig}
-                        reference={reference}
-                        repo={repo}
-                        path={path ? path : ''}
-                        after={after ? after : ''}
-                        onPaginate={(after) => {
-                            const query = { after };
-                            if (path) query.path = path;
-                            if (reference) query.ref = reference.id;
-                            if (showChangesOnly) query.showChanges = 'true';
-                            const url = {
-                                pathname: `/repositories/:repoId/objects`,
-                                query,
-                                params: { repoId: repo.id },
-                            };
-                            router.push(url);
-                        }}
-                        refreshToken={refreshToken}
-                        onUpload={() => {
-                            setShowUpload(true);
-                        }}
-                        onImport={() => {
-                            setShowImport(true);
-                        }}
-                        onRefresh={refresh}
-                        showChangesOnly={showChangesOnly}
-                        toggleShowChangesOnly={() => setShowChangesOnly(false)}
-                    />
+                {dataView === DATA_VIEW_TABLES ? (
+                    <TablesEnterpriseInfo />
+                ) : (
+                    <>
+                        <TreeContainer
+                            config={storageConfig}
+                            reference={reference}
+                            repo={repo}
+                            path={path ? path : ''}
+                            after={after ? after : ''}
+                            onPaginate={(after) => {
+                                const query = { after };
+                                if (path) query.path = path;
+                                if (reference) query.ref = reference.id;
+                                if (showChangesOnly) query.showChanges = 'true';
+                                const url = {
+                                    pathname: `/repositories/:repoId/objects`,
+                                    query,
+                                    params: { repoId: repo.id },
+                                };
+                                router.push(url);
+                            }}
+                            refreshToken={refreshToken}
+                            onUpload={() => {
+                                setShowUpload(true);
+                            }}
+                            onImport={() => {
+                                setShowImport(true);
+                            }}
+                            onRefresh={refresh}
+                            showChangesOnly={showChangesOnly}
+                            toggleShowChangesOnly={() => setShowChangesOnly(false)}
+                        />
 
-                    <ReadmeContainer
-                        config={storageConfig}
-                        reference={reference}
-                        repo={repo}
-                        path={path}
-                        refreshDep={refreshToken}
-                    />
-                </>
-            )}
+                        <ReadmeContainer
+                            config={storageConfig}
+                            reference={reference}
+                            repo={repo}
+                            path={path}
+                            refreshDep={refreshToken}
+                        />
+                    </>
+                )}
             </Box>
         </>
     );

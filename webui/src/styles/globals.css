@@ -199,8 +199,21 @@ pre {
 }
 
 /* Layout */
+.app-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
 .main-app {
-    padding: 75px 0 var(--spacing-lg) 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0 var(--spacing-lg) 0;
+}
+
+.main-app > * {
+    padding-top: var(--spacing-lg);
 }
 
 /* Fix for btn-light in dark mode */

@@ -18,24 +18,20 @@
     padding: 0;
 }
 
-/* Wide tree layout with bordered card */
-.tree-container-wide .tree-listing-card {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+/* Wide tree layout — sticky header for objects view */
+.tree-container-wide .card {
+    overflow: visible;
 }
 
-.tree-container-wide .tree-header {
+.tree-container-wide .card-header {
     position: sticky;
-    top: 57px; /* Fixed navbar height */
+    top: 0;
     z-index: 10;
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-bottom: 1px solid var(--border);
-    background-color: var(--bs-body-bg);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
-.tree-container-wide .tree-body {
-    padding: 0;
+.tree-container-wide .card-body {
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
 /* Column widths for balanced layout */
@@ -248,7 +244,7 @@ tr:hover .row-hover .btn-outline-danger {
     margin-bottom: 24px;
 }
 
-.tables-info-btn {
+.tables-info-content .btn {
     width: 280px;
     margin-bottom: 8px;
 }

@@ -981,12 +981,12 @@ export const Tree = ({
 
     return (
         <div className="tree-container tree-container-wide">
-            <div className="tree-listing-card">
-                <div className="tree-header">
+            <Card>
+                <Card.Header>
                     <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true} />
-                </div>
-                <div className="tree-body">{body}</div>
-            </div>
+                </Card.Header>
+                <Card.Body>{body}</Card.Body>
+            </Card>
 
             <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
         </div>
