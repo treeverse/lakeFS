@@ -37,27 +37,29 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
                 </Link>
             </td>
             <td>{run.event_type}</td>
-            <td className="text-truncate">
-                <Link
-                    className="me-2"
-                    href={{
-                        pathname: '/repositories/:repoId/objects',
-                        params: { repoId: repo.id },
-                        query: { ref: run.branch },
-                    }}
-                    title={run.branch}
-                >
-                    {run.branch}
-                </Link>
-                <TooltipButton
-                    onClick={() => onFilterBranch(run.branch)}
-                    variant="link"
-                    tooltip="filter by branch"
-                    className="row-hover"
-                    size="sm"
-                >
-                    <FilterIcon size="small" />
-                </TooltipButton>
+            <td>
+                <div className="d-flex align-items-center">
+                    <Link
+                        className="me-2 text-truncate"
+                        href={{
+                            pathname: '/repositories/:repoId/objects',
+                            params: { repoId: repo.id },
+                            query: { ref: run.branch },
+                        }}
+                        title={run.branch}
+                    >
+                        {run.branch}
+                    </Link>
+                    <TooltipButton
+                        onClick={() => onFilterBranch(run.branch)}
+                        variant="link"
+                        tooltip="filter by branch"
+                        className="row-hover flex-shrink-0"
+                        size="sm"
+                    >
+                        <FilterIcon size="small" />
+                    </TooltipButton>
+                </div>
             </td>
             <td>
                 <FormattedDate dateValue={run.start_time} />
