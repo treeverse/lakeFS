@@ -1280,7 +1280,7 @@ const TablesEnterpriseInfo = () => {
                         href="https://docs.lakefs.io/understand/enterprise/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-outline-secondary"
+                        className="btn btn-secondary"
                     >
                         Learn More
                     </a>

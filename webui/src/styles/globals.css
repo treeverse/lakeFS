@@ -209,6 +209,7 @@ pre {
 .main-app {
     flex: 1;
     overflow-y: auto;
+    scrollbar-gutter: stable;
     padding: 0 0 var(--spacing-lg) 0;
 }
 
