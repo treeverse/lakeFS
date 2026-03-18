@@ -5851,6 +5851,17 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
+	ctx := r.Context()
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if initialized {
+		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
+		return
+	}
+
 	// validate comm prefs email early
 	email := swag.StringValue(body.Email)
 	var commPrefs *auth.CommPrefs
@@ -5868,17 +5879,6 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 			FeatureUpdates:  swag.BoolValue(body.FeatureUpdates),
 			SecurityUpdates: swag.BoolValue(body.SecurityUpdates),
 		}
-	}
-
-	ctx := r.Context()
-	initialized, err := c.MetadataManager.IsInitialized(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-	if initialized {
-		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
-		return
 	}
 
 	// migrate the database if needed
