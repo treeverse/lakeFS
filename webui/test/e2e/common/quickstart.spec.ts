@@ -79,12 +79,12 @@ test.describe("Quickstart", () => {
             // DuckDB COPY in the previous test writes to lakeFS asynchronously.
             // Reload to ensure the page fetches the latest uncommitted changes state.
             await page.reload();
-            await expect(page.getByRole("button", { name: "Uncommitted" })).toBeVisible({ timeout: TIMEOUT_ELEMENT_VISIBLE });
+            await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toBeVisible({ timeout: TIMEOUT_ELEMENT_VISIBLE });
             await repositoryPage.changes.showOnlyChanges();
             await expect(page.getByText("Showing 1 change for branch")).toBeVisible();
             await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
             await repositoryPage.changes.commitChanges("denmark");
-            await expect(page.getByRole("button", { name: "Uncommitted" })).toHaveCount(0);
+            await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
         });
 
         await test.step("merge branch into main", async () => {
@@ -124,7 +124,7 @@ test.describe("Quickstart", () => {
             await repositoryPage.changes.showOnlyChanges();
             await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
             await repositoryPage.changes.commitChanges("Commit for pull-1");
-            await expect(page.getByRole("button", { name: "Uncommitted" })).toHaveCount(0);
+            await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
         });
 
         await test.step("verify empty pull requests list", async () => {

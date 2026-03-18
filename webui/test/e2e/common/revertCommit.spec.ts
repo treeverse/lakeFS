@@ -29,7 +29,7 @@ test.describe("Revert Commit", () => {
             await repositoryPage.changes.showOnlyChanges();
             await expect.poll(() => repositoryPage.changes.getUncommittedCount()).toEqual(1);
             await repositoryPage.changes.commitChanges("Delete image file");
-            await expect(page.getByRole("button", { name: "Uncommitted" })).toHaveCount(0);
+            await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
         });
     });
 

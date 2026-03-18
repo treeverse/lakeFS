@@ -185,7 +185,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
+            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)} aria-label="Commit Changes">
                 <GitCommitIcon /> Commit
             </Button>
         </>
@@ -1414,6 +1414,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                                 aria-pressed={showChangesOnly}
                                 onClick={handleToggleChanges}
                                 className="d-flex align-items-center"
+                                aria-label="Uncommitted Changes"
                             >
                                 <span className="changes-indicator-dot" />
                                 Uncommitted
