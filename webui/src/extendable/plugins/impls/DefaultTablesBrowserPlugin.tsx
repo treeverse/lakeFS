@@ -1,11 +1,10 @@
 import React from 'react';
 import { PluginTablesBrowser } from '../pluginTablesBrowser';
-
-const TablesPlaceholder: React.FC = () => <p>Tables browsing is an Enterprise feature.</p>;
+import { TablesEnterpriseInfo } from '../../../lib/components/repository/tablesEnterpriseInfo';
 
 class DefaultTablesBrowserPlugin implements PluginTablesBrowser {
     getTablesBrowserComponent(): React.FC {
-        return TablesPlaceholder;
+        return TablesEnterpriseInfo;
     }
 }
 

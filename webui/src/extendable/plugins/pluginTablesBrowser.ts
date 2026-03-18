@@ -1,5 +1,5 @@
 import React from 'react';
 
 export interface PluginTablesBrowser {
-    getTablesBrowserComponent(): React.FC | null;
+    getTablesBrowserComponent(): React.FC;
 }

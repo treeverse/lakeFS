@@ -10,5 +10,5 @@ export interface CompareBranchesComponentProps {
 }
 
 export interface PluginCompareBranches {
-    getCompareBranchesComponent(): React.FC<CompareBranchesComponentProps> | null;
+    getCompareBranchesComponent(): React.FC<CompareBranchesComponentProps>;
 }
