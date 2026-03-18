@@ -1409,7 +1409,9 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                     {reference && reference.type === RefTypeBranch && hasChanges && (
                         <>
                             <Button
-                                variant={showChangesOnly ? 'secondary' : 'outline-secondary'}
+                                variant="outline-secondary"
+                                active={showChangesOnly}
+                                aria-pressed={showChangesOnly}
                                 onClick={handleToggleChanges}
                                 className="d-flex align-items-center"
                             >

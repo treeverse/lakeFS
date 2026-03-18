@@ -13,7 +13,7 @@ export class ChangesOperations {
     }
 
     async commitChanges(commitMsg: string): Promise<void> {
-        await this.page.getByRole("button", { name: "Commit" }).click();
+        await this.page.locator('.action-bar').getByRole("button", { name: "Commit" }).click();
         if (commitMsg?.length) {
             await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
         }
