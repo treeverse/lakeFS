@@ -451,7 +451,7 @@ curl -X DELETE '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOUR
 The replication service is configured via the Helm chart values under `replication.*`. All fields below are set in your `values.yaml`.
 
 !!! note
-    Replication service configuration values can also be set via environment variables with the `REPLICATION_` prefix (e.g., `REPLICATION_REGION=us-east-1`). Sensitive values like credentials should be provided via a Kubernetes Secret referenced by `replication.extraEnvVarsSecret`.
+    Simple configuration values can also be set via environment variables with the `REPLICATION_` prefix (e.g., `REPLICATION_REGION=us-east-1`). Map fields like `dst_endpoints` must be set via the config file. Sensitive values like credentials should be provided via a Kubernetes Secret referenced by `replication.extraEnvVarsSecret`.
 
 ### Helm chart values
 
