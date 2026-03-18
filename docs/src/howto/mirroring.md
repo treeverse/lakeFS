@@ -74,7 +74,7 @@ At minimum, Transactional Mirroring involves two lakeFS Enterprise installations
 1. A valid lakeFS Enterprise license with the **Transactional Mirroring** capability. See [License Configuration](../enterprise/getstarted/install.md#lakefs-enterprise-license).
 1. Object store replication configured between source and destination buckets (see [below](#configuring-object-store-replication)).
 1. A shared database accessible from all regions for mirror coordination (e.g., a DynamoDB global table).
-1. Network connectivity between the lakeFS installations. The replication service in each region needs HTTP access to the lakeFS API in the other regions.
+1. Network connectivity: the replication service in each region requires HTTP access to the lakeFS API endpoint in the other regions.
 
 ### Configuring object store replication
 
