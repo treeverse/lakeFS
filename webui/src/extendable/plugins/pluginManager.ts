@@ -8,6 +8,10 @@ import { PluginCommitOperation } from './pluginCommitOperation';
 import { PluginMergeOperation } from './pluginMergeOperation';
 import SyncCommitPlugin from './impls/SyncCommitPlugin';
 import SyncMergePlugin from './impls/SyncMergePlugin';
+import { PluginTablesBrowser } from './pluginTablesBrowser';
+import DefaultTablesBrowserPlugin from './impls/DefaultTablesBrowserPlugin';
+import { PluginCompareBranches } from './pluginCompareBranches';
+import DefaultBranchChangesPlugin from './impls/DefaultCompareBranchesPlugin';
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
@@ -15,44 +19,62 @@ export class PluginManager {
     private _loginStrategy: PluginLoginStrategy = RedirectToSSOStrategyPlugin;
     private _commitOperation: PluginCommitOperation = SyncCommitPlugin;
     private _mergeOperation: PluginMergeOperation = SyncMergePlugin;
+    private _tablesBrowser: PluginTablesBrowser = DefaultTablesBrowserPlugin;
+    private _compareBranches: PluginCompareBranches = DefaultBranchChangesPlugin;
 
-    overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
-        this._repoCreationForm = pluginRepoCreationForm;
+    overridePluginRepoCreationForm(plugin: PluginRepoCreationForm): void {
+        this._repoCreationForm = plugin;
     }
 
     get repoCreationForm(): PluginRepoCreationForm {
         return this._repoCreationForm;
     }
 
-    overridePluginCustomObjectRenderers(pluginCustomObjectRenderers: PluginCustomObjectRenderers): void {
-        this._customObjectRenderers = pluginCustomObjectRenderers;
+    overridePluginCustomObjectRenderers(plugin: PluginCustomObjectRenderers): void {
+        this._customObjectRenderers = plugin;
     }
 
     get customObjectRenderers(): PluginCustomObjectRenderers {
         return this._customObjectRenderers;
     }
 
-    overridePluginLoginStrategy(pluginLoginStrategy: PluginLoginStrategy): void {
-        this._loginStrategy = pluginLoginStrategy;
+    overridePluginLoginStrategy(plugin: PluginLoginStrategy): void {
+        this._loginStrategy = plugin;
     }
 
     get loginStrategy(): PluginLoginStrategy {
         return this._loginStrategy;
     }
 
-    overridePluginCommitOperation(pluginCommitOperation: PluginCommitOperation): void {
-        this._commitOperation = pluginCommitOperation;
+    overridePluginCommitOperation(plugin: PluginCommitOperation): void {
+        this._commitOperation = plugin;
     }
 
     get commitOperation(): PluginCommitOperation {
         return this._commitOperation;
     }
 
-    overridePluginMergeOperation(pluginMergeOperation: PluginMergeOperation): void {
-        this._mergeOperation = pluginMergeOperation;
+    overridePluginMergeOperation(plugin: PluginMergeOperation): void {
+        this._mergeOperation = plugin;
     }
 
     get mergeOperation(): PluginMergeOperation {
         return this._mergeOperation;
+    }
+
+    overridePluginTablesBrowser(plugin: PluginTablesBrowser): void {
+        this._tablesBrowser = plugin;
+    }
+
+    get tablesBrowser(): PluginTablesBrowser {
+        return this._tablesBrowser;
+    }
+
+    overridePluginCompareBranches(plugin: PluginCompareBranches): void {
+        this._compareBranches = plugin;
+    }
+
+    get compareBranches(): PluginCompareBranches {
+        return this._compareBranches;
     }
 }
