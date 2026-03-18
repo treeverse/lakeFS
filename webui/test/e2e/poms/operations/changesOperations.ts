@@ -4,7 +4,7 @@ export class ChangesOperations {
     constructor(private page: Page) {}
 
     async showOnlyChanges(): Promise<void> {
-        await this.page.getByRole("button", { name: "Uncommitted Changes" }).click();
+        await this.page.getByRole("button", { name: "Uncommitted" }).click();
     }
 
     async getUncommittedCount(): Promise<number> {
@@ -13,13 +13,13 @@ export class ChangesOperations {
     }
 
     async commitChanges(commitMsg: string): Promise<void> {
-        await this.page.getByRole("button", { name: "Commit Changes" }).click();
+        await this.page.getByRole("button", { name: "Commit" }).click();
         if (commitMsg?.length) {
             await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
         }
         await this.page
             .getByRole("dialog")
-            .getByRole("button", { name: "Commit Changes" })
+            .getByRole("button", { name: "Commit" })
             .click();
     }
 

@@ -154,6 +154,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                                 type="text"
                                 placeholder="Commit Message (Optional)"
                                 ref={textRef}
+                                autoFocus
                                 disabled={mergeState.merging}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {

@@ -409,11 +409,11 @@ const RefDropdown = ({
 
     const refIcon =
         selected.type === RefTypeTag ? (
-            <TagIcon className="me-1" />
+            <TagIcon className="ms-1 me-1" />
         ) : selected.type === RefTypeCommit ? (
-            <GitCommitIcon className="me-1" />
+            <GitCommitIcon className="ms-1 me-1" />
         ) : (
-            <GitBranchIcon className="me-1" />
+            <GitBranchIcon className="ms-1 me-1" />
         );
     return (
         <>

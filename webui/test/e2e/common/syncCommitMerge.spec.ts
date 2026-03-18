@@ -67,7 +67,7 @@ test.describe('Commit and Merge Operations', () => {
             await expect(page.getByRole('button', { name: `branch: ${SOURCE_BRANCH}` })).toBeVisible();
 
             await repositoryPage.gotoObjectsTab();
-            await expect(page.getByRole('button', { name: 'Uncommitted Changes' })).not.toBeVisible();
+            await expect(page.getByRole('button', { name: 'Uncommitted' })).not.toBeVisible();
             await expect(page.getByRole('cell', { name: FILE_1_NAME }).first()).toBeVisible();
         });
     });
@@ -106,7 +106,7 @@ test.describe('Commit and Merge Operations', () => {
         await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.branches.switchBranch(SOURCE_BRANCH);
-        await expect(page.getByRole('button', { name: 'Uncommitted Changes' })).not.toBeVisible();
+        await expect(page.getByRole('button', { name: 'Uncommitted' })).not.toBeVisible();
     });
 
     test('Merge: Handle no-diff merge attempt', async ({ page }) => {

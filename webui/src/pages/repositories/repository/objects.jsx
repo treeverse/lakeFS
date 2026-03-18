@@ -142,7 +142,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
         <>
             <Modal show={show} onHide={hide} size="lg">
                 <Modal.Header closeButton={!committing}>
-                    <Modal.Title>Commit Changes</Modal.Title>
+                    <Modal.Title>Commit</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form
@@ -157,6 +157,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                                 type="text"
                                 placeholder="Commit Message"
                                 ref={textRef}
+                                autoFocus
                                 disabled={committing}
                             />
                         </Form.Group>
@@ -180,7 +181,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                         Cancel
                     </Button>
                     <Button variant="success" disabled={committing} onClick={onSubmit}>
-                        {committing ? 'Committing...' : 'Commit Changes'}
+                        {committing ? 'Committing...' : 'Commit'}
                     </Button>
                 </Modal.Footer>
             </Modal>
