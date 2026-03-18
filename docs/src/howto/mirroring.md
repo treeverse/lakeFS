@@ -497,7 +497,7 @@ Then set `replication.serviceAccountName: replication-sa` in the Helm values.
 | `organization_id` | Organization identifier, used internally as a partition key in the mirrors database. For on-prem deployments, use any consistent string (e.g., your company name). Must be the same across all installations |
 | `regional_endpoint` | URL of the lakeFS API in this region (e.g., `http://lakefs.default.svc.cluster.local:80`) |
 | `dst_endpoints` | Map of region identifier to lakeFS URL for each remote region |
-| `mirrors_database` | Database configuration for mirror coordination. Supports the same [database types](../reference/configuration.md#database) as lakeFS. Must be shared across all regions |
+| `mirrors_database` | Database configuration for mirror coordination (DynamoDB, PostgreSQL, or CockroachDB). Must be shared across all regions. See [Mirrors database](#mirrors-database) |
 | `blockstore` | Block storage configuration. Must match the lakeFS blockstore config |
 | `lakefs_access_key_id` | Access key ID for the replication lakeFS user. Can also be provided via `extraEnvVarsSecret` (recommended) |
 | `lakefs_secret_access_key` | Secret access key for the replication lakeFS user. Can also be provided via `extraEnvVarsSecret` (recommended) |
@@ -509,7 +509,7 @@ Then set `replication.serviceAccountName: replication-sa` in the Helm values.
 |-------|---------|-------------|
 | `organization_name` | | Organization name. Only used to auto-construct `regional_endpoint` for lakeFS Cloud. Not needed when `regional_endpoint` is set |
 | `listen_address` | `0.0.0.0:8008` | HTTP listen address for the replication service API |
-| `refstore_database` | same as lakeFS `database` | Database for replication metadata (commits, ranges, metaranges). Defaults to the same database configured for lakeFS. Only set this if you want to use a different database |
+| `refstore_database` | | Database for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set. When running outside the Helm chart, this field is required |
 | `list_mirrors_page_size` | `1000` | Page size when listing mirrors |
 | `list_repositories_page_size` | `1000` | Page size when listing repositories |
 | `logging.level` | `INFO` | Log level (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
