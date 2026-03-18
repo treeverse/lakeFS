@@ -37,7 +37,7 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
                 </Link>
             </td>
             <td>{run.event_type}</td>
-            <td>
+            <td className="text-truncate">
                 <Link
                     className="me-2"
                     href={{
@@ -45,6 +45,7 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
                         params: { repoId: repo.id },
                         query: { ref: run.branch },
                     }}
+                    title={run.branch}
                 >
                     {run.branch}
                 </Link>
@@ -95,15 +96,15 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
 const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onFilterCommit }) => {
     return (
         <>
-            <Table>
+            <Table style={{ tableLayout: 'fixed' }}>
                 <thead>
                     <tr>
-                        <th>Run ID</th>
-                        <th>Event</th>
-                        <th>Branch</th>
-                        <th>Start Time</th>
-                        <th>End Time</th>
-                        <th>Commit ID</th>
+                        <th style={{ width: '20%' }}>Run ID</th>
+                        <th style={{ width: '10%' }}>Event</th>
+                        <th style={{ width: '25%' }}>Branch</th>
+                        <th style={{ width: '15%' }}>Start Time</th>
+                        <th style={{ width: '15%' }}>End Time</th>
+                        <th style={{ width: '15%' }}>Commit ID</th>
                     </tr>
                 </thead>
                 <tbody>
