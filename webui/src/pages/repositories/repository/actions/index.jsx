@@ -38,25 +38,28 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
             </td>
             <td>{run.event_type}</td>
             <td>
-                <Link
-                    className="me-2"
-                    href={{
-                        pathname: '/repositories/:repoId/objects',
-                        params: { repoId: repo.id },
-                        query: { ref: run.branch },
-                    }}
-                >
-                    {run.branch}
-                </Link>
-                <TooltipButton
-                    onClick={() => onFilterBranch(run.branch)}
-                    variant="link"
-                    tooltip="filter by branch"
-                    className="row-hover"
-                    size="sm"
-                >
-                    <FilterIcon size="small" />
-                </TooltipButton>
+                <div className="d-flex align-items-center">
+                    <Link
+                        className="me-2 text-truncate"
+                        href={{
+                            pathname: '/repositories/:repoId/objects',
+                            params: { repoId: repo.id },
+                            query: { ref: run.branch },
+                        }}
+                        title={run.branch}
+                    >
+                        {run.branch}
+                    </Link>
+                    <TooltipButton
+                        onClick={() => onFilterBranch(run.branch)}
+                        variant="link"
+                        tooltip="filter by branch"
+                        className="row-hover flex-shrink-0"
+                        size="sm"
+                    >
+                        <FilterIcon size="small" />
+                    </TooltipButton>
+                </div>
             </td>
             <td>
                 <FormattedDate dateValue={run.start_time} />
@@ -95,15 +98,15 @@ const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
 const RunTable = ({ repo, runs, nextPage, after, onPaginate, onFilterBranch, onFilterCommit }) => {
     return (
         <>
-            <Table>
+            <Table style={{ tableLayout: 'fixed' }}>
                 <thead>
                     <tr>
-                        <th>Run ID</th>
-                        <th>Event</th>
-                        <th>Branch</th>
-                        <th>Start Time</th>
-                        <th>End Time</th>
-                        <th>Commit ID</th>
+                        <th style={{ width: '20%' }}>Run ID</th>
+                        <th style={{ width: '10%' }}>Event</th>
+                        <th style={{ width: '25%' }}>Branch</th>
+                        <th style={{ width: '15%' }}>Start Time</th>
+                        <th style={{ width: '15%' }}>End Time</th>
+                        <th style={{ width: '15%' }}>Commit ID</th>
                     </tr>
                 </thead>
                 <tbody>

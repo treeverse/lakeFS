@@ -16,9 +16,11 @@ const Layout: FC = () => {
 
     return (
         <ConfigProvider>
-            {showTopNav && <TopNav />}
-            <div className="main-app">
-                <Outlet />
+            <div className="app-layout">
+                {showTopNav && <TopNav />}
+                <div className="main-app">
+                    <Outlet />
+                </div>
             </div>
         </ConfigProvider>
     );
