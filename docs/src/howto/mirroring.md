@@ -208,10 +208,7 @@ Once a user has been created and the replication policy attached to it, create a
 
 ### Deploying the Replication Service
 
-The replication service is deployed alongside each lakeFS Enterprise installation using the [lakeFS Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs). It runs as a separate Deployment within the same Helm release.
-
-!!! important
-    The replication service must be deployed in **every** region participating in mirroring, not just the source.
+The replication service is deployed alongside each lakeFS Enterprise installation using the [lakeFS Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs). It runs as a separate Deployment within the same Helm release and must be deployed in every region participating in mirroring, not just the source.
 
 #### Mirrors database
 
@@ -365,7 +362,7 @@ replication:
 
 ### Creating a mirror
 
-Once both lakeFS installations and their replication services are running, create a mirror using the replication API on the **source** region's replication service:
+Once both lakeFS installations and their replication services are running, create a mirror by calling the replication API on the **source** region's replication service. This call only needs to be made once - the destination replication service will automatically detect the new mirror and create the repository on the destination.
 
 ```bash
 curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
@@ -451,53 +448,46 @@ curl -X DELETE '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOUR
 
 ## Configuration Reference
 
-The replication service configuration has two layers:
+The replication service is configured via the Helm chart values under `replication.*`. All fields below are set in your `values.yaml`.
 
-1. **Helm chart values** (`replication.*`) - Controls the Kubernetes deployment (image, resources, secrets, service account).
-2. **Replication service config** (`replication.config.*`) - Controls the replication service behavior (regions, endpoints, databases, auth).
-
-Configuration can also be set via environment variables with the `REPLICATION_` prefix (e.g., `REPLICATION_REGION=us-east-1`).
+!!! note
+    Replication service configuration values can also be set via environment variables with the `REPLICATION_` prefix (e.g., `REPLICATION_REGION=us-east-1`). Sensitive values like credentials should be provided via a Kubernetes Secret referenced by `replication.extraEnvVarsSecret`.
 
 ### Helm chart values
 
-| Field | Default | Required | Description |
-|-------|---------|----------|-------------|
-| `replication.enabled` | `false` | Yes | Enable the replication service deployment |
-| `replication.image.repository` | `treeverse/replication` | | Docker image repository |
-| `replication.image.tag` | `0.1.17` | | Docker image tag |
-| `replication.image.pullPolicy` | `IfNotPresent` | | Image pull policy |
-| `replication.port` | `8008` | | Service port |
-| `replication.serviceAccountName` | `""` | | Kubernetes service account to use for the replication pod. Required when the replication service needs cloud IAM permissions (e.g., to access DynamoDB or S3). See [Service account and cloud permissions](#service-account-and-cloud-permissions) |
-| `replication.extraEnvVarsSecret` | | | Name of a Kubernetes Secret containing sensitive configuration. When set, the following keys are injected as environment variables: `source_lakefs_access_key_id`, `source_lakefs_secret_access_key`, `auth_encrypt_secret_key` |
-| `replication.extraEnvVars` | `[]` | | Additional environment variables for the replication pod |
-| `replication.resources` | `{}` | | Kubernetes resource requests/limits |
-| `replication.podAnnotations` | `{}` | | Additional pod annotations |
-| `replication.local_cache.base_dir` | `/cache` | | Local cache directory path (auto-injected into `committed.local_cache.dir`) |
-| `replication.local_cache.size_bytes` | `512000000` | | Local cache size in bytes (auto-injected into `committed.local_cache.size_bytes`) |
+| Field | Default | Description |
+|-------|---------|-------------|
+| `replication.enabled` | `false` | Set to `true` to enable the replication service deployment |
+| `replication.image.repository` | `treeverse/replication` | Docker image repository |
+| `replication.image.tag` | `0.1.17` | Docker image tag |
+| `replication.image.pullPolicy` | `IfNotPresent` | Image pull policy |
+| `replication.port` | `8008` | Service port |
+| `replication.serviceAccountName` | `""` | Kubernetes service account for the replication pod. See [Service account and cloud permissions](#service-account-and-cloud-permissions) |
+| `replication.extraEnvVarsSecret` | | Name of a Kubernetes Secret containing sensitive configuration. When set, the following keys are injected as environment variables: `source_lakefs_access_key_id`, `source_lakefs_secret_access_key`, `auth_encrypt_secret_key` |
+| `replication.extraEnvVars` | `[]` | Additional environment variables for the replication pod |
+| `replication.resources` | `{}` | Kubernetes resource requests/limits |
+| `replication.podAnnotations` | `{}` | Additional pod annotations |
+| `replication.local_cache.base_dir` | `/cache` | Local cache directory path |
+| `replication.local_cache.size_bytes` | `512000000` | Local cache size in bytes |
 
 #### Service account and cloud permissions
 
-The `serviceAccountName` field specifies a Kubernetes service account for the replication pod. This is used to grant the replication service access to cloud resources (e.g., DynamoDB, S3) without embedding cloud credentials in the configuration.
+When the replication service needs access to cloud resources (e.g., DynamoDB, S3), use a Kubernetes service account with the appropriate annotations to grant permissions. On AWS, this is done using [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). For detailed instructions on setting up the IAM role, see the [lakeFS deployment guide](../howto/deploy/aws.md).
 
-On AWS, this is typically done using [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html):
+Example service account:
 
-1. Create an IAM role with the required permissions (DynamoDB access for the mirrors database, S3 access for the blockstore).
-2. Create a Kubernetes service account annotated with the IAM role ARN:
-    ```yaml
-    apiVersion: v1
-    kind: ServiceAccount
-    metadata:
-      name: replication-sa
-      annotations:
-        eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME>
-    ```
-3. Set `replication.serviceAccountName: replication-sa` in the Helm values.
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: replication-sa
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME>
+```
 
-The replication pod will then automatically assume the IAM role and have access to the configured cloud resources.
+Then set `replication.serviceAccountName: replication-sa` in the Helm values.
 
-### Replication service config
-
-These fields are set under `replication.config` in the Helm values.
+### Replication service config (`replication.config`)
 
 #### Required fields
 
@@ -519,16 +509,15 @@ These fields are set under `replication.config` in the Helm values.
 |-------|---------|-------------|
 | `organization_name` | | Organization name. Only used to auto-construct `regional_endpoint` for lakeFS Cloud. Not needed when `regional_endpoint` is set |
 | `listen_address` | `0.0.0.0:8008` | HTTP listen address for the replication service API |
-| `refstore_database` | lakeFS `database` config | Database for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set |
-| `cloud_domain` | | Cloud domain for auto-constructing endpoints. Not needed when `regional_endpoint` is set |
+| `refstore_database` | same as lakeFS `database` | Database for replication metadata (commits, ranges, metaranges). Defaults to the same database configured for lakeFS. Only set this if you want to use a different database |
 | `list_mirrors_page_size` | `1000` | Page size when listing mirrors |
 | `list_repositories_page_size` | `1000` | Page size when listing repositories |
 | `logging.level` | `INFO` | Log level (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
 | `logging.format` | `text` | Log format (`text`, `json`) |
 
-#### Committed (metadata cache)
+#### Committed metadata
 
-Controls local caching for committed metadata (ranges and metaranges). When deployed via the Helm chart, `committed.local_cache.dir` and `committed.local_cache.size_bytes` are automatically injected from `replication.local_cache`.
+Configuration for committed metadata (ranges and metaranges).
 
 | Field | Default | Description |
 |-------|---------|-------------|
