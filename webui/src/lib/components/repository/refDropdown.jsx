@@ -425,7 +425,7 @@ const RefDropdown = ({
                 style={{ maxWidth: narrow ? 320 : 590 }}
                 title={showId(selected)}
                 aria-label={`${prefix}${selected.type}: ${showId(selected)}`}
-                className="d-inline-flex align-items-center"
+                className="d-inline-flex align-items-center text-nowrap"
             >
                 {prefix}
                 {refIcon}
