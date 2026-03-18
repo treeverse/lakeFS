@@ -8,6 +8,10 @@ import { PluginCommitOperation } from './pluginCommitOperation';
 import { PluginMergeOperation } from './pluginMergeOperation';
 import SyncCommitPlugin from './impls/SyncCommitPlugin';
 import SyncMergePlugin from './impls/SyncMergePlugin';
+import { PluginTablesBrowser } from './pluginTablesBrowser';
+import DefaultTablesBrowserPlugin from './impls/DefaultTablesBrowserPlugin';
+import { PluginCompareBranches } from './pluginCompareBranches';
+import DefaultBranchChangesPlugin from './impls/DefaultCompareBranchesPlugin';
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
@@ -15,6 +19,8 @@ export class PluginManager {
     private _loginStrategy: PluginLoginStrategy = RedirectToSSOStrategyPlugin;
     private _commitOperation: PluginCommitOperation = SyncCommitPlugin;
     private _mergeOperation: PluginMergeOperation = SyncMergePlugin;
+    private _tablesBrowser: PluginTablesBrowser = DefaultTablesBrowserPlugin;
+    private _branchChanges: PluginCompareBranches = DefaultBranchChangesPlugin;
 
     overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
         this._repoCreationForm = pluginRepoCreationForm;
@@ -54,5 +60,21 @@ export class PluginManager {
 
     get mergeOperation(): PluginMergeOperation {
         return this._mergeOperation;
+    }
+
+    overridePluginTablesBrowser(pluginTablesBrowser: PluginTablesBrowser): void {
+        this._tablesBrowser = pluginTablesBrowser;
+    }
+
+    get tablesBrowser(): PluginTablesBrowser {
+        return this._tablesBrowser;
+    }
+
+    overridePluginBranchChanges(pluginBranchChanges: PluginCompareBranches): void {
+        this._branchChanges = pluginBranchChanges;
+    }
+
+    get branchChanges(): PluginCompareBranches {
+        return this._branchChanges;
     }
 }
