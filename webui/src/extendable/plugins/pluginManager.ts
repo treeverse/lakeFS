@@ -20,61 +20,61 @@ export class PluginManager {
     private _commitOperation: PluginCommitOperation = SyncCommitPlugin;
     private _mergeOperation: PluginMergeOperation = SyncMergePlugin;
     private _tablesBrowser: PluginTablesBrowser = DefaultTablesBrowserPlugin;
-    private _branchChanges: PluginCompareBranches = DefaultBranchChangesPlugin;
+    private _compareBranches: PluginCompareBranches = DefaultBranchChangesPlugin;
 
-    overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
-        this._repoCreationForm = pluginRepoCreationForm;
+    overridePluginRepoCreationForm(plugin: PluginRepoCreationForm): void {
+        this._repoCreationForm = plugin;
     }
 
     get repoCreationForm(): PluginRepoCreationForm {
         return this._repoCreationForm;
     }
 
-    overridePluginCustomObjectRenderers(pluginCustomObjectRenderers: PluginCustomObjectRenderers): void {
-        this._customObjectRenderers = pluginCustomObjectRenderers;
+    overridePluginCustomObjectRenderers(plugin: PluginCustomObjectRenderers): void {
+        this._customObjectRenderers = plugin;
     }
 
     get customObjectRenderers(): PluginCustomObjectRenderers {
         return this._customObjectRenderers;
     }
 
-    overridePluginLoginStrategy(pluginLoginStrategy: PluginLoginStrategy): void {
-        this._loginStrategy = pluginLoginStrategy;
+    overridePluginLoginStrategy(plugin: PluginLoginStrategy): void {
+        this._loginStrategy = plugin;
     }
 
     get loginStrategy(): PluginLoginStrategy {
         return this._loginStrategy;
     }
 
-    overridePluginCommitOperation(pluginCommitOperation: PluginCommitOperation): void {
-        this._commitOperation = pluginCommitOperation;
+    overridePluginCommitOperation(plugin: PluginCommitOperation): void {
+        this._commitOperation = plugin;
     }
 
     get commitOperation(): PluginCommitOperation {
         return this._commitOperation;
     }
 
-    overridePluginMergeOperation(pluginMergeOperation: PluginMergeOperation): void {
-        this._mergeOperation = pluginMergeOperation;
+    overridePluginMergeOperation(plugin: PluginMergeOperation): void {
+        this._mergeOperation = plugin;
     }
 
     get mergeOperation(): PluginMergeOperation {
         return this._mergeOperation;
     }
 
-    overridePluginTablesBrowser(pluginTablesBrowser: PluginTablesBrowser): void {
-        this._tablesBrowser = pluginTablesBrowser;
+    overridePluginTablesBrowser(plugin: PluginTablesBrowser): void {
+        this._tablesBrowser = plugin;
     }
 
     get tablesBrowser(): PluginTablesBrowser {
         return this._tablesBrowser;
     }
 
-    overridePluginBranchChanges(pluginBranchChanges: PluginCompareBranches): void {
-        this._branchChanges = pluginBranchChanges;
+    overridePluginCompareBranches(plugin: PluginCompareBranches): void {
+        this._compareBranches = plugin;
     }
 
-    get branchChanges(): PluginCompareBranches {
-        return this._branchChanges;
+    get compareBranches(): PluginCompareBranches {
+        return this._compareBranches;
     }
 }

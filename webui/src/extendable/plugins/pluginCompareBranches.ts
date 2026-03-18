@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface BranchChangesComponentProps {
+export interface CompareBranchesComponentProps {
     repo: { id: string };
     reference: { id: string; type: string };
     compareReference: { id: string; type: string };
@@ -10,5 +10,5 @@ export interface BranchChangesComponentProps {
 }
 
 export interface PluginCompareBranches {
-    getBranchChangesComponent(): React.FC<BranchChangesComponentProps> | null;
+    getCompareBranchesComponent(): React.FC<CompareBranchesComponentProps> | null;
 }

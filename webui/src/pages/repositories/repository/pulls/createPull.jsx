@@ -6,7 +6,7 @@ import { useRefs } from '../../../../lib/hooks/repo';
 import { RepoError } from '../error';
 import { useRouter } from '../../../../lib/hooks/router';
 import Button from 'react-bootstrap/Button';
-import CompareBranches from '../../../../lib/components/repository/compareBranches';
+import { usePluginManager } from '../../../../extendable/plugins/pluginsContext';
 import { RefTypeBranch } from '../../../../constants';
 import Form from 'react-bootstrap/Form';
 import { pulls as pullsAPI } from '../../../../lib/api';
@@ -93,6 +93,9 @@ const CreatePullForm = ({ repo, reference, compare, title, setTitle, description
 
 const CreatePull = () => {
     const { repo, loading, error, reference, compare } = useRefs();
+
+    const pluginManager = usePluginManager();
+    const CompareBranches = pluginManager.compareBranches.getCompareBranchesComponent();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
