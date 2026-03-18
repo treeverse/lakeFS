@@ -5,7 +5,7 @@ import { useRouter } from '../../lib/hooks/router';
 import { useAPI } from '../../lib/hooks/api';
 import { SetupComplete } from './setupComplete';
 import { UserConfiguration } from './userConfiguration';
-import { capitalize } from 'lodash';
+import capitalize from 'lodash/capitalize';
 
 const SetupContents = () => {
     const [setupError, setSetupError] = useState(null);
