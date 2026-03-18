@@ -1,5 +1,5 @@
 import React from 'react';
-import {PluginTablesBrowser} from '../pluginTablesBrowser';
+import { PluginTablesBrowser } from '../pluginTablesBrowser';
 
 const TablesPlaceholder: React.FC = () => (
     <p>Tables browsing is an Enterprise feature.</p>
