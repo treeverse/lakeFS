@@ -8,7 +8,15 @@ import Overlay from 'react-bootstrap/Overlay';
 import { Col, Nav, Row } from 'react-bootstrap';
 import Popover from 'react-bootstrap/Popover';
 import ListGroup from 'react-bootstrap/ListGroup';
-import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon } from '@primer/octicons-react';
+import {
+    ChevronDownIcon,
+    ChevronRightIcon,
+    ChevronUpIcon,
+    GitBranchIcon,
+    GitCommitIcon,
+    TagIcon,
+    XIcon,
+} from '@primer/octicons-react';
 
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
@@ -328,6 +336,7 @@ const RefDropdown = ({
     selectRef,
     onCancel,
     variant = 'light',
+    size,
     prefix = '',
     emptyText = '',
     withCommits = true,
@@ -379,6 +388,7 @@ const RefDropdown = ({
                 <Button
                     ref={target}
                     variant={variant}
+                    size={size}
                     onClick={() => {
                         setShow(!show);
                     }}
@@ -397,19 +407,29 @@ const RefDropdown = ({
         return ref.id;
     };
 
-    const title = prefix + !!selected ? `${prefix} ${selected.type}: ` : '';
+    const refIcon =
+        selected.type === RefTypeTag ? (
+            <TagIcon className="ms-1 me-1" />
+        ) : selected.type === RefTypeCommit ? (
+            <GitCommitIcon className="ms-1 me-1" />
+        ) : (
+            <GitBranchIcon className="ms-1 me-1" />
+        );
     return (
         <>
             <Button
                 ref={target}
                 variant={variant}
+                size={size}
                 onClick={() => setShow(!show)}
-                style={{ maxWidth: narrow ? 320 : 600 }}
+                style={{ maxWidth: narrow ? 320 : 590 }}
                 title={showId(selected)}
-                className="d-inline-flex align-items-center"
+                aria-label={`${prefix}${selected.type}: ${showId(selected)}`}
+                className="d-inline-flex align-items-center text-nowrap"
             >
+                {prefix}
+                {refIcon}
                 <span className="text-truncate">
-                    {title}
                     <strong>{showId(selected)}</strong>
                 </span>
                 <span className="ms-1">{show ? <ChevronUpIcon /> : <ChevronDownIcon />}</span>

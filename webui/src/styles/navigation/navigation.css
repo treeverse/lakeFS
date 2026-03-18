@@ -9,11 +9,8 @@
     box-shadow: var(--shadow);
     padding: var(--spacing-sm) var(--spacing-lg);
     border-bottom: 1px solid var(--border);
-    position: fixed; /* Make navbar fixed */
-    top: 0; /* Position at the top */
-    left: 0; /* Align to the left */
-    right: 0; /* Stretch to the right */
-    z-index: 1050; /* Ensure it stays on top */
+    flex-shrink: 0;
+    z-index: 1050;
 }
 
 .navbar-brand {

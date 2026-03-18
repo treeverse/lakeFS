@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { BrowserIcon, LinkIcon, PlayIcon, TagIcon } from '@primer/octicons-react';
+import { BrowserIcon, HistoryIcon, LinkIcon, PlayIcon, TagIcon } from '@primer/octicons-react';
 
 import { commits, tags, MAX_LISTING_AMOUNT } from '../../../../lib/api';
 import Badge from 'react-bootstrap/Badge';
@@ -261,7 +261,13 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
                         </Button>
                     )}
                     {isBranch && (
-                        <Button variant={revertMode ? 'secondary' : 'light'} onClick={handleRevertClick}>
+                        <Button
+                            variant={revertMode ? 'secondary' : 'outline-secondary'}
+                            size="sm"
+                            onClick={handleRevertClick}
+                            className="d-flex align-items-center"
+                        >
+                            <HistoryIcon className="me-1" />
                             {revertMode ? 'Cancel' : 'Revert'}
                         </Button>
                     )}
