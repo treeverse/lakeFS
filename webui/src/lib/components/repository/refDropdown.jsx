@@ -8,7 +8,15 @@ import Overlay from 'react-bootstrap/Overlay';
 import { Col, Nav, Row } from 'react-bootstrap';
 import Popover from 'react-bootstrap/Popover';
 import ListGroup from 'react-bootstrap/ListGroup';
-import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, GitBranchIcon, GitCommitIcon, TagIcon, XIcon } from '@primer/octicons-react';
+import {
+    ChevronDownIcon,
+    ChevronRightIcon,
+    ChevronUpIcon,
+    GitBranchIcon,
+    GitCommitIcon,
+    TagIcon,
+    XIcon,
+} from '@primer/octicons-react';
 
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
@@ -399,11 +407,14 @@ const RefDropdown = ({
         return ref.id;
     };
 
-    const refIcon = selected.type === RefTypeTag
-        ? <TagIcon className="me-1" />
-        : selected.type === RefTypeCommit
-            ? <GitCommitIcon className="me-1" />
-            : <GitBranchIcon className="me-1" />;
+    const refIcon =
+        selected.type === RefTypeTag ? (
+            <TagIcon className="me-1" />
+        ) : selected.type === RefTypeCommit ? (
+            <GitCommitIcon className="me-1" />
+        ) : (
+            <GitBranchIcon className="me-1" />
+        );
     return (
         <>
             <Button
@@ -415,7 +426,8 @@ const RefDropdown = ({
                 title={showId(selected)}
                 className="d-inline-flex align-items-center"
             >
-                {prefix}{refIcon}
+                {prefix}
+                {refIcon}
                 <span className="text-truncate">
                     <strong>{showId(selected)}</strong>
                 </span>
