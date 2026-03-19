@@ -188,5 +188,6 @@ def handle_http_error(resp: HTTPResponse) -> None:
         # Convert headers to dict for consistent interface
         headers = getattr(resp, 'headers', None)
         headers_dict = dict(headers) if headers else None
-        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)(resp.status, resp.reason, resp.data, headers_dict)
+        exc_class = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)
+        lakefs_ex = exc_class(resp.status, resp.reason, resp.data, headers_dict)
         raise lakefs_ex
