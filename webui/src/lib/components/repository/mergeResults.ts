@@ -51,8 +51,10 @@ export function mergeResults(
     // Avoid adding items that come after the last result path (both are sorted lexicographically)
     const lastResultPath = last(results)?.path;
     const missingItems = changesData.results
-        .filter((change) => change.type === 'removed' || change.type === 'added' || change.path_type === 'common_prefix')
-        .filter((change) => lastResultPath && change.path <= lastResultPath)
+        .filter(
+            (change) => change.type === 'removed' || change.type === 'added' || change.path_type === 'common_prefix',
+        )
+        .filter((change) => !lastResultPath || change.path <= lastResultPath)
         .filter((change) => !results.find((result) => result.path === change.path));
 
     // Merge regular results with change info
