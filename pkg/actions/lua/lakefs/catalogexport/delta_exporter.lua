@@ -140,88 +140,20 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         end
                         if entry.add ~= nil then
                             entry.add.path = physical_path
+                            if entry.add.deletionVector then
+                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.add.deletionVector, entry.add.path, "error")
+                            end
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
+                            if entry.remove.deletionVector then
+                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.remove.deletionVector, entry.remove.path, "skip")
+                            end
                         elseif entry.cdc ~= nil then
                             entry.cdc.path = physical_path
                         end
-
-                        -- Handle deletion vector paths (Protocol 3/7)
-                        local action_entry = entry.add or entry.remove
-                        local action_type = entry.add and "add" or "remove"
-                        if action_entry and action_entry.deletionVector then
-                            local dv = action_entry.deletionVector
-                            print(string.format("Found deletionVector for %s action on file: %s", action_type, action_entry.path))
-                            print(string.format("  storageType=%s, pathOrInlineDv=%s",
-                                tostring(dv.storageType), tostring(dv.pathOrInlineDv)))
-                            -- UUID-based (u): resolve Z85 UUID → .bin filename → stat_object → rewrite to physical URL
-                            -- Path-based (p): relative path → stat_object → rewrite to physical URL
-                            --                 absolute URI → error (not tracked by lakeFS, cannot resolve)
-                            -- Inline (i): no file; data is embedded in the JSON — pass through unchanged
-                            if dv.storageType == "p" then
-                                -- Per the Delta spec, "p" means pathOrInlineDv can be either:
-                                --   - a relative path from the table root (e.g. "deletion_vector_abc.bin")
-                                --   - an absolute URI (e.g. "abfss://...", "s3://...")
-                                -- For relative paths, resolve via stat_object just like "u" type.
-                                -- For absolute URIs, the file is not tracked by lakeFS and cannot be
-                                -- resolved — error rather than silently producing a broken exported table.
-                                local parsed_dv = url.parse(dv.pathOrInlineDv)
-                                if parsed_dv ~= nil and parsed_dv["scheme"] ~= nil and parsed_dv["scheme"] ~= "" then
-                                    error(string.format(
-                                        "unsupported deletion vector storageType=\"p\" with absolute URI on file %s: " ..
-                                        "pathOrInlineDv=%s is an absolute URI and cannot be resolved through lakeFS. " ..
-                                        "Only relative paths are supported for storageType=\"p\".",
-                                        tostring(action_entry.path), tostring(dv.pathOrInlineDv)))
-                                end
-                                local dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
-                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
-                                if dv_code == 200 then
-                                    local dv_stat = json.unmarshal(dv_obj)
-                                    local dv_u = url.parse(dv_stat["physical_address"])
-                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
-                                    if path_transformer ~= nil then
-                                        dv_physical = path_transformer(dv_physical)
-                                    end
-                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
-                                else
-                                    error(string.format(
-                                        "deletion vector file not found for storageType=\"p\" on file %s: " ..
-                                        "path=%s (code=%d)",
-                                        tostring(action_entry.path), dv_full_path, dv_code))
-                                end
-                            elseif dv.storageType == "u" then
-                                -- UUID-based: The pathOrInlineDv contains a Z85-encoded UUID (last 20 chars)
-                                -- with optional random prefix before it
-                                local uuid, prefix = z85.decode_uuid(dv.pathOrInlineDv)
-                                local dv_filename = "deletion_vector_" .. uuid .. ".bin"
-                                if prefix ~= "" then
-                                    dv_filename = prefix .. "/" .. dv_filename
-                                end
-                                local dv_full_path = pathlib.join("/", table_path, dv_filename)
-                                print(string.format("UUID-based DV decoded: uuid=%s, prefix=%s, path=%s", uuid, prefix, dv_full_path))
-                                local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
-                                if dv_code == 200 then
-                                    local dv_stat = json.unmarshal(dv_obj)
-                                    local dv_u = url.parse(dv_stat["physical_address"])
-                                    local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
-                                    if path_transformer ~= nil then
-                                        dv_physical = path_transformer(dv_physical)
-                                    end
-                                    -- Change storageType to 'p' since we're now using an absolute path
-                                    action_entry.deletionVector.storageType = "p"
-                                    action_entry.deletionVector.pathOrInlineDv = dv_physical
-                                    print(string.format("Transformed UUID DV to path: %s", dv_physical))
-                                else
-                                    print(string.format("WARNING: DV file not found at %s (code=%d)", dv_full_path, dv_code))
-                                end
-                            end
-                        end
                     elseif code == 404 then
                         if entry.remove ~= nil or entry.cdc ~= nil then
-                            -- If the object is not found, and the entry is a remove or a cdc entry, we can assume it was vacuumed
-                            print(string.format(
-                                "Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.",
-                                unescaped_path))
+                            -- File not found on a remove/cdc entry means it was vacuumed — skip silently.
                             unfound_paths[unescaped_path] = nil
                         else
                             unfound_paths[unescaped_path] = true
@@ -283,6 +215,52 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
         response[table_name_yaml] = table_val
     end
     return response
+end
+
+-- Resolve a deletion vector's .bin file to its physical storage address.
+-- dv: the deletionVector table (modified in place).
+-- file_path: parent Parquet path, used only in error messages.
+-- on_not_found: "error" for add entries (missing DV = deleted rows appear live,
+--               silent data corruption); "skip" for remove entries (DV file may
+--               have been vacuumed together with its compacted parent file).
+local function resolve_dv(repo, commit_id, table_path, path_transformer, dv, file_path, on_not_found)
+    if dv.storageType == "i" then
+        return -- inline bitmap embedded in JSON, no file to resolve
+    end
+    local dv_full_path
+    if dv.storageType == "p" then
+        -- "p" is a relative path from the table root.
+        dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
+    elseif dv.storageType == "u" then
+        -- pathOrInlineDv encodes a UUID in Z85: last 20 chars are the UUID,
+        -- any chars before are an optional subdirectory prefix.
+        local uuid, prefix = z85.decode_uuid(dv.pathOrInlineDv)
+        local dv_filename = "deletion_vector_" .. uuid .. ".bin"
+        if prefix ~= "" then
+            dv_filename = prefix .. "/" .. dv_filename
+        end
+        dv_full_path = pathlib.join("/", table_path, dv_filename)
+    else
+        error(string.format("unknown deletion vector storageType=%s on file %s",
+            tostring(dv.storageType), tostring(file_path)))
+    end
+    local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+    if dv_code == 200 then
+        local dv_stat = json.unmarshal(dv_obj)
+        local dv_u = url.parse(dv_stat["physical_address"])
+        local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+        if path_transformer ~= nil then
+            dv_physical = path_transformer(dv_physical)
+        end
+        -- Always write as "p" with an absolute physical URL.
+        dv.storageType = "p"
+        dv.pathOrInlineDv = dv_physical
+    elseif on_not_found == "error" then
+        error(string.format(
+            "deletion vector file not found for file %s: path=%s (code=%d)",
+            tostring(file_path), dv_full_path, dv_code))
+    end
+    -- on_not_found == "skip": DV was vacuumed together with its compacted parent file
 end
 
 -- Local function to filter the list of table defs to include only those that have changed
