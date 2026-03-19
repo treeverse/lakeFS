@@ -60,6 +60,21 @@ type CookieAuthConfig struct {
 	PersistFriendlyName     bool
 }
 
+// NewRequestAuthenticator returns a function that authenticates an HTTP request using all
+// supported auth methods (basic auth, JWT, cookies, OIDC, SAML). Returns the authenticated
+// user or nil if no credentials were provided. Returns an error if credentials were provided
+// but invalid.
+func NewRequestAuthenticator(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) (func(r *http.Request) (*model.User, error), error) {
+	swagger, err := apigen.GetSwagger()
+	if err != nil {
+		return nil, err
+	}
+	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	return func(r *http.Request) (*model.User, error) {
+		return checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
+	}, nil
+}
+
 func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) (func(next http.Handler) http.Handler, error) {
 	swagger, err := apigen.GetSwagger()
 	if err != nil {

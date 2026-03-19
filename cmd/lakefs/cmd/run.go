@@ -340,6 +340,12 @@ var runCmd = &cobra.Command{
 
 		actionsService.SetEndpoint(server)
 
+		// Build request authenticator for additional services, supporting all auth methods
+		requestAuthenticator, err := api.NewRequestAuthenticator(logger, middlewareAuthenticator, authService, &oidcConfig, &cookieAuthConfig)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create request authenticator")
+		}
+
 		// register additional API services
 		err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
 			Config:                cfg,
@@ -350,6 +356,7 @@ var runCmd = &cobra.Command{
 			Collector:             bufferedCollector,
 			Logger:                logger,
 			LicenseManager:        licenseManager,
+			RequestAuthenticator:  requestAuthenticator,
 		}, apiHandler)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to register services on router")

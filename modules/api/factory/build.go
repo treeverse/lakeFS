@@ -9,6 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -29,6 +30,9 @@ type ServiceDependencies struct {
 	Collector             stats.Collector
 	Logger                logging.Logger
 	LicenseManager        license.Manager
+	// RequestAuthenticator authenticates an HTTP request using all supported auth methods
+	// (basic auth, JWT, cookies, OIDC, SAML). Used by services that need HTTP authentication.
+	RequestAuthenticator func(r *http.Request) (*model.User, error)
 }
 
 func RegisterServices(ctx context.Context, sd ServiceDependencies, router *chi.Mux) error {
