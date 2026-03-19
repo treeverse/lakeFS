@@ -5,7 +5,7 @@ local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
 local strings = require("strings")
 local url = require("net/url")
-local z85 = require("encoding/z85")
+local z85 = require("encoding/z85enc")
 
 local function isTableNotEmpty(t)
     return next(t) ~= nil
@@ -320,6 +320,6 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
 end
 
 return {
-export_delta_log = export_delta_log,
+    export_delta_log = export_delta_log,
     changed_table_defs = changed_table_defs,
 }

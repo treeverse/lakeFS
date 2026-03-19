@@ -1,4 +1,4 @@
-package z85
+package z85enc
 
 import (
 	"fmt"
@@ -17,20 +17,7 @@ func Open(l *lua.State) {
 }
 
 var library = []lua.RegistryFunction{
-	{Name: "decode", Function: decode},
 	{Name: "decode_uuid", Function: decodeUUID},
-}
-
-func decode(l *lua.State) int {
-	data := lua.CheckString(l, 1)
-	dst := make([]byte, z85.DecodedLen(len(data)))
-	_, err := z85.Decode(dst, []byte(data))
-	if err != nil {
-		lua.Errorf(l, "%s", err.Error())
-		panic("unreachable")
-	}
-	l.PushString(string(dst))
-	return 1
 }
 
 func decodeUUID(l *lua.State) int {
