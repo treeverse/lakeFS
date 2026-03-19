@@ -101,12 +101,7 @@ local function resolve_dv(repo, commit_id, table_path, path_transformer, dv, fil
         -- Always write as "p" with an absolute physical URL.
         dv.storageType = "p"
         dv.pathOrInlineDv = dv_physical
-    elseif on_not_found == "error" then
-        error(string.format(
-            "deletion vector file not found for file %s: path=%s (code=%d)",
-            tostring(file_path), dv_full_path, dv_code))
     end
-    -- on_not_found == "skip": DV was vacuumed together with its compacted parent file
 end
 
 local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path,
@@ -188,12 +183,12 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         if entry.add ~= nil then
                             entry.add.path = physical_path
                             if entry.add.deletionVector then
-                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.add.deletionVector, entry.add.path, "error")
+                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.add.deletionVector, entry.add.path)
                             end
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
                             if entry.remove.deletionVector then
-                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.remove.deletionVector, entry.remove.path, "skip")
+                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.remove.deletionVector, entry.remove.path)
                             end
                         elseif entry.cdc ~= nil then
                             entry.cdc.path = physical_path
