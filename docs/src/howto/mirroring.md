@@ -220,6 +220,8 @@ The replication service requires a shared database to coordinate mirror state be
 
     To enable cross-region replication, you must configure the table as a [DynamoDB global table](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html) with a replica in the destination region. This requires enabling [DynamoDB Streams](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html) with `NEW_AND_OLD_IMAGES` view type on the table.
 
+    For cross-account setups, see [DynamoDB multi-account global tables](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/globaltables-MultiAccount.html).
+
 === "PostgreSQL / CockroachDB"
 
     Provide a PostgreSQL or CockroachDB database that is accessible from both regions. Use the same connection string in the `mirrors_database` configuration on each installation.
