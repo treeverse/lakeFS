@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Shopify/go-lua"
-	"github.com/tilinna/z85"
+	z85enc "github.com/tilinna/z85"
 )
 
 func Open(l *lua.State) {
@@ -23,8 +23,8 @@ var library = []lua.RegistryFunction{
 
 func decode(l *lua.State) int {
 	data := lua.CheckString(l, 1)
-	dst := make([]byte, z85.DecodedLen(len(data)))
-	_, err := z85.Decode(dst, []byte(data))
+	dst := make([]byte, z85enc.DecodedLen(len(data)))
+	_, err := z85enc.Decode(dst, []byte(data))
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
@@ -43,7 +43,7 @@ func decodeUUID(l *lua.State) int {
 		encoded = data[len(data)-20:]
 	}
 	dst := make([]byte, 16)
-	_, err := z85.Decode(dst, []byte(encoded))
+	_, err := z85enc.Decode(dst, []byte(encoded))
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
