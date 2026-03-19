@@ -62,6 +62,53 @@ end
     path_transformer: function(path) used for transforming path scheme (ex: Azure https to abfss)
 
 ]]
+
+-- Resolve a deletion vector's .bin file to its physical storage address.
+-- dv: the deletionVector table (modified in place).
+-- file_path: parent Parquet path, used only in error messages.
+-- on_not_found: "error" for add entries (missing DV = deleted rows appear live,
+--               silent data corruption); "skip" for remove entries (DV file may
+--               have been vacuumed together with its compacted parent file).
+local function resolve_dv(repo, commit_id, table_path, path_transformer, dv, file_path, on_not_found)
+    if dv.storageType == "i" then
+        return -- inline bitmap embedded in JSON, no file to resolve
+    end
+    local dv_full_path
+    if dv.storageType == "p" then
+        -- "p" is a relative path from the table root.
+        dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
+    elseif dv.storageType == "u" then
+        -- pathOrInlineDv encodes a UUID in Z85: last 20 chars are the UUID,
+        -- any chars before are an optional subdirectory prefix.
+        local uuid, prefix = z85.decode_uuid(dv.pathOrInlineDv)
+        local dv_filename = "deletion_vector_" .. uuid .. ".bin"
+        if prefix ~= "" then
+            dv_filename = prefix .. "/" .. dv_filename
+        end
+        dv_full_path = pathlib.join("/", table_path, dv_filename)
+    else
+        error(string.format("unknown deletion vector storageType=%s on file %s",
+            tostring(dv.storageType), tostring(file_path)))
+    end
+    local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+    if dv_code == 200 then
+        local dv_stat = json.unmarshal(dv_obj)
+        local dv_u = url.parse(dv_stat["physical_address"])
+        local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+        if path_transformer ~= nil then
+            dv_physical = path_transformer(dv_physical)
+        end
+        -- Always write as "p" with an absolute physical URL.
+        dv.storageType = "p"
+        dv.pathOrInlineDv = dv_physical
+    elseif on_not_found == "error" then
+        error(string.format(
+            "deletion vector file not found for file %s: path=%s (code=%d)",
+            tostring(file_path), dv_full_path, dv_code))
+    end
+    -- on_not_found == "skip": DV was vacuumed together with its compacted parent file
+end
+
 local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path,
                                 path_transformer)
     local repo = action.repository_id
@@ -215,52 +262,6 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
         response[table_name_yaml] = table_val
     end
     return response
-end
-
--- Resolve a deletion vector's .bin file to its physical storage address.
--- dv: the deletionVector table (modified in place).
--- file_path: parent Parquet path, used only in error messages.
--- on_not_found: "error" for add entries (missing DV = deleted rows appear live,
---               silent data corruption); "skip" for remove entries (DV file may
---               have been vacuumed together with its compacted parent file).
-local function resolve_dv(repo, commit_id, table_path, path_transformer, dv, file_path, on_not_found)
-    if dv.storageType == "i" then
-        return -- inline bitmap embedded in JSON, no file to resolve
-    end
-    local dv_full_path
-    if dv.storageType == "p" then
-        -- "p" is a relative path from the table root.
-        dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
-    elseif dv.storageType == "u" then
-        -- pathOrInlineDv encodes a UUID in Z85: last 20 chars are the UUID,
-        -- any chars before are an optional subdirectory prefix.
-        local uuid, prefix = z85.decode_uuid(dv.pathOrInlineDv)
-        local dv_filename = "deletion_vector_" .. uuid .. ".bin"
-        if prefix ~= "" then
-            dv_filename = prefix .. "/" .. dv_filename
-        end
-        dv_full_path = pathlib.join("/", table_path, dv_filename)
-    else
-        error(string.format("unknown deletion vector storageType=%s on file %s",
-            tostring(dv.storageType), tostring(file_path)))
-    end
-    local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
-    if dv_code == 200 then
-        local dv_stat = json.unmarshal(dv_obj)
-        local dv_u = url.parse(dv_stat["physical_address"])
-        local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
-        if path_transformer ~= nil then
-            dv_physical = path_transformer(dv_physical)
-        end
-        -- Always write as "p" with an absolute physical URL.
-        dv.storageType = "p"
-        dv.pathOrInlineDv = dv_physical
-    elseif on_not_found == "error" then
-        error(string.format(
-            "deletion vector file not found for file %s: path=%s (code=%d)",
-            tostring(file_path), dv_full_path, dv_code))
-    end
-    -- on_not_found == "skip": DV was vacuumed together with its compacted parent file
 end
 
 -- Local function to filter the list of table defs to include only those that have changed
