@@ -8,12 +8,14 @@ import { compareLexicographically } from '../../utils';
  * @param results - Array of object entries from the main listing
  * @param changesData - Changes data containing results array with change information
  * @param showChangesOnly - Whether to show only changes (if true, no merging needed)
+ * @param hasMore - Whether there are more pages of results after the current one
  * @returns Merged and sorted results with diff_type annotations
  */
 export function mergeResults(
     results: Entry[] | undefined | null,
     changesData: ChangesData | undefined | null,
     showChangesOnly = false,
+    hasMore = false,
 ): EntryWithDiff[] {
     if (showChangesOnly || !results || !changesData?.results) {
         // Ensure regular results are also sorted lexicographically
@@ -48,13 +50,14 @@ export function mergeResults(
 
     // Add missing items for removed entries, added entries, and prefixes
     // When using committed-only ref (branch@) for objects.list, added entries are not in the list
-    // Avoid adding items that come after the last result path (both are sorted lexicographically)
+    // On paginated results, only add items within the current page range to avoid duplicates
+    // On the last page (no more results), include all remaining changes
     const lastResultPath = last(results)?.path;
     const missingItems = changesData.results
         .filter(
             (change) => change.type === 'removed' || change.type === 'added' || change.path_type === 'common_prefix',
         )
-        .filter((change) => !lastResultPath || change.path <= lastResultPath)
+        .filter((change) => !hasMore || !lastResultPath || change.path <= lastResultPath)
         .filter((change) => !results.find((result) => result.path === change.path));
 
     // Merge regular results with change info

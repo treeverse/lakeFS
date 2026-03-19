@@ -203,7 +203,7 @@ describe('mergeResults', () => {
             });
         });
 
-        it('does not add removed items that come after last result path', () => {
+        it('does not add removed items that come after last result path when there are more pages', () => {
             const results: Entry[] = [
                 { path: 'a.txt', path_type: 'object' },
                 { path: 'b.txt', path_type: 'object' },
@@ -212,11 +212,30 @@ describe('mergeResults', () => {
                 results: [{ path: 'z.txt', type: 'removed', path_type: 'object' }],
             };
 
-            const merged = mergeResults(results, changesData, false);
+            const merged = mergeResults(results, changesData, false, true);
 
-            // z.txt should not be added because it comes after b.txt lexicographically
+            // z.txt should not be added because it comes after b.txt and there are more pages
             expect(merged).toHaveLength(2);
             expect(merged.find((r) => r.path === 'z.txt')).toBeUndefined();
+        });
+
+        it('adds items after last result path on the last page', () => {
+            const results: Entry[] = [
+                { path: 'a.txt', path_type: 'object' },
+                { path: 'b.txt', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [{ path: 'z.txt', type: 'added', path_type: 'object' }],
+            };
+
+            const merged = mergeResults(results, changesData, false, false);
+
+            // z.txt should be added because this is the last page
+            expect(merged).toHaveLength(3);
+            expect(merged.find((r) => r.path === 'z.txt')).toMatchObject({
+                path: 'z.txt',
+                diff_type: 'added',
+            });
         });
 
         it('does not duplicate items that exist in both results and changes', () => {
