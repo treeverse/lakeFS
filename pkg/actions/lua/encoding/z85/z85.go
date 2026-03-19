@@ -12,7 +12,7 @@ func Open(l *lua.State) {
 		lua.NewLibrary(l, library)
 		return 1
 	}
-	lua.Require(l, "encoding/z85", open, false)
+	lua.Require(l, "encoding/z85enc", open, false)
 	l.Pop(1)
 }
 
