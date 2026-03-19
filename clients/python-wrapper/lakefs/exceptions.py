@@ -116,6 +116,19 @@ class InvalidRangeException(ServerException, OSError):
     Raised when an object's read request start position exceeds file size 
     """
 
+    def __init__(self, status=None, reason=None, body=None, headers=None):
+        super().__init__(status, reason, body, headers)
+        self.size: int | None = None
+        # Parse size from Content-Range header if present
+        # Format: "bytes */<size>" (e.g., "bytes */0" for empty object)
+        if self.headers:
+            content_range = self.headers.get('Content-Range', '')
+            if content_range.startswith('bytes */'):
+                try:
+                    self.size = int(content_range.split('/')[1])
+                except (IndexError, ValueError):
+                    pass
+
 
 class ImportManagerException(LakeFSException):
     """
@@ -152,7 +165,10 @@ def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], L
     try:
         yield
     except lakefs_sdk.ApiException as e:
-        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason, e.body)
+        # Convert headers list of tuples to dict for easier access
+        headers = getattr(e, 'headers', None)
+        headers_dict = dict(headers) if headers else None
+        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason, e.body, headers_dict)
         if custom_handler is not None:
             lakefs_ex = custom_handler(lakefs_ex)
 
@@ -167,5 +183,8 @@ def handle_http_error(resp: HTTPResponse) -> None:
     :param resp: The response to parse
     """
     if not http.HTTPStatus.OK <= resp.status < http.HTTPStatus.MULTIPLE_CHOICES:
-        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)(resp.status, resp.reason, resp.data)
+        # Convert headers to dict for consistent interface
+        headers = getattr(resp, 'headers', None)
+        headers_dict = dict(headers) if headers else None
+        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)(resp.status, resp.reason, resp.data, headers_dict)
         raise lakefs_ex
