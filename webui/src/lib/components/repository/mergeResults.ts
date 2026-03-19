@@ -51,13 +51,22 @@ export function mergeResults(
     // Add missing items for removed entries, added entries, and prefixes
     // When using committed-only ref (branch@) for objects.list, added entries are not in the list
     // On paginated results, only add items within the current page range to avoid duplicates
-    // On the last page (no more results), include all remaining changes
     const lastResultPath = last(results)?.path;
+    const inPageRange = (path: string) => lastResultPath && path <= lastResultPath;
     const missingItems = changesData.results
         .filter(
             (change) => change.type === 'removed' || change.type === 'added' || change.path_type === 'common_prefix',
         )
-        .filter((change) => !hasMore || !lastResultPath || change.path <= lastResultPath)
+        .filter((change) => {
+            if (change.type === 'added') {
+                // Added entries never appear in committed results (branch@),
+                // so include them on the last page even if beyond lastResultPath
+                return inPageRange(change.path) || !hasMore;
+            }
+            // Removed/changed entries exist in committed results on some page,
+            // only show within the current page range
+            return inPageRange(change.path);
+        })
         .filter((change) => !results.find((result) => result.path === change.path));
 
     // Merge regular results with change info

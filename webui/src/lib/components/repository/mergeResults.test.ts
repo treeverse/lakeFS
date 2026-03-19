@@ -155,7 +155,7 @@ describe('mergeResults', () => {
     });
 
     describe('missing items (removed files/directories)', () => {
-        it('adds changed items when results is empty (e.g. fresh repo with only uncommitted uploads)', () => {
+        it('does not add removed items when results is empty', () => {
             const results: Entry[] = [];
             const changesData: ChangesData = {
                 results: [{ path: 'deleted.txt', type: 'removed', path_type: 'object' }],
@@ -163,9 +163,20 @@ describe('mergeResults', () => {
 
             const merged = mergeResults(results, changesData, false);
 
-            // When results is empty (no committed objects), changes should still appear
+            // Removed entries exist in committed data, so with empty results there's nothing to show
+            expect(merged).toEqual([]);
+        });
+
+        it('adds added items when results is empty (e.g. fresh repo with only uncommitted uploads)', () => {
+            const results: Entry[] = [];
+            const changesData: ChangesData = {
+                results: [{ path: 'uploaded.txt', type: 'added', path_type: 'object' }],
+            };
+
+            const merged = mergeResults(results, changesData, false);
+
             expect(merged).toEqual([
-                { path: 'deleted.txt', path_type: 'object', type: 'removed', diff_type: 'removed' },
+                { path: 'uploaded.txt', path_type: 'object', type: 'added', diff_type: 'added' },
             ]);
         });
 
