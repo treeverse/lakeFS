@@ -163,21 +163,8 @@ describe('mergeResults', () => {
 
             const merged = mergeResults(results, changesData, false);
 
-            // Removed entries exist in committed data, so with empty results there's nothing to show
+            // When results is empty, we don't know the range, so no missing items are added
             expect(merged).toEqual([]);
-        });
-
-        it('adds added items when results is empty (e.g. fresh repo with only uncommitted uploads)', () => {
-            const results: Entry[] = [];
-            const changesData: ChangesData = {
-                results: [{ path: 'uploaded.txt', type: 'added', path_type: 'object' }],
-            };
-
-            const merged = mergeResults(results, changesData, false);
-
-            expect(merged).toEqual([
-                { path: 'uploaded.txt', path_type: 'object', type: 'added', diff_type: 'added' },
-            ]);
         });
 
         it('adds removed files that are missing from results', () => {
@@ -214,7 +201,7 @@ describe('mergeResults', () => {
             });
         });
 
-        it('does not add removed items that come after last result path when there are more pages', () => {
+        it('does not add removed items that come after last result path', () => {
             const results: Entry[] = [
                 { path: 'a.txt', path_type: 'object' },
                 { path: 'b.txt', path_type: 'object' },
@@ -223,30 +210,11 @@ describe('mergeResults', () => {
                 results: [{ path: 'z.txt', type: 'removed', path_type: 'object' }],
             };
 
-            const merged = mergeResults(results, changesData, false, true);
+            const merged = mergeResults(results, changesData, false);
 
-            // z.txt should not be added because it comes after b.txt and there are more pages
+            // z.txt should not be added because it comes after b.txt lexicographically
             expect(merged).toHaveLength(2);
             expect(merged.find((r) => r.path === 'z.txt')).toBeUndefined();
-        });
-
-        it('adds items after last result path on the last page', () => {
-            const results: Entry[] = [
-                { path: 'a.txt', path_type: 'object' },
-                { path: 'b.txt', path_type: 'object' },
-            ];
-            const changesData: ChangesData = {
-                results: [{ path: 'z.txt', type: 'added', path_type: 'object' }],
-            };
-
-            const merged = mergeResults(results, changesData, false, false);
-
-            // z.txt should be added because this is the last page
-            expect(merged).toHaveLength(3);
-            expect(merged.find((r) => r.path === 'z.txt')).toMatchObject({
-                path: 'z.txt',
-                diff_type: 'added',
-            });
         });
 
         it('does not duplicate items that exist in both results and changes', () => {
@@ -282,6 +250,73 @@ describe('mergeResults', () => {
                 type: 'changed',
                 path_type: 'common_prefix',
                 diff_type: 'changed',
+            });
+        });
+    });
+
+    describe('added entries with committed-only listing (branch@)', () => {
+        it('includes added entries when committed results are empty (fresh repo upload)', () => {
+            const results: Entry[] = [];
+            const changesData: ChangesData = {
+                results: [{ path: 'uploaded.txt', type: 'added', path_type: 'object' }],
+            };
+
+            const merged = mergeResults(results, changesData, false);
+
+            expect(merged).toEqual([
+                { path: 'uploaded.txt', path_type: 'object', type: 'added', diff_type: 'added' },
+            ]);
+        });
+
+        it('includes added entries that sort after last committed object on last page', () => {
+            const results: Entry[] = [
+                { path: 'a.txt', path_type: 'object' },
+                { path: 'lakes.parquet', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [{ path: 'test-upload.txt', type: 'added', path_type: 'object' }],
+            };
+
+            // hasMore=false (last page)
+            const merged = mergeResults(results, changesData, false, false);
+
+            expect(merged).toHaveLength(3);
+            expect(merged.find((r) => r.path === 'test-upload.txt')).toMatchObject({
+                path: 'test-upload.txt',
+                diff_type: 'added',
+            });
+        });
+
+        it('excludes added entries beyond page range when there are more pages', () => {
+            const results: Entry[] = [
+                { path: 'a.txt', path_type: 'object' },
+                { path: 'b.txt', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [{ path: 'z.txt', type: 'added', path_type: 'object' }],
+            };
+
+            // hasMore=true (not last page)
+            const merged = mergeResults(results, changesData, false, true);
+
+            expect(merged).toHaveLength(2);
+            expect(merged.find((r) => r.path === 'z.txt')).toBeUndefined();
+        });
+
+        it('includes added entries within page range regardless of hasMore', () => {
+            const results: Entry[] = [
+                { path: 'a.txt', path_type: 'object' },
+                { path: 'z.txt', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [{ path: 'new-file.txt', type: 'added', path_type: 'object' }],
+            };
+
+            const merged = mergeResults(results, changesData, false, true);
+
+            expect(merged).toHaveLength(3);
+            expect(merged.find((r) => r.path === 'new-file.txt')).toMatchObject({
+                diff_type: 'added',
             });
         });
     });
