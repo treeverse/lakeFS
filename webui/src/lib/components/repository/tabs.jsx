@@ -45,7 +45,7 @@ export const RepositoryNavTabs = ({ active }) => {
                 href={withRefContext(`/repositories/${repoId}/objects`)}
                 component={NavItem}
             >
-                <DatabaseIcon /> Objects
+                <DatabaseIcon /> Data
             </Link>
             <Link
                 active={active === 'commits'}

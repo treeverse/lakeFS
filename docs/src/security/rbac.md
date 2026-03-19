@@ -82,6 +82,7 @@ Conditions are added to policy statements using the optional `condition` field:
 The `IpAddress` condition operator matches the client's source IP address against one or more IP addresses or CIDR blocks. The `NotIpAddress` condition operator matches when the client's source IP address does NOT match any of the specified IP addresses or CIDR blocks (negation of `IpAddress`).
 
 **Supported Fields:**
+
 - `SourceIp` - The IP address of the client making the request
 
 **Value Format:**
@@ -156,6 +157,14 @@ lakeFS extracts the client IP address from the request using the following prior
 
 This ensures that IP-based conditions work correctly even when lakeFS is deployed behind a load balancer or reverse proxy.
 
+#### StringLike / StringNotLike
+
+The `StringLike` condition operator matches a context value against one or more wildcard patterns. The `StringNotLike` condition operator matches when the context value does NOT match any of the specified patterns (negation of `StringLike`).
+
+Wildcard characters: `*` matches zero or more characters, `?` matches exactly one character.
+
+For supported fields and examples of using `StringLike` conditions with Iceberg catalog operations, see [Iceberg List Operations Filtering](../integrations/iceberg.md#list-operations-filtering).
+
 
 ## Resource naming - ARNs
 
@@ -176,6 +185,8 @@ Here are a some **examples** of valid ARNs within lakeFS and their meaning:
 | `arn:lakefs:catalog:::namespace/{repositoryId}/{namespace}` | An Iceberg namespace              |
 | `arn:lakefs:catalog:::table/{repositoryId}/{namespace}/{table}` | An Iceberg table              |
 | `arn:lakefs:catalog:::view/{repositoryId}/{namespace}/{view}` | An Iceberg view                |
+
+Note that Iceberg catalog ARNs are **branch-agnostic**, the branch is not part of the ARN. A policy granting access to a namespace, a table or a view applies to that resource on every branch in the repository.
 
 Additionally, the current user's ID is interpolated in runtime into the ARN using the `${user}` placeholder.
 

@@ -74,7 +74,7 @@ At minimum, Transactional Mirroring involves two lakeFS Enterprise installations
 1. A valid lakeFS Enterprise license with the **Transactional Mirroring** capability. See [License Configuration](../enterprise/getstarted/install.md#lakefs-enterprise-license).
 1. Object store replication configured between source and destination buckets (see [below](#configuring-object-store-replication)).
 1. A shared database accessible from all regions for mirror coordination (e.g., a DynamoDB global table).
-1. Network connectivity between the lakeFS installations. The replication service in each region needs HTTP access to the lakeFS API in the other regions.
+1. Network connectivity: the replication service in each region requires HTTP access to the lakeFS API endpoint in the other regions.
 
 ### Configuring object store replication
 
@@ -208,7 +208,7 @@ Once a user has been created and the replication policy attached to it, create a
 
 ### Deploying the Replication Service
 
-The replication service is deployed alongside each lakeFS Enterprise installation using the [lakeFS Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs). It runs as a separate Deployment within the same Helm release.
+The replication service is deployed alongside each lakeFS Enterprise installation using the [lakeFS Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs). It runs as a separate Deployment within the same Helm release and must be deployed in every region participating in mirroring, not just the source.
 
 #### Mirrors database
 
@@ -219,6 +219,8 @@ The replication service requires a shared database to coordinate mirror state be
     Provide the table name in the `mirrors_database` configuration. The replication service will create the table automatically if it doesn't exist.
 
     To enable cross-region replication, you must configure the table as a [DynamoDB global table](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html) with a replica in the destination region. This requires enabling [DynamoDB Streams](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html) with `NEW_AND_OLD_IMAGES` view type on the table.
+
+    For cross-account setups, see [DynamoDB multi-account global tables](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/globaltables-MultiAccount.html).
 
 === "PostgreSQL / CockroachDB"
 
@@ -362,10 +364,10 @@ replication:
 
 ### Creating a mirror
 
-Once both lakeFS installations and their replication services are running, create a mirror using the replication API on the **source** installation:
+Once both lakeFS installations and their replication services are running, create a mirror by calling the replication API on the **source** region's replication service. This call only needs to be made once - the destination replication service will automatically detect the new mirror and create the repository on the destination.
 
 ```bash
-curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
+curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
 --header 'Content-Type: application/json' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY> \
 -X POST \
@@ -377,7 +379,7 @@ curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>
 ```
 Using the following parameters:
 
-* `SOURCE_LAKEFS_ENDPOINT` - The URL of the source lakeFS installation (e.g. `https://lakefs-source.example.com`)
+* `REPLICATION_ENDPOINT` - The URL of the replication service in the source region
 * `SOURCE_REPO` - Name of the repository acting as the replication source. It should exist on the source installation
 * `ACCESS_KEY_ID` & `SECRET_ACCESS_KEY` - Credentials for your lakeFS replication user (make sure you have the necessary RBAC permissions as [listed below](#rbac))
 * `MIRROR_NAME` - Name used for the read-only mirror to be created on the destination
@@ -428,29 +430,68 @@ Listing/Getting Mirrors for a Repository:
 ### Listing all mirrors for a repository
 
 ```bash
-curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
+curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY> -s
 ```
 
 ### Getting a specific mirror
 
 ```bash
-curl '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
+curl '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY> -s
 ```
 
 ### Deleting a specific mirror
 
 ```bash
-curl -X DELETE '<SOURCE_LAKEFS_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
+curl -X DELETE '<REPLICATION_ENDPOINT>/service/replication/v1/repositories/<SOURCE_REPO>/mirrors/<MIRROR_ID>' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY>
 ```
 
 ## Configuration Reference
 
-The replication service is configured via the `replication.config` section of the Helm chart values, or directly via a YAML config file. Configuration can also be set via environment variables with the `REPLICATION_` prefix (e.g., `REPLICATION_REGION=us-east-1`).
+The replication service is configured via the Helm chart values under `replication.*`. All fields below are set in your `values.yaml`.
 
-### Required fields
+!!! note
+    Simple configuration values can also be set via environment variables with the `REPLICATION_` prefix (e.g., `REPLICATION_REGION=us-east-1`). Map fields like `dst_endpoints` must be set via the config file. Sensitive values like credentials should be provided via a Kubernetes Secret referenced by `replication.extraEnvVarsSecret`.
+
+### Helm chart values
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `replication.enabled` | `false` | Set to `true` to enable the replication service deployment |
+| `replication.image.repository` | `treeverse/replication` | Docker image repository |
+| `replication.image.tag` | `0.1.17` | Docker image tag |
+| `replication.image.pullPolicy` | `IfNotPresent` | Image pull policy |
+| `replication.port` | `8008` | Service port |
+| `replication.serviceAccountName` | `""` | Kubernetes service account for the replication pod. See [Service account and cloud permissions](#service-account-and-cloud-permissions) |
+| `replication.extraEnvVarsSecret` | | Name of a Kubernetes Secret containing sensitive configuration. When set, the following keys are injected as environment variables: `source_lakefs_access_key_id`, `source_lakefs_secret_access_key`, `auth_encrypt_secret_key` |
+| `replication.extraEnvVars` | `[]` | Additional environment variables for the replication pod |
+| `replication.resources` | `{}` | Kubernetes resource requests/limits |
+| `replication.podAnnotations` | `{}` | Additional pod annotations |
+| `replication.local_cache.base_dir` | `/cache` | Local cache directory path |
+| `replication.local_cache.size_bytes` | `512000000` | Local cache size in bytes |
+
+#### Service account and cloud permissions
+
+When the replication service needs access to cloud resources (e.g., DynamoDB, S3), use a Kubernetes service account with the appropriate annotations to grant permissions. On AWS, this is done using [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). For detailed instructions on setting up the IAM role, see the [lakeFS deployment guide](../howto/deploy/aws.md).
+
+Example service account:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: replication-sa
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME>
+```
+
+Then set `replication.serviceAccountName: replication-sa` in the Helm values.
+
+### Replication service config (`replication.config`)
+
+#### Required fields
 
 | Field | Description |
 |-------|-------------|
@@ -458,23 +499,37 @@ The replication service is configured via the `replication.config` section of th
 | `organization_id` | Organization identifier, used internally as a partition key in the mirrors database. For on-prem deployments, use any consistent string (e.g., your company name). Must be the same across all installations |
 | `regional_endpoint` | URL of the lakeFS API in this region (e.g., `http://lakefs.default.svc.cluster.local:80`) |
 | `dst_endpoints` | Map of region identifier to lakeFS URL for each remote region |
-| `mirrors_database` | Database configuration for mirror coordination. Supports the same database types as lakeFS. Must be shared across all regions |
+| `mirrors_database` | Database configuration for mirror coordination (DynamoDB, PostgreSQL, or CockroachDB). Must be shared across all regions. See [Mirrors database](#mirrors-database) |
 | `blockstore` | Block storage configuration. Must match the lakeFS blockstore config |
-| `auth.encrypt.secret_key` | Encryption secret. Must match the lakeFS `auth.encrypt.secret_key` |
+| `lakefs_access_key_id` | Access key ID for the replication lakeFS user. Can also be provided via `extraEnvVarsSecret` (recommended) |
+| `lakefs_secret_access_key` | Secret access key for the replication lakeFS user. Can also be provided via `extraEnvVarsSecret` (recommended) |
+| `auth.encrypt.secret_key` | Encryption secret key. Must match the lakeFS `auth.encrypt.secret_key`. Can also be provided via `extraEnvVarsSecret` (recommended) |
 
-### Optional fields
+#### Optional fields
 
 | Field | Default | Description |
 |-------|---------|-------------|
 | `organization_name` | | Organization name. Only used to auto-construct `regional_endpoint` for lakeFS Cloud. Not needed when `regional_endpoint` is set |
 | `listen_address` | `0.0.0.0:8008` | HTTP listen address for the replication service API |
-| `refstore_database` | lakeFS `database` config | Database for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set |
+| `refstore_database` | | Database for replication metadata (commits, ranges, metaranges). When deployed via the Helm chart, this defaults to the lakeFS `database` configuration if not explicitly set. When running outside the Helm chart, this field is required |
 | `list_mirrors_page_size` | `1000` | Page size when listing mirrors |
 | `list_repositories_page_size` | `1000` | Page size when listing repositories |
 | `logging.level` | `INFO` | Log level (`DEBUG`, `INFO`, `WARN`, `ERROR`) |
 | `logging.format` | `text` | Log format (`text`, `json`) |
 
-### Commit sensor
+#### Committed metadata
+
+Configuration for committed metadata (ranges and metaranges).
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `committed.local_cache.size_bytes` | `1073741824` (1 GiB) | Local cache size in bytes |
+| `committed.local_cache.dir` | | Cache directory path |
+| `committed.local_cache.range_proportion` | `0.9` | Proportion of cache allocated to ranges |
+| `committed.local_cache.metarange_proportion` | `0.1` | Proportion of cache allocated to metaranges |
+| `committed.metadata_prefix` | `_lakefs/` | Prefix used by lakeFS for metadata files in the storage namespace. Must match `committed.block_storage_prefix` in lakeFS |
+
+#### Commit sensor
 
 Controls how the service detects and synchronizes new commits from source to destination.
 
@@ -485,7 +540,7 @@ Controls how the service detects and synchronizes new commits from source to des
 | `commit_sensor.list_branch_page_size` | `1000` | Page size when listing branches |
 | `commit_sensor.log_commit_page_size` | `1000` | Page size when fetching commit logs |
 
-### Mirrors manager
+#### Mirrors manager
 
 Controls how the service reconciles mirror state (creates/deletes mirror repositories).
 
@@ -493,7 +548,7 @@ Controls how the service reconciles mirror state (creates/deletes mirror reposit
 |-------|---------|-------------|
 | `mirrors_manager.process_mirrors_interval_duration` | `20s` | Interval between mirror reconciliation runs |
 
-### Validator
+#### Validator
 
 Controls how the service validates that all metadata for promoted commits exists in block storage before advancing the mirror.
 
@@ -503,16 +558,27 @@ Controls how the service validates that all metadata for promoted commits exists
 | `validator.num_workers` | `3` | Number of concurrent metarange validation workers |
 | `validator.cooldown_on_missing` | `1m` | Cooldown before retrying validation of a missing metarange |
 | `validator.cooldown_on_error` | `1m` | Cooldown before retrying validation after an error |
+| `validator.metarange_presence_cache.size` | `5000` | Number of metarange presence results to cache |
+| `validator.metarange_presence_cache.expiry` | `1440h` (60 days) | Metarange cache entry expiry |
+| `validator.metarange_presence_cache.cooldown` | `30s` | Cooldown before retrying a missing metarange in cache |
+| `validator.range_presence_cache.size` | `500000` | Number of range presence results to cache |
+| `validator.range_presence_cache.expiry` | `1440h` (60 days) | Range cache entry expiry |
+| `validator.range_presence_cache.cooldown` | `10s` | Cooldown before retrying a missing range in cache |
+| `validator.object_presence_cache.size` | `5000000` | Number of object presence results to cache |
+| `validator.object_presence_cache.expiry` | `24h` | Object cache entry expiry |
+| `validator.object_presence_cache.cooldown` | `5s` | Cooldown before retrying a missing object in cache |
+| `validator.storage_namespace_cache.size` | `1000` | Number of repository-to-storage-namespace mappings to cache |
+| `validator.storage_namespace_cache.expiry` | `17s` | Storage namespace cache entry expiry |
 
-### Auth
+#### Auth
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `auth.encrypt.secret_key` | _(required)_ | Encryption key for stored credentials. Must match the lakeFS installation |
-| `auth.api.endpoint` | _(empty)_ | When set, uses API-based auth against an external auth service. When empty (default), uses KV-based auth directly from the replication service's database |
+| `auth.encrypt.secret_key` | _(required)_ | Encryption key for stored credentials. Must match the lakeFS installation. Can also be provided via `extraEnvVarsSecret` (recommended) |
 | `auth.cache.enabled` | `false` | Enable auth response caching |
 | `auth.cache.size` | | Number of cached auth entries |
 | `auth.cache.ttl` | | Cache entry time-to-live |
+| `auth.cache.jitter` | | Random jitter added to cache TTL to prevent thundering herd |
 
 ## Limitations
 

@@ -20,9 +20,19 @@ export class SetupPage {
         await this.page.goto("/setup");
     }
 
-    async fillForm(email: string, username = "admin", receiveUpdatesChecked = true): Promise<void> {
+    async fillForm(
+        email: string,
+        username = "admin",
+        receiveUpdatesChecked = true,
+        firstName = "",
+        lastName = "",
+        companyName = "",
+    ): Promise<void> {
         await this.usernameInputLocator.fill(username);
+        await this.page.getByLabel("First name").fill(firstName);
+        await this.page.getByLabel("Last name").fill(lastName);
         await this.page.getByLabel("Email").fill(email);
+        await this.page.getByLabel("Company name").fill(companyName);
         if (receiveUpdatesChecked) {
             await this.page.getByLabel("I'd like to receive security, product and feature updates").check();
         }

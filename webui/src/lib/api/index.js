@@ -1290,7 +1290,7 @@ class Setup {
         }
     }
 
-    async commPrefs(email, updates, security) {
+    async commPrefs(email, firstName, lastName, companyName, updates, security) {
         const response = await apiRequest('/setup_comm_prefs', {
             method: 'POST',
             headers: {
@@ -1299,6 +1299,9 @@ class Setup {
             },
             body: JSON.stringify({
                 email,
+                firstName,
+                lastName,
+                companyName,
                 featureUpdates: updates,
                 securityUpdates: security,
             }),

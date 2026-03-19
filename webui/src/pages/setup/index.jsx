@@ -26,7 +26,7 @@ const SetupContents = () => {
     }, [error, response]);
 
     const onSubmitUserConfiguration = useCallback(
-        async (adminUser, userEmail, checked) => {
+        async (adminUser, firstName, lastName, userEmail, companyName, checked) => {
             if (!adminUser) {
                 setSetupError('Please enter your admin username.');
                 return;
@@ -43,7 +43,7 @@ const SetupContents = () => {
                     setSetupData(response);
                 }
                 if (commPrefsMissing) {
-                    await setup.commPrefs(userEmail, checked, checked);
+                    await setup.commPrefs(userEmail, firstName, lastName, companyName, checked, checked);
                     setCommPrefsMissing(false);
                 }
                 setSetupError(null);
