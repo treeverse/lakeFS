@@ -61,6 +61,7 @@ def test_repository_create_storage_id(storage_namespace):
     assert repo.properties.storage_namespace == storage_namespace
     assert repo.properties.storage_id == storage_id
 
+
 def test_repository_create_storage_id_invalid_value(storage_namespace):
     repo_id = f"test-repo{uuid.uuid4()}"
     storage_id = "invalidvalue"
