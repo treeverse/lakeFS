@@ -11,7 +11,10 @@ import {
     GitCommitIcon,
     HistoryIcon,
     NorthStarIcon,
+    FileDirectoryIcon,
+    TableIcon,
 } from '@primer/octicons-react';
+import Nav from 'react-bootstrap/Nav';
 import RefDropdown from '../../../lib/components/repository/refDropdown';
 import {
     ActionGroup,
@@ -23,11 +26,9 @@ import {
     Warnings,
 } from '../../../lib/components/controls';
 import Button from 'react-bootstrap/Button';
-import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
-import Dropdown from 'react-bootstrap/Dropdown';
 import { BsCloudArrowUp } from 'react-icons/bs';
 
 import { humanSize, Tree, URINavigator } from '../../../lib/components/repository/tree';
@@ -79,6 +80,8 @@ import { mergeResults } from '../../../lib/components/repository/mergeResults';
 const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
+const DATA_VIEW_OBJECTS = 'objects';
+const DATA_VIEW_TABLES = 'tables';
 
 export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
     let resultsFiltered = resultsState.results;
@@ -139,7 +142,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
         <>
             <Modal show={show} onHide={hide} size="lg">
                 <Modal.Header closeButton={!committing}>
-                    <Modal.Title>Commit Changes</Modal.Title>
+                    <Modal.Title>Commit</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form
@@ -154,6 +157,7 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                                 type="text"
                                 placeholder="Commit Message"
                                 ref={textRef}
+                                autoFocus
                                 disabled={committing}
                             />
                         </Form.Group>
@@ -177,12 +181,12 @@ const CommitButton = ({ repo, onCommit, enabled = false }) => {
                         Cancel
                     </Button>
                     <Button variant="success" disabled={committing} onClick={onSubmit}>
-                        {committing ? 'Committing...' : 'Commit Changes'}
+                        {committing ? 'Committing...' : 'Commit'}
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
-                <GitCommitIcon /> Commit Changes
+            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)} aria-label="Commit Changes">
+                <GitCommitIcon /> Commit
             </Button>
         </>
     );
@@ -1097,7 +1101,7 @@ const TreeContainer = ({
                     }}
                     onRevert={onReset}
                     changesTreeMessage={
-                        <p>
+                        <p className="mt-2 ps-3">
                             Showing {changesResults.length} change
                             {changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong>
                         </p>
@@ -1227,6 +1231,36 @@ const NoGCRulesWarning = ({ repoId }) => {
     return <></>;
 };
 
+const DataViewToggle = ({ activeView, onChangeView }) => {
+    return (
+        <Nav variant="pills" className="data-view-toggle">
+            <Nav.Item>
+                <Nav.Link
+                    active={activeView === DATA_VIEW_OBJECTS}
+                    onClick={() => onChangeView(DATA_VIEW_OBJECTS)}
+                    className="d-flex align-items-center gap-1"
+                >
+                    <FileDirectoryIcon size={16} /> Objects
+                </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+                <Nav.Link
+                    active={activeView === DATA_VIEW_TABLES}
+                    onClick={() => onChangeView(DATA_VIEW_TABLES)}
+                    className="d-flex align-items-center gap-1"
+                >
+                    <TableIcon size={16} /> Tables <span className="enterprise-badge">Enterprise</span>
+                </Nav.Link>
+            </Nav.Item>
+        </Nav>
+    );
+};
+
+const TablesView = ({ pluginManager }) => {
+    const TablesComponent = pluginManager.tablesBrowser.getTablesBrowserComponent();
+    return <TablesComponent />;
+};
+
 const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const router = useRouter();
     const { path, after, importDialog, upload, showChanges } = router.query;
@@ -1236,6 +1270,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
     const [showUpload, setShowUpload] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
+    const [dataView, setDataView] = useState(DATA_VIEW_OBJECTS);
     const [showChangesOnly, setShowChangesOnly] = useState(showChanges === 'true');
     const [actionError, setActionError] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
@@ -1320,6 +1355,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
 
     return (
         <>
+            {/* Row 1: Context & Git Operations */}
             <ActionsBar>
                 <ActionGroup orientation="left">
                     <RefDropdown
@@ -1340,64 +1376,62 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                         }
                     />
 
-                    {/* Changes Management Button Group */}
                     {reference && reference.type === RefTypeBranch && hasChanges && (
-                        <Dropdown as={ButtonGroup} className="me-2">
-                            {/* Toggle Switch */}
+                        <>
                             <Button
-                                variant={showChangesOnly ? 'secondary' : 'outline-secondary'}
-                                size="sm"
+                                variant="outline-secondary"
+                                active={showChangesOnly}
+                                aria-pressed={showChangesOnly}
                                 onClick={handleToggleChanges}
                                 className="d-flex align-items-center"
+                                aria-label="Uncommitted Changes"
                             >
-                                <NorthStarIcon className="me-1" />
-                                Uncommitted Changes
+                                <span className="changes-indicator-dot" />
+                                Uncommitted
                             </Button>
-
-                            {/* Actions Dropdown */}
-                            <Dropdown.Toggle
+                            <CommitButton
+                                repo={repo}
+                                enabled={hasChanges && !repo?.read_only}
+                                onCommit={async (commitDetails, done) => {
+                                    try {
+                                        await pluginManager.commitOperation.commit(
+                                            repo.id,
+                                            reference.id,
+                                            commitDetails.message,
+                                            commitDetails.metadata,
+                                            capabilitiesConfig,
+                                        );
+                                        setActionError(null);
+                                        setShowChangesOnly(false);
+                                        const query = { path: path || '' };
+                                        if (reference) query.ref = reference.id;
+                                        router.push({
+                                            pathname: `/repositories/:repoId/objects`,
+                                            query,
+                                            params: { repoId: repo.id },
+                                        });
+                                        refresh();
+                                    } catch (err) {
+                                        setActionError(err);
+                                    }
+                                    done();
+                                }}
+                            />
+                            <Button
                                 variant="outline-secondary"
-                                size="sm"
-                                id="changes-dropdown"
-                            ></Dropdown.Toggle>
-
-                            <Dropdown.Menu className="changes-dropdown-menu">
-                                <div className="d-flex flex-column gap-2 p-2">
-                                    <Button
-                                        variant="success"
-                                        size="sm"
-                                        onClick={() => {
-                                            // Trigger the commit modal by finding the actual button and clicking it
-                                            const commitBtn = document.querySelector('[data-commit-btn] button');
-                                            if (commitBtn) {
-                                                commitBtn.click();
-                                            }
-                                        }}
-                                        disabled={repo?.read_only}
-                                        className="d-flex align-items-center justify-content-center changes-action-btn"
-                                    >
-                                        <GitCommitIcon className="me-1" />
-                                        Commit Changes
-                                    </Button>
-
-                                    <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        onClick={() => setShowRevertModal(true)}
-                                        disabled={repo?.read_only}
-                                        className="d-flex align-items-center justify-content-center changes-action-btn"
-                                    >
-                                        <HistoryIcon className="me-1" />
-                                        Revert All Changes
-                                    </Button>
-                                </div>
-                            </Dropdown.Menu>
-                        </Dropdown>
+                                onClick={() => setShowRevertModal(true)}
+                                disabled={repo?.read_only}
+                                className="d-flex align-items-center"
+                            >
+                                <HistoryIcon className="me-1" />
+                                Revert
+                            </Button>
+                        </>
                     )}
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
-                    {!showChangesOnly && (
+                    {dataView === DATA_VIEW_OBJECTS && !showChangesOnly && (
                         <PrefixSearchWidget
                             text="Search by Prefix"
                             key={path}
@@ -1416,115 +1450,87 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             }}
                         />
                     )}
-
                     <RefreshButton onClick={refresh} />
-
-                    <Button variant="success" disabled={repo?.read_only} onClick={() => setShowUpload(true)}>
-                        <UploadIcon /> Upload
-                    </Button>
-
-                    <Button
-                        variant={!storageConfig.import_support ? 'success' : 'light'}
-                        disabled={!storageConfig.import_support}
-                        onClick={() => setShowImport(true)}
-                    >
-                        <BsCloudArrowUp /> Import
-                    </Button>
-
-                    {/* Hidden components for modals */}
-                    <div style={{ display: 'none' }}>
-                        <div data-commit-btn>
-                            <CommitButton
-                                repo={repo}
-                                enabled={hasChanges && !repo?.read_only}
-                                onCommit={async (commitDetails, done) => {
-                                    try {
-                                        await pluginManager.commitOperation.commit(
-                                            repo.id,
-                                            reference.id,
-                                            commitDetails.message,
-                                            commitDetails.metadata,
-                                            capabilitiesConfig,
-                                        );
-                                        setActionError(null);
-
-                                        // Reset to normal view after commit
-                                        setShowChangesOnly(false);
-                                        const query = { path: path || '' };
-                                        if (reference) query.ref = reference.id;
-                                        // Don't include showChanges parameter to go back to normal mode
-                                        router.push({
-                                            pathname: `/repositories/:repoId/objects`,
-                                            query,
-                                            params: { repoId: repo.id },
-                                        });
-
-                                        refresh();
-                                    } catch (err) {
-                                        setActionError(err);
-                                    }
-                                    done();
-                                }}
-                            />
-                        </div>
-
-                        <UploadButton
-                            config={storageConfig}
-                            path={path}
-                            repo={repo}
-                            reference={reference}
-                            onDone={refresh}
-                            onClick={() => {}}
-                            onHide={() => {
-                                setShowUpload(false);
-                            }}
-                            show={showUpload}
-                            disabled={repo?.read_only}
-                        />
-                    </div>
-
-                    <ImportModal
-                        config={storageConfig}
-                        path={path}
-                        repoId={repo.id}
-                        referenceId={reference.id}
-                        referenceType={reference.type}
-                        onDone={refresh}
-                        onHide={() => {
-                            setShowImport(false);
-                        }}
-                        show={showImport}
-                    />
-
-                    <ConfirmationModal
-                        show={showRevertModal}
-                        onHide={() => setShowRevertModal(false)}
-                        msg="Are you sure you want to revert all uncommitted changes?"
-                        onConfirm={() => {
-                            branches
-                                .reset(repo.id, reference.id, { type: 'reset' })
-                                .then(() => {
-                                    // Reset to normal view after revert
-                                    setShowChangesOnly(false);
-                                    const query = { path: path || '' };
-                                    if (reference) query.ref = reference.id;
-                                    // Don't include showChanges parameter to go back to normal mode
-                                    router.push({
-                                        pathname: `/repositories/:repoId/objects`,
-                                        query,
-                                        params: { repoId: repo.id },
-                                    });
-
-                                    refresh();
-                                })
-                                .catch((error) => setActionError(error));
-                            setShowRevertModal(false);
-                        }}
-                    />
                 </ActionGroup>
             </ActionsBar>
 
+            {/* Row 2: View Toggle & Data Actions */}
+            <div className="data-view-row d-flex align-items-center mb-2">
+                <DataViewToggle activeView={dataView} onChangeView={setDataView} />
+                {dataView === DATA_VIEW_OBJECTS && (
+                    <div className="d-flex align-items-center gap-2 ms-auto">
+                        <Button
+                            variant={hasChanges ? 'outline-secondary' : 'success'}
+                            disabled={repo?.read_only}
+                            onClick={() => setShowUpload(true)}
+                        >
+                            <UploadIcon /> Upload
+                        </Button>
+                        <Button
+                            variant="outline-secondary"
+                            disabled={!storageConfig.import_support}
+                            onClick={() => setShowImport(true)}
+                        >
+                            <BsCloudArrowUp /> Import
+                        </Button>
+                    </div>
+                )}
+            </div>
+
             {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
+
+            {/* Hidden modal triggers */}
+            <div style={{ display: 'none' }}>
+                <UploadButton
+                    config={storageConfig}
+                    path={path}
+                    repo={repo}
+                    reference={reference}
+                    onDone={refresh}
+                    onClick={() => {}}
+                    onHide={() => {
+                        setShowUpload(false);
+                    }}
+                    show={showUpload}
+                    disabled={repo?.read_only}
+                />
+            </div>
+
+            <ImportModal
+                config={storageConfig}
+                path={path}
+                repoId={repo.id}
+                referenceId={reference.id}
+                referenceType={reference.type}
+                onDone={refresh}
+                onHide={() => {
+                    setShowImport(false);
+                }}
+                show={showImport}
+            />
+
+            <ConfirmationModal
+                show={showRevertModal}
+                onHide={() => setShowRevertModal(false)}
+                msg="Are you sure you want to revert all uncommitted changes?"
+                onConfirm={() => {
+                    branches
+                        .reset(repo.id, reference.id, { type: 'reset' })
+                        .then(() => {
+                            setShowChangesOnly(false);
+                            const query = { path: path || '' };
+                            if (reference) query.ref = reference.id;
+                            router.push({
+                                pathname: `/repositories/:repoId/objects`,
+                                query,
+                                params: { repoId: repo.id },
+                            });
+                            refresh();
+                        })
+                        .catch((error) => setActionError(error));
+                    setShowRevertModal(false);
+                }}
+            />
 
             <NoGCRulesWarning repoId={repo.id} />
 
@@ -1536,43 +1542,49 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                     mb: '30px',
                 }}
             >
-                <TreeContainer
-                    config={storageConfig}
-                    reference={reference}
-                    repo={repo}
-                    path={path ? path : ''}
-                    after={after ? after : ''}
-                    onPaginate={(after) => {
-                        const query = { after };
-                        if (path) query.path = path;
-                        if (reference) query.ref = reference.id;
-                        if (showChangesOnly) query.showChanges = 'true';
-                        const url = {
-                            pathname: `/repositories/:repoId/objects`,
-                            query,
-                            params: { repoId: repo.id },
-                        };
-                        router.push(url);
-                    }}
-                    refreshToken={refreshToken}
-                    onUpload={() => {
-                        setShowUpload(true);
-                    }}
-                    onImport={() => {
-                        setShowImport(true);
-                    }}
-                    onRefresh={refresh}
-                    showChangesOnly={showChangesOnly}
-                    toggleShowChangesOnly={() => setShowChangesOnly(false)}
-                />
+                {dataView === DATA_VIEW_TABLES ? (
+                    <TablesView pluginManager={pluginManager} />
+                ) : (
+                    <>
+                        <TreeContainer
+                            config={storageConfig}
+                            reference={reference}
+                            repo={repo}
+                            path={path ? path : ''}
+                            after={after ? after : ''}
+                            onPaginate={(after) => {
+                                const query = { after };
+                                if (path) query.path = path;
+                                if (reference) query.ref = reference.id;
+                                if (showChangesOnly) query.showChanges = 'true';
+                                const url = {
+                                    pathname: `/repositories/:repoId/objects`,
+                                    query,
+                                    params: { repoId: repo.id },
+                                };
+                                router.push(url);
+                            }}
+                            refreshToken={refreshToken}
+                            onUpload={() => {
+                                setShowUpload(true);
+                            }}
+                            onImport={() => {
+                                setShowImport(true);
+                            }}
+                            onRefresh={refresh}
+                            showChangesOnly={showChangesOnly}
+                            toggleShowChangesOnly={() => setShowChangesOnly(false)}
+                        />
 
-                <ReadmeContainer
-                    config={storageConfig}
-                    reference={reference}
-                    repo={repo}
-                    path={path}
-                    refreshDep={refreshToken}
-                />
+                        <ReadmeContainer
+                            config={storageConfig}
+                            reference={reference}
+                            repo={repo}
+                            path={path}
+                            refreshDep={refreshToken}
+                        />
+                    </>
+                )}
             </Box>
         </>
     );

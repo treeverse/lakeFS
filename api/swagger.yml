@@ -1070,8 +1070,17 @@ components:
     CommPrefsInput:
       type: object
       properties:
+        firstName:
+          description: the provided first name
+          type: string
+        lastName:
+          description: the provided last name
+          type: string
         email:
           description: the provided email
+          type: string
+        companyName:
+          description: the provided company name
           type: string
         featureUpdates:
           description: user preference to receive feature updates

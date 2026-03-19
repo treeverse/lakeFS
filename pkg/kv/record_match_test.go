@@ -12,6 +12,7 @@ import (
 )
 
 func TestFindMessageTypeRecord(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		partition string

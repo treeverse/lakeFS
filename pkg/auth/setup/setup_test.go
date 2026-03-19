@@ -24,6 +24,7 @@ func SetupService(t *testing.T, secret string) (*auth.BasicAuthService, kv.Store
 }
 
 func TestAddAdminUser(t *testing.T) {
+	t.Parallel()
 	authService, _ := SetupService(t, "secret")
 	ctx := t.Context()
 

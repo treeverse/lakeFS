@@ -5,7 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**first_name** | **str** | the provided first name | [optional] 
+**last_name** | **str** | the provided last name | [optional] 
 **email** | **str** | the provided email | [optional] 
+**company_name** | **str** | the provided company name | [optional] 
 **feature_updates** | **bool** | user preference to receive feature updates | 
 **security_updates** | **bool** | user preference to receive security updates | 
 

@@ -8,6 +8,7 @@ import (
 )
 
 func TestHasActionOnAnyResource(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		policies []*model.Policy
@@ -108,6 +109,7 @@ func TestHasActionOnAnyResource(t *testing.T) {
 }
 
 func TestCheckPermission(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		resourceArn string
@@ -426,7 +428,138 @@ func TestCheckPermission(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := auth.CheckPermission(tt.resourceArn, tt.username, tt.policies, tt.action)
+			got := auth.CheckPermission(tt.resourceArn, tt.username, tt.policies, tt.action, nil)
+			if got != tt.want {
+				t.Errorf("CheckPermission() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckPermissionWithConditions(t *testing.T) {
+	tests := []struct {
+		name         string
+		resourceArn  string
+		username     string
+		policies     []*model.Policy
+		action       string
+		conditionCtx *auth.ConditionContext
+		want         bool
+	}{
+		{
+			name:        "StringLike condition match",
+			resourceArn: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:    model.StatementEffectAllow,
+					Action:    []string{"catalog:ListTables"},
+					Resource:  "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+					Condition: map[string]map[string][]string{"StringLike": {"catalog:TableName": {"analytics-*"}}},
+				}},
+			}},
+			action:       "catalog:ListTables",
+			conditionCtx: auth.NewConditionContextWithFields(map[string]string{"catalog:TableName": "analytics-report"}),
+			want:         true,
+		},
+		{
+			name:        "StringLike condition no match",
+			resourceArn: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:    model.StatementEffectAllow,
+					Action:    []string{"catalog:ListTables"},
+					Resource:  "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+					Condition: map[string]map[string][]string{"StringLike": {"catalog:TableName": {"analytics-*"}}},
+				}},
+			}},
+			action:       "catalog:ListTables",
+			conditionCtx: auth.NewConditionContextWithFields(map[string]string{"catalog:TableName": "sales-data"}),
+			want:         false,
+		},
+		{
+			name:        "condition with nil context skips statement",
+			resourceArn: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:    model.StatementEffectAllow,
+					Action:    []string{"catalog:ListTables"},
+					Resource:  "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+					Condition: map[string]map[string][]string{"StringLike": {"catalog:TableName": {"analytics-*"}}},
+				}},
+			}},
+			action:       "catalog:ListTables",
+			conditionCtx: nil,
+			want:         false,
+		},
+		{
+			name:        "statement without condition still works with context",
+			resourceArn: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{{
+					Effect:   model.StatementEffectAllow,
+					Action:   []string{"catalog:ListTables"},
+					Resource: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+				}},
+			}},
+			action:       "catalog:ListTables",
+			conditionCtx: auth.NewConditionContextWithFields(map[string]string{"catalog:TableName": "anything"}),
+			want:         true,
+		},
+		{
+			name:        "deny with matching condition takes precedence",
+			resourceArn: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{
+					{
+						Effect:   model.StatementEffectAllow,
+						Action:   []string{"catalog:ListTables"},
+						Resource: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+					},
+					{
+						Effect:    model.StatementEffectDeny,
+						Action:    []string{"catalog:ListTables"},
+						Resource:  "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+						Condition: map[string]map[string][]string{"StringLike": {"catalog:TableName": {"secret-*"}}},
+					},
+				},
+			}},
+			action:       "catalog:ListTables",
+			conditionCtx: auth.NewConditionContextWithFields(map[string]string{"catalog:TableName": "secret-data"}),
+			want:         false,
+		},
+		{
+			name:        "deny condition does not match - allow passes",
+			resourceArn: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+			username:    "user1",
+			policies: []*model.Policy{{
+				Statement: model.Statements{
+					{
+						Effect:   model.StatementEffectAllow,
+						Action:   []string{"catalog:ListTables"},
+						Resource: "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+					},
+					{
+						Effect:    model.StatementEffectDeny,
+						Action:    []string{"catalog:ListTables"},
+						Resource:  "arn:lakefs:catalog:::namespace/my-repo/my-ns",
+						Condition: map[string]map[string][]string{"StringLike": {"catalog:TableName": {"secret-*"}}},
+					},
+				},
+			}},
+			action:       "catalog:ListTables",
+			conditionCtx: auth.NewConditionContextWithFields(map[string]string{"catalog:TableName": "analytics-report"}),
+			want:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := auth.CheckPermission(tt.resourceArn, tt.username, tt.policies, tt.action, tt.conditionCtx)
 			if got != tt.want {
 				t.Errorf("CheckPermission() = %v, want %v", got, tt.want)
 			}

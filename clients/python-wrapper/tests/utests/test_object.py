@@ -127,12 +127,12 @@ class TestObjectReader:
         end_pos = ""
 
         def monkey_get_object_with_http_response(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-            resp = ApiResponse(status_code=200, headers=dict())
+            resp = ApiResponse(status_code=200, headers={})
             assert repository == test_kwargs.repository_id
             assert ref == test_kwargs.reference_id
             assert path == test_kwargs.path
             assert presign
-            
+
             resp.data = data[start_pos:]
             if isinstance(end_pos, int):
                 resp.data = data[start_pos:end_pos]
@@ -188,7 +188,11 @@ class TestObjectReader:
                 start_pos = 0
 
                 def monkey_get_object_with_http_response(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-                    resp = ApiResponse(status_code=200, headers=dict(), data=b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82")
+                    resp = ApiResponse(
+                        status_code=200,
+                        headers={},
+                        data=b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82",
+                    )
                     assert repository == test_kwargs.repository_id
                     assert ref == test_kwargs.reference_id
                     assert path == test_kwargs.path
@@ -196,7 +200,11 @@ class TestObjectReader:
                     assert presign
                     return resp
 
-                monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object_with_http_info", monkey_get_object_with_http_response)
+                monkeypatch.setattr(
+                    lakefs_sdk.api.ObjectsApi,
+                    "get_object_with_http_info",
+                    monkey_get_object_with_http_response,
+                )
                 res = fd.read()
                 if 'b' not in mode:
                     assert res == data.decode('utf-8')

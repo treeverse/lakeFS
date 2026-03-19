@@ -1,7 +1,11 @@
 package esti
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestLakefsHelp(t *testing.T) {
@@ -9,6 +13,14 @@ func TestLakefsHelp(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakefs()+" --help", false, "lakefs/help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakefs(), true, "lakefs/help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakefs()+" --help", true, "lakefs/help", emptyVars)
+}
+
+func TestLakefsConfig(t *testing.T) {
+	// write a config with an invalid key; if --config is honored, run will fail mentioning it
+	configPath := filepath.Join(t.TempDir(), "/custom-config.yaml")
+	invalidKey := "invalid-key"
+	require.NoError(t, os.WriteFile(configPath, []byte(invalidKey+": invalid\n"), 0600))
+	runCmdAndVerifyContainsText(t, Lakefs()+" --config \""+configPath+"\" run", true, false, invalidKey, emptyVars)
 }
 
 func TestLakefsSuperuser_basic(t *testing.T) {

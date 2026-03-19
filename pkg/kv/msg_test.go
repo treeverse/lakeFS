@@ -33,6 +33,7 @@ const randomGetSeed int64 = 3_141_593
 var testTime = time.Now().UTC()
 
 func TestMsgFuncs(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	store := kvtest.GetStore(ctx, t)
 

@@ -10,6 +10,7 @@ import (
 )
 
 func TestGravelerValueMarshal(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		v    graveler.Value
@@ -35,6 +36,7 @@ func TestGravelerValueMarshal(t *testing.T) {
 }
 
 func TestGravelerValueUnmarshal(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		v    *graveler.Value

@@ -23,6 +23,7 @@ func (m *mockMetadataProvider) GetMetadata(context.Context) (map[string]string, 
 }
 
 func TestNewMetadata(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	logger := logging.Dummy()
 

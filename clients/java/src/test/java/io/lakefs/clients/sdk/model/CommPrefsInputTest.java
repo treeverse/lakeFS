@@ -38,11 +38,35 @@ public class CommPrefsInputTest {
     }
 
     /**
+     * Test the property 'firstName'
+     */
+    @Test
+    public void firstNameTest() {
+        // TODO: test firstName
+    }
+
+    /**
+     * Test the property 'lastName'
+     */
+    @Test
+    public void lastNameTest() {
+        // TODO: test lastName
+    }
+
+    /**
      * Test the property 'email'
      */
     @Test
     public void emailTest() {
         // TODO: test email
+    }
+
+    /**
+     * Test the property 'companyName'
+     */
+    @Test
+    public void companyNameTest() {
+        // TODO: test companyName
     }
 
     /**

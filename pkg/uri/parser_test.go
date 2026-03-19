@@ -13,6 +13,7 @@ func strp(v string) *string {
 }
 
 func TestParse(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Input    string
 		Err      error
@@ -122,6 +123,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestURI_String(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Input    *uri.URI
 		Expected string
@@ -153,6 +155,7 @@ func TestURI_String(t *testing.T) {
 }
 
 func TestIsValid(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Input    string
 		Expected bool
@@ -169,6 +172,7 @@ func TestIsValid(t *testing.T) {
 }
 
 func TestMust(t *testing.T) {
+	t.Parallel()
 	// should not panic
 	u := uri.Must(uri.Parse("lakefs://foo/bar/baz"))
 	if !uri.Equals(u, &uri.URI{

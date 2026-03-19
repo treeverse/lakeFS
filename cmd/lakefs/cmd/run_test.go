@@ -12,6 +12,7 @@ import (
 )
 
 func TestGetAuthService(t *testing.T) {
+	t.Parallel()
 	t.Run("maintain_inviter", func(t *testing.T) {
 		cfg := &configfactory.ConfigImpl{}
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACInternal

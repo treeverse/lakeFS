@@ -7,13 +7,13 @@ on:
 
 jobs:
   paths-filter:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       wrapper-change: ${{ steps.filter.outputs.wrapper == 'true' }}
       sdk-change: ${{ steps.filter.outputs.sdk == 'true' }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -27,7 +27,7 @@ jobs:
     needs: paths-filter
     if: ${{ needs.paths-filter.outputs.wrapper-change != 'true' }}
     name: Unit Test Python SDK Wrapper
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Always Succeed
         run: echo "No changes in client - skipping unit tests"
@@ -40,7 +40,7 @@ jobs:
       matrix:
         pydantic_v1: [ true, false ]
     name: Unit Test Python SDK Wrapper
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -87,7 +87,7 @@ jobs:
       matrix:
         pydantic_v1: [ true, false ]
     name: Unit Test Python SDK Wrapper - SDK Changes
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out code
         uses: actions/checkout@v6

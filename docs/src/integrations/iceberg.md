@@ -274,6 +274,12 @@ For general information about lakeFS RBAC, see the [RBAC documentation](../secur
 
 Namespaces in the ARN use dot-separated notation (e.g., `my.namespace`). Wildcards (`*`) are supported for any path component.
 
+!!! note "Permissions are branch-agnostic"
+    The ARN structure does not include a branch component — only the repository and namespace are used for authorization.
+    This means that a policy granting access to a namespace in a given repository applies to that namespace on **every branch**.
+    For example, a policy allowing `catalog:ReadTable` on `arn:lakefs:catalog:::table/my-repo/my.namespace/*` grants
+    read access to tables in `my.namespace` regardless of whether the client accesses branch `main`, `dev`, or any other branch.
+
 #### Actions
 
 | Action                     | Resource   | Description                                    |
@@ -293,6 +299,84 @@ Namespaces in the ARN use dot-separated notation (e.g., `my.namespace`). Wildcar
 | `catalog:ReadView`         | View       | Read view metadata                             |
 | `catalog:UpdateView`       | View       | Update, replace or rename a view               |
 | `catalog:DeleteView`       | View       | Delete a view                                  |
+
+#### List Operations Filtering
+
+**Namespace filtering:**
+
+For `ListNamespaces`, use wildcards in the resource ARN to control which namespaces are visible to the user.
+
+**Example - Allow listing only namespaces starting with `analytics`:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ListNamespaces"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/analytics*"
+    }
+  ]
+}
+```
+
+This policy allows the user to see only namespaces starting with `analytics` in `my-repo`. Other namespaces in the same repository are filtered out of the response.
+
+**Table and view filtering (using conditions):**
+
+For `ListTables` and `ListViews`, the namespace ARN alone is not enough to filter individual tables or views within that namespace. Policies can use the `StringLike` condition operator with the `catalog:TableName` or `catalog:ViewName` fields to control which entities are visible.
+
+| Condition Field     | Supported Action          | Description                          |
+|---------------------|---------------------------|--------------------------------------|
+| `catalog:TableName` | `catalog:ListTables`      | The name of the table being listed   |
+| `catalog:ViewName`  | `catalog:ListViews`       | The name of the view being listed    |
+
+**Example - Allow listing only tables matching a pattern:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ListTables"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/analytics",
+      "condition": {
+        "StringLike": {
+          "catalog:TableName": ["prod-*", "staging-*"]
+        }
+      }
+    }
+  ]
+}
+```
+
+This policy allows the user to see only tables starting with `prod-` or `staging-` when listing tables in the `analytics` namespace of `my-repo`. Tables that do not match the pattern are filtered out of the response.
+
+**Example - Deny listing a specific view:**
+
+```json
+{
+  "statement": [
+    {
+      "effect": "allow",
+      "action": ["catalog:ListViews"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace"
+    },
+    {
+      "effect": "deny",
+      "action": ["catalog:ListViews"],
+      "resource": "arn:lakefs:catalog:::namespace/my-repo/my.namespace",
+      "condition": {
+        "StringLike": {
+          "catalog:ViewName": ["secret_view"]
+        }
+      }
+    }
+  ]
+}
+```
+
+This policy allows the user to list all views in the `my.namespace` namespace, except for `secret_view` which is explicitly denied.
 
 #### Example Policies
 

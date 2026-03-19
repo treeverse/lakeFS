@@ -12,6 +12,7 @@ import (
 )
 
 func TestHookWriter_OutputWritePath(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 	content := "content"
 	contentReader := strings.NewReader(content)
@@ -48,6 +49,7 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 }
 
 func TestHookWriter_OutputWriteError(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

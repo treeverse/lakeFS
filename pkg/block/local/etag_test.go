@@ -10,6 +10,7 @@ import (
 const PartsNo = 30
 
 func TestEtag(t *testing.T) {
+	t.Parallel()
 	var base [16]byte
 	b := base[:]
 	parts := make([]block.MultipartPart, PartsNo)

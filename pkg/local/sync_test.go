@@ -388,6 +388,7 @@ func TestSyncManager_upload(t *testing.T) {
 }
 
 func TestSyncManager_download_symlinks(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		Name              string
 		Contents          []byte
@@ -507,6 +508,7 @@ func TestSyncManager_download_symlinks(t *testing.T) {
 }
 
 func TestSyncManager_upload_symlinks(t *testing.T) {
+	t.Parallel()
 	ctx := t.Context()
 
 	testCases := []struct {

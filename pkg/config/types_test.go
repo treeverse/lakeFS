@@ -20,6 +20,7 @@ type StringsStruct struct {
 }
 
 func TestStrings(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name     string
 		Source   map[string]any
@@ -81,6 +82,7 @@ func TestStrings(t *testing.T) {
 }
 
 func TestDecodeStringToMap(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name        string
 		Source      string
@@ -145,6 +147,7 @@ func errorsMatch(err, target error) bool {
 }
 
 func TestOnlyString(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name     string
 		Source   map[string]any
@@ -192,6 +195,7 @@ func TestOnlyString(t *testing.T) {
 }
 
 func TestStringToSliceWithBracketHookFunc(t *testing.T) {
+	t.Parallel()
 	type testStruct struct {
 		ID      int
 		Element string
@@ -267,6 +271,7 @@ func TestStringToSliceWithBracketHookFunc(t *testing.T) {
 }
 
 func TestStringToStructHookFunc(t *testing.T) {
+	t.Parallel()
 	type TestStruct struct {
 		Name  string `json:"name"`
 		Value int    `json:"value"`

@@ -6,6 +6,7 @@ import (
 )
 
 func TestValidateTagID(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		tag     TagID
@@ -41,6 +42,7 @@ func TestValidateTagID(t *testing.T) {
 }
 
 func TestValidateTagID_Type(t *testing.T) {
+	t.Parallel()
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("ValidateTagID should panic on invalid type")
@@ -50,6 +52,7 @@ func TestValidateTagID_Type(t *testing.T) {
 }
 
 func TestValidateBranchID(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		branchID BranchID
