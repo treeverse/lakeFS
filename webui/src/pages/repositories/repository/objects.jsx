@@ -996,7 +996,18 @@ const TreeContainer = ({
         }
         // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [repo.id, reference.id, reference.type, path, after, refreshToken, showChangesOnly, internalRefresh, lastSeenPath, delimiter]);
+    }, [
+        repo.id,
+        reference.id,
+        reference.type,
+        path,
+        after,
+        refreshToken,
+        showChangesOnly,
+        internalRefresh,
+        lastSeenPath,
+        delimiter,
+    ]);
 
     // Merge changes with objects for highlighting
     const mergedResults = React.useMemo(
