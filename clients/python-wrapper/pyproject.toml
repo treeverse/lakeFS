@@ -40,7 +40,7 @@ test = [
     "pillow >= 12.1.1,<13"
 ]
 typing = [
-    "mypy >= 1.0",
+    "mypy==1.19.1",
     "types-PyYAML",
 ]
 
@@ -55,9 +55,12 @@ lakefs = ["py.typed"]
 
 [tool.mypy]
 python_version = "3.10"
-ignore_missing_imports = true
 pretty = true
 
 [[tool.mypy.overrides]]
-module = "yaml"
+module = "boto3"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "botocore.*"
 ignore_missing_imports = true

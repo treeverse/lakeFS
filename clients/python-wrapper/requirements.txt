@@ -16,3 +16,5 @@ setuptools>=70.0.0
 boto3>=1.26.0
 tomli ; python_version < '3.11'
 pylint==4.0.5
+mypy==1.19.1
+types-PyYAML
