@@ -66,5 +66,3 @@ target/
 .ipynb_checkpoints
 
 _site/
-uv.lock
-.venv/

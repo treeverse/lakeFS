@@ -56,6 +56,7 @@ lakefs = ["py.typed"]
 [tool.mypy]
 python_version = "3.10"
 pretty = true
+files = ["lakefs", "lakectl"]
 
 [[tool.mypy.overrides]]
 module = "boto3"
