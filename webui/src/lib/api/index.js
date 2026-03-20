@@ -1287,10 +1287,12 @@ class Setup {
         switch (response.status) {
             case 200:
                 return response.json();
+            case 400:
+                throw new Error(await extractError(response));
             case 409:
                 throw new Error('Setup is already complete.');
             default:
-                throw new Error(await extractError(response));
+                throw new Error('Unknown');
         }
     }
 
@@ -1303,10 +1305,12 @@ class Setup {
         switch (response.status) {
             case 200:
                 return;
+            case 400:
+                throw new Error(await extractError(response));
             case 409:
                 throw new Error('Setup is already complete.');
             default:
-                throw new Error(await extractError(response));
+                throw new Error('Unknown');
         }
     }
 }
