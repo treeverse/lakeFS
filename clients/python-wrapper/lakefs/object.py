@@ -160,6 +160,12 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         return self
 
     def __exit__(self, typ, value, traceback) -> None:
+        """
+        Exit the context manager.
+
+        Returns None (not True) to ensure exceptions propagate normally.
+        This is intentional - we do NOT suppress exceptions.
+        """
         if typ is None:  # Perform logic in case no exception was raised
             self.close()
         else:
