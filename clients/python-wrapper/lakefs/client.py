@@ -33,13 +33,14 @@ class ServerConfiguration:
     _conf: lakefs_sdk.Config
     _storage_conf: dict[str, ServerStorageConfiguration] = {}
 
-    def __init__(self, client: Optional[Client] = None):
+    def __init__(self, client: Client):
         try:
             self._conf = client.sdk_client.config_api.get_config()
             if self._conf.storage_config_list is not None:
                 for storage in self._conf.storage_config_list:
-                    self._storage_conf[storage.blockstore_id] = ServerStorageConfiguration(
-                        **self._conf.storage_config.dict())
+                    if self._conf.storage_config is not None:
+                        self._storage_conf[storage.blockstore_id] = ServerStorageConfiguration(
+                            **self._conf.storage_config.dict())
             if self._conf.storage_config is not None:
                 self._storage_conf[SINGLE_STORAGE_ID] = ServerStorageConfiguration(**self._conf.storage_config.dict())
 
@@ -53,7 +54,9 @@ class ServerConfiguration:
         """
         Return the lakeFS server version
         """
-        return self._conf.version_config.version
+        if self._conf.version_config is None:
+            return ""
+        return self._conf.version_config.version or ""
 
     @property
     def storage_config(self) -> ServerStorageConfiguration:
@@ -164,7 +167,7 @@ class Client:
         return self._reset_token_time
 
     @reset_time.setter
-    def reset_time(self, time: datetime):
+    def reset_time(self, time: datetime.datetime) -> None:
         self._reset_token_time = time
 
     def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
@@ -189,7 +192,7 @@ def from_aws_role(
         session: boto3.Session,
         ttl_seconds: int = 3600,
         presigned_ttl: int = 60,
-        additional_headers: dict[str, str] = None,
+        additional_headers: Optional[dict[str, str]] = None,
         **kwargs) -> Client:
     """
     Create a lakeFS client from an AWS role.

@@ -113,7 +113,7 @@ class ClientConfig(Configuration):
         if verify_ssl is not None:
             self.verify_ssl = verify_ssl
         if proxy is not None:
-            self.proxy = proxy
+            self.proxy = proxy  # type: ignore[assignment]
 
         if kwargs:
             return
@@ -293,6 +293,8 @@ def _safe_int_or_default(value: Optional[str], default: int) -> int:
     """
     Safely convert a value to an int, returning a default if conversion fails.
     """
+    if value is None:
+        return default
     try:
         return int(value)
     except (ValueError, TypeError):

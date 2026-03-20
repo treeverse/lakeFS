@@ -23,7 +23,7 @@ class Repository(_BaseLakeFSObject):
     Access to these objects should be done from this class
     """
     _id: str
-    _properties: RepositoryProperties = None
+    _properties: Optional[RepositoryProperties] = None
 
     def __init__(self, repository_id: str, client: Optional[Client] = None) -> None:
         self._id = repository_id
@@ -178,7 +178,7 @@ class Repository(_BaseLakeFSObject):
         return self.id
 
 
-def repositories(client: Client = None,
+def repositories(client: Optional[Client] = None,
                  prefix: Optional[str] = None,
                  after: Optional[str] = None,
                  **kwargs) -> Generator[Repository]:

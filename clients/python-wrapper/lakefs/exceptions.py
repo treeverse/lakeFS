@@ -170,7 +170,7 @@ def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], L
         # Convert headers list of tuples to dict for easier access
         headers = getattr(e, 'headers', None)
         headers_dict = dict(headers) if headers else None
-        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason, e.body, headers_dict)
+        lakefs_ex: LakeFSException = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason, e.body, headers_dict)
         if custom_handler is not None:
             lakefs_ex = custom_handler(lakefs_ex)
 

@@ -25,7 +25,7 @@ import lakefs_sdk
 BINARY_DOWNLOAD_URL = 'https://github.com/treeverse/lakeFS/releases/download/'
 
 
-_PlatformInfo = namedtuple('PlatformInfo', ['system', 'machine'])
+_PlatformInfo = namedtuple('_PlatformInfo', ['system', 'machine'])
 
 
 def _get_platform_info() -> _PlatformInfo:

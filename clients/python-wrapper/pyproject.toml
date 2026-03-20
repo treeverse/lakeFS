@@ -53,3 +53,7 @@ lakefs = ["py.typed"]
 python_version = "3.10"
 ignore_missing_imports = true
 pretty = true
+
+[[tool.mypy.overrides]]
+module = "yaml"
+ignore_missing_imports = true
