@@ -17,6 +17,24 @@ pub struct Setup {
     pub username: String,
     #[serde(rename = "key", skip_serializing_if = "Option::is_none")]
     pub key: Option<Box<models::AccessKeyCredentials>>,
+    /// the provided first name
+    #[serde(rename = "firstName", skip_serializing_if = "Option::is_none")]
+    pub first_name: Option<String>,
+    /// the provided last name
+    #[serde(rename = "lastName", skip_serializing_if = "Option::is_none")]
+    pub last_name: Option<String>,
+    /// the provided email
+    #[serde(rename = "email", skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    /// the provided company name
+    #[serde(rename = "companyName", skip_serializing_if = "Option::is_none")]
+    pub company_name: Option<String>,
+    /// user preference to receive feature updates
+    #[serde(rename = "featureUpdates", skip_serializing_if = "Option::is_none")]
+    pub feature_updates: Option<bool>,
+    /// user preference to receive security updates
+    #[serde(rename = "securityUpdates", skip_serializing_if = "Option::is_none")]
+    pub security_updates: Option<bool>,
 }
 
 impl Setup {
@@ -24,6 +42,12 @@ impl Setup {
         Setup {
             username,
             key: None,
+            first_name: None,
+            last_name: None,
+            email: None,
+            company_name: None,
+            feature_updates: None,
+            security_updates: None,
         }
     }
 }

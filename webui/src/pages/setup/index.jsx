@@ -5,6 +5,7 @@ import { useRouter } from '../../lib/hooks/router';
 import { useAPI } from '../../lib/hooks/api';
 import { SetupComplete } from './setupComplete';
 import { UserConfiguration } from './userConfiguration';
+import capitalize from 'lodash/capitalize';
 
 const SetupContents = () => {
     const [setupError, setSetupError] = useState(null);
@@ -25,9 +26,11 @@ const SetupContents = () => {
         }
     }, [error, response]);
 
+    const notInitialized = currentStep !== SETUP_STATE_INITIALIZED;
+
     const onSubmitUserConfiguration = useCallback(
         async (adminUser, firstName, lastName, userEmail, companyName, checked) => {
-            if (!adminUser) {
+            if (notInitialized && !adminUser) {
                 setSetupError('Please enter your admin username.');
                 return;
             }
@@ -36,19 +39,27 @@ const SetupContents = () => {
                 return;
             }
 
+            const commPrefs = {
+                email: userEmail,
+                firstName,
+                lastName,
+                companyName,
+                featureUpdates: checked,
+                securityUpdates: checked,
+            };
+
             setDisabled(true);
             try {
                 if (currentStep !== SETUP_STATE_INITIALIZED) {
-                    const response = await setup.lakeFS(adminUser);
+                    const response = await setup.lakeFS({ username: adminUser, ...commPrefs });
                     setSetupData(response);
+                } else if (commPrefsMissing) {
+                    await setup.commPrefs(commPrefs);
                 }
-                if (commPrefsMissing) {
-                    await setup.commPrefs(userEmail, firstName, lastName, companyName, checked, checked);
-                    setCommPrefsMissing(false);
-                }
+                setCommPrefsMissing(false);
                 setSetupError(null);
             } catch (error) {
-                setSetupError(error);
+                setSetupError(capitalize(error.message));
             } finally {
                 setDisabled(false);
             }
@@ -72,7 +83,6 @@ const SetupContents = () => {
         );
     }
 
-    const notInitialized = currentStep !== SETUP_STATE_INITIALIZED;
     if (notInitialized || commPrefsMissing) {
         return (
             <UserConfiguration

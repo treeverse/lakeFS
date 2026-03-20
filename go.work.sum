@@ -929,6 +929,7 @@ github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/ad
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd h1:PpuIBO5P3e9hpqBD0O/HjhShYuM6XE0i/lbE6J94kww=
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0 h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4M0+kPpLofRdBo=
+github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542/go.mod h1:Ow0tF8D4Kplbc8s8sSb3V2oUCygFHVp8gC3Dn6U4MNI=
 github.com/hanwen/go-fuse v1.0.0 h1:GxS9Zrn6c35/BnfiVsZVWmsG803xwE7eVRDvcf/BEVc=
 github.com/hanwen/go-fuse/v2 v2.1.0 h1:+32ffteETaLYClUj0a3aHjZ1hOPxxaNEHiZiujuDaek=
 github.com/hashicorp/consul/api v1.25.1 h1:CqrdhYzc8XZuPnhIYZWH45toM0LB9ZeYr/gvpLVI3PE=
@@ -1188,8 +1189,6 @@ github.com/treeverse/delta-go v0.0.0-20260304153600-ce4c3f94e3a5/go.mod h1:E7uPC
 github.com/treeverse/delta-go v0.0.0-20260308090650-6b85cc1310b5/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
 github.com/treeverse/delta-go v0.0.0-20260311182212-b86fdf740f4a/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
 github.com/treeverse/delta-go v0.0.0-20260311192507-4df58b676a21/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
-github.com/treeverse/delta-go v0.0.0-20260312070549-3e50cc5f2d84 h1:hUdjL3wPguzoBtxdagMqZGES8lktlDLhyMrzCxmbq+Q=
-github.com/treeverse/delta-go v0.0.0-20260312070549-3e50cc5f2d84/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
 github.com/tsenart/go-tsz v0.0.0-20180814235614-0bd30b3df1c3 h1:pcQGQzTwCg//7FgVywqge1sW9Yf8VMsMdG58MI5kd8s=
 github.com/tsenart/go-tsz v0.0.0-20180814235614-0bd30b3df1c3/go.mod h1:SWZznP1z5Ki7hDT2ioqiFKEse8K9tU2OUvaRI0NeGQo=
 github.com/urfave/cli v1.22.1 h1:+mkCCcOFKPnCmVYVcURKps1Xe+3zP90gSYGNfRkjoIY=
@@ -1421,6 +1420,7 @@ gopkg.in/errgo.v2 v2.1.0 h1:0vLT13EuvQ0hNvakwLuFZ/jYrLp5F3kcWHXdRggjCE8=
 gopkg.in/fsnotify.v1 v1.4.7 h1:xOHLXZwVvI9hhs+cLKq5+I5onOuwQLhQwiu63xxlHs4=
 gopkg.in/go-playground/assert.v1 v1.2.1 h1:xoYuJVE7KT85PYWrN730RguIQO0ePzVRfFMXadIrXTM=
 gopkg.in/go-playground/validator.v8 v8.18.2 h1:lFB4DoMU6B626w8ny76MV7VX6W2VHct2GVOI3xgiMrQ=
+gopkg.in/h2non/gock.v1 v1.1.2/go.mod h1:n7UGz/ckNChHiK05rDoiC4MYSunEC/lyaUm2WWaDva0=
 gopkg.in/inconshreveable/log15.v2 v2.0.0-20180818164646-67afb5ed74ec h1:RlWgLqCMMIYYEVcAR5MDsuHlVkaIPDAF+5Dehzg8L5A=
 gopkg.in/jcmturner/aescts.v1 v1.0.1 h1:cVVZBK2b1zY26haWB4vbBiZrfFQnfbTVrE3xZq6hrEw=
 gopkg.in/jcmturner/dnsutils.v1 v1.0.1 h1:cIuC1OLRGZrld+16ZJvvZxVJeKPsvd5eUIvxfoN5hSM=
