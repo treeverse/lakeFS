@@ -276,7 +276,7 @@ checks-validator: lint validate-proto validate-ui-format \
 	validate-wrapper validate-wrapgen-testcode
 
 python-wrapper-lint:
-	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./lint.sh"
 
 python-wrapper-gen-docs:
 	@version=$$(python -m pip install -r clients/python-wrapper/requirements.txt && python clients/python-wrapper/_version.py)

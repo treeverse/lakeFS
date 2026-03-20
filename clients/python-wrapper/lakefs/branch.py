@@ -7,7 +7,7 @@ from __future__ import annotations
 import uuid
 import warnings
 from contextlib import contextmanager
-from typing import Optional, Generator, Iterable, Literal, Dict
+from typing import Optional, Generator, Iterable, Iterator, Literal, Dict
 
 import lakefs_sdk
 from lakefs.client import Client
@@ -203,7 +203,7 @@ class Branch(_BaseBranch):
             branch = self._client.sdk_client.branches_api.get_branch(self._repo_id, self._id)
         return Reference(self._repo_id, branch.commit_id, self._client)
 
-    def commit(self, message: str, metadata: dict = None, **kwargs) -> Reference:
+    def commit(self, message: str, metadata: Optional[dict] = None, **kwargs) -> Reference:
         """
         Commit changes on the current branch
 
@@ -277,7 +277,7 @@ class Branch(_BaseBranch):
             self._client.sdk_client.branches_api.revert_branch(
                 self._repo_id,
                 self._id,
-                lakefs_sdk.RevertCreation(ref=ref, parent_number=parent_number),
+                lakefs_sdk.RevertCreation(ref=ref, parent_number=parent_number, allow_empty=False),
                 **kwargs
             )
             commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
@@ -296,7 +296,7 @@ class Branch(_BaseBranch):
 
     @contextmanager
     def transact(self, commit_message: str = "", commit_metadata: Optional[Dict] = None,
-                 delete_branch_on_error: bool = True, tag: Optional[str] = None) -> _Transaction:
+                 delete_branch_on_error: bool = True, tag: Optional[str] = None) -> Iterator[_Transaction]:
         """
         Create a transaction for multiple operations.
         Transaction allows for multiple modifications to be performed atomically on a branch,
@@ -344,7 +344,7 @@ class _Transaction(_BaseBranch):
         return f"tx-{uuid.uuid4()}"  # Don't rely on source branch name as this might exceed valid branch length
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
-                 commit_metadata: Optional[Dict] = None, client: Client = None, tag: Optional[str] = None):
+                 commit_metadata: Optional[Dict] = None, client: Optional[Client] = None, tag: Optional[str] = None):
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
         self._source_branch = branch_id
@@ -417,8 +417,8 @@ class Transaction:
     """
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
-                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True, client: Client = None,
-                 tag: Optional[str] = None):
+                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True,
+                 client: Optional[Client] = None, tag: Optional[str] = None):
         self._repo_id = repository_id
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
@@ -435,7 +435,9 @@ class Transaction:
         self._tx_branch = Branch(self._repo_id, self._tx.id, self._client)
         return self._tx
 
-    def __exit__(self, typ, value, traceback) -> bool:
+    def __exit__(self, typ, value, traceback) -> Literal[False]:
+        assert self._tx is not None
+        assert self._tx_branch is not None
         if typ is not None:  # Perform only cleanup in case exception occurred
             if self._cleanup_branch:
                 self._tx_branch.delete()

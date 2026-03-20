@@ -39,6 +39,10 @@ test = [
     "pyarrow >= 14.0.1,<20",
     "pillow >= 12.1.1,<13"
 ]
+typing = [
+    "mypy==1.19.1",
+    "types-PyYAML",
+]
 
 [project.urls]
 Homepage = "https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper"
@@ -48,3 +52,12 @@ include = ["lakectl", "lakectl.*", "lakefs", "lakefs.*"]
 
 [tool.setuptools.package-data]
 lakefs = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.10"
+pretty = true
+files = ["lakefs", "lakectl"]
+
+[[tool.mypy.overrides]]
+module = ["boto3", "botocore.*"]
+ignore_missing_imports = true

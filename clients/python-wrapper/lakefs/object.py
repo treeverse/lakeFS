@@ -13,7 +13,7 @@ import os
 import tempfile
 import urllib.parse
 from abc import abstractmethod
-from typing import AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args
+from typing import Any, AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args
 
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
@@ -127,7 +127,7 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     def seekable(self) -> bool:
         raise NotImplementedError
 
-    def truncate(self, size: int = None) -> int:
+    def truncate(self, size: Optional[int] = None) -> int:  # type: ignore[override]
         """
         Unsupported by lakeFS implementation
         """
@@ -138,16 +138,16 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         raise NotImplementedError
 
     @abstractmethod
-    def write(self, s: AnyStr) -> int:
+    def write(self, s: AnyStr) -> int:  # type: ignore[override]
         raise NotImplementedError
 
-    def writelines(self, lines: List[AnyStr]) -> None:
+    def writelines(self, lines: List[AnyStr]) -> None:  # type: ignore[override]
         """
         Unsupported by lakeFS implementation
         """
         raise io.UnsupportedOperation
 
-    def __next__(self) -> AnyStr:
+    def __next__(self) -> AnyStr:  # type: ignore[type-var]
         line = self.readline()
         if len(line) == 0:
             raise StopIteration
@@ -159,21 +159,24 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     def __enter__(self) -> LakeFSIOBase:
         return self
 
-    def __exit__(self, typ, value, traceback) -> bool:
+    def __exit__(self, typ, value, traceback) -> None:
+        """
+        Exit the context manager.
+
+        Returns None (not True) to ensure exceptions propagate normally.
+        This is intentional - we do NOT suppress exceptions.
+        """
         if typ is None:  # Perform logic in case no exception was raised
             self.close()
-
         else:
             self._abort()  # perform logic regardless of exception
-
-        return False  # Don't suppress an exception
 
     @abstractmethod
     def seek(self, offset: int, whence: int = 0) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    def read(self, n: int = None) -> str | bytes:
+    def read(self, n: Optional[int] = None) -> str | bytes:
         raise NotImplementedError
 
     def tell(self) -> int:
@@ -197,7 +200,7 @@ class ObjectReader(LakeFSIOBase):
         self._readlines_buf = io.BytesIO(b"")
         self._is_closed = False
         self._kwargs = kwargs
-        self._size = None
+        self._size: Optional[int] = None
 
     @property
     def pre_sign(self):
@@ -230,7 +233,7 @@ class ObjectReader(LakeFSIOBase):
         """
         return True
 
-    def write(self, s: AnyStr) -> int:
+    def write(self, s: AnyStr) -> int:  # type: ignore[override]
         """
         Unsupported for reader object
         """
@@ -269,7 +272,7 @@ class ObjectReader(LakeFSIOBase):
         elif whence == os.SEEK_CUR:
             pos = self._pos + offset
         elif whence == os.SEEK_END:
-            size = self._obj.stat().size_bytes  # Seek end requires us to know the size of the file
+            size = self._obj.stat().size_bytes or 0  # Seek end requires us to know the size of the file
             pos = size + offset
         else:
             raise io.UnsupportedOperation(f"whence={whence} is not supported")
@@ -327,7 +330,7 @@ class ObjectReader(LakeFSIOBase):
                 self._size = self._pos
             return b''
 
-    def read(self, n: int = None) -> str | bytes:
+    def read(self, n: Optional[int] = None) -> str | bytes:
         """
         Read object data
 
@@ -365,7 +368,7 @@ class ObjectReader(LakeFSIOBase):
             raise ValueError("I/O operation on closed file")
 
         if self._readlines_buf.getbuffer().nbytes == 0:
-            self._readlines_buf = io.BytesIO(self._read(self._get_range_string(0)))
+            self._readlines_buf = io.BytesIO(self._read(self._get_range_string(0)))  # type: ignore[arg-type]
         self._readlines_buf.seek(self._pos)
         line = self._readlines_buf.readline(limit)
         self._pos = self._readlines_buf.tell()
@@ -419,7 +422,7 @@ class ObjectWriter(LakeFSIOBase):
     implicitly when using writer as a context.
     """
     _fd: tempfile.SpooledTemporaryFile
-    _obj_stats: ObjectInfo = None
+    _obj_stats: Optional[ObjectInfo] = None
 
     def __init__(self,
                  obj: StoredObject,
@@ -439,14 +442,13 @@ class ObjectWriter(LakeFSIOBase):
         self.content_type = content_type
         self.metadata = metadata
 
-        open_kwargs = {
-            # TODO: Once the upstream urllib3 < 2.0 is out of support,
-            # pass the specified write mode and conditional encoding (None, utf-8).
-            "encoding": None,  # Must be none for binary write modes. "utf-8" otherwise
-            "mode": 'wb+',  # Always write to file in binary mode (bug in urllib3 < 2.0,
-            "max_size": _WRITER_BUFFER_SIZE,
-        }
-        self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
+        # TODO: Once the upstream urllib3 < 2.0 is out of support,
+        # pass the specified write mode and conditional encoding (None, utf-8).
+        self._fd = tempfile.SpooledTemporaryFile(  # pylint: disable=consider-using-with
+            max_size=_WRITER_BUFFER_SIZE,
+            mode='wb+',  # Always write to file in binary mode (bug in urllib3 < 2.0)
+            encoding=None,  # Must be none for binary write modes. "utf-8" otherwise
+        )
         super().__init__(obj, mode, pre_sign, client)
         self._kwargs = kwargs
 
@@ -491,7 +493,7 @@ class ObjectWriter(LakeFSIOBase):
         if self._pos > _WRITER_BUFFER_SIZE:
             self._fd.flush()
 
-    def write(self, s: AnyStr) -> int:
+    def write(self, s: AnyStr) -> int:  # type: ignore[override]
         """
         Write data to buffer
 
@@ -592,7 +594,7 @@ class ObjectWriter(LakeFSIOBase):
                                                                                     **staging_kwargs)
         url = staging_location.presigned_url
 
-        headers = {"Content-Length": self._pos}
+        headers: dict[str, Any] = {"Content-Length": self._pos}
         if self.content_type:
             headers["Content-Type"] = self.content_type
         if self._client.storage_config_by_id(self._obj.storage_id()).blockstore_type == "azure":
@@ -611,7 +613,8 @@ class ObjectWriter(LakeFSIOBase):
                                            size_bytes=size_bytes,
                                            checksum=etag,
                                            user_metadata=self.metadata,
-                                           content_type=self.content_type)
+                                           content_type=self.content_type,
+                                           mtime=None)
         if_none_match = "*" if self._mode.startswith("x") else None
         try:
             return self._client.sdk_client.staging_api.link_physical_address(self._obj.repo,
@@ -649,7 +652,7 @@ class ObjectWriter(LakeFSIOBase):
         """
         raise io.UnsupportedOperation
 
-    def read(self, n: int = None) -> str | bytes:
+    def read(self, n: Optional[int] = None) -> str | bytes:
         """
         Unsupported for writer class
         """
@@ -781,7 +784,8 @@ class StoredObject(_BaseLakeFSObject):
         """
 
         with api_exception_handler():
-            object_copy_creation = lakefs_sdk.ObjectCopyCreation(src_ref=self._ref_id, src_path=self._path)
+            object_copy_creation = lakefs_sdk.ObjectCopyCreation(src_ref=self._ref_id, src_path=self._path,
+                                                                  shallow=False)
             self._client.sdk_client.objects_api.copy_object(repository=self._repo_id,
                                                             branch=destination_branch_id,
                                                             dest_path=destination_path,
@@ -837,7 +841,7 @@ class WriteableObject(StoredObject):
         :raise ServerException: for any other errors
         """
         with ObjectWriter(self, mode, pre_sign, content_type, metadata, self._client, **kwargs) as writer:
-            writer.write(data)
+            writer.write(data)  # type: ignore[arg-type, type-var]
 
         return self
 
