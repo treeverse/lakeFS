@@ -781,7 +781,8 @@ class StoredObject(_BaseLakeFSObject):
         """
 
         with api_exception_handler():
-            object_copy_creation = lakefs_sdk.ObjectCopyCreation(src_ref=self._ref_id, src_path=self._path)
+            object_copy_creation = lakefs_sdk.ObjectCopyCreation(src_ref=self._ref_id, src_path=self._path,
+                                                                  shallow=False)
             self._client.sdk_client.objects_api.copy_object(repository=self._repo_id,
                                                             branch=destination_branch_id,
                                                             dest_path=destination_path,

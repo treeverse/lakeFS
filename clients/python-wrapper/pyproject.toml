@@ -39,6 +39,10 @@ test = [
     "pyarrow >= 14.0.1,<20",
     "pillow >= 12.1.1,<13"
 ]
+typing = [
+    "mypy >= 1.0",
+    "types-PyYAML",
+]
 
 [project.urls]
 Homepage = "https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper"
