@@ -48,3 +48,8 @@ include = ["lakectl", "lakectl.*", "lakefs", "lakefs.*"]
 
 [tool.setuptools.package-data]
 lakefs = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+pretty = true
