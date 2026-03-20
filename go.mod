@@ -97,6 +97,7 @@ require (
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
+	github.com/tilinna/z85 v1.0.0
 	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20260302105446-91537729e473
 	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20260302105446-91537729e473
 	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20260302105446-91537729e473
@@ -454,6 +455,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260312070549-3e50cc5f2d84
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260319182137-e18762214828
 
 tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
