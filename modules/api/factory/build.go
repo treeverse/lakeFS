@@ -26,6 +26,7 @@ type ServiceDependencies struct {
 	Authenticator         auth.Authenticator
 	AuthenticationService authentication.Service
 	BlockAdapter          block.Adapter
+	Catalog               *catalog.Catalog
 	Collector             stats.Collector
 	Logger                logging.Logger
 	LicenseManager        license.Manager

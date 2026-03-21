@@ -347,6 +347,7 @@ var runCmd = &cobra.Command{
 			AuthService:           authService,
 			AuthenticationService: authenticationService,
 			BlockAdapter:          blockStore,
+			Catalog:               c,
 			Collector:             bufferedCollector,
 			Logger:                logger,
 			LicenseManager:        licenseManager,
