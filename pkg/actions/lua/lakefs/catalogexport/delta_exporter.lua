@@ -5,6 +5,7 @@ local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
 local strings = require("strings")
 local url = require("net/url")
+local z85 = require("encoding/z85enc")
 
 local function isTableNotEmpty(t)
     return next(t) ~= nil
@@ -61,6 +62,48 @@ end
     path_transformer: function(path) used for transforming path scheme (ex: Azure https to abfss)
 
 ]]
+
+-- Resolve a deletion vector's .bin file to its physical storage address.
+-- dv: the deletionVector table (modified in place).
+-- file_path: parent Parquet path, used only in error messages.
+-- on_not_found: "error" for add entries (missing DV = deleted rows appear live,
+--               silent data corruption); "skip" for remove entries (DV file may
+--               have been vacuumed together with its compacted parent file).
+local function resolve_dv(repo, commit_id, table_path, path_transformer, dv, file_path, on_not_found)
+    if dv.storageType == "i" then
+        return -- inline bitmap embedded in JSON, no file to resolve
+    end
+    local dv_full_path
+    if dv.storageType == "p" then
+        -- "p" is a relative path from the table root.
+        dv_full_path = pathlib.join("/", table_path, dv.pathOrInlineDv)
+    elseif dv.storageType == "u" then
+        -- pathOrInlineDv encodes a UUID in Z85: last 20 chars are the UUID,
+        -- any chars before are an optional subdirectory prefix.
+        local uuid, prefix = z85.decode_uuid(dv.pathOrInlineDv)
+        local dv_filename = "deletion_vector_" .. uuid .. ".bin"
+        if prefix ~= "" then
+            dv_filename = prefix .. "/" .. dv_filename
+        end
+        dv_full_path = pathlib.join("/", table_path, dv_filename)
+    else
+        error(string.format("unknown deletion vector storageType=%s on file %s",
+            tostring(dv.storageType), tostring(file_path)))
+    end
+    local dv_code, dv_obj = lakefs.stat_object(repo, commit_id, dv_full_path)
+    if dv_code == 200 then
+        local dv_stat = json.unmarshal(dv_obj)
+        local dv_u = url.parse(dv_stat["physical_address"])
+        local dv_physical = url.build_url(dv_u["scheme"], dv_u["host"], dv_u["path"])
+        if path_transformer ~= nil then
+            dv_physical = path_transformer(dv_physical)
+        end
+        -- Always write as "p" with an absolute physical URL.
+        dv.storageType = "p"
+        dv.pathOrInlineDv = dv_physical
+    end
+end
+
 local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path,
                                 path_transformer)
     local repo = action.repository_id
@@ -139,17 +182,20 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         end
                         if entry.add ~= nil then
                             entry.add.path = physical_path
+                            if entry.add.deletionVector then
+                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.add.deletionVector, entry.add.path)
+                            end
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
+                            if entry.remove.deletionVector then
+                                resolve_dv(repo, commit_id, table_path, path_transformer, entry.remove.deletionVector, entry.remove.path)
+                            end
                         elseif entry.cdc ~= nil then
                             entry.cdc.path = physical_path
                         end
                     elseif code == 404 then
                         if entry.remove ~= nil or entry.cdc ~= nil then
-                            -- If the object is not found, and the entry is a remove or a cdc entry, we can assume it was vacuumed
-                            print(string.format(
-                                "Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.",
-                                unescaped_path))
+                            -- File not found on a remove/cdc entry means it was vacuumed — skip silently.
                             unfound_paths[unescaped_path] = nil
                         else
                             unfound_paths[unescaped_path] = true
@@ -255,6 +301,7 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
                     if value and strings.has_prefix(changed_path, path) then
                         table.insert(changed_table_def_names, table_name_yaml)
                         print("  (inserted)")
+                        break  -- only insert once per table
                     end
                 end
             else

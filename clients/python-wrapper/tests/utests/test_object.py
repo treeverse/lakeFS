@@ -127,12 +127,12 @@ class TestObjectReader:
         end_pos = ""
 
         def monkey_get_object_with_http_response(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-            resp = ApiResponse(status_code=200, headers=dict())
+            resp = ApiResponse(status_code=200, headers={})
             assert repository == test_kwargs.repository_id
             assert ref == test_kwargs.reference_id
             assert path == test_kwargs.path
             assert presign
-            
+
             resp.data = data[start_pos:]
             if isinstance(end_pos, int):
                 resp.data = data[start_pos:end_pos]
@@ -188,7 +188,11 @@ class TestObjectReader:
                 start_pos = 0
 
                 def monkey_get_object_with_http_response(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-                    resp = ApiResponse(status_code=200, headers=dict(), data=b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82")
+                    resp = ApiResponse(
+                        status_code=200,
+                        headers={},
+                        data=b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82",
+                    )
                     assert repository == test_kwargs.repository_id
                     assert ref == test_kwargs.reference_id
                     assert path == test_kwargs.path
@@ -196,7 +200,11 @@ class TestObjectReader:
                     assert presign
                     return resp
 
-                monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object_with_http_info", monkey_get_object_with_http_response)
+                monkeypatch.setattr(
+                    lakefs_sdk.api.ObjectsApi,
+                    "get_object_with_http_info",
+                    monkey_get_object_with_http_response,
+                )
                 res = fd.read()
                 if 'b' not in mode:
                     assert res == data.decode('utf-8')
@@ -211,6 +219,136 @@ class TestObjectReader:
             with expect_exception_context(ValueError):
                 with obj.reader(mode="invalid"):
                     pass
+
+    def test_read_empty_object_range_request(self, monkeypatch, tmp_path):
+        """Test reading from an empty object with range request (issue #10208)"""
+        test_kwargs = ObjectTestKWArgs()
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            # Mock 416 response with Content-Range header for empty object (size=0)
+            def mock_get_object_with_http_info(*args, **kwargs):
+                raise lakefs_sdk.ApiException(
+                    status=http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                    reason="Requested Range Not Satisfiable",
+                    http_resp=MockHTTPResponse(
+                        status=416,
+                        reason="Requested Range Not Satisfiable",
+                        data=b'',
+                        headers=[('Content-Range', 'bytes */0')]
+                    )
+                )
+
+            monkeypatch.setattr(
+                lakefs_sdk.api.ObjectsApi,
+                "get_object_with_http_info",
+                mock_get_object_with_http_info
+            )
+
+            # Should not raise UnboundLocalError
+            with obj.reader(mode="rb") as fd:
+                data = fd.read(100)
+                assert data == b''  # Empty data for empty object
+                assert fd._size == 0  # Size should be extracted from Content-Range header
+
+    def test_read_invalid_range_with_size(self, monkeypatch, tmp_path):
+        """Test reading beyond object size extracts size from Content-Range header"""
+        test_kwargs = ObjectTestKWArgs()
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            # Mock 416 response with Content-Range header for object with size 100
+            def mock_get_object_with_http_info(*args, **kwargs):
+                raise lakefs_sdk.ApiException(
+                    status=http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                    reason="Requested Range Not Satisfiable",
+                    http_resp=MockHTTPResponse(
+                        status=416,
+                        reason="Requested Range Not Satisfiable",
+                        data=b'',
+                        headers=[('Content-Range', 'bytes */100')]
+                    )
+                )
+
+            monkeypatch.setattr(
+                lakefs_sdk.api.ObjectsApi,
+                "get_object_with_http_info",
+                mock_get_object_with_http_info
+            )
+
+            with obj.reader(mode="rb") as fd:
+                data = fd.read(100)
+                assert data == b''
+                assert fd._size == 100  # Size should be extracted from Content-Range header
+
+    def test_read_empty_object_with_read_all(self, monkeypatch, tmp_path):
+        """Test reading entire empty object using read() without args (issue #10208)"""
+        test_kwargs = ObjectTestKWArgs()
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            # Simulate reading empty object using read() without specifying size
+            # This was the original bug scenario: UnboundLocalError was raised
+            def mock_get_object_with_http_info(*args, **kwargs):
+                raise lakefs_sdk.ApiException(
+                    status=http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                    reason="Requested Range Not Satisfiable",
+                    http_resp=MockHTTPResponse(
+                        status=416,
+                        reason="Requested Range Not Satisfiable",
+                        data=b'',
+                        headers=[('Content-Range', 'bytes */0')]
+                    )
+                )
+
+            monkeypatch.setattr(
+                lakefs_sdk.api.ObjectsApi,
+                "get_object_with_http_info",
+                mock_get_object_with_http_info
+            )
+
+            # This was the original bug: UnboundLocalError was raised
+            # Now it should return empty bytes without error
+            with obj.reader(mode="rb") as fd:
+                data = fd.read()  # Read all without specifying size
+                assert data == b''
+                assert fd._size == 0
+
+    def test_read_range_without_content_range_header(self, monkeypatch, tmp_path):
+        """Test 416 response without Content-Range header falls back to current position"""
+        test_kwargs = ObjectTestKWArgs()
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            # Mock 416 response WITHOUT Content-Range header
+            def mock_get_object_with_http_info(*args, **kwargs):
+                raise lakefs_sdk.ApiException(
+                    status=http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                    reason="Requested Range Not Satisfiable",
+                    http_resp=MockHTTPResponse(
+                        status=416,
+                        reason="Requested Range Not Satisfiable",
+                        data=b'',
+                        headers=[]  # No Content-Range header
+                    )
+                )
+
+            monkeypatch.setattr(
+                lakefs_sdk.api.ObjectsApi,
+                "get_object_with_http_info",
+                mock_get_object_with_http_info
+            )
+
+            with obj.reader(mode="rb") as fd:
+                fd.seek(50)  # Set position to 50
+                data = fd.read(100)
+                assert data == b''
+                # When Content-Range header is missing, should fall back to current position
+                assert fd._size == 50
+
+
+class MockHTTPResponse:
+    """Mock HTTP response for testing ApiException with headers"""
+    def __init__(self, status, reason, data, headers):
+        self.status = status
+        self.reason = reason
+        self.data = data
+        self._headers = headers
+
+    def getheaders(self):
+        return self._headers
 
 
 class TestWriteableObject:

@@ -959,7 +959,7 @@ export const Tree = ({
     } else {
         body = (
             <>
-                <Table borderless size="sm">
+                <Table borderless size="sm" className="tree-table">
                     <tbody>
                         {results.map((entry) => (
                             <EntryRow
@@ -980,7 +980,7 @@ export const Tree = ({
     }
 
     return (
-        <div className="tree-container">
+        <div className="tree-container tree-container-wide">
             <Card>
                 <Card.Header>
                     <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true} />

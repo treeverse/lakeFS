@@ -13,14 +13,13 @@ export class ChangesOperations {
     }
 
     async commitChanges(commitMsg: string): Promise<void> {
-        await this.page.locator('button[id="changes-dropdown"]').click();
         await this.page.getByRole("button", { name: "Commit Changes" }).click();
         if (commitMsg?.length) {
             await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
         }
         await this.page
             .getByRole("dialog")
-            .getByRole("button", { name: "Commit Changes" })
+            .getByRole("button", { name: "Commit" })
             .click();
     }
 

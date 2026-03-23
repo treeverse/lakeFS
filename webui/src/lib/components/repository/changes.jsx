@@ -268,8 +268,8 @@ export const ChangesTreeContainer = ({
         <div className="tree-container">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
             <Card>
-                <Card.Header className="d-flex justify-content-between align-items-center">
-                    {delimiter !== '' && uriNavigator}
+                <Card.Header className="d-flex align-items-center gap-2">
+                    {delimiter !== '' && <div className="flex-grow-1">{uriNavigator}</div>}
                     <div className="d-flex gap-2">
                         <TooltipButton tooltip="Expand All" size="sm" variant="outline-secondary" onClick={expandAll}>
                             <FileDirectoryFillIcon className="me-1" />

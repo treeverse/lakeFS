@@ -56,6 +56,7 @@ require (
 require golang.org/x/sync v0.19.0
 
 require (
+	github.com/AfterShip/email-verifier v1.4.1
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.2.0
@@ -97,6 +98,7 @@ require (
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
+	github.com/tilinna/z85 v1.0.0
 	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20260302105446-91537729e473
 	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20260302105446-91537729e473
 	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20260302105446-91537729e473
@@ -126,7 +128,6 @@ require (
 	github.com/4meepo/tagalign v1.4.3 // indirect
 	github.com/Abirdcfly/dupword v0.1.7 // indirect
 	github.com/AdminBenni/iota-mixing v1.0.0 // indirect
-	github.com/AfterShip/email-verifier v1.4.1 // indirect
 	github.com/AlwxSin/noinlineerr v1.0.5 // indirect
 	github.com/Antonboom/errname v1.1.1 // indirect
 	github.com/Antonboom/nilnil v1.1.1 // indirect
@@ -193,12 +194,15 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/ckaznocha/intrange v0.3.1 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/curioswitch/go-reassign v0.3.0 // indirect
 	github.com/daixiang0/gci v0.13.7 // indirect
 	github.com/dave/dst v0.27.3 // indirect
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
+	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
@@ -290,6 +294,8 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/moby/api v1.54.0 // indirect
+	github.com/moby/moby/client v0.3.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/moricho/tparallel v0.3.2 // indirect
@@ -396,8 +402,7 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
-	github.com/docker/cli v28.3.3+incompatible // indirect
-	github.com/docker/docker v28.3.3+incompatible // indirect
+	github.com/docker/cli v29.2.0+incompatible // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -443,7 +448,7 @@ require (
 	go.uber.org/atomic v1.11.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/net v0.51.0
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/tools v0.41.0
@@ -452,6 +457,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260312070549-3e50cc5f2d84
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20260323095047-d2f80252d945
 
 tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint

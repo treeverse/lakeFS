@@ -31,7 +31,7 @@ export class RepositoryPage {
     }
 
     async gotoObjectsTab(): Promise<void> {
-        await this.page.getByRole("link", { name: "Objects", exact: true }).first().click();
+        await this.page.getByRole("link", { name: "Data", exact: true }).first().click();
     }
 
     async gotoCompareTab(): Promise<void> {
