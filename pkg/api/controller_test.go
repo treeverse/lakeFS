@@ -3709,33 +3709,88 @@ func TestController_ConfigHandlers(t *testing.T) {
 func TestController_SetupLakeFSHandler(t *testing.T) {
 	const validAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 	cases := []struct {
-		name               string
-		key                *apigen.AccessKeyCredentials
-		expectedStatusCode int
+		name                   string
+		body                   apigen.SetupJSONRequestBody
+		expectedStatusCode     int
+		expectCommPrefsMissing bool
 	}{
 		{
-			name:               "simple",
-			expectedStatusCode: http.StatusOK,
+			name: "username only",
+			body: apigen.SetupJSONRequestBody{
+				Username: "admin",
+			},
+			expectedStatusCode:     http.StatusOK,
+			expectCommPrefsMissing: true,
+		},
+		{
+			name: "username and email",
+			body: apigen.SetupJSONRequestBody{
+				Username: "admin",
+				Email:    swag.String("test@acme.co"),
+			},
+			expectedStatusCode:     http.StatusOK,
+			expectCommPrefsMissing: false,
 		},
 		{
 			name: "accessKeyAndSecret",
-			key: &apigen.AccessKeyCredentials{
-				AccessKeyId:     validAccessKeyID,
-				SecretAccessKey: "cetec astronomy",
+			body: apigen.SetupJSONRequestBody{
+				Username: "admin",
+				Email:    swag.String("test@acme.co"),
+				Key: &apigen.AccessKeyCredentials{
+					AccessKeyId:     validAccessKeyID,
+					SecretAccessKey: "cetec astronomy",
+				},
 			},
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode:     http.StatusOK,
+			expectCommPrefsMissing: false,
 		},
 		{
 			name: "emptyAccessKeyId",
-			key: &apigen.AccessKeyCredentials{
-				SecretAccessKey: "cetec astronomy",
+			body: apigen.SetupJSONRequestBody{
+				Username: "admin",
+				Key: &apigen.AccessKeyCredentials{
+					SecretAccessKey: "cetec astronomy",
+				},
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name: "emptySecretKey",
-			key: &apigen.AccessKeyCredentials{
-				AccessKeyId: validAccessKeyID,
+			body: apigen.SetupJSONRequestBody{
+				Username: "admin",
+				Key: &apigen.AccessKeyCredentials{
+					AccessKeyId: validAccessKeyID,
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "all fields",
+			body: apigen.SetupJSONRequestBody{
+				Username:        "admin",
+				Email:           swag.String("user@acme.co"),
+				FirstName:       swag.String("Test"),
+				LastName:        swag.String("User"),
+				CompanyName:     swag.String("Acme Inc."),
+				FeatureUpdates:  swag.Bool(true),
+				SecurityUpdates: swag.Bool(true),
+			},
+			expectedStatusCode:     http.StatusOK,
+			expectCommPrefsMissing: false,
+		},
+		{
+			name: "invalid email",
+			body: apigen.SetupJSONRequestBody{
+				Username: "admin",
+				Email:    swag.String("notanemail"),
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "free email",
+			body: apigen.SetupJSONRequestBody{
+				Username: "admin",
+				Email:    swag.String("user@gmail.com"),
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
@@ -3747,23 +3802,7 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 			clt := setupClientByEndpoint(t, server.URL, "", "")
 
 			ctx := t.Context()
-			mockEmail := "test@acme.co"
-			firstName := "Test"
-			lastName := "User"
-			companyName := "Acme Inc."
-			_, _ = clt.SetupCommPrefsWithResponse(ctx, apigen.SetupCommPrefsJSONRequestBody{
-				FirstName:       &firstName,
-				LastName:        &lastName,
-				Email:           &mockEmail,
-				CompanyName:     &companyName,
-				FeatureUpdates:  false,
-				SecurityUpdates: false,
-			})
-
-			resp, err := clt.SetupWithResponse(ctx, apigen.SetupJSONRequestBody{
-				Username: "admin",
-				Key:      c.key,
-			})
+			resp, err := clt.SetupWithResponse(ctx, c.body)
 			testutil.Must(t, err)
 			if resp.HTTPResponse.StatusCode != c.expectedStatusCode {
 				t.Fatalf("got status code %d, expected %d", resp.HTTPResponse.StatusCode, c.expectedStatusCode)
@@ -3777,11 +3816,11 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 				t.Fatal("Credential key id is missing")
 			}
 
-			if c.key != nil && c.key.AccessKeyId != creds.AccessKeyId {
-				t.Errorf("got access key ID %s != %s", creds.AccessKeyId, c.key.AccessKeyId)
+			if c.body.Key != nil && c.body.Key.AccessKeyId != creds.AccessKeyId {
+				t.Errorf("got access key ID %s != %s", creds.AccessKeyId, c.body.Key.AccessKeyId)
 			}
-			if c.key != nil && c.key.SecretAccessKey != creds.SecretAccessKey {
-				t.Errorf("got secret access key %s != %s", creds.SecretAccessKey, c.key.SecretAccessKey)
+			if c.body.Key != nil && c.body.Key.SecretAccessKey != creds.SecretAccessKey {
+				t.Errorf("got secret access key %s != %s", creds.SecretAccessKey, c.body.Key.SecretAccessKey)
 			}
 
 			clt = setupClientByEndpoint(t, server.URL, creds.AccessKeyId, creds.SecretAccessKey)
@@ -3832,21 +3871,69 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 					t.Error("re-setup didn't got conflict response")
 				}
 			}
+
+			// verify comm_prefs_missing state
+			stateResp, err := clt.GetSetupStateWithResponse(ctx)
+			testutil.Must(t, err)
+			require.NotNil(t, stateResp.JSON200)
+			require.Equal(t, c.expectCommPrefsMissing, swag.BoolValue(stateResp.JSON200.CommPrefsMissing),
+				"unexpected comm_prefs_missing for %s", c.name)
 		})
 	}
+}
+
+// TestController_SetupThenCommPrefs tests the backward-compatible two-step flow:
+// setup with just username, then separate comm prefs call.
+func TestController_SetupThenCommPrefs(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	ctx := t.Context()
+
+	// step 1: setup without comm prefs
+	setupResp, err := clt.SetupWithResponse(ctx, apigen.SetupJSONRequestBody{
+		Username: "admin",
+	})
+	testutil.Must(t, err)
+	require.Equal(t, http.StatusOK, setupResp.HTTPResponse.StatusCode)
+	require.NotEmpty(t, setupResp.JSON200.AccessKeyId)
+
+	// verify comm prefs are marked as missing
+	stateResp, err := clt.GetSetupStateWithResponse(ctx)
+	testutil.Must(t, err)
+	require.True(t, swag.BoolValue(stateResp.JSON200.CommPrefsMissing), "comm_prefs_missing should be true after setup without comm prefs")
+
+	// step 2: separate comm prefs call
+	commResp, err := clt.SetupCommPrefsWithResponse(ctx, apigen.SetupCommPrefsJSONRequestBody{
+		Email:           swag.String("test@acme.co"),
+		FirstName:       swag.String("Test"),
+		LastName:        swag.String("User"),
+		CompanyName:     swag.String("Acme Inc."),
+		FeatureUpdates:  true,
+		SecurityUpdates: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, commResp.StatusCode())
+
+	// verify comm prefs are no longer missing
+	stateResp, err = clt.GetSetupStateWithResponse(ctx)
+	testutil.Must(t, err)
+	require.False(t, swag.BoolValue(stateResp.JSON200.CommPrefsMissing), "comm_prefs_missing should be false after providing comm prefs")
 }
 
 func TestController_SetupCommPrefs(t *testing.T) {
 	mockEmail := "test@acme.co"
 	cases := []struct {
-		name string
-		body apigen.SetupCommPrefsJSONRequestBody
+		name               string
+		body               apigen.SetupCommPrefsJSONRequestBody
+		expectedStatusCode int
 	}{
 		{
 			name: "omit all optional name fields",
 			body: apigen.SetupCommPrefsJSONRequestBody{
 				Email: &mockEmail,
 			},
+			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "provides all optional name fields",
@@ -3856,6 +3943,26 @@ func TestController_SetupCommPrefs(t *testing.T) {
 				LastName:    swag.String("User"),
 				CompanyName: swag.String("Acme Inc."),
 			},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "missing email",
+			body:               apigen.SetupCommPrefsJSONRequestBody{},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid email format",
+			body: apigen.SetupCommPrefsJSONRequestBody{
+				Email: swag.String("notanemail"),
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "free email",
+			body: apigen.SetupCommPrefsJSONRequestBody{
+				Email: swag.String("user@gmail.com"),
+			},
+			expectedStatusCode: http.StatusBadRequest,
 		},
 	}
 
@@ -3867,7 +3974,7 @@ func TestController_SetupCommPrefs(t *testing.T) {
 
 			resp, err := clt.SetupCommPrefsWithResponse(t.Context(), c.body)
 			require.NoError(t, err)
-			require.Equal(t, http.StatusOK, resp.StatusCode(), "unexpected status for %s", c.name)
+			require.Equal(t, c.expectedStatusCode, resp.StatusCode(), "unexpected status for %s", c.name)
 		})
 	}
 }

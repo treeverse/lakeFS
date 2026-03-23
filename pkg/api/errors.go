@@ -13,4 +13,7 @@ var (
 	ErrRequestSizeExceeded   = errors.New("request size exceeded")
 	ErrStorageNamespaceInUse = errors.New("storage namespace already in use")
 	ErrInvalidFormat         = errors.New("invalid format")
+	ErrEmailRequired         = errors.New("email is required")
+	ErrInvalidEmailAddress   = errors.New("invalid email address")
+	ErrFreeEmailAddress      = errors.New("please use a business email address")
 )

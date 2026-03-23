@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -89,23 +90,14 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 		firstName := "Test"
 		lastName := "User"
 		companyName := "Acme Inc."
-		commResp, err := client.SetupCommPrefsWithResponse(context.Background(), apigen.SetupCommPrefsJSONRequestBody{
+		requestBody := apigen.SetupJSONRequestBody{
+			Username:        params.Name,
 			FirstName:       &firstName,
 			LastName:        &lastName,
 			CompanyName:     &companyName,
 			Email:           &mockEmail,
-			FeatureUpdates:  false,
-			SecurityUpdates: false,
-		})
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to setup lakeFS")
-		}
-		if commResp.StatusCode() != http.StatusOK {
-			logger.WithField("status", commResp.HTTPResponse.Status).Fatal("Failed to setup lakeFS")
-		}
-		adminUserName := params.Name
-		requestBody := apigen.SetupJSONRequestBody{
-			Username: adminUserName,
+			FeatureUpdates:  swag.Bool(false),
+			SecurityUpdates: swag.Bool(false),
 		}
 		if params.AdminAccessKeyID != "" || params.AdminSecretAccessKey != "" {
 			requestBody.Key = &apigen.AccessKeyCredentials{

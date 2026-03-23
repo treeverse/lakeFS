@@ -21,9 +21,9 @@ import json
 
 from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictStr
+    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictStr
+    from pydantic import BaseModel, Field, StrictBool, StrictStr
 from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials
 
 class Setup(BaseModel):
@@ -32,7 +32,13 @@ class Setup(BaseModel):
     """
     username: StrictStr = Field(..., description="an identifier for the user (e.g. jane.doe)")
     key: Optional[AccessKeyCredentials] = None
-    __properties = ["username", "key"]
+    first_name: Optional[StrictStr] = Field(None, alias="firstName", description="the provided first name")
+    last_name: Optional[StrictStr] = Field(None, alias="lastName", description="the provided last name")
+    email: Optional[StrictStr] = Field(None, description="the provided email")
+    company_name: Optional[StrictStr] = Field(None, alias="companyName", description="the provided company name")
+    feature_updates: Optional[StrictBool] = Field(None, alias="featureUpdates", description="user preference to receive feature updates")
+    security_updates: Optional[StrictBool] = Field(None, alias="securityUpdates", description="user preference to receive security updates")
+    __properties = ["username", "key", "firstName", "lastName", "email", "companyName", "featureUpdates", "securityUpdates"]
 
     class Config:
         """Pydantic configuration"""
@@ -74,7 +80,13 @@ class Setup(BaseModel):
 
         _obj = Setup.parse_obj({
             "username": obj.get("username"),
-            "key": AccessKeyCredentials.from_dict(obj.get("key")) if obj.get("key") is not None else None
+            "key": AccessKeyCredentials.from_dict(obj.get("key")) if obj.get("key") is not None else None,
+            "first_name": obj.get("firstName"),
+            "last_name": obj.get("lastName"),
+            "email": obj.get("email"),
+            "company_name": obj.get("companyName"),
+            "feature_updates": obj.get("featureUpdates"),
+            "security_updates": obj.get("securityUpdates")
         })
         return _obj
 

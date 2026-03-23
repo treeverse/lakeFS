@@ -7,6 +7,12 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **username** | **str** | an identifier for the user (e.g. jane.doe) | 
 **key** | [**AccessKeyCredentials**](AccessKeyCredentials.md) |  | [optional] 
+**first_name** | **str** | the provided first name | [optional] 
+**last_name** | **str** | the provided last name | [optional] 
+**email** | **str** | the provided email | [optional] 
+**company_name** | **str** | the provided company name | [optional] 
+**feature_updates** | **bool** | user preference to receive feature updates | [optional] 
+**security_updates** | **bool** | user preference to receive security updates | [optional] 
 
 ## Example
 

@@ -60,6 +60,30 @@ public class Setup {
   @SerializedName(SERIALIZED_NAME_KEY)
   private AccessKeyCredentials key;
 
+  public static final String SERIALIZED_NAME_FIRST_NAME = "firstName";
+  @SerializedName(SERIALIZED_NAME_FIRST_NAME)
+  private String firstName;
+
+  public static final String SERIALIZED_NAME_LAST_NAME = "lastName";
+  @SerializedName(SERIALIZED_NAME_LAST_NAME)
+  private String lastName;
+
+  public static final String SERIALIZED_NAME_EMAIL = "email";
+  @SerializedName(SERIALIZED_NAME_EMAIL)
+  private String email;
+
+  public static final String SERIALIZED_NAME_COMPANY_NAME = "companyName";
+  @SerializedName(SERIALIZED_NAME_COMPANY_NAME)
+  private String companyName;
+
+  public static final String SERIALIZED_NAME_FEATURE_UPDATES = "featureUpdates";
+  @SerializedName(SERIALIZED_NAME_FEATURE_UPDATES)
+  private Boolean featureUpdates;
+
+  public static final String SERIALIZED_NAME_SECURITY_UPDATES = "securityUpdates";
+  @SerializedName(SERIALIZED_NAME_SECURITY_UPDATES)
+  private Boolean securityUpdates;
+
   public Setup() {
   }
 
@@ -102,6 +126,132 @@ public class Setup {
 
   public void setKey(AccessKeyCredentials key) {
     this.key = key;
+  }
+
+
+  public Setup firstName(String firstName) {
+    
+    this.firstName = firstName;
+    return this;
+  }
+
+   /**
+   * the provided first name
+   * @return firstName
+  **/
+  @javax.annotation.Nullable
+  public String getFirstName() {
+    return firstName;
+  }
+
+
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+
+  public Setup lastName(String lastName) {
+    
+    this.lastName = lastName;
+    return this;
+  }
+
+   /**
+   * the provided last name
+   * @return lastName
+  **/
+  @javax.annotation.Nullable
+  public String getLastName() {
+    return lastName;
+  }
+
+
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
+  }
+
+
+  public Setup email(String email) {
+    
+    this.email = email;
+    return this;
+  }
+
+   /**
+   * the provided email
+   * @return email
+  **/
+  @javax.annotation.Nullable
+  public String getEmail() {
+    return email;
+  }
+
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+
+  public Setup companyName(String companyName) {
+    
+    this.companyName = companyName;
+    return this;
+  }
+
+   /**
+   * the provided company name
+   * @return companyName
+  **/
+  @javax.annotation.Nullable
+  public String getCompanyName() {
+    return companyName;
+  }
+
+
+  public void setCompanyName(String companyName) {
+    this.companyName = companyName;
+  }
+
+
+  public Setup featureUpdates(Boolean featureUpdates) {
+    
+    this.featureUpdates = featureUpdates;
+    return this;
+  }
+
+   /**
+   * user preference to receive feature updates
+   * @return featureUpdates
+  **/
+  @javax.annotation.Nullable
+  public Boolean getFeatureUpdates() {
+    return featureUpdates;
+  }
+
+
+  public void setFeatureUpdates(Boolean featureUpdates) {
+    this.featureUpdates = featureUpdates;
+  }
+
+
+  public Setup securityUpdates(Boolean securityUpdates) {
+    
+    this.securityUpdates = securityUpdates;
+    return this;
+  }
+
+   /**
+   * user preference to receive security updates
+   * @return securityUpdates
+  **/
+  @javax.annotation.Nullable
+  public Boolean getSecurityUpdates() {
+    return securityUpdates;
+  }
+
+
+  public void setSecurityUpdates(Boolean securityUpdates) {
+    this.securityUpdates = securityUpdates;
   }
 
   /**
@@ -160,13 +310,19 @@ public class Setup {
     }
     Setup setup = (Setup) o;
     return Objects.equals(this.username, setup.username) &&
-        Objects.equals(this.key, setup.key)&&
+        Objects.equals(this.key, setup.key) &&
+        Objects.equals(this.firstName, setup.firstName) &&
+        Objects.equals(this.lastName, setup.lastName) &&
+        Objects.equals(this.email, setup.email) &&
+        Objects.equals(this.companyName, setup.companyName) &&
+        Objects.equals(this.featureUpdates, setup.featureUpdates) &&
+        Objects.equals(this.securityUpdates, setup.securityUpdates)&&
         Objects.equals(this.additionalProperties, setup.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(username, key, additionalProperties);
+    return Objects.hash(username, key, firstName, lastName, email, companyName, featureUpdates, securityUpdates, additionalProperties);
   }
 
   @Override
@@ -175,6 +331,12 @@ public class Setup {
     sb.append("class Setup {\n");
     sb.append("    username: ").append(toIndentedString(username)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    firstName: ").append(toIndentedString(firstName)).append("\n");
+    sb.append("    lastName: ").append(toIndentedString(lastName)).append("\n");
+    sb.append("    email: ").append(toIndentedString(email)).append("\n");
+    sb.append("    companyName: ").append(toIndentedString(companyName)).append("\n");
+    sb.append("    featureUpdates: ").append(toIndentedString(featureUpdates)).append("\n");
+    sb.append("    securityUpdates: ").append(toIndentedString(securityUpdates)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -200,6 +362,12 @@ public class Setup {
     openapiFields = new HashSet<String>();
     openapiFields.add("username");
     openapiFields.add("key");
+    openapiFields.add("firstName");
+    openapiFields.add("lastName");
+    openapiFields.add("email");
+    openapiFields.add("companyName");
+    openapiFields.add("featureUpdates");
+    openapiFields.add("securityUpdates");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -232,6 +400,18 @@ public class Setup {
       // validate the optional field `key`
       if (jsonObj.get("key") != null && !jsonObj.get("key").isJsonNull()) {
         AccessKeyCredentials.validateJsonElement(jsonObj.get("key"));
+      }
+      if ((jsonObj.get("firstName") != null && !jsonObj.get("firstName").isJsonNull()) && !jsonObj.get("firstName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `firstName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("firstName").toString()));
+      }
+      if ((jsonObj.get("lastName") != null && !jsonObj.get("lastName").isJsonNull()) && !jsonObj.get("lastName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `lastName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("lastName").toString()));
+      }
+      if ((jsonObj.get("email") != null && !jsonObj.get("email").isJsonNull()) && !jsonObj.get("email").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `email` to be a primitive type in the JSON string but got `%s`", jsonObj.get("email").toString()));
+      }
+      if ((jsonObj.get("companyName") != null && !jsonObj.get("companyName").isJsonNull()) && !jsonObj.get("companyName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `companyName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("companyName").toString()));
       }
   }
 

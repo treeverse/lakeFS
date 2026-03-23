@@ -17,7 +17,7 @@ test.describe("Setup Page Validation", () => {
     test("username is required", async ({ page }) => {
         const setupPage = new SetupPage(page);
         await setupPage.goto();
-        await setupPage.fillForm("test@example.com", "");
+        await setupPage.fillForm("test@treeverse.io", "");
         const error = page.getByText(setupPage.usernameErrorSelectorText);
         await expect(error).toBeVisible();
     });
@@ -27,6 +27,22 @@ test.describe("Setup Page Validation", () => {
         await setupPage.goto();
         await setupPage.fillForm("");
         const error = page.getByText(setupPage.emailErrorSelectorText);
+        await expect(error).toBeVisible();
+    });
+
+    test("shows error for free email", async ({ page }) => {
+        const setupPage = new SetupPage(page);
+        await setupPage.goto();
+        await setupPage.fillForm("user@gmail.com", "admin", true, "Jane", "Doe", "Acme Inc.");
+        const error = page.getByText("Please use a business email address");
+        await expect(error).toBeVisible();
+    });
+
+    test("shows error for invalid email", async ({ page }) => {
+        const setupPage = new SetupPage(page);
+        await setupPage.goto();
+        await setupPage.fillForm("nope@nope", "admin", true, "Jane", "Doe", "Acme Inc.");
+        const error = page.getByText("Invalid email address");
         await expect(error).toBeVisible();
     });
 });
