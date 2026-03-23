@@ -132,17 +132,17 @@ type progressReadSeeker struct {
 }
 
 func newProgressReadSeeker(rs io.ReadSeeker, size int64, visible bool) *progressReadSeeker {
-	bar := progressbar.NewOptions64(
-		size,
+	bar := progressbar.NewOptions64(size,
 		progressbar.OptionSetDescription("Uploading"),
 		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionShowBytes(true),
 		progressbar.OptionSetWidth(barWidth),
 		progressbar.OptionThrottle(barThrottle),
-		progressbar.OptionShowBytes(true),
 		progressbar.OptionShowCount(),
 		progressbar.OptionOnCompletion(func() {
 			_, _ = fmt.Fprint(os.Stderr, "\n")
 		}),
+		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionSetVisibility(visible),
 	)
 	return &progressReadSeeker{ReadSeeker: rs, bar: bar}
