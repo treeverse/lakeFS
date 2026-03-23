@@ -1198,8 +1198,9 @@ github.com/treeverse/delta-go v0.0.0-20260317172445-52634abfc248/go.mod h1:E7uPC
 github.com/treeverse/delta-go v0.0.0-20260318174416-353d0bf5668d/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
 github.com/treeverse/delta-go v0.0.0-20260318184648-12ceef1eb60c/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
 github.com/treeverse/delta-go v0.0.0-20260319182137-e18762214828/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
-github.com/treeverse/delta-go v0.0.0-20260323081026-eb649710873c h1:dj+JKmnSPB6OdugwY02mWxjorB7D0HqpPeuP8hilsgU=
 github.com/treeverse/delta-go v0.0.0-20260323081026-eb649710873c/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
+github.com/treeverse/delta-go v0.0.0-20260323095047-d2f80252d945 h1:lNeK0Ja041ImXOLqHard7vdeunaIAAUFtAgbNzYvLxw=
+github.com/treeverse/delta-go v0.0.0-20260323095047-d2f80252d945/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
 github.com/tsenart/go-tsz v0.0.0-20180814235614-0bd30b3df1c3 h1:pcQGQzTwCg//7FgVywqge1sW9Yf8VMsMdG58MI5kd8s=
 github.com/tsenart/go-tsz v0.0.0-20180814235614-0bd30b3df1c3/go.mod h1:SWZznP1z5Ki7hDT2ioqiFKEse8K9tU2OUvaRI0NeGQo=
 github.com/urfave/cli v1.22.1 h1:+mkCCcOFKPnCmVYVcURKps1Xe+3zP90gSYGNfRkjoIY=
