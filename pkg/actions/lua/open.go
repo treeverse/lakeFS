@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/json"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/yaml"
+	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/z85enc"
 	"github.com/treeverse/lakefs/pkg/actions/lua/formats"
 	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/http"
@@ -43,6 +44,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	base64.Open(l)
 	uuid.Open(l)
 	hex.Open(l)
+	z85enc.Open(l)
 	sha256.Open(l)
 	aes.Open(l)
 	parquet.Open(l)
