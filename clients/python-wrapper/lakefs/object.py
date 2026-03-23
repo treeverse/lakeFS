@@ -272,7 +272,9 @@ class ObjectReader(LakeFSIOBase):
         elif whence == os.SEEK_CUR:
             pos = self._pos + offset
         elif whence == os.SEEK_END:
-            size = self._obj.stat().size_bytes or 0  # Seek end requires us to know the size of the file
+            size = self._obj.stat().size_bytes
+            if size is None:
+                raise ValueError("Cannot seek from end: object size is unknown")
             pos = size + offset
         else:
             raise io.UnsupportedOperation(f"whence={whence} is not supported")
