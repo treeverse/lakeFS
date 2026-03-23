@@ -5665,7 +5665,7 @@ paths:
         name: partNumber
         required: true
         schema:
-          maximum: 1000
+          maximum: 10000
           minimum: 1
           type: integer
         style: simple
@@ -5750,7 +5750,7 @@ paths:
         name: partNumber
         required: true
         schema:
-          maximum: 1000
+          maximum: 10000
           minimum: 1
           type: integer
         style: simple
