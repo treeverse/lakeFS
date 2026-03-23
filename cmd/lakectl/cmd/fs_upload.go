@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -33,7 +36,8 @@ var fsUploadCmd = &cobra.Command{
 		defer stop()
 
 		if !recursive || isFileOrStdin(source) {
-			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags)
+			noProgress := getNoProgressMode(cmd)
+			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags, noProgress)
 			if err != nil {
 				DieErr(err)
 			}
@@ -93,16 +97,51 @@ func isFileOrStdin(source string) bool {
 	return !stat.IsDir()
 }
 
-func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, syncFlags local.SyncFlags) (*apigen.ObjectStats, error) {
+func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, syncFlags local.SyncFlags, noProgress bool) (*apigen.ObjectStats, error) {
 	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
 	}()
+
+	bar := newUploadSpinner(!noProgress)
+	stop := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-ticker.C:
+				_ = bar.Add(1)
+			}
+		}
+	}()
+	defer func() {
+		close(stop)
+		_ = bar.Finish()
+	}()
+
 	objectPath := apiutil.Value(destURI.Path)
 	if syncFlags.Presign {
 		return helpers.ClientUploadPreSign(ctx, client, getHTTPClient(lakectlRetryPolicy), destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, syncFlags.PresignMultipart)
 	}
 	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
+}
+
+func newUploadSpinner(visible bool) *progressbar.ProgressBar {
+	return progressbar.NewOptions64(
+		-1,
+		progressbar.OptionSetDescription("Uploading"),
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionSetWidth(10),
+		progressbar.OptionThrottle(65*time.Millisecond),
+		progressbar.OptionSpinnerType(14),
+		progressbar.OptionOnCompletion(func() {
+			_, _ = fmt.Fprint(os.Stderr, "\n")
+		}),
+		progressbar.OptionSetVisibility(visible),
+	)
 }
 
 //nolint:gochecknoinits
