@@ -131,11 +131,6 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 }
 
 func newUploadSpinner(visible bool) *progressbar.ProgressBar {
-	const (
-		barSpinnerType = 14
-		barWidth       = 10
-		barThrottle    = 65 * time.Millisecond
-	)
 	return progressbar.NewOptions64(
 		-1,
 		progressbar.OptionSetDescription("Uploading"),

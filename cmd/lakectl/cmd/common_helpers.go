@@ -38,6 +38,13 @@ const (
 )
 
 const (
+	// Progress bar defaults shared across commands.
+	barSpinnerType = 14
+	barWidth       = 10
+	barThrottle    = 65 * time.Millisecond
+)
+
+const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
 

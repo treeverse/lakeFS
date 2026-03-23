@@ -137,11 +137,6 @@ var importCmd = &cobra.Command{
 }
 
 func newImportProgressBar(visible bool) *progressbar.ProgressBar {
-	const (
-		barSpinnerType = 14
-		barWidth       = 10
-		barThrottle    = 65 * time.Millisecond
-	)
 	bar := progressbar.NewOptions64(
 		-1,
 		progressbar.OptionSetDescription("Importing"),
