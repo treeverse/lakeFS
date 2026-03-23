@@ -106,7 +106,8 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 	bar := newUploadSpinner(!noProgress)
 	stop := make(chan struct{})
 	go func() {
-		ticker := time.NewTicker(100 * time.Millisecond)
+		const tickerDuration = 100 * time.Millisecond
+		ticker := time.NewTicker(tickerDuration)
 		defer ticker.Stop()
 		for {
 			select {
@@ -130,13 +131,18 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 }
 
 func newUploadSpinner(visible bool) *progressbar.ProgressBar {
+	const (
+		barSpinnerType = 14
+		barWidth       = 10
+		barThrottle    = 65 * time.Millisecond
+	)
 	return progressbar.NewOptions64(
 		-1,
 		progressbar.OptionSetDescription("Uploading"),
 		progressbar.OptionSetWriter(os.Stderr),
-		progressbar.OptionSetWidth(10),
-		progressbar.OptionThrottle(65*time.Millisecond),
-		progressbar.OptionSpinnerType(14),
+		progressbar.OptionSetWidth(barWidth),
+		progressbar.OptionThrottle(barThrottle),
+		progressbar.OptionSpinnerType(barSpinnerType),
 		progressbar.OptionOnCompletion(func() {
 			_, _ = fmt.Fprint(os.Stderr, "\n")
 		}),
