@@ -328,8 +328,10 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 ### stats
 
 * `stats.enabled` `(bool : true)` - Whether to periodically collect anonymous usage statistics
+* `stats.address` `(string : https://stats.lakefs.io)` - The endpoint to send statistics to
 * `stats.flush_interval` `(duration : 30s)` - Interval used to post anonymous statistics collected
 * `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
+* `stats.extended` `(bool : false)` - When true, collect additional hashed (non-reversible) identifiers for repository, branch, and user with each event. lakeFS Enterprise defaults to `true`.
 
 ### installation
 
