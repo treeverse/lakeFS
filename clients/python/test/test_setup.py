@@ -40,7 +40,13 @@ class TestSetup(unittest.TestCase):
                 username = '',
                 key = lakefs_sdk.models.access_key_credentials.AccessKeyCredentials(
                     access_key_id = 'AKIAIOSFODNN7EXAMPLE', 
-                    secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', )
+                    secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', ),
+                first_name = '',
+                last_name = '',
+                email = '',
+                company_name = '',
+                feature_updates = True,
+                security_updates = True
             )
         else:
             return Setup(

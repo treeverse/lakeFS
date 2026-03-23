@@ -1271,18 +1271,24 @@ class Setup {
         }
     }
 
-    async lakeFS(username) {
+    async lakeFS({ username, email, firstName, lastName, companyName, featureUpdates, securityUpdates }) {
         const response = await apiRequest('/setup_lakefs', {
             method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username: username }),
+            body: JSON.stringify({
+                username,
+                email,
+                firstName,
+                lastName,
+                companyName,
+                featureUpdates,
+                securityUpdates,
+            }),
         });
         switch (response.status) {
             case 200:
                 return response.json();
+            case 400:
+                throw new Error(await extractError(response));
             case 409:
                 throw new Error('Setup is already complete.');
             default:
@@ -1290,26 +1296,17 @@ class Setup {
         }
     }
 
-    async commPrefs(email, firstName, lastName, companyName, updates, security) {
+    async commPrefs({ email, firstName, lastName, companyName, featureUpdates, securityUpdates }) {
         const response = await apiRequest('/setup_comm_prefs', {
             method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email,
-                firstName,
-                lastName,
-                companyName,
-                featureUpdates: updates,
-                securityUpdates: security,
-            }),
+            body: JSON.stringify({ email, firstName, lastName, companyName, featureUpdates, securityUpdates }),
         });
 
         switch (response.status) {
             case 200:
                 return;
+            case 400:
+                throw new Error(await extractError(response));
             case 409:
                 throw new Error('Setup is already complete.');
             default:
