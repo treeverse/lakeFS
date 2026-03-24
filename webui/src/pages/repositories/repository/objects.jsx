@@ -1087,7 +1087,7 @@ const TreeContainer = ({
                     getMore={getMoreUncommittedChanges}
                     loading={loading}
                     nextPage={nextPage}
-                    setLastSeenPath={setLastSeenPath}
+                    setAfterUpdated={setLastSeenPath}
                     onNavigate={(entry) => {
                         return {
                             pathname: `/repositories/:repoId/objects`,
