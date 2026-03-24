@@ -162,19 +162,25 @@ func (u *PreSignUploader) Upload(ctx context.Context, repoID string, branchID st
 	return upload.Upload(ctx)
 }
 
+type presignPartReader struct {
+	Reader *io.SectionReader
+	URL    string
+}
+
 func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStats, error) {
 	mpu, err := u.initMultipart(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// prepare section readers for each part
-	readers := make([]*io.SectionReader, u.numParts)
+	// prepare readers
+	parts := make([]presignPartReader, u.numParts)
 	rem := u.size
 	off := int64(0)
-	for i := range readers {
+	for i := range parts {
 		size := min(u.partSize, rem)
-		readers[i] = io.NewSectionReader(u.readerAt, off, size)
+		parts[i].Reader = io.NewSectionReader(u.readerAt, off, size) // use `readerAt`
+		parts[i].URL = (*mpu.PresignedUrls)[i]
 		rem -= size
 		off += size
 	}
@@ -186,14 +192,9 @@ func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStat
 
 	for i := 0; i < u.numParts; i++ {
 		g.Go(func() error {
-			// get a fresh presigned URL for this part
-			partURL, err := u.getPartUploadURL(grpCtx, mpu, i+1)
+			etag, err := u.uploadPart(grpCtx, parts[i].Reader, parts[i].URL)
 			if err != nil {
-				return fmt.Errorf("part %d get presigned URL: %w", i+1, err)
-			}
-			etag, err := u.uploadPart(grpCtx, readers[i], partURL)
-			if err != nil {
-				return fmt.Errorf("part %d upload %w", i+1, err)
+				return fmt.Errorf("part %d %w", i+1, err)
 			}
 			uploadParts[i] = apigen.UploadPart{
 				PartNumber: i + 1,
@@ -214,20 +215,6 @@ func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStat
 	}
 
 	return u.completeMultipart(ctx, mpu, uploadParts)
-}
-
-func (u *presignUpload) getPartUploadURL(ctx context.Context, mpu *apigen.PresignMultipartUpload, partNumber int) (string, error) {
-	resp, err := u.uploader.Client.UploadPartWithResponse(ctx, u.repoID, u.branchID, mpu.UploadId, partNumber,
-		&apigen.UploadPartParams{Path: u.objectPath},
-		apigen.UploadPartJSONRequestBody{PhysicalAddress: mpu.PhysicalAddress},
-	)
-	if err != nil {
-		return "", fmt.Errorf("get presigned URL: %w", err)
-	}
-	if resp.JSON200 == nil {
-		return "", fmt.Errorf("get presigned URL: %w", ResponseAsError(resp))
-	}
-	return resp.JSON200.PresignedUrl, nil
 }
 
 func (u *presignUpload) completeMultipart(ctx context.Context, mpu *apigen.PresignMultipartUpload, uploadParts []apigen.UploadPart) (*apigen.ObjectStats, error) {
@@ -287,10 +274,10 @@ func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMulti
 		u.numParts++
 	}
 
-	// create presign multipart upload without requesting presigned URLs upfront;
-	// URLs are fetched per-part just before upload to avoid expiry on large files.
+	// create presign multipart upload
 	resp, err := u.uploader.Client.CreatePresignMultipartUploadWithResponse(ctx, u.repoID, u.branchID, &apigen.CreatePresignMultipartUploadParams{
-		Path: u.objectPath,
+		Path:  u.objectPath,
+		Parts: swag.Int(u.numParts),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create presign multipart upload: %w", err)
@@ -298,7 +285,17 @@ func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMulti
 	if resp.JSON201 == nil {
 		return nil, fmt.Errorf("create presign multipart upload: %w", ResponseAsError(resp))
 	}
-	return resp.JSON201, nil
+
+	// verify we got the expected number of presigned urls
+	mpu := resp.JSON201
+	var presignedUrls []string
+	if mpu.PresignedUrls != nil {
+		presignedUrls = *mpu.PresignedUrls
+	}
+	if len(presignedUrls) != u.numParts {
+		return nil, fmt.Errorf("create presign multipart upload: %w, expected %d presigned urls, got %d", ErrRequestFailed, u.numParts, len(presignedUrls))
+	}
+	return mpu, nil
 }
 
 func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionReader, partURL string) (string, error) {

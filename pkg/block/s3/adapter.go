@@ -503,7 +503,9 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 		// partNumber can only be as big as 10,000
 		PartNumber: aws.Int32(int32(partNumber)), //nolint:gosec
 	}
-	uploadPart, err := presigner.PresignUploadPart(ctx, uploadInput)
+	uploadPart, err := presigner.PresignUploadPart(ctx, uploadInput, func(o *s3.PresignOptions) {
+		o.Expires = block.MultipartUploadPresignExpiry
+	})
 	if err != nil {
 		return "", err
 	}
