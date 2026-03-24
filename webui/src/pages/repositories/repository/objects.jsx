@@ -1249,7 +1249,7 @@ const DataViewToggle = ({ activeView, onChangeView }) => {
                     onClick={() => onChangeView(DATA_VIEW_TABLES)}
                     className="d-flex align-items-center gap-1"
                 >
-                    <TableIcon size={16} /> Tables <span className="enterprise-badge">Enterprise</span>
+                    <TableIcon size={16} /> Tables
                 </Nav.Link>
             </Nav.Item>
         </Nav>
