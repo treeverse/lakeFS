@@ -41,7 +41,7 @@ class ImportManager(_BaseLakeFSObject):
     _repo_id: str
     _branch_id: str
     _in_progress: bool = False
-    _import_id: str = None
+    _import_id: Optional[str] = None
     commit_message: str
     commit_metadata: Optional[Dict]
     sources: List[lakefs_sdk.ImportLocation]
@@ -56,7 +56,7 @@ class ImportManager(_BaseLakeFSObject):
         super().__init__(client)
 
     @property
-    def import_id(self) -> str:
+    def import_id(self) -> Optional[str]:
         """
         Returns the id of the current import process
         """
@@ -110,7 +110,9 @@ class ImportManager(_BaseLakeFSObject):
 
         creation = lakefs_sdk.ImportCreation(paths=self.sources,
                                              commit=lakefs_sdk.CommitCreation(message=self.commit_message,
-                                                                              metadata=self.commit_metadata))
+                                                                              metadata=self.commit_metadata,
+                                                                              allow_empty=False,
+                                                                              date=None))
         with api_exception_handler():
             res = self._client.sdk_client.import_api.import_start(repository=self._repo_id,
                                                                   branch=self._branch_id,
@@ -146,7 +148,7 @@ class ImportManager(_BaseLakeFSObject):
         if self._import_id is None:
             raise ImportManagerException("No import in progress")
 
-        res = asyncio.run(self._wait_for_completion(poll_interval))
+        res = asyncio.run(self._wait_for_completion(poll_interval or timedelta(seconds=2)))
         self._in_progress = False
         return ImportStatus(**res.dict())
 
