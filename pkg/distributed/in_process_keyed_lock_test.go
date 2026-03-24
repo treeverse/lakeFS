@@ -123,7 +123,7 @@ func TestInProcessKeyedLock_CancelledMiddleWaiter(t *testing.T) {
 		var wg sync.WaitGroup
 		cancelCtx, cancelW1 := context.WithCancel(ctx)
 
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			wg.Add(1)
 			acquireCtx := ctx
 			if i == 1 {

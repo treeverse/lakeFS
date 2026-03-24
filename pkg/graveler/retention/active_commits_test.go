@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"testing"
@@ -379,9 +380,7 @@ func TestActiveCommits(t *testing.T) {
 			}
 
 			commitsWithHashedKeys := make(map[graveler.CommitID]testCommit, len(tst.commits))
-			for k, v := range tst.commits {
-				commitsWithHashedKeys[k] = v
-			}
+			maps.Copy(commitsWithHashedKeys, tst.commits)
 
 			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
 

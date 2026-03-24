@@ -24,7 +24,7 @@ func MapLoggingFields(value any) logging.Fields {
 
 func structFieldsFunc(value reflect.Value, tag, squashValue string, prefix []string, cb func(key string, value any)) {
 	// finite loop: Go types are well-founded.
-	for value.Kind() == reflect.Ptr {
+	for value.Kind() == reflect.Pointer {
 		if value.IsZero() {
 			// If required, would already have errored out.
 			return
@@ -91,7 +91,7 @@ func GetSecureStringKeyPaths(value any) []string {
 }
 
 func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string, prefix []string, cb func(key string)) {
-	for value.Kind() == reflect.Ptr {
+	for value.Kind() == reflect.Pointer {
 		if value.IsZero() {
 			return
 		}

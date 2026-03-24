@@ -21,7 +21,7 @@ func GetStructKeys(typ reflect.Type, tag, squashValue string) []string {
 // passed to GetStructKeys down to this typ.
 func appendStructKeys(typ reflect.Type, tag, squashValue string, prefix []string, keys []string) []string {
 	// Dereference any pointers.  This is a finite loop: Go types are well-founded.
-	for ; typ.Kind() == reflect.Ptr; typ = typ.Elem() {
+	for ; typ.Kind() == reflect.Pointer; typ = typ.Elem() {
 	}
 
 	// Handle only struct containers; terminate the recursion on anything else.
@@ -73,7 +73,7 @@ func isScalar(kind reflect.Kind) bool {
 	case reflect.Array:
 	case reflect.Chan:
 	case reflect.Map:
-	case reflect.Ptr:
+	case reflect.Pointer:
 	case reflect.Slice:
 		return false
 	}
@@ -82,7 +82,7 @@ func isScalar(kind reflect.Kind) bool {
 
 func appendStructKeysIfZero(value reflect.Value, tag, squashValue, validateTag, requiredValue string, prefix []string, keys []string) []string {
 	// finite loop: Go types are well-founded.
-	for value.Kind() == reflect.Ptr {
+	for value.Kind() == reflect.Pointer {
 		if value.IsZero() { // If required, would already have errored out.
 			return keys
 		}
