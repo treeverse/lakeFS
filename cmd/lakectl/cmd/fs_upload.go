@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -33,7 +36,8 @@ var fsUploadCmd = &cobra.Command{
 		defer stop()
 
 		if !recursive || isFileOrStdin(source) {
-			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags)
+			noProgress := getNoProgressMode(cmd)
+			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags, noProgress)
 			if err != nil {
 				DieErr(err)
 			}
@@ -93,16 +97,71 @@ func isFileOrStdin(source string) bool {
 	return !stat.IsDir()
 }
 
-func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, syncFlags local.SyncFlags) (*apigen.ObjectStats, error) {
+func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, syncFlags local.SyncFlags, noProgress bool) (*apigen.ObjectStats, error) {
 	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
 	}()
+
+	// Get the size of the file for the progress bar
+	size, err := fp.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := fp.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+
+	reader := newProgressReadSeeker(fp, size, !noProgress)
+	defer func() {
+		_ = reader.Finish()
+	}()
+
 	objectPath := apiutil.Value(destURI.Path)
 	if syncFlags.Presign {
-		return helpers.ClientUploadPreSign(ctx, client, getHTTPClient(lakectlRetryPolicy), destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, syncFlags.PresignMultipart)
+		return helpers.ClientUploadPreSign(ctx, client, getHTTPClient(lakectlRetryPolicy), destURI.Repository, destURI.Ref, objectPath, nil, contentType, reader, syncFlags.PresignMultipart)
 	}
-	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
+	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, reader)
+}
+
+// progressReadSeeker wraps an io.ReadSeeker and updates a progress bar on each Read.
+// It also implements io.ReaderAt for presign multipart uploads.
+type progressReadSeeker struct {
+	io.ReadSeeker
+	bar *progressbar.ProgressBar
+}
+
+func newProgressReadSeeker(rs io.ReadSeeker, size int64, visible bool) *progressReadSeeker {
+	bar := progressbar.NewOptions64(size,
+		progressbar.OptionSetDescription("Uploading"),
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(barWidth),
+		progressbar.OptionThrottle(barThrottle),
+		progressbar.OptionShowCount(),
+		progressbar.OptionOnCompletion(func() {
+			_, _ = fmt.Fprint(os.Stderr, "\n")
+		}),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionSetVisibility(visible),
+	)
+	return &progressReadSeeker{ReadSeeker: rs, bar: bar}
+}
+
+func (r *progressReadSeeker) Read(p []byte) (int, error) {
+	n, err := r.ReadSeeker.Read(p)
+	_ = r.bar.Add(n)
+	return n, err
+}
+
+func (r *progressReadSeeker) ReadAt(p []byte, off int64) (int, error) {
+	n, err := r.ReadSeeker.(io.ReaderAt).ReadAt(p, off)
+	_ = r.bar.Add(n)
+	return n, err
+}
+
+func (r *progressReadSeeker) Finish() error {
+	return r.bar.Finish()
 }
 
 //nolint:gochecknoinits
