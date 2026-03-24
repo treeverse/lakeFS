@@ -57,6 +57,8 @@ var authPoliciesShow = &cobra.Command{
 		}
 
 		policy := *resp.JSON200
+		// Convert statements for display: multi-resource policies store resources as a
+		// JSON-encoded array string; toPrintStatement expands it into a proper JSON array.
 		stmts := make([]printStatement, len(policy.Statement))
 		for i, s := range policy.Statement {
 			stmts[i] = toPrintStatement(s)
