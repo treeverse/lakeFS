@@ -709,6 +709,7 @@ func (a *Adapter) BlockstoreType() string {
 func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	return &block.BlockstoreMetadata{
 		IsProductionSafe: true,
+		IsIcebergSupported: true,
 	}, nil
 }
 

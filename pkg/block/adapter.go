@@ -166,8 +166,9 @@ type Properties struct {
 }
 
 type BlockstoreMetadata struct {
-	IsProductionSafe bool
-	Region           *string
+	IsProductionSafe   bool
+	IsIcebergSupported bool
+	Region             *string
 }
 
 type PutResponse struct {
