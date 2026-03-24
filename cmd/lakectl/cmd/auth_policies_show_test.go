@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -45,13 +44,8 @@ func TestToPrintStatement(t *testing.T) {
 			}
 			got := toPrintStatement(s)
 
-			// Verify the Resource field marshals to the expected JSON.
-			raw, err := json.Marshal(got.Resource)
-			if err != nil {
-				t.Fatalf("marshal resource: %v", err)
-			}
-			if string(raw) != tt.wantResource {
-				t.Errorf("resource = %s, want %s", raw, tt.wantResource)
+			if string(got.Resource) != tt.wantResource {
+				t.Errorf("resource = %s, want %s", got.Resource, tt.wantResource)
 			}
 
 			// Verify the other fields are preserved.
