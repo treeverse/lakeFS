@@ -896,9 +896,9 @@ func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMeta
 		return nil, err
 	}
 	return &block.BlockstoreMetadata{
-		IsProductionSafe: true,
+		IsProductionSafe:   true,
 		IsIcebergSupported: true,
-		Region:           &region,
+		Region:             &region,
 	}, nil
 }
 
