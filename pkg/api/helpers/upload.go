@@ -196,10 +196,8 @@ func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStat
 		g.Go(func() error {
 			partURL := parts[i].URL
 			if presignedURLExpired(partURL) {
-				fmt.Println("Presigned URL is expired...")
 				var refreshErr error
 				partURL, refreshErr = u.getPartUploadURL(grpCtx, mpu, i+1)
-				fmt.Printf("New URL created: %s", partURL)
 				if refreshErr != nil {
 					return fmt.Errorf("part %d refresh presigned URL: %w", i+1, refreshErr)
 				}
