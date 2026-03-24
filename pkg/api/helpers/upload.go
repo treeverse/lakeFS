@@ -242,6 +242,7 @@ func (u *presignUpload) getPartUploadURL(ctx context.Context, mpu *apigen.Presig
 }
 
 const amzDateFormat = "20060102T150405Z"
+const presignedURLExpirationBuffer = 15 * time.Second
 
 // presignedURLExpired checks whether an S3 presigned URL has expired by parsing
 // the X-Amz-Date and X-Amz-Expires query parameters. Returns true if the URL
@@ -268,7 +269,7 @@ func presignedURLExpired(rawURL string) bool {
 	expiresAt := signedAt.Add(time.Duration(expiresSec) * time.Second)
 	// Use a small buffer to avoid starting an upload with a URL that's about to expire.
 	// S3 validates the URL at request start, not at the end of the data transfer.
-	return time.Now().Add(15 * time.Second).After(expiresAt)
+	return time.Now().Add(presignedURLExpirationBuffer).After(expiresAt)
 }
 
 func (u *presignUpload) completeMultipart(ctx context.Context, mpu *apigen.PresignMultipartUpload, uploadParts []apigen.UploadPart) (*apigen.ObjectStats, error) {
