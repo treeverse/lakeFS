@@ -13,31 +13,28 @@ type StatementDoc struct {
 }
 
 func (s StatementDoc) MarshalJSON() ([]byte, error) {
-	// Use a raw map so new fields added to apigen.Statement are picked up automatically.
-	type rawStatement = map[string]json.RawMessage
-
-	stmts := make([]rawStatement, len(s.Statement))
-	for i, st := range s.Statement {
-		b, err := json.Marshal(st)
-		if err != nil {
-			return nil, err
-		}
-		var m rawStatement
-		_ = json.Unmarshal(b, &m)
-		// Multi-resource policies store resources as a JSON-encoded array string.
-		// Expand it into a proper JSON array for display.
-		var resourceStr string
-		var arr []string
-		if json.Unmarshal(m["resource"], &resourceStr) == nil {
-			if json.Unmarshal([]byte(resourceStr), &arr) == nil {
-				m["resource"], _ = json.Marshal(arr)
-			}
-		}
-		stmts[i] = m
+	// local type to control Resource serialization
+	type stmtOut struct {
+		Action    []string                    `json:"action"`
+		Condition *apigen.Statement_Condition `json:"condition,omitempty"`
+		Effect    string                      `json:"effect"`
+		Resource  json.RawMessage             `json:"resource"`
 	}
-	return json.Marshal(struct {
-		Statement []rawStatement `json:"statement"`
-	}{Statement: stmts})
+	out := struct {
+		Statement []stmtOut `json:"statement"`
+	}{Statement: make([]stmtOut, len(s.Statement))}
+
+	for i, st := range s.Statement {
+		var arr []string
+		var res json.RawMessage
+		if json.Unmarshal([]byte(st.Resource), &arr) == nil {
+			res, _ = json.Marshal(arr)
+		} else {
+			res, _ = json.Marshal(st.Resource)
+		}
+		out.Statement[i] = stmtOut{st.Action, st.Condition, st.Effect, res}
+	}
+	return json.Marshal(out)
 }
 
 const policyDetailsTemplate = `
