@@ -87,21 +87,22 @@ class Client:
 
     """
 
-    _client: Optional[LakeFSClient] = None
-    _conf: Optional[ClientConfig] = None
+    _client: LakeFSClient
+    _conf: ClientConfig
     _server_conf: Optional[ServerConfiguration] = None
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
         self._client = LakeFSClient(self._conf, header_name='X-Lakefs-Client',
                                     header_value='python-lakefs')
-        self._server_conf = None
-        self._reset_token_time = None
-        self._session = None
+        self._server_conf: Optional[ServerConfiguration] = None
+        self._reset_token_time: Optional[datetime.datetime] = None
+        self._session: Optional[boto3.Session] = None
 
         # Initialize auth if using IAM provider
         if self._conf.get_auth_type() is ClientConfig.AuthType.IAM:
             iam_provider = self._conf.iam_provider
+            assert iam_provider is not None
             if iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
                 # boto3 session lazy loading (only if an AWS IAM provider is used)
                 import boto3 # pylint: disable=import-outside-toplevel, import-error
@@ -129,8 +130,11 @@ class Client:
                 current_time >= self._reset_token_time):
             # Refresh token:
             iam_provider = self._conf.iam_provider
+            assert iam_provider is not None
             if iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
                 lakefs_host = urlparse(self._conf.host).hostname
+                assert lakefs_host is not None, "Invalid host URL"
+                assert self._session is not None, "Boto3 session is not initialized"
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
                     self._client,
                     lakefs_host,

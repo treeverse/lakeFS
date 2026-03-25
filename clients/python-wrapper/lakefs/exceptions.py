@@ -21,8 +21,8 @@ class ServerException(LakeFSException):
     """
     Generic exception when no other exception is applicable
     """
-    status_code: int
-    reason: str
+    status_code: Optional[int]
+    reason: Optional[str]
     body: dict
     headers: dict
 
@@ -144,7 +144,7 @@ class TransactionException(LakeFSException):
     """
 
 
-_STATUS_CODE_TO_EXCEPTION = {
+_STATUS_CODE_TO_EXCEPTION: dict[int,  type[ServerException]] = {
     http.HTTPStatus.BAD_REQUEST.value: BadRequestException,
     http.HTTPStatus.UNAUTHORIZED.value: NotAuthorizedException,
     http.HTTPStatus.FORBIDDEN.value: ForbiddenException,
@@ -170,7 +170,10 @@ def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], L
         # Convert headers list of tuples to dict for easier access
         headers = getattr(e, 'headers', None)
         headers_dict = dict(headers) if headers else None
-        lakefs_ex: LakeFSException = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason, e.body, headers_dict)
+        exc_class = ServerException
+        if e.status is not None:
+            exc_class = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)
+        lakefs_ex: LakeFSException = exc_class(e.status, e.reason, e.body, headers_dict)
         if custom_handler is not None:
             lakefs_ex = custom_handler(lakefs_ex)
 
