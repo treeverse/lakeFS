@@ -214,7 +214,7 @@ pre {
 }
 
 .main-app > * {
-    padding-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
 }
 
 /* Fix for btn-light in dark mode */
