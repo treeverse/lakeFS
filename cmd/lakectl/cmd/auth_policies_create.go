@@ -50,20 +50,14 @@ var authPoliciesCreate = &cobra.Command{
 		}
 
 		createdPolicy := resp.JSON201
-		// Convert statements for display: multi-resource policies store resources as a
-		// JSON-encoded array string; toPrintStatement expands it into a proper JSON array.
-		stmts := make([]printStatement, len(createdPolicy.Statement))
-		for i, s := range createdPolicy.Statement {
-			stmts[i] = toPrintStatement(s)
-		}
 		Write(policyCreatedTemplate, struct {
 			ID           string
 			CreationDate int64
-			StatementDoc showStatementDoc
+			StatementDoc StatementDoc
 		}{
 			ID:           createdPolicy.Id,
 			CreationDate: *createdPolicy.CreationDate,
-			StatementDoc: showStatementDoc{Statement: stmts},
+			StatementDoc: StatementDoc{createdPolicy.Statement},
 		})
 	},
 }
