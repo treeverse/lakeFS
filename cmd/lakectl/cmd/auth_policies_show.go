@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -9,6 +10,31 @@ import (
 
 type StatementDoc struct {
 	Statement []apigen.Statement `json:"statement"`
+}
+
+func (s StatementDoc) MarshalJSON() ([]byte, error) {
+	// local type to control Resource serialization
+	type stmtOut struct {
+		Action    []string                    `json:"action"`
+		Condition *apigen.Statement_Condition `json:"condition,omitempty"`
+		Effect    string                      `json:"effect"`
+		Resource  json.RawMessage             `json:"resource"`
+	}
+	out := struct {
+		Statement []stmtOut `json:"statement"`
+	}{Statement: make([]stmtOut, len(s.Statement))}
+
+	for i, st := range s.Statement {
+		var arr []string
+		var res json.RawMessage
+		if json.Unmarshal([]byte(st.Resource), &arr) == nil {
+			res, _ = json.Marshal(arr)
+		} else {
+			res, _ = json.Marshal(st.Resource)
+		}
+		out.Statement[i] = stmtOut{st.Action, st.Condition, st.Effect, res}
+	}
+	return json.Marshal(out)
 }
 
 const policyDetailsTemplate = `
