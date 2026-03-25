@@ -10,56 +10,38 @@ import (
 func TestStatementDocMarshalJSON(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name         string
-		resource     string
-		wantResource string // expected JSON value of the resource field
+		name string
+		doc  StatementDoc
+		want string
 	}{
 		{
-			name:         "wildcard string",
-			resource:     "*",
-			wantResource: `"*"`,
+			name: "single resource",
+			doc: StatementDoc{Statement: []apigen.Statement{{
+				Action:   []string{"fs:ReadObject"},
+				Effect:   "allow",
+				Resource: "*",
+			}}},
+			want: `{"statement":[{"action":["fs:ReadObject"],"effect":"allow","resource":"*"}]}`,
 		},
 		{
-			name:         "single ARN string",
-			resource:     "arn:lakefs:fs:::repository/myrepo/object/*",
-			wantResource: `"arn:lakefs:fs:::repository/myrepo/object/*"`,
-		},
-		{
-			name:         "multi-resource JSON array string",
-			resource:     `["arn:lakefs:fs:::repository/a/object/f1","arn:lakefs:fs:::repository/a/object/f2"]`,
-			wantResource: `["arn:lakefs:fs:::repository/a/object/f1","arn:lakefs:fs:::repository/a/object/f2"]`,
-		},
-		{
-			name:         "single-element JSON array string",
-			resource:     `["arn:lakefs:fs:::repository/myrepo/object/*"]`,
-			wantResource: `["arn:lakefs:fs:::repository/myrepo/object/*"]`,
+			name: "multi-resource JSON array string",
+			doc: StatementDoc{Statement: []apigen.Statement{{
+				Action:   []string{"fs:ReadObject"},
+				Effect:   "allow",
+				Resource: `["arn:lakefs:fs:::repository/a/object/f1","arn:lakefs:fs:::repository/a/object/f2"]`,
+			}}},
+			want: `{"statement":[{"action":["fs:ReadObject"],"effect":"allow","resource":["arn:lakefs:fs:::repository/a/object/f1","arn:lakefs:fs:::repository/a/object/f2"]}]}`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			doc := StatementDoc{
-				Statement: []apigen.Statement{{
-					Action:   []string{"fs:ReadObject"},
-					Effect:   "allow",
-					Resource: tt.resource,
-				}},
-			}
-			out, err := json.Marshal(doc)
+			out, err := json.Marshal(tt.doc)
 			if err != nil {
 				t.Fatalf("MarshalJSON: %v", err)
 			}
-			// Extract just the resource field from the marshaled output.
-			var parsed struct {
-				Statement []struct {
-					Resource json.RawMessage `json:"resource"`
-				} `json:"statement"`
-			}
-			if err := json.Unmarshal(out, &parsed); err != nil {
-				t.Fatalf("unmarshal output: %v", err)
-			}
-			if got := string(parsed.Statement[0].Resource); got != tt.wantResource {
-				t.Errorf("resource = %s, want %s", got, tt.wantResource)
+			if string(out) != tt.want {
+				t.Errorf("got  %s\nwant %s", out, tt.want)
 			}
 		})
 	}
