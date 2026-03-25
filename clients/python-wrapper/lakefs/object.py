@@ -127,7 +127,7 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     def seekable(self) -> bool:
         raise NotImplementedError
 
-    def truncate(self, size: Optional[int] = None) -> int:  # type: ignore[override]
+    def truncate(self, size: Optional[int] = None) -> int:
         """
         Unsupported by lakeFS implementation
         """
