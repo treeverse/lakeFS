@@ -99,14 +99,14 @@ class ClientConfig(Configuration):
         An IAM authentication provider
         """
         type: ClientConfig.ProviderType
-        aws_iam: Optional[ClientConfig.AWSIAMProviderConfig]
+        aws_iam: ClientConfig.AWSIAMProviderConfig
 
     server = Server(endpoint_url="")
-    credentials = Credentials(access_key_id="", secret_access_key="")
-    username = None
-    password = None
-    access_token = None
-    _iam_provider = None
+    credentials: Optional["Credentials"] = Credentials(access_key_id="", secret_access_key="")
+    username: Optional[str] = None
+    password: Optional[str] = None
+    access_token: Optional[str] = None
+    _iam_provider: Optional["ClientConfig.IAMProvider"] = None
 
     def __init__(self, verify_ssl: Optional[bool] = None, proxy: Optional[str] = None, **kwargs):
         super().__init__(**kwargs)

@@ -424,8 +424,8 @@ class Transaction:
         self._commit_metadata = commit_metadata
         self._source_branch = branch_id
         self._client = client
-        self._tx = None
-        self._tx_branch = None
+        self._tx: Optional["_Transaction"] = None
+        self._tx_branch: Optional["Branch"] = None
         self._cleanup_branch = delete_branch_on_error
         self._tag = tag
 
