@@ -5352,7 +5352,7 @@ paths:
         required: true
         schema:
           type: integer
-          maximum: 1000
+          maximum: 10000
           minimum: 1
     put:
       tags:
@@ -5410,7 +5410,7 @@ paths:
         required: true
         schema:
           type: integer
-          maximum: 1000
+          maximum: 10000
           minimum: 1
     put:
       tags:

@@ -3869,7 +3869,7 @@ class ExperimentalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def upload_part(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> UploadTo:  # noqa: E501
+    def upload_part(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=10000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> UploadTo:  # noqa: E501
         """upload_part  # noqa: E501
 
         Return a presigned URL to upload into a presigned multipart upload.  # noqa: E501
@@ -3909,7 +3909,7 @@ class ExperimentalApi:
         return self.upload_part_with_http_info(repository, branch, upload_id, path, part_number, upload_part_from, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def upload_part_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> ApiResponse:  # noqa: E501
+    def upload_part_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=10000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> ApiResponse:  # noqa: E501
         """upload_part  # noqa: E501
 
         Return a presigned URL to upload into a presigned multipart upload.  # noqa: E501
@@ -4060,7 +4060,7 @@ class ExperimentalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def upload_part_copy(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> None:  # noqa: E501
+    def upload_part_copy(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=10000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> None:  # noqa: E501
         """upload_part_copy  # noqa: E501
 
         Upload a part by copying part of another object.  # noqa: E501
@@ -4100,7 +4100,7 @@ class ExperimentalApi:
         return self.upload_part_copy_with_http_info(repository, branch, upload_id, path, part_number, upload_part_copy_from, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def upload_part_copy_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> ApiResponse:  # noqa: E501
+    def upload_part_copy_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=10000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> ApiResponse:  # noqa: E501
         """upload_part_copy  # noqa: E501
 
         Upload a part by copying part of another object.  # noqa: E501
