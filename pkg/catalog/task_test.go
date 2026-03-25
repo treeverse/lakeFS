@@ -114,7 +114,7 @@ func TestRunBackgroundTaskSteps_StatusReadableDuringExecution(t *testing.T) {
 		readInterval := TaskHeartbeatInterval / 2
 		numReads := 6
 
-		for i := 0; i < numReads; i++ {
+		for i := range numReads {
 			time.Sleep(readInterval)
 			synctest.Wait()
 

@@ -217,7 +217,7 @@ func TestAuthService_ListPaged(t *testing.T) {
 			if size == 0 { // Overload to mean "don't paginate"
 				pagination.Amount = -1
 			}
-			got := ""
+			var got strings.Builder
 			for {
 				values, paginator, err := s.ListKVPaged(ctx, (&userData).ProtoReflect().Type(), pagination, model.UserPath(""), false)
 				if err != nil {
@@ -229,7 +229,7 @@ func TestAuthService_ListPaged(t *testing.T) {
 				}
 				letters := model.ConvertUsersDataList(values)
 				for _, c := range letters {
-					got += c.Username
+					got.WriteString(c.Username)
 				}
 				if paginator.NextPageToken == "" {
 					if size > 0 && len(letters) > size {
@@ -242,8 +242,8 @@ func TestAuthService_ListPaged(t *testing.T) {
 				}
 				pagination.After = paginator.NextPageToken
 			}
-			if got != chars {
-				t.Errorf("Expected to read back \"%s\" but got \"%s\"", chars, got)
+			if got.String() != chars {
+				t.Errorf("Expected to read back \"%s\" but got \"%s\"", chars, got.String())
 			}
 		})
 	}
