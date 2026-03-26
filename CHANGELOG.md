@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.80.0
+
+:new: What's new:
+
+- Verify link address expiration set to 24h (#10180)
+- Normalize file extension case for object previews (#10231)
+- Support StringLike condition operator in policy evaluation (#10249)
+- hadoopfs: Add retry mechanism for lakeFS API calls (#10254)
+- webui: redesign Data tab with Objects/Tables toggle (#10271)
+- Setup: collect comm prefs during setup and validate email (#10277)
+
+:bug: Bugs Fixed
+
+- Bump otel/sdk to v1.40.0 (fix PATH hijacking CVE) (#10211)
+- Fix UnboundLocalError when reading empty objects with range request (#10238)
+- lakectl fs upload: Multipart upload - generate presigned URL per part (#10291)
+
 ## v1.79.0
 
 :new: What's new:
