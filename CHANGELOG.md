@@ -14,7 +14,6 @@
 :bug: Bugs Fixed
 
 - Bump otel/sdk to v1.40.0 (fix PATH hijacking CVE) (#10211)
-- Fix UnboundLocalError when reading empty objects with range request (#10238)
 - lakectl fs upload: Multipart upload - generate presigned URL per part (#10291)
 
 ## v1.79.0
