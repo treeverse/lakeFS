@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"encoding/json"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -44,5 +46,33 @@ func TestStatementDocMarshalJSON(t *testing.T) {
 				t.Errorf("got  %s\nwant %s", out, tt.want)
 			}
 		})
+	}
+}
+
+// TestStatementOutFieldsInSync verifies that statementOut declares the same json fields
+// as apigen.Statement, so that if apigen.Statement gains a new field the test fails.
+func TestStatementOutFieldsInSync(t *testing.T) {
+	t.Parallel()
+	jsonTags := func(t reflect.Type) map[string]bool {
+		tags := make(map[string]bool, t.NumField())
+		for i := range t.NumField() {
+			name := strings.Split(t.Field(i).Tag.Get("json"), ",")[0]
+			tags[name] = true
+		}
+		return tags
+	}
+
+	apigenTags := jsonTags(reflect.TypeOf(apigen.Statement{}))
+	outTags := jsonTags(reflect.TypeOf(statementOut{}))
+
+	for name := range apigenTags {
+		if !outTags[name] {
+			t.Errorf("field %q in apigen.Statement is missing from statementOut", name)
+		}
+	}
+	for name := range outTags {
+		if !apigenTags[name] {
+			t.Errorf("field %q in statementOut has no counterpart in apigen.Statement", name)
+		}
 	}
 }

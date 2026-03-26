@@ -12,16 +12,19 @@ type StatementDoc struct {
 	Statement []apigen.Statement `json:"statement"`
 }
 
+// statementOut mirrors apigen.Statement for JSON marshaling, using json.RawMessage
+// for Resource to allow rendering multi-resource array strings as proper JSON arrays.
+type statementOut struct {
+	Action    []string                    `json:"action"`
+	Condition *apigen.Statement_Condition `json:"condition,omitempty"`
+	Effect    string                      `json:"effect"`
+	Resource  json.RawMessage             `json:"resource"`
+}
+
 func (s StatementDoc) MarshalJSON() ([]byte, error) {
-	type stmtOut struct {
-		Action    []string                    `json:"action"`
-		Condition *apigen.Statement_Condition `json:"condition,omitempty"`
-		Effect    string                      `json:"effect"`
-		Resource  json.RawMessage             `json:"resource"`
-	}
 	out := struct {
-		Statement []stmtOut `json:"statement"`
-	}{Statement: make([]stmtOut, len(s.Statement))}
+		Statement []statementOut `json:"statement"`
+	}{Statement: make([]statementOut, len(s.Statement))}
 
 	for i, st := range s.Statement {
 		// Multi-resource policies store resources as a JSON-encoded array string.
@@ -33,7 +36,7 @@ func (s StatementDoc) MarshalJSON() ([]byte, error) {
 		} else {
 			res, _ = json.Marshal(st.Resource)
 		}
-		out.Statement[i] = stmtOut{st.Action, st.Condition, st.Effect, res}
+		out.Statement[i] = statementOut{st.Action, st.Condition, st.Effect, res}
 	}
 	return json.Marshal(out)
 }
