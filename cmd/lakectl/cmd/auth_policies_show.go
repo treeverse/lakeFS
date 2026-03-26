@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -9,6 +10,39 @@ import (
 
 type StatementDoc struct {
 	Statement []apigen.Statement `json:"statement"`
+}
+
+// statementOut mirrors apigen.Statement for JSON marshaling, using json.RawMessage
+// for Resource to allow rendering multi-resource array strings as proper JSON arrays.
+type statementOut struct {
+	Action    []string                    `json:"action"`
+	Condition *apigen.Statement_Condition `json:"condition,omitempty"`
+	Effect    string                      `json:"effect"`
+	Resource  json.RawMessage             `json:"resource"`
+}
+
+func (s StatementDoc) MarshalJSON() ([]byte, error) {
+	out := struct {
+		Statement []statementOut `json:"statement"`
+	}{Statement: make([]statementOut, len(s.Statement))}
+
+	for i, st := range s.Statement {
+		// Multi-resource policies store resources as a JSON-encoded array string.
+		// Expand it into a proper JSON array for display.
+		var arr []string
+		var res json.RawMessage
+		var err error
+		if json.Unmarshal([]byte(st.Resource), &arr) == nil {
+			res, err = json.Marshal(arr)
+		} else {
+			res, err = json.Marshal(st.Resource)
+		}
+		if err != nil {
+			return nil, err
+		}
+		out.Statement[i] = statementOut{st.Action, st.Condition, st.Effect, res}
+	}
+	return json.Marshal(out)
 }
 
 const policyDetailsTemplate = `
