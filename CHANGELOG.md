@@ -7,7 +7,6 @@
 - Verify link address expiration set to 24h (#10180)
 - Normalize file extension case for object previews (#10231)
 - Support StringLike condition operator in policy evaluation (#10249)
-- hadoopfs: Add retry mechanism for lakeFS API calls (#10254)
 - webui: redesign Data tab with Objects/Tables toggle (#10271)
 - Setup: collect comm prefs during setup and validate email (#10277)
 
