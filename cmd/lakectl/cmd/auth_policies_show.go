@@ -31,10 +31,14 @@ func (s StatementDoc) MarshalJSON() ([]byte, error) {
 		// Expand it into a proper JSON array for display.
 		var arr []string
 		var res json.RawMessage
+		var err error
 		if json.Unmarshal([]byte(st.Resource), &arr) == nil {
-			res, _ = json.Marshal(arr)
+			res, err = json.Marshal(arr)
 		} else {
-			res, _ = json.Marshal(st.Resource)
+			res, err = json.Marshal(st.Resource)
+		}
+		if err != nil {
+			return nil, err
 		}
 		out.Statement[i] = statementOut{st.Action, st.Condition, st.Effect, res}
 	}
