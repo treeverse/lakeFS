@@ -1478,10 +1478,11 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             </Button>
                         </>
                     )}
-                    {dataView === DATA_VIEW_TABLES && (() => {
-                        const TablesActions = pluginManager.tablesBrowser.getTablesActionsComponent();
-                        return TablesActions ? <TablesActions /> : null;
-                    })()}
+                    {dataView === DATA_VIEW_TABLES &&
+                        (() => {
+                            const TablesActions = pluginManager.tablesBrowser.getTablesActionsComponent();
+                            return TablesActions ? <TablesActions /> : null;
+                        })()}
                 </div>
             </div>
 
