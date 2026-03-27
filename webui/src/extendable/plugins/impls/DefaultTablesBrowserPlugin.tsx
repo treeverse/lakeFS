@@ -6,6 +6,10 @@ class DefaultTablesBrowserPlugin implements PluginTablesBrowser {
     getTablesBrowserComponent(): React.FC {
         return TablesEnterpriseInfo;
     }
+
+    getTablesActionsComponent(): React.FC | null {
+        return null;
+    }
 }
 
 export default new DefaultTablesBrowserPlugin();

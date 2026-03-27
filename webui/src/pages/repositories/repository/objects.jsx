@@ -1457,24 +1457,32 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
             {/* Row 2: View Toggle & Data Actions */}
             <div className="data-view-row d-flex align-items-center mb-2">
                 <DataViewToggle activeView={dataView} onChangeView={setDataView} />
-                {dataView === DATA_VIEW_OBJECTS && (
-                    <div className="d-flex align-items-center gap-2 ms-auto">
-                        <Button
-                            variant={hasChanges ? 'outline-secondary' : 'success'}
-                            disabled={repo?.read_only}
-                            onClick={() => setShowUpload(true)}
-                        >
-                            <UploadIcon /> Upload
-                        </Button>
-                        <Button
-                            variant="outline-secondary"
-                            disabled={!storageConfig.import_support}
-                            onClick={() => setShowImport(true)}
-                        >
-                            <BsCloudArrowUp /> Import
-                        </Button>
-                    </div>
-                )}
+                <div className="d-flex align-items-center gap-2 ms-auto">
+                    {dataView === DATA_VIEW_OBJECTS && (
+                        <>
+                            <Button
+                                size="sm"
+                                variant={hasChanges ? 'outline-secondary' : 'success'}
+                                disabled={repo?.read_only}
+                                onClick={() => setShowUpload(true)}
+                            >
+                                <UploadIcon /> Upload
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline-secondary"
+                                disabled={!storageConfig.import_support}
+                                onClick={() => setShowImport(true)}
+                            >
+                                <BsCloudArrowUp /> Import
+                            </Button>
+                        </>
+                    )}
+                    {dataView === DATA_VIEW_TABLES && (() => {
+                        const TablesActions = pluginManager.tablesBrowser.getTablesActionsComponent();
+                        return TablesActions ? <TablesActions /> : null;
+                    })()}
+                </div>
             </div>
 
             {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
