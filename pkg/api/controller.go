@@ -810,8 +810,8 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-	internalAuthSession, _ := c.sessionStore.Get(r, InternalAuthSessionName)
-	internalAuthSession.Values[TokenSessionKeyName] = tokenString
+	internalAuthSession, _ := c.sessionStore.Get(r, auth.InternalAuthSessionName)
+	internalAuthSession.Values[auth.TokenSessionKeyName] = tokenString
 	err = c.sessionStore.Save(r, w, internalAuthSession)
 	if err != nil {
 		c.Logger.WithError(err).Error("Failed to save internal auth session")

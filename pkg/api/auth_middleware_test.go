@@ -9,7 +9,6 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -96,13 +95,13 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("valid gorilla session", func(t *testing.T) {
 		ctx := t.Context()
 		apiToken := testGenerateApiToken(ctx, t, clt, cred)
-		values := map[any]any{api.TokenSessionKeyName: apiToken}
+		values := map[any]any{auth.TokenSessionKeyName: apiToken}
 		store := sessions.NewCookieStore([]byte("some secret"))
-		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
+		encoded, err := securecookie.EncodeMulti(auth.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {
 			t.Fatal("Failed to encode cookie value for session: ", err)
 		}
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.InternalAuthSessionName, encoded)
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", auth.InternalAuthSessionName, encoded)
 		if err != nil {
 			t.Fatal("gorilla session security provider", err)
 		}
@@ -122,13 +121,13 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("invalid gorilla cookie", func(t *testing.T) {
 		ctx := t.Context()
 		apiToken := testGenerateBadAPIToken(t, deps.authService)
-		values := map[any]any{api.TokenSessionKeyName: apiToken}
+		values := map[any]any{auth.TokenSessionKeyName: apiToken}
 		store := sessions.NewCookieStore([]byte("some secret"))
-		encoded, err := securecookie.EncodeMulti(api.InternalAuthSessionName, values, store.Codecs...)
+		encoded, err := securecookie.EncodeMulti(auth.InternalAuthSessionName, values, store.Codecs...)
 		if err != nil {
 			t.Fatal("Failed to encode cookie value for session: ", err)
 		}
-		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", api.InternalAuthSessionName, encoded)
+		authProvider, err := securityprovider.NewSecurityProviderApiKey("cookie", auth.InternalAuthSessionName, encoded)
 		if err != nil {
 			t.Fatal("gorilla session security provider", err)
 		}
