@@ -46,12 +46,17 @@ export function mergeResults(
         }
     });
 
-    // Add missing items only for removed entries or deleted prefixes
-    // Avoid adding items that come after the last result path (both are sorted lexicographically)
+    // Add missing items for removed entries, added entries, and prefixes
+    // When using committed-only ref (branch@) for objects.list, added entries are not in the list
+    // Avoid adding removed/prefix items that come after the last result path (both are sorted lexicographically)
+    // Note: 'added' items (staged files) are exempt from this restriction because they may be
+    // alphabetically after the last committed file, and changesData is already paginated via 'after'
     const lastResultPath = last(results)?.path;
     const missingItems = changesData.results
-        .filter((change) => change.type === 'removed' || change.path_type === 'common_prefix')
-        .filter((change) => lastResultPath && change.path <= lastResultPath)
+        .filter(
+            (change) => change.type === 'removed' || change.type === 'added' || change.path_type === 'common_prefix',
+        )
+        .filter((change) => change.type === 'added' || (lastResultPath && change.path <= lastResultPath))
         .filter((change) => !results.find((result) => result.path === change.path));
 
     // Merge regular results with change info
