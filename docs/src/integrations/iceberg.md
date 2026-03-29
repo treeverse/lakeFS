@@ -446,7 +446,7 @@ This policy allows the user to list all views in the `my.namespace` namespace, e
     - Table renaming
     - Updating table's location (using Commit)
 3. lakeFS Iceberg REST Catalog is currently tested to work with Amazon S3 and Google Cloud Storage. Other storage backends, such as Azure or Local storage are currently not supported, but will be in future releases.
-4. The [Iceberg `v3` table format](https://iceberg.apache.org/spec) is currently not supported (while the most common `v2` and `v1` are supported
+4. The Iceberg `v3` [table format](https://iceberg.apache.org/spec/#version-3-extended-types-and-capabilities) is currently not supported (while the most common `v2` and `v1` are).
 
 ### Table Maintenance
 
