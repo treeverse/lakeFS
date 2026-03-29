@@ -46,7 +46,11 @@ const (
 )
 
 var (
-	V4AuthHeaderRegexp      = regexp.MustCompile(`AWS4-HMAC-SHA256 Credential=(?P<AccessKeyId>.{3,20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request,\s*SignedHeaders=(?P<SignatureHeaders>[\w\-\;]+),\s*Signature=(?P<Signature>[abcdef0123456789]{64})`)
+	// SignedHeaders can contain header names with various special characters that S3 allows in metadata keys.
+	// The character class includes: word chars (\w), hyphen, semicolon (separator), and special chars
+	// that are valid HTTP header token characters per RFC 7230: ! # $ % & ' * + - . ^ _ ` | ~
+	// Note: ( and ) are accepted by S3 but rejected by Go's HTTP server as they're not valid token chars.
+	V4AuthHeaderRegexp      = regexp.MustCompile(`AWS4-HMAC-SHA256 Credential=(?P<AccessKeyId>.{3,20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request,\s*SignedHeaders=(?P<SignatureHeaders>[\w\-;.#!$%&'*+^` + "`" + `|~]+),\s*Signature=(?P<Signature>[abcdef0123456789]{64})`)
 	V4CredentialScopeRegexp = regexp.MustCompile(`(?P<AccessKeyId>.{3,20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request`)
 )
 
