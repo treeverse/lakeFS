@@ -442,14 +442,11 @@ This policy allows the user to list all views in the `my.namespace` namespace, e
 1. **Table Maintenance**:
     - See [Table Maintenance](#table-maintenance) section for details
 2. **Advanced Features**:
-    - Views (all view operations are unsupported)
-    - Transactional DML (`stage-create`)
     - Server-side query planning
     - Table renaming
     - Updating table's location (using Commit)
-    - Table statistics (`set-statistics` and `remove-statistics` operations are currently a no-op)
 3. lakeFS Iceberg REST Catalog is currently tested to work with Amazon S3 and Google Cloud Storage. Other storage backends, such as Azure or Local storage are currently not supported, but will be in future releases.
-4. Currently only [Iceberg `v2` table format](https://iceberg.apache.org/spec) is supported
+4. The [Iceberg `v3` table format](https://iceberg.apache.org/spec) is currently not supported (while the most common `v2` and `v1` are supported
 
 ### Table Maintenance
 
