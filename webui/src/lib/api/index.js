@@ -875,6 +875,28 @@ class Objects {
         return await response.json();
     }
 
+    async listExclude(repoId, ref, tree, after = '', excludePrefix, presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = '/') {
+        const { results, pagination } = await this.list(repoId, ref, tree, after, presign, amount, delimiter);
+
+        const filtered = results.filter((entry) => !entry.path.startsWith(excludePrefix));
+        const excludedCount = results.length - filtered.length;
+
+        // Entries were filtered — if there are more results, fetch replacements
+        if (excludedCount && pagination && pagination.has_more) {
+            const lastPath = results[results.length - 1].path;
+
+            const extra = await this.list(repoId, ref, tree, lastPath, presign, excludedCount, delimiter);
+            const extraFiltered = extra.results.filter((entry) => !entry.path.startsWith(excludePrefix));
+
+            return {
+                results: [...filtered, ...extraFiltered],
+                pagination: extra.pagination,
+            };
+        }
+
+        return { results: filtered, pagination };
+    }
+
     listAll(repoId, ref, prefix, presign = false) {
         let after = '';
         return {

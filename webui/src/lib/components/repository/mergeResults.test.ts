@@ -386,4 +386,57 @@ describe('mergeResults', () => {
             });
         });
     });
+
+    describe('excludePrefix', () => {
+        it('excludes changes matching the prefix from annotations', () => {
+            const results: Entry[] = [
+                { path: 'data/', path_type: 'common_prefix' },
+                { path: 'readme.txt', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: '_lakefs_tables/', type: 'changed', path_type: 'common_prefix' },
+                    { path: 'readme.txt', type: 'changed', path_type: 'object' },
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false, '_lakefs_tables/');
+
+            expect(merged).toHaveLength(2);
+            expect(merged.find((r) => r.path === '_lakefs_tables/')).toBeUndefined();
+            expect(merged.find((r) => r.path === 'readme.txt')).toMatchObject({ diff_type: 'changed' });
+        });
+
+        it('excludes removed entries matching the prefix from missing items', () => {
+            const results: Entry[] = [
+                { path: 'z.txt', path_type: 'object' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: '_lakefs_tables/', type: 'removed', path_type: 'common_prefix' },
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false, '_lakefs_tables/');
+
+            expect(merged).toHaveLength(1);
+            expect(merged[0].path).toBe('z.txt');
+        });
+
+        it('does not exclude changes when excludePrefix is empty', () => {
+            const results: Entry[] = [
+                { path: '_lakefs_tables/', path_type: 'common_prefix' },
+            ];
+            const changesData: ChangesData = {
+                results: [
+                    { path: '_lakefs_tables/', type: 'changed', path_type: 'common_prefix' },
+                ],
+            };
+
+            const merged = mergeResults(results, changesData, false, '');
+
+            expect(merged).toHaveLength(1);
+            expect(merged[0]).toMatchObject({ path: '_lakefs_tables/', diff_type: 'changed' });
+        });
+    });
 });

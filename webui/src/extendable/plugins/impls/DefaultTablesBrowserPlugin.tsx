@@ -10,6 +10,10 @@ class DefaultTablesBrowserPlugin implements PluginTablesBrowser {
     getTablesActionsComponent(): React.FC | null {
         return null;
     }
+
+    getTablesPrefix(): null {
+        return null;
+    }
 }
 
 export default new DefaultTablesBrowserPlugin();

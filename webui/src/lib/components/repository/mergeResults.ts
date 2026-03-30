@@ -8,12 +8,14 @@ import { compareLexicographically } from '../../utils';
  * @param results - Array of object entries from the main listing
  * @param changesData - Changes data containing results array with change information
  * @param showChangesOnly - Whether to show only changes (if true, no merging needed)
+ * @param excludePrefix - Optional prefix to exclude from changes data
  * @returns Merged and sorted results with diff_type annotations
  */
 export function mergeResults(
     results: Entry[] | undefined | null,
     changesData: ChangesData | undefined | null,
     showChangesOnly = false,
+    excludePrefix = '',
 ): EntryWithDiff[] {
     if (showChangesOnly || !results || !changesData?.results) {
         // Ensure regular results are also sorted lexicographically
@@ -24,7 +26,8 @@ export function mergeResults(
     const directoryChanges = new Map<string, DiffType>(); // Store change type for directories
 
     // Map direct changes and identify affected directories
-    changesData.results.forEach((change) => {
+    const changes = changesData.results.filter((change) => !excludePrefix || !change.path.startsWith(excludePrefix));
+    changes.forEach((change) => {
         // Map change type to what EntryRow expects
         const mappedType = change.type === 'removed' ? 'removed' : change.type === 'added' ? 'added' : 'changed';
 
@@ -49,7 +52,7 @@ export function mergeResults(
     // Add missing items only for removed entries or deleted prefixes
     // Avoid adding items that come after the last result path (both are sorted lexicographically)
     const lastResultPath = last(results)?.path;
-    const missingItems = changesData.results
+    const missingItems = changes
         .filter((change) => change.type === 'removed' || change.path_type === 'common_prefix')
         .filter((change) => lastResultPath && change.path <= lastResultPath)
         .filter((change) => !results.find((result) => result.path === change.path));

@@ -957,6 +957,8 @@ const TreeContainer = ({
     showChangesOnly,
     toggleShowChangesOnly,
 }) => {
+    const pluginManager = usePluginManager();
+
     const [actionError, setActionError] = useState(null);
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [lastSeenPath, setLastSeenPath] = useState('');
@@ -984,6 +986,8 @@ const TreeContainer = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo.id, reference.id, path, refreshToken, showChangesOnly, after]);
 
+    const filteredPrefix = pluginManager.tablesBrowser.getTablesPrefix();
+
     // Use different API calls based on whether we're showing changes only or all objects
     const { results, error, loading, nextPage } = useAPIWithPagination(() => {
         if (showChangesOnly) {
@@ -992,8 +996,9 @@ const TreeContainer = ({
                 refs.changes(repo.id, reference.id, lastSeenPath, path, delimiter),
             );
         } else {
-            // Show all objects
-            return objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui);
+            return filteredPrefix
+                ? objects.listExclude(repo.id, reference.id, path, after, filteredPrefix, config.pre_sign_support_ui)
+                : objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui);
         }
         // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1001,7 +1006,7 @@ const TreeContainer = ({
 
     // Merge changes with objects for highlighting
     const mergedResults = React.useMemo(
-        () => mergeResults(results, changesData, showChangesOnly),
+        () => mergeResults(results, changesData, showChangesOnly, filteredPrefix),
         [results, changesData, showChangesOnly],
     );
 
