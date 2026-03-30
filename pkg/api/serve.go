@@ -72,8 +72,8 @@ func Serve(
 		Secure:   cfg.GetBaseConfig().TLS.Enabled, // Only set Secure flag when TLS is enabled
 		SameSite: http.SameSiteLaxMode,            // Lax allows OAuth callback redirects
 	}
-	oidcConfig := OIDCConfig(cfg.AuthConfig().GetBaseAuthConfig().OIDC)
-	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().GetBaseAuthConfig().CookieAuthVerification)
+	oidcConfig := auth.OIDCConfig(cfg.AuthConfig().GetBaseAuthConfig().OIDC)
+	cookieAuthConfig := auth.CookieAuthConfig(cfg.AuthConfig().GetBaseAuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
