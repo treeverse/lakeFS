@@ -875,7 +875,16 @@ class Objects {
         return await response.json();
     }
 
-    async listExclude(repoId, ref, tree, after = '', excludePrefix, presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = '/') {
+    async listExclude(
+        repoId,
+        ref,
+        tree,
+        after = '',
+        excludePrefix,
+        presign = false,
+        amount = DEFAULT_LISTING_AMOUNT,
+        delimiter = '/',
+    ) {
         const { results, pagination } = await this.list(repoId, ref, tree, after, presign, amount, delimiter);
 
         const filtered = results.filter((entry) => !entry.path.startsWith(excludePrefix));

@@ -408,13 +408,9 @@ describe('mergeResults', () => {
         });
 
         it('excludes removed entries matching the prefix from missing items', () => {
-            const results: Entry[] = [
-                { path: 'z.txt', path_type: 'object' },
-            ];
+            const results: Entry[] = [{ path: 'z.txt', path_type: 'object' }];
             const changesData: ChangesData = {
-                results: [
-                    { path: '_lakefs_tables/', type: 'removed', path_type: 'common_prefix' },
-                ],
+                results: [{ path: '_lakefs_tables/', type: 'removed', path_type: 'common_prefix' }],
             };
 
             const merged = mergeResults(results, changesData, false, '_lakefs_tables/');
@@ -424,13 +420,9 @@ describe('mergeResults', () => {
         });
 
         it('does not exclude changes when excludePrefix is empty', () => {
-            const results: Entry[] = [
-                { path: '_lakefs_tables/', path_type: 'common_prefix' },
-            ];
+            const results: Entry[] = [{ path: '_lakefs_tables/', path_type: 'common_prefix' }];
             const changesData: ChangesData = {
-                results: [
-                    { path: '_lakefs_tables/', type: 'changed', path_type: 'common_prefix' },
-                ],
+                results: [{ path: '_lakefs_tables/', type: 'changed', path_type: 'common_prefix' }],
             };
 
             const merged = mergeResults(results, changesData, false, '');

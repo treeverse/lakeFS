@@ -1007,7 +1007,7 @@ const TreeContainer = ({
     // Merge changes with objects for highlighting
     const mergedResults = React.useMemo(
         () => mergeResults(results, changesData, showChangesOnly, filteredPrefix),
-        [results, changesData, showChangesOnly],
+        [results, changesData, showChangesOnly, filteredPrefix],
     );
 
     const initialState = {
