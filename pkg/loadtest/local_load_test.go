@@ -8,11 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
-	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
-	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -43,7 +38,7 @@ func TestLocalLoad(t *testing.T) {
 	ctx := t.Context()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 
-	cfg := &configfactory.ConfigImpl{}
+	cfg := &config.ConfigImpl{}
 	baseCfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 
@@ -69,7 +64,7 @@ func TestLocalLoad(t *testing.T) {
 		Config:            cfg,
 		KVStore:           kvStore,
 		PathProvider:      upload.DefaultPathProvider,
-		ConflictResolvers: catalogfactory.BuildConflictResolvers(cfg, blockAdapter),
+		ConflictResolvers: nil,
 	})
 	testutil.MustDo(t, "build catalog", err)
 
@@ -92,10 +87,7 @@ func TestLocalLoad(t *testing.T) {
 	})
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
-	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
-	testutil.Must(t, err)
-	icebergSyncer := apifactory.NewIcebergSyncController(cfg)
+	loginTokenProvider := authentication.UnimplementedLoginTokenProvider{}
 	handler := api.Serve(
 		cfg,
 		c,
@@ -107,15 +99,12 @@ func TestLocalLoad(t *testing.T) {
 		migrator,
 		&stats.NullCollector{},
 		actionsService,
-		catalog.NewNoopExtendedOperations(),
 		auditChecker,
 		logging.ContextUnavailable(),
 		nil,
 		nil,
 		upload.DefaultPathProvider,
 		&stats.NopUsageReporter{},
-		licenseManager,
-		icebergSyncer,
 		loginTokenProvider,
 	)
 

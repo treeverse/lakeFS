@@ -12,9 +12,8 @@ import (
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/block"
+	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -29,7 +28,7 @@ func newConfigFromFile(fn string) (config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := configfactory.BuildConfig("")
+	cfg, err := config.BuildConfig("")
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +38,7 @@ func newConfigFromFile(fn string) (config.Config, error) {
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	cfg := &configfactory.ConfigImpl{}
+	cfg := &config.ConfigImpl{}
 	baseCfg, err := config.NewConfig("", cfg)
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
@@ -131,7 +130,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, c)
+		adapter, err := blockfactory.BuildBlockAdapterWithMetrics(ctx, nil, c)
 		testutil.Must(t, err)
 		metricsAdapter, ok := adapter.(*block.MetricsAdapter)
 		if !ok {
@@ -146,7 +145,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		testutil.Must(t, err)
 
-		_, err = blockfactory.BuildBlockAdapter(ctx, nil, c)
+		_, err = blockfactory.BuildBlockAdapterWithMetrics(ctx, nil, c)
 		var errProfileNotExists awsconfig.SharedConfigProfileNotExistError
 		if !errors.As(err, &errProfileNotExists) {
 			t.Fatalf("expected a config.SharedConfigProfileNotExistError, got '%v'", err)
@@ -156,7 +155,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("gs block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, c)
+		adapter, err := blockfactory.BuildBlockAdapterWithMetrics(ctx, nil, c)
 		testutil.Must(t, err)
 
 		metricsAdapter, ok := adapter.(*block.MetricsAdapter)

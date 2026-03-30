@@ -14,10 +14,6 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
-	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -119,7 +115,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	viper.Set("committed.sstable.memory.cache_size_bytes", 2*1024*1024)
 
 	collector := &memCollector{}
-	cfg := &configfactory.ConfigImpl{}
+	cfg := &config.ConfigImpl{}
 	baseCfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 	cfg.Committed.LocalCache.Dir = path.Join(t.TempDir(), "cache")
@@ -172,11 +168,8 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 
 	authenticationService := authentication.NewDummyService()
-	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
 	logger := logging.FromContext(ctx)
-	loginTokenProvider, err := authenticationfactory.NewLoginTokenProvider(ctx, cfg, logger, kvStore)
-	testutil.Must(t, err)
-	icebergSyncer := apifactory.NewIcebergSyncController(cfg)
+	loginTokenProvider := authentication.UnimplementedLoginTokenProvider{}
 	handler := api.Serve(
 		cfg,
 		c,
@@ -188,20 +181,17 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		migrator,
 		collector,
 		actionsService,
-		catalog.NewNoopExtendedOperations(),
 		auditChecker,
 		logger,
 		nil,
 		nil,
 		upload.DefaultPathProvider,
 		&stats.NopUsageReporter{},
-		licenseManager,
-		icebergSyncer,
 		loginTokenProvider,
 	)
 
 	// register additional API services
-	err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+	err = api.RegisterServices(ctx, api.ServiceDependencies{
 		Config:                cfg,
 		Authenticator:         authenticator,
 		AuthService:           authService,
@@ -209,7 +199,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		BlockAdapter:          c.BlockAdapter,
 		Collector:             collector,
 		Logger:                logger,
-		LicenseManager:        licenseManager,
 	}, handler)
 	testutil.MustDo(t, "register module api factory", err)
 

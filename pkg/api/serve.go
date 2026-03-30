@@ -21,8 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/icebergsync"
-	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -46,15 +44,12 @@ func Serve(
 	migrator Migrator,
 	collector stats.Collector,
 	actions actionsHandler,
-	catalogExtendedOps catalog.ExtendedOperations,
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	gatewayDomains []string,
 	snippets []params.CodeSnippet,
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
-	licenseManager license.Manager,
-	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
 ) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
@@ -99,14 +94,11 @@ func Serve(
 		migrator,
 		collector,
 		actions,
-		catalogExtendedOps,
 		auditChecker,
 		logger,
 		sessionStore,
 		pathProvider,
 		usageReporter,
-		licenseManager,
-		icebergSyncer,
 		loginTokenProvider,
 	)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
