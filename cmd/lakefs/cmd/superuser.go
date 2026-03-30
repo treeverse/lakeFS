@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
+	authfactory "github.com/treeverse/lakefs/pkg/auth/factory"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -71,11 +71,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		addToAdmins := !authUIConfig.IsAuthBasic()
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
-		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
-		if err != nil {
-			fmt.Printf("Failed to initialize auth service: %s\n", err)
-			os.Exit(1)
-		}
+		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{

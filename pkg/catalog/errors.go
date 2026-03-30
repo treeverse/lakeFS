@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
@@ -17,6 +18,8 @@ var (
 	// ErrItClosed is used to determine the reason for the end of the walk
 	ErrItClosed = errors.New("iterator closed")
 
-	ErrNotImplemented     = errors.New("functionality not implemented")
+	// ErrNotImplemented is an alias for apiutil.ErrNotImplemented to ensure errors.Is checks
+	// match across packages that return this error.
+	ErrNotImplemented     = apiutil.ErrNotImplemented
 	ErrNonEmptyRepository = errors.New("non empty repository")
 )
