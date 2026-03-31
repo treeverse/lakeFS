@@ -112,7 +112,7 @@ const BranchChangesList = ({
     if (compareReference.id === reference.id) {
         return (
             <Alert variant="warning">
-                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
+                <Alert.Heading>There’s nothing to compare.</Alert.Heading>
                 You’ll need to use two different sources to get a valid comparison.
             </Alert>
         );
