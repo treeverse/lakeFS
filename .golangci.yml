@@ -50,6 +50,7 @@ linters:
       - std-error-handling
     paths:
       - pkg/metastore/hive/gen-go
+      - webui/node_modules
       - third_party$
       - builtin$
       - examples$
@@ -61,6 +62,7 @@ formatters:
     generated: lax
     paths:
       - pkg/metastore/hive/gen-go
+      - webui/node_modules
       - third_party$
       - builtin$
       - examples$
