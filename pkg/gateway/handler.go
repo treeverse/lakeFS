@@ -63,7 +63,7 @@ type ServerContext struct {
 	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool, middleware func(http.Handler) http.Handler) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -117,10 +117,6 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 		isAdvancedAuth)
 
 	h = loggingMiddleware(h)
-
-	if middleware != nil {
-		h = middleware(h)
-	}
 
 	h = EnrichWithOperation(sc,
 		MetricsMiddleware(

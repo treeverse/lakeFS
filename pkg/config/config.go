@@ -427,7 +427,6 @@ type Config interface {
 	UIConfig() UIConfig
 	Validate() error
 	GetVersionContext() string
-	CapabilitiesConfig() CapabilitiesConfig
 }
 
 type StorageConfig interface {
@@ -451,9 +450,6 @@ type UIConfig interface {
 	GetCustomViewers() []apiparams.CustomViewer
 }
 
-type CapabilitiesConfig interface {
-	GetAsyncOps() bool
-}
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
@@ -840,10 +836,3 @@ func (u *UI) GetCustomViewers() []apiparams.CustomViewer {
 	return nil
 }
 
-func (c *BaseConfig) GetAsyncOps() bool {
-	return false
-}
-
-func (c *BaseConfig) CapabilitiesConfig() CapabilitiesConfig {
-	return c
-}
