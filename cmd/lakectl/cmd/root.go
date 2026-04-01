@@ -674,7 +674,7 @@ func checkServerIsEnterprise(ctx context.Context, client *apigen.ClientWithRespo
 		// Network or auth error — don't warn, the command will fail on its own
 		return false
 	}
-	if resp.HTTPResponse.StatusCode != http.StatusOK {
+	if resp.JSON200 == nil || resp.JSON200.Token == "" {
 		return false
 	}
 	fmt.Fprintln(w, "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server.")

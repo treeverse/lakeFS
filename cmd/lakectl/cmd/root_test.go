@@ -279,12 +279,25 @@ func TestCheckServerEnterprise(t *testing.T) {
 	tests := []struct {
 		name         string
 		statusCode   int
+		body         string
 		warnExpected bool
 	}{
 		{
-			name:         "enterprise server returns 200",
+			name:         "enterprise server returns 200 with license",
 			statusCode:   http.StatusOK,
+			body:         `{"token":"some-jwt-token"}`,
 			warnExpected: true,
+		},
+		{
+			name:         "200 with empty token",
+			statusCode:   http.StatusOK,
+			body:         `{"token":""}`,
+			warnExpected: false,
+		},
+		{
+			name:         "200 with empty body",
+			statusCode:   http.StatusOK,
+			warnExpected: false,
 		},
 		{
 			name:         "other error returns 404",
@@ -300,7 +313,13 @@ func TestCheckServerEnterprise(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.body != "" {
+					w.Header().Set("Content-Type", "application/json")
+				}
 				w.WriteHeader(tt.statusCode)
+				if tt.body != "" {
+					_, _ = w.Write([]byte(tt.body))
+				}
 			}))
 			defer server.Close()
 
