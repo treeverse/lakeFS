@@ -5921,7 +5921,7 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 
 func (c *Controller) getCapabilitiesConfig() *apigen.CapabilitiesConfig {
 	return &apigen.CapabilitiesConfig{
-		AsyncOps: swag.Bool(c.Config.CapabilitiesConfig().GetAsyncOps()),
+		AsyncOps: swag.Bool(false),
 	}
 }
 
