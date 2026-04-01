@@ -27,7 +27,7 @@ var branchProtectListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		u := MustParseRepoURI("repository URI", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -53,7 +53,7 @@ var branchProtectAddCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(branchProtectAddCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		u := MustParseRepoURI("repository URI", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 
@@ -80,7 +80,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(branchProtectDeleteCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		u := MustParseRepoURI("repository URI", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

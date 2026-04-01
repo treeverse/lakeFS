@@ -33,7 +33,7 @@ var findMergeBaseCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		sourceRef := MustParseRefURI("source ref URI", args[0])
 		destinationRef := MustParseRefURI("destination ref URI", args[1])
 		fmt.Println("Source:", sourceRef)

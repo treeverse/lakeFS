@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -150,6 +151,8 @@ var (
 
 	// verboseMode is set to true when the user requests verbose output
 	verboseMode = false
+
+	checkEnterpriseOnce sync.Once
 )
 
 const (
@@ -449,7 +452,7 @@ It can be extended with plugins; see 'lakectl plugin --help' for more informatio
 
 		// get lakeFS server version
 
-		client := getClient()
+		client := getCommandClient(cmd)
 
 		resp, err := client.GetConfigWithResponse(cmd.Context())
 		if err != nil {
@@ -659,6 +662,41 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
 	}
 	return client
+}
+
+// checkServerIsEnterprise calls GET /license to determine if the connected server
+// is an Enterprise server. Returns true if Enterprise, false otherwise.
+// Writes a warning to w if the server is Enterprise.
+// Network/auth errors are ignored — the command will fail on its own.
+func checkServerIsEnterprise(ctx context.Context, client *apigen.ClientWithResponses, w io.Writer) bool {
+	resp, err := client.GetLicenseWithResponse(ctx)
+	if err != nil {
+		// Network or auth error — don't warn, the command will fail on its own
+		return false
+	}
+	if resp.HTTPResponse.StatusCode != http.StatusOK {
+		return false
+	}
+	fmt.Fprintln(w, "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server.")
+	return true
+}
+
+// getCommandClient creates an API client and checks once whether the server is an OSS server.
+func getCommandClient(cmd *cobra.Command, opts ...apigen.ClientOption) *apigen.ClientWithResponses {
+	client := getClient(opts...)
+	maybeWarnOnEnterpriseServer(cmd.Context(), client)
+	return client
+}
+
+// maybeWarnOnEnterpriseServer checks once whether the server is an OSS server and prints a warning if so.
+// Set LAKECTL_SKIP_ENTERPRISE_CHECK=1 to disable the check.
+func maybeWarnOnEnterpriseServer(ctx context.Context, client *apigen.ClientWithResponses) {
+	if os.Getenv("LAKECTL_SKIP_ENTERPRISE_CHECK") == "1" {
+		return
+	}
+	checkEnterpriseOnce.Do(func() {
+		checkServerIsEnterprise(ctx, client, os.Stderr)
+	})
 }
 
 func CreateTokenCacheCallback() awsiam.TokenCacheCallback {

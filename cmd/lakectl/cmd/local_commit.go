@@ -84,7 +84,7 @@ var localCommitCmd = &cobra.Command{
 	Short: "Commit changes from local directory to the lakeFS branch it tracks.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		_, localPath := getSyncArgs(args, false, false)
 		message, kvPairs := getCommitFlags(cmd)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))

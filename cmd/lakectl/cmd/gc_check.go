@@ -28,7 +28,7 @@ var gcCheckCommitsCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository URI", args[0])
-		client := getClient()
+		client := getCommandClient(cmd)
 		id := Must(cmd.Flags().GetString("id"))
 		resp, err := client.PrepareGarbageCollectionCommitsStatusWithResponse(cmd.Context(), u.Repository, &apigen.PrepareGarbageCollectionCommitsStatusParams{Id: id})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

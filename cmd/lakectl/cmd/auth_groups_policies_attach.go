@@ -13,7 +13,7 @@ var authGroupsPoliciesAttach = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		policy := Must(cmd.Flags().GetString("policy"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		resp, err := clt.AttachPolicyToGroupWithResponse(cmd.Context(), id, policy)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)

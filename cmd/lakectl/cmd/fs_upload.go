@@ -24,7 +24,7 @@ var fsUploadCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		pathURI, _ := getSyncArgs(args, true, false)
 		syncFlags := getSyncFlags(cmd, client, pathURI.Repository)
 		source := Must(cmd.Flags().GetString("source"))

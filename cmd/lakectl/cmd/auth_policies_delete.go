@@ -12,7 +12,7 @@ var authPoliciesDelete = &cobra.Command{
 	Short: "Delete a policy",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

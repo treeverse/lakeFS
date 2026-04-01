@@ -37,7 +37,7 @@ var importCmd = &cobra.Command{
 		message, metadata := getCommitFlags(cmd)
 
 		ctx := cmd.Context()
-		client := getClient()
+		client := getCommandClient(cmd)
 		verifySourceMatchConfiguredStorage(ctx, client, toURI.Repository, from)
 
 		// verify target branch exists before we try to create and import into the associated imported branch

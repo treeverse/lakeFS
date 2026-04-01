@@ -35,7 +35,7 @@ var fsUpdateUserMetadataCmd = &cobra.Command{
 			},
 		}
 
-		client := getClient()
+		client := getCommandClient(cmd)
 
 		ctx := cmd.Context()
 		resp, err := client.UpdateObjectUserMetadata(

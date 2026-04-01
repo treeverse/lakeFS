@@ -13,7 +13,7 @@ var authUsersCredentialsDelete = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		accessKeyID := Must(cmd.Flags().GetString("access-key-id"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())

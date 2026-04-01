@@ -23,7 +23,7 @@ var refsDumpCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		repoURI := MustParseRepoURI("repository URI", args[0])
-		client := getClient()
+		client := getCommandClient(cmd)
 		output := Must(cmd.Flags().GetString("output"))
 		pollInterval := Must(cmd.Flags().GetDuration("poll-interval"))
 		if pollInterval < minimumPollInterval {

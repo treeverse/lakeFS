@@ -20,7 +20,7 @@ var branchResetCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		clt := getClient()
+		clt := getCommandClient(cmd)
 		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
 		prefix, err := cmd.Flags().GetString("prefix")

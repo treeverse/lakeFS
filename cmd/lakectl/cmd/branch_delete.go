@@ -19,7 +19,7 @@ var branchDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Delete branch aborted", 1)
 		}
-		client := getClient()
+		client := getCommandClient(cmd)
 		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref, &apigen.DeleteBranchParams{})

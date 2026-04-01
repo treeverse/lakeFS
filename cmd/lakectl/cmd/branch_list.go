@@ -17,7 +17,7 @@ var branchListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		prefix, after, amount := getPaginationFlags(cmd)
 		u := MustParseRepoURI("repository URI", args[0])
-		client := getClient()
+		client := getCommandClient(cmd)
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &apigen.ListBranchesParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),

@@ -14,7 +14,7 @@ var authUsersAWSIAMDetach = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		principalID := Must(cmd.Flags().GetString("principal-id"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())

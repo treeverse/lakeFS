@@ -24,7 +24,7 @@ var repoCreateCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(repoCreateCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		clt := getClient()
+		clt := getCommandClient(cmd)
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
 

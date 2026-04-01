@@ -25,7 +25,7 @@ var tagCreateCmd = &cobra.Command{
 		tagURI := MustParseRefURI("tag URI", args[0])
 		commitURI := MustParseRefURI("commit URI", args[1])
 
-		client := getClient()
+		client := getCommandClient(cmd)
 		ctx := cmd.Context()
 		force := Must(cmd.Flags().GetBool("force"))
 

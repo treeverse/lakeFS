@@ -41,7 +41,7 @@ var cherryPick = &cobra.Command{
 			parentNumber = 1
 		}
 
-		clt := getClient()
+		clt := getCommandClient(cmd)
 		resp, err := clt.CherryPickWithResponse(cmd.Context(), branch.Repository, branch.Ref, apigen.CherryPickJSONRequestBody{
 			Ref:          ref.Ref,
 			ParentNumber: &parentNumber,

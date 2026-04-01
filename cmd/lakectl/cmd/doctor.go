@@ -132,6 +132,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 		return &WrongEndpointURIError{Message: msgOnErrWrongEndpointURI, Details: err.Error()}
 	}
 	client := getClient()
+	maybeWarnOnEnterpriseServer(ctx, client)
 	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to run a sanity command using current configuration."})
 	resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 

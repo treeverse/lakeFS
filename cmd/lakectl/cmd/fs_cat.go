@@ -17,7 +17,7 @@ var fsCatCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path URI", args[0])
-		client := getClient()
+		client := getCommandClient(cmd)
 		preSignMode := getPresignMode(cmd, client, pathURI.Repository)
 
 		var err error

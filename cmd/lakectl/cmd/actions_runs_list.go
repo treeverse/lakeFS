@@ -28,7 +28,7 @@ var actionsRunsListCmd = &cobra.Command{
 			Die("Can't specify 'commit' and 'branch'", 1)
 		}
 
-		client := getClient()
+		client := getCommandClient(cmd)
 		ctx := cmd.Context()
 
 		// list runs with optional branch filter

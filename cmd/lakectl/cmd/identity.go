@@ -19,7 +19,7 @@ var identityCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(0),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		resp, err := client.GetCurrentUserWithResponse(cmd.Context())
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

@@ -19,7 +19,7 @@ var authUsersPoliciesList = &cobra.Command{
 		after := Must(cmd.Flags().GetString("after"))
 		effective := Must(cmd.Flags().GetBool("effective"))
 
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &apigen.ListUserPoliciesParams{
 			After:     apiutil.Ptr(apigen.PaginationAfter(after)),

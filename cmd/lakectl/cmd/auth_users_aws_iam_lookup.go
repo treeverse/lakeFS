@@ -16,7 +16,7 @@ var authAWSIAMLookup = &cobra.Command{
 	Short: "Lookup IAM Role attachments",
 	Run: func(cmd *cobra.Command, args []string) {
 		principalID := Must(cmd.Flags().GetString("principal-id"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		resp, err := clt.GetExternalPrincipalWithResponse(cmd.Context(), &apigen.GetExternalPrincipalParams{
 			PrincipalId: principalID,

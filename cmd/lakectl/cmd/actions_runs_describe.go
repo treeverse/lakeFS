@@ -35,7 +35,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 		fmt.Println("Repository:", u)
 		runID := args[1]
 
-		client := getClient()
+		client := getCommandClient(cmd)
 		ctx := cmd.Context()
 
 		// run result information

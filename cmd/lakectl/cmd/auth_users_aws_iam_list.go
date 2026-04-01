@@ -14,7 +14,7 @@ var authUsersAWSIAMList = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		prefix, after, amount := getPaginationFlags(cmd)
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())

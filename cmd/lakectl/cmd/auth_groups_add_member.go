@@ -13,7 +13,7 @@ var authGroupsAddMember = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		user := Must(cmd.Flags().GetString("user"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		resp, err := clt.AddGroupMembershipWithResponse(cmd.Context(), id, user)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)

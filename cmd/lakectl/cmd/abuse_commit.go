@@ -37,7 +37,7 @@ var abuseCommitCmd = &cobra.Command{
 		})
 
 		// generate randomly selected keys as input
-		client := getClient()
+		client := getCommandClient(cmd)
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

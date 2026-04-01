@@ -17,7 +17,7 @@ The object location must be outside the repository's storage namespace`,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		pathURI := MustParsePathURI("path URI", args[0])
 		flags := cmd.Flags()
 		size, _ := flags.GetInt64("size")

@@ -27,7 +27,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 
-		client := getClient()
+		client := getCommandClient(cmd)
 
 		fmt.Println("Source ref:", u)
 		deleteGen := stress.NewGenerator("delete branch", parallelism)

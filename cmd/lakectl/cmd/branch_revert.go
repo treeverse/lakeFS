@@ -41,7 +41,7 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Revert aborted", 1)
 		}
-		clt := getClient()
+		clt := getCommandClient(cmd)
 		for i := 1; i < len(args); i++ {
 			commitRef := args[i]
 			resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, apigen.RevertBranchJSONRequestBody{

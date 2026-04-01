@@ -45,6 +45,7 @@ var abuseRandomDeletesCmd = &cobra.Command{
 			}
 		})
 
+		getCommandClient(cmd)
 		// execute the things!
 		generator.Run(func(input chan string, output chan stress.Result) {
 			ctx := cmd.Context()

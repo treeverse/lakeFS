@@ -17,7 +17,7 @@ var usageSummaryCmd = &cobra.Command{
 	Args:   cobra.NoArgs,
 	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
+		client := getCommandClient(cmd)
 		ctx := cmd.Context()
 		resp, err := client.GetUsageReportSummaryWithResponse(ctx)
 		if err != nil {

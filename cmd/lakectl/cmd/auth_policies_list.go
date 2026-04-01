@@ -15,7 +15,7 @@ var authPoliciesList = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		prefix, after, amount := getPaginationFlags(cmd)
 
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		resp, err := clt.ListPoliciesWithResponse(cmd.Context(), &apigen.ListPoliciesParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),

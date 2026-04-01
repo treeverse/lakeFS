@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -269,6 +270,51 @@ func TestPlugin(t *testing.T) {
 			if tt.expectedOutput != "" {
 				out := buf.String()
 				require.Contains(t, out, tt.expectedOutput)
+			}
+		})
+	}
+}
+
+func TestCheckServerEnterprise(t *testing.T) {
+	tests := []struct {
+		name         string
+		statusCode   int
+		warnExpected bool
+	}{
+		{
+			name:         "enterprise server returns 200",
+			statusCode:   http.StatusOK,
+			warnExpected: true,
+		},
+		{
+			name:         "other error returns 404",
+			statusCode:   http.StatusNotFound,
+			warnExpected: false,
+		},
+		{
+			name:         "OSS server returns 501",
+			statusCode:   http.StatusNotImplemented,
+			warnExpected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+			}))
+			defer server.Close()
+
+			client, err := apigen.NewClientWithResponses(server.URL)
+			require.NoError(t, err)
+
+			var buf bytes.Buffer
+			warned := checkServerIsEnterprise(t.Context(), client, &buf)
+			if tt.warnExpected {
+				assert.True(t, warned, "expected enterprise detection")
+				assert.Contains(t, buf.String(), "WARNING:")
+			} else {
+				assert.False(t, warned, "expected non-enterprise detection")
+				assert.Empty(t, buf.String())
 			}
 		})
 	}

@@ -15,7 +15,7 @@ var authUsersCredentialsList = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		prefix, after, amount := getPaginationFlags(cmd)
 		id := Must(cmd.Flags().GetString("id"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

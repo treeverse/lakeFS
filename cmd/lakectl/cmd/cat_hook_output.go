@@ -21,7 +21,7 @@ var catHookOutputCmd = &cobra.Command{
 		fmt.Println("Repository:", u)
 		runID := args[1]
 		hookRunID := args[2]
-		client := getClient()
+		client := getCommandClient(cmd)
 		ctx := cmd.Context()
 		resp, err := client.GetRunHookOutputWithResponse(ctx, u.Repository, runID, hookRunID)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

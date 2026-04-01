@@ -18,7 +18,7 @@ var showCommitCmd = &cobra.Command{
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 
 		ctx := cmd.Context()
-		client := getClient()
+		client := getCommandClient(cmd)
 		resp, err := client.GetCommitWithResponse(ctx, commitURI.Repository, commitURI.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

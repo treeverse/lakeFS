@@ -18,7 +18,7 @@ var authUsersCredentialsCreate = &cobra.Command{
 	Short: "Create user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		clt := getClient()
+		clt := getCommandClient(cmd)
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
