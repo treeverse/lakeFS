@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -673,10 +674,11 @@ func isShellCompletion(cmd *cobra.Command) bool {
 // Skipped for the config command, or when LAKECTL_SKIP_ENTERPRISE_CHECK=1 is set.
 // Errors are silently ignored — the command will fail on its own if the server is unreachable.
 func maybeWarnEnterprise(cmd *cobra.Command) {
-	if cmd == configCmd || isShellCompletion(cmd) {
+	skipCheck, _ := strconv.ParseBool(os.Getenv("LAKECTL_SKIP_ENTERPRISE_CHECK"))
+	if skipCheck {
 		return
 	}
-	if os.Getenv("LAKECTL_SKIP_ENTERPRISE_CHECK") == "1" {
+	if cmd == configCmd || isShellCompletion(cmd) {
 		return
 	}
 	client := getClient()
