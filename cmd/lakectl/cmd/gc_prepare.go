@@ -21,7 +21,7 @@ var gcPrepareCommitsCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository URI", args[0])
-		client := getCommandClient(cmd)
+		client := getClient()
 		resp, err := client.PrepareGarbageCollectionCommitsAsyncWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusAccepted)
 		id := resp.JSON202.Id

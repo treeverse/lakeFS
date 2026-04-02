@@ -17,7 +17,7 @@ var branchCreateCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseBranchURI("branch URI", args[0])
-		client := getCommandClient(cmd)
+		client := getClient()
 		sourceRawURI := Must(cmd.Flags().GetString("source"))
 		sourceURI, err := uri.ParseWithBaseURI(sourceRawURI, baseURI)
 		if err != nil {

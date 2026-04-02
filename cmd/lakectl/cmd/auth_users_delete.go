@@ -12,7 +12,7 @@ var authUsersDelete = &cobra.Command{
 	Short: "Delete a user",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.DeleteUserWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

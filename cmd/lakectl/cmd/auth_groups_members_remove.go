@@ -13,7 +13,7 @@ var authGroupsMembersRemove = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		user := Must(cmd.Flags().GetString("user"))
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.DeleteGroupMembershipWithResponse(cmd.Context(), id, user)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

@@ -15,7 +15,7 @@ var authGroupsACLSet = &cobra.Command{
 		id := Must(cmd.Flags().GetString("id"))
 		permission := Must(cmd.Flags().GetString("permission"))
 
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		acl := apigen.SetGroupACLJSONRequestBody{
 			Permission: permission,

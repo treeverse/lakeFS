@@ -17,7 +17,7 @@ var authGroupsPoliciesList = &cobra.Command{
 		id := Must(cmd.Flags().GetString("id"))
 		prefix, after, amount := getPaginationFlags(cmd)
 
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.ListGroupPoliciesWithResponse(cmd.Context(), id, &apigen.ListGroupPoliciesParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),

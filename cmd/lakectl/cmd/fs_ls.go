@@ -15,7 +15,7 @@ var fsLsCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getCommandClient(cmd)
+		client := getClient()
 		pathURI := MustParsePathURI("path URI", args[0])
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		prefix := *pathURI.Path

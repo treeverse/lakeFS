@@ -20,7 +20,7 @@ var tagListCmd = &cobra.Command{
 		u := MustParseRepoURI("repository URI", args[0])
 
 		ctx := cmd.Context()
-		client := getCommandClient(cmd)
+		client := getClient()
 		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &apigen.ListTagsParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),

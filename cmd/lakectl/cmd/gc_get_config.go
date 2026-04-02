@@ -23,7 +23,7 @@ var gcGetConfigCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository URI", args[0])
 		isJSON := Must(cmd.Flags().GetBool(jsonFlagName))
-		client := getCommandClient(cmd)
+		client := getClient()
 		resp, err := client.GetGCRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

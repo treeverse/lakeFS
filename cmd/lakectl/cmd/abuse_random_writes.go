@@ -32,7 +32,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 			}
 		})
 
-		client := getCommandClient(cmd)
+		client := getClient()
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

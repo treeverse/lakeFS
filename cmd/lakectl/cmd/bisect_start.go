@@ -21,7 +21,7 @@ var bisectStartCmd = &cobra.Command{
 		repository := goodURI.Repository
 
 		// resolve repository and references
-		client := getCommandClient(cmd)
+		client := getClient()
 		ctx := cmd.Context()
 		// check repository exists
 		repoResponse, err := client.GetRepositoryWithResponse(ctx, repository)

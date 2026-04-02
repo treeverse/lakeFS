@@ -48,7 +48,7 @@ var commitCmd = &cobra.Command{
 		fmt.Println("Branch:", branchURI)
 
 		ctx := cmd.Context()
-		client := getCommandClient(cmd)
+		client := getClient()
 
 		configResp, err := client.GetConfigWithResponse(ctx)
 		DieOnErrorOrUnexpectedStatusCode(configResp, err, http.StatusOK)

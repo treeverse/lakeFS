@@ -32,7 +32,7 @@ var fsRmCmd = &cobra.Command{
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
 		pathURI := MustParsePathURI("path URI", args[0])
-		client := getCommandClient(cmd)
+		client := getClient()
 		if !recursive {
 			// Delete a single object in the main thread
 			err := deleteObject(cmd.Context(), client, pathURI)

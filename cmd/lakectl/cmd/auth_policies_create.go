@@ -19,7 +19,7 @@ var authPoliciesCreate = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		document := Must(cmd.Flags().GetString("statement-document"))
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		var err error
 		var fp io.ReadCloser

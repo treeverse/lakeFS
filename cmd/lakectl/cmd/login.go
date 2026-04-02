@@ -136,7 +136,7 @@ var loginCmd = &cobra.Command{
 		}
 
 		httpClient := getHTTPClientWithRetryConfig(loginRetryPolicy, cfg.Server.LoginRetries)
-		client := getCommandClient(cmd, apigen.WithHTTPClient(httpClient))
+		client := getClient(apigen.WithHTTPClient(httpClient))
 		tokenRedirect, err := client.GetTokenRedirectWithResponse(cmd.Context())
 		// TODO(ariels): Change back to http.StatusSeeOther after fixing lakeFS server!
 		DieOnErrorOrUnexpectedStatusCode(tokenRedirect, err, http.StatusOK)

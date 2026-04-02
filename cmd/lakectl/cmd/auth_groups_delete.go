@@ -12,7 +12,7 @@ var authGroupsDeleteCmd = &cobra.Command{
 	Short: "Delete a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.DeleteGroupWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

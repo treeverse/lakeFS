@@ -14,7 +14,7 @@ var branchShowCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getCommandClient(cmd)
+		client := getClient()
 		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)

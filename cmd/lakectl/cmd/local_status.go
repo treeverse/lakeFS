@@ -40,7 +40,7 @@ var localStatusCmd = &cobra.Command{
 		dieOnInterruptedOperation(LocalOperation(idx.ActiveOperation), false)
 
 		remoteBase := remote.WithRef(idx.AtHead)
-		client := getCommandClient(cmd)
+		client := getClient()
 		c := localDiff(cmd.Context(), client, remoteBase, idx.LocalPath())
 
 		// compare both

@@ -24,7 +24,6 @@ const (
 
 func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
 	client := getClient()
-	maybeWarnOnEnterpriseServer(ctx, client)
 
 	// dereference first in case remote doesn't exist or not reachable
 	head := resolveCommitOrDie(ctx, client, remote.Repository, remote.Ref)

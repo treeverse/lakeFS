@@ -16,7 +16,7 @@ var authUsersList = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		prefix, after, amount := getPaginationFlags(cmd)
 
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.ListUsersWithResponse(cmd.Context(), &apigen.ListUsersParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),

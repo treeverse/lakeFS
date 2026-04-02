@@ -58,7 +58,7 @@ var authPoliciesShow = &cobra.Command{
 	Short: "Show a policy",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

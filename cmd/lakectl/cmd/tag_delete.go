@@ -17,7 +17,7 @@ var tagDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Delete tag aborted", 1)
 		}
-		client := getCommandClient(cmd)
+		client := getClient()
 		u := MustParseRefURI("tag URI", args[0])
 
 		ctx := cmd.Context()

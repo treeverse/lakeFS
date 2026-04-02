@@ -42,7 +42,7 @@ var mergeCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		message, kvPairs := getCommitFlags(cmd)
-		client := getCommandClient(cmd)
+		client := getClient()
 
 		sourceRef := MustParseBranchURI("source ref", args[0])
 		destinationRef := MustParseBranchURI("destination ref", args[1])

@@ -14,7 +14,7 @@ var authGroupsMembersList = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		prefix, after, amount := getPaginationFlags(cmd)
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.ListGroupMembersWithResponse(cmd.Context(), id, &apigen.ListGroupMembersParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),

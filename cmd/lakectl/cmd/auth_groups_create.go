@@ -17,7 +17,7 @@ var authGroupsCreateCmd = &cobra.Command{
 	Short: "Create a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.CreateGroupWithResponse(cmd.Context(), apigen.CreateGroupJSONRequestBody{
 			Id: id,

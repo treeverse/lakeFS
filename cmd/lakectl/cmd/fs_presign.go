@@ -16,7 +16,7 @@ var fsPresignCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path URI", args[0])
-		client := getCommandClient(cmd)
+		client := getClient()
 		preSignMode := getServerPreSignMode(cmd.Context(), client, pathURI.Repository)
 		if !preSignMode.Enabled {
 			Die("Pre-signed URL support is currently disabled for this lakeFS server", 1)

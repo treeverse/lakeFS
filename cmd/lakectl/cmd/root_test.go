@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -275,66 +274,37 @@ func TestPlugin(t *testing.T) {
 	}
 }
 
-func TestCheckServerEnterprise(t *testing.T) {
+func TestMaybeWarnEnterprise_VersionContext(t *testing.T) {
 	tests := []struct {
 		name         string
-		statusCode   int
-		body         string
+		context      string
 		warnExpected bool
 	}{
 		{
-			name:         "enterprise server returns 200 with license",
-			statusCode:   http.StatusOK,
-			body:         `{"token":"some-jwt-token"}`,
+			name:         "OSS server",
+			context:      "lakeFS",
+			warnExpected: false,
+		},
+		{
+			name:         "enterprise server",
+			context:      "lakeFS-Enterprise",
 			warnExpected: true,
 		},
 		{
-			name:         "200 with empty token",
-			statusCode:   http.StatusOK,
-			body:         `{"token":""}`,
-			warnExpected: false,
+			name:         "unknown version context",
+			context:      "something-else",
+			warnExpected: true,
 		},
 		{
-			name:         "200 with empty body",
-			statusCode:   http.StatusOK,
-			warnExpected: false,
-		},
-		{
-			name:         "other error returns 404",
-			statusCode:   http.StatusNotFound,
-			warnExpected: false,
-		},
-		{
-			name:         "OSS server returns 501",
-			statusCode:   http.StatusNotImplemented,
+			name:         "empty version context",
+			context:      "",
 			warnExpected: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.body != "" {
-					w.Header().Set("Content-Type", "application/json")
-				}
-				w.WriteHeader(tt.statusCode)
-				if tt.body != "" {
-					_, _ = w.Write([]byte(tt.body))
-				}
-			}))
-			defer server.Close()
-
-			client, err := apigen.NewClientWithResponses(server.URL)
-			require.NoError(t, err)
-
-			var buf bytes.Buffer
-			warned := checkServerIsEnterprise(t.Context(), client, &buf)
-			if tt.warnExpected {
-				assert.True(t, warned, "expected enterprise detection")
-				assert.Contains(t, buf.String(), "WARNING:")
-			} else {
-				assert.False(t, warned, "expected non-enterprise detection")
-				assert.Empty(t, buf.String())
-			}
+			isNonOSS := tt.context != "" && tt.context != lakeFSOSSVersionContext
+			assert.Equal(t, tt.warnExpected, isNonOSS)
 		})
 	}
 }

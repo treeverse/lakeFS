@@ -35,7 +35,7 @@ var fsDownloadCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(fsDownloadCmdMinArgs, fsDownloadCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, dest := getSyncArgs(args, true, false)
-		client := getCommandClient(cmd)
+		client := getClient()
 		syncFlags := getSyncFlags(cmd, client, remote.Repository)
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		ctx := cmd.Context()

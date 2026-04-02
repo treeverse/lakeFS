@@ -16,7 +16,7 @@ var authUsersGroupsList = &cobra.Command{
 		id := Must(cmd.Flags().GetString("id"))
 		prefix, after, amount := getPaginationFlags(cmd)
 
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &apigen.ListUserGroupsParams{
 			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),

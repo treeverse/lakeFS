@@ -56,7 +56,7 @@ var diffCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getCommandClient(cmd)
+		client := getClient()
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
 			branchURI := MustParseBranchURI("branch URI", args[0])

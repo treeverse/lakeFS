@@ -39,7 +39,7 @@ var localCheckoutCmd = &cobra.Command{
 }
 
 func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, confirmByFlag bool) {
-	client := getCommandClient(cmd)
+	client := getClient()
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

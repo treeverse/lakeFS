@@ -45,7 +45,7 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 func runLinkObject(cmd *cobra.Command, u *uri.URI, generator *stress.Generator) {
 	generator.Run(func(input chan string, output chan stress.Result) {
 		ctx := cmd.Context()
-		client := getCommandClient(cmd)
+		client := getClient()
 		for work := range input {
 			start := time.Now()
 

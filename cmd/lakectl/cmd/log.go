@@ -108,7 +108,7 @@ var logCmd = &cobra.Command{
 
 		pagination := apigen.Pagination{HasMore: true}
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
-		client := getCommandClient(cmd)
+		client := getClient()
 		refURI := MustParseRefURI("ref URI", args[0])
 		amountForPagination := amount
 		if amountForPagination <= 0 {

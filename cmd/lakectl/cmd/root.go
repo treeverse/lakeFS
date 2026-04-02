@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -151,8 +150,6 @@ var (
 
 	// verboseMode is set to true when the user requests verbose output
 	verboseMode = false
-
-	checkEnterpriseOnce sync.Once
 )
 
 const (
@@ -439,6 +436,7 @@ It can be extended with plugins; see 'lakectl plugin --help' for more informatio
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		preRunCmd(cmd)
 		sendStats(cmd, "")
+		maybeWarnEnterprise(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
@@ -452,7 +450,7 @@ It can be extended with plugins; see 'lakectl plugin --help' for more informatio
 
 		// get lakeFS server version
 
-		client := getCommandClient(cmd)
+		client := getClient()
 
 		resp, err := client.GetConfigWithResponse(cmd.Context())
 		if err != nil {
@@ -664,39 +662,27 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 	return client
 }
 
-// checkServerIsEnterprise calls GET /license to determine if the connected server
-// is an Enterprise server. Returns true if Enterprise, false otherwise.
-// Writes a warning to w if the server is Enterprise.
-// Network/auth errors are ignored — the command will fail on its own.
-func checkServerIsEnterprise(ctx context.Context, client *apigen.ClientWithResponses, w io.Writer) bool {
-	resp, err := client.GetLicenseWithResponse(ctx)
-	if err != nil {
-		// Network or auth error — don't warn, the command will fail on its own
-		return false
-	}
-	if resp.JSON200 == nil || resp.JSON200.Token == "" {
-		return false
-	}
-	fmt.Fprintln(w, "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server.")
-	return true
-}
+const lakeFSOSSVersionContext = "lakeFS"
 
-// getCommandClient creates an API client and checks once whether the server is an OSS server.
-func getCommandClient(cmd *cobra.Command, opts ...apigen.ClientOption) *apigen.ClientWithResponses {
-	client := getClient(opts...)
-	maybeWarnOnEnterpriseServer(cmd.Context(), client)
-	return client
-}
-
-// maybeWarnOnEnterpriseServer checks once whether the server is an OSS server and prints a warning if so.
-// Set LAKECTL_SKIP_ENTERPRISE_CHECK=1 to disable the check.
-func maybeWarnOnEnterpriseServer(ctx context.Context, client *apigen.ClientWithResponses) {
+// maybeWarnEnterprise calls GetConfig and warns if the server is not lakeFS OSS.
+// Skipped for the config command, or when LAKECTL_SKIP_ENTERPRISE_CHECK=1 is set.
+// Errors are silently ignored — the command will fail on its own if the server is unreachable.
+func maybeWarnEnterprise(cmd *cobra.Command) {
+	if cmd == configCmd {
+		return
+	}
 	if os.Getenv("LAKECTL_SKIP_ENTERPRISE_CHECK") == "1" {
 		return
 	}
-	checkEnterpriseOnce.Do(func() {
-		checkServerIsEnterprise(ctx, client, os.Stderr)
-	})
+	client := getClient()
+	resp, err := client.GetConfigWithResponse(cmd.Context())
+	if err != nil || resp.JSON200 == nil || resp.JSON200.VersionConfig == nil {
+		return
+	}
+	vc := swag.StringValue(resp.JSON200.VersionConfig.VersionContext)
+	if vc != "" && vc != lakeFSOSSVersionContext {
+		fmt.Fprintln(os.Stderr, "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server.")
+	}
 }
 
 func CreateTokenCacheCallback() awsiam.TokenCacheCallback {

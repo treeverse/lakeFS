@@ -56,7 +56,7 @@ Example configuration file:
 		if err != nil {
 			DieErr(err)
 		}
-		client := getCommandClient(cmd)
+		client := getClient()
 		resp, err := client.SetGCRules(cmd.Context(), u.Repository, body)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},

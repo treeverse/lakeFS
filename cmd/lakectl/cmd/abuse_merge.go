@@ -87,7 +87,7 @@ var abuseMergeCmd = &cobra.Command{
 
 		generator := stress.NewGenerator("merge", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
-		client := getCommandClient(cmd)
+		client := getClient()
 
 		// generate branch names as input
 		generator.Setup(func(add stress.GeneratorAddFn) {

@@ -13,7 +13,7 @@ var authUsersPoliciesDetach = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
 		policy := Must(cmd.Flags().GetString("policy"))
-		clt := getCommandClient(cmd)
+		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromUserWithResponse(cmd.Context(), id, policy)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
