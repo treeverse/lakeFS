@@ -664,11 +664,21 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 
 const lakeFSOSSVersionContext = "lakeFS"
 
+// isShellCompletion returns true if the command is being run as part of shell tab completion.
+func isShellCompletion(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		if c.Name() == cobra.ShellCompRequestCmd || c.Name() == cobra.ShellCompNoDescRequestCmd {
+			return true
+		}
+	}
+	return false
+}
+
 // maybeWarnEnterprise calls GetConfig and warns if the server is not lakeFS OSS.
 // Skipped for the config command, or when LAKECTL_SKIP_ENTERPRISE_CHECK=1 is set.
 // Errors are silently ignored — the command will fail on its own if the server is unreachable.
 func maybeWarnEnterprise(cmd *cobra.Command) {
-	if cmd == configCmd {
+	if cmd == configCmd || isShellCompletion(cmd) {
 		return
 	}
 	if os.Getenv("LAKECTL_SKIP_ENTERPRISE_CHECK") == "1" {
