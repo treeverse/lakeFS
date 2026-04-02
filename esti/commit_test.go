@@ -53,8 +53,8 @@ type Upload struct {
 	Repo, Branch, Path string
 }
 
-// upload uploads random file data for uploads.
-func upload(ctx context.Context, uploads chan Upload) error {
+// uploadRandomData uploads random file data for uploads.
+func uploadRandomData(ctx context.Context, uploads chan Upload) error {
 	for u := range uploads {
 		_, _, err := UploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false, nil)
 		if err != nil {
@@ -77,7 +77,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 	wg := sync.WaitGroup{}
 	for range parallelism {
 		wg.Go(func() {
-			if err := upload(ctx, uploads); err != nil {
+			if err := uploadRandomData(ctx, uploads); err != nil {
 				t.Error(err)
 			}
 		})
@@ -104,7 +104,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 	wg = sync.WaitGroup{}
 	for range parallelism {
 		wg.Go(func() {
-			if err := upload(ctx, uploads); err != nil {
+			if err := uploadRandomData(ctx, uploads); err != nil {
 				t.Error(err)
 			}
 		})
