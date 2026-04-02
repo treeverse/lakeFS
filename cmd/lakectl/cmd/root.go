@@ -666,12 +666,7 @@ const lakeFSOSSVersionContext = "lakeFS"
 
 // isShellCompletion returns true if the command is being run as part of shell tab completion.
 func isShellCompletion(cmd *cobra.Command) bool {
-	for c := cmd; c != nil; c = c.Parent() {
-		if c.Name() == cobra.ShellCompRequestCmd || c.Name() == cobra.ShellCompNoDescRequestCmd {
-			return true
-		}
-	}
-	return false
+	return cmd.Name() == cobra.ShellCompRequestCmd || cmd.Name() == cobra.ShellCompNoDescRequestCmd
 }
 
 // maybeWarnEnterprise calls GetConfig and warns if the server is not lakeFS OSS.
