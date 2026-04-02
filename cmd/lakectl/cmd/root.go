@@ -688,7 +688,7 @@ func maybeWarnEnterprise(cmd *cobra.Command) {
 	}
 	vc := swag.StringValue(resp.JSON200.VersionConfig.VersionContext)
 	if vc != "" && vc != lakeFSOSSVersionContext {
-		fmt.Fprintln(os.Stderr, "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server.")
+		_, _ = fmt.Fprintln(os.Stderr, "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server.")
 	}
 }
 
