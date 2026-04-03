@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -437,7 +438,7 @@ It can be extended with plugins; see 'lakectl plugin --help' for more informatio
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		preRunCmd(cmd)
 		sendStats(cmd, "")
-		maybeWarnEnterprise(cmd)
+		maybeWarnEnterprise(cmd, os.Stderr)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
@@ -665,15 +666,17 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 
 const lakeFSOSSVersionContext = "lakeFS"
 
+const enterpriseWarningMessage = "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server."
+
 // isShellCompletion returns true if the command is being run as part of shell tab completion.
 func isShellCompletion(cmd *cobra.Command) bool {
 	return cmd.Name() == cobra.ShellCompRequestCmd || cmd.Name() == cobra.ShellCompNoDescRequestCmd
 }
 
 // maybeWarnEnterprise calls GetConfig and warns if the server is not lakeFS OSS.
-// Skipped for the config command, or when LAKECTL_SKIP_ENTERPRISE_CHECK=1 is set.
+// Skipped for the config command, shell completion, or when LAKECTL_SKIP_ENTERPRISE_CHECK=1 is set.
 // Errors are silently ignored — the command will fail on its own if the server is unreachable.
-func maybeWarnEnterprise(cmd *cobra.Command) {
+func maybeWarnEnterprise(cmd *cobra.Command, out io.Writer) {
 	skipCheck, _ := strconv.ParseBool(os.Getenv("LAKECTL_SKIP_ENTERPRISE_CHECK"))
 	if skipCheck {
 		return
@@ -688,7 +691,7 @@ func maybeWarnEnterprise(cmd *cobra.Command) {
 	}
 	vc := swag.StringValue(resp.JSON200.VersionConfig.VersionContext)
 	if vc != "" && vc != lakeFSOSSVersionContext {
-		_, _ = fmt.Fprintln(os.Stderr, "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server.")
+		_, _ = fmt.Fprintln(out, enterpriseWarningMessage)
 	}
 }
 
