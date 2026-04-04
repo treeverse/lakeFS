@@ -25,7 +25,7 @@ jobs:
     - name: Publish to Docs Repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
       env:
-        API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+        API_TOKEN_GITHUB: ${{ secrets.TREEVERSE_CI_TOKEN }}
       with:
         source_file: clients/python-wrapper/_site/.
         destination_repo: treeverse/docs-lakefs-sdk-python-wrapper

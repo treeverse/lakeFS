@@ -16,6 +16,6 @@ jobs:
     steps:
       - name: Trigger code-int workflow
         env:
-          GH_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          GH_TOKEN: ${{ secrets.TREEVERSE_CI_TOKEN }}
         run: |
           gh workflow run code-int.yaml --repo treeverse/lakeFS-Enterprise --field ref='${{ github.ref }}'
