@@ -249,12 +249,17 @@ export const ChangesTreeContainer = ({
     changesTreeMessage,
     noChangesText = 'No changes',
     emptyStateComponent,
+    filterOutPrefix = '',
 }) => {
     // Manages expand/collapse state for all directories in the tree.
     const { isAllExpanded, expandAll, collapseAll, markDirAsManuallyToggled, wasDirManuallyToggled } =
         useExpandCollapseDirs();
 
-    if (results.length === 0) {
+    const filteredResults = filterOutPrefix
+        ? results.filter((entry) => !entry.path.startsWith(filterOutPrefix))
+        : results;
+
+    if (filteredResults.length === 0) {
         if (emptyStateComponent) {
             return emptyStateComponent;
         }
@@ -290,7 +295,7 @@ export const ChangesTreeContainer = ({
                 <Card.Body>
                     <Table borderless size="sm">
                         <tbody>
-                            {results.map((entry) => {
+                            {filteredResults.map((entry) => {
                                 return (
                                     <TreeItemRow
                                         key={entry.path + '-item'}
