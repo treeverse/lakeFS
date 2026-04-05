@@ -27,7 +27,6 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -40,9 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/icebergsync"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
@@ -127,14 +124,11 @@ type Controller struct {
 	Migrator           Migrator
 	Collector          stats.Collector
 	Actions            actionsHandler
-	catalogExtendedOps catalog.ExtendedOperations
 	AuditChecker       AuditChecker
 	Logger             logging.Logger
 	sessionStore       sessions.Store
 	PathProvider       upload.PathProvider
 	usageReporter      stats.UsageReporterOperations
-	licenseManager     license.Manager
-	icebergSyncer      icebergsync.Controller
 	loginTokenProvider authentication.LoginTokenProvider
 }
 
@@ -151,14 +145,11 @@ func NewController(
 	migrator Migrator,
 	collector stats.Collector,
 	actions actionsHandler,
-	catalogExtendedOps catalog.ExtendedOperations,
 	auditChecker AuditChecker,
 	logger logging.Logger,
 	sessionStore sessions.Store,
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
-	licenseManager license.Manager,
-	icebergSyncer icebergsync.Controller,
 	loginTokenProvider authentication.LoginTokenProvider,
 ) *Controller {
 	return &Controller{
@@ -172,14 +163,11 @@ func NewController(
 		Migrator:           migrator,
 		Collector:          collector,
 		Actions:            actions,
-		catalogExtendedOps: catalogExtendedOps,
 		AuditChecker:       auditChecker,
 		Logger:             logger,
 		sessionStore:       sessionStore,
 		PathProvider:       pathProvider,
 		usageReporter:      usageReporter,
-		licenseManager:     licenseManager,
-		icebergSyncer:      icebergSyncer,
 		loginTokenProvider: loginTokenProvider,
 	}
 }
@@ -828,7 +816,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Request, body apigen.ExternalPrincipalLoginJSONRequestBody) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	c.LogAction(ctx, "external_principal_login", r, "", "", "")
@@ -1162,7 +1150,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
-	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	condition, err := apiutil.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1534,7 +1522,7 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params apigen.ListGroupPoliciesParams) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1625,7 +1613,7 @@ func apiStatementsToModelStatements(apiStatements []apigen.Statement) model.Stat
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1647,7 +1635,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1670,7 +1658,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params apigen.ListPoliciesParams) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1709,7 +1697,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body apigen.CreatePolicyJSONRequestBody) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1748,7 +1736,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1774,7 +1762,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1802,7 +1790,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body apigen.UpdatePolicyJSONRequestBody, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -1912,7 +1900,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	if invite {
 		inviter, ok := c.Auth.(auth.EmailInviter)
 		if !ok {
-			writeError(w, r, http.StatusNotImplemented, "Not implemented")
+			writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 			return
 		}
 		err := inviter.InviteUser(ctx, *parsedEmail)
@@ -2123,7 +2111,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserPoliciesParams) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -2168,7 +2156,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -2190,7 +2178,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -3271,9 +3259,8 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
-		errors.Is(err, license.ErrNotImplemented),
 		errors.Is(err, catalog.ErrNotImplemented):
-		cb(w, r, http.StatusNotImplemented, "Not implemented")
+		cb(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		log.Info("User verification failed - insufficient permissions")
@@ -3538,87 +3525,12 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	commitResponse(w, r, newCommit)
 }
 
-func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, body apigen.CommitAsyncJSONRequestBody, repository, branch string, params apigen.CommitAsyncParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "create_commit_async", r, repository, branch, "")
-	user, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, "user not found")
-		return
-	}
-	var metadata map[string]string
-	if body.Metadata != nil {
-		metadata = body.Metadata.AdditionalProperties
-	}
-
-	taskID, err := c.catalogExtendedOps.SubmitCommit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
-		Id: taskID,
-	})
+func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, _ apigen.CommitAsyncJSONRequestBody, _, _ string, _ apigen.CommitAsyncParams) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, repository, branch, id string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "create_commit_async_status", r, repository, branch, "")
-	taskID := id
-	status, err := c.catalogExtendedOps.GetCommitStatus(ctx, repository, taskID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	resp := apigen.CommitAsyncStatus{
-		AsyncTaskStatus: apigen.AsyncTaskStatus{
-			TaskId:    status.Task.Id,
-			Completed: status.Task.Done,
-		},
-	}
-	if status.Task.UpdatedAt != nil {
-		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
-	}
-
-	if status.Task.ErrorMsg != "" {
-		resp.Error = &apigen.Error{
-			Message: status.Task.ErrorMsg,
-		}
-		resp.StatusCode = apiutil.Ptr(status.Task.StatusCode)
-	}
-
-	if status.Info != nil {
-		resp.Result = &apigen.Commit{
-			Id:           status.Info.Id,
-			Parents:      status.Info.Parents,
-			Committer:    status.Info.Committer,
-			Message:      status.Info.Message,
-			CreationDate: status.Info.CreationDate.AsTime().Unix(),
-			MetaRangeId:  status.Info.MetaRangeId,
-			Metadata: &apigen.Commit_Metadata{
-				AdditionalProperties: status.Info.Metadata,
-			},
-			Generation: apiutil.Ptr(int64(status.Info.Generation)),
-			Version:    apiutil.Ptr(int(status.Info.Version)),
-		}
-	}
-
-	writeResponse(w, r, http.StatusOK, resp)
+func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, _, _, _ string) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
 func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
@@ -3785,7 +3697,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	var setOpts []graveler.SetOptionsFunc
 	// Handle preconditions
-	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	condition, err := apiutil.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4038,7 +3950,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	// Handle preconditions
-	opts, err := apifactory.BuildOptsFromParams(body)
+	opts, err := apiutil.BuildOptsFromParams(body)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5572,87 +5484,12 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	})
 }
 
-func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request, body apigen.MergeIntoBranchAsyncJSONRequestBody, repository, sourceRef, destinationBranch string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.BranchArn(repository, destinationBranch),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "merge_branches_async", r, repository, destinationBranch, sourceRef)
-	user, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, "user not found")
-		return
-	}
-	metadata := map[string]string{}
-	if body.Metadata != nil {
-		metadata = body.Metadata.AdditionalProperties
-	}
-
-	taskID, err := c.catalogExtendedOps.SubmitMergeIntoBranch(ctx,
-		repository, destinationBranch, sourceRef,
-		user.Committer(),
-		swag.StringValue(body.Message),
-		metadata,
-		swag.StringValue(body.Strategy),
-		graveler.WithForce(swag.BoolValue(body.Force)),
-		graveler.WithAllowEmpty(swag.BoolValue(body.AllowEmpty)),
-		graveler.WithSquashMerge(swag.BoolValue(body.SquashMerge)),
-	)
-
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusAccepted, apigen.TaskCreation{
-		Id: taskID,
-	})
+func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request, _ apigen.MergeIntoBranchAsyncJSONRequestBody, _, _, _ string) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, repository, sourceRef, destinationBranch, id string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.BranchArn(repository, destinationBranch),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "merge_branches_async_status", r, repository, destinationBranch, sourceRef)
-	taskID := id
-	status, err := c.catalogExtendedOps.GetMergeIntoBranchStatus(ctx, repository, taskID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	resp := apigen.MergeAsyncStatus{
-		AsyncTaskStatus: apigen.AsyncTaskStatus{
-			TaskId:    status.Task.Id,
-			Completed: status.Task.Done,
-		},
-	}
-	if status.Task.UpdatedAt != nil {
-		resp.UpdateTime = status.Task.UpdatedAt.AsTime()
-	}
-
-	if status.Task.ErrorMsg != "" {
-		resp.Error = &apigen.Error{
-			Message: status.Task.ErrorMsg,
-		}
-		resp.StatusCode = apiutil.Ptr(status.Task.StatusCode)
-	}
-
-	if status.Info != nil {
-		resp.Result = &apigen.MergeResult{
-			Reference: status.Info.Reference,
-		}
-	}
-
-	writeResponse(w, r, http.StatusOK, resp)
+func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, _, _, _, _ string) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
@@ -6084,7 +5921,7 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 
 func (c *Controller) getCapabilitiesConfig() *apigen.CapabilitiesConfig {
 	return &apigen.CapabilitiesConfig{
-		AsyncOps: swag.Bool(c.Config.CapabilitiesConfig().GetAsyncOps()),
+		AsyncOps: swag.Bool(false),
 	}
 }
 
@@ -6635,7 +6472,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, _ apigen.CreateUserExternalPrincipalJSONRequestBody, userID string, params apigen.CreateUserExternalPrincipalParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -6659,7 +6496,7 @@ func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.
 func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID string, params apigen.DeleteUserExternalPrincipalParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -6681,7 +6518,7 @@ func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.
 func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, params apigen.GetExternalPrincipalParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -6708,7 +6545,7 @@ func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request
 func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 		return
 	}
 	if !c.authorize(w, r, permissions.Node{
@@ -6756,47 +6593,17 @@ func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
 }
 
 func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	c.LogAction(ctx, "get_license", r, "", "", "")
-
-	_, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
-	token, err := c.licenseManager.GetToken()
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusOK, apigen.License{Token: token})
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }
 
-func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PullIcebergTableJSONRequestBody, catalogID string) {
-	ctx := r.Context()
-	_, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
-
-	c.LogAction(ctx, "pull_iceberg_table", r, "", "", "")
-
-	c.icebergSyncer.Pull(w, r, body, catalogID)
+func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, _ apigen.PullIcebergTableJSONRequestBody, _ string) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, body apigen.PushIcebergTableJSONRequestBody, catalogID string) {
-	ctx := r.Context()
-	_, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
-
-	c.LogAction(ctx, "push_iceberg_table", r, "", "", "")
-
-	c.icebergSyncer.Push(w, r, body, catalogID)
+func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, _ apigen.PushIcebergTableJSONRequestBody, _ string) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }

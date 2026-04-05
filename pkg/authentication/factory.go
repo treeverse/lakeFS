@@ -1,4 +1,4 @@
-package factory
+package authentication
 
 import (
 	"context"
@@ -6,21 +6,20 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func NewAuthenticationService(_ context.Context, c config.Config, logger logging.Logger) (authentication.Service, error) {
+func NewAuthenticationService(_ context.Context, c config.Config, logger logging.Logger) (Service, error) {
 	baseAuthCfg := c.AuthConfig().GetBaseAuthConfig()
 	if baseAuthCfg.IsAuthenticationTypeAPI() {
-		return authentication.NewAPIService(
+		return NewAPIService(
 			baseAuthCfg.AuthenticationAPI.Endpoint,
 			baseAuthCfg.CookieAuthVerification.ValidateIDTokenClaims,
 			logger.WithField("service", "authentication_api"),
 			baseAuthCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
 	}
-	return authentication.NewDummyService(), nil
+	return NewDummyService(), nil
 }
 
 func BuildAuthenticatorChain(c config.Config, logger logging.Logger, authService auth.Service) (auth.ChainAuthenticator, error) {
