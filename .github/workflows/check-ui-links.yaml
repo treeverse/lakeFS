@@ -30,7 +30,7 @@ jobs:
         with:
           repository: treeverse/docs-lakeFS
           fetch-depth: 1
-          token: ${{ secrets.PERSONAL_TOKEN }}
+          token: ${{ secrets.TREEVERSE_CI_TOKEN }}
           path: docs/docs-repo
 
       - name: Configure Git
@@ -42,7 +42,7 @@ jobs:
       - name: Build latest
         working-directory: docs/docs-repo
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TREEVERSE_CI_TOKEN }}
         run: |
           mike deploy --config-file ../mkdocs.yml --branch main dev --update-aliases latest
 
