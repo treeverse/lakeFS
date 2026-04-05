@@ -3,7 +3,7 @@ name: Weekly PR Summary
 on:
   schedule:
     - cron: '0 8 * * 0'  # Every Sunday at 08:00 UTC
-  workflow_dispatch:       # Manual trigger
+  workflow_dispatch:
 
 jobs:
   pr-summary:
