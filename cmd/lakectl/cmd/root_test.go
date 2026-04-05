@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/go-openapi/swag"
@@ -16,6 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -270,6 +272,107 @@ func TestPlugin(t *testing.T) {
 				out := buf.String()
 				require.Contains(t, out, tt.expectedOutput)
 			}
+		})
+	}
+}
+
+func TestMaybeWarnEnterprise(t *testing.T) {
+	tests := []struct {
+		name           string
+		cmd            *cobra.Command
+		envValue       string
+		serverResponse string
+		statusCode     int
+		wantWarn       bool
+	}{
+		{
+			name:           "OSS server",
+			cmd:            &cobra.Command{Use: "fs"},
+			serverResponse: `{"version_config":{"version_context":"lakeFS"}}`,
+			statusCode:     http.StatusOK,
+			wantWarn:       false,
+		},
+		{
+			name:           "enterprise server",
+			cmd:            &cobra.Command{Use: "fs"},
+			serverResponse: `{"version_config":{"version_context":"lakeFS-Enterprise"}}`,
+			statusCode:     http.StatusOK,
+			wantWarn:       true,
+		},
+		{
+			name:           "unknown version context",
+			cmd:            &cobra.Command{Use: "fs"},
+			serverResponse: `{"version_config":{"version_context":"something-else"}}`,
+			statusCode:     http.StatusOK,
+			wantWarn:       true,
+		},
+		{
+			name:           "empty version context",
+			cmd:            &cobra.Command{Use: "fs"},
+			serverResponse: `{"version_config":{"version_context":""}}`,
+			statusCode:     http.StatusOK,
+			wantWarn:       false,
+		},
+		{
+			name:           "skipped by env",
+			cmd:            &cobra.Command{Use: "fs"},
+			envValue:       "true",
+			serverResponse: `{"version_config":{"version_context":"lakeFS-Enterprise"}}`,
+			statusCode:     http.StatusOK,
+			wantWarn:       false,
+		},
+		{
+			name:           "skipped for config command",
+			cmd:            configCmd,
+			serverResponse: `{"version_config":{"version_context":"lakeFS-Enterprise"}}`,
+			statusCode:     http.StatusOK,
+			wantWarn:       false,
+		},
+		{
+			name:           "skipped for shell completion",
+			cmd:            &cobra.Command{Use: cobra.ShellCompRequestCmd},
+			serverResponse: `{"version_config":{"version_context":"lakeFS-Enterprise"}}`,
+			statusCode:     http.StatusOK,
+			wantWarn:       false,
+		},
+		{
+			name:           "ignored fetch error",
+			cmd:            &cobra.Command{Use: "fs"},
+			serverResponse: `not json`,
+			statusCode:     http.StatusInternalServerError,
+			wantWarn:       false,
+		},
+	}
+
+	originalCfg := cfg
+	cfg = &Configuration{}
+	defer func() { cfg = originalCfg }()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("LAKECTL_SKIP_ENTERPRISE_CHECK", tt.envValue)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/v1/config" {
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				_, _ = io.WriteString(w, tt.serverResponse)
+			}))
+			defer server.Close()
+			cfg.Server.EndpointURL = lakefsconfig.OnlyString(server.URL)
+
+			var buf bytes.Buffer
+			tt.cmd.SetContext(t.Context())
+
+			maybeWarnEnterprise(tt.cmd, &buf)
+
+			if tt.wantWarn {
+				require.Contains(t, buf.String(), enterpriseWarningMessage)
+				return
+			}
+			require.Empty(t, strings.TrimSpace(buf.String()))
 		})
 	}
 }
