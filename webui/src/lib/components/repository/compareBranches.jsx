@@ -10,7 +10,7 @@ import { URINavigator } from './tree';
 import CompareBranchesActionsBar from './compareBranchesActionBar';
 import { DiffActionType, DiffContext } from '../../hooks/diffContext';
 
-const CompareBranches = ({ repo, reference, compareReference, showActionsBar, prefix = '', baseSelectURL }) => {
+const CompareBranches = ({ repo, reference, compareReference, showActionsBar, prefix = '', baseSelectURL, suppressDiffContext = false }) => {
     const { dispatch } = useContext(DiffContext);
 
     const [internalRefresh, setInternalRefresh] = useState(true);
@@ -45,6 +45,7 @@ const CompareBranches = ({ repo, reference, compareReference, showActionsBar, pr
     const apiResult = { results, loading, error, nextPage };
 
     useEffect(() => {
+        if (suppressDiffContext) return;
         // dispatch for dependent components
         dispatch({
             type: DiffActionType.setResults,
@@ -52,7 +53,7 @@ const CompareBranches = ({ repo, reference, compareReference, showActionsBar, pr
         });
         // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [results, loading, error, nextPage]);
+    }, [results, loading, error, nextPage, suppressDiffContext]);
 
     const isEmptyDiff = !loading && !error && !!results && results.length === 0;
 
