@@ -1,0 +1,34 @@
+name: Weekly PR Summary
+
+on:
+  schedule:
+    - cron: '0 10 * * 0'  # Every Sunday at 10:00 UTC
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  pr-summary:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Generate PR summary
+        id: summary
+        run: ./scripts/pr-summary.sh --last 7 --format slack
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Send to Slack
+        uses: slackapi/slack-github-action@v3
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "channel": "dev-channel",
+              "text": "${{ steps.summary.outputs.report }}"
+            }
