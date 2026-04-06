@@ -1322,7 +1322,7 @@ Reset uncommitted changes - all of them, or by path
 
 <h4>Synopsis</h4>
 
-reset changes.  There are four different ways to reset changes:
+reset changes.  There are three different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
   2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
