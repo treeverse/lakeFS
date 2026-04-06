@@ -1,10 +1,9 @@
-package factory
+package auth
 
 import (
 	"context"
 	"errors"
 
-	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -27,7 +26,7 @@ func checkAuthModeSupport(authCfg config.AuthConfig) error {
 	return nil
 }
 
-func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
+func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *KVMetadataManager) Service {
 	authCfg := cfg.AuthConfig()
 	baseAuthCfg := authCfg.GetBaseAuthConfig()
 	authUICfg := authCfg.GetAuthUIConfig()
@@ -37,7 +36,7 @@ func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logge
 
 	secretStore := crypt.NewSecretStore([]byte(baseAuthCfg.Encrypt.SecretKey))
 	if authUICfg.IsAuthBasic() {
-		apiService := auth.NewBasicAuthService(
+		apiService := NewBasicAuthService(
 			kvStore,
 			secretStore,
 			authparams.ServiceCache(baseAuthCfg.Cache),
@@ -51,7 +50,7 @@ func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logge
 		if initialized {
 			username, err := apiService.Migrate(ctx)
 			switch {
-			case errors.Is(err, auth.ErrMigrationNotPossible):
+			case errors.Is(err, ErrMigrationNotPossible):
 				logger.WithError(err).Fatal(`
 cannot migrate existing user to basic auth mode!
 Please run "lakefs superuser -h" and follow the instructions on how to migrate an existing user
@@ -64,11 +63,11 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 				logger.WithError(err).Fatal("basic auth migration failed")
 			}
 		}
-		return auth.NewMonitoredAuthService(apiService)
+		return NewMonitoredAuthService(apiService)
 	}
 
 	// Not Basic - using auth server
-	apiService, err := auth.NewAPIAuthService(
+	apiService, err := NewAPIAuthService(
 		baseAuthCfg.API.Endpoint,
 		baseAuthCfg.API.Token.SecureValue(),
 		authUICfg.IsAdvancedAuth(),
@@ -85,5 +84,5 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 			logger.WithError(err).Fatal("Auth API health check failed")
 		}
 	}
-	return auth.NewMonitoredAuthServiceAndInviter(apiService)
+	return NewMonitoredAuthServiceAndInviter(apiService)
 }

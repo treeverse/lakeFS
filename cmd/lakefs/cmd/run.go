@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	authfactory "github.com/treeverse/lakefs/pkg/auth/factory"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
@@ -105,7 +104,7 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, installationID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		authService := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 
 		authenticationService, err := authentication.NewAuthenticationService(ctx, cfg, logger)
 		if err != nil {

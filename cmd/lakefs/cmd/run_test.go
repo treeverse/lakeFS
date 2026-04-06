@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/auth"
-	authfactory "github.com/treeverse/lakefs/pkg/auth/factory"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -17,7 +16,7 @@ func TestGetAuthService(t *testing.T) {
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACInternal
 		cfg.Auth.GetBaseAuthConfig().API.Endpoint = "http://localhost:8000"
 		cfg.Auth.GetBaseAuthConfig().API.SkipHealthCheck = true
-		service := authfactory.NewAuthService(t.Context(), cfg, logging.ContextUnavailable(), nil, nil)
+		service := auth.NewAuthService(t.Context(), cfg, logging.ContextUnavailable(), nil, nil)
 		_, ok := service.(auth.EmailInviter)
 		if !ok {
 			t.Fatalf("expected Service to be of type EmailInviter")
@@ -28,7 +27,7 @@ func TestGetAuthService(t *testing.T) {
 		kvStore := kvtest.GetStore(t.Context(), t)
 		meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACNone
-		service := authfactory.NewAuthService(t.Context(), cfg, logging.ContextUnavailable(), kvStore, meta)
+		service := auth.NewAuthService(t.Context(), cfg, logging.ContextUnavailable(), kvStore, meta)
 		_, ok := service.(auth.EmailInviter)
 		if ok {
 			t.Fatalf("expected Service to not be of type EmailInviter")
