@@ -190,17 +190,8 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		loginTokenProvider,
 	)
 
-	// register additional API services
-	err = api.RegisterServices(ctx, api.ServiceDependencies{
-		Config:                cfg,
-		Authenticator:         authenticator,
-		AuthService:           authService,
-		AuthenticationService: authenticationService,
-		BlockAdapter:          c.BlockAdapter,
-		Collector:             collector,
-		Logger:                logger,
-	}, handler)
-	testutil.MustDo(t, "register module api factory", err)
+	// register placeholder routes for services not available in OSS
+	api.MountNotImplementedServices(handler)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

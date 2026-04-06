@@ -303,19 +303,8 @@ var runCmd = &cobra.Command{
 
 		actionsService.SetEndpoint(server)
 
-		// register additional API services
-		err = api.RegisterServices(ctx, api.ServiceDependencies{
-			Config:                cfg,
-			Authenticator:         middlewareAuthenticator,
-			AuthService:           authService,
-			AuthenticationService: authenticationService,
-			BlockAdapter:          blockStore,
-			Collector:             bufferedCollector,
-			Logger:                logger,
-		}, apiHandler)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to register services on router")
-		}
+		// register placeholder routes for services not available in OSS
+		api.MountNotImplementedServices(apiHandler)
 
 		go func() {
 			var err error

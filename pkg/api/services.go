@@ -1,35 +1,17 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/authentication"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/stats"
 )
 
-type ServiceDependencies struct {
-	Config                config.Config
-	AuthService           auth.Service
-	Authenticator         auth.Authenticator
-	AuthenticationService authentication.Service
-	BlockAdapter          block.Adapter
-	Collector             stats.Collector
-	Logger                logging.Logger
-}
-
-func RegisterServices(ctx context.Context, sd ServiceDependencies, router *chi.Mux) error {
-	// Additional API routes we like to serve and report as not implemented
+// MountNotImplementedServices registers placeholder routes that return HTTP 501 for
+// services not available in the open-source build.
+func MountNotImplementedServices(router *chi.Mux) {
 	router.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 	router.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 	router.Mount("/mds/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
-
-	return nil
 }
 
 // NotImplementedIcebergCatalogHandler returns HTTP 501 Not Implemented status for Iceberg REST Catalog endpoints.

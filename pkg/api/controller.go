@@ -3259,7 +3259,7 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
-		errors.Is(err, catalog.ErrNotImplemented):
+		errors.Is(err, apiutil.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
