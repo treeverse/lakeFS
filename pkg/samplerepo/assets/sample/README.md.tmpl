@@ -50,7 +50,7 @@ Follow the prompts to enter your credentials that you created when you first set
 1. When you download [lakeFS from the GitHub repository](https://github.com/treeverse/lakeFS/releases) the distribution includes the `lakectl` tool. 
 
     Add this to your `$PATH`, or when invoking it reference it from the downloaded folder
-2. [Configure](https://docs.lakefs.io/reference/cli.html#configuring-credentials-and-api-endpoint) `lakectl` by running
+2. [Configure](https://community.lakefs.io/reference/cli.html#configuring-credentials-and-api-endpoint) `lakectl` by running
 
     ```bash
     lakectl config
@@ -156,7 +156,7 @@ created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8
 
 ## Transforming the Data
 
-_Now we'll make a change to the data. lakeFS has several native clients, as well as an [S3-compatible endpoint](https://docs.lakefs.io/understand/architecture.html#s3-gateway). This means that anything that can use S3 will work with lakeFS. Pretty neat._
+_Now we'll make a change to the data. lakeFS has several native clients, as well as an [S3-compatible endpoint](https://community.lakefs.io/understand/architecture.html#s3-gateway). This means that anything that can use S3 will work with lakeFS. Pretty neat._
 
 We're going to use DuckDB which is embedded within the web interface of lakeFS.
 
@@ -444,7 +444,7 @@ Back in the object page and the DuckDB query we can see that the original file i
 <a name="actions-and-hooks"></a>
 # Actions and Hooks in lakeFS 🪝
 
-When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](https://docs.lakefs.io/howto/hooks/) can be of benefit here.
+When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](https://community.lakefs.io/howto/hooks/) can be of benefit here.
 
 We're going to enforce a rule that when a commit is made to any branch that begins with `etl`: 
 
@@ -625,11 +625,11 @@ Here are some more resources to help you find out more about lakeFS.
 
 ## Connecting lakeFS to your own object storage
 
-Enjoyed the quickstart and want to try out lakeFS against your own data? The documentation explains [how to run lakeFS locally as a Docker container locally connecting to an object store](https://docs.lakefs.io/quickstart/learning-more-lakefs.html#connecting-lakefs-to-your-own-object-storage).
+Enjoyed the quickstart and want to try out lakeFS against your own data? The documentation explains [how to run lakeFS locally as a Docker container locally connecting to an object store](https://community.lakefs.io/quickstart/learning-more-lakefs.html#connecting-lakefs-to-your-own-object-storage).
 
 ## Deploying lakeFS
 
-Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](https://docs.lakefs.io/deploy/onprem.html) (including on [Kubernetes](https://docs.lakefs.io/deploy/onprem.html#k8s)) or on [AWS](https://docs.lakefs.io/deploy/aws.html), [Azure](https://docs.lakefs.io/deploy/azure.html), or [GCP](https://docs.lakefs.io/deploy/gcp.html).
+Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](https://community.lakefs.io/deploy/onprem.html) (including on [Kubernetes](https://community.lakefs.io/deploy/onprem.html#k8s)) or on [AWS](https://community.lakefs.io/deploy/aws.html), [Azure](https://community.lakefs.io/deploy/azure.html), or [GCP](https://community.lakefs.io/deploy/gcp.html).
 
 Alternatively you might want to have a look at [lakeFS Cloud](https://lakefs.cloud/) which provides a fully-managed, SOC-2 compliant, lakeFS service.
 
@@ -653,7 +653,7 @@ lakeFS' community is important to us. Our **guiding principles** are.
 
 We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#announcements-and-more`. Or just lurk and soak up the vibes 😎
 
-If you're interested in getting involved in lakeFS' development head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](https://docs.lakefs.io/contributing.html) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help.
+If you're interested in getting involved in lakeFS' development head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](https://community.lakefs.io/contributing.html) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help.
 
 We love speaking at meetups and chatting to community members at them - you can find a list of these [here](https://lakefs.io/community/).
 
@@ -661,4 +661,4 @@ Finally, make sure to drop by to say hi on [Twitter](https://twitter.com/lakeFS)
 
 ## lakeFS Concepts and Internals
 
-We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts](https://docs.lakefs.io/understand/model.html) and [architecture](https://docs.lakefs.io/understand/architecture.html) guides, as well as the explanation of [how merges are handled](https://docs.lakefs.io/understand/how/merge.html). To go deeper you might be interested in [the internals of versioning](https://docs.lakefs.io/understand/how/versioning-internals.html) and our [internal database structure](https://docs.lakefs.io/understand/how/kv.html).
+We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts](https://community.lakefs.io/understand/model.html) and [architecture](https://community.lakefs.io/understand/architecture.html) guides, as well as the explanation of [how merges are handled](https://community.lakefs.io/understand/how/merge.html). To go deeper you might be interested in [the internals of versioning](https://community.lakefs.io/understand/how/versioning-internals.html) and our [internal database structure](https://community.lakefs.io/understand/how/kv.html).

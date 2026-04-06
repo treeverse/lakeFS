@@ -20,15 +20,15 @@ This integration uses two MATLAB helper classes:
 Before using lakeFS with MATLAB, ensure you have:
 
 1. **lakeFS Server**: Running instance (local or cloud)
-   - [Quick Start Guide](https://docs.lakefs.io/latest/quickstart/)
+   - [Quick Start Guide](https://community.lakefs.io/latest/quickstart/)
    - [Cloud Setup](https://lakefs.cloud)
 
 2. **lakectl CLI**: Installed and configured
-   - [lakectl Installation](https://docs.lakefs.io/latest/reference/cli/)
+   - [lakectl Installation](https://community.lakefs.io/latest/reference/cli/)
    - Configuration file at `~/.lakectl.yaml`
 
 3. **Everest** (optional, for mounting): File system interface
-   - [Everest Documentation](https://docs.lakefs.io/latest/reference/mount/)
+   - [Everest Documentation](https://community.lakefs.io/latest/reference/mount/)
    - Install: `brew install treeverse/brew/everest` (macOS)
 
 4. **MATLAB**: Version R2023a or later recommended
@@ -536,9 +536,9 @@ lakefs.upload('repo', 'branch', '/data/file.mat', 'local.mat');
 
 ## Additional Resources
 
-- [lakeFS Documentation](https://docs.lakefs.io/)
-- [lakectl CLI Reference](https://docs.lakefs.io/latest/reference/cli/)
-- [Everest Mount Reference](https://docs.lakefs.io/latest/reference/mount/)
+- [lakeFS Documentation](https://community.lakefs.io/)
+- [lakectl CLI Reference](https://community.lakefs.io/latest/reference/cli/)
+- [Everest Mount Reference](https://community.lakefs.io/latest/reference/mount/)
 - [lakeFS Samples Repository](https://github.com/treeverse/lakeFS-samples)
 - [lakeFS Community Slack](https://lakefs.io/slack)
 

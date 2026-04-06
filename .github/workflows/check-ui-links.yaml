@@ -28,7 +28,7 @@ jobs:
       - name: Checkout the documentation repository
         uses: actions/checkout@v6
         with:
-          repository: treeverse/docs-lakeFS
+          repository: treeverse/docs-lakeFS-community
           fetch-depth: 1
           token: ${{ secrets.TREEVERSE_CI_TOKEN }}
           path: docs/docs-repo
@@ -57,7 +57,7 @@ jobs:
           find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
             cut -d'"' -f2 | \
             grep -v -e "^/" -e "^#" | \
-            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/docs-repo/" > /tmp/links_to_check.txt
+            sed "s/https:\/\/community.lakefs.io/file:\/\/$escaped_pwd\/docs\/docs-repo/" > /tmp/links_to_check.txt
 
       - name: Check links
         id: lychee

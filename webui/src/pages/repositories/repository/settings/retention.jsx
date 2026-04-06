@@ -158,7 +158,7 @@ const GCPolicy = ({ repo }) => {
             </div>
             <p className="mt-3">
                 This policy determines for how long objects are kept in the storage after they are deleted in lakeFS.{' '}
-                <a href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank" rel="noreferrer">
+                <a href="https://community.lakefs.io/howto/garbage-collection/" target="_blank" rel="noreferrer">
                     Learn more.
                 </a>
             </p>

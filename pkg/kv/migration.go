@@ -57,7 +57,7 @@ func ValidateSchemaVersion(ctx context.Context, store Store) (int, error) {
 	case kvVersion >= NextSchemaVersion:
 		return kvVersion, fmt.Errorf("incompatible schema version. Latest: %d: %w", NextSchemaVersion-1, ErrMigrationVersion)
 	case kvVersion < InitialMigrateVersion:
-		return kvVersion, fmt.Errorf("migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration: %w", ErrMigrationVersion)
+		return kvVersion, fmt.Errorf("migration to KV required. Did you migrate using version v0.80.x? https://community.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration: %w", ErrMigrationVersion)
 	case kvVersion < ACLMigrateVersion,
 		kvVersion < ACLNoReposMigrateVersion:
 		return kvVersion, fmt.Errorf("migration to ACL required. Please run 'lakefs migrate up': %w", ErrMigrationRequired)

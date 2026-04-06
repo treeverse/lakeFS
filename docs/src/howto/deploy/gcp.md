@@ -99,7 +99,7 @@ If you already have a database, take note of the connection string and skip to t
     1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
 
     !!! note
-        The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
+        The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://community.lakefs.io/reference/configuration.html) but without sensitive information.
         Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
 
     1. In the directory where you created `conf-values.yaml`, run the following commands:

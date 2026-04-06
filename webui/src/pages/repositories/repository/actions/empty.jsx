@@ -70,7 +70,7 @@ export const EmptyActionsState = () => {
 
                     <div className="d-flex flex-column flex-sm-row  gap-2 mt-4">
                         <Button
-                            href="https://docs.lakefs.io/latest/howto/hooks/"
+                            href="https://community.lakefs.io/latest/howto/hooks/"
                             target="_blank"
                             rel="noopener noreferrer"
                             variant="success"
@@ -81,7 +81,7 @@ export const EmptyActionsState = () => {
                             Learn How to Configure Actions
                         </Button>
                         <Button
-                            href="https://docs.lakefs.io/latest/understand/use_cases/cicd_for_data/"
+                            href="https://community.lakefs.io/latest/understand/use_cases/cicd_for_data/"
                             target="_blank"
                             rel="noopener noreferrer"
                             variant="outline-secondary"

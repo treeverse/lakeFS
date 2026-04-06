@@ -909,4 +909,4 @@ If you encounter issues during migration:
 2. **Image Pull Errors**: Ensure your DockerHub token has access to the lakeFS Enterprise image
 3. **Ingress Issues**: Confirm that your ingress is pointing directly to lakeFS (not Fluffy)
 
-For additional support, consult the [lakeFS documentation](https://docs.lakefs.io) or contact lakeFS support.
+For additional support, consult the [lakeFS documentation](https://community.lakefs.io) or contact lakeFS support.

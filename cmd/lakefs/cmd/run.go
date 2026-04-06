@@ -496,12 +496,12 @@ lakeFS {{ .Version }} - Up and running (^C to shutdown)...
 {{ .SetupMessage }}
 │
 │ For more information on how to use lakeFS,
-│     check out the docs at https://docs.lakefs.io/quickstart/
+│     check out the docs at https://community.lakefs.io/quickstart/
 │
 
 │
 │ For support or any other question,                            >(.＿.)<
-│     join our Slack channel https://docs.lakefs.io/slack         (  )_
+│     join our Slack channel https://community.lakefs.io/slack         (  )_
 │
 
 `

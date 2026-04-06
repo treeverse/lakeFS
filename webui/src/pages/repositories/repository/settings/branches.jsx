@@ -99,7 +99,7 @@ const SettingsContainer = () => {
                 <div>
                     Define branch protection rules to prevent direct changes.&nbsp; Changes to protected branches can
                     only be done by merging from other branches.&nbsp;
-                    <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">
+                    <a href="https://community.lakefs.io/reference/protected_branches.html" target="_blank">
                         Learn more.
                     </a>
                 </div>

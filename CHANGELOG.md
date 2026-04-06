@@ -644,7 +644,7 @@ The legacy Java client has been discontinued as of this release. Its development
 **Note:**
 PLEASE READ CAREFULLY BEFORE UPGRADING TO THIS VERSION!!!
 This version removes the built-in ACLs functionality, and might require some users to take action.
-Refer to [documentation](https://docs.lakefs.io/security/access-control-lists.html) for more information.
+Refer to [documentation](https://community.lakefs.io/security/access-control-lists.html) for more information.
 
 :new: What's new:
 - ACLs: Remove server usage (#8126)
@@ -1071,7 +1071,7 @@ This is a huge milestone for the lakeFS maintainers, contributors and community 
 1.0 is more than just a cosmetic change - it includes a few important benefits and guarantees to anyone running or using lakeFS:
 
 * lakeFS 1.x ensures both [backwards]() and [forwards]() compatibility with any future 1.x release, as per [Semver](https://semver.org/).
-* Not just the [lakeFS Open API](https://docs.lakefs.io/reference/api.html): This is also true for the [new lakeFS Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk), the [Java SDK](https://central.sonatype.com/artifact/io.lakefs/sdk?smo=true) and the [lakectl CLI](https://docs.lakefs.io/reference/cli.html) tool.
+* Not just the [lakeFS Open API](https://community.lakefs.io/reference/api.html): This is also true for the [new lakeFS Python SDK](https://community.lakefs.io/integrations/python.html#using-the-lakefs-sdk), the [Java SDK](https://central.sonatype.com/artifact/io.lakefs/sdk?smo=true) and the [lakectl CLI](https://community.lakefs.io/reference/cli.html) tool.
 * Bug fixes will be released for lakeFS 1.x even after the release of future major version, and at least until October 2024
 * Security fixes will be released (and if needed, backported) even after the release of future major version, and at least until June 2025(!).
 * While lakeFS is already trusted in production in hundreds of organizations around the world, 1.x ensures a stable API going forward and it is highly recommended for all lakeFS users.
@@ -1084,7 +1084,7 @@ for users of slightly older 0.x lakeFS versions, here are a few highlights from 
 - `lakectl local` - Allows syncing a local directory with remote data in lakeFS, including full Git integration ([read announcement](https://lakefs.io/blog/scalable-data-version-control-getting-the-best-of-both-worlds-with-lakefs/))
 - **iceberg catalog** - Making it possible to branch, commit and merge multiple Iceberg tables together and in tandem with other formats ([read announcement](https://lakefs.io/blog/using-lakefs-with-apache-iceberg/))
 - **lua based hooks** - Run your own custom logic when commits, merges and other events occur. No need to host a webhook server or deploy anything! ([read announcement](https://lakefs.io/blog/introducing-lua-hooks/))
-- **enhanced security with pre-signed URLs** - Allows lakeFS to version data it cannot even read! This enhanced security by leveraging pre-signed URLs supported on all common object stores, to allow lakeFS to authorize access to data without having to proxy that data through the lakeFS server ([read more](https://docs.lakefs.io/reference/security/presigned-url.html))
+- **enhanced security with pre-signed URLs** - Allows lakeFS to version data it cannot even read! This enhanced security by leveraging pre-signed URLs supported on all common object stores, to allow lakeFS to authorize access to data without having to proxy that data through the lakeFS server ([read more](https://community.lakefs.io/reference/security/presigned-url.html))
 - **[Many many](https://github.com/treeverse/lakeFS/pulls?q=is%3Apr+is%3Aclosed) bug fixes and performance improvements across the board** 
 
 ### Notes on upgrading from lakeFS 0.x
@@ -1093,9 +1093,9 @@ While most of the API hasn't changed much, there are a few notable API changes b
 
 The migration path is usually pretty simple and not many code changes are required - but *please read through the list of breaking changes*:
 
-[lakeFS 1.0 - Code Migration Guide](https://docs.lakefs.io/project/code-migrate-1.0-sdk.html)
+[lakeFS 1.0 - Code Migration Guide](https://community.lakefs.io/project/code-migrate-1.0-sdk.html)
 
-For more information on the benefits of upgrading to 1.0 and the migration path, please refer to the [lakeFS documentation](https://docs.lakefs.io/understand/towards-1.0-sdk.html) or [reach out on Slack](https://lakefs.io/slack).
+For more information on the benefits of upgrading to 1.0 and the migration path, please refer to the [lakeFS documentation](https://community.lakefs.io/understand/towards-1.0-sdk.html) or [reach out on Slack](https://lakefs.io/slack).
 
 :bug: Bugs fixed:
 
@@ -1388,7 +1388,7 @@ Before running the new version you will be required to run migrate, with the new
 This release requires running database migration.
 The lakeFS service will not run if the migration version isn't compatible with the binary.
 Before running the new version you will be required to run migrate, with the new version.
-Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
+Please refer to this [upgrade documentation](https://community.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
 
 :new: What's new:
 - Lua optional net http request (#5679)
@@ -1408,7 +1408,7 @@ Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/ac
 This release requires running database migration.
 The lakeFS service will not run if the migration version isn't compatible with the binary.
 Before running the new version you will be required to run migrate, with the new version.
-Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
+Please refer to this [upgrade documentation](https://community.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
 
 
 :new: What's new:
@@ -1720,7 +1720,7 @@ you can skip this version.
 This release requires running database migration.
 The lakeFS service will not run if the migration version isn't compatible with the binary.
 Before running the new version you will be required to run migrate, with the new version.
-Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
+Please refer to this [upgrade documentation](https://community.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
 
 Bug fix:
 - Fix multiparts KV migration for null content-type (#4343)
@@ -1781,13 +1781,13 @@ What's new:
 This release requires running database migration.
 The lakeFS service will not run if the migration version isn't compatible with the binary.
 Before running the new version you will be required to run migrate, with the new version. 
-Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
+Please refer to this [upgrade documentation](https://community.lakefs.io/reference/upgrade.html##lakefs-0800-or-greater-kv-migration) for more information on the specific migration to KV
 
 This is the first lakeFS version over Key-Value Store
 lakeFS is decoupling from PostgreSQL and moving to a KV Store interface. 
 This will provide greater flexibility and allow production groups working with lakeFS to select their backing DB of choice.  
-Check our updated [Deploy lakeFS](https://docs.lakefs.io/deploy/#deploy-lakefs) page, for deployment instructions.
-Also make sure to check our [Sizing Guide](https://docs.lakefs.io/understand/sizing-guide.html#lakefs-kv-store) for best practices, requirements and benchmarks
+Check our updated [Deploy lakeFS](https://community.lakefs.io/deploy/#deploy-lakefs) page, for deployment instructions.
+Also make sure to check our [Sizing Guide](https://community.lakefs.io/understand/sizing-guide.html#lakefs-kv-store) for best practices, requirements and benchmarks
 
 ## v0.70.6 - 2022-08-30
 - UI: fix focus on branch lookup while creating tag (#4005)
@@ -2100,7 +2100,7 @@ Bug fixes:
 ## v0.49.0 - 2021-09-02
 
 - Add search locations to load lakeFS configuration. More information on
-  https://docs.lakefs.io/reference/configuration (#2355)
+  https://community.lakefs.io/reference/configuration (#2355)
 - Fix ARNs parsing confusion when the account-ID field contained a slash or
   the resource-ID a colon.  Configurations (incorrectly) using a slash "`/`"
   to separate account from resource in the ARN will need to switch to use a
@@ -2214,7 +2214,7 @@ $ lakefs migrate up
 
 ## v0.41.0 - 2021-05-12
 
-2e2e005a ingest cmd [Importing data from an object store without actually copying it](https://docs.lakefs.io/reference/import.html#importing-data-from-an-object-store-without-actually-copying-it) (#1864)
+2e2e005a ingest cmd [Importing data from an object store without actually copying it](https://community.lakefs.io/reference/import.html#importing-data-from-an-object-store-without-actually-copying-it) (#1864)
 851f02a4 Don't upload chunks smaller than 8192 bytes while streaming (#1885)
 1a81228f Fix multipart upload failure in Azure (#1896)
 9ebab7a7 Fix broken Clipboard copy button (#1904)
@@ -2298,7 +2298,7 @@ lakefs.branches.list_branches(repository='my-repo')  # Or any other API action
 
 This client is officially supported and distributed by the lakeFS team, and will be released in conjunction with lakeFS releases, so it should always align in capabilities with the latest lakeFS versions.
 
-For more information, see the [Python Client Documentation](https://docs.lakefs.io/using/python.html).
+For more information, see the [Python Client Documentation](https://community.lakefs.io/using/python.html).
 
 ### Native Spark client, allowing to export a commit (or set of commits) to another object store ✨
 
@@ -2306,7 +2306,7 @@ Using Apache Spark, lakeFS users can now quickly export the contents of a branch
 
 This is the first feature released based on lakeFS' Spark integration (soon to be followed by data retention for stale objects), and a native `lakefs://` filesystem support for Spark).
 
-For more information, see the [Export Job configuration Documentation](https://docs.lakefs.io/reference/export.html).
+For more information, see the [Export Job configuration Documentation](https://community.lakefs.io/reference/export.html).
 
 ### lakeFS standardized URIs ✨
 
@@ -2328,7 +2328,7 @@ $ lakectl diff my-branch main
 $ lakectl fs ls mybranch/path/
 ```
 
-For more information, see the [CLI Command Reference Documentation](https://docs.lakefs.io/reference/commands.html).
+For more information, see the [CLI Command Reference Documentation](https://community.lakefs.io/reference/commands.html).
 
 
 ### Complete UI Overhaul
@@ -2361,7 +2361,7 @@ Making it faster, more responsive and contains many improvements to pagination, 
 - `[API Gateway]` List repository actions should not check branch existence 🐞 (#1743)
 
 
-As always, we hang around at [#help on the lakeFS Slack](https://docs.lakefs.io/slack) to assist and answer questions!
+As always, we hang around at [#help on the lakeFS Slack](https://community.lakefs.io/slack) to assist and answer questions!
 
 
 ## v0.33.1 - 2021-03-18
@@ -2438,7 +2438,7 @@ Included is a big change to lakeFS' data model, which is now much closer to Git'
 
 ### Upgrading from previous versions
 
-https://docs.lakefs.io/deploying/upgrade.html
+https://community.lakefs.io/deploying/upgrade.html
 
 
 ## v0.23.1 - 2021-01-21

@@ -86,7 +86,7 @@ export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAcces
                             </Alert>
                             <h5>lakectl</h5>
                             <div className="ms-2 mt-2">
-                                <a target="_blank" rel="noreferrer" href="https://docs.lakefs.io/reference/cli.html">
+                                <a target="_blank" rel="noreferrer" href="https://community.lakefs.io/reference/cli.html">
                                     lakectl
                                 </a>{' '}
                                 is a CLI tool for working with lakeFS.

@@ -94,7 +94,7 @@
 ## v0.7.0
 :new: What's new:
 
-- AWS role Authentication: Initiate lakeFS Python client sessions securely using your AWS Role. (#7874)  [Read more](https://docs.lakefs.io/reference/security/external-principals-aws.html#login-with-python)
+- AWS role Authentication: Initiate lakeFS Python client sessions securely using your AWS Role. (#7874)  [Read more](https://community.lakefs.io/reference/security/external-principals-aws.html#login-with-python)
  
 :bug: Bugs fixed:
 
