@@ -666,7 +666,7 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 
 const lakeFSOSSVersionContext = "lakeFS"
 
-const enterpriseWarningMessage = "WARNING: This version of lakectl is designed for the lakeFS Community (OSS) server. The connected server appears to be a lakeFS Enterprise server."
+const enterpriseWarningMessage = "WARNING: This lakectl is built for lakeFS Community (OSS), but the connected server appears to be Enterprise. Use enterprise lakectl or set LAKECTL_SKIP_ENTERPRISE_CHECK=1 to suppress."
 
 // isShellCompletion returns true if the command is being run as part of shell tab completion.
 func isShellCompletion(cmd *cobra.Command) bool {
