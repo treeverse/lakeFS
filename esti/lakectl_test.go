@@ -1268,3 +1268,146 @@ func TestLakectlTagList(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName+" --prefix="+vars_test["TAG1"]+" --amount=1", false, "lakectl_tag_list_prefix", vars_test)
 	})
 }
+
+func TestLakectlFsCp(t *testing.T) {
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	// Upload test files
+	const totalObjects = 3
+	for i := range totalObjects {
+		vars["FILE_PATH"] = fmt.Sprintf("data/file%d.txt", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+	}
+
+	t.Run("single_copy", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/copied.txt"
+		sanitizedResult := runCmd(t, Lakectl()+" fs cp lakefs://"+repoName+"/"+mainBranch+"/data/file0.txt lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		require.Contains(t, sanitizedResult, "Path: "+vars["FILE_PATH"])
+
+		// Verify the copied file exists
+		sanitizedResult = runCmd(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		require.Contains(t, sanitizedResult, "Path: "+vars["FILE_PATH"])
+	})
+
+	t.Run("single_copy_not_found", func(t *testing.T) {
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs cp lakefs://"+repoName+"/"+mainBranch+"/nonexistent.txt lakefs://"+repoName+"/"+mainBranch+"/dest.txt", false, "object not found\n404 Not Found\n", vars)
+	})
+
+	t.Run("copy_overwrites_existing", func(t *testing.T) {
+		// First create target file
+		vars["FILE_PATH"] = "data/target.txt"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+
+		// Copy over existing file (overwrites by default)
+		sanitizedResult := runCmd(t, Lakectl()+" fs cp lakefs://"+repoName+"/"+mainBranch+"/data/file0.txt lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		require.Contains(t, sanitizedResult, "Path: "+vars["FILE_PATH"])
+	})
+
+	t.Run("recursive_copy", func(t *testing.T) {
+		sanitizedResult := runCmd(t, Lakectl()+" fs cp -r --no-progress lakefs://"+repoName+"/"+mainBranch+"/data/ lakefs://"+repoName+"/"+mainBranch+"/data-copy/", false, false, vars)
+		require.Contains(t, sanitizedResult, "Copy Summary")
+		require.Contains(t, sanitizedResult, "Copied:")
+
+		// Verify copies exist
+		sanitizedResult = runCmd(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/data-copy/", false, false, vars)
+		require.Contains(t, sanitizedResult, "file0.txt")
+		require.Contains(t, sanitizedResult, "file1.txt")
+		require.Contains(t, sanitizedResult, "file2.txt")
+	})
+
+	t.Run("copy_across_branches", func(t *testing.T) {
+		// Create a new branch
+		branchVars := map[string]string{
+			"REPO":          repoName,
+			"SOURCE_BRANCH": mainBranch,
+			"DEST_BRANCH":   "feature",
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/feature --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+
+		// Copy from main to feature branch
+		vars["FILE_PATH"] = "from-main.txt"
+		sanitizedResult := runCmd(t, Lakectl()+" fs cp lakefs://"+repoName+"/"+mainBranch+"/data/file0.txt lakefs://"+repoName+"/feature/"+vars["FILE_PATH"], false, false, vars)
+		require.Contains(t, sanitizedResult, "Path: "+vars["FILE_PATH"])
+	})
+}
+
+func TestLakectlFsMv(t *testing.T) {
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	t.Run("single_move", func(t *testing.T) {
+		// Upload a file to move
+		vars["FILE_PATH"] = "to-move.txt"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+
+		// Move the file
+		destPath := "moved.txt"
+		sanitizedResult := runCmd(t, Lakectl()+" fs mv lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" lakefs://"+repoName+"/"+mainBranch+"/"+destPath, false, false, vars)
+		require.Contains(t, sanitizedResult, "Path: "+destPath)
+
+		// Verify source no longer exists
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "object not found\n404 Not Found\n", vars)
+
+		// Verify destination exists
+		sanitizedResult = runCmd(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/"+destPath, false, false, vars)
+		require.Contains(t, sanitizedResult, "Path: "+destPath)
+	})
+
+	t.Run("single_move_not_found", func(t *testing.T) {
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs mv lakefs://"+repoName+"/"+mainBranch+"/nonexistent.txt lakefs://"+repoName+"/"+mainBranch+"/dest.txt", false, "object not found\n404 Not Found\n", vars)
+	})
+
+	t.Run("recursive_move", func(t *testing.T) {
+		// Upload multiple files to move
+		const totalObjects = 3
+		for i := range totalObjects {
+			vars["FILE_PATH"] = fmt.Sprintf("move-dir/file%d.txt", i)
+			RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+		}
+
+		// Move the directory
+		sanitizedResult := runCmd(t, Lakectl()+" fs mv -r --no-progress lakefs://"+repoName+"/"+mainBranch+"/move-dir/ lakefs://"+repoName+"/"+mainBranch+"/moved-dir/", false, false, vars)
+		require.Contains(t, sanitizedResult, "Move Summary")
+		require.Contains(t, sanitizedResult, "Moved:")
+
+		// Verify source directory is empty
+		sanitizedResult = runCmd(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/move-dir/", false, false, vars)
+		require.NotContains(t, sanitizedResult, "file0.txt")
+
+		// Verify destination has all files
+		sanitizedResult = runCmd(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/moved-dir/", false, false, vars)
+		require.Contains(t, sanitizedResult, "file0.txt")
+		require.Contains(t, sanitizedResult, "file1.txt")
+		require.Contains(t, sanitizedResult, "file2.txt")
+	})
+
+	t.Run("move_overwrites_existing", func(t *testing.T) {
+		// Upload source and target files
+		vars["FILE_PATH"] = "mv-src.txt"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+
+		targetPath := "mv-target.txt"
+		vars["FILE_PATH"] = targetPath
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+targetPath, false, "lakectl_fs_upload", vars)
+
+		// Move overwrites existing file by default
+		sanitizedResult := runCmd(t, Lakectl()+" fs mv lakefs://"+repoName+"/"+mainBranch+"/mv-src.txt lakefs://"+repoName+"/"+mainBranch+"/"+targetPath, false, false, vars)
+		require.Contains(t, sanitizedResult, "Path: "+targetPath)
+
+		// Verify source no longer exists
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/mv-src.txt", false, "object not found\n404 Not Found\n", vars)
+	})
+}
