@@ -3568,12 +3568,3 @@ func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
 func (w *UncommittedWriter) Size() int64 {
 	return w.size
 }
-
-func newCatalogEntryFromValueRecord(valueRecord *graveler.ValueRecord) (*DBEntry, error) {
-	entry, err := ValueToEntry(valueRecord.Value)
-	if err != nil {
-		return nil, fmt.Errorf("decode entry: %w", err)
-	}
-	dbEntry := newCatalogEntryFromEntry(false, string(valueRecord.Key), entry)
-	return &dbEntry, nil
-}
