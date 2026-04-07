@@ -111,8 +111,6 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("failed to create authentication service")
 		}
 
-		loginTokenProvider := authentication.UnimplementedLoginTokenProvider{}
-
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
@@ -141,7 +139,6 @@ var runCmd = &cobra.Command{
 			Config:                  cfg,
 			KVStore:                 kvStore,
 			PathProvider:            upload.DefaultPathProvider,
-			ConflictResolvers:       nil,
 			ErrorToStatusCodeAndMsg: api.ErrorToStatusAndMsg,
 		}
 
@@ -234,7 +231,6 @@ var runCmd = &cobra.Command{
 			cfg.UIConfig().GetSnippets(),
 			upload.DefaultPathProvider,
 			usageReporter,
-			loginTokenProvider,
 		)
 
 		// init gateway server

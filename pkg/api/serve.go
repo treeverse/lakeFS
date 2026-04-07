@@ -50,7 +50,6 @@ func Serve(
 	snippets []params.CodeSnippet,
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
-	loginTokenProvider authentication.LoginTokenProvider,
 ) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
@@ -99,7 +98,6 @@ func Serve(
 		sessionStore,
 		pathProvider,
 		usageReporter,
-		loginTokenProvider,
 	)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 

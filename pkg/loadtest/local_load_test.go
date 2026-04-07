@@ -61,10 +61,9 @@ func TestLocalLoad(t *testing.T) {
 
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:            cfg,
-		KVStore:           kvStore,
-		PathProvider:      upload.DefaultPathProvider,
-		ConflictResolvers: nil,
+		Config:       cfg,
+		KVStore:      kvStore,
+		PathProvider: upload.DefaultPathProvider,
 	})
 	testutil.MustDo(t, "build catalog", err)
 
@@ -87,7 +86,6 @@ func TestLocalLoad(t *testing.T) {
 	})
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
-	loginTokenProvider := authentication.UnimplementedLoginTokenProvider{}
 	handler := api.Serve(
 		cfg,
 		c,
@@ -105,7 +103,6 @@ func TestLocalLoad(t *testing.T) {
 		nil,
 		upload.DefaultPathProvider,
 		&stats.NopUsageReporter{},
-		loginTokenProvider,
 	)
 
 	ts := httptest.NewServer(handler)

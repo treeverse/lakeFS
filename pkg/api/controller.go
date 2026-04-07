@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -23,7 +22,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/elnormous/contenttype"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
@@ -114,22 +112,21 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config             config.Config
-	Catalog            *catalog.Catalog
-	Authenticator      auth.Authenticator
-	Auth               auth.Service
-	Authentication     authentication.Service
-	BlockAdapter       block.Adapter
-	MetadataManager    auth.MetadataManager
-	Migrator           Migrator
-	Collector          stats.Collector
-	Actions            actionsHandler
-	AuditChecker       AuditChecker
-	Logger             logging.Logger
-	sessionStore       sessions.Store
-	PathProvider       upload.PathProvider
-	usageReporter      stats.UsageReporterOperations
-	loginTokenProvider authentication.LoginTokenProvider
+	Config          config.Config
+	Catalog         *catalog.Catalog
+	Authenticator   auth.Authenticator
+	Auth            auth.Service
+	Authentication  authentication.Service
+	BlockAdapter    block.Adapter
+	MetadataManager auth.MetadataManager
+	Migrator        Migrator
+	Collector       stats.Collector
+	Actions         actionsHandler
+	AuditChecker    AuditChecker
+	Logger          logging.Logger
+	sessionStore    sessions.Store
+	PathProvider    upload.PathProvider
+	usageReporter   stats.UsageReporterOperations
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -150,25 +147,23 @@ func NewController(
 	sessionStore sessions.Store,
 	pathProvider upload.PathProvider,
 	usageReporter stats.UsageReporterOperations,
-	loginTokenProvider authentication.LoginTokenProvider,
 ) *Controller {
 	return &Controller{
-		Config:             cfg,
-		Catalog:            catalog,
-		Authenticator:      authenticator,
-		Auth:               authService,
-		Authentication:     authenticationService,
-		BlockAdapter:       blockAdapter,
-		MetadataManager:    metadataManager,
-		Migrator:           migrator,
-		Collector:          collector,
-		Actions:            actions,
-		AuditChecker:       auditChecker,
-		Logger:             logger,
-		sessionStore:       sessionStore,
-		PathProvider:       pathProvider,
-		usageReporter:      usageReporter,
-		loginTokenProvider: loginTokenProvider,
+		Config:          cfg,
+		Catalog:         catalog,
+		Authenticator:   authenticator,
+		Auth:            authService,
+		Authentication:  authenticationService,
+		BlockAdapter:    blockAdapter,
+		MetadataManager: metadataManager,
+		Migrator:        migrator,
+		Collector:       collector,
+		Actions:         actions,
+		AuditChecker:    auditChecker,
+		Logger:          logger,
+		sessionStore:    sessionStore,
+		PathProvider:    pathProvider,
+		usageReporter:   usageReporter,
 	}
 }
 
@@ -887,126 +882,17 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 
 func (c *Controller) GetTokenRedirect(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	// Login method needs no auth!
-	redirect, err := c.loginTokenProvider.GetRedirect(ctx)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	w.Header().Set("Location", redirect.RedirectURL)
-	w.Header().Set(httputil.LoginMailboxHeaderName, redirect.Mailbox)
-
-	writeResponse(w, r, http.StatusOK, nil)
+	c.handleAPIError(ctx, w, r, authentication.ErrNotImplemented)
 }
 
 func (c *Controller) GetTokenFromMailbox(w http.ResponseWriter, r *http.Request, mailbox string) {
 	ctx := r.Context()
-	// Login method needs no auth!
-	token, expiresAt, err := c.loginTokenProvider.GetToken(ctx, mailbox)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	// This call is repeated, so only log after we've found the token is valid.
-	c.LogAction(ctx, "get_token_from_mailbox", r, "", "", "")
-
-	c.Logger.
-		WithContext(r.Context()).
-		WithFields(logging.Fields{
-			"mailbox":          mailbox,
-			"token_expiration": expiresAt,
-		}).
-		Debug("Got login token")
-
-	response := apigen.AuthenticationToken{
-		Token:           token,
-		TokenExpiration: swag.Int64(expiresAt.Unix()),
-	}
-	writeResponse(w, r, http.StatusOK, response)
+	c.handleAPIError(ctx, w, r, authentication.ErrNotImplemented)
 }
-
-var releasedTokenTemplate = template.Must(
-	template.New("released-token").
-		Parse(`{{define "releasedToken" -}}
-<!doctype html>
-<html>
-  <title>Logged in</title>
-  <body>
-  <div>You are logged in as <code>{{.Username}}</code>.  It is safe to close this window.</div>
-  </body>
-</html>
-{{- end}}`))
-
-type UserData struct {
-	Username string
-}
-
-var (
-	textHTML                         = contenttype.MediaType{Type: "text", Subtype: "html"}
-	releaseTokenAcceptableMediaTypes = []contenttype.MediaType{
-		textHTML,
-		{Type: "*", Subtype: "*"},
-	}
-)
 
 func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Request, loginRequestToken string) {
 	ctx := r.Context()
-
-	c.LogAction(ctx, "release_token_to_mailbox", r, "", "", "")
-
-	user, err := auth.GetUser(ctx)
-	if err != nil {
-		// This is typically called from a browser - send it to login, return here
-		// after.
-		c.Logger.
-			WithContext(ctx).
-			WithError(err).
-			WithField("accept", r.Header.Get("Accept")).
-			Debug("Failed to get user - redirect to login")
-
-		q := make(url.Values)
-		q.Set("next", r.URL.String())
-		q.Set("redirected", "true")
-		redirectURL := url.URL{
-			Path:     "/auth/login",
-			RawQuery: q.Encode(),
-		}
-		w.Header().Set("Location", redirectURL.String())
-		w.WriteHeader(http.StatusTemporaryRedirect)
-		return
-	}
-
-	// Release will release a token for the authenticated user.
-	err = c.loginTokenProvider.Release(ctx, loginRequestToken)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	mediaType, _, err := contenttype.GetAcceptableMediaType(r, releaseTokenAcceptableMediaTypes)
-	if err != nil {
-		c.Logger.
-			WithContext(r.Context()).
-			WithError(err).
-			WithField("accept", r.Header.Get("Accept")).
-			Warn("Failed to parse Content-Type - no user-friendly page")
-		// Keep going - errors are safe here, at worst the user will not get a pretty page.
-	}
-
-	switch {
-	case mediaType.EqualsMIME(textHTML):
-		username := user.Username
-		// This endpoint is _usually_ visited by a browser.  Report to the user that
-		// they logged in, telling them the name they used to log in.
-		httputil.KeepPrivate(w)
-		w.WriteHeader(http.StatusOK)
-
-		err = releasedTokenTemplate.ExecuteTemplate(w, "releasedToken", &UserData{Username: username})
-		if c.handleAPIError(ctx, w, r, err) {
-			return
-		}
-	default:
-		writeResponse(w, r, http.StatusNoContent, nil)
-	}
+	c.handleAPIError(ctx, w, r, authentication.ErrNotImplemented)
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {

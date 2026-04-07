@@ -169,7 +169,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	logger := logging.FromContext(ctx)
-	loginTokenProvider := authentication.UnimplementedLoginTokenProvider{}
 	handler := api.Serve(
 		cfg,
 		c,
@@ -187,7 +186,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		nil,
 		upload.DefaultPathProvider,
 		&stats.NopUsageReporter{},
-		loginTokenProvider,
 	)
 
 	// register placeholder routes for services not available in OSS
