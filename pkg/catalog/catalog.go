@@ -26,11 +26,11 @@ import (
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
-	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
+	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
@@ -149,17 +149,6 @@ type Store interface {
 	graveler.Collaborator
 }
 
-type EntryConflictResolver interface {
-	// FilterByPath returns true if the path should be considered for conflict resolution.
-	// This is an optimization to avoid decoding irrelevant entries.
-	FilterByPath(path string) bool
-
-	// ResolveConflict resolves conflicts between two DBEntry values.
-	// It returns the resolved value, or nil if the conflict cannot be resolved automatically.
-	// Assuming the source and dest have the same key (path).
-	ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, srcValue, destValue *DBEntry) (*DBEntry, error)
-}
-
 const (
 	RangeFSName     = "range"
 	MetaRangeFSName = "meta-range"
@@ -239,12 +228,10 @@ type WriteRangeRequest struct {
 }
 
 type Config struct {
-	Config                config.Config
-	KVStore               kv.Store
-	SettingsManagerOption settings.ManagerOption
-	PathProvider          *upload.PathPartitionProvider
-	// ConflictResolvers alternative conflict resolvers (if nil, the default behavior is kept)
-	ConflictResolvers       []graveler.ConflictResolver
+	Config                  config.Config
+	KVStore                 kv.Store
+	SettingsManagerOption   settings.ManagerOption
+	PathProvider            *upload.PathPartitionProvider
 	ErrorToStatusCodeAndMsg ErrorToStatusCodeAndMsg
 }
 
@@ -336,7 +323,7 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 
 func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
-	adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg.Config)
+	adapter, err := blockfactory.BuildBlockAdapterWithMetrics(ctx, nil, cfg.Config)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)
@@ -505,16 +492,10 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 		}
 	}
 
-	crs := cfg.ConflictResolvers
-	if len(crs) == 0 {
-		// set a default conflict resolver if none was provided
-		crs = []graveler.ConflictResolver{&committed.StrategyConflictResolver{}}
-	}
-
 	committedManager := committed.NewCommittedManager(
 		sstableMetaRangeManagers,
 		sstableManagers,
-		crs,
+		[]graveler.ConflictResolver{&committed.StrategyConflictResolver{}},
 		committedParams,
 	)
 	return committedManager, closers, nil
@@ -3586,65 +3567,4 @@ func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
 
 func (w *UncommittedWriter) Size() int64 {
 	return w.size
-}
-
-func newCatalogEntryFromValueRecord(valueRecord *graveler.ValueRecord) (*DBEntry, error) {
-	entry, err := ValueToEntry(valueRecord.Value)
-	if err != nil {
-		return nil, fmt.Errorf("decode entry: %w", err)
-	}
-	dbEntry := newCatalogEntryFromEntry(false, string(valueRecord.Key), entry)
-	return &dbEntry, nil
-}
-
-type ConflictResolverWrapper struct {
-	ConflictResolver EntryConflictResolver
-}
-
-func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, _ graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
-	if !cr.ConflictResolver.FilterByPath(string(srcValue.Key)) {
-		// Not a conflict the catalog should resolve
-		return nil, nil
-	}
-
-	// Decode values to entries
-	srcDBEntry, err := newCatalogEntryFromValueRecord(srcValue)
-	if err != nil {
-		return nil, err
-	}
-	destDBEntry, err := newCatalogEntryFromValueRecord(destValue)
-	if err != nil {
-		return nil, err
-	}
-
-	// Resolve conflict
-	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, sCtx, srcDBEntry, destDBEntry)
-	if err != nil {
-		return nil, err
-	}
-
-	var returnValue *graveler.ValueRecord
-	switch {
-	case resolvedDBEntry == nil:
-		// Conflict wasn't resolved - return nil
-		returnValue = nil
-	case resolvedDBEntry.Path == srcDBEntry.Path:
-		// Resolved to src entry - return src value
-		returnValue = srcValue
-	case resolvedDBEntry.Path == destDBEntry.Path:
-		// Resolved to dest entry - return dest value
-		returnValue = destValue
-	default:
-		// Resolved to a new entry - encode resolved entry to value
-		resolvedEntry := newEntryFromCatalogEntry(*resolvedDBEntry)
-		value, err := EntryToValue(resolvedEntry)
-		if err != nil {
-			return nil, fmt.Errorf("encode resolved entry: %w", err)
-		}
-		returnValue = &graveler.ValueRecord{
-			Key:   srcValue.Key, // srcValue and destValue keys are the same
-			Value: value,
-		}
-	}
-	return returnValue, nil
 }

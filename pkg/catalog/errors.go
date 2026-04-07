@@ -17,6 +17,5 @@ var (
 	// ErrItClosed is used to determine the reason for the end of the walk
 	ErrItClosed = errors.New("iterator closed")
 
-	ErrNotImplemented     = errors.New("functionality not implemented")
 	ErrNonEmptyRepository = errors.New("non empty repository")
 )

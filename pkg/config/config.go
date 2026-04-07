@@ -427,7 +427,6 @@ type Config interface {
 	UIConfig() UIConfig
 	Validate() error
 	GetVersionContext() string
-	CapabilitiesConfig() CapabilitiesConfig
 }
 
 type StorageConfig interface {
@@ -449,10 +448,6 @@ type UIConfig interface {
 	IsUIEnabled() bool
 	GetSnippets() []apiparams.CodeSnippet
 	GetCustomViewers() []apiparams.CustomViewer
-}
-
-type CapabilitiesConfig interface {
-	GetAsyncOps() bool
 }
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -838,12 +833,4 @@ func BuildCodeSnippets(s []UISnippet) []apiparams.CodeSnippet {
 
 func (u *UI) GetCustomViewers() []apiparams.CustomViewer {
 	return nil
-}
-
-func (c *BaseConfig) GetAsyncOps() bool {
-	return false
-}
-
-func (c *BaseConfig) CapabilitiesConfig() CapabilitiesConfig {
-	return c
 }
