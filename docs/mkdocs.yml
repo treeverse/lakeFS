@@ -1,5 +1,4 @@
 # MkDocs settings
-# TODO: Remove this comment - temporary change to trigger docs preview workflow
 dev_addr: 127.0.0.1:4000
 site_name: lakeFS Community Documentation
 site_url: https://community.lakefs.io/
