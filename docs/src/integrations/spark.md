@@ -62,7 +62,7 @@ interact with your data on lakeFS.
 
 !!! note "Spark 4 Compatibility"
     The lakeFS Hadoop FileSystem is compatible with Spark 4. However, starting with Spark 4, the bundled AWS SDK v1 (`aws-java-sdk-bundle`) has been removed as part of the upgrade to Hadoop 3.4.x (see [Spark 4 release notes](https://spark.apache.org/releases/spark-release-4-0-0.html)).
-    Since the lakeFS Hadoop FileSystem client depends on AWS SDK v1, you must explicitly include the [`aws-java-sdk-bundle`](https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-bundle) in your classpath when running with Spark 4.
+    Since the lakeFS Hadoop FileSystem client depends on AWS SDK v1, you must explicitly include the [`aws-java-sdk-bundle`](https://central.sonatype.com/artifact/com.amazonaws/aws-java-sdk-bundle) in your classpath when running with Spark 4.
 
 === "Spark Standalone"
     Add the package to your `spark-submit` command:
