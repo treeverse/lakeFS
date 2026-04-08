@@ -55,13 +55,13 @@ jobs:
           aws-region: us-east-1
 
       - name: Publish preview site
-        run: aws s3 sync docs/site/ s3://lakefs-docs-pr-previews/prs/pr-${{ github.event.pull_request.number }}/
+        run: aws s3 sync docs/site/ s3://lakefs-docs-pr-previews/prs/oss-pr-${{ github.event.pull_request.number }}/
 
       - name: Comment with preview URL
         uses: actions/github-script@v8
         with:
           script: |
-            const previewUrl = `https://pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;
+            const previewUrl = `https://oss-pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;
             let commentBody = `📚 Documentation preview at ${previewUrl}`;
 
             // Check if a preview comment already exists
