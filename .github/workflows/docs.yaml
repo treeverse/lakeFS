@@ -44,7 +44,7 @@ jobs:
       - name: Checkout the documentation repository
         uses: actions/checkout@v6
         with:
-          repository: treeverse/docs-lakeFS
+          repository: treeverse/docs-lakeFS-community
           fetch-depth: 1
           token: ${{ secrets.TREEVERSE_CI_TOKEN }}
           path: docs/docs-repo

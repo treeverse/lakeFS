@@ -34,7 +34,7 @@ class Reference(_BaseLakeFSObject):
         - 'main@' (head of 'main' branch, only committed objects)
         - 'my_tag~3' (3 commits before 'my_tag')
 
-        See https://docs.lakefs.io/understand/model.html#ref-expressions for
+        See https://community.lakefs.io/understand/model.html#ref-expressions for
         details.
         """
         self._repo_id = repository_id

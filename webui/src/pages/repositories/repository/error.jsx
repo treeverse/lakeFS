@@ -41,7 +41,11 @@ const BareRepositoryContainer = () => (
             backup/restore operations with <code>lakectl refs-restore</code>.
         </p>
         <p>
-            <a href="https://docs.lakefs.io/howto/backup-and-restore.html" target="_blank" rel="noopener noreferrer">
+            <a
+                href="https://community.lakefs.io/howto/backup-and-restore.html"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
                 Learn more about bare repositories.
             </a>
         </p>

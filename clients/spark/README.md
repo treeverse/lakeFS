@@ -5,7 +5,7 @@ Read metadata from lakeFS into Spark.
 ## Features
 
 1. Read Graveler meta-ranges, ranges and entries.
-1. Export data from lakeFS to any object storage (see [docs](https://docs.lakefs.io/reference/export.html)).
+1. Export data from lakeFS to any object storage (see [docs](https://community.lakefs.io/reference/export.html)).
 
 _Please note that starting version 0.9.0, Spark 2 is not supported with the lakeFS metadata client._
 

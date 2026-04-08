@@ -114,7 +114,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
             <div className="auth-learn-more">
                 Users are entities that access and use lakeFS.{' '}
                 <a
-                    href="https://docs.lakefs.io/reference/authentication.html"
+                    href="https://community.lakefs.io/reference/authentication.html"
                     target="_blank"
                     rel="noopener noreferrer"
                 >

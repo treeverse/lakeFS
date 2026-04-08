@@ -199,6 +199,6 @@ materialized form of the ui sub-object.
 - GUI
 
 
-[auth-sec-update]:  https://docs.lakefs.io/posts/security_update.html#whats-changing
+[auth-sec-update]:  https://community.lakefs.io/posts/security_update.html#whats-changing
 [http-stat-405]:  https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/405
 [http-stat-501]:  https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/501

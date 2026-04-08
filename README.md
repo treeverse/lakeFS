@@ -26,7 +26,7 @@ With lakeFS you can build repeatable, atomic, and versioned data lake operations
 
 lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, DuckDB, and Presto.
 
-For more information, see the [documentation](https://docs.lakefs.io).
+For more information, see the [documentation](https://community.lakefs.io).
 
 ## Getting Started
 
@@ -53,7 +53,7 @@ docker run --pull always \
 
 ### Quickstart
 
-**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://docs.lakefs.io/quickstart/) to jump right in!**
+**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://community.lakefs.io/quickstart/) to jump right in!**
 
 Make sure to also have a look at the [lakeFS samples](https://github.com/treeverse/lakeFS-samples). These are a rich resource of examples of end-to-end applications that you can build with lakeFS.
 
@@ -104,9 +104,9 @@ Stay up to date and get lakeFS support via:
 
 ## More information
 
-- Read the [documentation](https://docs.lakefs.io).
-- See the [contributing guide](https://docs.lakefs.io/contributing).
-- Take a look at our [roadmap](https://docs.lakefs.io/understand/roadmap.html) to peek into the future of lakeFS.
+- Read the [documentation](https://community.lakefs.io).
+- See the [contributing guide](https://community.lakefs.io/contributing).
+- Take a look at our [roadmap](https://community.lakefs.io/understand/roadmap.html) to peek into the future of lakeFS.
 
 ## Licensing
 
