@@ -4,6 +4,5 @@ mkdocs-material==9.7.1
 mkdocs-redirects==1.2.2
 mkdocs==1.6.1
 git+https://github.com/treeverse/mkdocs-render-swagger-plugin.git#egg=mkdocs-render-swagger-plugin
-pymdown-extensions==10.20.1
-Pygments>=2.12,<2.20  # 2.20 breaks pymdownx.highlight (filename=None crash)
+pymdown-extensions==10.21.2
 mkdocs-glightbox==0.5.2
