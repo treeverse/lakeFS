@@ -762,7 +762,7 @@ SELECT * FROM delta.`s3a://example-repo/main/datasets/delta-table/` LIMIT 100
 ```
 ### ⚠️ Experimental: Pre-signed mode for S3A
 
-!!! warning "Not supported on Spark 4+ / Hadoop 3.4+"
+!!! warning "Deprecated"
     This feature does not work on Spark 4 or later (Hadoop 3.4+), which [migrated S3A from AWS SDK v1 to v2](https://issues.apache.org/jira/browse/HADOOP-18073). AWS SDK v2 does not follow HTTP redirects at the transport layer, and the `QueryStringSignerType` signer no longer exists in SDK v2. This is not fixable via configuration.
 
     For direct-to-storage access on Spark 4, use the [lakeFS Hadoop FileSystem in presigned mode](#hadoop-filesystem-in-presigned-mode) instead.
