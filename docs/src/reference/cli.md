@@ -2731,6 +2731,7 @@ lakectl tag delete <tag URI> [flags]
 
 ```
   -h, --help   help for delete
+  -y, --yes    Automatically say yes to all confirmations
 ```
 
 
