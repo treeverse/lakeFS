@@ -1267,4 +1267,9 @@ func TestLakectlTagList(t *testing.T) {
 	t.Run("with prefix and amount", func(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName+" --prefix="+vars_test["TAG1"]+" --amount=1", false, "lakectl_tag_list_prefix", vars_test)
 	})
+
+	t.Run("delete tag1", func(t *testing.T) {
+		RunCmdAndVerifySuccess(t, Lakectl()+" tag delete lakefs://"+repoName+"/tag1 -y", false, "", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName, false, "lakectl_tag_list_single", vars_test)
+	})
 }
