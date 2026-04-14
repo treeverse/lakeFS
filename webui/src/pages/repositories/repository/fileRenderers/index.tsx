@@ -13,7 +13,6 @@ import {
     TextRenderer,
     UnsupportedFileType,
 } from './simple';
-import { usePluginManager } from '../../../../extendable/plugins/pluginsContext';
 
 const MAX_FILE_SIZE = 20971520; // 20MiB
 
@@ -157,13 +156,6 @@ export function guessType(contentType?: string, fileExtension?: string): FileTyp
 }
 
 export const ObjectRenderer: FC<RendererComponent> = (props: RendererComponent) => {
-    const pluginManager = usePluginManager();
-
-    const customRenderer = pluginManager.customObjectRenderers.get(props.contentType, props.fileExtension);
-    if (customRenderer) {
-        return customRenderer(props);
-    }
-
     const fileType = guessType(props.contentType, props.fileExtension);
     if (fileType !== FileType.DATA && props.sizeBytes > MAX_FILE_SIZE) return Renderers[FileType.TOO_LARGE](props);
     return Renderers[fileType](props);

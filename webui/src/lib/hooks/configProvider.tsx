@@ -1,7 +1,6 @@
-import React, { createContext, FC, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, FC, useContext, useMemo } from 'react';
 
 import { config } from '../api';
-import { usePluginManager } from '../../extendable/plugins/pluginsContext';
 import { useAPI } from './api';
 import { useAuth } from '../auth/authContext';
 
@@ -62,7 +61,6 @@ const configContext = createContext<ConfigContextType>(configInitialState);
 const useConfigContext = () => useContext(configContext);
 
 const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
-    const pluginManager = usePluginManager();
     const { user } = useAuth();
     const { response, loading, error } = useAPI(
         () => config.getConfig(),
@@ -70,12 +68,6 @@ const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [user],
     );
-
-    useEffect(() => {
-        if (response) {
-            pluginManager.customObjectRenderers?.init(response);
-        }
-    }, [response, pluginManager]);
 
     const value = useMemo(
         () => ({ config: response ?? null, loading, error }) satisfies ConfigContextType,

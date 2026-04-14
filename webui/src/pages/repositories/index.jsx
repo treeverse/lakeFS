@@ -25,7 +25,7 @@ import { ReadOnlyBadge } from '../../lib/components/badges';
 
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
-import { usePluginManager } from '../../extendable/plugins/pluginsContext';
+import { RepositoryCreateForm } from '../../lib/components/repositoryCreateForm';
 
 dayjs.extend(relativeTime);
 
@@ -68,9 +68,6 @@ const GettingStartedCreateRepoButton = ({
 };
 
 const CreateRepositoryModal = ({ show, error, onSubmit, onCancel, inProgress }) => {
-    const pluginManager = usePluginManager();
-    const repoCreationFormPlugin = pluginManager.repoCreationForm;
-
     const [formValid, setFormValid] = useState(false);
 
     const { config, error: err, loading } = useConfigContext();
@@ -98,14 +95,14 @@ const CreateRepositoryModal = ({ show, error, onSubmit, onCancel, inProgress }) 
     return (
         <Modal show={show} onHide={onCancel} size="lg">
             <Modal.Body>
-                {repoCreationFormPlugin.build({
-                    formID: 'repository-create-form',
-                    configs: config?.storages,
-                    error: showError,
-                    formValid,
-                    setFormValid,
-                    onSubmit,
-                })}
+                <RepositoryCreateForm
+                    formID="repository-create-form"
+                    config={config?.storages?.[0]}
+                    error={showError}
+                    formValid={formValid}
+                    setFormValid={setFormValid}
+                    onSubmit={onSubmit}
+                />
             </Modal.Body>
             <Modal.Footer className="border-0 pt-0">
                 <Button
@@ -291,7 +288,6 @@ const RepositoryList = ({
 };
 
 const RepositoriesPage = () => {
-    const pluginManager = usePluginManager();
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
     const [createRepoError, setCreateRepoError] = useState(null);
@@ -341,7 +337,7 @@ const RepositoriesPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
-    const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(storageConfigs);
+    const allowSampleRepoCreation = true;
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
         // note that this is only called on a single storage config server

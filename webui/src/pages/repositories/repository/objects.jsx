@@ -38,6 +38,7 @@ import {
     retention,
     repositories,
     imports,
+    commits,
     NotFoundError,
     uploadWithProgress,
     parseRawHeaders,
@@ -49,7 +50,6 @@ import { useMount } from '../../../lib/hooks/useMount';
 import { useRecentRefs } from '../../../lib/hooks/useRecentRefs';
 import { useRefs } from '../../../lib/hooks/repo';
 import { useRouter } from '../../../lib/hooks/router';
-import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
 import { RefTypeBranch } from '../../../constants';
 import {
     ExecuteImportButton,
@@ -76,6 +76,7 @@ import { ConfirmationModal } from '../../../lib/components/modals';
 import { Link } from '../../../lib/components/nav';
 import Card from 'react-bootstrap/Card';
 import { mergeResults } from '../../../lib/components/repository/mergeResults';
+import { TablesEnterpriseInfo } from '../../../lib/components/repository/tablesEnterpriseInfo';
 
 const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
@@ -1256,17 +1257,15 @@ const DataViewToggle = ({ activeView, onChangeView }) => {
     );
 };
 
-const TablesView = ({ pluginManager }) => {
-    const TablesComponent = pluginManager.tablesBrowser.getTablesBrowserComponent();
-    return <TablesComponent />;
+const TablesView = () => {
+    return <TablesEnterpriseInfo />;
 };
 
-const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
+const ObjectsBrowser = ({ storageConfig }) => {
     const router = useRouter();
     const { path, after, importDialog, upload, showChanges } = router.query;
     const [searchParams, setSearchParams] = useSearchParams();
     const { repo, reference, loading, error } = useRefs();
-    const pluginManager = usePluginManager();
     const [showUpload, setShowUpload] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
@@ -1394,12 +1393,11 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                                 enabled={hasChanges && !repo?.read_only}
                                 onCommit={async (commitDetails, done) => {
                                     try {
-                                        await pluginManager.commitOperation.commit(
+                                        await commits.commit(
                                             repo.id,
                                             reference.id,
                                             commitDetails.message,
                                             commitDetails.metadata,
-                                            capabilitiesConfig,
                                         );
                                         setActionError(null);
                                         setShowChangesOnly(false);
@@ -1478,11 +1476,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                             </Button>
                         </>
                     )}
-                    {dataView === DATA_VIEW_TABLES &&
-                        (() => {
-                            const TablesActions = pluginManager.tablesBrowser.getTablesActionsComponent();
-                            return TablesActions ? <TablesActions /> : null;
-                        })()}
+                    {/* Tables view has no additional actions in Community edition */}
                 </div>
             </div>
 
@@ -1552,7 +1546,7 @@ const ObjectsBrowser = ({ storageConfig, capabilitiesConfig }) => {
                 }}
             >
                 {dataView === DATA_VIEW_TABLES ? (
-                    <TablesView pluginManager={pluginManager} />
+                    <TablesView />
                 ) : (
                     <>
                         <TreeContainer
@@ -1613,7 +1607,7 @@ const RepositoryObjectsPage = () => {
     if (configLoading) return <Loading />;
     if (configError) return <RepoError error={configError} />;
 
-    return <ObjectsBrowser storageConfig={storageConfig} capabilitiesConfig={config?.capabilitiesConfig} />;
+    return <ObjectsBrowser storageConfig={storageConfig} />;
 };
 
 export default RepositoryObjectsPage;

@@ -14,7 +14,7 @@ import { RepoError } from '../error';
 import { pulls as pullsAPI } from '../../../../lib/api';
 import { useAPI } from '../../../../lib/hooks/api';
 import { Link } from '../../../../lib/components/nav';
-import { usePluginManager } from '../../../../extendable/plugins/pluginsContext';
+import CompareBranches from '../../../../lib/components/repository/compareBranches';
 import { PullStatus, RefTypeBranch } from '../../../../constants';
 import { DiffContext, WithDiffContext } from '../../../../lib/hooks/diffContext';
 import Alert from 'react-bootstrap/Alert';
@@ -23,9 +23,6 @@ const PullDetailsContent = ({ repo, pull }) => {
     let [loading, setLoading] = useState(false);
     let [action, setAction] = useState(null);
     let [error, setError] = useState(null);
-
-    const pluginManager = usePluginManager();
-    const CompareBranches = pluginManager.compareBranches.getCompareBranchesComponent();
 
     const {
         state: { results: diffResults, loading: diffLoading, error: diffError },
