@@ -1257,10 +1257,6 @@ const DataViewToggle = ({ activeView, onChangeView }) => {
     );
 };
 
-const TablesView = () => {
-    return <TablesEnterpriseInfo />;
-};
-
 const ObjectsBrowser = ({ storageConfig }) => {
     const router = useRouter();
     const { path, after, importDialog, upload, showChanges } = router.query;
@@ -1476,7 +1472,6 @@ const ObjectsBrowser = ({ storageConfig }) => {
                             </Button>
                         </>
                     )}
-                    {/* Tables view has no additional actions in Community edition */}
                 </div>
             </div>
 
@@ -1546,7 +1541,7 @@ const ObjectsBrowser = ({ storageConfig }) => {
                 }}
             >
                 {dataView === DATA_VIEW_TABLES ? (
-                    <TablesView />
+                    <TablesEnterpriseInfo />
                 ) : (
                     <>
                         <TreeContainer
