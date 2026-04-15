@@ -108,14 +108,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
             strategy: mergeState.strategy,
         });
         try {
-            await refs.merge(
-                repo.id,
-                source,
-                dest,
-                strategy,
-                message,
-                metadata,
-            );
+            await refs.merge(repo.id, source, dest, strategy, message, metadata);
             setMergeState({
                 merging: mergeState.merging,
                 show: mergeState.show,
@@ -207,11 +200,7 @@ const MergeButton = ({ repo, onDone, source, dest, disabled = false }) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button
-                variant="success"
-                disabled={disabled}
-                onClick={() => onClickMerge()}
-            >
+            <Button variant="success" disabled={disabled} onClick={() => onClickMerge()}>
                 <GitMergeIcon /> {'Merge'}
             </Button>
         </>
