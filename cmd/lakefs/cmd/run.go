@@ -447,8 +447,8 @@ lakeFS {{ .Version }} - Up and running (^C to shutdown)...
 │
 
 │
-│ For support or any other question,                            >(.＿.)<
-│     join our Slack channel https://community.lakefs.io/slack         (  )_
+│ For support or any other question,                              >(.＿.)<
+│     join our Slack channel https://community.lakefs.io/slack      (  )_
 │
 
 `
