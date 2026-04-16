@@ -9,7 +9,7 @@ import rehypeReact from 'rehype-react';
 import rehypeWrap from 'rehype-wrap';
 import { unified } from 'unified';
 import imageUriReplacer from '../../../../lib/remark-plugins/imageUriReplacer';
-import { CustomMarkdownCodeComponent } from './CustomMarkdownRenderer';
+import { CustomMarkdownCodeComponent } from './customMarkdownRenderer';
 
 // @ts-expect-error: the react types are missing.
 const options: Options = {
