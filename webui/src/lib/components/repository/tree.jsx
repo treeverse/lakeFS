@@ -15,6 +15,7 @@ import {
     TrashIcon,
     LogIcon,
     BeakerIcon,
+    TerminalIcon,
 } from '@primer/octicons-react';
 import Tooltip from 'react-bootstrap/Tooltip';
 import Table from 'react-bootstrap/Table';
@@ -26,6 +27,8 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Modal from 'react-bootstrap/Modal';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 import { FaDownload } from 'react-icons/fa';
 
 import { commits, linkToPath, objects } from '../../api';
@@ -33,7 +36,7 @@ import { ConfirmationModal } from '../modals';
 import { Paginator } from '../pagination';
 import { Link } from '../nav';
 import { RefTypeBranch, RefTypeCommit } from '../../../constants';
-import { ClipboardButton, copyTextToClipboard, AlertError, Loading } from '../controls';
+import { ClipboardButton, copyTextToClipboard, AlertError, Loading, TooltipButton } from '../controls';
 import { useAPI } from '../../hooks/api';
 import noop from 'lodash/noop';
 import { CommitInfoCard } from './commits';
@@ -456,6 +459,45 @@ const PathLink = ({ repoId, reference, path, children, presign = false, as = nul
     return React.createElement(as, { href: link, download: name }, children);
 };
 
+const MountModal = ({ show, onHide, repo, reference, path }) => {
+    const mountCommand = `everest mount lakefs://${repo.id}/${reference.id}/${path}`;
+    return (
+        <Modal show={show} onHide={onHide} size={'lg'}>
+            <Modal.Header closeButton>
+                <Modal.Title>Mount Directory</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p>
+                    Mount this path as a local directory using{' '}
+                    <a href="https://docs.lakefs.io/reference/mount.html" target="_blank" rel="noopener noreferrer">
+                        Everest
+                    </a>
+                    :
+                </p>
+                <InputGroup>
+                    <Form.Control readOnly value={mountCommand} className="font-monospace" disabled />
+                </InputGroup>
+                <p className="text-muted mt-3">
+                    Mount is only available with{' '}
+                    <a href="https://lakefs.io/enterprise/" target="_blank" rel="noopener noreferrer">
+                        lakeFS Enterprise
+                    </a>{' '}
+                    or{' '}
+                    <a href="https://lakefs.cloud/register" target="_blank" rel="noopener noreferrer">
+                        lakeFS Cloud
+                    </a>
+                    .
+                </p>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide}>
+                    Close
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
+
 const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
     let rowClass = 'change-entry-row ';
     switch (entry.diff_type) {
@@ -766,7 +808,9 @@ export const URINavigator = ({
     pathURLBuilder = buildPathURL,
     isPathToFile = false,
     hasCopyButton = false,
+    hasMountButton = false,
 }) => {
+    const [showMountModal, setShowMountModal] = useState(false);
     const parts = pathParts(path, isPathToFile);
     const params = useMemo(() => ({ repoId: repo.id }), [repo.id]);
     const displayedReference = reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
@@ -836,6 +880,17 @@ export const URINavigator = ({
                 {breadcrumbItems.length > 0 && <CollapsibleBreadcrumb items={breadcrumbItems} minVisibleItems={2} />}
             </div>
             <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
+                {hasMountButton && !isPathToFile && (
+                    <TooltipButton
+                        variant="link"
+                        size="sm"
+                        tooltip="Mount directory"
+                        className="me-1"
+                        onClick={() => setShowMountModal(true)}
+                    >
+                        <TerminalIcon />
+                    </TooltipButton>
+                )}
                 {hasCopyButton && (
                     <ClipboardButton
                         text={`lakefs://${repo.id}/${reference.id}/${path}`}
@@ -857,6 +912,15 @@ export const URINavigator = ({
                     </a>
                 )}
             </div>
+            {hasMountButton && !isPathToFile && (
+                <MountModal
+                    show={showMountModal}
+                    onHide={() => setShowMountModal(false)}
+                    repo={repo}
+                    reference={reference}
+                    path={path}
+                />
+            )}
         </div>
     );
 };
@@ -983,7 +1047,13 @@ export const Tree = ({
         <div className="tree-container tree-container-wide">
             <Card>
                 <Card.Header>
-                    <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true} />
+                    <URINavigator
+                        path={path}
+                        repo={repo}
+                        reference={reference}
+                        hasCopyButton={true}
+                        hasMountButton={true}
+                    />
                 </Card.Header>
                 <Card.Body>{body}</Card.Body>
             </Card>
