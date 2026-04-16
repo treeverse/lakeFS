@@ -58,7 +58,7 @@ import {
     ImportPhase,
     ImportProgress,
     startImport,
-} from '../services/import_data';
+} from '../services/importData';
 import { Box } from '@mui/material';
 import { RepoError } from './error';
 import { getContentType, getFileExtension, FileContents } from './objectViewer';

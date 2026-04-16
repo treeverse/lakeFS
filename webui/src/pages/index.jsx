@@ -36,7 +36,7 @@ import UserCredentialsPage from './auth/users/user/credentials';
 import PoliciesPage from './auth/policies';
 import PolicyPage from './auth/policies/policy';
 import LoginPage from './auth/login';
-import ActivateInvitedUserPage from './auth/users/create-user-with-password';
+import ActivateInvitedUserPage from './auth/users/createUserWithPassword';
 import Setup from './setup';
 import { AuthLayout } from '../lib/components/auth/layout';
 import RepositoryActionPage from './repositories/repository/actions/run';

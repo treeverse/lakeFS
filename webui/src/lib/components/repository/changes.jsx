@@ -5,7 +5,7 @@ import { ClockIcon, FileDirectoryFillIcon, FoldDownIcon, FoldUpIcon } from '@pri
 import { useAPIWithPagination } from '../../hooks/api';
 import { useExpandCollapseDirs } from '../../hooks/useExpandCollapseDirs';
 import { AlertError, TooltipButton } from '../controls';
-import { ObjectsDiff } from './ObjectsDiff';
+import { ObjectsDiff } from './objectsDiff';
 import { ObjectTreeEntryRow, PrefixTreeEntryRow } from './treeRows';
 import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';

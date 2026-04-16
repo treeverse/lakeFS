@@ -12,7 +12,7 @@ import {
     TableIcon,
     TrashIcon,
 } from '@primer/octicons-react';
-import ChangeSummary from './ChangeSummary';
+import ChangeSummary from './changeSummary';
 import { ConfirmationModal } from '../modals';
 import { OverlayTrigger } from 'react-bootstrap';
 import Tooltip from 'react-bootstrap/Tooltip';
