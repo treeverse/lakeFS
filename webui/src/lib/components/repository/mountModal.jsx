@@ -5,7 +5,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button';
 
 const MountModal = ({ show, onHide, repo, reference, path }) => {
-    const mountCommand = `everest mount lakefs://${repo.id}/${reference.id}/${path}`;
+    const mountCommand = `everest mount "lakefs://${repo.id}/${reference.id}/${path}" <local-dir>`;
     return (
         <Modal show={show} onHide={onHide} size={'lg'}>
             <Modal.Header closeButton>
