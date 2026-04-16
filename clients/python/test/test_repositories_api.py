@@ -82,6 +82,13 @@ class TestRepositoriesApi(unittest.TestCase):
         """
         pass
 
+    def test_get_repository_metadata(self) -> None:
+        """Test case for get_repository_metadata
+
+        get repository metadata  # noqa: E501
+        """
+        pass
+
     def test_list_repositories(self) -> None:
         """Test case for list_repositories
 

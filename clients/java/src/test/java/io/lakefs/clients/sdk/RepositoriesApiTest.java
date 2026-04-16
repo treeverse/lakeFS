@@ -148,6 +148,19 @@ public class RepositoriesApiTest {
     }
 
     /**
+     * get repository metadata
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getRepositoryMetadataTest() throws ApiException {
+        String repository = null;
+        Map<String, String> response = api.getRepositoryMetadata(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * list repositories
      *
      * @throws ApiException if the Api call fails

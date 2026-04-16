@@ -47,6 +47,13 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_delete_repository_metadata(self) -> None:
+        """Test case for delete_repository_metadata
+
+        delete repository metadata  # noqa: E501
+        """
+        pass
+
     def test_dump_refs(self) -> None:
         """Test case for dump_refs
 
@@ -182,6 +189,13 @@ class TestInternalApi(unittest.TestCase):
     def test_set_garbage_collection_rules_preflight(self) -> None:
         """Test case for set_garbage_collection_rules_preflight
 
+        """
+        pass
+
+    def test_set_repository_metadata(self) -> None:
+        """Test case for set_repository_metadata
+
+        set repository metadata  # noqa: E501
         """
         pass
 
