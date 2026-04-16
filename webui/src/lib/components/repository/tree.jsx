@@ -841,16 +841,6 @@ export const URINavigator = ({
             </div>
             <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
                 <ButtonGroup size="sm" className="me-1">
-                    {hasMountButton && !isPathToFile && (
-                        <TooltipButton
-                            variant="outline-secondary"
-                            size="sm"
-                            tooltip="Mount directory"
-                            onClick={() => setShowMountModal(true)}
-                        >
-                            <TerminalIcon />
-                        </TooltipButton>
-                    )}
                     {hasCopyButton && (
                         <ClipboardButton
                             text={`lakefs://${repo.id}/${reference.id}/${path}`}
@@ -860,6 +850,16 @@ export const URINavigator = ({
                             onError={() => {}}
                             tooltip={'copy URI to clipboard'}
                         />
+                    )}
+                    {hasMountButton && !isPathToFile && (
+                        <TooltipButton
+                            variant="outline-secondary"
+                            size="sm"
+                            tooltip="Mount directory"
+                            onClick={() => setShowMountModal(true)}
+                        >
+                            <TerminalIcon />
+                        </TooltipButton>
                     )}
                 </ButtonGroup>
                 {downloadUrl && (
