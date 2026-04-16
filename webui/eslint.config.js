@@ -81,7 +81,7 @@ export default defineConfig([
     },
     {
         name: 'app/filename-convention',
-        files: ['src/**/*.{js,jsx,ts,tsx,css,scss}'],
+        files: ['src/**/*.{js,jsx,ts,tsx}'],
         plugins: {
             'check-file': checkFile,
         },
@@ -90,7 +90,6 @@ export default defineConfig([
                 'error',
                 {
                     '**/*.{js,jsx,ts,tsx}': 'CAMEL_CASE',
-                    '**/*.{css,scss}': 'KEBAB_CASE',
                 },
                 {
                     ignoreMiddleExtensions: true,
