@@ -144,14 +144,6 @@ class Repository(_BaseLakeFSObject):
             yield Tag(self._id, res.id, client=self._client)
 
     @property
-    def metadata(self) -> dict[str, str]:
-        """
-        Returns the repository metadata
-        """
-        with api_exception_handler():
-            return self._client.sdk_client.repositories_api.get_repository_metadata(repository=self._id)
-
-    @property
     def properties(self) -> RepositoryProperties:
         """
         Return the repository's properties object

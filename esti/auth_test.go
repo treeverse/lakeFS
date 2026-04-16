@@ -240,45 +240,6 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 	}
 }
 
-func TestRepoMetadata_Unauthorized(t *testing.T) {
-	ctx, log, repo := setupTest(t)
-	if isBasicAuth(t, ctx) {
-		t.Skip("Unsupported in basic auth configuration")
-	}
-
-	// generate client with no group association
-	clt := newClientFromGroup(t, ctx, log, "none", nil)
-	t.Run("set", func(t *testing.T) {
-		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repo, apigen.SetRepositoryMetadataJSONRequestBody{
-			Metadata: apigen.RepositoryMetadataSet_Metadata{
-				AdditionalProperties: map[string]string{"foo": "bar"},
-			},
-		})
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON401)
-		if !strings.Contains(resp.JSON401.Message, auth.ErrInsufficientPermissions.Error()) {
-			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
-		}
-	})
-	t.Run("delete", func(t *testing.T) {
-		resp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repo, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: []string{"foo"}})
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON401)
-		if !strings.Contains(resp.JSON401.Message, auth.ErrInsufficientPermissions.Error()) {
-			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
-		}
-	})
-
-	t.Run("get", func(t *testing.T) {
-		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repo)
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON401)
-		if !strings.Contains(resp.JSON401.Message, auth.ErrInsufficientPermissions.Error()) {
-			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
-		}
-	})
-}
-
 func TestCreatePolicy(t *testing.T) {
 	ctx := t.Context()
 	if !isAdvancedAuth(t, ctx) {

@@ -33,8 +33,6 @@ import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
 import io.lakefs.clients.sdk.model.PrepareGarbageCollectionCommitsStatus;
 import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.RefsRestore;
-import io.lakefs.clients.sdk.model.RepositoryMetadataKeys;
-import io.lakefs.clients.sdk.model.RepositoryMetadataSet;
 import io.lakefs.clients.sdk.model.Setup;
 import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
@@ -95,22 +93,6 @@ public class InternalApiTest {
         String location = null;
         StorageURI response = api.createSymlinkFile(repository, branch)
                 .location(location)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * delete repository metadata
-     *
-     * Delete specified keys from the repository&#39;s metadata. 
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void deleteRepositoryMetadataTest() throws ApiException {
-        String repository = null;
-        RepositoryMetadataKeys repositoryMetadataKeys = null;
-        api.deleteRepositoryMetadata(repository, repositoryMetadataKeys)
                 .execute();
         // TODO: test validations
     }
@@ -383,22 +365,6 @@ public class InternalApiTest {
     public void setGarbageCollectionRulesPreflightTest() throws ApiException {
         String repository = null;
         api.setGarbageCollectionRulesPreflight(repository)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * set repository metadata
-     *
-     * Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys. 
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void setRepositoryMetadataTest() throws ApiException {
-        String repository = null;
-        RepositoryMetadataSet repositoryMetadataSet = null;
-        api.setRepositoryMetadata(repository, repositoryMetadataSet)
                 .execute();
         // TODO: test validations
     }

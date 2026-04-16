@@ -112,8 +112,6 @@ docs/Repository.md
 docs/RepositoryCreation.md
 docs/RepositoryDumpStatus.md
 docs/RepositoryList.md
-docs/RepositoryMetadataKeys.md
-docs/RepositoryMetadataSet.md
 docs/RepositoryRestoreStatus.md
 docs/ResetCreation.md
 docs/RevertCreation.md
@@ -261,8 +259,6 @@ src/models/repository.rs
 src/models/repository_creation.rs
 src/models/repository_dump_status.rs
 src/models/repository_list.rs
-src/models/repository_metadata_keys.rs
-src/models/repository_metadata_set.rs
 src/models/repository_restore_status.rs
 src/models/reset_creation.rs
 src/models/revert_creation.rs
