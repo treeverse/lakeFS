@@ -7,7 +7,6 @@ Method | HTTP request | Description
 [**create_branch_protection_rule_preflight**](InternalApi.md#create_branch_protection_rule_preflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 [**create_commit_record**](InternalApi.md#create_commit_record) | **POST** /repositories/{repository}/commits | create commit record
 [**create_symlink_file**](InternalApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
-[**delete_repository_metadata**](InternalApi.md#delete_repository_metadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata
 [**dump_refs**](InternalApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
 [**get_auth_capabilities**](InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**get_garbage_collection_config**](InternalApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
@@ -29,7 +28,6 @@ Method | HTTP request | Description
 [**prepare_garbage_collection_uncommitted**](InternalApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 [**restore_refs**](InternalApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 [**set_garbage_collection_rules_preflight**](InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
-[**set_repository_metadata**](InternalApi.md#set_repository_metadata) | **POST** /repositories/{repository}/metadata | set repository metadata
 [**setup**](InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 [**setup_comm_prefs**](InternalApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
 [**stage_object**](InternalApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object's metadata for the given branch
@@ -119,37 +117,6 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-
-## delete_repository_metadata
-
-> delete_repository_metadata(repository, repository_metadata_keys)
-delete repository metadata
-
-Delete specified keys from the repository's metadata. 
-
-### Parameters
-
-
-Name | Type | Description  | Required | Notes
-------------- | ------------- | ------------- | ------------- | -------------
-**repository** | **String** |  | [required] |
-**repository_metadata_keys** | [**RepositoryMetadataKeys**](RepositoryMetadataKeys.md) |  | [required] |
-
-### Return type
-
- (empty response body)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
-- **Content-Type**: application/json
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -741,37 +708,6 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-
-## set_repository_metadata
-
-> set_repository_metadata(repository, repository_metadata_set)
-set repository metadata
-
-Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys. 
-
-### Parameters
-
-
-Name | Type | Description  | Required | Notes
-------------- | ------------- | ------------- | ------------- | -------------
-**repository** | **String** |  | [required] |
-**repository_metadata_set** | [**RepositoryMetadataSet**](RepositoryMetadataSet.md) |  | [required] |
-
-### Return type
-
- (empty response body)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
-- **Content-Type**: application/json
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

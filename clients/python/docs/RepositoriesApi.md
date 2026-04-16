@@ -12,7 +12,6 @@ Method | HTTP request | Description
 [**get_branch_protection_rules**](RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/settings/branch_protection | get branch protection rules
 [**get_gc_rules**](RepositoriesApi.md#get_gc_rules) | **GET** /repositories/{repository}/settings/gc_rules | get repository GC rules
 [**get_repository**](RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
-[**get_repository_metadata**](RepositoriesApi.md#get_repository_metadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 [**list_repositories**](RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
 [**restore_status**](RepositoriesApi.md#restore_status) | **GET** /repositories/{repository}/restore | Status of a restore request
 [**restore_submit**](RepositoriesApi.md#restore_submit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
@@ -901,116 +900,6 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | repository |  -  |
 **400** | Validation Error |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**429** | too many requests |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **get_repository_metadata**
-> Dict[str, str] get_repository_metadata(repository)
-
-get repository metadata
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-* Bearer (JWT) Authentication (jwt_token):
-
-```python
-import time
-import os
-import lakefs_sdk
-from lakefs_sdk.rest import ApiException
-from pprint import pprint
-
-# Defining the host is optional and defaults to /api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_sdk.Configuration(
-    host = "/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_sdk.Configuration(
-    username = os.environ["USERNAME"],
-    password = os.environ["PASSWORD"]
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_sdk.Configuration(
-    access_token = os.environ["BEARER_TOKEN"]
-)
-
-# Enter a context with an instance of the API client
-with lakefs_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = lakefs_sdk.RepositoriesApi(api_client)
-    repository = 'repository_example' # str | 
-
-    try:
-        # get repository metadata
-        api_response = api_instance.get_repository_metadata(repository)
-        print("The response of RepositoriesApi->get_repository_metadata:\n")
-        pprint(api_response)
-    except Exception as e:
-        print("Exception when calling RepositoriesApi->get_repository_metadata: %s\n" % e)
-```
-
-
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **str**|  | 
-
-### Return type
-
-**Dict[str, str]**
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | repository metadata |  -  |
-**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |

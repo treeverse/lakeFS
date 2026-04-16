@@ -236,7 +236,6 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**createBranchProtectionRulePreflight**](docs/InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 *InternalApi* | [**createCommitRecord**](docs/InternalApi.md#createCommitRecord) | **POST** /repositories/{repository}/commits | create commit record
 *InternalApi* | [**createSymlinkFile**](docs/InternalApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
-*InternalApi* | [**deleteRepositoryMetadata**](docs/InternalApi.md#deleteRepositoryMetadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata
 *InternalApi* | [**dumpRefs**](docs/InternalApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**getAuthCapabilities**](docs/InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 *InternalApi* | [**getGarbageCollectionConfig**](docs/InternalApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
@@ -258,7 +257,6 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**prepareGarbageCollectionUncommitted**](docs/InternalApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *InternalApi* | [**restoreRefs**](docs/InternalApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
-*InternalApi* | [**setRepositoryMetadata**](docs/InternalApi.md#setRepositoryMetadata) | **POST** /repositories/{repository}/metadata | set repository metadata
 *InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *InternalApi* | [**setupCommPrefs**](docs/InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
 *InternalApi* | [**stageObject**](docs/InternalApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
@@ -295,7 +293,6 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**getBranchProtectionRules**](docs/RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/settings/branch_protection | get branch protection rules
 *RepositoriesApi* | [**getGCRules**](docs/RepositoriesApi.md#getGCRules) | **GET** /repositories/{repository}/settings/gc_rules | get repository GC rules
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
-*RepositoriesApi* | [**getRepositoryMetadata**](docs/RepositoriesApi.md#getRepositoryMetadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
 *RepositoriesApi* | [**restoreStatus**](docs/RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Status of a restore request
 *RepositoriesApi* | [**restoreSubmit**](docs/RepositoriesApi.md#restoreSubmit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
@@ -403,8 +400,6 @@ Class | Method | HTTP request | Description
  - [RepositoryCreation](docs/RepositoryCreation.md)
  - [RepositoryDumpStatus](docs/RepositoryDumpStatus.md)
  - [RepositoryList](docs/RepositoryList.md)
- - [RepositoryMetadataKeys](docs/RepositoryMetadataKeys.md)
- - [RepositoryMetadataSet](docs/RepositoryMetadataSet.md)
  - [RepositoryRestoreStatus](docs/RepositoryRestoreStatus.md)
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)

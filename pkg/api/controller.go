@@ -2530,60 +2530,6 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "get_repo_metadata", r, repository, "", "")
-	metadata, err := c.Catalog.GetRepositoryMetadata(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusOK, apigen.RepositoryMetadata{AdditionalProperties: metadata})
-}
-
-func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.SetRepositoryMetadataJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.UpdateRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "update_repo_metadata", r, repository, "", "")
-	err := c.Catalog.UpdateRepositoryMetadata(ctx, repository, body.Metadata.AdditionalProperties)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
-func (c *Controller) DeleteRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.DeleteRepositoryMetadataJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.UpdateRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "delete_repo_metadata", r, repository, "", "")
-	err := c.Catalog.DeleteRepositoryMetadata(ctx, repository, body.Keys)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
 func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
