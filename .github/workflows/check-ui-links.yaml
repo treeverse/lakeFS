@@ -71,20 +71,38 @@ jobs:
 
       - name: Check Lychee output
         run: |
-          if grep "Errors per input" /tmp/lychee/results.md; then
+          cat /tmp/lychee/results.md
+
+          # Check for actual error/timeout entries (lines like "* [TIMEOUT] ..." or "* [404] ...")
+          if grep -P '^\* \[' /tmp/lychee/results.md; then
             echo "## 🙀 Outbound links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
+            # Extract broken URLs and find their source in webui/src
             while IFS= read -r line; do
-              if [[ $line =~ .*docs/_site(.*)\].* ]]; then
-                  search_phrase="${BASH_REMATCH[1]}"
-                  matching_files=$(grep -lr "$search_phrase" "webui/src")
-                  echo "* 🚨 Broken reference to \`$search_phrase\` found in \`$matching_files\`" >> $GITHUB_STEP_SUMMARY
+              # Match lychee error lines: "* [STATUS] <URL> | reason"
+              if [[ $line =~ ^\*\ \[([A-Z0-9_]+)\]\ \<([^>]+)\> ]]; then
+                status="${BASH_REMATCH[1]}"
+                url="${BASH_REMATCH[2]}"
+                # Try to find the original URL in webui/src
+                # For file:// URLs converted from community.lakefs.io, extract the path
+                search_url="$url"
+                if [[ $url == file://* ]]; then
+                  search_url=$(echo "$url" | sed 's|file://.*/docs/docs-repo|https://community.lakefs.io|')
+                fi
+                matching_files=$(grep -rlF "$search_url" "webui/src" 2>/dev/null || true)
+                if [ -n "$matching_files" ]; then
+                  echo "* 🚨 [$status] \`$search_url\` found in: \`$matching_files\`" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "* 🚨 [$status] \`$url\`" >> $GITHUB_STEP_SUMMARY
+                fi
               fi
             done < /tmp/lychee/results.md
-            echo "" >> $GITHUB_STEP_SUMMARY
 
-            sed -e '/## Errors per input/,$d' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Full lychee report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
             cat $GITHUB_STEP_SUMMARY
             exit 1
           else
