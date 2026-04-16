@@ -222,6 +222,32 @@ components:
           type: boolean
           description: Whether the repository is a read-only repository- not relevant for bare repositories
 
+    RepositoryMetadata:
+      type: object
+      additionalProperties:
+        type: string
+
+    RepositoryMetadataSet:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    RepositoryMetadataKeys:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+            description: metadata key
+
     RepositoryList:
       type: object
       required:
@@ -3550,6 +3576,86 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/metadata:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getRepositoryMetadata
+      summary: get repository metadata
+      responses:
+        200:
+          description: repository metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositoryMetadata"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - internal
+      operationId: setRepositoryMetadata
+      summary: set repository metadata
+      description: |
+        Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepositoryMetadataSet"
+      responses:
+        204:
+          description: repository metadata set successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - internal
+      operationId: deleteRepositoryMetadata
+      summary: delete repository metadata
+      description: |
+        Delete specified keys from the repository's metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepositoryMetadataKeys"
+      responses:
+        204:
+          description: repository metadata keys deleted successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
         429:
           description: too many requests
         default:

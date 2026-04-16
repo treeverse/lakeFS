@@ -26,6 +26,9 @@ def test_repository_sanity(storage_namespace, setup_repo):
     with expect_exception_context(ConflictException):
         repo.create(storage_namespace, default_branch, True)
 
+    # Get metadata
+    _ = repo.metadata
+
     # List branches
     branches = list(repo.branches())
     assert len(branches) == 1
