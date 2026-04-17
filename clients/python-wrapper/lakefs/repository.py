@@ -48,12 +48,10 @@ class Repository(_BaseLakeFSObject):
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        storage_id = kwargs.pop("storage_id", None)
         repository_creation = lakefs_sdk.RepositoryCreation(name=self._id,
                                                             storage_namespace=storage_namespace,
                                                             default_branch=default_branch,
-                                                            sample_data=include_samples,
-                                                            storage_id=storage_id)
+                                                            sample_data=include_samples)
 
         def handle_conflict(e: LakeFSException):
             if isinstance(e, ConflictException) and exist_ok:

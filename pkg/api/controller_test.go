@@ -1032,7 +1032,6 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr("main"),
 			Name:             repoName,
-			StorageId:        swag.String(config.SingleBlockstoreID),
 			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
 		verifyResponseOK(t, resp, err)
@@ -1044,37 +1043,6 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		if response.Id != repoName {
 			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
 		}
-	})
-
-	t.Run("create repo no storage id success", func(t *testing.T) {
-		repoName := testUniqueRepoName()
-		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    apiutil.Ptr("main"),
-			Name:             repoName,
-			StorageNamespace: onBlock(deps, "foo-bucket-1-1"),
-		})
-		verifyResponseOK(t, resp, err)
-
-		response := resp.JSON201
-		if response == nil {
-			t.Fatal("CreateRepository got bad response")
-		}
-		if response.Id != repoName {
-			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
-		}
-	})
-
-	t.Run("create repo non empty storage id", func(t *testing.T) {
-		repoName := testUniqueRepoName()
-		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    apiutil.Ptr("main"),
-			Name:             repoName,
-			StorageId:        swag.String("foo"),
-			StorageNamespace: onBlock(deps, "foo-bucket-1-1"),
-		})
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON400)
-		require.Contains(t, resp.JSON400.Message, "storage id: invalid value")
 	})
 
 	t.Run("create bare repo success", func(t *testing.T) {
@@ -1097,46 +1065,6 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		if response.Id != repoName {
 			t.Fatalf("CreateRepository bare id=%s, expected=%s", response.Id, repoName)
 		}
-	})
-
-	t.Run("create bare repo storage id success", func(t *testing.T) {
-		repoName := testUniqueRepoName()
-		bareRepo := true
-		resp, err := clt.CreateRepositoryWithResponse(ctx,
-			&apigen.CreateRepositoryParams{
-				Bare: &bareRepo,
-			}, apigen.CreateRepositoryJSONRequestBody{
-				DefaultBranch:    apiutil.Ptr("main"),
-				Name:             repoName,
-				StorageId:        swag.String(config.SingleBlockstoreID),
-				StorageNamespace: onBlock(deps, "foo-bucket-3"),
-			})
-		verifyResponseOK(t, resp, err)
-
-		response := resp.JSON201
-		if response == nil {
-			t.Fatal("CreateRepository (bare) got bad response")
-		}
-		if response.Id != repoName {
-			t.Fatalf("CreateRepository bare id=%s, expected=%s", response.Id, repoName)
-		}
-	})
-
-	t.Run("create bare repo non empty storage id", func(t *testing.T) {
-		repoName := testUniqueRepoName()
-		bareRepo := true
-		resp, err := clt.CreateRepositoryWithResponse(ctx,
-			&apigen.CreateRepositoryParams{
-				Bare: &bareRepo,
-			}, apigen.CreateRepositoryJSONRequestBody{
-				DefaultBranch:    apiutil.Ptr("main"),
-				Name:             repoName,
-				StorageId:        swag.String("foo"),
-				StorageNamespace: onBlock(deps, "foo-bucket-2"),
-			})
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON400)
-		require.Contains(t, resp.JSON400.Message, "storage id: invalid value")
 	})
 
 	t.Run("create repo duplicate", func(t *testing.T) {
@@ -4100,7 +4028,6 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr("main"),
 		Name:             repo,
-		StorageId:        swag.String(config.SingleBlockstoreID),
 		StorageNamespace: "mem://repo9",
 	})
 	verifyResponseOK(t, resp, err)
@@ -7037,17 +6964,6 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 	return nil
 }
 
-func TestController_GetLicense(t *testing.T) {
-	ctx := t.Context()
-	t.Run("not_implemented", func(t *testing.T) {
-		clt, _ := setupClientWithAdmin(t)
-		resp, err := clt.GetLicenseWithResponse(ctx)
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected status Not Implemented")
-		require.NotNil(t, resp.JSON501, "expected HTTP-501 response, got %v", resp.StatusCode())
-	})
-}
-
 func TestController_ImportStart_Disabled(t *testing.T) {
 	// set up a server with local imports disabled
 	storageLocation := t.TempDir()
@@ -7150,49 +7066,5 @@ func TestController_UploadObject_ErrorHandling(t *testing.T) {
 		require.Equal(t, http.StatusPreconditionFailed, resp.StatusCode(),
 			"upload with If-None-Match on committed object should return 412 Precondition Failed")
 		require.NotNil(t, resp.JSON412, "should have precondition failed response")
-	})
-}
-
-func TestController_AsyncOperationsNotImplemented(t *testing.T) {
-	ctx := context.Background()
-	clt, deps := setupClientWithAdmin(t)
-
-	repoName := "test-async-repo"
-	_, err := deps.catalog.CreateRepository(ctx, repoName, "", onBlock(deps, "async-test"), "main", false)
-	require.NoError(t, err)
-
-	t.Run("commit_async_not_implemented", func(t *testing.T) {
-		resp, err := clt.CommitAsyncWithResponse(ctx, repoName, "main", &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody{
-			Message: "test async commit",
-		})
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async operations in OSS")
-		require.NotNil(t, resp.JSON501)
-	})
-
-	t.Run("commit_async_status_not_implemented", func(t *testing.T) {
-		resp, err := clt.CommitAsyncStatusWithResponse(ctx, repoName, "main", "CA1234567890")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async status in OSS")
-		require.NotNil(t, resp.JSON501)
-	})
-
-	t.Run("merge_async_not_implemented", func(t *testing.T) {
-		_, err := deps.catalog.CreateBranch(ctx, repoName, "feature", "main")
-		require.NoError(t, err)
-
-		resp, err := clt.MergeIntoBranchAsyncWithResponse(ctx, repoName, "feature", "main", apigen.MergeIntoBranchAsyncJSONRequestBody{
-			Message: swag.String("test async merge"),
-		})
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async merge in OSS")
-		require.NotNil(t, resp.JSON501)
-	})
-
-	t.Run("merge_async_status_not_implemented", func(t *testing.T) {
-		resp, err := clt.MergeIntoBranchAsyncStatusWithResponse(ctx, repoName, "feature", "main", "MA1234567890")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected 501 Not Implemented for async merge status in OSS")
-		require.NotNil(t, resp.JSON501)
 	})
 }

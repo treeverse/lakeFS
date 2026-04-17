@@ -880,21 +880,6 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 	writeResponse(w, r, http.StatusOK, responseToken)
 }
 
-func (c *Controller) GetTokenRedirect(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	c.handleAPIError(ctx, w, r, authentication.ErrNotImplemented)
-}
-
-func (c *Controller) GetTokenFromMailbox(w http.ResponseWriter, r *http.Request, mailbox string) {
-	ctx := r.Context()
-	c.handleAPIError(ctx, w, r, authentication.ErrNotImplemented)
-}
-
-func (c *Controller) ReleaseTokenToMailbox(w http.ResponseWriter, r *http.Request, loginRequestToken string) {
-	ctx := r.Context()
-	c.handleAPIError(ctx, w, r, authentication.ErrNotImplemented)
-}
-
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2260,7 +2245,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams) {
-	storageID := config.GetActualStorageID(c.Config.StorageConfig(), swag.StringValue(body.StorageId))
+	storageID := config.GetActualStorageID(c.Config.StorageConfig(), "")
 	storageNamespace := body.StorageNamespace
 
 	if !c.authorize(w, r, permissions.Node{
@@ -3409,14 +3394,6 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		return
 	}
 	commitResponse(w, r, newCommit)
-}
-
-func (c *Controller) CommitAsync(w http.ResponseWriter, r *http.Request, _ apigen.CommitAsyncJSONRequestBody, _, _ string, _ apigen.CommitAsyncParams) {
-	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-}
-
-func (c *Controller) CommitAsyncStatus(w http.ResponseWriter, r *http.Request, _, _, _ string) {
-	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
 func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
@@ -5370,14 +5347,6 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	})
 }
 
-func (c *Controller) MergeIntoBranchAsync(w http.ResponseWriter, r *http.Request, _ apigen.MergeIntoBranchAsyncJSONRequestBody, _, _, _ string) {
-	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-}
-
-func (c *Controller) MergeIntoBranchAsyncStatus(w http.ResponseWriter, r *http.Request, _, _, _, _ string) {
-	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-}
-
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -5806,9 +5775,7 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 }
 
 func (c *Controller) getCapabilitiesConfig() *apigen.CapabilitiesConfig {
-	return &apigen.CapabilitiesConfig{
-		AsyncOps: swag.Bool(false),
-	}
+	return &apigen.CapabilitiesConfig{}
 }
 
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
@@ -6478,18 +6445,6 @@ func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
 	return c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
 }
 
-func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-}
-
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
 	c.Authentication.OauthCallback(w, r, c.sessionStore)
-}
-
-func (c *Controller) PullIcebergTable(w http.ResponseWriter, r *http.Request, _ apigen.PullIcebergTableJSONRequestBody, _ string) {
-	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-}
-
-func (c *Controller) PushIcebergTable(w http.ResponseWriter, r *http.Request, _ apigen.PushIcebergTableJSONRequestBody, _ string) {
-	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }

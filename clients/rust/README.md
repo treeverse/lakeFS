@@ -53,8 +53,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
 *AuthApi* | [**get_group_acl**](docs/AuthApi.md#get_group_acl) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**get_policy**](docs/AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
-*AuthApi* | [**get_token_from_mailbox**](docs/AuthApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
-*AuthApi* | [**get_token_redirect**](docs/AuthApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 *AuthApi* | [**get_user**](docs/AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
 *AuthApi* | [**list_group_members**](docs/AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 *AuthApi* | [**list_group_policies**](docs/AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
@@ -67,7 +65,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**oauth_callback**](docs/AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
-*AuthApi* | [**release_token_to_mailbox**](docs/AuthApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *AuthApi* | [**set_group_acl**](docs/AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherry_pick**](docs/BranchesApi.md#cherry_pick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
@@ -82,8 +79,6 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *ConfigApi* | [**get_config**](docs/ConfigApi.md#get_config) | **GET** /config | 
 *ExperimentalApi* | [**abort_presign_multipart_upload**](docs/ExperimentalApi.md#abort_presign_multipart_upload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
-*ExperimentalApi* | [**commit_async**](docs/ExperimentalApi.md#commit_async) | **POST** /repositories/{repository}/branches/{branch}/commits/async | create commit asynchronously
-*ExperimentalApi* | [**commit_async_status**](docs/ExperimentalApi.md#commit_async_status) | **GET** /repositories/{repository}/branches/{branch}/commits/async/{id}/status | get status of async commit operation
 *ExperimentalApi* | [**complete_presign_multipart_upload**](docs/ExperimentalApi.md#complete_presign_multipart_upload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
 *ExperimentalApi* | [**create_presign_multipart_upload**](docs/ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 *ExperimentalApi* | [**create_pull_request**](docs/ExperimentalApi.md#create_pull_request) | **POST** /repositories/{repository}/pulls | create pull request
@@ -91,17 +86,11 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**delete_user_external_principal**](docs/ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExperimentalApi* | [**external_principal_login**](docs/ExperimentalApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 *ExperimentalApi* | [**get_external_principal**](docs/ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
-*ExperimentalApi* | [**get_license**](docs/ExperimentalApi.md#get_license) | **GET** /license | 
 *ExperimentalApi* | [**get_pull_request**](docs/ExperimentalApi.md#get_pull_request) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
-*ExperimentalApi* | [**get_token_from_mailbox**](docs/ExperimentalApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
-*ExperimentalApi* | [**get_token_redirect**](docs/ExperimentalApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 *ExperimentalApi* | [**hard_reset_branch**](docs/ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**list_pull_requests**](docs/ExperimentalApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 *ExperimentalApi* | [**list_user_external_principals**](docs/ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
-*ExperimentalApi* | [**merge_into_branch_async**](docs/ExperimentalApi.md#merge_into_branch_async) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async | merge references asynchronously
-*ExperimentalApi* | [**merge_into_branch_async_status**](docs/ExperimentalApi.md#merge_into_branch_async_status) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}/async/{id}/status | get status of async merge operation
 *ExperimentalApi* | [**merge_pull_request**](docs/ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
-*ExperimentalApi* | [**release_token_to_mailbox**](docs/ExperimentalApi.md#release_token_to_mailbox) | **GET** /auth/get-token/release-token/{loginRequestToken} | release a token for the current (authenticated) user to the mailbox of this login request.
 *ExperimentalApi* | [**sts_login**](docs/ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
 *ExperimentalApi* | [**update_object_user_metadata**](docs/ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**update_pull_request**](docs/ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
@@ -146,7 +135,6 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**setup_comm_prefs**](docs/InternalApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
 *InternalApi* | [**stage_object**](docs/InternalApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object's metadata for the given branch
 *InternalApi* | [**upload_object_preflight**](docs/InternalApi.md#upload_object_preflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
-*LicenseApi* | [**get_license**](docs/LicenseApi.md#get_license) | **GET** /license | 
 *MetadataApi* | [**get_meta_range**](docs/MetadataApi.md#get_meta_range) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**get_range**](docs/MetadataApi.md#get_range) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
 *ObjectsApi* | [**copy_object**](docs/ObjectsApi.md#copy_object) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
@@ -168,8 +156,6 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**find_merge_base**](docs/RefsApi.md#find_merge_base) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 *RefsApi* | [**log_commits**](docs/RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**merge_into_branch**](docs/RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
-*RemotesApi* | [**pull_iceberg_table**](docs/RemotesApi.md#pull_iceberg_table) | **POST** /iceberg/remotes/{catalog}/pull | take a table previously pushed from lakeFS into a remote catalog, and pull its state back into the originating lakeFS repository
-*RemotesApi* | [**push_iceberg_table**](docs/RemotesApi.md#push_iceberg_table) | **POST** /iceberg/remotes/{catalog}/push | register existing lakeFS table in remote catalog
 *RepositoriesApi* | [**create_repository**](docs/RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
 *RepositoriesApi* | [**delete_gc_rules**](docs/RepositoriesApi.md#delete_gc_rules) | **DELETE** /repositories/{repository}/settings/gc_rules | 
 *RepositoriesApi* | [**delete_repository**](docs/RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
@@ -199,16 +185,13 @@ Class | Method | HTTP request | Description
  - [Acl](docs/Acl.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
- - [AsyncTaskStatus](docs/AsyncTaskStatus.md)
  - [AuthCapabilities](docs/AuthCapabilities.md)
  - [AuthenticationToken](docs/AuthenticationToken.md)
  - [BranchCreation](docs/BranchCreation.md)
  - [BranchProtectionRule](docs/BranchProtectionRule.md)
- - [CapabilitiesConfig](docs/CapabilitiesConfig.md)
  - [CherryPickCreation](docs/CherryPickCreation.md)
  - [CommPrefsInput](docs/CommPrefsInput.md)
  - [Commit](docs/Commit.md)
- - [CommitAsyncStatus](docs/CommitAsyncStatus.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
  - [CommitOverrides](docs/CommitOverrides.md)
@@ -240,21 +223,15 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
- - [IcebergLocalTable](docs/IcebergLocalTable.md)
- - [IcebergPullRequest](docs/IcebergPullRequest.md)
- - [IcebergPushRequest](docs/IcebergPushRequest.md)
- - [IcebergRemoteTable](docs/IcebergRemoteTable.md)
  - [ImportCreation](docs/ImportCreation.md)
  - [ImportCreationResponse](docs/ImportCreationResponse.md)
  - [ImportLocation](docs/ImportLocation.md)
  - [ImportStatus](docs/ImportStatus.md)
  - [InstallationUsageReport](docs/InstallationUsageReport.md)
  - [InternalDeleteBranchProtectionRuleRequest](docs/InternalDeleteBranchProtectionRuleRequest.md)
- - [License](docs/License.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
- - [MergeAsyncStatus](docs/MergeAsyncStatus.md)
  - [MergeResult](docs/MergeResult.md)
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
