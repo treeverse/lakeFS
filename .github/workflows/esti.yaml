@@ -21,7 +21,7 @@ jobs:
       python-sdk-change: ${{ steps.filter.outputs.python-sdk == 'true' }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@v4.0.1
         id: filter
         with:
           filters: |
@@ -56,7 +56,7 @@ jobs:
         run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
 
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.4
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
@@ -106,7 +106,7 @@ jobs:
           aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.2
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -163,7 +163,7 @@ jobs:
           mask-aws-account-id: 'false'
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.2
         with:
           mask-password: 'false'
 
@@ -269,7 +269,7 @@ jobs:
         run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.4
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -352,7 +352,7 @@ jobs:
           aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.2
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -726,7 +726,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v6
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.4
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -773,7 +773,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v6
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.4
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -1324,7 +1324,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.4
         id: playwright-cache
         with:
           path: |
@@ -1400,7 +1400,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.4
         id: playwright-cache
         with:
           path: |
