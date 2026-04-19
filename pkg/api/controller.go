@@ -2245,7 +2245,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams) {
-	storageID := config.GetActualStorageID(c.Config.StorageConfig(), "")
+	storageID := config.GetActualStorageID(c.Config.StorageConfig(), swag.StringValue(body.StorageId))
 	storageNamespace := body.StorageNamespace
 
 	if !c.authorize(w, r, permissions.Node{
