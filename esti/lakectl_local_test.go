@@ -124,7 +124,7 @@ func TestLakectlLocal_init(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+dataDir, false, "lakectl_local_list", vars)
 
 	// Expect empty since no linked directories in CWD
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_local_list_empty", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
 	// Verify directory is empty
 	localVerifyDirContents(t, dataDir, []string{})
@@ -251,7 +251,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+dataDir, false, "lakectl_local_list", vars)
 
 		// Expect empty since no linked directories in CWD
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_local_list_empty", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
 		expected := localExtractRelativePathsByPrefix(t, prefix, objects)
 		localVerifyDirContents(t, dataDir, expected)
@@ -1147,4 +1147,12 @@ Use "lakectl local pull... --force" to sync with the remote.`,
 			require.Contains(t, sanitizedResult, tt.expectedmessage)
 		})
 	}
+}
+
+func TestLakectlLocal_warning(t *testing.T) {
+	// Verify that running a `lakectl local` subcommand emits the scalability
+	// warning. Uses runShellCommand to bypass sanitize(), which strips it.
+	out, _ := runShellCommand(t, Lakectl()+" local list", false)
+	require.Contains(t, string(out), `Warning:`)
+	require.Contains(t, string(out), `https://docs.lakefs.io/reference/mount.html`)
 }
