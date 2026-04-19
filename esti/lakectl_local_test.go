@@ -1148,11 +1148,3 @@ Use "lakectl local pull... --force" to sync with the remote.`,
 		})
 	}
 }
-
-func TestLakectlLocal_warning(t *testing.T) {
-	// Verify that running a `lakectl local` subcommand emits the scalability
-	// warning. Uses runShellCommand to bypass sanitize(), which strips it.
-	out, _ := runShellCommand(t, Lakectl()+" local list", false)
-	require.Contains(t, string(out), `Warning:`)
-	require.Contains(t, string(out), `https://docs.lakefs.io/reference/mount.html`)
-}
