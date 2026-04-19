@@ -1,2 +1,4 @@
+Warning: Using "lakectl local" requires a full local copy of cloned data. For a more scalable solution, please refer to: https://docs.lakefs.io/reference/mount.html
+
 lakeFS path ${PATH} is an existing object and cannot be used as a reference source
 Error executing command.

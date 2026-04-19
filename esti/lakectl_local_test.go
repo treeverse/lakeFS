@@ -124,7 +124,7 @@ func TestLakectlLocal_init(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+dataDir, false, "lakectl_local_list", vars)
 
 	// Expect empty since no linked directories in CWD
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_local_list_empty", vars)
 
 	// Verify directory is empty
 	localVerifyDirContents(t, dataDir, []string{})
@@ -251,7 +251,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+dataDir, false, "lakectl_local_list", vars)
 
 		// Expect empty since no linked directories in CWD
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_local_list_empty", vars)
 
 		expected := localExtractRelativePathsByPrefix(t, prefix, objects)
 		localVerifyDirContents(t, dataDir, expected)

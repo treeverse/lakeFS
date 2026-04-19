@@ -32,6 +32,8 @@ const (
 	cloneOperation    LocalOperation = "clone"
 
 	CaseInsensitiveWarningMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly.`
+
+	localScalabilityWarning = `Using "lakectl local" requires a full local copy of cloned data. For a more scalable solution, please refer to: https://docs.lakefs.io/reference/mount.html`
 )
 
 const localSummaryTemplate = `
@@ -157,6 +159,7 @@ var localCmd = &cobra.Command{
 	Short: "Sync local directories with lakeFS paths",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		preRunCmd(cmd)
+		Warning(localScalabilityWarning)
 
 		_, localPath := getSyncArgs(args, false, false)
 		cmdSuffix := ""

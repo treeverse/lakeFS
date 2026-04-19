@@ -1,1 +1,3 @@
+Warning: Using "lakectl local" requires a full local copy of cloned data. For a more scalable solution, please refer to: https://docs.lakefs.io/reference/mount.html
+
 Successfully linked local directory '${LOCAL_DIR}' with remote 'lakefs://${REPO}/${REF}/${PREFIX}'
