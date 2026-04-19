@@ -34,7 +34,7 @@ const (
 	LakectlInteractive     = "LAKECTL_INTERACTIVE"
 	DeathMessage           = "{{.Error|red}}\nError executing command.\n"
 	DeathMessageWithFields = "{{.Message|red}}\n{{.Status}}\n"
-	WarnMessage            = "{{.Warning|yellow}}\n\n"
+	WarnMessage            = "{{.Prefix|yellow}} {{.Message}}\n\n"
 )
 
 const (
@@ -234,7 +234,7 @@ func WriteIfVerbose(tpl string, data any) {
 }
 
 func Warning(message string) {
-	WriteTo(WarnMessage, struct{ Warning string }{Warning: "Warning: " + message}, os.Stderr)
+	WriteTo(WarnMessage, struct{ Prefix, Message string }{Prefix: "Warning:", Message: message}, os.Stderr)
 }
 
 func Die(errMsg string, code int) {
