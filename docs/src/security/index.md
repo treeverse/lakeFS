@@ -26,6 +26,7 @@ Learn more about some of the featured that help keep lakeFS Secure:
 - [Single Sign On (SSO)](./sso.md) - lakeFS provides administrators with the necessary information to set up SSO for both lakeFS Cloud and Enterprise editions, covering various authentication protocols and identity providers.
 - [Short Lived Token (STS like)](./sts-login.md) - This feature allows lakeFS to leverage temporary credentials for secure and flexible authentication, integrating seamlessly with existing identity providers.
 - [Login to lakeFS with AWS IAM](./external-principals-aws.md) - This feature enhances the integration between lakeFS and AWS by supporting authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
+- [JWT IdP Login](./jwt-login.md) - Exchange a JWT issued by any external IdP with a JWKS endpoint for a lakeFS session token via `POST /auth/jwt/login`.
 
 ### SOC2 Compliance ###
 lakeFS Cloud is SOC2 compliant, demonstrating our commitment to stringent security standards.

@@ -149,6 +149,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**get_token_from_mailbox**](docs/AuthApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
 *AuthApi* | [**get_token_redirect**](docs/AuthApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 *AuthApi* | [**get_user**](docs/AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
+*AuthApi* | [**jwt_login**](docs/AuthApi.md#jwt_login) | **POST** /auth/jwt/login | exchange an external IdP JWT for a lakeFS session token
 *AuthApi* | [**list_group_members**](docs/AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 *AuthApi* | [**list_group_policies**](docs/AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
 *AuthApi* | [**list_groups**](docs/AuthApi.md#list_groups) | **GET** /auth/groups | list groups
@@ -343,6 +344,7 @@ Class | Method | HTTP request | Description
  - [ImportStatus](docs/ImportStatus.md)
  - [InstallationUsageReport](docs/InstallationUsageReport.md)
  - [InternalDeleteBranchProtectionRuleRequest](docs/InternalDeleteBranchProtectionRuleRequest.md)
+ - [JWTLoginInformation](docs/JWTLoginInformation.md)
  - [License](docs/License.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)

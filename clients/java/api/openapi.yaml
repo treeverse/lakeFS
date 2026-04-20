@@ -283,6 +283,48 @@ paths:
       - experimental
       x-content-type: application/json
       x-accepts: application/json
+  /auth/jwt/login:
+    post:
+      operationId: jwtLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JWTLoginInformation'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: successful login
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "501":
+          description: JWT login is not enabled on this server
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: exchange an external IdP JWT for a lakeFS session token
+      tags:
+      - auth
+      x-content-type: application/json
+      x-accepts: application/json
   /auth/capabilities:
     get:
       operationId: getAuthCapabilities
@@ -10506,6 +10548,16 @@ components:
       - code
       - redirect_uri
       - state
+      type: object
+    JWTLoginInformation:
+      example:
+        token: token
+      properties:
+        token:
+          description: A JWT issued by the configured external IdP.
+          type: string
+      required:
+      - token
       type: object
     AuthenticationToken:
       example:

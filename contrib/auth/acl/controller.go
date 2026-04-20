@@ -314,6 +314,29 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 	}
 
 	ctx := r.Context()
+
+	// JWT IdP login resolves users by external ID via ListUsers?external_id=.
+	// Our paginated list doesn't support arbitrary predicates, so delegate
+	// to GetUserByExternalID and return a 0/1-element page.
+	if params.ExternalId != nil {
+		user, err := c.Auth.GetUserByExternalID(ctx, *params.ExternalId)
+		if errors.Is(err, auth.ErrNotFound) {
+			writeResponse(w, http.StatusOK, apigen.UserList{
+				Results:    make([]apigen.User, 0),
+				Pagination: apigen.Pagination{Results: 0},
+			})
+			return
+		}
+		if c.handleAPIError(w, err) {
+			return
+		}
+		writeResponse(w, http.StatusOK, apigen.UserList{
+			Results:    []apigen.User{serializeUser(user)},
+			Pagination: apigen.Pagination{Results: 1},
+		})
+		return
+	}
+
 	users, paginator, err := c.Auth.ListUsers(ctx,
 		&model.PaginationParams{
 			After:  swag.StringValue((*string)(params.After)),
@@ -333,15 +356,21 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 		},
 	}
 	for _, u := range users {
-		response.Results = append(response.Results, apigen.User{
-			Username:          u.Username,
-			CreationDate:      u.CreatedAt.Unix(),
-			Email:             u.Email,
-			EncryptedPassword: u.EncryptedPassword,
-			FriendlyName:      u.FriendlyName,
-		})
+		response.Results = append(response.Results, serializeUser(u))
 	}
 	writeResponse(w, http.StatusOK, response)
+}
+
+func serializeUser(u *model.User) apigen.User {
+	return apigen.User{
+		Username:          u.Username,
+		CreationDate:      u.CreatedAt.Unix(),
+		Email:             u.Email,
+		EncryptedPassword: u.EncryptedPassword,
+		FriendlyName:      u.FriendlyName,
+		ExternalId:        u.ExternalID,
+		Source:            swag.String(u.Source),
+	}
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body apigen.CreateUserJSONRequestBody) {
@@ -352,19 +381,13 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		FriendlyName: body.FriendlyName,
 		Email:        body.Email,
 		Source:       swag.StringValue(body.Source),
+		ExternalID:   body.ExternalId,
 	}
 	_, err := c.Auth.CreateUser(ctx, u)
 	if c.handleAPIError(w, err) {
 		return
 	}
-	response := apigen.User{
-		CreationDate: u.CreatedAt.Unix(),
-		Email:        u.Email,
-		FriendlyName: u.FriendlyName,
-		Username:     u.Username,
-		Source:       &u.Source,
-	}
-	writeResponse(w, http.StatusCreated, response)
+	writeResponse(w, http.StatusCreated, serializeUser(u))
 }
 
 func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, username string) {

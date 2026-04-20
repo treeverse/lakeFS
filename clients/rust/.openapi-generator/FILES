@@ -69,6 +69,7 @@ docs/ImportStatus.md
 docs/InstallationUsageReport.md
 docs/InternalApi.md
 docs/InternalDeleteBranchProtectionRuleRequest.md
+docs/JwtLoginInformation.md
 docs/License.md
 docs/LicenseApi.md
 docs/LoginConfig.md
@@ -224,6 +225,7 @@ src/models/import_location.rs
 src/models/import_status.rs
 src/models/installation_usage_report.rs
 src/models/internal_delete_branch_protection_rule_request.rs
+src/models/jwt_login_information.rs
 src/models/license.rs
 src/models/login_config.rs
 src/models/login_information.rs

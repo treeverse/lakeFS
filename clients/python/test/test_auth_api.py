@@ -209,6 +209,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_jwt_login(self) -> None:
+        """Test case for jwt_login
+
+        exchange an external IdP JWT for a lakeFS session token  # noqa: E501
+        """
+        pass
+
     def test_list_group_members(self) -> None:
         """Test case for list_group_members
 

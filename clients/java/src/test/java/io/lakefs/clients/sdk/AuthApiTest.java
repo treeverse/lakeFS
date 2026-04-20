@@ -29,6 +29,7 @@ import io.lakefs.clients.sdk.model.ExternalPrincipalList;
 import io.lakefs.clients.sdk.model.Group;
 import io.lakefs.clients.sdk.model.GroupCreation;
 import io.lakefs.clients.sdk.model.GroupList;
+import io.lakefs.clients.sdk.model.JWTLoginInformation;
 import io.lakefs.clients.sdk.model.LoginInformation;
 import io.lakefs.clients.sdk.model.Policy;
 import io.lakefs.clients.sdk.model.PolicyList;
@@ -398,6 +399,19 @@ public class AuthApiTest {
     public void getUserTest() throws ApiException {
         String userId = null;
         User response = api.getUser(userId)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * exchange an external IdP JWT for a lakeFS session token
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void jwtLoginTest() throws ApiException {
+        JWTLoginInformation jwTLoginInformation = null;
+        AuthenticationToken response = api.jwtLogin(jwTLoginInformation)
                 .execute();
         // TODO: test validations
     }

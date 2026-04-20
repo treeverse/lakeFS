@@ -880,6 +880,36 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 	writeResponse(w, r, http.StatusOK, responseToken)
 }
 
+func (c *Controller) JwtLogin(w http.ResponseWriter, r *http.Request, body apigen.JwtLoginJSONRequestBody) {
+	ctx := r.Context()
+	c.LogAction(ctx, "jwt_login", r, "", "", "")
+
+	user, err := c.Authentication.ValidateJWT(ctx, body.Token)
+	switch {
+	case errors.Is(err, authentication.ErrNotImplemented):
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
+		return
+	case err != nil:
+		c.Logger.WithError(err).Debug("jwt login failed")
+		writeError(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		return
+	}
+
+	loginTime := time.Now()
+	duration := c.Config.AuthConfig().GetBaseAuthConfig().LoginDuration
+	expires := loginTime.Add(duration)
+	tokenString, err := auth.GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), user.Username, loginTime, expires)
+	if err != nil {
+		c.Logger.WithError(err).Error("jwt login: failed to generate lakeFS token")
+		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	writeResponse(w, r, http.StatusOK, apigen.AuthenticationToken{
+		Token:           tokenString,
+		TokenExpiration: swag.Int64(expires.Unix()),
+	})
+}
+
 func (c *Controller) GetTokenRedirect(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	c.handleAPIError(ctx, w, r, authentication.ErrNotImplemented)

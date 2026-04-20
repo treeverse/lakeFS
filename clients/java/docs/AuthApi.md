@@ -30,6 +30,7 @@ All URIs are relative to */api/v1*
 | [**getTokenFromMailbox**](AuthApi.md#getTokenFromMailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL. |
 | [**getTokenRedirect**](AuthApi.md#getTokenRedirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser |
 | [**getUser**](AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user |
+| [**jwtLogin**](AuthApi.md#jwtLogin) | **POST** /auth/jwt/login | exchange an external IdP JWT for a lakeFS session token |
 | [**listGroupMembers**](AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members |
 | [**listGroupPolicies**](AuthApi.md#listGroupPolicies) | **GET** /auth/groups/{groupId}/policies | list group policies |
 | [**listGroups**](AuthApi.md#listGroups) | **GET** /auth/groups | list groups |
@@ -2407,6 +2408,71 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **429** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="jwtLogin"></a>
+# **jwtLogin**
+> AuthenticationToken jwtLogin(jwTLoginInformation).execute();
+
+exchange an external IdP JWT for a lakeFS session token
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    JWTLoginInformation jwTLoginInformation = new JWTLoginInformation(); // JWTLoginInformation | 
+    try {
+      AuthenticationToken result = apiInstance.jwtLogin(jwTLoginInformation)
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#jwtLogin");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **jwTLoginInformation** | [**JWTLoginInformation**](JWTLoginInformation.md)|  | |
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | successful login |  -  |
+| **400** | Bad Request |  -  |
+| **401** | Unauthorized |  -  |
+| **501** | JWT login is not enabled on this server |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listGroupMembers"></a>

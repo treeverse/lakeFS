@@ -706,6 +706,7 @@ type BaseAuth struct {
 	} `mapstructure:"remote_authenticator"`
 	OIDC                   OIDC                   `mapstructure:"oidc"`
 	CookieAuthVerification CookieAuthVerification `mapstructure:"cookie_auth_verification"`
+	JWT                    JWT                    `mapstructure:"jwt"`
 	// LogoutRedirectURL is the URL on which to mount the
 	// server-side logout.
 	LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
@@ -736,6 +737,56 @@ type OIDC struct {
 	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 	PersistFriendlyName    bool              `mapstructure:"persist_friendly_name"`
+}
+
+// JWT configures the POST /auth/jwt/login token-exchange endpoint:
+// lakeFS verifies a JWT issued by an external IdP, maps its claims to
+// a lakeFS user, and returns a lakeFS AuthenticationToken. Enabled
+// when JWKSURL is non-empty.
+type JWT struct {
+	// Issuer is the required `iss` claim value.
+	// Example: "https://accounts.example.com".
+	Issuer string `mapstructure:"issuer"`
+
+	// Audience lists acceptable `aud` values; a JWT is accepted if its
+	// audience matches any entry.
+	Audience []string `mapstructure:"audience"`
+
+	// JWKSURL serves the IdP's JSON Web Key Set. Fetched once at
+	// startup (fail-fast) and re-fetched on-demand when a token
+	// presents an unknown `kid`.
+	JWKSURL string `mapstructure:"jwks_url"`
+
+	// ValidateIDTokenClaims requires each listed top-level claim to
+	// exact-match the given value. Use to restrict by tenant, domain,
+	// etc. Example: {"hd": "example.com", "tid": "abc-123"}.
+	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
+
+	// InitialGroupsPath is a JMESPath expression evaluated against
+	// the verified claim map on first login. Must return a string or
+	// array of strings of lakeFS group names. Any other result (null,
+	// empty array, wrong type) leaves the user with no initial groups
+	// -- bake the default into the expression, e.g.
+	//   contains(groups, 'admin') && ['Admins'] || ['Viewers']
+	InitialGroupsPath string `mapstructure:"initial_groups_path"`
+
+	// FriendlyNameClaimRef is an RFC 6901 JSON pointer to the user's
+	// display name. Persisted only when PersistFriendlyName is true.
+	// Example: "/name", "/preferred_username".
+	FriendlyNameClaimRef string `mapstructure:"friendly_name_claim_ref"`
+
+	// ExternalUserIDClaimRef is an RFC 6901 JSON pointer to the claim
+	// that stably identifies the subject across logins. Stored as
+	// model.User.ExternalID, and as Username for new users. Defaults
+	// to "/sub". Example overrides: "/oid" (Entra),
+	// "/cognito:username".
+	ExternalUserIDClaimRef string `mapstructure:"external_user_id_claim_ref"`
+
+	// PersistFriendlyName, when true, writes the friendly name
+	// resolved from FriendlyNameClaimRef to the KV store so it
+	// surfaces in the user list. Refreshed on each login whenever the
+	// claim value changes. No-op when FriendlyNameClaimRef is empty.
+	PersistFriendlyName bool `mapstructure:"persist_friendly_name"`
 }
 
 // CookieAuthVerification is related to auth based on a cookie set by an external service

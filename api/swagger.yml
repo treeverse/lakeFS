@@ -1243,6 +1243,16 @@ components:
           description: |
             The time-to-live for the generated token in seconds.  The default
             value is 3600 seconds (1 hour) maximum time allowed is 12 hours.
+
+    JWTLoginInformation:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: A JWT issued by the configured external IdP.
+
     AuthenticationToken:
       type: object
       required:
@@ -2421,6 +2431,35 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         429:
           description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/jwt/login:
+    post:
+      tags:
+        - auth
+      operationId: jwtLogin
+      summary: exchange an external IdP JWT for a lakeFS session token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JWTLoginInformation"
+      responses:
+        200:
+          description: successful login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationToken"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        501:
+          description: JWT login is not enabled on this server
         default:
           $ref: "#/components/responses/ServerError"
 

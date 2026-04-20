@@ -11,6 +11,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -21,6 +22,10 @@ type Service interface {
 	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]any) (*apiclient.ExternalPrincipal, error)
 	// ValidateSTS validates the STS parameters and returns the external user ID
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
+	// ValidateJWT verifies a JWT issued by an external IdP and returns
+	// the resolved lakeFS user, provisioning on first login. Implementations
+	// that do not support JWT IdP login return ErrNotImplemented.
+	ValidateJWT(ctx context.Context, token string) (*model.User, error)
 	RegisterAdditionalRoutes(r *chi.Mux, sessionStore sessions.Store)
 	OauthCallback(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store)
 }
@@ -36,6 +41,10 @@ func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state 
 }
 
 func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]any) (*apiclient.ExternalPrincipal, error) {
+	return nil, ErrNotImplemented
+}
+
+func (d DummyService) ValidateJWT(_ context.Context, _ string) (*model.User, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -151,6 +160,13 @@ func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest
 
 func (s *APIService) IsExternalPrincipalsEnabled() bool {
 	return s.externalPrincipalsEnabled
+}
+
+// ValidateJWT on the remote authenticator is not implemented. JWT IdP
+// login is an in-process, JWKS-based flow; callers wire it via
+// WithJWT on top of any underlying Service.
+func (s *APIService) ValidateJWT(_ context.Context, _ string) (*model.User, error) {
+	return nil, ErrNotImplemented
 }
 
 func (s *APIService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {

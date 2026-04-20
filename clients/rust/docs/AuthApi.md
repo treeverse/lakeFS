@@ -30,6 +30,7 @@ Method | HTTP request | Description
 [**get_token_from_mailbox**](AuthApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
 [**get_token_redirect**](AuthApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 [**get_user**](AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
+[**jwt_login**](AuthApi.md#jwt_login) | **POST** /auth/jwt/login | exchange an external IdP JWT for a lakeFS session token
 [**list_group_members**](AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 [**list_group_policies**](AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
 [**list_groups**](AuthApi.md#list_groups) | **GET** /auth/groups | list groups
@@ -775,6 +776,34 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## jwt_login
+
+> models::AuthenticationToken jwt_login(jwt_login_information)
+exchange an external IdP JWT for a lakeFS session token
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**jwt_login_information** | [**JwtLoginInformation**](JwtLoginInformation.md) |  | [required] |
+
+### Return type
+
+[**models::AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

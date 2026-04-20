@@ -246,6 +246,7 @@ nav:
           - AWS IAM Roles: security/external-principals-aws.md
           - Remote Authenticator: security/remote-authenticator.md
           - Short-Lived Tokens (STS): security/sts-login.md
+          - JWT IdP Login: security/jwt-login.md
           - SCIM: howto/scim.md
       - Authorization:
           - Role-Based Access Control (RBAC): security/rbac.md

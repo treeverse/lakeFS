@@ -42,6 +42,7 @@ import io.lakefs.clients.sdk.model.ExternalPrincipalList;
 import io.lakefs.clients.sdk.model.Group;
 import io.lakefs.clients.sdk.model.GroupCreation;
 import io.lakefs.clients.sdk.model.GroupList;
+import io.lakefs.clients.sdk.model.JWTLoginInformation;
 import io.lakefs.clients.sdk.model.LoginInformation;
 import io.lakefs.clients.sdk.model.Policy;
 import io.lakefs.clients.sdk.model.PolicyList;
@@ -4732,6 +4733,178 @@ public class AuthApi {
      */
     public APIgetUserRequest getUser(String userId) {
         return new APIgetUserRequest(userId);
+    }
+    private okhttp3.Call jwtLoginCall(JWTLoginInformation jwTLoginInformation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = jwTLoginInformation;
+
+        // create path and map variables
+        String localVarPath = "/auth/jwt/login";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call jwtLoginValidateBeforeCall(JWTLoginInformation jwTLoginInformation, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'jwTLoginInformation' is set
+        if (jwTLoginInformation == null) {
+            throw new ApiException("Missing the required parameter 'jwTLoginInformation' when calling jwtLogin(Async)");
+        }
+
+        return jwtLoginCall(jwTLoginInformation, _callback);
+
+    }
+
+
+    private ApiResponse<AuthenticationToken> jwtLoginWithHttpInfo(JWTLoginInformation jwTLoginInformation) throws ApiException {
+        okhttp3.Call localVarCall = jwtLoginValidateBeforeCall(jwTLoginInformation, null);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call jwtLoginAsync(JWTLoginInformation jwTLoginInformation, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = jwtLoginValidateBeforeCall(jwTLoginInformation, _callback);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIjwtLoginRequest {
+        private final JWTLoginInformation jwTLoginInformation;
+
+        private APIjwtLoginRequest(JWTLoginInformation jwTLoginInformation) {
+            this.jwTLoginInformation = jwTLoginInformation;
+        }
+
+        /**
+         * Build call for jwtLogin
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> JWT login is not enabled on this server </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return jwtLoginCall(jwTLoginInformation, _callback);
+        }
+
+        /**
+         * Execute jwtLogin request
+         * @return AuthenticationToken
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> JWT login is not enabled on this server </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public AuthenticationToken execute() throws ApiException {
+            ApiResponse<AuthenticationToken> localVarResp = jwtLoginWithHttpInfo(jwTLoginInformation);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute jwtLogin request with HTTP info returned
+         * @return ApiResponse&lt;AuthenticationToken&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> JWT login is not enabled on this server </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<AuthenticationToken> executeWithHttpInfo() throws ApiException {
+            return jwtLoginWithHttpInfo(jwTLoginInformation);
+        }
+
+        /**
+         * Execute jwtLogin request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 501 </td><td> JWT login is not enabled on this server </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+            return jwtLoginAsync(jwTLoginInformation, _callback);
+        }
+    }
+
+    /**
+     * exchange an external IdP JWT for a lakeFS session token
+     * 
+     * @param jwTLoginInformation  (required)
+     * @return APIjwtLoginRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful login </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 501 </td><td> JWT login is not enabled on this server </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIjwtLoginRequest jwtLogin(JWTLoginInformation jwTLoginInformation) {
+        return new APIjwtLoginRequest(jwTLoginInformation);
     }
     private okhttp3.Call listGroupMembersCall(String groupId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
         String basePath = null;
