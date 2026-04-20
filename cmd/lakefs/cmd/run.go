@@ -213,6 +213,16 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
+		// Optional JWT IdP login wiring (POST /auth/jwt/login).
+		// Enabled iff auth.jwt.jwks_url is set.
+		if jwtCfg := cfg.AuthConfig().GetBaseAuthConfig().JWT; jwtCfg.JWKSURL != "" {
+			authenticationService, err = authentication.WithJWT(authenticationService, &jwtCfg, authService, logger)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to initialize JWT IdP login")
+			}
+			logger.WithField("jwks_url", jwtCfg.JWKSURL).Info("JWT IdP login enabled")
+		}
+
 		// start API server
 		apiHandler := api.Serve(
 			cfg,

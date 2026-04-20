@@ -149,6 +149,22 @@ Configuration section for the lakeFS key-value store database.
 * `auth.oidc.persist_friendly_name` `(bool : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
 * `auth.oidc.validate_id_token_claims` `(map[string]string : {})` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 
+#### auth.jwt
+
+Configures `POST /auth/jwt/login`, which accepts a JWT issued by an external
+identity provider and exchanges it for a lakeFS session token. The endpoint is
+enabled when `auth.jwt.jwks_url` is set; otherwise it responds with `501 Not
+Implemented`. See [JWT IdP login](../security/jwt-login.md) for the full guide.
+
+* `auth.jwt.issuer` `(string : "")` - Required `iss` claim value.
+* `auth.jwt.audience` `(string[] : [])` - Accepted `aud` values; a JWT is accepted if its audience matches any entry.
+* `auth.jwt.jwks_url` `(string : "")` - URL of the IdP's JSON Web Key Set. Setting this enables JWT login. Fetched once at startup and re-fetched on-demand when a token presents an unknown `kid`.
+* `auth.jwt.validate_id_token_claims` `(map[string]string : {})` - Each listed top-level claim must exact-match the given value for the JWT to be accepted.
+* `auth.jwt.external_user_id_claim_ref` `(string : "/sub")` - RFC 6901 JSON pointer to the claim that stably identifies the subject across logins. Stored on `model.User.ExternalID` and as `Username` for new users.
+* `auth.jwt.friendly_name_claim_ref` `(string : "")` - RFC 6901 JSON pointer to the user's display name. Persisted only when `auth.jwt.persist_friendly_name` is `true`.
+* `auth.jwt.initial_groups_path` `(string : "")` - JMESPath expression evaluated against the claim map on first provisioning. Must return a string or array of strings of lakeFS group names; any other result leaves the user with no initial groups. Bake defaults into the expression, e.g. `` contains(groups, 'admin') && ['Admins'] || ['Viewers'] ``.
+* `auth.jwt.persist_friendly_name` `(bool : false)` - If set to `true`, the friendly name resolved from `auth.jwt.friendly_name_claim_ref` is persisted to the KV store and can be displayed in the user list. Refreshed on each login whenever the claim value changes. Has no effect when `auth.jwt.friendly_name_claim_ref` is unset.
+
 #### auth.cookie_auth_verification
 
 * `auth.cookie_auth_verification.validate_id_token_claims` `(map[string]string : {})` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.

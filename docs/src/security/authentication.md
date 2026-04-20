@@ -107,3 +107,12 @@ auth:
     # ... Other OIDC configurations
     initial_groups_claim_name: roles
 ```
+
+## JWT IdP login (token exchange)
+
+lakeFS can accept a JWT issued by an external identity provider and exchange
+it for a lakeFS session token via `POST /auth/jwt/login`. It is a
+vendor-agnostic alternative to the built-in IAM and STS logins, and works with
+any IdP that publishes a JWKS endpoint.
+
+See [JWT IdP login](./jwt-login.md) for configuration and usage.

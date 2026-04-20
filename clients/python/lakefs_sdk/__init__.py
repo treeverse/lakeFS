@@ -106,6 +106,7 @@ from lakefs_sdk.models.import_location import ImportLocation
 from lakefs_sdk.models.import_status import ImportStatus
 from lakefs_sdk.models.installation_usage_report import InstallationUsageReport
 from lakefs_sdk.models.internal_delete_branch_protection_rule_request import InternalDeleteBranchProtectionRuleRequest
+from lakefs_sdk.models.jwt_login_information import JWTLoginInformation
 from lakefs_sdk.models.license import License
 from lakefs_sdk.models.login_config import LoginConfig
 from lakefs_sdk.models.login_information import LoginInformation

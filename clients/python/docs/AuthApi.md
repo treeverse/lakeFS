@@ -30,6 +30,7 @@ Method | HTTP request | Description
 [**get_token_from_mailbox**](AuthApi.md#get_token_from_mailbox) | **GET** /auth/get-token/mailboxes/{mailbox} | receive the token after user has authenticated on redirect URL.
 [**get_token_redirect**](AuthApi.md#get_token_redirect) | **GET** /auth/get-token/start | start acquiring a token by logging in on a browser
 [**get_user**](AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
+[**jwt_login**](AuthApi.md#jwt_login) | **POST** /auth/jwt/login | exchange an external IdP JWT for a lakeFS session token
 [**list_group_members**](AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 [**list_group_policies**](AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
 [**list_groups**](AuthApi.md#list_groups) | **GET** /auth/groups | list groups
@@ -2793,6 +2794,79 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **jwt_login**
+> AuthenticationToken jwt_login(jwt_login_information)
+
+exchange an external IdP JWT for a lakeFS session token
+
+### Example
+
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.authentication_token import AuthenticationToken
+from lakefs_sdk.models.jwt_login_information import JWTLoginInformation
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    jwt_login_information = lakefs_sdk.JWTLoginInformation() # JWTLoginInformation | 
+
+    try:
+        # exchange an external IdP JWT for a lakeFS session token
+        api_response = api_instance.jwt_login(jwt_login_information)
+        print("The response of AuthApi->jwt_login:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AuthApi->jwt_login: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **jwt_login_information** | [**JWTLoginInformation**](JWTLoginInformation.md)|  | 
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful login |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**501** | JWT login is not enabled on this server |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

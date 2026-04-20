@@ -70,6 +70,7 @@ docs/ImportStatus.md
 docs/InstallationUsageReport.md
 docs/InternalApi.md
 docs/InternalDeleteBranchProtectionRuleRequest.md
+docs/JWTLoginInformation.md
 docs/License.md
 docs/LicenseApi.md
 docs/LoginConfig.md
@@ -229,6 +230,7 @@ lakefs_sdk/models/import_location.py
 lakefs_sdk/models/import_status.py
 lakefs_sdk/models/installation_usage_report.py
 lakefs_sdk/models/internal_delete_branch_protection_rule_request.py
+lakefs_sdk/models/jwt_login_information.py
 lakefs_sdk/models/license.py
 lakefs_sdk/models/login_config.py
 lakefs_sdk/models/login_information.py
@@ -370,6 +372,7 @@ test/test_import_status.py
 test/test_installation_usage_report.py
 test/test_internal_api.py
 test/test_internal_delete_branch_protection_rule_request.py
+test/test_jwt_login_information.py
 test/test_license.py
 test/test_license_api.py
 test/test_login_config.py

@@ -85,6 +85,9 @@ func setBaseDefaults(cfgType string) {
 	viper.SetDefault("auth.oidc.persist_friendly_name", false)
 	viper.SetDefault("auth.cookie_auth_verification.persist_friendly_name", false)
 
+	viper.SetDefault("auth.jwt.external_user_id_claim_ref", "/sub")
+	viper.SetDefault("auth.jwt.persist_friendly_name", false)
+
 	viper.SetDefault("committed.local_cache.size_bytes", 1*1024*1024*1024)
 	viper.SetDefault("committed.local_cache.dir", "~/lakefs/data/cache")
 	viper.SetDefault("committed.local_cache.max_uploaders_per_writer", 10)

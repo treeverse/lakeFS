@@ -110,6 +110,8 @@ pub mod installation_usage_report;
 pub use self::installation_usage_report::InstallationUsageReport;
 pub mod internal_delete_branch_protection_rule_request;
 pub use self::internal_delete_branch_protection_rule_request::InternalDeleteBranchProtectionRuleRequest;
+pub mod jwt_login_information;
+pub use self::jwt_login_information::JwtLoginInformation;
 pub mod license;
 pub use self::license::License;
 pub mod login_config;
