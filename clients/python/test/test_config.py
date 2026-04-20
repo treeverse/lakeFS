@@ -81,8 +81,7 @@ class TestConfig(unittest.TestCase):
                                 ''
                                 ], )
                         ], ),
-                capabilities_config = lakefs_sdk.models.capabilities_config.CapabilitiesConfig(
-                    async_ops = True, )
+                capabilities_config = None
             )
         else:
             return Config(

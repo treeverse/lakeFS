@@ -1,15 +1,10 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -50,12 +45,6 @@ var commitCmd = &cobra.Command{
 		ctx := cmd.Context()
 		client := getClient()
 
-		configResp, err := client.GetConfigWithResponse(ctx)
-		DieOnErrorOrUnexpectedStatusCode(configResp, err, http.StatusOK)
-		if configResp.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-
 		body := apigen.CommitJSONRequestBody{
 			Message: message,
 			Metadata: &apigen.CommitCreation_Metadata{
@@ -64,49 +53,12 @@ var commitCmd = &cobra.Command{
 			Date:       datePtr,
 			AllowEmpty: &emptyCommitBool,
 		}
-		var commit *apigen.Commit
-		isAsync := false
-		if configResp.JSON200.CapabilitiesConfig != nil {
-			isAsync = swag.BoolValue(configResp.JSON200.CapabilitiesConfig.AsyncOps)
+		resp, err := client.CommitWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitParams{}, body)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
 		}
-		// run asynchronous commit first
-		if isAsync {
-			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-			defer stop()
-
-			startResp, err := client.CommitAsyncWithResponse(sigCtx, branchURI.Repository, branchURI.Ref, &apigen.CommitAsyncParams{}, apigen.CommitAsyncJSONRequestBody(body))
-			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
-			if startResp.JSON202 == nil {
-				Die("Bad response from server", 1)
-			}
-
-			taskID := startResp.JSON202.Id
-			err = pollAsyncOperationStatus(sigCtx, taskID, "commit", func() (*apigen.AsyncTaskStatus, error) {
-				resp, err := client.CommitAsyncStatusWithResponse(sigCtx, branchURI.Repository, branchURI.Ref, taskID)
-				if err != nil {
-					return nil, err
-				}
-				if resp.JSON200 == nil {
-					Die("Bad response from server", 1)
-				}
-				commit = resp.JSON200.Result
-				return &resp.JSON200.AsyncTaskStatus, nil
-			})
-			if err != nil {
-				if errors.Is(err, context.Canceled) {
-					DieFmt("Commit polling canceled. Async task ID: %s", taskID)
-				}
-				DieErr(err)
-			}
-		} else { // Regular commit
-			resp, err := client.CommitWithResponse(ctx, branchURI.Repository, branchURI.Ref, &apigen.CommitParams{}, body)
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-			if resp.JSON201 == nil {
-				Die("Bad response from server", 1)
-			}
-
-			commit = resp.JSON201
-		}
+		commit := resp.JSON201
 
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI

@@ -157,7 +157,6 @@ var (
 const (
 	recursiveFlagName     = "recursive"
 	recursiveFlagShort    = "r"
-	storageIDFlagName     = "storage-id"
 	presignFlagName       = "pre-sign"
 	parallelismFlagName   = "parallelism"
 	noProgressBarFlagName = "no-progress"
@@ -207,13 +206,6 @@ var (
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
 	cmd.Flags().BoolP(recursiveFlagName, recursiveFlagShort, false, usage)
-}
-
-func withStorageID(cmd *cobra.Command) {
-	cmd.Flags().String(storageIDFlagName, "", "")
-	if err := cmd.Flags().MarkHidden(storageIDFlagName); err != nil {
-		DieErr(err)
-	}
 }
 
 func withParallelismFlag(cmd *cobra.Command) {
@@ -622,7 +614,7 @@ func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
 	return awsiam.NewIAMAuthParams(host, opts...), nil
 }
 
-func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
+func getClient() *apigen.ClientWithResponses {
 	httpClient := getHTTPClient(lakectlRetryPolicy)
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
@@ -639,9 +631,10 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
+	var opts []apigen.ClientOption
 	useJWTAuth := accessKeyID == "" && secretAccessKey == ""
 	if useJWTAuth {
-		opts = append(getClientOptions(awsIAMparams, serverEndpoint), opts...)
+		opts = getClientOptions(awsIAMparams, serverEndpoint)
 	}
 
 	oss := osinfo.GetOSInfo()

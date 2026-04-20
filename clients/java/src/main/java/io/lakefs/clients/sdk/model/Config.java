@@ -19,7 +19,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.CapabilitiesConfig;
 import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.UIConfig;
 import io.lakefs.clients.sdk.model.VersionConfig;
@@ -75,7 +74,7 @@ public class Config {
 
   public static final String SERIALIZED_NAME_CAPABILITIES_CONFIG = "capabilities_config";
   @SerializedName(SERIALIZED_NAME_CAPABILITIES_CONFIG)
-  private CapabilitiesConfig capabilitiesConfig;
+  private Object capabilitiesConfig;
 
   public Config() {
   }
@@ -172,7 +171,7 @@ public class Config {
   }
 
 
-  public Config capabilitiesConfig(CapabilitiesConfig capabilitiesConfig) {
+  public Config capabilitiesConfig(Object capabilitiesConfig) {
     
     this.capabilitiesConfig = capabilitiesConfig;
     return this;
@@ -183,12 +182,12 @@ public class Config {
    * @return capabilitiesConfig
   **/
   @javax.annotation.Nullable
-  public CapabilitiesConfig getCapabilitiesConfig() {
+  public Object getCapabilitiesConfig() {
     return capabilitiesConfig;
   }
 
 
-  public void setCapabilitiesConfig(CapabilitiesConfig capabilitiesConfig) {
+  public void setCapabilitiesConfig(Object capabilitiesConfig) {
     this.capabilitiesConfig = capabilitiesConfig;
   }
 
@@ -340,10 +339,6 @@ public class Config {
       // validate the optional field `ui_config`
       if (jsonObj.get("ui_config") != null && !jsonObj.get("ui_config").isJsonNull()) {
         UIConfig.validateJsonElement(jsonObj.get("ui_config"));
-      }
-      // validate the optional field `capabilities_config`
-      if (jsonObj.get("capabilities_config") != null && !jsonObj.get("capabilities_config").isJsonNull()) {
-        CapabilitiesConfig.validateJsonElement(jsonObj.get("capabilities_config"));
       }
   }
 
