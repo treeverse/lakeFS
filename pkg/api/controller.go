@@ -2099,13 +2099,12 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
 	uiConfig := c.getUIConfig()
-	capabilitiesConfig := c.getCapabilitiesConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{
 		StorageConfig:      storageCfg,
 		VersionConfig:      &versionConfig,
 		StorageConfigList:  &storageCfgList,
 		UiConfig:           uiConfig,
-		CapabilitiesConfig: capabilitiesConfig,
+		CapabilitiesConfig: &apigen.CapabilitiesConfig{},
 	})
 }
 
@@ -5772,10 +5771,6 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 	return &apigen.UIConfig{
 		CustomViewers: &apigenViewers,
 	}
-}
-
-func (c *Controller) getCapabilitiesConfig() *apigen.CapabilitiesConfig {
-	return &apigen.CapabilitiesConfig{}
 }
 
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
