@@ -27,11 +27,11 @@ var fsCatCmd = &cobra.Command{
 			Path:    *pathURI.Path,
 			Presign: swag.Bool(preSignMode.Enabled),
 		})
-		DieOnHTTPError(resp)
-		body = resp.Body
 		if err != nil {
 			DieErr(err)
 		}
+		DieOnHTTPError(resp)
+		body = resp.Body
 
 		defer func() {
 			if err := body.Close(); err != nil {
