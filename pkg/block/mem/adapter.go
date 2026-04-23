@@ -246,6 +246,14 @@ func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	dstStorageID := destinationObj.StorageID
 	sourceKey := getKey(sourceObj)
 	destinationKey := getKey(destinationObj)
+	// Signal the missing source explicitly so the gateway returns 404 instead
+	// of silently writing an empty destination object (#10185).
+	if a.data[srcStorageID] == nil {
+		return block.ErrDataNotFound
+	}
+	if _, ok := a.data[srcStorageID][sourceKey]; !ok {
+		return block.ErrDataNotFound
+	}
 	if a.data[srcStorageID] != nil {
 		if a.data[dstStorageID] == nil {
 			a.data[dstStorageID] = make(map[string][]byte)
