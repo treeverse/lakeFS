@@ -53,7 +53,7 @@ jobs:
       id: docver
 
     - name: Setup Ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@v1.302.0
       with:
         working-directory: clients/python
         ruby-version: '3.2'

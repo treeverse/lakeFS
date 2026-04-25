@@ -71,7 +71,7 @@ jobs:
 
       - name: Setup NodeJS
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.3.0
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -106,7 +106,7 @@ jobs:
           aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.3
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -163,7 +163,7 @@ jobs:
           mask-aws-account-id: 'false'
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.3
         with:
           mask-password: 'false'
 
@@ -352,7 +352,7 @@ jobs:
           aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.3
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -1311,7 +1311,7 @@ jobs:
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.3.0
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -1387,7 +1387,7 @@ jobs:
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.3.0
         with:
           node-version: "22.17.x"
           cache: "npm"
