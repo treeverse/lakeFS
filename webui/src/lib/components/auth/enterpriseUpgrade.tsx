@@ -157,8 +157,8 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
         headline: 'Your access keys live here',
         description: (
             <>
-                Access keys are the credentials applications use to authenticate against lakeFS. Create, rotate,
-                and revoke per-user keys when an authentication backend is configured.
+                Access keys are the credentials applications use to authenticate against lakeFS. Create, rotate, and
+                revoke per-user keys when an authentication backend is configured.
             </>
         ),
         learnMore: {
@@ -178,8 +178,8 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
         headline: 'Bring your team into lakeFS',
         description: (
             <>
-                Users are the people and applications that access lakeFS. Invite teammates, provision API users,
-                and manage their lifecycle from one place.
+                Users are the people and applications that access lakeFS. Invite teammates, provision API users, and
+                manage their lifecycle from one place.
             </>
         ),
         learnMore: {
@@ -202,8 +202,8 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
         headline: 'Organize access with groups',
         description: (
             <>
-                Groups bundle users together so you can grant permissions to a whole team at once instead of
-                managing each user individually.
+                Groups bundle users together so you can grant permissions to a whole team at once instead of managing
+                each user individually.
             </>
         ),
         learnMore: {
@@ -223,8 +223,8 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
         headline: 'Define fine-grained permissions',
         description: (
             <>
-                Policies are IAM-style documents that describe what actions users and groups are allowed to
-                perform on which repositories, branches, and paths.
+                Policies are IAM-style documents that describe what actions users and groups are allowed to perform on
+                which repositories, branches, and paths.
             </>
         ),
         learnMore: {
@@ -251,11 +251,7 @@ export const FeatureLockedEmptyState: FC<FeatureLockedEmptyStateProps> = ({ feat
             <div className="feature-locked-empty-state">
                 <div className="feature-locked-actions mb-3 d-flex flex-wrap gap-2">
                     {details.primaryActions.map((action) => (
-                        <Button
-                            key={action.label}
-                            variant={action.variant}
-                            onClick={() => setShowModal(true)}
-                        >
+                        <Button key={action.label} variant={action.variant} onClick={() => setShowModal(true)}>
                             {action.label}
                         </Button>
                     ))}
@@ -304,11 +300,7 @@ export const FeatureLockedEmptyState: FC<FeatureLockedEmptyStateProps> = ({ feat
                 </div>
             </div>
 
-            <EnterpriseUpgradeModal
-                feature={feature}
-                show={showModal}
-                onHide={() => setShowModal(false)}
-            />
+            <EnterpriseUpgradeModal feature={feature} show={showModal} onHide={() => setShowModal(false)} />
         </>
     );
 };

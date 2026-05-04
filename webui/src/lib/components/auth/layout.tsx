@@ -65,27 +65,15 @@ export const AuthLayout = () => {
                             <hr />
 
                             <Nav variant="pills" className="flex-column">
-                                <Link
-                                    component={Nav.Link}
-                                    href="/auth/users"
-                                    active={activeTab === 'users'}
-                                >
+                                <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'}>
                                     Users
                                 </Link>
 
-                                <Link
-                                    component={Nav.Link}
-                                    href="/auth/groups"
-                                    active={activeTab === 'groups'}
-                                >
+                                <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'}>
                                     Groups
                                 </Link>
                                 {rbac !== 'simplified' && (
-                                    <Link
-                                        component={Nav.Link}
-                                        href="/auth/policies"
-                                        active={activeTab === 'policies'}
-                                    >
+                                    <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
                                         Policies
                                     </Link>
                                 )}

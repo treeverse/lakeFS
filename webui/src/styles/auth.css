@@ -133,11 +133,7 @@ body .auth-page .nav-pills .nav-link:hover {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0) 0%,
-        var(--bs-body-bg, #ffffff) 90%
-    );
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, var(--bs-body-bg, #ffffff) 90%);
     pointer-events: none;
 }
 
@@ -146,7 +142,6 @@ body .auth-page .nav-pills .nav-link:hover {
     opacity: 0.55;
     margin-bottom: 0;
 }
-
 
 /* Enterprise upgrade modal */
 .enterprise-upgrade-content {
@@ -224,7 +219,9 @@ body .auth-page .nav-pills .nav-link:hover {
     border: 1px solid var(--bs-border-color, #e5e7eb);
     border-radius: 10px;
     background-color: var(--bs-body-bg, #fff);
-    transition: border-color 0.15s ease, transform 0.15s ease;
+    transition:
+        border-color 0.15s ease,
+        transform 0.15s ease;
 }
 
 .enterprise-upgrade-pill:hover {
