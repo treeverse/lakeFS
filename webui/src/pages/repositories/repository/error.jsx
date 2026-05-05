@@ -42,7 +42,7 @@ const BareRepositoryContainer = () => (
         </p>
         <p>
             <a
-                href="https://community.lakefs.io/howto/backup-and-restore.html"
+                href="https://docs.lakefs.io/howto/backup-and-restore.html"
                 target="_blank"
                 rel="noopener noreferrer"
             >

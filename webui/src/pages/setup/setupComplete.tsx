@@ -89,7 +89,7 @@ export const SetupComplete: FC<SetupCompleteProps> = ({ accessKeyId, secretAcces
                                 <a
                                     target="_blank"
                                     rel="noreferrer"
-                                    href="https://community.lakefs.io/reference/cli.html"
+                                    href="https://docs.lakefs.io/reference/cli.html"
                                 >
                                     lakectl
                                 </a>{' '}
