@@ -47,7 +47,7 @@ const (
 `
 	getLatestVersionErrorTemplate = `{{ "Failed getting latest lakectl version:" | red }} {{ . }}
 `
-	versionTemplate = `lakectl version: {{.LakectlVersion }}
+	versionTemplate = `lakectl version: {{.LakectlVersion }}{{ if .Distribution }} ({{.Distribution}}){{ end }}
 {{- if .LakeFSVersion }}
 lakeFS version: {{.LakeFSVersion}}
 {{- end }}
@@ -121,6 +121,7 @@ type Configuration struct {
 
 type versionInfo struct {
 	LakectlVersion       string
+	Distribution         string
 	LakeFSVersion        string
 	LakectlLatestVersion string
 	LakeFSLatestVersion  string
@@ -440,7 +441,7 @@ It can be extended with plugins; see 'lakectl plugin --help' for more informatio
 			return
 		}
 
-		info := versionInfo{LakectlVersion: version.Version}
+		info := versionInfo{LakectlVersion: version.Version, Distribution: version.Distribution}
 
 		// get lakeFS server version
 
