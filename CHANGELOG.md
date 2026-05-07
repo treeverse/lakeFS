@@ -1,5 +1,18 @@
 # Changelog
 
+
+:new: What's new:
+
+- `lakectl tag delete` now supports a `--yes` flag for non-interactive/scripted usage (#10351)
+- `lakectl` now warns when connected to a lakeFS Enterprise server (#10326)
+- OSS documentation is now available at community.lakefs.io (#10339)
+- Admin screens now display helpful empty states instead of blank pages (#10392)
+
+:bug: Bugs fixed:
+
+- `lakectl` now correctly outputs multiple resources as a JSON array instead of a plain string (#10297)
+- Removed unimplemented endpoints and Enterprise-only parameters from the OpenAPI spec to accurately reflect what's available in OSS (#10370)
+
 ## v1.80.0
 
 :new: What's new:
