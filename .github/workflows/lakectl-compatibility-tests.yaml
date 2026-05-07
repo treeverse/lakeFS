@@ -133,7 +133,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          SKIP_TESTS: 'TestLakectl(Usage|Help)$'
+          SKIP_TESTS: 'TestLakectl(Usage|Help)$|TestLakectlTagList/delete_tag1'
 
   notify-slack:
     name: Notify slack on workflow failures

@@ -21,7 +21,7 @@ import {
 import { tags, branches, commits } from '../../api';
 import { RefTypeBranch, RefTypeCommit, RefTypeTag } from '../../../constants';
 import { useRecentRefs } from '../../hooks/useRecentRefs';
-import { RecentRefSelector } from './RecentRefSelector';
+import { RecentRefSelector } from './recentRefSelector';
 import { MAX_UNTRIMMED_RESULT_LENGTH, getRefDisplayName } from '../../utils/refDisplayName';
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {

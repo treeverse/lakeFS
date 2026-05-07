@@ -28,5 +28,7 @@ var tagDeleteCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
+	AssignAutoConfirmFlag(tagDeleteCmd.Flags())
+
 	tagCmd.AddCommand(tagDeleteCmd)
 }

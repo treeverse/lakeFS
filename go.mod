@@ -84,7 +84,6 @@ require (
 	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf
 	github.com/databricks/databricks-sdk-go v0.26.2
 	github.com/dgraph-io/badger/v4 v4.7.0
-	github.com/elnormous/contenttype v1.0.4
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.35.2
 	github.com/go-viper/mapstructure/v2 v2.4.0
@@ -99,15 +98,6 @@ require (
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/tilinna/z85 v1.0.0
-	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/modules/catalog/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20260302105446-91537729e473
-	github.com/treeverse/lakefs/webui v0.0.0-20260302105446-91537729e473
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )

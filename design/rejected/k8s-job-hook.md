@@ -15,7 +15,7 @@
 
 ### Overview
 
-Current hooks mechanism described [here](https://docs.lakefs.io/setup/hooks.html)
+Current hooks mechanism described [here](https://community.lakefs.io/setup/hooks.html)
 
 Enabling additional side-car as part of lakeFS deployment will enable the current web-hook type to trigger a new job on a Kubernetes cluster.
 

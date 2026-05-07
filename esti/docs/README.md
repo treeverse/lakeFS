@@ -9,7 +9,7 @@ The following guide explains how to set up and execute the system tests infrastr
 
 A couple of prerequisites before we start:
 
-* Go over our [contributing](https://docs.lakefs.io/contributing.html) page and make sure you have a working lakeFS environment.
+* Go over our [contributing](https://community.lakefs.io/contributing.html) page and make sure you have a working lakeFS environment.
 * [Docker](https://www.docker.com/)
 * [Curl](https://curl.se/)
 

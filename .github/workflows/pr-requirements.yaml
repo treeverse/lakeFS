@@ -40,7 +40,7 @@ jobs:
           !startsWith(github.head_ref, 'dependabot/') &&
           !contains(github.event.pull_request.labels.*.name, 'minor-change')
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.TREEVERSE_CI_TOKEN }}
         run: |
           if ! ISSUES=$(gh pr view ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \

@@ -60,14 +60,14 @@ managed Spark providers).
 
 ## v0.10.0 - 2023-08-15
 * Bug fixes and improvements.
-* Seperated flows of committs and uncommitted GC are no longer supported. Use the [new GC job](https://docs.lakefs.io/howto/garbage-collection/).
+* Seperated flows of committs and uncommitted GC are no longer supported. Use the [new GC job](https://community.lakefs.io/howto/garbage-collection/).
 
 ## v0.9.1 - 2023-07-31
 * Fix bug when GC runs into the initial commit repository.
 * Fix bug when GC runs on a bucket outside the provided region. (#6283)
 
 ## v0.9.0 - 2023-07-23
-* A new an improved Garbage Collection job. See the [docs](https://docs.lakefs.io/howto/garbage-collection.html) for more information.
+* A new an improved Garbage Collection job. See the [docs](https://community.lakefs.io/howto/garbage-collection.html) for more information.
 
 ## v0.8.1 - 2023-05-22
 
@@ -153,7 +153,7 @@ What's new:
 ## v0.6.0 - 2022-12-14
 
 What's new:
-* Beta feature: Uncommitted garbage collection. [Documentation](https://docs.lakefs.io/howto/garbage-collection.html#beta-deleting-uncommitted-objects)
+* Beta feature: Uncommitted garbage collection. [Documentation](https://community.lakefs.io/howto/garbage-collection.html#beta-deleting-uncommitted-objects)
 
 Bug fixes:
 * Correctly write GC JSON summary object using UTF-8 (#4644)

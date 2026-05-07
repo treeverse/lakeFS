@@ -104,7 +104,7 @@ lakeFS supports two ways to authenticate with Azure.
 ## K/V Store
 
 lakeFS stores metadata in a database for its versioning engine.
-This is done via a Key-Value interface that can be implemented on any DB engine and lakeFS comes with several built-in driver implementations (You can read more about it [here](https://docs.lakefs.io/understand/how/kv.html)).
+This is done via a Key-Value interface that can be implemented on any DB engine and lakeFS comes with several built-in driver implementations (You can read more about it [here](https://community.lakefs.io/understand/how/kv.html)).
 
 The database used doesn't _have_ to be a dedicated K/V database.
 
@@ -215,7 +215,7 @@ Now that you've chosen and configured object storage, a K/V store, and authentic
     1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
 
     !!! note
-        The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
+        The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://community.lakefs.io/reference/configuration.html) but without sensitive information.
         Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
 
     1. In the directory where you created `conf-values.yaml`, run the following commands:

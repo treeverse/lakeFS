@@ -1322,7 +1322,7 @@ Reset uncommitted changes - all of them, or by path
 
 <h4>Synopsis</h4>
 
-reset changes.  There are four different ways to reset changes:
+reset changes.  There are three different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
   2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
@@ -2363,32 +2363,6 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
 
 
 
-### lakectl login
-
-Use a web browser to log into lakeFS
-
-<h4>Synopsis</h4>
-
-Connect to lakeFS using a web browser.
-
-```
-lakectl login [flags]
-```
-
-<h4>Examples</h4>
-
-```
-lakectl login
-```
-
-<h4>Options</h4>
-
-```
-  -h, --help   help for login
-```
-
-
-
 ### lakectl merge
 
 Merge & commit changes from source branch into destination branch
@@ -2731,6 +2705,7 @@ lakectl tag delete <tag URI> [flags]
 
 ```
   -h, --help   help for delete
+  -y, --yes    Automatically say yes to all confirmations
 ```
 
 

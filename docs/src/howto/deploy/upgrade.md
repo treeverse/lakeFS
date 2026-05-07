@@ -132,4 +132,4 @@ cataloger:
 
 !!! warning
     If you are using a version before 0.50.0,
-    you must first perform the [previous upgrade to that version](https://docs.lakefs.io/v0.50/reference/upgrade.html#data-migration-for-version-v0500).
+    you must first perform the [previous upgrade to that version](https://community.lakefs.io/v0.50/reference/upgrade.html#data-migration-for-version-v0500).

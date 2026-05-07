@@ -8,12 +8,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
-// lakectl branch reset lakefs://myrepo/main --commit commitId --prefix path --object path
 var branchResetCmd = &cobra.Command{
 	Use:     "reset <branch URI> [--prefix|--object]",
 	Example: "lakectl branch reset " + myRepoExample + "/" + myBranchExample,
 	Short:   "Reset uncommitted changes - all of them, or by path",
-	Long: `reset changes.  There are four different ways to reset changes:
+	Long: `reset changes.  There are three different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
   2. reset uncommitted changes under specific path - reset lakefs://myrepo/main --prefix path
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path`,

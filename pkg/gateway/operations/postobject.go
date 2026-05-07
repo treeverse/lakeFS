@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	apifactory "github.com/treeverse/lakefs/modules/api/factory"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -122,13 +122,13 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		}
 	}
 	ifMatch := o.ifMatchHeader(req)
-	condition, err := apifactory.BuildConditionFromParams(ifMatch, ifNoneMatch)
+	condition, err := apiutil.BuildConditionFromParams(ifMatch, ifNoneMatch)
 	if err != nil {
 		if errors.Is(err, graveler.ErrInvalidValue) {
 			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrBadRequest))
 			return
 		}
-		if errors.Is(err, catalog.ErrNotImplemented) {
+		if errors.Is(err, apiutil.ErrNotImplemented) {
 			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
 			return
 		}

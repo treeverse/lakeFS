@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -45,7 +47,7 @@ const (
 `
 	getLatestVersionErrorTemplate = `{{ "Failed getting latest lakectl version:" | red }} {{ . }}
 `
-	versionTemplate = `lakectl version: {{.LakectlVersion }}
+	versionTemplate = `lakectl version: {{.LakectlVersion }}{{ if .Distribution }} ({{.Distribution}}){{ end }}
 {{- if .LakeFSVersion }}
 lakeFS version: {{.LakeFSVersion}}
 {{- end }}
@@ -119,6 +121,7 @@ type Configuration struct {
 
 type versionInfo struct {
 	LakectlVersion       string
+	Distribution         string
 	LakeFSVersion        string
 	LakectlLatestVersion string
 	LakeFSLatestVersion  string
@@ -155,7 +158,6 @@ var (
 const (
 	recursiveFlagName     = "recursive"
 	recursiveFlagShort    = "r"
-	storageIDFlagName     = "storage-id"
 	presignFlagName       = "pre-sign"
 	parallelismFlagName   = "parallelism"
 	noProgressBarFlagName = "no-progress"
@@ -205,13 +207,6 @@ var (
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
 	cmd.Flags().BoolP(recursiveFlagName, recursiveFlagShort, false, usage)
-}
-
-func withStorageID(cmd *cobra.Command) {
-	cmd.Flags().String(storageIDFlagName, "", "")
-	if err := cmd.Flags().MarkHidden(storageIDFlagName); err != nil {
-		DieErr(err)
-	}
 }
 
 func withParallelismFlag(cmd *cobra.Command) {
@@ -436,6 +431,7 @@ It can be extended with plugins; see 'lakectl plugin --help' for more informatio
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		preRunCmd(cmd)
 		sendStats(cmd, "")
+		maybeWarnEnterprise(cmd, os.Stderr)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
@@ -445,7 +441,7 @@ It can be extended with plugins; see 'lakectl plugin --help' for more informatio
 			return
 		}
 
-		info := versionInfo{LakectlVersion: version.Version}
+		info := versionInfo{LakectlVersion: version.Version, Distribution: version.Distribution}
 
 		// get lakeFS server version
 
@@ -619,7 +615,7 @@ func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
 	return awsiam.NewIAMAuthParams(host, opts...), nil
 }
 
-func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
+func getClient() *apigen.ClientWithResponses {
 	httpClient := getHTTPClient(lakectlRetryPolicy)
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
@@ -636,9 +632,10 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
+	var opts []apigen.ClientOption
 	useJWTAuth := accessKeyID == "" && secretAccessKey == ""
 	if useJWTAuth {
-		opts = append(getClientOptions(awsIAMparams, serverEndpoint), opts...)
+		opts = getClientOptions(awsIAMparams, serverEndpoint)
 	}
 
 	oss := osinfo.GetOSInfo()
@@ -659,6 +656,37 @@ func getClient(opts ...apigen.ClientOption) *apigen.ClientWithResponses {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
 	}
 	return client
+}
+
+const lakeFSOSSVersionContext = "lakeFS"
+
+const enterpriseWarningMessage = "WARNING: This lakectl is built for lakeFS Community (OSS), but the connected server appears to be Enterprise. Use enterprise lakectl or set LAKECTL_SKIP_ENTERPRISE_CHECK=1 to suppress."
+
+// isShellCompletion returns true if the command is being run as part of shell tab completion.
+func isShellCompletion(cmd *cobra.Command) bool {
+	return cmd.Name() == cobra.ShellCompRequestCmd || cmd.Name() == cobra.ShellCompNoDescRequestCmd
+}
+
+// maybeWarnEnterprise calls GetConfig and warns if the server is not lakeFS OSS.
+// Skipped for the config command, shell completion, or when LAKECTL_SKIP_ENTERPRISE_CHECK=1 is set.
+// Errors are silently ignored — the command will fail on its own if the server is unreachable.
+func maybeWarnEnterprise(cmd *cobra.Command, out io.Writer) {
+	skipCheck, _ := strconv.ParseBool(os.Getenv("LAKECTL_SKIP_ENTERPRISE_CHECK"))
+	if skipCheck {
+		return
+	}
+	if cmd == configCmd || isShellCompletion(cmd) {
+		return
+	}
+	client := getClient()
+	resp, err := client.GetConfigWithResponse(cmd.Context())
+	if err != nil || resp.JSON200 == nil || resp.JSON200.VersionConfig == nil {
+		return
+	}
+	vc := swag.StringValue(resp.JSON200.VersionConfig.VersionContext)
+	if vc != "" && vc != lakeFSOSSVersionContext {
+		_, _ = fmt.Fprintln(out, enterpriseWarningMessage)
+	}
 }
 
 func CreateTokenCacheCallback() awsiam.TokenCacheCallback {

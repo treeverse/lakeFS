@@ -28,9 +28,9 @@ jobs:
       - name: Checkout the documentation repository
         uses: actions/checkout@v6
         with:
-          repository: treeverse/docs-lakeFS
+          repository: treeverse/docs-lakeFS-community
           fetch-depth: 1
-          token: ${{ secrets.PERSONAL_TOKEN }}
+          token: ${{ secrets.TREEVERSE_CI_TOKEN }}
           path: docs/docs-repo
 
       - name: Configure Git
@@ -42,7 +42,7 @@ jobs:
       - name: Build latest
         working-directory: docs/docs-repo
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TREEVERSE_CI_TOKEN }}
         run: |
           mike deploy --config-file ../mkdocs.yml --branch main dev --update-aliases latest
 
@@ -57,37 +57,13 @@ jobs:
           find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
             cut -d'"' -f2 | \
             grep -v -e "^/" -e "^#" | \
-            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/docs-repo/" > /tmp/links_to_check.txt
+            sed "s/https:\/\/community.lakefs.io/file:\/\/$escaped_pwd\/docs\/docs-repo/" > /tmp/links_to_check.txt
 
       - name: Check links
-        id: lychee
         uses: lycheeverse/lychee-action@v2
         with:
           args: /tmp/links_to_check.txt
-          fail: false
-          jobSummary: false
+          fail: true
+          jobSummary: true
           format: markdown
           output: /tmp/lychee/results.md
-
-      - name: Check Lychee output
-        run: |
-          if grep "Errors per input" /tmp/lychee/results.md; then
-            echo "## 🙀 Outbound links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            while IFS= read -r line; do
-              if [[ $line =~ .*docs/_site(.*)\].* ]]; then
-                  search_phrase="${BASH_REMATCH[1]}"
-                  matching_files=$(grep -lr "$search_phrase" "webui/src")
-                  echo "* 🚨 Broken reference to \`$search_phrase\` found in \`$matching_files\`" >> $GITHUB_STEP_SUMMARY
-              fi
-            done < /tmp/lychee/results.md
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            sed -e '/## Errors per input/,$d' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
-            cat $GITHUB_STEP_SUMMARY
-            exit 1
-          else
-            echo "## ✅ All outbound links found in the lakeFS UI are working" > $GITHUB_STEP_SUMMARY
-            exit 0
-          fi

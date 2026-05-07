@@ -181,3 +181,12 @@ func BuildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...
 	logging.FromContext(ctx).WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }
+
+// BuildBlockAdapterWithMetrics creates a block adapter from a Config and wraps it with metrics collection.
+func BuildBlockAdapterWithMetrics(ctx context.Context, statsCollector stats.Collector, c config.Config) (block.Adapter, error) {
+	adapter, err := BuildBlockAdapter(ctx, statsCollector, c.StorageConfig().GetStorageByID(config.SingleBlockstoreID))
+	if err != nil {
+		return nil, err
+	}
+	return block.NewMetricsAdapter(adapter), nil
+}

@@ -13,7 +13,7 @@ Like other version control systems, lakeFS allows you to configure _Actions_ to 
    A webhook that reads new Parquet and ORC files to ensure they don't contain a block list of column names (or name prefixes).
    This is useful for avoiding accidental PII exposure.
 1. Integration with external systems:
-   Post-merge and post-commit hooks could be used to export metadata about the change to another system. A common example is exporting `symlink.txt` files that allow e.g. [AWS Athena](../../integrations/athena.md) to read data from lakeFS.
+   Post-merge and post-commit hooks could be used to export metadata about the change to another system, e.g. exporting catalog metadata to allow query engines like [AWS Athena](../../integrations/athena.md) to read data from lakeFS.
 1. Notifying downstream consumers:
    Running a post-merge hook to trigger an Airflow DAG or to send a Webhook to an API, notifying it of the change that happened
 

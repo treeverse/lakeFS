@@ -30,13 +30,11 @@ var repoCreateCmd = &cobra.Command{
 
 		defaultBranch := Must(cmd.Flags().GetString(defaultBranchFlagName))
 		sampleData := Must(cmd.Flags().GetBool(sampleDataFlagName))
-		storageID := Must(cmd.Flags().GetString(storageIDFlagName))
 
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&apigen.CreateRepositoryParams{},
 			apigen.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
-				StorageId:        &storageID,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
 				SampleData:       &sampleData,
@@ -58,7 +56,6 @@ var repoCreateCmd = &cobra.Command{
 func init() {
 	repoCreateCmd.Flags().StringP(defaultBranchFlagName, "d", defaultBranchFlagValue, "the default branch of this repository")
 	repoCreateCmd.Flags().Bool(sampleDataFlagName, false, "create sample data in the repository")
-	withStorageID(repoCreateCmd)
 
 	repoCmd.AddCommand(repoCreateCmd)
 }

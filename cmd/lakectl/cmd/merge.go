@@ -1,18 +1,11 @@
 package cmd
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const (
@@ -62,16 +55,6 @@ var mergeCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
-		configResp, err := client.GetConfigWithResponse(ctx)
-		DieOnErrorOrUnexpectedStatusCode(configResp, err, http.StatusOK)
-		if configResp.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-
-		isAsync := false
-		if configResp.JSON200.CapabilitiesConfig != nil {
-			isAsync = swag.BoolValue(configResp.JSON200.CapabilitiesConfig.AsyncOps)
-		}
 		body := apigen.MergeIntoBranchJSONRequestBody{
 			Message:     &message,
 			Metadata:    &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
@@ -80,53 +63,15 @@ var mergeCmd = &cobra.Command{
 			AllowEmpty:  &allowEmpty,
 			SquashMerge: &squash,
 		}
-		var mergeResult *apigen.MergeResult
-		// asynchronous merge
-		if isAsync {
-			sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-			defer stop()
-
-			startResp, err := client.MergeIntoBranchAsyncWithResponse(sigCtx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchAsyncJSONRequestBody(body))
-			DieOnErrorOrUnexpectedStatusCode(startResp, err, http.StatusAccepted)
-			if startResp.JSON202 == nil {
-				Die("Bad response from server", 1)
-			}
-
-			taskID := startResp.JSON202.Id
-			err = pollAsyncOperationStatus(sigCtx, taskID, "merge", func() (*apigen.AsyncTaskStatus, error) {
-				resp, err := client.MergeIntoBranchAsyncStatusWithResponse(sigCtx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, taskID)
-				if err != nil {
-					return nil, err
-				}
-				if resp.JSON200 == nil {
-					Die("Bad response from server", 1)
-				}
-				if apiutil.Value(resp.JSON200.StatusCode) == http.StatusConflict { // Align die msg with sync response of conflict
-					Die("Conflict found.", 1)
-				}
-				mergeResult = resp.JSON200.Result
-				return &resp.JSON200.AsyncTaskStatus, nil
-			})
-			if err != nil {
-				if errors.Is(err, context.Canceled) {
-					DieFmt("Merge polling canceled. Async task ID: %s", taskID)
-				}
-				DieErr(err)
-			}
-			if mergeResult == nil {
-				Die("Bad response from server", 1)
-			}
-		} else {
-			resp, err := client.MergeIntoBranchWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
-			if resp != nil && resp.JSON409 != nil {
-				Die("Conflict found.", 1)
-			}
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
-			}
-			mergeResult = resp.JSON200
+		resp, err := client.MergeIntoBranchWithResponse(ctx, destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
+		if resp != nil && resp.JSON409 != nil {
+			Die("Conflict found.", 1)
 		}
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+		mergeResult := resp.JSON200
 
 		Write(mergeCreateTemplate, struct {
 			Merge  FromTo

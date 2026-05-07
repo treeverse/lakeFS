@@ -103,3 +103,162 @@ body .auth-page .nav-pills .nav-link:hover {
     width: 269px;
     height: 62px;
 }
+
+/* Feature-locked empty state for Enterprise-only auth pages */
+.feature-locked-empty-state .feature-locked-card {
+    background-color: var(--bs-tertiary-bg, #f8f9fa);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.feature-locked-empty-state .feature-locked-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: rgba(139, 92, 246, 0.1);
+    color: var(--success, #198754);
+}
+
+.feature-locked-empty-state .feature-locked-table-preview {
+    position: relative;
+    pointer-events: none;
+    user-select: none;
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+.feature-locked-empty-state .feature-locked-table-preview::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, var(--bs-body-bg, #ffffff) 90%);
+    pointer-events: none;
+}
+
+.feature-locked-empty-state .feature-locked-table {
+    filter: blur(2px);
+    opacity: 0.55;
+    margin-bottom: 0;
+}
+
+/* Enterprise upgrade modal */
+.enterprise-upgrade-content {
+    border: none;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18);
+}
+
+.enterprise-upgrade-hero {
+    position: relative;
+    background:
+        radial-gradient(circle at 20% 0%, rgba(139, 92, 246, 0.55), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(34, 197, 94, 0.45), transparent 50%),
+        linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: #fff;
+    border-bottom: none;
+    padding: 1.75rem 1.75rem 1.5rem 1.75rem;
+    align-items: flex-start;
+}
+
+.enterprise-upgrade-hero .btn-close {
+    margin: 0;
+    opacity: 0.7;
+}
+
+.enterprise-upgrade-hero-inner {
+    width: 100%;
+}
+
+.enterprise-upgrade-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background-color: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 0.85rem;
+    color: #fff;
+}
+
+.enterprise-upgrade-badge svg {
+    color: #fde68a;
+}
+
+.enterprise-upgrade-headline {
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    line-height: 1.25;
+}
+
+.enterprise-upgrade-subhead {
+    color: rgba(255, 255, 255, 0.78);
+    margin-bottom: 0;
+    font-size: 0.95rem;
+}
+
+.enterprise-upgrade-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.enterprise-upgrade-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--bs-border-color, #e5e7eb);
+    border-radius: 10px;
+    background-color: var(--bs-body-bg, #fff);
+    transition:
+        border-color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.enterprise-upgrade-pill:hover {
+    border-color: rgba(139, 92, 246, 0.45);
+    transform: translateY(-1px);
+}
+
+.enterprise-upgrade-pill-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(34, 197, 94, 0.15));
+    color: #6d28d9;
+}
+
+.enterprise-upgrade-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--bs-border-color, #e5e7eb);
+}
+
+.enterprise-upgrade-footer .btn-link {
+    text-decoration: none;
+}
+
+.enterprise-upgrade-cta {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    border: none;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+    font-weight: 600;
+}
+
+.enterprise-upgrade-cta:hover,
+.enterprise-upgrade-cta:focus {
+    background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.45);
+}

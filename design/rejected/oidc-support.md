@@ -1,5 +1,5 @@
 _This design has moved out of scope of lakeFS, see our [security
-update](https://docs.lakefs.io/posts/security_update.html)._
+update](https://community.lakefs.io/posts/security_update.html)._
 
 # OIDC support in lakeFS
 

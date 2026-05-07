@@ -141,19 +141,6 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName3+" "+storage3+" --sample-data", false, "lakectl_repo_create_sample", vars)
 }
 
-func TestLakectlRepoCreateWithStorageID(t *testing.T) {
-	// Validate the --storage-id flag (currently only allowed to be empty)
-	repoName := GenerateUniqueRepositoryName()
-	storage := GenerateUniqueStorageNamespace(repoName)
-	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
-	}
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id storage1", false, "lakectl_repo_create_with_storage_id", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id \"\"", false, "lakectl_repo_create", vars)
-}
-
 func TestLakectlPreSignUpload(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
@@ -1266,5 +1253,10 @@ func TestLakectlTagList(t *testing.T) {
 
 	t.Run("with prefix and amount", func(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName+" --prefix="+vars_test["TAG1"]+" --amount=1", false, "lakectl_tag_list_prefix", vars_test)
+	})
+
+	t.Run("delete tag1", func(t *testing.T) {
+		RunCmdAndVerifySuccess(t, Lakectl()+" tag delete lakefs://"+repoName+"/tag1 -y", false, "", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName, false, "lakectl_tag_list_single", vars_test)
 	})
 }

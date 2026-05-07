@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## v0.16.0
+
+:new: What's new:
+
+- Shallow copy implementation (#10183)
+
+:bug: Bugs fixed:
+
+- Fix UnboundLocalError when reading empty objects with range request (#10238)
+
+:warning: Breaking changes:
+
+- Drop Python 3.9 support, minimum version is now 3.10 (#10193)
+
 ## v0.15.0
 
 :new: What's new:
@@ -94,7 +108,7 @@
 ## v0.7.0
 :new: What's new:
 
-- AWS role Authentication: Initiate lakeFS Python client sessions securely using your AWS Role. (#7874)  [Read more](https://docs.lakefs.io/reference/security/external-principals-aws.html#login-with-python)
+- AWS role Authentication: Initiate lakeFS Python client sessions securely using your AWS Role. (#7874)  [Read more](https://community.lakefs.io/reference/security/external-principals-aws.html#login-with-python)
  
 :bug: Bugs fixed:
 

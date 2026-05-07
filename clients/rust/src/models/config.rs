@@ -21,7 +21,7 @@ pub struct Config {
     #[serde(rename = "ui_config", skip_serializing_if = "Option::is_none")]
     pub ui_config: Option<Box<models::UiConfig>>,
     #[serde(rename = "capabilities_config", skip_serializing_if = "Option::is_none")]
-    pub capabilities_config: Option<Box<models::CapabilitiesConfig>>,
+    pub capabilities_config: Option<serde_json::Value>,
 }
 
 impl Config {

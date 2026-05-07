@@ -5,9 +5,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import { auth, AuthenticationError, ClientError, ServerError, setup, SETUP_STATE_INITIALIZED } from '../../lib/api';
 import { AlertError, Loading } from '../../lib/components/controls';
-import { useRouter } from '../../lib/hooks/router';
 import { useAPI } from '../../lib/hooks/api';
-import { usePluginManager } from '../../extendable/plugins/pluginsContext';
 import { LAKEFS_POST_LOGIN_NEXT, useAuth } from '../../lib/auth/authContext';
 import { normalizeNext, ROUTES } from '../../lib/utils';
 
@@ -166,12 +164,10 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
 };
 
 const LoginPage = () => {
-    const router = useRouter();
     const location = useLocation();
-    const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
     const setupResponse = response as SetupResponse | null;
-    const { redirected, redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
+    const { redirectedFromQuery, next, cleanUrl } = getLoginIntent(location);
 
     // Persist next for post-login redirect
     if (next && next.startsWith('/')) window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
@@ -185,15 +181,9 @@ const LoginPage = () => {
         return <Navigate to={{ pathname: ROUTES.SETUP, search: location.search }} replace />;
     }
 
-    if (redirectedFromQuery) return <Navigate to={cleanUrl} replace state={{ redirected: true, next }} />;
+    if (redirectedFromQuery) return <Navigate to={cleanUrl} replace state={{ next }} />;
 
     const loginConfig = setupResponse?.login_config;
-
-    // `redirected` comes from history state (not from the URL) to trigger the strategy once.
-    if (redirected) {
-        const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-        if (loginStrategy.element !== undefined) return loginStrategy.element;
-    }
 
     // Default: lakeFS login form
     return <LoginForm loginConfig={loginConfig} />;

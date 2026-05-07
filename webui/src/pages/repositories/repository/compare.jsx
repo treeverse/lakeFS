@@ -4,14 +4,11 @@ import { Loading } from '../../../lib/components/controls';
 import { useRefs } from '../../../lib/hooks/repo';
 import { useRouter } from '../../../lib/hooks/router';
 import { RepoError } from './error';
-import { usePluginManager } from '../../../extendable/plugins/pluginsContext';
+import CompareBranches from '../../../lib/components/repository/compareBranches';
 
 const CompareContainer = () => {
     const router = useRouter();
     const { loading, error, repo, reference, compare } = useRefs();
-
-    const pluginManager = usePluginManager();
-    const CompareBranches = pluginManager.compareBranches.getCompareBranchesComponent();
 
     const { prefix } = router.query;
 

@@ -131,7 +131,7 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
             Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/)
     1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
         !!! note
-        The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
+        The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://community.lakefs.io/reference/configuration.html) but without sensitive information.
         Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
     1. In the directory where you created `conf-values.yaml`, run the following commands:
         ```bash
@@ -205,7 +205,7 @@ blockstore:
 
 !!! warning ""
     - lakeFS doesn't control the way a shared location is managed across machines
-    - When using lakectl or the lakeFS UI, you can currently import only directories. If you need to import a single file, use the [HTTP API](https://docs.lakefs.io/reference/api.html#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`.
+    - When using lakectl or the lakeFS UI, you can currently import only directories. If you need to import a single file, use the [HTTP API](https://community.lakefs.io/reference/api.html#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`.
     - Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
 
 ## Create the admin user

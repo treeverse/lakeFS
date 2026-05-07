@@ -4,11 +4,11 @@
     align-items: center;
 }
 
-.object-viewer-buttons .btn {
+.object-viewer-buttons > .btn {
     margin-right: var(--spacing-md);
 }
 
-.object-viewer-buttons .btn:last-child {
+.object-viewer-buttons > .btn:last-child {
     margin-right: 0;
 }
 

@@ -1,258 +1,219 @@
 ---
 title: Glue Data Catalog
-description: Query data from lakeFS branches in AWS Athena or other services backed by Glue Data Catalog.
+description: Set up AWS Glue Catalog Federation with lakeFS to expose Iceberg tables to Athena and other AWS analytics services.
+status: enterprise
 ---
 
-# Using lakeFS with the Glue Catalog
+# Using lakeFS with the AWS Glue Data Catalog
+
+!!! info
+    Available in **lakeFS Enterprise**
+
+!!! tip
+    This integration requires the [lakeFS Iceberg REST Catalog](./iceberg.md) to be enabled.
+    [Contact us](https://lakefs.io/lp/iceberg-rest-catalog/) to get started!
 
 ## Overview
 
-The integration between Glue and lakeFS is based on [Data Catalog Exports](../howto/catalog_exports.md).
+Using [AWS Glue Catalog Federation](https://docs.aws.amazon.com/glue/latest/dg/catalog-federation.html), you can expose lakeFS-managed Apache Iceberg tables to any AWS service that reads from the Glue Data Catalog -- including [Amazon Athena](./athena.md), Redshift Spectrum, and EMR.
 
-This guide describes how to use lakeFS with the Glue Data Catalog.
-You'll be able to query your lakeFS data by specifying the repository, branch and commit in your SQL query.
-Currently, only read operations are supported on the tables.
-You will set up the automation required to work with lakeFS on top of the Glue Data Catalog, including:
+The [`lakefs-glue`](https://github.com/treeverse/lakefs-glue-federation) CLI tool automates the creation of a federated Glue catalog that connects directly to the lakeFS Iceberg REST Catalog. Table metadata is discovered in real time through lakeFS -- no data copying or metadata syncing required.
 
-1. Create a table descriptor under `_lakefs_tables/<your-table>.yaml`. This will represent your table schema.
-2. Write an exporter script that will:
-   * Mirror your branch's state into [Hive Symlink](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html) files readable by Athena.
-   * Export the table descriptors from your branch to the Glue Catalog.
-3. Set up lakeFS [hooks](../howto/catalog_exports.md#running-an-exporter) to trigger the above script when specific events occur.
-  
-## Example: Using Athena to query lakeFS data
+### How It Works
+
+1. A query engine (e.g. Athena) submits a SQL query referencing a table in the federated **Glue Data Catalog**.
+2. **Glue** connects to the **lakeFS Iceberg REST Catalog** via a REST API connection and retrieves table metadata.
+3. **Lake Formation** issues temporary, scoped S3 credentials to the query engine.
+4. The query engine reads Iceberg data files directly from **S3**.
 
 ### Prerequisites
 
-Before starting, make sure you have:
-1. An active lakeFS installation with S3 as the backing storage, and a repository in this installation.
-2. A database in Glue Data Catalog (lakeFS does not create one).
-3. AWS Credentials with permission to manage Glue, Athena Query and S3 access.
+- A lakeFS instance with the [Iceberg REST Catalog](./iceberg.md) enabled.
+- A lakeFS service account (access key and secret key).
+- Python 3.11+ (for running the `lakefs-glue` CLI).
+- AWS credentials with permissions to manage IAM, Glue, Lake Formation, and Secrets Manager.
 
-### Add table descriptor
+## Setting Up a Federated Catalog
 
-Let's define a table, and commit it to lakeFS. 
-Save the YAML below as `animals.yaml` and upload it to lakeFS. 
+### Install the CLI
 
-```bash
-lakectl fs upload lakefs://catalogs/main/_lakefs_tables/animals.yaml -s ./animals.yaml && \
-lakectl commit lakefs://catalogs/main -m "added table"
-```
+=== "uv (recommended)"
 
-```yaml 
-name: animals
-type: hive
-# data location root in lakeFS
-path: tables/animals
-# partitions order
-partition_columns: ['type', 'weight']
-schema:
-  type: struct
-  # all the columns spec
-  fields:
-    - name: type
-      type: string
-      nullable: true
-      metadata:
-        comment: axolotl, cat, dog, fish etc
-    - name: weight
-      type: integer
-      nullable: false
-      metadata: {}
-    - name: name
-      type: string
-      nullable: false
-      metadata: {}
-```
+    The easiest way to run the tool is with [`uv`](https://docs.astral.sh/uv/) -- no install needed:
 
-### Write some table data
-
-Insert data into the table path, using your preferred method (e.g. [Spark](spark.md)), and commit upon completion.
-This example uses CSV files, and the files added to lakeFS should look like this:
-
-![lakeFS Uploaded CSV Files](../assets/img/csv_export_hooks_data.png)
-
-### The exporter script
-
-Upload the following script to your main branch under `scripts/animals_exporter.lua` (or a path of your choice).
-
-!!! note
-    For code references check [symlink_exporter](../howto/hooks/lua.md#lakefscatalogexportsymlink_exporter) and [glue_exporter](../howto/hooks/lua.md#lakefscatalogexportglue_exporter) docs.
-
-
-```lua 
-local aws = require("aws")
-local symlink_exporter = require("lakefs/catalogexport/symlink_exporter")
-local glue_exporter = require("lakefs/catalogexport/glue_exporter")
--- settings 
-local access_key = args.aws.aws_access_key_id
-local secret_key = args.aws.aws_secret_access_key
-local region = args.aws.aws_region
-local table_path = args.table_source -- table descriptor 
-local db = args.catalog.db_name -- glue db
-local table_input = args.catalog.table_input -- table input (AWS input spec) for Glue
--- export symlinks 
-local s3 = aws.s3_client(access_key, secret_key, region)
-local result = symlink_exporter.export_s3(s3, table_path, action, {debug=true})
--- register glue table
-local glue = aws.glue_client(access_key, secret_key, region)
-local res = glue_exporter.export_glue(glue, db, table_path, table_input, action, {debug=true})
-```
-
-### Configure Action Hooks
-
-Hooks serve as the mechanism that triggers the execution of the exporter.
-For more detailed information on how to configure exporter hooks, you can refer to [Running an Exporter](../howto/catalog_exports.md#running-an-exporter).
-
-!!! info
-    The `args.catalog.table_input` argument in the Lua script is assumed to be passed from the action arguments, that way the same script can be reused for different tables. 
-    
-    heck the [example](../howto/hooks/lua.md#lakefscatalogexportglue_exporterexport_glueglue-db-table_src_path-create_table_input-action_info-options) to construct the table input in the lua code.
-
-
-=== "Hook CSV Glue Table"
-    Upload to `_lakefs_actions/animals_glue.yaml`: 
-
-    ```yaml
-    name: Glue Exporter
-    on:
-      post-commit:
-        branches: ["main"]
-    hooks:
-      - id: animals_table_glue_exporter
-        type: lua
-        properties:
-          script_path: "scripts/animals_exporter.lua"
-          args:
-            aws:
-              aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
-              aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
-              aws_region: "<AWS_REGION>"
-            table_source: '_lakefs_tables/animals.yaml'
-            catalog:
-              db_name: "my-glue-db"
-              table_input:
-                StorageDescriptor: 
-                  InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
-                  OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
-                  SerdeInfo:
-                    SerializationLibrary: "org.apache.hadoop.hive.serde2.OpenCSVSerde"
-                    Parameters:
-                      separatorChar: ","
-                Parameters: 
-                  classification: "csv"
-                  "skip.header.line.count": "1"
+    ```bash
+    uvx lakefs-glue federate --help
     ```
 
-=== "Hook Parquet Glue Table"
-    When working with Parquet files, upload the following to `_lakefs_actions/animals_glue.yaml`:
+=== "pip"
 
-    ```yaml
-    name: Glue Exporter
-    on:
-    post-commit:
-        branches: ["main"]
-    hooks:
-    - id: animals_table_glue_exporter
-        type: lua
-        properties:
-            script_path: "scripts/animals_exporter.lua"
-            args:
-            aws:
-                aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
-                aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
-                aws_region: "<AWS_REGION>"
-            table_source: '_lakefs_tables/animals.yaml'
-            catalog:
-                db_name: "my-glue-db"
-                table_input:
-                    StorageDescriptor:
-                    InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
-                    OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
-                    SerdeInfo:
-                        SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
-                    Parameters:
-                    classification: "parquet"
-                    EXTERNAL: "TRUE"
-                    "parquet.compression": "SNAPPY"
+    ```bash
+    pip install lakefs-glue
+    lakefs-glue federate --help
     ```
 
-=== "Multiple Hooks / Inline script"
-    The following example demonstrates how to separate the symlink and glue exporter into building blocks running in separate hooks.
-    It also shows how to run the lua script inline instead of a file, depending on user preference.
+### Create a Federated Catalog
 
-    ```yaml
-    name: Animal Table Exporter
-    on:
-    post-commit:
-        branches: ["main"]
-    hooks:
-    - id: symlink_exporter
-        type: lua
-        properties:
-        args:
-            aws:
-            aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
-            aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
-            aws_region: "<AWS_REGION>"
-            table_source: '_lakefs_tables/animals.yaml'
-        script: |
-            local exporter = require("lakefs/catalogexport/symlink_exporter")
-            local aws = require("aws")
-            local table_path = args.table_source
-            local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
-            exporter.export_s3(s3, table_path, action, {debug=true})
-    - id: glue_exporter
-        type: lua
-        properties:
-        args:
-            aws:
-            aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
-            aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
-            aws_region: "<AWS_REGION>"
-            table_source: '_lakefs_tables/animals.yaml'
-            catalog:
-            db_name: "my-glue-db"
-            table_input: # add glue table input here 
-        script: |
-            local aws = require("aws")
-            local exporter = require("lakefs/catalogexport/glue_exporter")
-            local glue = aws.glue_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
-            exporter.export_glue(glue, args.catalog.db_name, args.table_source, args.catalog.table_input, action, {debug=true})  
+Run the `federate` command to create a Glue federated catalog that points to a lakeFS repository and ref:
+
+=== "uv"
+
+    ```bash
+    uvx lakefs-glue federate \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-repo my-repo \
+        --lakefs-access-key-id AKIAIOSFODNN7EXAMPLE \
+        --lakefs-secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     ```
 
+=== "pip"
 
-Adding the script and the action files to the repository and commit it. This is a post-commit action, meaning it will be executed after the commit operation has taken place. 
+    ```bash
+    lakefs-glue federate \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-repo my-repo \
+        --lakefs-access-key-id AKIAIOSFODNN7EXAMPLE \
+        --lakefs-secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    ```
 
-```bash
-lakectl fs upload lakefs://catalogs/main/scripts/animals_exporter.lua -s ./animals_exporter.lua
-lakectl fs upload lakefs://catalogs/main/_lakefs_actions/animals_glue.yaml -s ./animals_glue.yaml
-lakectl commit lakefs://catalogs/main -m "trigger first export hook"
-```
+This creates a federated catalog named `lakefs-catalog` (the default) pointing to the `main` branch.
 
-Once the action has completed its execution, you can review the results in the action logs.
+### Configuration Options
 
-![Hooks log result in lakeFS UI](../assets/img/glue_export_hook_result_log.png)
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--lakefs-url` | Yes | | lakeFS server URL |
+| `--lakefs-repo` | Yes | | Repository name |
+| `--lakefs-ref` | No | `main` | Branch, tag, or commit ID to expose |
+| `--lakefs-access-key-id` | Yes | | Service account access key |
+| `--lakefs-secret-access-key` | Yes | | Service account secret key |
+| `--catalog-name` | No | `lakefs-catalog` | Name for the Glue federated catalog |
+| `--region` | No | `us-east-1` | AWS region |
+| `--grant-to` | No | | IAM ARNs to grant catalog access to (repeatable) |
 
-### Use Athena 
+### What Gets Created
 
-We can use the exported Glue table with any tool that supports Glue Catalog (or Hive compatible) such as Athena, Trino, Spark and others.
-To use Athena we can simply run `MSCK REPAIR TABLE` and then query the tables.
+The `federate` command creates the following AWS resources:
 
-In Athena, make sure that the correct database (`my-glue-db` in the example above) is configured, then run: 
+- **Secrets Manager secret** (`<catalog-name>-secret`) -- stores lakeFS credentials for OAuth2 authentication.
+- **IAM role** (`<catalog-name>-GlueConnectionRole`) -- assumed by Glue and Lake Formation.
+- **Glue Connection** (`<catalog-name>-connection`) -- the REST API bridge to lakeFS.
+- **Lake Formation resource** -- enables S3 credential vending.
+- **Glue Catalog** (`<catalog-name>`) -- the federated catalog visible in Athena and other AWS services.
+- **Lake Formation grants** -- permissions for any principals specified with `--grant-to`.
 
-```sql
-MSCK REPAIR TABLE `animals_catalogs_main_9255e5`; -- load partitions for the first time 
-SELECT * FROM `animals_catalogs_main_9255e5` limit 50;
-```
+The command is idempotent: running it again with different parameters updates the existing resources.
 
-![Athena SQL Result](../assets/img/catalog_export_athena_aws_ui_sql.png)
+## Working with Multiple Branches and Refs
 
-### Cleanup
+Each federated catalog points to a single lakeFS ref. To query multiple branches, tags, or commits, create a separate catalog for each:
 
-Users can use additional hooks / actions to implement a custom cleanup logic to delete the symlink in S3 and Glue Tables. 
+=== "uv"
 
-```lua
-glue.delete_table(db, '<glue table name>')
-s3.delete_recursive('bucket', 'path/to/symlinks/of/a/commit/')
-```
+    ```bash
+    # Main branch
+    uvx lakefs-glue federate \
+        --lakefs-repo my-repo \
+        --lakefs-ref main \
+        --catalog-name my-repo-main \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-access-key-id $LAKEFS_ACCESS_KEY_ID \
+        --lakefs-secret-access-key $LAKEFS_SECRET_ACCESS_KEY
+
+    # Development branch
+    uvx lakefs-glue federate \
+        --lakefs-repo my-repo \
+        --lakefs-ref dev \
+        --catalog-name my-repo-dev \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-access-key-id $LAKEFS_ACCESS_KEY_ID \
+        --lakefs-secret-access-key $LAKEFS_SECRET_ACCESS_KEY
+
+    # A specific tag
+    uvx lakefs-glue federate \
+        --lakefs-repo my-repo \
+        --lakefs-ref v1.0 \
+        --catalog-name my-repo-v1 \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-access-key-id $LAKEFS_ACCESS_KEY_ID \
+        --lakefs-secret-access-key $LAKEFS_SECRET_ACCESS_KEY
+    ```
+
+=== "pip"
+
+    ```bash
+    # Main branch
+    lakefs-glue federate \
+        --lakefs-repo my-repo \
+        --lakefs-ref main \
+        --catalog-name my-repo-main \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-access-key-id $LAKEFS_ACCESS_KEY_ID \
+        --lakefs-secret-access-key $LAKEFS_SECRET_ACCESS_KEY
+
+    # Development branch
+    lakefs-glue federate \
+        --lakefs-repo my-repo \
+        --lakefs-ref dev \
+        --catalog-name my-repo-dev \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-access-key-id $LAKEFS_ACCESS_KEY_ID \
+        --lakefs-secret-access-key $LAKEFS_SECRET_ACCESS_KEY
+
+    # A specific tag
+    lakefs-glue federate \
+        --lakefs-repo my-repo \
+        --lakefs-ref v1.0 \
+        --catalog-name my-repo-v1 \
+        --lakefs-url https://my-org.us-east-1.lakefscloud.io \
+        --lakefs-access-key-id $LAKEFS_ACCESS_KEY_ID \
+        --lakefs-secret-access-key $LAKEFS_SECRET_ACCESS_KEY
+    ```
+
+Each catalog appears independently in Athena and Lake Formation.
+
+## Querying the Federated Catalog
+
+Once set up, you can query your lakeFS tables from any AWS service that integrates with Glue Data Catalog. For a detailed guide with query examples, see [Using lakeFS with AWS Glue & Amazon Athena](./athena.md).
+
+## Removing Federated Catalogs
+
+To clean up federated catalogs and their associated AWS resources:
+
+=== "uv"
+
+    ```bash
+    # Remove a specific catalog
+    uvx lakefs-glue rm my-catalog
+
+    # Remove all federated catalogs
+    uvx lakefs-glue rm --all
+
+    # Skip confirmation prompt
+    uvx lakefs-glue rm my-catalog --yes
+
+    # Target a specific region
+    uvx lakefs-glue rm my-catalog --region us-west-2
+    ```
+
+=== "pip"
+
+    ```bash
+    # Remove a specific catalog
+    lakefs-glue rm my-catalog
+
+    # Remove all federated catalogs
+    lakefs-glue rm --all
+
+    # Skip confirmation prompt
+    lakefs-glue rm my-catalog --yes
+
+    # Target a specific region
+    lakefs-glue rm my-catalog --region us-west-2
+    ```
+
+## Limitations
+
+- **Read-only**: AWS Glue Catalog Federation only supports read queries. `INSERT`, `CREATE TABLE`, and other write operations are not supported.
+- **Single ref per catalog**: Each federated catalog points to one lakeFS ref. Create multiple catalogs to query multiple branches or tags.
+- **Flat namespaces only**: AWS Glue Catalog Federation supports only flat `catalog.namespace.table` structures -- nested namespaces are not supported.

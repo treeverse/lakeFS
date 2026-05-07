@@ -118,4 +118,4 @@ See [testing documentation](https://github.com/treeverse/lakeFS/blob/master/clie
 services@treeverse.io
 
 [git-spec-rev]:  https://git-scm.com/docs/git-rev-parse#_specifying_revisions
-[lakefs-spec-ref]:  https://docs.lakefs.io/understand/model.html#ref-expressions
+[lakefs-spec-ref]:  https://community.lakefs.io/understand/model.html#ref-expressions

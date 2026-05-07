@@ -23,6 +23,7 @@ var FallbackHTML []byte
 // UIBuilt is true if the full UI was built (dist/index.html exists)
 var UIBuilt bool
 
+//nolint:gochecknoinits
 func init() {
 	// Get the dist subdirectory
 	Content, _ = fs.Sub(content, "dist")

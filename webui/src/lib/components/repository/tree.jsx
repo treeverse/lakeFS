@@ -15,12 +15,14 @@ import {
     TrashIcon,
     LogIcon,
     BeakerIcon,
+    TerminalIcon,
 } from '@primer/octicons-react';
 import Tooltip from 'react-bootstrap/Tooltip';
 import Table from 'react-bootstrap/Table';
 import Card from 'react-bootstrap/Card';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -33,10 +35,10 @@ import { ConfirmationModal } from '../modals';
 import { Paginator } from '../pagination';
 import { Link } from '../nav';
 import { RefTypeBranch, RefTypeCommit } from '../../../constants';
-import { ClipboardButton, copyTextToClipboard, AlertError, Loading } from '../controls';
+import { ClipboardButton, copyTextToClipboard, AlertError, Loading, TooltipButton } from '../controls';
 import { useAPI } from '../../hooks/api';
-import noop from 'lodash/noop';
 import { CommitInfoCard } from './commits';
+import MountModal from './mountModal';
 
 export const humanSize = (bytes) => {
     if (!bytes) return '0.0 B';
@@ -766,7 +768,9 @@ export const URINavigator = ({
     pathURLBuilder = buildPathURL,
     isPathToFile = false,
     hasCopyButton = false,
+    hasMountButton = false,
 }) => {
+    const [showMountModal, setShowMountModal] = useState(false);
     const parts = pathParts(path, isPathToFile);
     const params = useMemo(() => ({ repoId: repo.id }), [repo.id]);
     const displayedReference = reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
@@ -836,17 +840,28 @@ export const URINavigator = ({
                 {breadcrumbItems.length > 0 && <CollapsibleBreadcrumb items={breadcrumbItems} minVisibleItems={2} />}
             </div>
             <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
-                {hasCopyButton && (
-                    <ClipboardButton
-                        text={`lakefs://${repo.id}/${reference.id}/${path}`}
-                        variant="link"
-                        size="sm"
-                        onSuccess={noop}
-                        onError={noop}
-                        className={'me-1'}
-                        tooltip={'copy URI to clipboard'}
-                    />
-                )}
+                <ButtonGroup size="sm" className="me-1">
+                    {hasCopyButton && (
+                        <ClipboardButton
+                            text={`lakefs://${repo.id}/${reference.id}/${path}`}
+                            variant="outline-secondary"
+                            size="sm"
+                            onSuccess={() => {}}
+                            onError={() => {}}
+                            tooltip={'copy URI to clipboard'}
+                        />
+                    )}
+                    {hasMountButton && !isPathToFile && (
+                        <TooltipButton
+                            variant="outline-secondary"
+                            size="sm"
+                            tooltip="Mount directory"
+                            onClick={() => setShowMountModal(true)}
+                        >
+                            <TerminalIcon />
+                        </TooltipButton>
+                    )}
+                </ButtonGroup>
                 {downloadUrl && (
                     <a
                         href={downloadUrl}
@@ -857,6 +872,15 @@ export const URINavigator = ({
                     </a>
                 )}
             </div>
+            {hasMountButton && !isPathToFile && (
+                <MountModal
+                    show={showMountModal}
+                    onHide={() => setShowMountModal(false)}
+                    repo={repo}
+                    reference={reference}
+                    path={path}
+                />
+            )}
         </div>
     );
 };
@@ -983,7 +1007,13 @@ export const Tree = ({
         <div className="tree-container tree-container-wide">
             <Card>
                 <Card.Header>
-                    <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true} />
+                    <URINavigator
+                        path={path}
+                        repo={repo}
+                        reference={reference}
+                        hasCopyButton={true}
+                        hasMountButton={true}
+                    />
                 </Card.Header>
                 <Card.Body>{body}</Card.Body>
             </Card>

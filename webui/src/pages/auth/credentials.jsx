@@ -8,6 +8,8 @@ import { CredentialsShowModal, CredentialsTable } from '../../lib/components/aut
 import { useRouter } from '../../lib/hooks/router';
 import { resolveUserDisplayName } from '../../lib/utils';
 import { useAuth } from '../../lib/auth/authContext';
+import { useLoginConfigContext } from '../../lib/hooks/conf';
+import { FeatureLockedEmptyState } from '../../lib/components/auth/enterpriseUpgrade';
 
 const CredentialsContainer = () => {
     const router = useRouter();
@@ -98,7 +100,11 @@ const CredentialsContainer = () => {
 
 const CredentialsPage = () => {
     const [setActiveTab] = useOutletContext();
+    const { RBAC: rbac } = useLoginConfigContext();
     useEffect(() => setActiveTab('credentials'), [setActiveTab]);
+    if (rbac === 'none') {
+        return <FeatureLockedEmptyState feature="credentials" />;
+    }
     return <CredentialsContainer />;
 };
 

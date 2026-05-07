@@ -1,7 +1,7 @@
 # Export
 
 ## Requirements
-The functionality currently provided by the [lakeFS Export utility](https://docs.lakefs.io/reference/export.html) but without a dependency on Apache Spark.
+The functionality currently provided by the [lakeFS Export utility](https://community.lakefs.io/reference/export.html) but without a dependency on Apache Spark.
 This includes:
 1. Export all data from a given lakeFS reference (commit or branch) to a designated object store location.
 1. Export only the diff between the HEAD of a branch and a commit reference (helpful for continuous exports).

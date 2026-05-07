@@ -39,6 +39,7 @@ var (
 	rePreSignURL      = regexp.MustCompile(`https?://\S+\?\S+`)
 	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
+	reLocalWarning    = regexp.MustCompile(`(?m)^Warning: Using "lakectl local" requires .*\n\n?`)
 )
 
 func lakeBinaryLocation(name string) string {
@@ -149,6 +150,7 @@ func sanitize(output string, vars map[string]string) string {
 	// The order of execution below is important as certain expression can contain others
 	// and so, should be handled first
 	s := strings.ReplaceAll(output, "\r\n", "\n")
+	s = reLocalWarning.ReplaceAllString(s, "")
 	if _, ok := vars["DATE"]; !ok {
 		s = normalizeProgramTimestamp(s)
 	}
