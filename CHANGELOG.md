@@ -1,6 +1,8 @@
 # Changelog
 
 
+## v1.81.0
+
 :new: What's new:
 
 - `lakectl tag delete` now supports a `--yes` flag for non-interactive/scripted usage (#10351)
