@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/storage v1.60.0
-	github.com/apache/thrift v0.19.0 // indirect
+	github.com/apache/thrift v0.23.0 // indirect
 	github.com/cockroachdb/pebble v0.0.0-20230106151110-65ff304d3d7a
 	github.com/cubewise-code/go-mime v0.0.0-20200519001935-8c5762b177d8
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
@@ -96,7 +96,6 @@ require (
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
-	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/tilinna/z85 v1.0.0
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
