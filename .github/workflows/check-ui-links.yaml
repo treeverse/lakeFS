@@ -5,6 +5,8 @@ on:
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'CHANGELOG.md'
   schedule:
     - cron: '0 1 * * *' # once a day at 1 am
     

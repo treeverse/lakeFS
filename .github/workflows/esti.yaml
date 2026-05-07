@@ -1,9 +1,13 @@
 name: Esti
 on:
   pull_request:
+    paths-ignore:
+      - 'CHANGELOG.md'
   push:
     branches:
       - master
+    paths-ignore:
+      - 'CHANGELOG.md'
   workflow_dispatch:
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
