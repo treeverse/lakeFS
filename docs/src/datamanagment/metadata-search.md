@@ -135,6 +135,12 @@ If you are **self-hosting lakeFS Enterprise**:
 2. Add the configuration below to your Helm values file.
 3. Install or upgrade the Helm chart with the updated configuration.
 
+!!! note
+    From [`lakefs` Helm chart](https://github.com/treeverse/charts) version **1.10.0**, the Metadata Search
+    service runs on the `treeverse/lakefs-enterprise` image (invoked as `lakefs mds run`) instead of the
+    legacy standalone `treeverse/mds` image. The chart's `mds.config` block uses the schema documented
+    below.
+
 If you are using **lakeFS cloud**:
 
 [Contact us](https://lakefs.io/lp/metadata-search/) to enable the feature. We’ll request the information included in the 
@@ -147,17 +153,25 @@ The Metadata Search service requires:
 
 #### Configuration Reference
 
-* `lakefs.endpoint` `(string : "")`- the lakeFS server endpoint
-* `lakefs.access_key_id` `(string : "")`- a lakeFS access key 
-* `lakefs.secret_access_key` `(string : "")`- a lakeFS secret access key
-* `metadata_settings.since` `(string : "")`- ISO 8601 timestamp (e.g., `2025-07-15T00:00:00+00`) that sets the earliest
-point in time from which to process commits for metadata extraction. If omitted, metadata will be captured from the time 
-the branch was created.
-* `metadata_settings.max_commits` `(int : 0)` - The maximum number of commits to process per searchable branch.
-  Uses 0 by default that disables the limit.
-* `repositories` `(map[string]branches:string[] : {})` - A mapping of repositories and the branches in each where metadata 
-search should be enabled. You can specify full branch names or use branch prefixes for flexibility. Prefixes should be expressed using a trailing
-asterisk, e.g., `dev-*`.  
+All settings live under the top-level `metadata_search` key.
+
+* `lakefs_mds_endpoint` `(string : "")` - the lakeFS server endpoint. **Required.**
+* `access_key_id` `(string : "")` - a lakeFS access key.
+* `secret_key` `(string : "")` - a lakeFS secret key.
+* `period` `(duration : 60s)` - interval between metadata-collection passes.
+* `concurrency` `(int : 25)` - number of branches processed in parallel.
+* `max_commits` `(int : 1000)` - the maximum number of commits to process per searchable branch.
+* `since` `(string : "")` - RFC 3339 timestamp (e.g., `2025-01-01T00:00:00Z`) that sets the earliest
+  point in time from which to process commits for metadata extraction. If omitted, metadata is captured
+  from the time the branch was created.
+* `repositories` `(map[string]repo : {})` - mapping of repositories to per-repository settings. Metadata
+  search activates when this map is non-empty. You can specify full branch names or use branch prefixes
+  for flexibility. Prefixes should be expressed using a trailing asterisk, e.g., `dev-*`.
+    * `repositories.<name>.branches` `([]string : [])` - branch names (or prefixes) whose object metadata
+      should be searchable.
+    * `repositories.<name>.storage_namespace` `(string : "")` - optional storage namespace override for
+      the generated `<repo>-metadata` repository. If omitted, lakeFS picks one based on the data
+      repository's namespace.
 
 !!! note
     Metadata search is disabled by default. You must explicitly configure which repositories and branches to include.
@@ -165,26 +179,32 @@ asterisk, e.g., `dev-*`.
 !!! tip
     Use branch name prefixes (e.g., `feature-*`) to reduce the need for manual updates when new branches are added.
 
+!!! warning "Validation"
+    The Metadata Search service refuses to start unless `lakefs_mds_endpoint` is non-empty and `period`,
+    `concurrency`, and `max_commits` are all positive (`period > 0`, `concurrency >= 1`, `max_commits >= 1`).
+    Unlike earlier versions, `max_commits: 0` is no longer accepted to disable the per-branch limit.
+
 #### Sample Configuration
 
 !!! example
     ```yaml
-    lakefs:
-      endpoint: "https://example.lakefs.io"
+    metadata_search:
+      lakefs_mds_endpoint: "https://example.lakefs.io"
       access_key_id: "AKIAIOSFOLEXAMPLE"
-      secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-    metadata_settings:
-      since: "2025-07-15T00:00:00+00"
-      max_commits: 100
-    repositories:
-      "example-repo-1":
-        branches:
-         - "main"
-         - "dev"
-      "example-repo-2":
-        branches:  
-         - "main"
-         - "feature-*"
+      secret_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      period: 60s
+      concurrency: 25
+      max_commits: 1000
+      since: "2025-01-01T00:00:00Z"
+      repositories:
+        example-repo-1:
+          branches:
+            - main
+            - dev
+        example-repo-2:
+          branches:
+            - main
+            - feature-*
     ```
 
 ## How to Search by Metadata
