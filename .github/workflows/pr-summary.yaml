@@ -33,6 +33,6 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "channel": "dev-channel",
+              "channel": "dev-internal",
               "text": "${{ steps.summary.outputs.report }}"
             }
