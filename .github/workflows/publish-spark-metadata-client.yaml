@@ -22,7 +22,7 @@ jobs:
           java-version: '17'
           cache: 'sbt'
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
 
       - name: validate format
         working-directory: clients/spark
@@ -38,7 +38,7 @@ jobs:
           gpg --list-secret-keys --keyid-format LONG
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}

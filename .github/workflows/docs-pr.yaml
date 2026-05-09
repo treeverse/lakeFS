@@ -48,7 +48,7 @@ jobs:
           done
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           aws-access-key-id: ${{ secrets.DOCS_PREVIEW_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DOCS_PREVIEW_AWS_SECRET_ACCESS_KEY }}
@@ -58,7 +58,7 @@ jobs:
         run: aws s3 sync docs/site/ s3://lakefs-docs-pr-previews/prs/oss-pr-${{ github.event.pull_request.number }}/
 
       - name: Comment with preview URL
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const previewUrl = `https://oss-pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;

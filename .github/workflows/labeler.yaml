@@ -12,6 +12,6 @@ jobs:
   label:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/labeler@v6
+      - uses: actions/labeler@v6.0.1
         with:
           sync-labels: true

@@ -100,13 +100,13 @@ jobs:
       tag: ${{ needs.gen-code.outputs.tag }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.4
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -156,14 +156,14 @@ jobs:
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
           mask-aws-account-id: 'false'
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.4
         with:
           mask-password: 'false'
 
@@ -346,13 +346,13 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.4
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -439,7 +439,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -495,7 +495,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
 
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
@@ -519,7 +519,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
 
       - name: Package Spark 2 and 3 Apps
         working-directory: test/spark/app
@@ -739,7 +739,7 @@ jobs:
           java-version: "17"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
         if: steps.restore-cache.outputs.cache-hit != 'true'
 
       - name: Package Metaclient
@@ -1352,7 +1352,7 @@ jobs:
           name: playwright-report
           path: webui/test-results/
           retention-days: 7
-      - uses: test-summary/action@v2
+      - uses: test-summary/action@v2.4
         if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
         with:
           paths: webui/test-results.xml
@@ -1428,7 +1428,7 @@ jobs:
           name: playwright-report
           path: webui/test-results/
           retention-days: 7
-      - uses: test-summary/action@v2
+      - uses: test-summary/action@v2.4
         if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
         with:
           paths: webui/test-results.xml

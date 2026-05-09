@@ -31,7 +31,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
 
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
@@ -213,7 +213,7 @@ jobs:
           java-version: ${{ matrix.spark.java_version }}
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -306,7 +306,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.22
 
       - name: Package Spark App
         working-directory: test/spark/app
