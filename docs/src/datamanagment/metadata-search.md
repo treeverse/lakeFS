@@ -141,6 +141,11 @@ If you are **self-hosting lakeFS Enterprise**:
     legacy standalone `treeverse/mds` image. The chart's `mds.config` block uses the schema documented
     below.
 
+    **Upgrading to chart >= 1.10.0 from an earlier version:** the configuration schema changed.
+    Existing installations must migrate their `mds.config` to the new keys (e.g. `lakefs.endpoint` →
+    `metadata_search.lakefs_mds_endpoint`, `lakefs.secret_access_key` → `metadata_search.secret_key`,
+    and the `metadata_settings.*` keys move under `metadata_search`) before upgrading.
+
 If you are using **lakeFS cloud**:
 
 [Contact us](https://lakefs.io/lp/metadata-search/) to enable the feature. We’ll request the information included in the 
@@ -179,8 +184,9 @@ All settings live under the top-level `metadata_search` key.
 !!! tip
     Use branch name prefixes (e.g., `feature-*`) to reduce the need for manual updates when new branches are added.
 
-!!! warning "Validation"
-    The Metadata Search service refuses to start unless `lakefs_mds_endpoint` is non-empty and `period`,
+!!! warning "Validation (chart 1.10.0+)"
+    On [`lakefs` Helm chart](https://github.com/treeverse/charts) version **1.10.0** and later, the
+    Metadata Search service refuses to start unless `lakefs_mds_endpoint` is non-empty and `period`,
     `concurrency`, and `max_commits` are all positive (`period > 0`, `concurrency >= 1`, `max_commits >= 1`).
     Unlike earlier versions, `max_commits: 0` is no longer accepted to disable the per-branch limit.
 
