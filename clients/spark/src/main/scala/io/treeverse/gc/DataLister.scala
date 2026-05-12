@@ -31,32 +31,62 @@ class NaiveDataLister extends DataLister {
 class FileDescriptor(val path: String, val lastModified: Long) extends Serializable
 
 class ParallelDataLister extends DataLister with Serializable {
-  private def listPath(configMapper: ConfigMapper, p: Path): Iterator[FileDescriptor] = {
+  // listPath lists entries under p and returns FileDescriptors with paths relative to p.
+  // Non-recursive mode uses listStatusIterator (includes directories, needed for data/ scanning).
+  // Recursive mode uses listFiles (leaf files only, needed for sharded shard directories).
+  private def listPath(
+      configMapper: ConfigMapper,
+      p: Path,
+      recursive: Boolean
+  ): Iterator[FileDescriptor] = {
     val fs = p.getFileSystem(configMapper.configuration)
-    if (!fs.exists(p)) {
-      return Iterator.empty
-    }
-    val it = fs.listStatusIterator(p)
-    new Iterator[FileDescriptor] with Serializable {
-      override def hasNext: Boolean = it.hasNext
-
-      override def next(): FileDescriptor = {
-        val item = it.next()
-        new FileDescriptor(item.getPath.getName, item.getModificationTime)
+    if (!fs.exists(p)) return Iterator.empty
+    if (recursive) {
+      // Use makeQualified so the base URI scheme matches what listFiles returns
+      // (e.g. s3:// vs s3a://) and stripPrefix reliably removes the prefix.
+      val base = fs.makeQualified(p).toString.stripSuffix("/") + "/"
+      val it = fs.listFiles(p, true)
+      new Iterator[FileDescriptor] with Serializable {
+        override def hasNext: Boolean = it.hasNext
+        override def next(): FileDescriptor = {
+          val s = it.next()
+          val rel = s.getPath.toString.stripPrefix(base)
+          require(rel != s.getPath.toString, s"path ${s.getPath} is not under $base")
+          new FileDescriptor(rel, s.getModificationTime)
+        }
+      }
+    } else {
+      // for base with partition directories
+      val it = fs.listStatusIterator(p)
+      new Iterator[FileDescriptor] with Serializable {
+        override def hasNext: Boolean = it.hasNext
+        override def next(): FileDescriptor = {
+          val s = it.next()
+          new FileDescriptor(s.getPath.getName, s.getModificationTime)
+        }
       }
     }
   }
 
+  // ShardDirPrefix must match shardDirPrefix in pkg/upload/path_provider.go.
+  private val ShardDirPrefix = "!"
+
+  // isShardSlice returns true for shard directory names (<ShardDirPrefix><2-hex-chars>).
+  // Legacy partition names are 20-char xid strings, so detection is unambiguous.
+  private def isShardSlice(sliceId: String): Boolean =
+    sliceId.matches(s"${java.util.regex.Pattern.quote(ShardDirPrefix)}[0-9a-f]{2}")
+
   override def listData(configMapper: ConfigMapper, path: Path, parallelism: Int): DataFrame = {
     import spark.implicits._
-    val slices = listPath(configMapper, path)
+    val slices = listPath(configMapper, path, recursive = false)
     val objectsPath = if (path.toString.endsWith("/")) path.toString else path.toString + "/"
     // udf require serializable string and not Path
     val objectsUDF = udf((sliceId: String) => {
       // WA for https://issues.apache.org/jira/browse/HDFS-14762
       val slicePath = new Path(objectsPath + sliceId)
-      listPath(configMapper, slicePath).toSeq
-        .map(s => (s.path, s.lastModified))
+      listPath(configMapper, slicePath, recursive = isShardSlice(sliceId)).toSeq.map(s =>
+        (s.path, s.lastModified)
+      )
     })
 
     val objectsDF = slices
