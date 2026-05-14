@@ -112,6 +112,9 @@ Stay up to date and get lakeFS support via:
 
 lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
+Treeverse considers that any sharing of source code with an AI agent, and any output an AI agent generates based on our source code, without the appropriate notices or attribution requirements, violates the terms of the Apache 2.0 license to which this source code is subject. 
+We also do not consider AI provider guardrails as sufficient to prevent copyright infringement. Treeverse reserves all of its rights to pursue legal action against any party that inputs LakeFS code into an AI agent.
+
 ## Who Uses lakeFS?
 
 lakeFS is used by numerous companies, including those below. _If you use lakeFS and would like to be included here please open a PR._
