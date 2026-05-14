@@ -77,12 +77,6 @@ check-licenses-npm:
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
-docs-serve: ### Serve local docs
-	$(DOCKER) run --rm -it -p 4000:4000 -v ./docs:/docs --entrypoint /bin/sh squidfunk/mkdocs-material:9 -c "cd /docs && pip install -r requirements-docs.txt && mkdocs serve --dev-addr=0.0.0.0:4000"
-
-gen-docs: ## Generate CLI docs automatically
-	$(GOCMD) run cmd/lakectl/main.go docs > docs/src/reference/cli.md
-
 .PHONY: tools
 tools: ## Install tools
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
@@ -246,9 +240,6 @@ validate-wrapper: gen-code
 validate-wrapgen-testcode: gen-code
 	git diff --quiet -- ./tools/wrapgen/testcode || (echo "Modification verification failed! tools/wrapgen/testcode"; false)
 
-validate-reference:
-	git diff --quiet -- docs/src/reference/cli.md || (echo "Modification verification failed! docs/src/reference/cli.md"; false)
-
 validate-client-python: validate-python-sdk
 
 validate-python-sdk:
@@ -269,7 +260,7 @@ validate-ui-format: ## Validate UI code formatting with prettier
 
 # Run all validation/linting steps
 checks-validator: lint validate-proto validate-ui-format \
-	validate-client-python validate-client-java validate-client-rust validate-reference \
+	validate-client-python validate-client-java validate-client-rust \
 	validate-mockgen \
 	validate-permissions-gen \
 	validate-api \
@@ -306,7 +297,7 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-ui gen-api gen-code clients gen-docs
+gen: gen-ui gen-api gen-code clients
 
 validate-clients-untracked-files:
 	scripts/verify_clients_untracked_files.sh

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/src/assets/img/logo_large.png"/>
+  <img src=".github/assets/logo_large.png"/>
 </p>
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
@@ -10,8 +10,6 @@
 		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions/workflows/esti.yaml?query=branch%3Amaster">
 		<img src="https://github.com/treeverse/lakeFS/workflows/Esti/badge.svg?branch=master" alt="Integration tests status" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml">
-		<img src="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml/badge.svg" alt="Docs Preview & Link Check status" /></a>
 	<a href="https://artifacthub.io/packages/search?repo=lakefs">
 		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
 	<a href="CODE_OF_CONDUCT.md">
@@ -107,6 +105,8 @@ Stay up to date and get lakeFS support via:
 - Read the [documentation](https://community.lakefs.io).
 - See the [contributing guide](https://community.lakefs.io/contributing).
 - Take a look at our [roadmap](https://community.lakefs.io/understand/roadmap.html) to peek into the future of lakeFS.
+
+> **Note**: The documentation source has moved out of this repository and is being migrated to a separate repository (location TBD). The `docs/` directory in this repo is no longer the source of truth for https://community.lakefs.io. Once the new repository is announced, contribution instructions will be updated to point there.
 
 ## Licensing
 
