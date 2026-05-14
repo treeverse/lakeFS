@@ -1,15 +1,7 @@
 # On a published release (or manual dispatch with a version), pushes
-# cli.md, swagger.yml, and authorization.yml to
-# `treeverse/docs-next-lakeFS` at
-# `reference-versions/oss/v<MAJOR>.<MINOR>/`.  The docs-side
-# expand-versioned-reference.py uses `reference-versions/oss/LATEST`
-# (updated here when is_latest is true) to resolve the `latest` alias;
-# when is_latest is false only the vX.Y snapshot is written.
-#
-# Required secrets:
-#   TREEVERSE_CI_TOKEN — PAT with write access to docs-next-lakeFS
+# cli.md, swagger.yml, and authorization.yml to `treeverse/docs-next-lakeFS`.
 
-name: Push OSS release docs snapshot
+name: Push docs release
 
 on:
   release:
@@ -27,7 +19,7 @@ on:
         default: true
 
 concurrency:
-  group: push-docs-release-oss-${{ github.event.release.tag_name || inputs.version }}
+  group: push-docs-release
   cancel-in-progress: false
 
 jobs:
@@ -66,9 +58,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Generate API client (needed by lakectl)
-        run: make gen-api
 
       - name: Generate cli.md
         run: go run cmd/lakectl/main.go docs > /tmp/cli.md
