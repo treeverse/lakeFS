@@ -106,8 +106,6 @@ Stay up to date and get lakeFS support via:
 - See the [contributing guide](https://community.lakefs.io/contributing).
 - Take a look at our [roadmap](https://community.lakefs.io/understand/roadmap.html) to peek into the future of lakeFS.
 
-> **Note**: The documentation source has moved out of this repository and is being migrated to a separate repository (location TBD). The `docs/` directory in this repo is no longer the source of truth for https://community.lakefs.io. Once the new repository is announced, contribution instructions will be updated to point there.
-
 ## Licensing
 
 lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
