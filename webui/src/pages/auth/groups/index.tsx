@@ -183,7 +183,7 @@ const GroupsContainer = () => {
             <div className="auth-learn-more">
                 A group is a collection of users.{' '}
                 <a
-                    href="https://docs.lakefs.io/reference/authorization.html#authorization"
+                    href="https://docs.lakefs.io/reference/authorization/oss/#authorization"
                     target="_blank"
                     rel="noopener noreferrer"
                 >

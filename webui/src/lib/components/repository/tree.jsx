@@ -918,7 +918,7 @@ const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
                             </Card.Body>
                             <Card.Footer className="text-center bg-transparent border-0">
                                 <a
-                                    href="https://docs.lakefs.io/howto/import.html"
+                                    href="https://docs.lakefs.io/howto/import/"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-decoration-none"

@@ -14,7 +14,7 @@ const MountModal = ({ show, onHide, repo, reference, path }) => {
             <Modal.Body>
                 <p>
                     Mount this path as a local directory using{' '}
-                    <a href="https://docs.lakefs.io/reference/mount.html" target="_blank" rel="noopener noreferrer">
+                    <a href="https://docs.lakefs.io/reference/mount/" target="_blank" rel="noopener noreferrer">
                         Everest
                     </a>
                     :

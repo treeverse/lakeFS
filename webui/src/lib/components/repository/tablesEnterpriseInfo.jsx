@@ -24,7 +24,7 @@ export const TablesEnterpriseInfo = () => {
                         Try lakeFS Enterprise
                     </a>
                     <a
-                        href="https://docs.lakefs.io/understand/enterprise/"
+                        href="https://docs.lakefs.io/enterprise/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-secondary"
