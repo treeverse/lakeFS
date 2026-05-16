@@ -269,11 +269,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                 <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
                 <div className={'mt-2'}>
                     A tag is an immutable pointer to a single commit.{' '}
-                    <a
-                        href="https://docs.lakefs.io/understand/model/#tags"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
+                    <a href="https://docs.lakefs.io/understand/model/#tags" target="_blank" rel="noopener noreferrer">
                         Learn more.
                     </a>
                 </div>

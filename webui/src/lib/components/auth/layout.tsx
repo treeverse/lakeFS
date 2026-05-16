@@ -38,11 +38,7 @@ export const AuthLayout = () => {
                                 Role-Based Access Control
                             </Alert.Link>{' '}
                             – Available on <Alert.Link href={'https://lakefs.cloud/register'}>lakeFS Cloud</Alert.Link>{' '}
-                            and{' '}
-                            <Alert.Link href={'https://docs.lakefs.io/enterprise/'}>
-                                lakeFS Enterprise
-                            </Alert.Link>
-                            !
+                            and <Alert.Link href={'https://docs.lakefs.io/enterprise/'}>lakeFS Enterprise</Alert.Link>!
                         </Alert>
                     )}
                 </div>
