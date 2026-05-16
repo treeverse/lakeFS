@@ -1,6 +1,0 @@
-User-agent: *
-
-Allow: /dev
-Allow: /latest
-
-Sitemap: https://community.lakefs.io/latest/sitemap.xml
