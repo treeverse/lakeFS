@@ -521,11 +521,7 @@ const BranchList = ({ repo, prefix, after, showHidden = false, onPaginate }) => 
             {content}
             <div className={'mt-2'}>
                 lakeFS uses a Git-like branching model.{' '}
-                <a
-                    href="https://docs.lakefs.io/understand/branching-model.html"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
+                <a href="https://docs.lakefs.io/understand/model/" target="_blank" rel="noopener noreferrer">
                     Learn more.
                 </a>
             </div>

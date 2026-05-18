@@ -34,15 +34,11 @@ export const AuthLayout = () => {
                             }}
                         >
                             <InfoIcon /> Enhance Your Security with{' '}
-                            <Alert.Link href={'https://docs.lakefs.io/reference/security/rbac.html'}>
+                            <Alert.Link href={'https://docs.lakefs.io/security/rbac/'}>
                                 Role-Based Access Control
                             </Alert.Link>{' '}
                             – Available on <Alert.Link href={'https://lakefs.cloud/register'}>lakeFS Cloud</Alert.Link>{' '}
-                            and{' '}
-                            <Alert.Link href={'https://docs.lakefs.io/understand/enterprise/'}>
-                                lakeFS Enterprise
-                            </Alert.Link>
-                            !
+                            and <Alert.Link href={'https://docs.lakefs.io/enterprise/'}>lakeFS Enterprise</Alert.Link>!
                         </Alert>
                     )}
                 </div>

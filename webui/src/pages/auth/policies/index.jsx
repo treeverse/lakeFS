@@ -94,13 +94,13 @@ const PoliciesContainer = () => {
                     <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated and will be replaced
                     by ACL (Access Control Lists) in future releases. For more information on the transition from RBAC
                     to ACL, please visit our{' '}
-                    <a href="https://docs.lakefs.io/posts/security_update.html">documentation page</a>.
+                    <a href="https://docs.lakefs.io/posts/security_update/">documentation page</a>.
                 </Warning>
             )}
             <div className="auth-learn-more">
                 A policy defines the permissions of a user or a group.{' '}
                 <a
-                    href="https://docs.lakefs.io/reference/authorization.html#authorization"
+                    href="https://docs.lakefs.io/reference/authorization/oss/#authorization"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
