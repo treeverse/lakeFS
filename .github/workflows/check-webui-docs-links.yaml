@@ -47,8 +47,6 @@ jobs:
             --max-concurrency 4
             webui-docs-links.txt
           output: ./lychee-report.md
-          # Never fail the job - this workflow must not block a release.
-          fail: false
 
       - name: Write report to job summary
         if: always()
