@@ -50,13 +50,6 @@
 # recordings
 /pkg/gateway/testdata/recordings/
 
-# Docs
-/docs/_site/
-/docs/.jekyll-metadata
-/docs/.jekyll-bundle-cache
-/docs/site/
-/docs/docs-repo/
-
 # terraform
 # Local .terraform directories
 **/.terraform/*

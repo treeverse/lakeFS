@@ -1,0 +1,98 @@
+# On a published release (or manual dispatch with a version), pushes
+# cli.md, swagger.yml, and authorization.yml to `treeverse/docs-next-lakeFS`.
+
+name: Push docs release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to snapshot (e.g. v1.80.0). Defaults to the latest release tag."
+        required: false
+        type: string
+      is_latest:
+        description: "Mark this release as the current latest. Uncheck when pushing a patch snapshot for an older minor."
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: push-docs-release
+  cancel-in-progress: false
+
+jobs:
+  push-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target tag
+        id: tag
+        run: |
+          set -eu
+          TAG="${{ github.event.release.tag_name || inputs.version }}"
+          if [ -z "$TAG" ]; then
+            echo "No release tag and no manual input.  Aborting." >&2
+            exit 1
+          fi
+          # vMAJOR.MINOR.PATCH -> vMAJOR.MINOR
+          MINOR=$(echo "$TAG" | sed -E 's/^(v[0-9]+\.[0-9]+).*/\1/')
+          echo "tag=$TAG"     >> "$GITHUB_OUTPUT"
+          echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve is-latest flag
+        id: flags
+        run: |
+          # release events always update LATEST; workflow_dispatch respects the input.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.is_latest }}" == "false" ]]; then
+            echo "is_latest=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_latest=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Generate cli.md
+        run: go run cmd/lakectl/main.go docs > /tmp/cli.md
+
+      - name: Checkout docs-next-lakeFS
+        uses: actions/checkout@v6
+        with:
+          repository: treeverse/docs-next-lakeFS
+          token: ${{ secrets.TREEVERSE_CI_TOKEN }}
+          path: docs-next
+          ref: main
+
+      - name: Stage snapshot
+        run: |
+          set -eu
+          target="docs-next/reference-versions/oss/${{ steps.tag.outputs.minor }}"
+          mkdir -p "$target"
+          cp /tmp/cli.md             "$target/cli.md"
+          cp api/swagger.yml         "$target/swagger.yml"
+          cp api/authorization.yml   "$target/authorization.yml"
+          if [[ "${{ steps.flags.outputs.is_latest }}" == "true" ]]; then
+            echo "${{ steps.tag.outputs.minor }}" > "docs-next/reference-versions/oss/LATEST"
+          fi
+
+      - name: Commit and push
+        working-directory: docs-next
+        run: |
+          set -eu
+          git config user.name  "treeverse-ci-bot"
+          git config user.email "ci-bot@treeverse.io"
+          git add "reference-versions/oss/${{ steps.tag.outputs.minor }}/"
+          git add "reference-versions/oss/LATEST"
+          if git diff --cached --quiet; then
+            echo "No changes — snapshot already up to date."
+            exit 0
+          fi
+          git commit -m "snapshot: oss/${{ steps.tag.outputs.minor }} from lakeFS@${{ steps.tag.outputs.tag }}"
+          git push origin main

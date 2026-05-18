@@ -83,12 +83,6 @@ area/ci:
       - any-glob-to-any-file:
           - '.github/**'
 
-# Documentation
-docs:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'docs/**'
-
 # Testing
 area/testing:
   - changed-files:
