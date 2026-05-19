@@ -1,0 +1,65 @@
+name: Check webui docs links
+
+# Extracts docs.lakefs.io URLs from the webui source and verifies them with
+# lychee. Runs on every published release and on manual dispatch.
+#
+# Broken links are reported in the job summary but DO NOT fail the workflow:
+# release shipping must not be blocked by docs that have not yet been
+# published. Fix or publish the missing docs after the release.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or SHA to check. Defaults to the release tag or current branch."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    # Never block on broken links - they can be fixed after release.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.ref || github.ref }}
+
+      - name: Extract docs.lakefs.io links from webui
+        run: |
+          set -euo pipefail
+          .github/scripts/extract-docs-links.sh webui/src | tee webui-docs-links.txt
+          echo
+          echo "Found $(wc -l < webui-docs-links.txt) unique link(s)."
+
+      - name: Verify links with lychee
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --verbose
+            --no-progress
+            --max-concurrency 4
+            webui-docs-links.txt
+          output: ./lychee-report.md
+
+      - name: Write report to job summary
+        if: always()
+        run: |
+          {
+            echo "## webui docs.lakefs.io link check"
+            echo
+            echo "Checked links extracted from \`webui/src\` against docs.lakefs.io."
+            echo "Broken links here do **not** block the release - publish the missing docs and re-run when ready."
+            echo
+            if [ -s ./lychee-report.md ]; then
+              cat ./lychee-report.md
+            else
+              echo "_No report produced by lychee._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

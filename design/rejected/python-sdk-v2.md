@@ -143,7 +143,7 @@ Move `clients/python-wrapper/` (`lakefs` package) from depending on `lakefs-sdk`
       import warnings
       warnings.warn(
           "lakefs-sdk is deprecated. Please migrate to lakefs-sdk-next. "
-          "See https://community.lakefs.io/sdk-migration for details.",
+          "See https://docs.lakefs.io/project/code-migrate-1.0-sdk/ for details.",
           DeprecationWarning,
           stacklevel=2,
       )

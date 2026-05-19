@@ -16,7 +16,7 @@ import {
 type OcticonComponent = React.FC<{ size?: number | string }>;
 
 const BOOK_DEMO_URL = 'https://lakefs.io/book-a-demo/';
-const ENTERPRISE_DOCS_URL = 'https://docs.lakefs.io/latest/enterprise/';
+const ENTERPRISE_DOCS_URL = 'https://docs.lakefs.io/enterprise/';
 
 const ENTERPRISE_BULLETS: Array<{ title: string; description: string; icon: OcticonComponent }> = [
     {
@@ -162,7 +162,7 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
             </>
         ),
         learnMore: {
-            href: 'https://docs.lakefs.io/latest/security/sso/',
+            href: 'https://docs.lakefs.io/security/sso/',
             label: 'Learn about lakeFS authentication',
         },
         primaryActions: [{ label: 'Create Access Key', variant: 'success' }],
@@ -183,7 +183,7 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
             </>
         ),
         learnMore: {
-            href: 'https://docs.lakefs.io/latest/security/rbac/',
+            href: 'https://docs.lakefs.io/security/rbac/',
             label: 'Learn about lakeFS users',
         },
         primaryActions: [
@@ -207,7 +207,7 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
             </>
         ),
         learnMore: {
-            href: 'https://docs.lakefs.io/latest/security/rbac/',
+            href: 'https://docs.lakefs.io/security/rbac/',
             label: 'Learn about groups and RBAC',
         },
         primaryActions: [{ label: 'Create Group', variant: 'success' }],
@@ -228,7 +228,7 @@ const FEATURE_DETAILS: Record<EnterpriseFeatureKey, FeatureCopy> = {
             </>
         ),
         learnMore: {
-            href: 'https://docs.lakefs.io/latest/security/rbac/',
+            href: 'https://docs.lakefs.io/security/rbac/',
             label: 'Learn about policies',
         },
         primaryActions: [{ label: 'Create Policy', variant: 'success' }],

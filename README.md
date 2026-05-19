@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/src/assets/img/logo_large.png"/>
+  <img src=".github/assets/logo_large.png"/>
 </p>
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
@@ -10,8 +10,6 @@
 		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions/workflows/esti.yaml?query=branch%3Amaster">
 		<img src="https://github.com/treeverse/lakeFS/workflows/Esti/badge.svg?branch=master" alt="Integration tests status" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml">
-		<img src="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml/badge.svg" alt="Docs Preview & Link Check status" /></a>
 	<a href="https://artifacthub.io/packages/search?repo=lakefs">
 		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
 	<a href="CODE_OF_CONDUCT.md">
@@ -26,7 +24,7 @@ With lakeFS you can build repeatable, atomic, and versioned data lake operations
 
 lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, DuckDB, and Presto.
 
-For more information, see the [documentation](https://community.lakefs.io).
+For more information, see the [documentation](https://docs.lakefs.io/).
 
 ## Getting Started
 
@@ -53,7 +51,7 @@ docker run --pull always \
 
 ### Quickstart
 
-**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://community.lakefs.io/quickstart/) to jump right in!**
+**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://docs.lakefs.io/quickstart/) to jump right in!**
 
 Make sure to also have a look at the [lakeFS samples](https://github.com/treeverse/lakeFS-samples). These are a rich resource of examples of end-to-end applications that you can build with lakeFS.
 
@@ -104,13 +102,16 @@ Stay up to date and get lakeFS support via:
 
 ## More information
 
-- Read the [documentation](https://community.lakefs.io).
-- See the [contributing guide](https://community.lakefs.io/contributing).
-- Take a look at our [roadmap](https://community.lakefs.io/understand/roadmap.html) to peek into the future of lakeFS.
+- Read the [documentation](https://docs.lakefs.io/).
+- See the [contributing guide](https://docs.lakefs.io/project/contributing/).
+- Take a look at our [roadmap](https://docs.lakefs.io/project/) to peek into the future of lakeFS.
 
 ## Licensing
 
 lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+
+Treeverse considers that any sharing of source code with an AI agent, and any output an AI agent generates based on our source code, without the appropriate notices or attribution requirements, violates the terms of the Apache 2.0 license to which this source code is subject. 
+We also do not consider AI provider guardrails as sufficient to prevent copyright infringement. Treeverse reserves all of its rights to pursue legal action against any party that inputs LakeFS code into an AI agent.
 
 ## Who Uses lakeFS?
 
