@@ -65,6 +65,9 @@ class ParallelDataListerSpec
         })
       }
 
+      // Note: these tests use the local file:// filesystem, which does not exhibit the URI-scheme mismatch
+      // (s3:// vs s3a://) that motivated makeQualified in listPath. The require() assertion in listPath provides a
+      // runtime guard against that mismatch in production, and the S3A coverage is provided by integration tests.
       it("should list sharded-format paths recursively") {
         val dataDir = new File(dir.toFile, "data")
         dataDir.mkdir()
@@ -124,6 +127,38 @@ class ParallelDataListerSpec
           // sharded entries should precede legacy partitions
           addresses(0) should be("!ab/c/bpel26ce4m36oefv1600/xid_sharded_file")
           addresses(1) should be("legacy_partition_xid_str00/xid_legacy_file")
+        })
+      }
+
+      it("should return empty when path does not exist") {
+        withSparkSession(spark => {
+          val nonExistentDir = new File(dir.toFile, "nonexistent")
+          val path = new Path(nonExistentDir.toURI)
+          val configMapper = new ConfigMapper(
+            spark.sparkContext.broadcast(
+              HadoopUtils.getHadoopConfigurationValues(spark.sparkContext.hadoopConfiguration)
+            )
+          )
+          val df = new ParallelDataLister().listData(configMapper, path, 3)
+          df.count() should be(0)
+        })
+      }
+
+      it("should list files placed directly in path") {
+        val dataDir = new File(dir.toFile, "data")
+        dataDir.mkdir()
+        withSparkSession(spark => {
+          val filename = "staged_object"
+          new File(dataDir, filename).createNewFile()
+          val path = new Path(dataDir.toURI)
+          val configMapper = new ConfigMapper(
+            spark.sparkContext.broadcast(
+              HadoopUtils.getHadoopConfigurationValues(spark.sparkContext.hadoopConfiguration)
+            )
+          )
+          val df = new ParallelDataLister().listData(configMapper, path, 3)
+          df.count() should be(1)
+          df.head.getString(0) should be(s"$filename/$filename")
         })
       }
 
