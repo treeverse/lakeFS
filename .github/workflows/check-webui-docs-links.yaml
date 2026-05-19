@@ -11,11 +11,6 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      ref:
-        description: "Branch, tag, or SHA to check. Defaults to the release tag or current branch."
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -28,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || inputs.ref || github.ref }}
+          ref: ${{ github.event.release.tag_name || github.ref }}
 
       - name: Extract docs.lakefs.io links from webui
         run: |
