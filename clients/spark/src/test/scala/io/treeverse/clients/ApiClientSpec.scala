@@ -90,16 +90,26 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       val mockInternalApi = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi])
 
       // Create mock request builder for async API
-      val asyncApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsAsyncRequest])
-      Mockito.when(asyncApiBuilder.execute()).thenThrow(new ApiException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Internal server error"))
-      Mockito.when(mockInternalApi.prepareGarbageCollectionCommitsAsync(anyString())).thenReturn(asyncApiBuilder)
+      val asyncApiBuilder = Mockito.mock(
+        classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsAsyncRequest]
+      )
+      Mockito
+        .when(asyncApiBuilder.execute())
+        .thenThrow(new ApiException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Internal server error"))
+      Mockito
+        .when(mockInternalApi.prepareGarbageCollectionCommitsAsync(anyString()))
+        .thenReturn(asyncApiBuilder)
 
       // Create mock request builder for sync API
       val syncResponse = new GarbageCollectionPrepareResponse()
       syncResponse.setGcCommitsLocation(testGcCommitsLocation)
-      val syncApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsRequest])
+      val syncApiBuilder = Mockito.mock(
+        classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsRequest]
+      )
       Mockito.when(syncApiBuilder.execute()).thenReturn(syncResponse)
-      Mockito.when(mockInternalApi.prepareGarbageCollectionCommits(anyString())).thenReturn(syncApiBuilder)
+      Mockito
+        .when(mockInternalApi.prepareGarbageCollectionCommits(anyString()))
+        .thenReturn(syncApiBuilder)
 
       // Replace the internalApi with our mock using the test method
       apiClient.setInternalApiForTesting(mockInternalApi)
@@ -108,7 +118,9 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       val result = apiClient.prepareGarbageCollectionCommits(repoName, timeoutSeconds = 60)
 
       // Verify async API was called first (may be retried by retry wrapper)
-      Mockito.verify(mockInternalApi, Mockito.atLeastOnce()).prepareGarbageCollectionCommitsAsync(repoName)
+      Mockito
+        .verify(mockInternalApi, Mockito.atLeastOnce())
+        .prepareGarbageCollectionCommitsAsync(repoName)
 
       // Verify sync API was called as fallback
       Mockito.verify(mockInternalApi, Mockito.times(1)).prepareGarbageCollectionCommits(repoName)
@@ -131,9 +143,13 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       val taskCreation = new TaskCreation()
       taskCreation.setId(taskId)
 
-      val asyncApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsAsyncRequest])
+      val asyncApiBuilder = Mockito.mock(
+        classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsAsyncRequest]
+      )
       Mockito.when(asyncApiBuilder.execute()).thenReturn(taskCreation)
-      Mockito.when(mockInternalApi.prepareGarbageCollectionCommitsAsync(anyString())).thenReturn(asyncApiBuilder)
+      Mockito
+        .when(mockInternalApi.prepareGarbageCollectionCommitsAsync(anyString()))
+        .thenReturn(asyncApiBuilder)
 
       // Mock status API to return completed status immediately
       val status = new PrepareGarbageCollectionCommitsStatus()
@@ -142,9 +158,13 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       result.setGcCommitsLocation(testGcCommitsLocation)
       status.setResult(result)
 
-      val statusApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsStatusRequest])
+      val statusApiBuilder = Mockito.mock(
+        classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsStatusRequest]
+      )
       Mockito.when(statusApiBuilder.execute()).thenReturn(status)
-      Mockito.when(mockInternalApi.prepareGarbageCollectionCommitsStatus(anyString(), anyString())).thenReturn(statusApiBuilder)
+      Mockito
+        .when(mockInternalApi.prepareGarbageCollectionCommitsStatus(anyString(), anyString()))
+        .thenReturn(statusApiBuilder)
 
       // Replace the internalApi with our mock using the test method
       apiClient.setInternalApiForTesting(mockInternalApi)
@@ -153,10 +173,14 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       val response = apiClient.prepareGarbageCollectionCommits(repoName, timeoutSeconds = 60)
 
       // Verify async API was called
-      Mockito.verify(mockInternalApi, Mockito.times(1)).prepareGarbageCollectionCommitsAsync(repoName)
+      Mockito
+        .verify(mockInternalApi, Mockito.times(1))
+        .prepareGarbageCollectionCommitsAsync(repoName)
 
       // Verify status API was called
-      Mockito.verify(mockInternalApi, Mockito.atLeastOnce()).prepareGarbageCollectionCommitsStatus(repoName, taskId)
+      Mockito
+        .verify(mockInternalApi, Mockito.atLeastOnce())
+        .prepareGarbageCollectionCommitsStatus(repoName, taskId)
 
       // Verify sync API was NOT called (no fallback)
       Mockito.verify(mockInternalApi, Mockito.never()).prepareGarbageCollectionCommits(anyString())
@@ -174,9 +198,15 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       val mockInternalApi = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi])
 
       // Create mock request builder for async API that throws 404 on execute()
-      val asyncApiBuilder = Mockito.mock(classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsAsyncRequest])
-      Mockito.when(asyncApiBuilder.execute()).thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "Not found"))
-      Mockito.when(mockInternalApi.prepareGarbageCollectionCommitsAsync(anyString())).thenReturn(asyncApiBuilder)
+      val asyncApiBuilder = Mockito.mock(
+        classOf[io.lakefs.clients.sdk.InternalApi#APIprepareGarbageCollectionCommitsAsyncRequest]
+      )
+      Mockito
+        .when(asyncApiBuilder.execute())
+        .thenThrow(new ApiException(HttpStatus.SC_NOT_FOUND, "Not found"))
+      Mockito
+        .when(mockInternalApi.prepareGarbageCollectionCommitsAsync(anyString()))
+        .thenReturn(asyncApiBuilder)
 
       // Replace the internalApi with our mock using the test method
       apiClient.setInternalApiForTesting(mockInternalApi)
@@ -189,7 +219,9 @@ class ApiClientSpec extends AnyFunSpec with Matchers with MockitoSugar {
       thrown.getCode should be(HttpStatus.SC_NOT_FOUND)
 
       // Verify async API was called (may be retried by retry wrapper)
-      Mockito.verify(mockInternalApi, Mockito.atLeastOnce()).prepareGarbageCollectionCommitsAsync(repoName)
+      Mockito
+        .verify(mockInternalApi, Mockito.atLeastOnce())
+        .prepareGarbageCollectionCommitsAsync(repoName)
 
       // Verify sync API was NOT called (no fallback for non-500 errors)
       Mockito.verify(mockInternalApi, Mockito.never()).prepareGarbageCollectionCommits(anyString())
