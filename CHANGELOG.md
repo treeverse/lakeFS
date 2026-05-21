@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.81.1
+
+### Security Fixes
+
+- Fixed an XSS vulnerability by sanitizing HTML in rendered markdown content
 
 ## v1.81.0
 
