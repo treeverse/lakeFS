@@ -2,7 +2,7 @@
 
 ## v1.81.1
 
-:bug: Bugs fixed:
+### Security Fixes
 
 - Fixed an XSS vulnerability by sanitizing HTML in rendered markdown content
 
