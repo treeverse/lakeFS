@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.22.0
+
+* Add support for sharded storage namespaces (#10406)
+
 ## v0.21.0
 
 * Fix GCS protobuf shading conflict (#10228)
