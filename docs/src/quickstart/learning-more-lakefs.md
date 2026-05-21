@@ -66,6 +66,22 @@ Enjoyed the quickstart and want to try out lakeFS against your own data? Here's 
     lakefs run --local-settings
     ```
 
+=== "Backblaze B2"
+    To use lakeFS with Backblaze B2 (S3-compatible API), point the S3 blockstore at the regional B2 endpoint and use a B2 application key:
+
+    ```bash
+    export LAKEFS_BLOCKSTORE_TYPE="s3"
+    export LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE="true"
+    export LAKEFS_BLOCKSTORE_S3_ENDPOINT="https://s3.us-west-001.backblazeb2.com"
+    export LAKEFS_BLOCKSTORE_S3_REGION="us-west-001"
+    export LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION="false"
+    export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID="<b2_application_key_id>"
+    export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY="<b2_application_key>"
+    lakefs run --local-settings
+    ```
+
+    Replace the endpoint and region with the values shown in the [Backblaze B2 console](https://www.backblaze.com/docs/cloud-storage-s3-compatible-api) for your bucket. Generate an application key scoped to the lakeFS bucket from the **Application Keys** page.
+
 ## Deploying lakeFS
 
 Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](../howto/deploy/onprem.md) (including on [Kubernetes][onprem-k8s]) or on [AWS](../howto/deploy/aws.md), [Azure](../howto/deploy/azure.md), or [GCP](../howto/deploy/gcp.md).

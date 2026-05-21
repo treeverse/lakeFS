@@ -481,6 +481,39 @@ To set a value into a `map[string]string` type field, use the syntax `key1=value
 
     ```
 
+!!! example "Backblaze B2 (S3-compatible)"
+
+    ```yaml
+    ---
+    logging:
+    format: json
+    level: WARN
+    output: "-"
+
+    database:
+    type: "postgres"
+    postgres:
+        connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+
+    auth:
+    encrypt:
+        secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
+
+    blockstore:
+    type: s3
+    s3:
+        force_path_style: true
+        endpoint: https://s3.us-west-001.backblazeb2.com
+        region: us-west-001
+        discover_bucket_region: false
+        credentials:
+            access_key_id: <b2_application_key_id>
+            secret_access_key: <b2_application_key>
+
+    ```
+
+    Replace `us-west-001` with the region shown for your bucket in the [Backblaze B2 console](https://www.backblaze.com/docs/cloud-storage-s3-compatible-api). Use a B2 application key scoped to the lakeFS bucket.
+
 !!! example "Azure blob storage"
 
     ```yaml
