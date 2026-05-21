@@ -30,7 +30,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/version"
 )
+
+// userAgentProduct identifies lakeFS on S3 server-side request logs as
+// `lakefs/<version>` (RFC 9110 product form). Matches the convention already
+// used by the Lua client (LuaClientUserAgent = "lakefs-lua/" + version.Version).
+const userAgentProduct = "lakefs"
 
 var (
 	ErrS3          = errors.New("s3 error")
@@ -145,6 +151,13 @@ func LoadConfig(ctx context.Context, params params.S3) (aws.Config, error) {
 	opts = append(opts,
 		config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
 		config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+		// Attribute S3 traffic on server-side request logs as
+		// `lakefs/<version>`. AddUserAgentKeyValue appends to the wire UA;
+		// downstream callers can stack additional suffixes via further
+		// API-options middleware without overriding ours.
+		config.WithAPIOptions([]func(*middleware.Stack) error{
+			awsmiddleware.AddUserAgentKeyValue(userAgentProduct, version.Version),
+		}),
 	)
 
 	opts = append(opts, config.WithLogger(&logging.AWSAdapter{
