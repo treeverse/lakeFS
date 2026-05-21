@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import remarkHtml from 'remark-html';
 import rehypeRaw from 'rehype-raw';
 import rehypeReact from 'rehype-react';
+import rehypeSanitize from 'rehype-sanitize';
 import rehypeWrap from 'rehype-wrap';
 import { unified } from 'unified';
 import imageUriReplacer from '../../../../lib/remark-plugins/imageUriReplacer';
@@ -49,6 +50,7 @@ export function useMarkdownProcessor(
                 .use(remarkHtml)
                 .use(remarkRehype, { allowDangerousHtml: true })
                 .use(rehypeRaw)
+                .use(rehypeSanitize)
                 .use(rehypeReact, options)
                 .use(rehypeWrap, { wrapper: 'div.object-viewer-markdown' })
                 .process(text);
