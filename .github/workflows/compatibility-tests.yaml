@@ -31,7 +31,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
 
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
@@ -64,7 +64,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and export
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v7.1.0
         id: build_export
         with:
           context: .
@@ -214,7 +214,7 @@ jobs:
           java-version: ${{ matrix.spark.java_version }}
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -307,7 +307,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
 
       - name: Package Spark App
         working-directory: test/spark/app

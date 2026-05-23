@@ -22,7 +22,7 @@ jobs:
           java-version: '17'
           cache: 'sbt'
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
 
       - name: validate format
         working-directory: clients/spark

@@ -139,7 +139,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and Push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v7.1.0
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.gen-code.outputs.tag }}
@@ -365,7 +365,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
       - name: Build and Push to Amazon ECR
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v7.1.0
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}
@@ -439,7 +439,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -495,7 +495,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
 
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
@@ -519,7 +519,7 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
 
       - name: Package Spark 2 and 3 Apps
         working-directory: test/spark/app
@@ -739,7 +739,7 @@ jobs:
           java-version: "17"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.1.23
         if: steps.restore-cache.outputs.cache-hit != 'true'
 
       - name: Package Metaclient
