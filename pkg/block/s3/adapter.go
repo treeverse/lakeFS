@@ -30,7 +30,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/pkg/version"
 )
+
+// userAgentProduct is the lakeFS product token added to the S3 User-Agent
+// (RFC 9110 product form: `lakefs/<version>`).
+const userAgentProduct = "lakefs"
 
 var (
 	ErrS3          = errors.New("s3 error")
@@ -145,6 +150,9 @@ func LoadConfig(ctx context.Context, params params.S3) (aws.Config, error) {
 	opts = append(opts,
 		config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
 		config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+		config.WithAPIOptions([]func(*middleware.Stack) error{
+			awsmiddleware.AddUserAgentKeyValue(userAgentProduct, version.Version),
+		}),
 	)
 
 	opts = append(opts, config.WithLogger(&logging.AWSAdapter{
