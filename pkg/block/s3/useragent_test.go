@@ -3,7 +3,6 @@ package s3_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -19,14 +18,11 @@ import (
 func TestLoadConfigSetsLakeFSUserAgent(t *testing.T) {
 	t.Parallel()
 
-	var (
-		mu       sync.Mutex
-		captured string
-	)
+	userAgentCh := make(chan string, 2)
+
 	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		captured = r.Header.Get("User-Agent")
-		mu.Unlock()
+		userAgentCh <- r.Header.Get("User-Agent")
+		close(userAgentCh)
 	}))
 	t.Cleanup(srv.Close)
 
@@ -46,8 +42,7 @@ func TestLoadConfigSetsLakeFSUserAgent(t *testing.T) {
 	})
 	_, _ = client.HeadBucket(ctx, &awss3.HeadBucketInput{Bucket: aws.String("test")})
 
-	mu.Lock()
-	defer mu.Unlock()
+	captured := <-userAgentCh
 	require.Contains(t, captured, "lakefs/",
 		"User-Agent does not include the lakefs/ product (got %q)", captured)
 }
