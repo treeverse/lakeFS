@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -53,7 +53,7 @@ jobs:
       image_id: ${{ steps.build_export.outputs.ImageID }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Extract version
         shell: bash
@@ -206,7 +206,7 @@ jobs:
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - uses: actions/setup-java@v5
         with:
@@ -287,7 +287,7 @@ jobs:
       SPARK_TAG: 3
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
