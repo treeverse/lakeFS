@@ -40,7 +40,7 @@ class LenientNamedTuple:
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
-            return False
+            return NotImplemented
         for k, v in self.__dict__.items():
             if k == "unknown":
                 continue
