@@ -120,14 +120,15 @@ class Client:
         # Initialize auth if using IAM provider
         if self._conf.get_auth_type() is ClientConfig.AuthType.IAM:
             iam_provider = self._conf.iam_provider
-            assert iam_provider is not None
-            if iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
+            if iam_provider is not None and iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
                 # boto3 session lazy loading (only if an AWS IAM provider is used)
                 import boto3 # pylint: disable=import-outside-toplevel, import-error
                 self._session = boto3.Session()
                 lakefs_host = urlparse(self._conf.host).hostname
-                assert lakefs_host is not None, f"Could not parse hostname from host: {self._conf.host}"
-                assert iam_provider.aws_iam is not None
+                if lakefs_host is None:
+                    raise ValueError(f"Could not parse hostname from host: {self._conf.host!r}")
+                if iam_provider.aws_iam is None:
+                    raise ValueError("AWS IAM provider configuration is missing")
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
                     self._client,
                     lakefs_host,
@@ -150,10 +151,11 @@ class Client:
                 current_time >= self._reset_token_time):
             # Refresh token:
             iam_provider = self._conf.iam_provider
-            if iam_provider is not None and iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
+            if (iam_provider is not None and iam_provider.aws_iam is not None and
+                    iam_provider.type == ClientConfig.ProviderType.AWS_IAM):
                 lakefs_host = urlparse(self._conf.host).hostname
-                assert lakefs_host is not None, f"Could not parse hostname from host: {self._conf.host}"
-                assert iam_provider.aws_iam is not None
+                if lakefs_host is None:
+                    return
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
                     self._client,
                     lakefs_host,
