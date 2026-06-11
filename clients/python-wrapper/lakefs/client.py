@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime
 from threading import Lock
-from typing import Optional
+from typing import Any, Optional
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -65,7 +65,7 @@ class ServerConfiguration:
         """
         return self.storage_config_by_id()
 
-    def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
+    def storage_config_by_id(self, storage_id: str = SINGLE_STORAGE_ID) -> ServerStorageConfiguration:
         """
         Returns the lakeFS server storage configuration by ID
         """
@@ -87,12 +87,30 @@ class Client:
 
     """
 
-    _client: Optional[LakeFSClient] = None
-    _conf: Optional[ClientConfig] = None
+    _client: LakeFSClient
+    _conf: ClientConfig
     _server_conf: Optional[ServerConfiguration] = None
 
-    def __init__(self, **kwargs):
-        self._conf = ClientConfig(**kwargs)
+    def __init__(
+        self,
+        *,
+        host: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        access_token: Optional[str] = None,
+        verify_ssl: Optional[bool] = None,
+        proxy: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        # Only forward non-None values so that ClientConfig's auto-detection
+        # (env vars / ~/.lakectl.yaml) still runs when no credentials are provided.
+        explicit: dict[str, Any] = {k: v for k, v in {
+            "host": host,
+            "username": username,
+            "password": password,
+            "access_token": access_token,
+        }.items() if v is not None}
+        self._conf = ClientConfig(verify_ssl=verify_ssl, proxy=proxy, **explicit, **kwargs)
         self._client = LakeFSClient(self._conf, header_name='X-Lakefs-Client',
                                     header_value='python-lakefs')
         self._server_conf = None
@@ -102,11 +120,14 @@ class Client:
         # Initialize auth if using IAM provider
         if self._conf.get_auth_type() is ClientConfig.AuthType.IAM:
             iam_provider = self._conf.iam_provider
+            assert iam_provider is not None
             if iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
                 # boto3 session lazy loading (only if an AWS IAM provider is used)
                 import boto3 # pylint: disable=import-outside-toplevel, import-error
                 self._session = boto3.Session()
                 lakefs_host = urlparse(self._conf.host).hostname
+                assert lakefs_host is not None, f"Could not parse hostname from host: {self._conf.host}"
+                assert iam_provider.aws_iam is not None
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
                     self._client,
                     lakefs_host,
@@ -119,7 +140,7 @@ class Client:
             object.__getattribute__(self, "_refresh_token_if_necessary")()
         return object.__getattribute__(self, name)
 
-    def _refresh_token_if_necessary(self):
+    def _refresh_token_if_necessary(self) -> None:
         """
         Refresh the token if necessary
         """
@@ -129,8 +150,10 @@ class Client:
                 current_time >= self._reset_token_time):
             # Refresh token:
             iam_provider = self._conf.iam_provider
-            if iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
+            if iam_provider is not None and iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
                 lakefs_host = urlparse(self._conf.host).hostname
+                assert lakefs_host is not None, f"Could not parse hostname from host: {self._conf.host}"
+                assert iam_provider.aws_iam is not None
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
                     self._client,
                     lakefs_host,
@@ -139,28 +162,28 @@ class Client:
                 )
 
     @property
-    def config(self):
+    def config(self) -> ClientConfig:
         """
         Return the underlying lakefs_sdk configuration
         """
         return self._conf
 
     @property
-    def sdk_client(self):
+    def sdk_client(self) -> LakeFSClient:
         """
         Return the underlying lakefs_sdk client
         """
         return self._client
 
     @property
-    def storage_config(self):
+    def storage_config(self) -> ServerStorageConfiguration:
         """
         lakeFS SDK storage config object, lazy evaluated.
         """
         return self.storage_config_by_id()
 
     @property
-    def reset_time(self):
+    def reset_time(self) -> Optional[datetime.datetime]:
         """
         The time when the access token will expire.
         """
@@ -170,7 +193,7 @@ class Client:
     def reset_time(self, time: datetime.datetime) -> None:
         self._reset_token_time = time
 
-    def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
+    def storage_config_by_id(self, storage_id: str = SINGLE_STORAGE_ID) -> ServerStorageConfiguration:
         """
         Returns lakeFS SDK storage config object, defaults to a single storage ID.
         """
