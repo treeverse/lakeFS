@@ -391,12 +391,19 @@ func AssignAutoConfirmFlag(flags *pflag.FlagSet) {
 	flags.BoolP(AutoConfirmFlagName, AutoConfigFlagShortName, false, AutoConfirmFlagHelp)
 }
 
-func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
+func Confirm(flags *pflag.FlagSet, question string, preamble ...string) (bool, error) {
 	yes, err := flags.GetBool(AutoConfirmFlagName)
 	if err == nil && yes {
 		// got auto confirm flag
 		return true, nil
 	}
+
+	// promptui has a known issue with newlines in the Label. (the app hangs)
+	// so this is to split the preamble prints from the prompt
+	for _, preambleLine := range preamble {
+		fmt.Println(preambleLine)
+	}
+
 	prm := promptui.Prompt{
 		Label:     question,
 		IsConfirm: true,

@@ -1148,3 +1148,84 @@ Use "lakectl local pull... --force" to sync with the remote.`,
 		})
 	}
 }
+
+func TestLakectlLocal_interrupted_commit_yes_flag(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	tests := []struct {
+		name        string
+		flag        string
+		expectFail  bool
+		expectedMsg string
+	}{
+		{
+			name:        "short-yes-flag",
+			flag:        "-y",
+			expectFail:  false,
+			expectedMsg: "Commit for branch \"${BRANCH}\" completed",
+		},
+		{
+			name:        "long-yes-flag",
+			flag:        "--yes",
+			expectFail:  false,
+			expectedMsg: "Commit for branch \"${BRANCH}\" completed",
+		},
+		{
+			name:        "no-confirmation-flag",
+			flag:        "",
+			expectFail:  true,
+			expectedMsg: "Latest 'local pull' operation was interrupted, running 'local commit' operation now might lead to data loss.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+
+			localVars := map[string]string{
+				"REPO":      repoName,
+				"STORAGE":   storage,
+				"BRANCH":    tt.name,
+				"REF":       tt.name,
+				"PREFIX":    "",
+				"LOCAL_DIR": dataDir,
+			}
+
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, localVars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+tt.name+"/ --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", localVars)
+
+			// Create a local file so there are changes to commit.
+			require.NoError(t, os.WriteFile(filepath.Join(dataDir, "test.txt"), []byte{}, os.ModePerm))
+
+			// Simulate an interrupted pull by writing ActiveOperation into the index.
+			idx, err := local.ReadIndex(dataDir)
+			require.NoError(t, err)
+			u, err := idx.GetCurrentURI()
+			require.NoError(t, err)
+			_, err = local.WriteIndex(idx.LocalPath(), u, idx.AtHead, "pull")
+			require.NoError(t, err)
+
+			cmd := fmt.Sprintf("%s local commit %s -m test %s", Lakectl(), tt.flag, dataDir)
+			if tt.expectFail {
+				RunCmdAndVerifyFailureContainsText(t, cmd, false, tt.expectedMsg, localVars)
+			} else {
+				RunCmdAndVerifyContainsText(t, cmd, false, tt.expectedMsg, localVars)
+			}
+		})
+	}
+}
