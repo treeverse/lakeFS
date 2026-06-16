@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.82.0
+
+:new: What's new:
+
+- S3 traffic is now attributed with a `lakefs/<version>` User-Agent, making lakeFS requests identifiable in object store logs (#10426)
+- `lakectl local commit` now supports a `-y` / `--yes` flag to auto-confirm after an interrupted operation (#10439)
+
+:bug: Bugs Fixed:
+
+- Upgrade minio CRC library to fix illegal-instruction crashes on some ARM64 platforms (#10418)
+
+### Security Fixes
+
+- Upgrade pgx/v5 to v5.9.2 to address a critical PostgreSQL driver vulnerability (CVE-2026-33816 / GHSA-9jj7-4m8r-rfcm) (#10445)
+
 ## v1.81.1
 
 ### Security Fixes
