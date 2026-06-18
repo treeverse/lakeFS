@@ -82,7 +82,7 @@ func createEntriesForIgnore(dir string, paths []string, exclude bool) ([]string,
 			return nil, fmt.Errorf("%s :%w", p, err)
 		}
 		if isDir {
-			pathInRepo = filepath.Join(pathInRepo, "*")
+			pathInRepo = filepath.ToSlash(filepath.Join(pathInRepo, "*"))
 		}
 		if exclude {
 			pathInRepo = "!" + pathInRepo
