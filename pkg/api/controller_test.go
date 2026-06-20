@@ -3928,6 +3928,7 @@ func TestController_SetupCommPrefsAlreadySet(t *testing.T) {
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	ctx := t.Context()
+	createDefaultAdminUser(t, clt)
 
 	body := apigen.SetupCommPrefsJSONRequestBody{
 		Email:           swag.String("test@acme.co"),
@@ -3946,6 +3947,21 @@ func TestController_SetupCommPrefsAlreadySet(t *testing.T) {
 	resp, err = clt.SetupCommPrefsWithResponse(ctx, body)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusConflict, resp.StatusCode())
+}
+
+// TestController_SetupCommPrefsNotInitialized verifies comm prefs cannot be set
+// before lakeFS is initialized: the call is rejected with 412 so that Setup
+// remains the source of truth for the comm prefs state.
+func TestController_SetupCommPrefsNotInitialized(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+
+	resp, err := clt.SetupCommPrefsWithResponse(t.Context(), apigen.SetupCommPrefsJSONRequestBody{
+		Email: swag.String("test@acme.co"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusPreconditionFailed, resp.StatusCode())
 }
 
 func TestController_SetupCommPrefs(t *testing.T) {
@@ -3998,6 +4014,7 @@ func TestController_SetupCommPrefs(t *testing.T) {
 			handler, _ := setupHandler(t)
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
+			createDefaultAdminUser(t, clt)
 
 			resp, err := clt.SetupCommPrefsWithResponse(t.Context(), c.body)
 			require.NoError(t, err)
