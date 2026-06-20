@@ -239,22 +239,22 @@ func (s *StoreService) SetEndpoint(h *http.Server) {
 }
 
 func (s *StoreService) asyncRun(ctx context.Context, record graveler.HookRecord) {
-	s.wg.Go(func() {
-		// load the user from the original context
-		user, err := auth.GetUser(ctx)
-		if err != nil {
-			if !errors.Is(err, auth.ErrUserNotFound) {
-				logging.FromContext(s.ctx).WithError(err).WithField("record", record).
-					Info("Failed getting user from context")
-			} else {
-				ctx = s.ctx
-			}
-		} else {
-			ctx = auth.WithUser(s.ctx, user)
+	// Carry the user from the request context onto the service context, which
+	// outlives the request, so the async run keeps its identity but is only
+	// cancelled on shutdown. Extract before spawning the goroutine: the request
+	// context may be cancelled by the time the goroutine runs.
+	runCtx := s.ctx
+	if user, err := auth.GetUser(ctx); err != nil {
+		if !errors.Is(err, auth.ErrUserNotFound) {
+			logging.FromContext(s.ctx).WithError(err).WithField("record", record).
+				Info("Failed getting user from context")
 		}
+	} else {
+		runCtx = auth.WithUser(s.ctx, user)
+	}
 
-		// passing the global (possibly wrapped) context for cancelling all runs when lakeFS shuts down
-		if err := s.Run(ctx, record); err != nil {
+	s.wg.Go(func() {
+		if err := s.Run(runCtx, record); err != nil {
 			logging.FromContext(s.ctx).WithError(err).WithField("record", record).
 				Info("Async run of hook failed")
 		}
