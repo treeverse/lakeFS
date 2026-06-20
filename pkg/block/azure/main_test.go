@@ -54,8 +54,22 @@ func createDNSResolver() {
 
 func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	ctx := context.Background()
-	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.31.0", []string{
-		fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
+	// The azblob SDK negotiates a newer REST API version than Azurite supports,
+	// so run Azurite with --skipApiVersionCheck to accept the request. The default
+	// Cmd is overridden, so the host bindings from the image are restated here.
+	resource, err := dockerPool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "mcr.microsoft.com/azure-storage/azurite",
+		Tag:        "3.35.0",
+		Env: []string{
+			fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
+		},
+		Cmd: []string{
+			"azurite", "-l", "/data",
+			"--blobHost", "0.0.0.0",
+			"--queueHost", "0.0.0.0",
+			"--tableHost", "0.0.0.0",
+			"--skipApiVersionCheck",
+		},
 	})
 	if err != nil {
 		panic(err)

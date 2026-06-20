@@ -73,8 +73,9 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 
 	key := strings.TrimPrefix(physicalAddress.Path, "/")
 	bucket := physicalAddress.Hostname()
-	uploader := manager.NewUploader(s.svc)
-	out, err := uploader.Upload(ctx, &s3.PutObjectInput{
+	// feature/s3/transfermanager, the suggested replacement, is still a v0.x developer preview.
+	uploader := manager.NewUploader(s.svc)               //nolint:staticcheck // transfermanager not yet GA
+	out, err := uploader.Upload(ctx, &s3.PutObjectInput{ //nolint:staticcheck // transfermanager not yet GA
 		Body:   contents,
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),

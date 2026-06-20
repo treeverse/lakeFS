@@ -2,11 +2,11 @@
 ARG VERSION=dev
 
 ARG BUILD_REPO=golang
-ARG BUILD_TAG=1.25-alpine
+ARG BUILD_TAG=1.26-alpine
 ARG BUILD_PACKAGES="build-base ca-certificates"
 
 ARG IMAGE_REPO=alpine
-ARG IMAGE_TAG=3.21
+ARG IMAGE_TAG=3.24
 ARG IMAGE_PACKAGES=ca-certificates
 
 ARG ADD_PACKAGES="apk add -U --no-cache"

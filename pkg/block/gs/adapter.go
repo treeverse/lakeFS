@@ -141,7 +141,7 @@ func (o *storageObjectHandle) withReadHandle(ctx context.Context, a *Adapter) *s
 		}
 	} else {
 		// Assume no decryption needed when attrs is not found
-		a.log(ctx).Debugf("object Attrs get error %w", err)
+		a.log(ctx).Debugf("object Attrs get error %v", err)
 	}
 	return o
 }
