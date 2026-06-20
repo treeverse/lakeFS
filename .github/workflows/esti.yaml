@@ -20,7 +20,7 @@ jobs:
     outputs:
       python-sdk-change: ${{ steps.filter.outputs.python-sdk == 'true' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -48,7 +48,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Extract version
         id: version
@@ -109,7 +109,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Retrieve generated code
         uses: actions/download-artifact@v8
@@ -246,7 +246,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -355,7 +355,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Extract version
         shell: bash
@@ -380,7 +380,7 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -431,15 +431,15 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.2.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.2.1
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -487,15 +487,15 @@ jobs:
     runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.2.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.2.1
 
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
@@ -511,21 +511,21 @@ jobs:
     runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.2.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.2.1
 
       - name: Package Spark 2 and 3 Apps
         working-directory: test/spark/app
         run: sbt sonnets-246/package sonnets-311/package
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.2.0
         with:
           distribution: "adopt-hotspot"
           java-version: "17"
@@ -565,7 +565,7 @@ jobs:
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Download lakeFS HadoopFS
         uses: actions/download-artifact@v8
@@ -675,7 +675,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Start lakeFS for export tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -724,7 +724,7 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
       - name: Restore cache
         uses: actions/cache@v5
         id: restore-cache
@@ -732,14 +732,14 @@ jobs:
           path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ hashFiles('./clients/spark/**') }}
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.2.0
         if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           distribution: "adopt-hotspot"
           java-version: "17"
           cache: "sbt"
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.2.1
         if: steps.restore-cache.outputs.cache-hit != 'true'
 
       - name: Package Metaclient
@@ -771,7 +771,7 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
       - name: Restore cache
         uses: actions/cache@v5
         id: restore-cache
@@ -831,7 +831,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Generate uniquifying value
         id: unique
@@ -904,7 +904,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Generate uniquifying value
         id: unique
@@ -976,7 +976,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Generate uniquifying value
         id: unique
@@ -1031,7 +1031,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Generate uniquifying value
         id: unique
@@ -1093,7 +1093,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Generate uniquifying value
         id: unique
@@ -1184,7 +1184,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v6
@@ -1246,7 +1246,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v6
@@ -1310,7 +1310,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
       - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
@@ -1386,7 +1386,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
       - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
@@ -1445,7 +1445,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
       - name: Generate uniquifying value
         id: unique

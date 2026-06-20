@@ -21,15 +21,15 @@ jobs:
             java: "17"
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.2.0
         with:
           distribution: 'adopt-hotspot'
           java-version: ${{ matrix.java }}
           cache: 'sbt'
 
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@v1.2.1
 
       - name: validate format
         working-directory: clients/spark
