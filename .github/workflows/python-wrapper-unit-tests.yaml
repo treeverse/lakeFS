@@ -12,7 +12,7 @@ jobs:
       wrapper-change: ${{ steps.filter.outputs.wrapper == 'true' }}
       sdk-change: ${{ steps.filter.outputs.sdk == 'true' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -43,11 +43,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         
       # The minimal supported version of Python is 3.10, so we need to test it in this environment
       - name: Set up Python 3.10
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.10"
 
@@ -90,11 +90,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # The minimal supported version of Python is 3.10, so we need to test it in this environment
       - name: Set up Python 3.10
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.10"
       

@@ -50,11 +50,11 @@ jobs:
             echo "is_latest=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.tag.outputs.tag }}
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v6.4.0
         with:
           go-version-file: go.mod
           cache: true
@@ -63,7 +63,7 @@ jobs:
         run: go run cmd/lakectl/main.go docs > /tmp/cli.md
 
       - name: Checkout docs-next-lakeFS
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: treeverse/docs-next-lakeFS
           token: ${{ secrets.TREEVERSE_CI_TOKEN }}

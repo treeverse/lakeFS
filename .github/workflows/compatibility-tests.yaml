@@ -17,15 +17,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v6.4.0
         with:
           go-version-file: 'go.mod'
         id: go
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -53,7 +53,7 @@ jobs:
       image_id: ${{ steps.build_export.outputs.ImageID }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract version
         shell: bash
@@ -207,9 +207,9 @@ jobs:
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: "adopt-hotspot"
           java-version: ${{ matrix.spark.java_version }}
@@ -222,7 +222,7 @@ jobs:
         run: sbt ${{ matrix.spark.sonnet_project }}/package
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: 3.11
           cache: "pip"
@@ -288,7 +288,7 @@ jobs:
       SPARK_TAG: 3
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -302,7 +302,7 @@ jobs:
       - name: Load Docker image
         run: docker load --input /tmp/lakefs.tar
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -315,7 +315,7 @@ jobs:
         run: sbt sonnets-311/package
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: 3.11
           cache: "pip"
