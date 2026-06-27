@@ -21,9 +21,9 @@ jobs:
             java: "17"
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: 'adopt-hotspot'
           java-version: ${{ matrix.java }}

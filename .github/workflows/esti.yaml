@@ -20,7 +20,7 @@ jobs:
     outputs:
       python-sdk-change: ${{ steps.filter.outputs.python-sdk == 'true' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -48,7 +48,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract version
         id: version
@@ -56,7 +56,7 @@ jobs:
         run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
 
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
@@ -64,7 +64,7 @@ jobs:
 
       - name: Setup Go
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v6.4.0
         with:
           go-version-file: 'go.mod'
         id: go
@@ -100,7 +100,7 @@ jobs:
       tag: ${{ needs.gen-code.outputs.tag }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
@@ -109,7 +109,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Retrieve generated code
         uses: actions/download-artifact@v8
@@ -121,7 +121,7 @@ jobs:
         run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v6.4.0
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -156,7 +156,7 @@ jobs:
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
@@ -246,10 +246,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v6.4.0
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -269,7 +269,7 @@ jobs:
         run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -346,7 +346,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
@@ -355,7 +355,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract version
         shell: bash
@@ -380,7 +380,7 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -431,9 +431,9 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -487,9 +487,9 @@ jobs:
     runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -511,9 +511,9 @@ jobs:
     runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -525,7 +525,7 @@ jobs:
         working-directory: test/spark/app
         run: sbt sonnets-246/package sonnets-311/package
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         with:
           distribution: "adopt-hotspot"
           java-version: "17"
@@ -565,7 +565,7 @@ jobs:
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download lakeFS HadoopFS
         uses: actions/download-artifact@v8
@@ -580,7 +580,7 @@ jobs:
           path: test/spark/app/target/
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: 3.11
           cache: 'pip'
@@ -675,7 +675,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Start lakeFS for export tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -724,15 +724,15 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ hashFiles('./clients/spark/**') }}
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.3.0
         if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           distribution: "adopt-hotspot"
@@ -771,9 +771,9 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -831,7 +831,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Generate uniquifying value
         id: unique
@@ -904,7 +904,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Generate uniquifying value
         id: unique
@@ -976,7 +976,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Generate uniquifying value
         id: unique
@@ -1031,7 +1031,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Generate uniquifying value
         id: unique
@@ -1093,7 +1093,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Generate uniquifying value
         id: unique
@@ -1184,10 +1184,10 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.10"
 
@@ -1246,10 +1246,10 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.10"
 
@@ -1310,7 +1310,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
@@ -1324,7 +1324,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         id: playwright-cache
         with:
           path: |
@@ -1386,7 +1386,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: "22.17.x"
@@ -1400,7 +1400,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         id: playwright-cache
         with:
           path: |
@@ -1445,7 +1445,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Generate uniquifying value
         id: unique
