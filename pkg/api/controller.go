@@ -5645,6 +5645,33 @@ func (c *Controller) collectCommPrefs(commPrefs *auth.CommPrefs, installationID 
 }
 
 func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body apigen.SetupCommPrefsJSONRequestBody) {
+	ctx := r.Context()
+	// comm prefs are part of the post-setup flow; setup must run first. Setting
+	// them before setup lets Setup's empty-prefs path later overwrite them with
+	// comm_prefs_set=false, diverging from the cached state.
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if !initialized {
+		writeError(w, r, http.StatusPreconditionFailed, "lakeFS is not initialized")
+		return
+	}
+
+	// comm prefs may only be set once; do not override existing preferences.
+	// ErrNotFound means they were never recorded, so setting is allowed.
+	commPrefsSet, err := c.MetadataManager.IsCommPrefsSet(ctx)
+	if err != nil && !errors.Is(err, auth.ErrNotFound) {
+		c.Logger.WithError(err).Error("Setup comm prefs failed to check existing state")
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if commPrefsSet {
+		writeError(w, r, http.StatusConflict, "communication preferences already set")
+		return
+	}
+
 	email := swag.StringValue(body.Email)
 	if err := validateEmail(email); err != nil {
 		c.Logger.WithError(err).WithField("email_domain", domainFromEmail(email)).Warn("Setup comm prefs validation failed")
@@ -5659,7 +5686,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		FeatureUpdates:  body.FeatureUpdates,
 		SecurityUpdates: body.SecurityUpdates,
 	}
-	installationID, err := c.MetadataManager.UpdateCommPrefs(r.Context(), commPrefs)
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
 		c.Logger.WithError(err).Error("Setup comm prefs failed")
 		writeError(w, r, http.StatusInternalServerError, err)

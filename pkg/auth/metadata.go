@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -60,6 +61,12 @@ type KVMetadataManager struct {
 	kvType         string
 	installationID string
 	store          kv.Store
+
+	// cache of positive setup/comm-prefs state to avoid hitting KV on every
+	// check. These states only ever transition false->true, so a cached true
+	// is correct indefinitely.
+	initialized  atomic.Bool
+	commPrefsSet atomic.Bool
 }
 
 type CommPrefs struct {
@@ -169,6 +176,10 @@ func (m *KVMetadataManager) getOptionalMetadataValue(ctx context.Context, key st
 }
 
 func (m *KVMetadataManager) IsCommPrefsSet(ctx context.Context) (bool, error) {
+	if m.commPrefsSet.Load() {
+		return true, nil
+	}
+
 	commPrefsSet, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(CommPrefsSetKeyName)))
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
@@ -177,7 +188,15 @@ func (m *KVMetadataManager) IsCommPrefsSet(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	return strconv.ParseBool(string(commPrefsSet.Value))
+	isSet, err := strconv.ParseBool(string(commPrefsSet.Value))
+	if err != nil {
+		return false, err
+	}
+	// cache the result in case it is true
+	if isSet {
+		m.commPrefsSet.Store(isSet)
+	}
+	return isSet, nil
 }
 
 func (m *KVMetadataManager) GetSetupState(ctx context.Context) (SetupStateName, error) {
@@ -210,7 +229,13 @@ func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, setupTime 
 		SetupTimestampKeyName: setupTimeStr,
 	}
 	items[SetupAuthTypeKeyPrefix+authType] = setupTimeStr
-	return m.writeMetadata(ctx, items)
+	err := m.writeMetadata(ctx, items)
+	if err != nil {
+		return err
+	}
+	// setup just completed; prime the cache so subsequent checks skip KV
+	m.initialized.Store(true)
+	return nil
 }
 
 // UpdateCommPrefs - updates the comm prefs metadata.
@@ -236,10 +261,23 @@ func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs *Comm
 		}
 	}
 	err := m.writeMetadata(ctx, meta)
-	return m.installationID, err
+	if err != nil {
+		return m.installationID, err
+	}
+
+	// cache that comm prefs are set, but only when they actually were:
+	// a nil commPrefs writes comm_prefs_set=false and must not prime the cache.
+	if commPrefs != nil {
+		m.commPrefsSet.Store(true)
+	}
+	return m.installationID, nil
 }
 
 func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
+	if m.initialized.Load() {
+		return true, nil
+	}
+
 	setupTimestamp, err := m.getSetupTimestamp(ctx)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
@@ -247,7 +285,11 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 		}
 		return false, err
 	}
-	return !setupTimestamp.IsZero(), nil
+	initialized := !setupTimestamp.IsZero()
+	if initialized {
+		m.initialized.Store(true)
+	}
+	return initialized, nil
 }
 
 // DockeEnvExists For testing purposes

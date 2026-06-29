@@ -3921,6 +3921,49 @@ func TestController_SetupThenCommPrefs(t *testing.T) {
 	require.False(t, swag.BoolValue(stateResp.JSON200.CommPrefsMissing), "comm_prefs_missing should be false after providing comm prefs")
 }
 
+// TestController_SetupCommPrefsAlreadySet verifies comm prefs can only be set
+// once: a second call must not override and returns 409 Conflict.
+func TestController_SetupCommPrefsAlreadySet(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+	ctx := t.Context()
+	createDefaultAdminUser(t, clt)
+
+	body := apigen.SetupCommPrefsJSONRequestBody{
+		Email:           swag.String("test@acme.co"),
+		FirstName:       swag.String("Test"),
+		LastName:        swag.String("User"),
+		CompanyName:     swag.String("Acme Inc."),
+		FeatureUpdates:  true,
+		SecurityUpdates: true,
+	}
+
+	resp, err := clt.SetupCommPrefsWithResponse(ctx, body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode())
+
+	// second call must be rejected without overriding the stored prefs
+	resp, err = clt.SetupCommPrefsWithResponse(ctx, body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusConflict, resp.StatusCode())
+}
+
+// TestController_SetupCommPrefsNotInitialized verifies comm prefs cannot be set
+// before lakeFS is initialized: the call is rejected with 412 so that Setup
+// remains the source of truth for the comm prefs state.
+func TestController_SetupCommPrefsNotInitialized(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+
+	resp, err := clt.SetupCommPrefsWithResponse(t.Context(), apigen.SetupCommPrefsJSONRequestBody{
+		Email: swag.String("test@acme.co"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusPreconditionFailed, resp.StatusCode())
+}
+
 func TestController_SetupCommPrefs(t *testing.T) {
 	mockEmail := "test@acme.co"
 	cases := []struct {
@@ -3971,6 +4014,7 @@ func TestController_SetupCommPrefs(t *testing.T) {
 			handler, _ := setupHandler(t)
 			server := setupServer(t, handler)
 			clt := setupClientByEndpoint(t, server.URL, "", "")
+			createDefaultAdminUser(t, clt)
 
 			resp, err := clt.SetupCommPrefsWithResponse(t.Context(), c.body)
 			require.NoError(t, err)
