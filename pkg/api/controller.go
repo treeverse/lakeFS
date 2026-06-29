@@ -2138,7 +2138,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 	}
 	info := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
 	if info == nil {
-		c.Logger.Error("no storage namespace info found for id: %s", storageID)
+		c.Logger.Errorf("no storage namespace info found for id: %s", storageID)
 		return nil, config.ErrNoStorageConfig
 	}
 
@@ -2166,7 +2166,7 @@ func (c *Controller) getStorageConfigList() apigen.StorageConfigList {
 	for _, id := range c.Config.StorageConfig().GetStorageIDs() {
 		info, err := c.getStorageConfig(id)
 		if info == nil {
-			c.Logger.WithError(err).Error("no storage config found for id: %s", id)
+			c.Logger.WithError(err).Errorf("no storage config found for id: %s", id)
 			continue
 		}
 		info.BlockstoreId = swag.String(id)

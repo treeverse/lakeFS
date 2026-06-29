@@ -693,7 +693,7 @@ func CreateTokenCacheCallback() awsiam.TokenCacheCallback {
 	return func(newToken *apigen.AuthenticationToken) {
 		cachedToken = newToken
 		if err := SaveTokenToCache(); err != nil {
-			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
+			logging.ContextUnavailable().Debugf("error saving token to cache: %v", err)
 		}
 	}
 }
@@ -749,7 +749,7 @@ func getTokenOnce() *apigen.AuthenticationToken {
 				cachedToken = token
 				return
 			}
-			logging.ContextUnavailable().Debugf("Error loading token from cache: %w", err)
+			logging.ContextUnavailable().Debugf("Error loading token from cache: %v", err)
 		}
 	})
 	return cachedToken
@@ -759,11 +759,11 @@ func getTokenCacheOnce() *awsiam.JWTCache {
 	tokenCacheOnce.Do(func() {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			logging.ContextUnavailable().Debugf("Error getting user homedir: %w", err)
+			logging.ContextUnavailable().Debugf("Error getting user homedir: %v", err)
 		}
 		cache, err := awsiam.NewJWTCache(homeDir, LakectlDirName, CacheDirName, CacheFileName)
 		if err != nil {
-			logging.ContextUnavailable().Debugf("Error creating token cache: %w", err)
+			logging.ContextUnavailable().Debugf("Error creating token cache: %v", err)
 			tokenCache = nil
 		} else {
 			tokenCache = cache
