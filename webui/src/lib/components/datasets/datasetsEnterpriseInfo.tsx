@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { FC } from 'react';
 import Card from 'react-bootstrap/Card';
 import { LockIcon } from '@primer/octicons-react';
 
 const DATASETS_DOCS_URL = 'https://docs.lakefs.io/';
 const BOOK_DEMO_URL = 'https://lakefs.io/book-a-demo/';
 
-export const DatasetsEnterpriseInfo = () => {
+export const DatasetsEnterpriseInfo: FC = () => {
     return (
         <Card>
             <div className="datasets-gate-content">
@@ -17,12 +17,7 @@ export const DatasetsEnterpriseInfo = () => {
                     Use lakeFS Datasets to version and share curated data collections across your organization.
                 </p>
                 <div className="datasets-gate-actions">
-                    <a
-                        href={BOOK_DEMO_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-primary"
-                    >
+                    <a href={BOOK_DEMO_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
                         Book a demo
                     </a>
                     <a

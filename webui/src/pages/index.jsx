@@ -101,8 +101,6 @@ export const IndexPage = () => {
                                 </Route>
                                 <Route path="datasets" element={<Layout />}>
                                     <Route index element={<DatasetsPage />} />
-                                    <Route path="pulls" element={<DatasetsPage />} />
-                                    <Route path="settings" element={<DatasetsPage />} />
                                 </Route>
                                 <Route path="auth" element={<Layout />}>
                                     <Route index element={<Navigate to="credentials" replace />} />

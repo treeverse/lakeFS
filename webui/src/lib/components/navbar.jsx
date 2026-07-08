@@ -2,7 +2,7 @@ import React from 'react';
 import { useRouter } from '../hooks/router';
 import { Link } from './nav';
 import DarkModeToggle from './darkModeToggle';
-import { Navbar, Nav, NavDropdown } from 'react-bootstrap';
+import { Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import Container from 'react-bootstrap/Container';
 import { useLoginConfigContext } from '../hooks/conf';
 import { FeedPersonIcon } from '@primer/octicons-react';
@@ -94,7 +94,8 @@ const TopNav = () => {
                     <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: '100px' }} navbarScroll>
                         <TopNavLink href="/repositories">Repositories</TopNavLink>
                         <TopNavLink href="/datasets">
-                            Datasets<NewBadge style={{ marginLeft: 2 }} />
+                            Datasets
+                            <NewBadge style={{ marginLeft: 2 }} />
                         </TopNavLink>
                         <TopNavLink href="/auth">Administration</TopNavLink>
                     </Nav>
