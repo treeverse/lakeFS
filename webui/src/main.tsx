@@ -13,6 +13,7 @@ import './styles/objects/upload.css';
 import './styles/objects/tree.css';
 import './styles/objects/diff.css';
 import './styles/auth.css';
+import './styles/datasets.css';
 // Components
 import './styles/components/buttons.css';
 import './styles/components/cards.css';
