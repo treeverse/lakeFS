@@ -12,7 +12,7 @@ export const DatasetsEnterpriseInfo: FC = () => {
                 <div className="datasets-gate-icon">
                     <LockIcon size={24} />
                 </div>
-                <h4>Datasets is a lakeFS Enterprise feature</h4>
+                <h4>Datasets is an Enterprise feature</h4>
                 <p className="text-muted">
                     Use lakeFS Datasets to version and share curated data collections across your organization.
                 </p>
