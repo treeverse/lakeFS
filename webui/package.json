@@ -111,5 +111,11 @@
     "vite": "^7.3.1",
     "vite-plugin-eslint2": "^5.0.4",
     "vitest": "^3.2.4"
+  },
+  "allowScripts": {
+    "@parcel/watcher": true,
+    "@swc/core": true,
+    "esbuild": true,
+    "fsevents": true
   }
 }
