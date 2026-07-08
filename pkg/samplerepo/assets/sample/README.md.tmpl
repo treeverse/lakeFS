@@ -72,7 +72,7 @@ _Note: Screenshots in this guide show `main` as the default branch name._
 
 _Let's have a look at the data, ahead of making some changes to it on a branch in the following steps._
 
-Click on [`lakes.parquet`](object?ref={{.RepoDefaultBranch}}&path=lakes.parquet) from the object browser and notice that the built-it DuckDB runs a query to show a preview of the file's contents.
+Click on [`lakes.parquet`](object?ref={{.RepoDefaultBranch}}&path=lakes.parquet) from the object browser and notice that the built-in DuckDB runs a query to show a preview of the file's contents.
 
 <img width="75%" src="/api/v1/repositories/{{.RepoName}}/refs/{{.RepoDefaultBranch}}/objects?path=images%2Fduckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
@@ -121,8 +121,8 @@ In a new terminal window run the following:
 ```bash
 docker exec lakefs \
     lakectl branch create \
-	    lakefs://{{.RepoName}}/denmark-lakes \
-      --source lakefs://{{.RepoName}}/{{.RepoDefaultBranch}}
+    lakefs://{{.RepoName}}/denmark-lakes \
+    --source lakefs://{{.RepoName}}/{{.RepoDefaultBranch}}
 ```
 
 _You should get a confirmation message like this:_
@@ -260,7 +260,7 @@ _In the next step we'll see how to merge our branch back into `{{.RepoDefaultBra
 
 _In the previous step we branched our data from `{{.RepoDefaultBranch}}` into a new `denmark-lakes` branch, and overwrote the `lakes.parquet` to hold solely information about lakes in Denmark. Now we're going to commit that change (just like Git) and merge it back to `{{.RepoDefaultBranch}}` (just like Git)._
 
-_Having make the change to the datafile in the `denmark-lakes` branch, we now want to commit it. There are various options for interacting with lakeFS' API, including the web interface, [a Python client](https://pydocs.lakefs.io/), and `lakectl`._
+_Having made the change to the datafile in the `denmark-lakes` branch, we now want to commit it. There are various options for interacting with lakeFS' API, including the web interface, [a Python client](https://pydocs.lakefs.io/), and `lakectl`._
 
 Choose one of the following methods depending on your preferred interface and how you're running lakeFS.
 
@@ -273,7 +273,7 @@ Choose one of the following methods depending on your preferred interface and ho
 
     ![Screenshot of Uncommitted Changes screen in lakeFS](images/commit-change.png)
 
-3. Enter a commit message and then click **Commits Changes**
+3. Enter a commit message and then click **Commit Changes**
 
     ![Adding a commit message in lakeFS](images/commit-change-02.png)
 
@@ -285,8 +285,8 @@ Run the following from a terminal window:
 
 ```bash
 docker exec lakefs \
-  lakectl commit lakefs://{{.RepoName}}/denmark-lakes \
-	-m "Create a dataset of just the lakes in Denmark"
+    lakectl commit lakefs://{{.RepoName}}/denmark-lakes \
+    -m "Create a dataset of just the lakes in Denmark"
 ```
 
 _You will get confirmation of the commit including its hash._
@@ -327,7 +327,7 @@ Parents: 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
 </details>
 
 
-_With our change committed, it's now time to merge it to back to the `{{.RepoDefaultBranch}}` branch._
+_With our change committed, it's now time to merge it back to the `{{.RepoDefaultBranch}}` branch._
 
 # Merging Branches in lakeFS 🔀
 
@@ -355,9 +355,9 @@ Run this from a terminal window.
 
 ```bash
 docker exec lakefs \
-	lakectl merge \
-		lakefs://{{.RepoName}}/denmark-lakes \
-		lakefs://{{.RepoName}}/{{.RepoDefaultBranch}}
+    lakectl merge \
+    lakefs://{{.RepoName}}/denmark-lakes \
+    lakefs://{{.RepoName}}/{{.RepoDefaultBranch}}
 ```
 
 </details>
@@ -403,8 +403,8 @@ From your terminal window run `lakectl` with the `revert` command:
 ```bash
 docker exec -it lakefs \
     lakectl branch revert \
-	    lakefs://{{.RepoName}}/{{.RepoDefaultBranch}} \
-	    {{.RepoDefaultBranch}} --parent-number 1 --yes
+    lakefs://{{.RepoName}}/{{.RepoDefaultBranch}} \
+    {{.RepoDefaultBranch}} --parent-number 1 --yes
 ```
 
 _You should see a confirmation of a successful rollback:_
@@ -463,8 +463,8 @@ _Hooks_ can be either a Lua script that lakeFS will execute itself, an external 
     ```bash
     docker exec lakefs \
         lakectl branch create \
-                lakefs://quickstart/add_action \
-                        --source lakefs://quickstart/{{.RepoDefaultBranch}}
+        lakefs://quickstart/add_action \
+        --source lakefs://quickstart/{{.RepoDefaultBranch}}
     ```
 
 1. Open up your favorite text editor (or emacs), and paste the following YAML: 
@@ -472,44 +472,49 @@ _Hooks_ can be either a Lua script that lakeFS will execute itself, an external 
     ```yaml
     name: Check Commit Message and Metadata
     on:
-    pre-commit:
-        branches: 
-        - etl**
+      pre-commit:
+        branches:
+          - etl**
     hooks:
-    - id: check_metadata
+      - id: check_metadata
         type: lua
         properties:
-            script: |
-                commit_message=action.commit.message
-                if commit_message and #commit_message>0 then
-                    print("✅ The commit message exists and is not empty: " .. commit_message)
-                else
-                    error("\n\n❌ A commit message must be provided")
-                end
+          script: |
+            commit_message=action.commit.message
+            if commit_message and #commit_message>0 then
+                print("✅ The commit message exists and is not empty: " .. commit_message)
+            else
+                error("\n\n❌ A commit message must be provided")
+            end
 
-                job_name=action.commit.metadata["job_name"]
-                if job_name == nil then
-                    error("\n❌ Commit metadata must include job_name")
-                else
-                    print("✅ Commit metadata includes job_name: " .. job_name)
-                end
+            job_name=action.commit.metadata["job_name"]
+            if job_name == nil then
+                error("\n❌ Commit metadata must include job_name")
+            else
+                print("✅ Commit metadata includes job_name: " .. job_name)
+            end
 
-                version=action.commit.metadata["version"]
-                if version == nil then
-                    error("\n❌ Commit metadata must include version")
+            version=action.commit.metadata["version"]
+            if version == nil then
+                error("\n❌ Commit metadata must include version")
+            else
+                print("✅ Commit metadata includes version: " .. version)
+                if tonumber(version) then
+                    print("✅ Commit metadata version is numeric")
                 else
-                    print("✅ Commit metadata includes version: " .. version)
-                    if tonumber(version) then
-                        print("✅ Commit metadata version is numeric")
-                    else
-                        error("\n❌ Version metadata must be numeric: " .. version)
-                    end
+                    error("\n❌ Version metadata must be numeric: " .. version)
                 end
+            end
     ```
 
 1. Save this file as `/tmp/check_commit_metadata.yml`
 
     * You can save it elsewhere, but make sure you change the path below when uploading
+    * If you're running lakeFS with Docker, the file is saved on your local machine and won't be visible from inside the container. Copy it into the container first so that the `lakectl fs upload` command below can find it:
+
+        ```bash
+        docker cp /tmp/check_commit_metadata.yml lakefs:/tmp/check_commit_metadata.yml
+        ```
 
 1. Upload the `check_commit_metadata.yml` file to the `add_action` branch under `_lakefs_actions/`. As above, you can use the UI (make sure you select the correct branch when you do), or with `lakectl`:
 
