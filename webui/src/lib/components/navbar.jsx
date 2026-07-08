@@ -94,7 +94,7 @@ const TopNav = () => {
                     <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: '100px' }} navbarScroll>
                         <TopNavLink href="/repositories">Repositories</TopNavLink>
                         <TopNavLink href="/datasets">
-                            Datasets <NewBadge style={{ marginLeft: 4 }} />
+                            Datasets<NewBadge style={{ marginLeft: 2 }} />
                         </TopNavLink>
                         <TopNavLink href="/auth">Administration</TopNavLink>
                     </Nav>
