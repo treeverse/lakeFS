@@ -1,0 +1,82 @@
+/* "NEW" badge in the top navigation */
+.badge.feature-new-badge {
+    background-color: #7c3aed !important;
+    color: #fff;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.2em 0.4em;
+    vertical-align: super;
+    position: relative;
+    top: -0.5em;
+}
+
+/* Datasets tab bar */
+.datasets-nav-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.datasets-nav-tabs .nav-link svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.datasets-nav-tabs.nav-tabs .nav-link:hover {
+    color: var(--text);
+    background-color: var(--background-alt);
+}
+
+.datasets-nav-tabs.nav-tabs .nav-link.active {
+    color: #7c3aed;
+    border-bottom: 2px solid #7c3aed;
+}
+
+.datasets-nav-tabs.nav-tabs .nav-link.active::before {
+    background-color: #7c3aed;
+}
+
+/* Datasets Enterprise gate */
+.datasets-gate-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
+    text-align: center;
+    min-height: 40vh;
+}
+
+.datasets-gate-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #fef3c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: #b45309;
+}
+
+[data-bs-theme='dark'] .datasets-gate-icon {
+    background-color: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
+.datasets-gate-content h4 {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.datasets-gate-content p {
+    max-width: 460px;
+    margin-bottom: 24px;
+}
+
+.datasets-gate-actions {
+    display: flex;
+    gap: 8px;
+}

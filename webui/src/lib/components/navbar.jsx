@@ -2,7 +2,7 @@ import React from 'react';
 import { useRouter } from '../hooks/router';
 import { Link } from './nav';
 import DarkModeToggle from './darkModeToggle';
-import { Navbar, Nav, NavDropdown } from 'react-bootstrap';
+import { Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import Container from 'react-bootstrap/Container';
 import { useLoginConfigContext } from '../hooks/conf';
 import { FeedPersonIcon } from '@primer/octicons-react';
@@ -10,6 +10,7 @@ import { useConfigContext } from '../hooks/configProvider';
 import { auth } from '../api';
 import { AUTH_STATUS, LAKEFS_POST_LOGIN_NEXT, useAuth } from '../auth/authContext';
 import { ROUTES } from '../utils';
+import { NewBadge } from './badges';
 
 const NavUserInfo = () => {
     const { user, status } = useAuth();
@@ -92,6 +93,10 @@ const TopNav = () => {
                 <Navbar.Collapse id="navbarScroll">
                     <Nav className="me-auto my-2 my-lg-0" style={{ maxHeight: '100px' }} navbarScroll>
                         <TopNavLink href="/repositories">Repositories</TopNavLink>
+                        <TopNavLink href="/datasets">
+                            Datasets
+                            <NewBadge style={{ marginLeft: 2 }} />
+                        </TopNavLink>
                         <TopNavLink href="/auth">Administration</TopNavLink>
                     </Nav>
 
