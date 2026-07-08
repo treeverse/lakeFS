@@ -2,7 +2,7 @@ import React, { FC } from 'react';
 import Card from 'react-bootstrap/Card';
 import { LockIcon } from '@primer/octicons-react';
 
-const DATASETS_DOCS_URL = 'https://docs.lakefs.io/';
+const DATASETS_DOCS_URL = 'https://docs.lakefs.io/datamanagement/datasets';
 const BOOK_DEMO_URL = 'https://lakefs.io/book-a-demo/';
 
 export const DatasetsEnterpriseInfo: FC = () => {
