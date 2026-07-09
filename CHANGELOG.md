@@ -3,7 +3,7 @@
 ## v1.83.0
 
 :new: What's new:
-- Introducing datasets - a new way to share curated data across your organization
+- Add UI entry points for the Enterprise-only Datasets feature.
 
 :bug: Bugs Fixed:
 - Ensure asynchronous hooks continue running after the triggering request is cancelled (#10454)
