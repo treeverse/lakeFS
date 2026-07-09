@@ -994,16 +994,30 @@ const TreeContainer = ({
             );
         } else {
             // Show all objects
-            return objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui);
+            // Use committed-only ref (branch@) for branches to avoid scanning staging area twice
+            // This significantly improves performance when there are many uncommitted deletes
+            const listRef = reference.type === RefTypeBranch ? reference.id + '@' : reference.id;
+            return objects.list(repo.id, listRef, path, after, config.pre_sign_support_ui);
         }
         // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, lastSeenPath, delimiter]);
+    }, [
+        repo.id,
+        reference.id,
+        reference.type,
+        path,
+        after,
+        refreshToken,
+        showChangesOnly,
+        internalRefresh,
+        lastSeenPath,
+        delimiter,
+    ]);
 
     // Merge changes with objects for highlighting
     const mergedResults = React.useMemo(
-        () => mergeResults(results, changesData, showChangesOnly),
-        [results, changesData, showChangesOnly],
+        () => mergeResults(results, changesData, showChangesOnly, !!nextPage),
+        [results, changesData, showChangesOnly, nextPage],
     );
 
     const initialState = {
