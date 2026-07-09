@@ -6,7 +6,7 @@
 - Introducing datasets - a new way to share curated data across your organization
 
 :bug: Bugs Fixed:
-- Fixed a bug where async hooks could keep running after their triggering request was cancelled (#10454)
+- Ensure asynchronous hooks continue running after the triggering request is cancelled (#10454)
 
 ## v1.82.0
 
