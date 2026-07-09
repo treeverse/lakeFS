@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.83.0
+
+:new: What's new:
+- Add UI entry points for the Enterprise-only Datasets feature.
+
+:bug: Bugs Fixed:
+- Ensure asynchronous hooks continue running after the triggering request is cancelled (#10454)
+
 ## v1.82.0
 
 :new: What's new:
