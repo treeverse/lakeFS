@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -77,7 +77,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -142,7 +142,7 @@ jobs:
     if: ${{ always() && contains(needs.*.result, 'failure') && github.ref == 'refs/heads/master' }}
     steps:
       - name: slack-send
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook

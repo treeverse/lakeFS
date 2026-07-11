@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -25,7 +25,7 @@ jobs:
           go-version-file: 'go.mod'
         id: go
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.4.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -53,7 +53,7 @@ jobs:
       image_id: ${{ steps.build_export.outputs.ImageID }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract version
         shell: bash
@@ -208,9 +208,9 @@ jobs:
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.4.0
         with:
           distribution: "adopt-hotspot"
           java-version: ${{ matrix.spark.java_version }}
@@ -289,7 +289,7 @@ jobs:
       SPARK_TAG: 3
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -303,7 +303,7 @@ jobs:
       - name: Load Docker image
         run: docker load --input /tmp/lakefs.tar
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.4.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -366,7 +366,7 @@ jobs:
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     steps:
       - name: slack-send
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
