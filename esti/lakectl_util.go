@@ -28,13 +28,17 @@ var (
 )
 
 var (
-	reTimestamp       = regexp.MustCompile(`timestamp: \d+`)
-	reTime            = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,4}`)
-	reCommitID        = regexp.MustCompile(`[\d|a-f]{64}`)
-	reShortCommitID   = regexp.MustCompile(`[\d|a-f]{16}`)
-	reChecksum        = regexp.MustCompile(`([\d|a-f]{32})|(0x[0-9A-F]{15})`)
-	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
-	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/(?:[0-9a-v]{20}(?:,.+)?)?`)
+	reTimestamp     = regexp.MustCompile(`timestamp: \d+`)
+	reTime          = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,4}`)
+	reCommitID      = regexp.MustCompile(`[\d|a-f]{64}`)
+	reShortCommitID = regexp.MustCompile(`[\d|a-f]{16}`)
+	// multipart uploads report an etag with a part count suffix, e.g. <md5>-1025
+	reChecksum = regexp.MustCompile(`([\d|a-f]{32}(-\d+)?)|(0x[0-9A-F]{15})`)
+	reEndpoint = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
+	// physical addresses may be printed relative to the storage namespace (no
+	// leading slash), and multipart uploads append a part-count suffix, e.g.
+	// data/<prefix>/<key>,<suffix>
+	rePhysicalAddress = regexp.MustCompile(`/?data/[0-9a-v]{20}/(?:[0-9a-v]{20}(?:,.+)?)?`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
 	rePreSignURL      = regexp.MustCompile(`https?://\S+\?\S+`)
 	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
@@ -260,7 +264,12 @@ func normalizeProgramTimestamp(output string) string {
 func normalizeRandomObjectKey(output string, objectPrefix string) string {
 	objectPrefix = strings.TrimPrefix(objectPrefix, "/")
 	for _, match := range rePhysicalAddress.FindAllString(output, -1) {
-		output = strings.Replace(output, objectPrefix+match, objectPrefix+"/<OBJECT_KEY>", 1)
+		if strings.Contains(output, objectPrefix+match) {
+			output = strings.Replace(output, objectPrefix+match, objectPrefix+"/<OBJECT_KEY>", 1)
+		} else {
+			// relative physical address, not prefixed by the storage namespace
+			output = strings.Replace(output, match, "<OBJECT_KEY>", 1)
+		}
 	}
 	return output
 }
