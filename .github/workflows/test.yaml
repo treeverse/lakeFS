@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-24.04-8-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v6.5.0
         with:
           go-version-file: 'go.mod'
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.4.0
         with:
           node-version: "22.17.x"
           cache: "npm"
@@ -43,10 +43,10 @@ jobs:
     runs-on: ubuntu-24.04-16-cores
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v6.5.0
         with:
           go-version-file: 'go.mod'
 
@@ -64,9 +64,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup NodeJS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.4.0
         with:
           node-version-file: webui/package.json
           cache: npm
