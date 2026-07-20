@@ -118,40 +118,9 @@ jobs:
           fi
           echo "chart version: $chart_version -> $new_chart_version, appVersion: $app_version -> $new_app_version"
 
-          python3 -m venv /tmp/ruamel-venv
-          /tmp/ruamel-venv/bin/pip --quiet install 'ruamel.yaml==0.19.1'
-          export NEW_CHART_VERSION="$new_chart_version" NEW_APP_VERSION="$new_app_version"
-          /tmp/ruamel-venv/bin/python - <<'PY'
-          import os
-          from ruamel.yaml import YAML
-          from ruamel.yaml.scalarstring import DoubleQuotedScalarString
-
-          yaml = YAML()
-          yaml.preserve_quotes = True
-          yaml.width = 1000000
-          yaml.indent(mapping=2, sequence=4, offset=2)
-
-          # Round-trip nulls exactly as spelled in the source (empty vs "null").
-          class Null(str):
-              pass
-
-          yaml.constructor.add_constructor(
-              "tag:yaml.org,2002:null", lambda self, node: Null(node.value))
-          yaml.representer.add_representer(
-              Null, lambda self, data: self.represent_scalar("tag:yaml.org,2002:null", str(data)))
-
-          def edit(path, apply):
-              with open(path) as f:
-                  doc = yaml.load(f)
-              apply(doc)
-              with open(path, "w") as f:
-                  yaml.dump(doc, f)
-
-          edit("charts/lakefs/Chart.yaml", lambda doc: doc.update(
-              version=os.environ["NEW_CHART_VERSION"], appVersion=os.environ["NEW_APP_VERSION"]))
-          edit("charts/lakefs/values.yaml", lambda doc: doc["image"]["community"].update(
-              tag=DoubleQuotedScalarString(os.environ["VERSION"])))
-          PY
+          NEW_CHART_VERSION="$new_chart_version" NEW_APP_VERSION="$new_app_version" \
+            yq -i '.version = strenv(NEW_CHART_VERSION) | .appVersion = strenv(NEW_APP_VERSION)' charts/lakefs/Chart.yaml
+          yq -i '.image.community.tag = strenv(VERSION) | .image.community.tag style="double"' charts/lakefs/values.yaml
 
           [ "$(sed -n 1p CHANGELOG.md)" = "# Changelog" ] && [ -z "$(sed -n 2p CHANGELOG.md)" ] || { echo "::error::Unexpected CHANGELOG.md header."; exit 1; }
           {
