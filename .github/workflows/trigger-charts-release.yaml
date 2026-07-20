@@ -1,0 +1,253 @@
+# Releases a new public Helm chart once a released version's Docker image is
+# ready, gated to the repository's current "latest" release so a back-patch
+# never rolls the chart back. Opens a version-bump PR on treeverse/charts as
+# treeverse-ci-bot and merges it once the required charts checks pass; the
+# merge triggers the chart release.
+
+name: Trigger charts release
+
+on:
+  workflow_run:
+    workflows: [Docker]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'lakeFS version to release a chart for (e.g. v1.84.0). Defaults to the latest release.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trigger-charts-release
+  cancel-in-progress: false
+
+jobs:
+  charts-pr:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate on latest release and resolve version
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILT_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          repo="${{ github.repository }}"
+          latest_tag=$(gh release view --repo "$repo" --json tagName --jq .tagName)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${INPUT_VERSION:-$latest_tag}"
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Resolve the tag to its commit (dereferences annotated tags) to compare against the build.
+          latest_sha=$(gh api "repos/$repo/commits/$latest_tag" --jq .sha)
+          echo "latest release: $latest_tag ($latest_sha); built commit: $BUILT_SHA"
+          if [ "$latest_sha" != "$BUILT_SHA" ]; then
+            echo "Docker build was not for the latest release — skipping charts release."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            echo "version=${latest_tag#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mint treeverse-ci-bot token
+        if: steps.gate.outputs.proceed == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.TREEVERSE_CI_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.TREEVERSE_CI_BOT_PRIVATE_KEY }}
+          owner: treeverse
+          repositories: charts
+
+      - name: Checkout charts repository
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: treeverse/charts
+          token: ${{ steps.app-token.outputs.token }}
+          path: charts
+
+      - name: Bump chart to the released version
+        if: steps.gate.outputs.proceed == 'true'
+        id: bump
+        working-directory: charts
+        env:
+          VERSION: ${{ steps.gate.outputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Invalid version '$VERSION'."; exit 1; }
+
+          current=$(yq '.image.community.tag' charts/lakefs/values.yaml)
+          chart_version=$(yq '.version' charts/lakefs/Chart.yaml)
+          app_version=$(yq '.appVersion' charts/lakefs/Chart.yaml)
+          for v in "$current" "$chart_version" "$app_version"; do
+            if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Failed to read current versions from the chart."
+              exit 1
+            fi
+          done
+          echo "community tag: $current -> $VERSION (chart version: $chart_version, appVersion: $app_version)"
+
+          if [ "$VERSION" = "$current" ]; then
+            echo "Chart already references lakeFS $VERSION — nothing to do."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$(printf '%s\n%s\n' "$VERSION" "$current" | sort -V | tail -n 1)" != "$VERSION" ]; then
+            echo "::error::$VERSION is older than the chart's current community version $current."
+            exit 1
+          fi
+
+          IFS=. read -r new_major new_minor _ <<< "$VERSION"
+          IFS=. read -r cur_major cur_minor _ <<< "$current"
+          IFS=. read -r chart_major chart_minor chart_patch <<< "$chart_version"
+          IFS=. read -r app_major app_minor app_patch <<< "$app_version"
+          new_chart_version="$chart_major.$chart_minor.$((chart_patch + 1))"
+          # appVersion mirrors the release type: minor bump for a minor release, patch bump for a patch release.
+          if [ "$new_major" -gt "$cur_major" ] || [ "$new_minor" -gt "$cur_minor" ]; then
+            new_app_version="$app_major.$((app_minor + 1)).0"
+          else
+            new_app_version="$app_major.$app_minor.$((app_patch + 1))"
+          fi
+          echo "chart version: $chart_version -> $new_chart_version, appVersion: $app_version -> $new_app_version"
+
+          python3 -m venv /tmp/ruamel-venv
+          /tmp/ruamel-venv/bin/pip --quiet install 'ruamel.yaml==0.19.1'
+          export NEW_CHART_VERSION="$new_chart_version" NEW_APP_VERSION="$new_app_version"
+          /tmp/ruamel-venv/bin/python - <<'PY'
+          import os
+          from ruamel.yaml import YAML
+          from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+
+          yaml = YAML()
+          yaml.preserve_quotes = True
+          yaml.width = 1000000
+          yaml.indent(mapping=2, sequence=4, offset=2)
+
+          # Round-trip nulls exactly as spelled in the source (empty vs "null").
+          class Null(str):
+              pass
+
+          yaml.constructor.add_constructor(
+              "tag:yaml.org,2002:null", lambda self, node: Null(node.value))
+          yaml.representer.add_representer(
+              Null, lambda self, data: self.represent_scalar("tag:yaml.org,2002:null", str(data)))
+
+          def edit(path, apply):
+              with open(path) as f:
+                  doc = yaml.load(f)
+              apply(doc)
+              with open(path, "w") as f:
+                  yaml.dump(doc, f)
+
+          edit("charts/lakefs/Chart.yaml", lambda doc: doc.update(
+              version=os.environ["NEW_CHART_VERSION"], appVersion=os.environ["NEW_APP_VERSION"]))
+          edit("charts/lakefs/values.yaml", lambda doc: doc["image"]["community"].update(
+              tag=DoubleQuotedScalarString(os.environ["VERSION"])))
+          PY
+
+          [ "$(sed -n 1p CHANGELOG.md)" = "# Changelog" ] && [ -z "$(sed -n 2p CHANGELOG.md)" ] || { echo "::error::Unexpected CHANGELOG.md header."; exit 1; }
+          {
+            head -n 2 CHANGELOG.md
+            printf '# %s\n' "$new_chart_version"
+            printf ':new: What'\''s new:\n'
+            printf -- '- Update lakeFS community version to [%s](https://github.com/treeverse/lakeFS/releases/tag/v%s)\n\n' "$VERSION" "$VERSION"
+            tail -n +3 CHANGELOG.md
+          } > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
+          [ "$(yq '.version' charts/lakefs/Chart.yaml)" = "$new_chart_version" ] || { echo "::error::Chart.yaml version was not updated."; exit 1; }
+          [ "$(yq '.appVersion' charts/lakefs/Chart.yaml)" = "$new_app_version" ] || { echo "::error::Chart.yaml appVersion was not updated."; exit 1; }
+          [ "$(yq '.image.community.tag' charts/lakefs/values.yaml)" = "$VERSION" ] || { echo "::error::values.yaml community tag was not updated."; exit 1; }
+
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+          echo "chart_version=$new_chart_version" >> "$GITHUB_OUTPUT"
+          echo "app_version=$new_app_version" >> "$GITHUB_OUTPUT"
+          echo "previous=$current" >> "$GITHUB_OUTPUT"
+
+      - name: Open PR
+        if: steps.bump.outputs.proceed == 'true'
+        id: pr
+        working-directory: charts
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.gate.outputs.version }}
+          PREVIOUS: ${{ steps.bump.outputs.previous }}
+          CHART_VERSION: ${{ steps.bump.outputs.chart_version }}
+          APP_VERSION: ${{ steps.bump.outputs.app_version }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
+        run: |
+          set -euo pipefail
+          bot_id=$(gh api "users/$BOT" --jq .id)
+          git config user.name "$BOT"
+          git config user.email "$bot_id+$BOT@users.noreply.github.com"
+
+          branch="auto-release/lakefs-v$VERSION"
+          git checkout -b "$branch"
+          git commit -am "Release chart $CHART_VERSION for lakeFS v$VERSION"
+          git push -f origin "$branch"
+
+          pr_url=$(gh pr list --head "$branch" --state open --json url --jq '.[0].url')
+          if [ -z "$pr_url" ]; then
+            body_file=$(mktemp)
+            cat > "$body_file" <<EOF
+          Automated chart release for lakeFS [v$VERSION](https://github.com/treeverse/lakeFS/releases/tag/v$VERSION):
+
+          - \`image.community.tag\`: $PREVIOUS → $VERSION
+          - chart \`version\`: $CHART_VERSION, \`appVersion\`: $APP_VERSION
+
+          Opened by the [Trigger charts release](https://github.com/treeverse/lakeFS/actions/workflows/trigger-charts-release.yaml) workflow, which merges it once the required checks pass; the merge releases the chart.
+          EOF
+            pr_url=$(gh pr create --base master --head "$branch" \
+              --title "Release chart $CHART_VERSION for lakeFS v$VERSION" \
+              --body-file "$body_file")
+          fi
+          echo "PR: $pr_url"
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+
+          # Close superseded bump PRs.
+          gh pr list --state open --json url,headRefName \
+            --jq ".[] | select(.headRefName | startswith(\"auto-release/lakefs-v\")) | select(.headRefName != \"$branch\") | .url" |
+          while read -r stale; do
+            gh pr close "$stale" --comment "Superseded by $pr_url."
+          done
+
+      - name: Merge PR when checks pass (bot bypass)
+        if: steps.bump.outputs.proceed == 'true'
+        timeout-minutes: 12
+        working-directory: charts
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+        run: |
+          set -uo pipefail
+          # --admin bypasses only the review (charts ruleset); required checks stay enforced.
+          for i in $(seq 1 40); do
+            state=$(gh pr view "$PR_URL" --json state --jq .state 2>/dev/null || echo "")
+            case "$state" in
+              MERGED) echo "PR already merged."; exit 0 ;;
+              CLOSED) echo "::error::PR was closed without merging."; exit 1 ;;
+            esac
+            if gh pr merge --squash --admin "$PR_URL" 2>/tmp/merge.err; then
+              echo "PR merged (review bypassed, checks enforced)."
+              exit 0
+            fi
+            failed=$(gh pr checks "$PR_URL" --required --json bucket \
+              --jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length' 2>/dev/null || echo "")
+            if [ -n "$failed" ] && [ "$failed" -gt 0 ]; then
+              echo "::error::Required checks failed:"
+              gh pr checks "$PR_URL" --required || true
+              exit 1
+            fi
+            echo "Not mergeable yet ($i): $(head -1 /tmp/merge.err 2>/dev/null)"
+            sleep 15
+          done
+          echo "::error::Timed out waiting to merge $PR_URL (required checks never finished, or merge blocked)."
+          exit 1
