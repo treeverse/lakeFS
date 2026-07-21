@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
 )
 
@@ -399,6 +400,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
+	o.reportBytes(stats.EventNameBytesIn, o.Principal, o.Repository.Name, o.Reference, blob.Size)
 	o.SetHeader(w, "ETag", httputil.ETag(blob.Checksum))
 	w.WriteHeader(http.StatusOK)
 }

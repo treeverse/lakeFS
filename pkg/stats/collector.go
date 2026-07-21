@@ -20,6 +20,10 @@ const (
 
 	// heartbeatInterval is the interval between 2 heartbeat events.
 	heartbeatInterval = time.Hour
+
+	// EventNameBytesIn and EventNameBytesOut report bytes written to / read from lakeFS.
+	EventNameBytesIn  = "bytes_in"
+	EventNameBytesOut = "bytes_out"
 )
 
 type CommPrefs struct {
