@@ -81,6 +81,7 @@ public class Setup {
   private Boolean featureUpdates;
 
   public static final String SERIALIZED_NAME_SECURITY_UPDATES = "securityUpdates";
+  @Deprecated
   @SerializedName(SERIALIZED_NAME_SECURITY_UPDATES)
   private Boolean securityUpdates;
 
@@ -234,6 +235,7 @@ public class Setup {
   }
 
 
+  @Deprecated
   public Setup securityUpdates(Boolean securityUpdates) {
     
     this.securityUpdates = securityUpdates;
@@ -241,15 +243,18 @@ public class Setup {
   }
 
    /**
-   * user preference to receive security updates
+   * Deprecated: no longer used
    * @return securityUpdates
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
   public Boolean getSecurityUpdates() {
     return securityUpdates;
   }
 
 
+  @Deprecated
   public void setSecurityUpdates(Boolean securityUpdates) {
     this.securityUpdates = securityUpdates;
   }

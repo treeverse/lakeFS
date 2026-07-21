@@ -91,13 +91,12 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 		lastName := "User"
 		companyName := "Acme Inc."
 		requestBody := apigen.SetupJSONRequestBody{
-			Username:        params.Name,
-			FirstName:       &firstName,
-			LastName:        &lastName,
-			CompanyName:     &companyName,
-			Email:           &mockEmail,
-			FeatureUpdates:  swag.Bool(false),
-			SecurityUpdates: swag.Bool(false),
+			Username:       params.Name,
+			FirstName:      &firstName,
+			LastName:       &lastName,
+			CompanyName:    &companyName,
+			Email:          &mockEmail,
+			FeatureUpdates: swag.Bool(false),
 		}
 		if params.AdminAccessKeyID != "" || params.AdminSecretAccessKey != "" {
 			requestBody.Key = &apigen.AccessKeyCredentials{

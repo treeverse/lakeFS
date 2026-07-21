@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **email** | Option<**String**> | the provided email | [optional]
 **company_name** | Option<**String**> | the provided company name | [optional]
 **feature_updates** | **bool** | user preference to receive feature updates | 
-**security_updates** | **bool** | user preference to receive security updates | 
+**security_updates** | **bool** | Deprecated: no longer used | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

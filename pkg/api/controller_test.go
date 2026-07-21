@@ -3767,13 +3767,12 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 		{
 			name: "all fields",
 			body: apigen.SetupJSONRequestBody{
-				Username:        "admin",
-				Email:           swag.String("user@acme.co"),
-				FirstName:       swag.String("Test"),
-				LastName:        swag.String("User"),
-				CompanyName:     swag.String("Acme Inc."),
-				FeatureUpdates:  swag.Bool(true),
-				SecurityUpdates: swag.Bool(true),
+				Username:       "admin",
+				Email:          swag.String("user@acme.co"),
+				FirstName:      swag.String("Test"),
+				LastName:       swag.String("User"),
+				CompanyName:    swag.String("Acme Inc."),
+				FeatureUpdates: swag.Bool(true),
 			},
 			expectedStatusCode:     http.StatusOK,
 			expectCommPrefsMissing: false,
@@ -3905,12 +3904,11 @@ func TestController_SetupThenCommPrefs(t *testing.T) {
 
 	// step 2: separate comm prefs call
 	commResp, err := clt.SetupCommPrefsWithResponse(ctx, apigen.SetupCommPrefsJSONRequestBody{
-		Email:           swag.String("test@acme.co"),
-		FirstName:       swag.String("Test"),
-		LastName:        swag.String("User"),
-		CompanyName:     swag.String("Acme Inc."),
-		FeatureUpdates:  true,
-		SecurityUpdates: true,
+		Email:          swag.String("test@acme.co"),
+		FirstName:      swag.String("Test"),
+		LastName:       swag.String("User"),
+		CompanyName:    swag.String("Acme Inc."),
+		FeatureUpdates: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, commResp.StatusCode())

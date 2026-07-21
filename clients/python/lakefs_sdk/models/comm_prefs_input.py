@@ -34,7 +34,7 @@ class CommPrefsInput(BaseModel):
     email: Optional[StrictStr] = Field(None, description="the provided email")
     company_name: Optional[StrictStr] = Field(None, alias="companyName", description="the provided company name")
     feature_updates: StrictBool = Field(..., alias="featureUpdates", description="user preference to receive feature updates")
-    security_updates: StrictBool = Field(..., alias="securityUpdates", description="user preference to receive security updates")
+    security_updates: StrictBool = Field(..., alias="securityUpdates", description="Deprecated: no longer used")
     __properties = ["firstName", "lastName", "email", "companyName", "featureUpdates", "securityUpdates"]
 
     class Config:

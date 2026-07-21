@@ -45,7 +45,6 @@ const SetupContents = () => {
                 lastName,
                 companyName,
                 featureUpdates: checked,
-                securityUpdates: checked,
             };
 
             setDisabled(true);

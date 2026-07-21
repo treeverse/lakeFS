@@ -5563,12 +5563,11 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 			return
 		}
 		commPrefs = &auth.CommPrefs{
-			UserEmail:       email,
-			FirstName:       swag.StringValue(body.FirstName),
-			LastName:        swag.StringValue(body.LastName),
-			CompanyName:     swag.StringValue(body.CompanyName),
-			FeatureUpdates:  swag.BoolValue(body.FeatureUpdates),
-			SecurityUpdates: swag.BoolValue(body.SecurityUpdates),
+			UserEmail:      email,
+			FirstName:      swag.StringValue(body.FirstName),
+			LastName:       swag.StringValue(body.LastName),
+			CompanyName:    swag.StringValue(body.CompanyName),
+			FeatureUpdates: swag.BoolValue(body.FeatureUpdates),
 		}
 	}
 
@@ -5633,14 +5632,13 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 // collectCommPrefs fires a background stats event for the given comm prefs.
 func (c *Controller) collectCommPrefs(commPrefs *auth.CommPrefs, installationID string) {
 	go c.Collector.CollectCommPrefs(stats.CommPrefs{
-		Email:           commPrefs.UserEmail,
-		FirstName:       commPrefs.FirstName,
-		LastName:        commPrefs.LastName,
-		CompanyName:     commPrefs.CompanyName,
-		InstallationID:  installationID,
-		FeatureUpdates:  commPrefs.FeatureUpdates,
-		SecurityUpdates: commPrefs.SecurityUpdates,
-		BlockstoreType:  c.BlockAdapter.BlockstoreType(),
+		Email:          commPrefs.UserEmail,
+		FirstName:      commPrefs.FirstName,
+		LastName:       commPrefs.LastName,
+		CompanyName:    commPrefs.CompanyName,
+		InstallationID: installationID,
+		FeatureUpdates: commPrefs.FeatureUpdates,
+		BlockstoreType: c.BlockAdapter.BlockstoreType(),
 	})
 }
 
@@ -5652,12 +5650,11 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 	commPrefs := &auth.CommPrefs{
-		UserEmail:       email,
-		FirstName:       swag.StringValue(body.FirstName),
-		LastName:        swag.StringValue(body.LastName),
-		CompanyName:     swag.StringValue(body.CompanyName),
-		FeatureUpdates:  body.FeatureUpdates,
-		SecurityUpdates: body.SecurityUpdates,
+		UserEmail:      email,
+		FirstName:      swag.StringValue(body.FirstName),
+		LastName:       swag.StringValue(body.LastName),
+		CompanyName:    swag.StringValue(body.CompanyName),
+		FeatureUpdates: body.FeatureUpdates,
 	}
 	installationID, err := c.MetadataManager.UpdateCommPrefs(r.Context(), commPrefs)
 	if err != nil {
