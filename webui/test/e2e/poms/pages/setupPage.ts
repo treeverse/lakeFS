@@ -34,7 +34,7 @@ export class SetupPage {
         await this.page.getByLabel("Email").fill(email);
         await this.page.getByLabel("Company name").fill(companyName);
         if (receiveUpdatesChecked) {
-            await this.page.getByLabel("I'd like to receive security, product and feature updates").check();
+            await this.page.getByLabel("I'd like to receive product and feature updates").check();
         }
         await this.page.getByRole("button", { name: "Setup" }).click();
     }
