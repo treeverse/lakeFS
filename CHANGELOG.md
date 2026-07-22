@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.84.0
+
+## :new: What's new:
+- BI: Improved usage reporting and metrics (#10487)
+- Removed the option to subscribe to security updates during setup (#10484)
+
 ## v1.83.0
 
 :new: What's new:
