@@ -371,6 +371,18 @@ type PullRequest struct {
 	MergedCommitID *string
 	// ClosedDate - Closing date of pull request. Relevant only for closed or merged PRs
 	ClosedDate *time.Time
+	// Approvals - approvals given to the pull request, at most one per approver
+	Approvals []PullRequestApproval
+}
+
+type PullRequestApproval struct {
+	// Approver - committer identity of the approving user
+	Approver string
+	// CreationDate - time the approval was given
+	CreationDate time.Time
+	// SourceCommitID - the source branch tip when the approval was given; the approval is stale (ignored on merge)
+	// once the source branch advances past this commit
+	SourceCommitID string
 }
 
 type PullRequestRecord struct {
@@ -806,6 +818,13 @@ type VersionController interface {
 	// If lastKnownChecksum is nil, the update is performed unconditionally.
 	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 
+	// IsBranchMergeBlocked returns whether direct merges into branchID are blocked by a branch protection rule
+	IsBranchMergeBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (bool, error)
+
+	// RequiredApprovals returns the number of distinct pull request approvals required to merge into branchID,
+	// per the repository's branch protection rules (0 if none configured for this branch)
+	RequiredApprovals(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (uint32, error)
+
 	// DeleteExpiredImports deletes expired imports on a given repository
 	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
 }
@@ -863,6 +882,13 @@ type Collaborator interface {
 
 	// UpdatePullRequest update pull request in the given repository
 	UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error
+
+	// AddPullRequestApproval records an approval for an open pull request by approver, keyed to sourceCommitID.
+	// Re-approving by the same approver refreshes the recorded source commit. Fails if the approver is the PR author.
+	AddPullRequestApproval(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, approver, sourceCommitID string) error
+
+	// RemovePullRequestApproval removes approver's approval from an open pull request (no-op if absent)
+	RemovePullRequestApproval(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, approver string) error
 }
 
 // Internal structures used by Graveler
@@ -1756,6 +1782,14 @@ func (g *Graveler) GCNewRunID() string {
 
 func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, *string, error) {
 	return g.protectedBranchesManager.GetRules(ctx, repository)
+}
+
+func (g *Graveler) IsBranchMergeBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (bool, error) {
+	return g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_MERGE)
+}
+
+func (g *Graveler) RequiredApprovals(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (uint32, error) {
+	return g.protectedBranchesManager.RequiredApprovals(ctx, repository, branchID)
 }
 
 func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
@@ -3753,6 +3787,76 @@ func isPullClosed(status PullRequestStatus) bool {
 	return status == PullRequestStatus_CLOSED || status == PullRequestStatus_MERGED
 }
 
+// retryPullRequestUpdate retries f (a full get-mutate-CAS cycle via RefManager.UpdatePullRequest)
+// on concurrent-write conflicts, reusing the same backoff shape as retryRepoMetadataUpdate.
+func (g *Graveler) retryPullRequestUpdate(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, f PullUpdateFunc) error {
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = RepoMetadataUpdateMaxInterval
+	bo.MaxElapsedTime = RepoMetadataUpdateMaxElapsedTime
+	bo.RandomizationFactor = RepoMetadataUpdateRandomFactor
+
+	err := backoff.Retry(func() error {
+		err := g.RefManager.UpdatePullRequest(ctx, repository, pullRequestID, f)
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			return err
+		}
+		if err != nil {
+			return backoff.Permanent(err)
+		}
+		return nil
+	}, bo)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		return fmt.Errorf("update pull request: %w", ErrTooManyTries)
+	}
+	return err
+}
+
+// AddPullRequestApproval records an approval for pullRequestID by approver, keyed to the current source
+// commit ID so that a later push to the source branch invalidates it. Re-approving refreshes the source commit.
+func (g *Graveler) AddPullRequestApproval(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, approver, sourceCommitID string) error {
+	return g.retryPullRequestUpdate(ctx, repository, pullRequestID, func(pr *PullRequest) (*PullRequest, error) {
+		if pr.Status != PullRequestStatus_OPEN {
+			return nil, ErrPullRequestNotOpen
+		}
+		if pr.Author == approver {
+			return nil, ErrPullRequestApprovalByAuthor
+		}
+		approvals := make([]PullRequestApproval, 0, len(pr.Approvals)+1)
+		for _, a := range pr.Approvals {
+			if a.Approver != approver {
+				approvals = append(approvals, a)
+			}
+		}
+		approvals = append(approvals, PullRequestApproval{
+			Approver:       approver,
+			CreationDate:   time.Now(),
+			SourceCommitID: sourceCommitID,
+		})
+		pr.Approvals = approvals
+		return pr, nil
+	})
+}
+
+// RemovePullRequestApproval removes approver's approval from pullRequestID, if present.
+func (g *Graveler) RemovePullRequestApproval(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, approver string) error {
+	return g.retryPullRequestUpdate(ctx, repository, pullRequestID, func(pr *PullRequest) (*PullRequest, error) {
+		approvals := make([]PullRequestApproval, 0, len(pr.Approvals))
+		found := false
+		for _, a := range pr.Approvals {
+			if a.Approver == approver {
+				found = true
+				continue
+			}
+			approvals = append(approvals, a)
+		}
+		if !found {
+			return nil, nil
+		}
+		pr.Approvals = approvals
+		return pr, nil
+	})
+}
+
 func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error {
 	pr, err := g.RefManager.GetPullRequest(ctx, repository, pullRequestID)
 	if err != nil {
@@ -4005,6 +4109,9 @@ type ProtectedBranchesManager interface {
 	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
+	// RequiredApprovals returns the highest required-approvals count configured across branch protection
+	// rules matching the given branch (0 if none match).
+	RequiredApprovals(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (uint32, error)
 }
 
 // NewRepoInstanceID Returns a new unique identifier for the repository instance

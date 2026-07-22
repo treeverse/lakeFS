@@ -330,6 +330,14 @@ func (g *FakeGraveler) UpdatePullRequest(context.Context, *graveler.RepositoryRe
 	panic("implement me")
 }
 
+func (g *FakeGraveler) AddPullRequestApproval(context.Context, *graveler.RepositoryRecord, graveler.PullRequestID, string, string) error {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) RemovePullRequestApproval(context.Context, *graveler.RepositoryRecord, graveler.PullRequestID, string) error {
+	panic("implement me")
+}
+
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int

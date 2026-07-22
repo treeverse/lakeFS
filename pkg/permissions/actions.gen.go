@@ -61,6 +61,7 @@ var Actions = []string{
 	"pr:ReadPullRequest",
 	"pr:WritePullRequest",
 	"pr:ListPullRequests",
+	"pr:ApprovePullRequest",
 	"catalog:ListNamespaces",
 	"catalog:GetNamespace",
 	"catalog:CreateNamespace",

@@ -6759,6 +6759,8 @@ func TestController_UpdatePullRequest(t *testing.T) {
 			Id:                pr.Id,
 			MergedCommitId:    pr.MergedCommitId,
 			SourceBranch:      pr.SourceBranch,
+			RequiredApprovals: pr.RequiredApprovals,
+			Approvals:         pr.Approvals,
 		}
 		updateResp, err = clt.UpdatePullRequestWithResponse(ctx, repo, resp.JSON201.Id, apigen.UpdatePullRequestJSONRequestBody{
 			Description: expected.Description,
@@ -7010,6 +7012,101 @@ func TestController_MergePullRequest(t *testing.T) {
 		require.NotNil(t, mergeResp.JSON409, mergeResp.Status())
 		require.NotNil(t, mergeResp.Body)
 		require.Contains(t, string(mergeResp.Body), "conflict")
+	})
+}
+
+func TestController_PullRequestApprovals(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := t.Context()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
+	require.NoError(t, err)
+
+	newPullWithChange := func(t *testing.T, sourceBranch string) apigen.PullRequestCreationResponse {
+		t.Helper()
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   sourceBranch,
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+
+		require.NoError(t, deps.catalog.CreateEntry(ctx, repo, sourceBranch, catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "baraddr", CreationDate: time.Now(), Size: 1, Checksum: "cksum"}))
+		_, err = deps.catalog.Commit(ctx, repo, sourceBranch, "some message", DefaultUserID, nil, nil, nil, false)
+		require.NoError(t, err)
+
+		createResp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
+			Description:       swag.String("desc"),
+			DestinationBranch: "main",
+			SourceBranch:      sourceBranch,
+			Title:             "title",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, createResp.JSON201, createResp.Status())
+		return *createResp.JSON201
+	}
+
+	t.Run("author cannot approve own pull request", func(t *testing.T) {
+		pr := newPullWithChange(t, "approvals_branch_a")
+		resp, err := clt.CreatePullRequestApprovalWithResponse(ctx, repo, pr.Id)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400, resp.Status())
+		require.Contains(t, resp.JSON400.Message, "author")
+	})
+
+	t.Run("merge blocked below required approvals", func(t *testing.T) {
+		pr := newPullWithChange(t, "approvals_branch_b")
+
+		rulesResp, err := clt.GetBranchProtectionRulesWithResponse(ctx, repo)
+		require.NoError(t, err)
+		params := &apigen.SetBranchProtectionRulesParams{}
+		if etag := rulesResp.HTTPResponse.Header.Get("ETag"); etag != "" {
+			params.IfMatch = swag.String(etag)
+		}
+		setResp, err := clt.SetBranchProtectionRulesWithResponse(ctx, repo, params,
+			[]apigen.BranchProtectionRule{{Pattern: "main", RequiredApprovals: swag.Uint32(2)}})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNoContent, setResp.StatusCode())
+
+		mergeResp, err := clt.MergePullRequestWithResponse(ctx, repo, pr.Id)
+		require.NoError(t, err)
+		require.NotNil(t, mergeResp.JSON400, mergeResp.Status())
+		require.Contains(t, mergeResp.JSON400.Message, "requires 2 approval")
+
+		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, pr.Id)
+		require.NoError(t, err)
+		require.NotNil(t, getResp.JSON200)
+		require.NotNil(t, getResp.JSON200.RequiredApprovals)
+		require.Equal(t, uint32(2), *getResp.JSON200.RequiredApprovals)
+	})
+
+	t.Run("direct merge blocked on a branch protected against MERGE", func(t *testing.T) {
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   "approvals_branch_c",
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+		require.NoError(t, deps.catalog.CreateEntry(ctx, repo, "approvals_branch_c", catalog.DBEntry{Path: "foo/baz", PhysicalAddress: "bazaddr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"}))
+		_, err = deps.catalog.Commit(ctx, repo, "approvals_branch_c", "some message", DefaultUserID, nil, nil, nil, false)
+		require.NoError(t, err)
+
+		// Protecting a branch always blocks MERGE too (blocked actions are all-or-nothing for now,
+		// see SetBranchProtectionRules), forcing direct merges through the pull request flow.
+		rulesResp, err := clt.GetBranchProtectionRulesWithResponse(ctx, repo)
+		require.NoError(t, err)
+		params := &apigen.SetBranchProtectionRulesParams{}
+		if etag := rulesResp.HTTPResponse.Header.Get("ETag"); etag != "" {
+			params.IfMatch = swag.String(etag)
+		}
+		setResp, err := clt.SetBranchProtectionRulesWithResponse(ctx, repo, params,
+			[]apigen.BranchProtectionRule{{Pattern: "main"}})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNoContent, setResp.StatusCode())
+
+		mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "approvals_branch_c", "main", apigen.MergeIntoBranchJSONRequestBody{})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusForbidden, mergeResp.StatusCode())
 	})
 }
 

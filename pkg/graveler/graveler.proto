@@ -54,6 +54,7 @@ message GarbageCollectionRules {
 enum BranchProtectionBlockedAction {
   STAGING_WRITE = 0;
   COMMIT = 1;
+  MERGE = 2;
 }
 
 message BranchProtectionBlockedActions {
@@ -62,6 +63,9 @@ message BranchProtectionBlockedActions {
 
 message BranchProtectionRules {
   map<string, BranchProtectionBlockedActions> branch_pattern_to_blocked_actions = 1;
+  // branch_pattern_to_required_approvals - minimum number of distinct approvals (other than the PR author)
+  // required to merge a pull request into a branch matching the pattern. 0 (or unset) means approvals are not required.
+  map<string, uint32> branch_pattern_to_required_approvals = 2;
 }
 
 message StagedEntryData {
@@ -106,6 +110,14 @@ message PullRequestData {
   optional string commit_id = 9;
   // closed_at relevant only for merged or closed PRs
   optional google.protobuf.Timestamp closed_at = 10;
+  repeated PullRequestApprovalData approvals = 11;
+}
+
+message PullRequestApprovalData {
+  string approver = 1;
+  google.protobuf.Timestamp created_at = 2;
+  // source_commit_id - the source branch tip at approval time; an approval is stale (ignored) once the source advances past it
+  string source_commit_id = 3;
 }
 
 enum PullRequestStatus {

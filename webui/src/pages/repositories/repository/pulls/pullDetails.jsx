@@ -3,11 +3,12 @@ import { useOutletContext } from 'react-router-dom';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
-import { GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from '@primer/octicons-react';
+import { CheckIcon, GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon } from '@primer/octicons-react';
 import dayjs from 'dayjs';
 import Markdown from 'react-markdown';
 
 import { AlertError, Loading } from '../../../../lib/components/controls';
+import { useAuth } from '../../../../lib/auth/authContext';
 import { useRefs } from '../../../../lib/hooks/repo';
 import { useRouter } from '../../../../lib/hooks/router';
 import { RepoError } from '../error';
@@ -23,12 +24,19 @@ const PullDetailsContent = ({ repo, pull }) => {
     let [loading, setLoading] = useState(false);
     let [action, setAction] = useState(null);
     let [error, setError] = useState(null);
+    const { user } = useAuth();
 
     const {
         state: { results: diffResults, loading: diffLoading, error: diffError },
     } = useContext(DiffContext);
     const isEmptyDiff = !diffLoading && !diffError && !!diffResults && diffResults.length === 0;
     const formattedDiffError = getFormattedDiffError(diffError);
+
+    const requiredApprovals = pull.required_approvals || 0;
+    const approvals = pull.approvals || [];
+    const hasApproved = approvals.some((a) => a.approver === user?.id);
+    const isAuthor = user?.id === pull.author;
+    const approvalsSatisfied = approvals.length >= requiredApprovals;
 
     const mergePullRequest = async () => {
         setError(null);
@@ -43,6 +51,24 @@ const PullDetailsContent = ({ repo, pull }) => {
             return;
         }
         window.location.reload(); // TODO (gilo): replace with a more elegant solution
+    };
+
+    const toggleApproval = async () => {
+        setError(null);
+        setAction('approve');
+        setLoading(true);
+        try {
+            if (hasApproved) {
+                await pullsAPI.unapprove(repo.id, pull.id);
+            } else {
+                await pullsAPI.approve(repo.id, pull.id);
+            }
+            window.location.reload(); // TODO (gilo): replace with a more elegant solution
+        } catch (error) {
+            setError(error.message);
+            setLoading(false);
+            setAction(null);
+        }
     };
 
     const changePullStatus = (status) => async () => {
@@ -77,6 +103,17 @@ const PullDetailsContent = ({ repo, pull }) => {
                     <Markdown>{pull.description}</Markdown>
                 </Card.Body>
             </Card>
+            {isPullOpen() && requiredApprovals > 0 && (
+                <ApprovalsPanel
+                    approvals={approvals}
+                    required={requiredApprovals}
+                    hasApproved={hasApproved}
+                    isAuthor={isAuthor}
+                    onToggle={toggleApproval}
+                    loading={loading && action === 'approve'}
+                    disabled={loading}
+                />
+            )}
             <div className="bottom-buttons-row mt-4">
                 {error && <AlertError error={error} onDismiss={() => setError(null)} />}
                 {formattedDiffError && <AlertError error={formattedDiffError} />}
@@ -92,6 +129,7 @@ const PullDetailsContent = ({ repo, pull }) => {
                                 <MergePullButton
                                     onClick={mergePullRequest}
                                     isEmptyDiff={isEmptyDiff}
+                                    approvalsSatisfied={approvalsSatisfied}
                                     loading={loading && action === 'merge'}
                                     disabled={loading}
                                 />
@@ -104,7 +142,12 @@ const PullDetailsContent = ({ repo, pull }) => {
                                     role="status"
                                     aria-hidden="true"
                                 />
-                                {action === 'merge' ? 'Merging pull request...' : 'Closing pull request...'}
+                                {action === 'merge' ? 'Merging pull request...' : action === 'approve' ? 'Updating approval...' : 'Closing pull request...'}
+                            </Alert>
+                        )}
+                        {!approvalsSatisfied && (
+                            <Alert variant="warning" className="mt-4">
+                                Merging is disabled until this pull request has {requiredApprovals} approval(s) (has {approvals.length}).
                             </Alert>
                         )}
                         {isEmptyDiff && (
@@ -194,8 +237,34 @@ const ClosePullButton = ({ onClick, loading, disabled }) => (
     </Button>
 );
 
-const MergePullButton = ({ onClick, isEmptyDiff, loading, disabled }) => (
-    <Button variant="success" className="ms-2" disabled={disabled || isEmptyDiff} onClick={onClick}>
+const ApprovalsPanel = ({ approvals, required, hasApproved, isAuthor, onToggle, loading, disabled }) => (
+    <Card className="mt-4">
+        <Card.Header>
+            Approvals ({approvals.length}/{required})
+        </Card.Header>
+        <Card.Body className="d-flex justify-content-between align-items-center">
+            <div>
+                {approvals.length === 0 && <span className="text-secondary">No approvals yet.</span>}
+                {approvals.map((a) => (
+                    <Badge key={a.approver} pill bg="success" className="me-2">
+                        <CheckIcon /> {a.approver}
+                    </Badge>
+                ))}
+            </div>
+            <Button
+                variant={hasApproved ? 'outline-secondary' : 'success'}
+                disabled={disabled || isAuthor}
+                title={isAuthor ? "You can't approve your own pull request" : ''}
+                onClick={onToggle}
+            >
+                {loading ? 'Updating...' : hasApproved ? 'Revoke approval' : 'Approve'}
+            </Button>
+        </Card.Body>
+    </Card>
+);
+
+const MergePullButton = ({ onClick, isEmptyDiff, approvalsSatisfied, loading, disabled }) => (
+    <Button variant="success" className="ms-2" disabled={disabled || isEmptyDiff || !approvalsSatisfied} onClick={onClick}>
         {loading ? (
             'Merging...'
         ) : (
