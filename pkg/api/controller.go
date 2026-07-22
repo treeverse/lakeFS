@@ -626,6 +626,8 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
+	c.reportDataSize(ctx, r, stats.EventNameBytesIn, repository, branch, entry.Size)
+
 	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
@@ -1036,6 +1038,8 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+
+	c.reportDataSize(ctx, r, stats.EventNameBytesIn, repository, branch, entry.Size)
 
 	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 	response := apigen.ObjectStats{
@@ -3675,6 +3679,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
+	c.reportDataSize(ctx, r, stats.EventNameBytesIn, repository, branch, blob.Size)
+
 	response := apigen.ObjectStats{
 		Checksum:        blob.Checksum,
 		Mtime:           blob.CreationDate.Unix(),
@@ -4986,6 +4992,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
+		c.reportDataSize(ctx, r, stats.EventNameBytesOut, repository, ref, entry.Size)
 		w.Header().Set("Location", location)
 		w.WriteHeader(http.StatusFound)
 		return
@@ -5008,6 +5015,9 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// handle partial response if byte range supplied
 	var reader io.ReadCloser
+	// servedBytes is the number of bytes actually served to the client (the full
+	// object size, or the requested range length for a partial read).
+	servedBytes := entry.Size
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
@@ -5024,8 +5034,9 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		defer func() {
 			_ = reader.Close()
 		}()
+		servedBytes = rng.EndOffset - rng.StartOffset + 1
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", servedBytes))
 		w.WriteHeader(http.StatusPartialContent)
 	} else {
 		reader, err = c.BlockAdapter.Get(ctx, pointer)
@@ -5037,6 +5048,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		}()
 		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
 	}
+	c.reportDataSize(ctx, r, stats.EventNameBytesOut, repository, ref, servedBytes)
 
 	// time to first byte - include out part of the processing without the actual data transfer
 	requestTTFBHistograms.
@@ -6145,6 +6157,24 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 	}).Debug("performing API action")
 	c.Collector.CollectEvent(ev)
 	usageCounter.Add(1)
+}
+
+// reportDataSize reports bytes transferred by an API data operation. No-op when size <= 0.
+func (c *Controller) reportDataSize(ctx context.Context, r *http.Request, name, repository, ref string, size int64) {
+	if size <= 0 {
+		return
+	}
+	ev := stats.Event{
+		Class:      "api_server",
+		Name:       name,
+		Repository: repository,
+		Ref:        ref,
+		Client:     httputil.GetRequestLakeFSClient(r),
+	}
+	if user, _ := auth.GetUser(ctx); user != nil {
+		ev.UserID = user.Username
+	}
+	c.Collector.CollectEvents(ev, uint64(size)) //nolint:gosec
 }
 
 func paginationFor(hasMore bool, results any, fieldName string) apigen.Pagination {

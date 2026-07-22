@@ -44,6 +44,11 @@ const (
 
 type ActionIncr func(action, userID, repository, ref string)
 
+// ByteReportIncr reports the amount of data (in bytes) transferred by a data
+// operation. name is stats.EventNameBytesIn for writes or stats.EventNameBytesOut
+// for reads.
+type ByteReportIncr func(name, userID, repository, ref string, size int64)
+
 type Operation struct {
 	OperationID       OperationID
 	Region            string
@@ -53,9 +58,19 @@ type Operation struct {
 	BlockStore        block.Adapter
 	Auth              auth.GatewayService
 	Incr              ActionIncr
+	IncrByteReport    ByteReportIncr
 	MatchedHost       bool
 	PathProvider      upload.PathProvider
 	VerifyUnsupported bool
+}
+
+// reportBytes reports the number of bytes transferred by a data operation. It is
+// a no-op when no reporter is configured or size is not positive.
+func (o *Operation) reportBytes(name, userID, repository, ref string, size int64) {
+	if o.IncrByteReport == nil || size <= 0 {
+		return
+	}
+	o.IncrByteReport(name, userID, repository, ref, size)
 }
 
 func StorageClassFromHeader(header http.Header) *string {

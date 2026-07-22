@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 const (
@@ -124,6 +125,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 			return
 		}
 
+		o.reportBytes(stats.EventNameBytesOut, o.Principal, o.Repository.Name, o.Reference, entry.Size)
 		o.SetHeader(w, "Location", preSignedURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 		return
@@ -155,6 +157,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		o.SetHeader(w, "Content-Range", contentRange)
 	}
 	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", contentLength))
+	o.reportBytes(stats.EventNameBytesOut, o.Principal, o.Repository.Name, o.Reference, contentLength)
 	o.SetHeader(w, "X-Content-Type-Options", "nosniff")
 	o.SetHeader(w, "X-Frame-Options", "SAMEORIGIN")
 	o.SetHeader(w, "Content-Security-Policy", "default-src 'none'")

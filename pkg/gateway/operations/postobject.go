@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 const (
@@ -185,6 +186,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
+	o.reportBytes(stats.EventNameBytesIn, o.Principal, o.Repository.Name, o.Reference, resp.ContentLength)
 	err = o.MultipartTracker.Delete(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Warn("could not delete multipart record")
