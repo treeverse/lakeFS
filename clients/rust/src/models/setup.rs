@@ -32,7 +32,7 @@ pub struct Setup {
     /// user preference to receive feature updates
     #[serde(rename = "featureUpdates", skip_serializing_if = "Option::is_none")]
     pub feature_updates: Option<bool>,
-    /// user preference to receive security updates
+    /// Deprecated: no longer used
     #[serde(rename = "securityUpdates", skip_serializing_if = "Option::is_none")]
     pub security_updates: Option<bool>,
 }

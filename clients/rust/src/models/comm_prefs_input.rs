@@ -27,7 +27,7 @@ pub struct CommPrefsInput {
     /// user preference to receive feature updates
     #[serde(rename = "featureUpdates")]
     pub feature_updates: bool,
-    /// user preference to receive security updates
+    /// Deprecated: no longer used
     #[serde(rename = "securityUpdates")]
     pub security_updates: bool,
 }

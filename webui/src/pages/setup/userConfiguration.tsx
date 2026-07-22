@@ -184,7 +184,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                                     type="checkbox"
                                                     checked={checks}
                                                     onChange={handleChecksChange}
-                                                    label="I'd like to receive security, product and feature updates"
+                                                    label="I'd like to receive product and feature updates"
                                                 />
                                             </Form.Group>
                                         </Col>

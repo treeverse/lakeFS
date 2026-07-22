@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **email** | **str** | the provided email | [optional] 
 **company_name** | **str** | the provided company name | [optional] 
 **feature_updates** | **bool** | user preference to receive feature updates | [optional] 
-**security_updates** | **bool** | user preference to receive security updates | [optional] 
+**security_updates** | **bool** | Deprecated: no longer used | [optional] 
 
 ## Example
 
