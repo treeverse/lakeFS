@@ -69,7 +69,13 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 			return nil, fmt.Errorf("%s: get RepoManagementRead: %w", acl.Permission, ErrBadACLPermission)
 		}
 
-		statements = append(statements, append(ownCredentialsStatement, ciStatement...)...)
+		// Write access implies the ability to open, review and approve pull requests.
+		prStatement, err := auth.MakeStatementForPolicyType("PRReadWrite", all)
+		if err != nil {
+			return nil, fmt.Errorf("%s: get PRReadWrite: %w", acl.Permission, ErrBadACLPermission)
+		}
+
+		statements = append(statements, append(append(ownCredentialsStatement, ciStatement...), prStatement...)...)
 	case SuperPermission:
 		statements, err = auth.MakeStatementForPolicyType("FSFullAccess", all)
 		if err != nil {
@@ -86,7 +92,13 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 			return nil, fmt.Errorf("%s: get RepoManagementRead: %w", acl.Permission, ErrBadACLPermission)
 		}
 
-		statements = append(statements, append(ownCredentialsStatement, ciStatement...)...)
+		// Super is a superset of Write and must not have fewer PR rights.
+		prStatement, err := auth.MakeStatementForPolicyType("PRReadWrite", all)
+		if err != nil {
+			return nil, fmt.Errorf("%s: get PRReadWrite: %w", acl.Permission, ErrBadACLPermission)
+		}
+
+		statements = append(statements, append(append(ownCredentialsStatement, ciStatement...), prStatement...)...)
 	case AdminPermission:
 		statements, err = auth.MakeStatementForPolicyType("AllAccess", []string{permissions.All})
 		if err != nil {
