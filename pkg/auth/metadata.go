@@ -109,54 +109,6 @@ func (m *KVMetadataManager) getSetupTimestamp(ctx context.Context) (time.Time, e
 	return time.Parse(time.RFC3339, string(valWithPred.Value))
 }
 
-func (m *KVMetadataManager) GetCommPrefs(ctx context.Context) (CommPrefs, error) {
-	email, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(EmailKeyName)))
-	if err != nil {
-		return CommPrefs{}, err
-	}
-	featureUpdates, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(FeatureUpdatesKeyName)))
-	if err != nil {
-		return CommPrefs{}, err
-	}
-
-	hasFeatureUpdates, err := strconv.ParseBool(string(featureUpdates.Value))
-	if err != nil {
-		return CommPrefs{}, err
-	}
-
-	firstName, err := m.getOptionalMetadataValue(ctx, FirstNameKeyName)
-	if err != nil {
-		return CommPrefs{}, err
-	}
-	lastName, err := m.getOptionalMetadataValue(ctx, LastNameKeyName)
-	if err != nil {
-		return CommPrefs{}, err
-	}
-	companyName, err := m.getOptionalMetadataValue(ctx, CompanyNameKeyName)
-	if err != nil {
-		return CommPrefs{}, err
-	}
-
-	return CommPrefs{
-		UserEmail:      string(email.Value),
-		FirstName:      firstName,
-		LastName:       lastName,
-		CompanyName:    companyName,
-		FeatureUpdates: hasFeatureUpdates,
-	}, nil
-}
-
-func (m *KVMetadataManager) getOptionalMetadataValue(ctx context.Context, key string) (string, error) {
-	value, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(key)))
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			return "", nil
-		}
-		return "", err
-	}
-	return string(value.Value), nil
-}
-
 func (m *KVMetadataManager) IsCommPrefsSet(ctx context.Context) (bool, error) {
 	commPrefsSet, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(CommPrefsSetKeyName)))
 	if err != nil {
