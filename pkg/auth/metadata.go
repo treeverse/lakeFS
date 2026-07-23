@@ -50,6 +50,7 @@ type MetadataManager interface {
 	IsInitialized(ctx context.Context) (bool, error)
 	GetSetupState(ctx context.Context) (SetupStateName, error)
 	UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefs) (string, error)
+	SetCommPrefsOnce(ctx context.Context, commPrefs *CommPrefs) (string, error)
 	IsCommPrefsSet(ctx context.Context) (bool, error)
 	UpdateSetupTimestamp(ctx context.Context, setupTime time.Time, authType string) error
 	GetMetadata(context.Context) (map[string]string, error)
@@ -179,25 +180,82 @@ func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, setupTime 
 	return nil
 }
 
+// commPrefsData returns the (non-flag) metadata key/values for the given prefs.
+func commPrefsData(commPrefs *CommPrefs) map[string]string {
+	return map[string]string{
+		FirstNameKeyName:      base64.StdEncoding.EncodeToString([]byte(commPrefs.FirstName)),
+		LastNameKeyName:       base64.StdEncoding.EncodeToString([]byte(commPrefs.LastName)),
+		EmailKeyName:          base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail)),
+		CompanyNameKeyName:    base64.StdEncoding.EncodeToString([]byte(commPrefs.CompanyName)),
+		FeatureUpdatesKeyName: strconv.FormatBool(commPrefs.FeatureUpdates),
+	}
+}
+
+// SetCommPrefsOnce persists comm prefs and marks them set, but only if they
+// were not already set. It returns ErrCommPrefsAlreadySet otherwise, so a
+// repeat call never overrides an established record.
+//
+// The prefs data is written first, and comm_prefs_set is flipped last with a
+// conditional SetIf as the commit point. Ordering it this way means a failed
+// data write leaves the flag unset, so a retry can still complete the record
+// (no partial-write brick). Only one caller wins the SetIf commit; the rest get
+// ErrCommPrefsAlreadySet. Concurrent callers that all observe the flag unset do
+// race on the data itself (last write wins), which is acceptable.
+func (m *KVMetadataManager) SetCommPrefsOnce(ctx context.Context, commPrefs *CommPrefs) (string, error) {
+	if m.commPrefsSet.Load() {
+		return m.installationID, ErrCommPrefsAlreadySet
+	}
+
+	flagKey := []byte(model.MetadataKeyPath(CommPrefsSetKeyName))
+	current, err := m.store.Get(ctx, []byte(model.PartitionKey), flagKey)
+	var predicate kv.Predicate
+	switch {
+	case errors.Is(err, kv.ErrNotFound):
+		predicate = nil // commit only if the flag is still absent
+	case err != nil:
+		return m.installationID, err
+	default:
+		isSet, parseErr := strconv.ParseBool(string(current.Value))
+		if parseErr != nil {
+			return m.installationID, parseErr
+		}
+		if isSet {
+			m.commPrefsSet.Store(true)
+			return m.installationID, ErrCommPrefsAlreadySet
+		}
+		predicate = current.Predicate // flag is false; commit only if unchanged
+	}
+
+	// write the data first so a failure here leaves the flag unset and retryable.
+	if err := m.writeMetadata(ctx, commPrefsData(commPrefs)); err != nil {
+		return m.installationID, err
+	}
+
+	// flip comm_prefs_set last as the commit point; only one caller wins.
+	err = m.store.SetIf(ctx, []byte(model.PartitionKey), flagKey, []byte(strconv.FormatBool(true)), predicate)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		// another writer committed comm_prefs_set concurrently
+		m.commPrefsSet.Store(true)
+		return m.installationID, ErrCommPrefsAlreadySet
+	}
+	if err != nil {
+		return m.installationID, err
+	}
+	m.commPrefsSet.Store(true)
+	return m.installationID, nil
+}
+
 // UpdateCommPrefs - updates the comm prefs metadata.
 // When commPrefs is nil, we assume the setup is done and the user didn't provide any comm prefs.
 // The data can be provided later as the web UI verifies if the comm prefs are set.
 func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefs) (string, error) {
-	var meta map[string]string
+	meta := map[string]string{
+		CommPrefsSetKeyName: strconv.FormatBool(commPrefs != nil),
+	}
 	if commPrefs != nil {
 		// if commPrefs is not nil, we assume the setup is done and the user provided comm prefs
-		meta = map[string]string{
-			FirstNameKeyName:      base64.StdEncoding.EncodeToString([]byte(commPrefs.FirstName)),
-			LastNameKeyName:       base64.StdEncoding.EncodeToString([]byte(commPrefs.LastName)),
-			EmailKeyName:          base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail)),
-			CompanyNameKeyName:    base64.StdEncoding.EncodeToString([]byte(commPrefs.CompanyName)),
-			FeatureUpdatesKeyName: strconv.FormatBool(commPrefs.FeatureUpdates),
-			CommPrefsSetKeyName:   strconv.FormatBool(true),
-		}
-	} else {
-		// if commPrefs is nil, we assume the setup is done and the user didn't provide any comm prefs
-		meta = map[string]string{
-			CommPrefsSetKeyName: strconv.FormatBool(false),
+		for k, v := range commPrefsData(commPrefs) {
+			meta[k] = v
 		}
 	}
 	err := m.writeMetadata(ctx, meta)
@@ -205,11 +263,10 @@ func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs *Comm
 		return m.installationID, err
 	}
 
-	// cache that comm prefs are set, but only when they actually were:
-	// a nil commPrefs writes comm_prefs_set=false and must not prime the cache.
-	if commPrefs != nil {
-		m.commPrefsSet.Store(true)
-	}
+	// keep the cache in sync with what was written: a nil commPrefs writes
+	// comm_prefs_set=false and must un-stick any previously cached true (e.g. a
+	// Setup retry after an earlier write primed the cache).
+	m.commPrefsSet.Store(commPrefs != nil)
 	return m.installationID, nil
 }
 
