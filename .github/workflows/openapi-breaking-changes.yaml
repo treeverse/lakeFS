@@ -15,14 +15,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check-out revised code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: 'changed'
           sparse-checkout: |
             api/swagger.yml
           sparse-checkout-cone-mode: false
       - name: Check-out base code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: 'master'
           path: 'base'
