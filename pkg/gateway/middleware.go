@@ -142,7 +142,7 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 			},
 			IncrByteReport: func(name, userID, repository, ref string, size int64) {
 				sc.stats.CollectEvents(stats.Event{
-					Class:      "s3_gateway",
+					Class:      stats.EventClassTraffic,
 					Name:       name,
 					Repository: repository,
 					Ref:        ref,
