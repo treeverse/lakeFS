@@ -1080,7 +1080,8 @@ components:
           description: user preference to receive feature updates
           type: boolean
         securityUpdates:
-          description: user preference to receive security updates
+          deprecated: true
+          description: "Deprecated: no longer used"
           type: boolean
       required:
         - username
@@ -1104,7 +1105,8 @@ components:
           description: user preference to receive feature updates
           type: boolean
         securityUpdates:
-          description: user preference to receive security updates
+          deprecated: true
+          description: "Deprecated: no longer used"
           type: boolean
       required:
         - featureUpdates
