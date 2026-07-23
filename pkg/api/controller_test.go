@@ -3984,8 +3984,7 @@ func TestController_SetupCommPrefs(t *testing.T) {
 }
 
 // TestController_SetupCommPrefsRejected verifies the setup-state guard: comm prefs
-// cannot be set before setup (412), and cannot be overwritten once captured (409) -
-// the latter is the scenario reported in issue #10465.
+// cannot be set before setup (412) or overwritten once captured (409).
 func TestController_SetupCommPrefsRejected(t *testing.T) {
 	mockEmail := "test@acme.co"
 	commPrefsBody := apigen.SetupCommPrefsJSONRequestBody{

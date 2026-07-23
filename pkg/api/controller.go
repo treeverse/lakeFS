@@ -5501,6 +5501,12 @@ func newLoginConfig(c config.AuthConfig) *apigen.LoginConfig {
 	return loginConfig
 }
 
+const (
+	setupAlreadyInitializedMsg = "lakeFS already initialized"
+	setupNotInitializedMsg     = "lakeFS is not initialized"
+	commPrefsAlreadySetMsg     = "communication preferences already set"
+)
+
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -5565,7 +5571,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	ctx := r.Context()
 	// fast path: already initialized this process, skip the KV read
 	if c.setupComplete.Load() {
-		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
+		writeError(w, r, http.StatusConflict, setupAlreadyInitializedMsg)
 		return
 	}
 	initialized, err := c.MetadataManager.IsInitialized(ctx)
@@ -5575,7 +5581,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	}
 	if initialized {
 		c.setupComplete.Store(true)
-		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
+		writeError(w, r, http.StatusConflict, setupAlreadyInitializedMsg)
 		return
 	}
 
@@ -5678,7 +5684,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 
 	// fast path: comm prefs already captured this process, skip the KV read
 	if c.commPrefsSet.Load() {
-		writeError(w, r, http.StatusConflict, "communication preferences already set")
+		writeError(w, r, http.StatusConflict, commPrefsAlreadySetMsg)
 		return
 	}
 
@@ -5690,13 +5696,16 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	}
 	if savedState != auth.SetupStateInitialized {
 		// setup hasn't run yet - do not latch, this is a transient state
-		writeError(w, r, http.StatusPreconditionFailed, "lakeFS is not initialized")
+		writeError(w, r, http.StatusPreconditionFailed, setupNotInitializedMsg)
 		return
 	}
 	if !c.commPrefsMissing(ctx, savedState) {
-		// prefs already captured (or the feature is disabled) - refuse to overwrite
-		c.commPrefsSet.Store(true)
-		writeError(w, r, http.StatusConflict, "communication preferences already set")
+		// prefs already captured (or the feature is disabled) - refuse to overwrite.
+		// only latch when the feature is enabled, so toggling it on later is honored.
+		if c.Config.GetBaseConfig().EmailSubscription.Enabled {
+			c.commPrefsSet.Store(true)
+		}
+		writeError(w, r, http.StatusConflict, commPrefsAlreadySetMsg)
 		return
 	}
 
