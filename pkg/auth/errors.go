@@ -8,6 +8,7 @@ import (
 
 var (
 	ErrNotFound                = kv.ErrNotFound
+	ErrCommPrefsAlreadySet     = errors.New("comm prefs already set")
 	ErrAlreadyExists           = errors.New("already exists")
 	ErrNonUnique               = errors.New("more than one user found")
 	ErrInvalidArn              = errors.New("invalid ARN")

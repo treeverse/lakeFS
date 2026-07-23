@@ -1305,11 +1305,12 @@ class Setup {
 
         switch (response.status) {
             case 200:
+            case 409:
+                // 409 means the preferences were already set (e.g. a double-submit
+                // or a retried request) - the desired end state, so treat as success.
                 return;
             case 400:
                 throw new Error(await extractError(response));
-            case 409:
-                throw new Error('Setup is already complete.');
             default:
                 throw new Error('Unknown');
         }
