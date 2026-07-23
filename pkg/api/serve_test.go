@@ -100,25 +100,8 @@ func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterfac
 	}
 }
 
-// setupHandlerConfig holds optional overrides for setupHandler.
-type setupHandlerConfig struct {
-	metaWrapper func(auth.MetadataManager) auth.MetadataManager
-}
-
-type setupHandlerOption func(*setupHandlerConfig)
-
-// withMetadataManagerWrapper wraps the metadata manager handed to the server so
-// tests can inject faults (e.g. a failing IsCommPrefsSet).
-func withMetadataManagerWrapper(w func(auth.MetadataManager) auth.MetadataManager) setupHandlerOption {
-	return func(c *setupHandlerConfig) { c.metaWrapper = w }
-}
-
-func setupHandler(t testing.TB, opts ...setupHandlerOption) (http.Handler, *dependencies) {
+func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	t.Helper()
-	var shCfg setupHandlerConfig
-	for _, o := range opts {
-		o(&shCfg)
-	}
 	ctx := t.Context()
 
 	if viper.Get(config.BlockstoreTypeKey) == nil {
@@ -142,10 +125,7 @@ func setupHandler(t testing.TB, opts ...setupHandlerOption) (http.Handler, *depe
 	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.FromContext(ctx))
-	var meta auth.MetadataManager = auth.NewKVMetadataManager("serve_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
-	if shCfg.metaWrapper != nil {
-		meta = shCfg.metaWrapper(meta)
-	}
+	meta := auth.NewKVMetadataManager("serve_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 
 	// Use context.WithoutCancel to prevent test timeout from cancelling catalog's background goroutines
 	// This preserves context values (like logging) while preventing cancellation propagation
