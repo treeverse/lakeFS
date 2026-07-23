@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -127,6 +128,12 @@ type Controller struct {
 	sessionStore    sessions.Store
 	PathProvider    upload.PathProvider
 	usageReporter   stats.UsageReporterOperations
+
+	// One-way latches for the unauthenticated setup endpoints. Once we observe
+	// that setup / comm prefs are complete, further POSTs are rejected without a
+	// KV read. They only ever flip false -> true, so they never serve stale state.
+	setupComplete atomic.Bool
+	commPrefsSet  atomic.Bool
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -5494,6 +5501,12 @@ func newLoginConfig(c config.AuthConfig) *apigen.LoginConfig {
 	return loginConfig
 }
 
+const (
+	setupAlreadyInitializedMsg = "lakeFS already initialized"
+	setupNotInitializedMsg     = "lakeFS is not initialized"
+	commPrefsAlreadySetMsg     = "communication preferences already set"
+)
+
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -5518,17 +5531,20 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := apigen.SetupState{
-		State:       swag.String(string(savedState)),
-		LoginConfig: newLoginConfig(c.Config.AuthConfig()),
+		State:            swag.String(string(savedState)),
+		LoginConfig:      newLoginConfig(c.Config.AuthConfig()),
+		CommPrefsMissing: swag.Bool(c.commPrefsMissing(ctx, savedState)),
 	}
 
-	// if email subscription is disabled in the config, set the missing flag to false.
-	// otherwise, check if the comm prefs are set.
-	// if they are, set the missing flag to false.
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+// commPrefsMissing reports whether communication preferences still need to be
+// collected for this installation, mirroring the state surfaced by GetSetupState.
+func (c *Controller) commPrefsMissing(ctx context.Context, state auth.SetupStateName) bool {
+	// if email subscription is disabled in the config, comm prefs are never collected.
 	if !c.Config.GetBaseConfig().EmailSubscription.Enabled {
-		response.CommPrefsMissing = swag.Bool(false)
-		writeResponse(w, r, http.StatusOK, response)
-		return
+		return false
 	}
 
 	prefsSet, err := c.MetadataManager.IsCommPrefsSet(ctx)
@@ -5537,15 +5553,13 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		// comprefs may not be found for two reasons:
 		// 1. The setup ran on an older version of lakeFS that didn't have commprefs. In this case, we treat it as set.
 		// 2. The setup ran on a newer version of lakeFS that has commprefs, but the setup didn't complete. In this case, we treat it as not set.
-		response.CommPrefsMissing = swag.Bool(savedState != auth.SetupStateInitialized)
+		return state != auth.SetupStateInitialized
 	case err != nil:
 		// failed to check if comm prefs are set, treating as set
-		response.CommPrefsMissing = swag.Bool(false)
+		return false
 	default:
-		response.CommPrefsMissing = swag.Bool(!prefsSet)
+		return !prefsSet
 	}
-
-	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.SetupJSONRequestBody) {
@@ -5555,13 +5569,19 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	}
 
 	ctx := r.Context()
+	// fast path: already initialized this process, skip the KV read
+	if c.setupComplete.Load() {
+		writeError(w, r, http.StatusConflict, setupAlreadyInitializedMsg)
+		return
+	}
 	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 	if initialized {
-		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
+		c.setupComplete.Store(true)
+		writeError(w, r, http.StatusConflict, setupAlreadyInitializedMsg)
 		return
 	}
 
@@ -5629,7 +5649,12 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
+
+	// setup is complete - latch so repeated POSTs short-circuit without a KV read.
+	c.setupComplete.Store(true)
 	if commPrefs != nil {
+		// comm prefs were stored as part of setup, so setup_comm_prefs is done too.
+		c.commPrefsSet.Store(true)
 		c.collectCommPrefs(commPrefs, meta.InstallationID)
 	}
 
@@ -5655,6 +5680,33 @@ func (c *Controller) collectCommPrefs(commPrefs *auth.CommPrefs, installationID 
 }
 
 func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body apigen.SetupCommPrefsJSONRequestBody) {
+	ctx := r.Context()
+
+	// fast path: comm prefs already captured this process, skip the KV read
+	if c.commPrefsSet.Load() {
+		writeError(w, r, http.StatusConflict, commPrefsAlreadySetMsg)
+		return
+	}
+
+	// comm prefs can only be set once, and only after lakeFS setup completed.
+	savedState, err := c.MetadataManager.GetSetupState(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if savedState != auth.SetupStateInitialized {
+		// setup must run first - do not latch
+		writeError(w, r, http.StatusPreconditionFailed, setupNotInitializedMsg)
+		return
+	}
+	if !c.commPrefsMissing(ctx, savedState) {
+		// prefs already captured (or the feature is disabled) - refuse to overwrite.
+		// the latch is only set after we successfully write prefs, never from this
+		// read, so a transient read error can't pin the endpoint to a permanent 409.
+		writeError(w, r, http.StatusConflict, commPrefsAlreadySetMsg)
+		return
+	}
+
 	email := swag.StringValue(body.Email)
 	if err := validateEmail(email); err != nil {
 		c.Logger.WithError(err).WithField("email_domain", domainFromEmail(email)).Warn("Setup comm prefs validation failed")
@@ -5668,12 +5720,13 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		CompanyName:    swag.StringValue(body.CompanyName),
 		FeatureUpdates: body.FeatureUpdates,
 	}
-	installationID, err := c.MetadataManager.UpdateCommPrefs(r.Context(), commPrefs)
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
 		c.Logger.WithError(err).Error("Setup comm prefs failed")
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+	c.commPrefsSet.Store(true)
 	c.collectCommPrefs(commPrefs, installationID)
 	writeResponse(w, r, http.StatusOK, nil)
 }
