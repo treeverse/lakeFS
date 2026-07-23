@@ -6165,7 +6165,7 @@ func (c *Controller) reportDataSize(ctx context.Context, r *http.Request, name, 
 		return
 	}
 	ev := stats.Event{
-		Class:      "api_server",
+		Class:      stats.EventClassTraffic,
 		Name:       name,
 		Repository: repository,
 		Ref:        ref,

@@ -24,6 +24,9 @@ const (
 	// EventNameBytesIn and EventNameBytesOut report bytes written to / read from lakeFS.
 	EventNameBytesIn  = "bytes_in"
 	EventNameBytesOut = "bytes_out"
+
+	// EventClassTraffic is the class under which bytes_in/bytes_out are reported
+	EventClassTraffic = "traffic"
 )
 
 type CommPrefs struct {
