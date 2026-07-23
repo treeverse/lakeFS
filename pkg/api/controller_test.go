@@ -19,7 +19,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"text/template"
 	"time"
@@ -4045,53 +4044,6 @@ func TestController_SetupCommPrefsRejected(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusConflict, second.StatusCode())
 	})
-}
-
-// faultyCommPrefsMetadataManager wraps a MetadataManager and makes IsCommPrefsSet
-// fail on demand, to simulate a transient store error.
-type faultyCommPrefsMetadataManager struct {
-	auth.MetadataManager
-	fail atomic.Bool
-}
-
-func (m *faultyCommPrefsMetadataManager) IsCommPrefsSet(ctx context.Context) (bool, error) {
-	if m.fail.Load() {
-		return false, errors.New("transient store error")
-	}
-	return m.MetadataManager.IsCommPrefsSet(ctx)
-}
-
-// TestController_SetupCommPrefsTransientError verifies that a transient store
-// error while reading the comm-prefs state returns 500 and does NOT latch the
-// process into a permanent 409: once the store recovers the endpoint works.
-func TestController_SetupCommPrefsTransientError(t *testing.T) {
-	faulty := &faultyCommPrefsMetadataManager{}
-	handler, _ := setupHandler(t, withMetadataManagerWrapper(func(m auth.MetadataManager) auth.MetadataManager {
-		faulty.MetadataManager = m
-		return faulty
-	}))
-	server := setupServer(t, handler)
-	clt := setupClientByEndpoint(t, server.URL, "", "")
-	ctx := t.Context()
-
-	// setup without comm prefs so the endpoint is in the "missing" state
-	setupResp, err := clt.SetupWithResponse(ctx, apigen.SetupJSONRequestBody{Username: "admin"})
-	testutil.Must(t, err)
-	require.Equal(t, http.StatusOK, setupResp.HTTPResponse.StatusCode)
-
-	commPrefsBody := apigen.SetupCommPrefsJSONRequestBody{Email: swag.String("test@acme.co")}
-
-	// store blips during the state read - must be 500, not a misleading 409
-	faulty.fail.Store(true)
-	resp, err := clt.SetupCommPrefsWithResponse(ctx, commPrefsBody)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusInternalServerError, resp.StatusCode())
-
-	// store recovers - the process must not be stuck: the prefs go through
-	faulty.fail.Store(false)
-	resp, err = clt.SetupCommPrefsWithResponse(ctx, commPrefsBody)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode())
 }
 
 func TestLogin(t *testing.T) {

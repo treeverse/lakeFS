@@ -5530,8 +5530,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
 
-	// best-effort: on a read error, treat comm prefs as not missing. This is a
-	// read-only poll, so the next call re-reads once the store recovers.
+	// best-effort: on a read error treat prefs as not missing; the next poll re-reads.
 	missing, _ := c.commPrefsMissing(ctx, savedState)
 	response := apigen.SetupState{
 		State:            swag.String(string(savedState)),
@@ -5701,7 +5700,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 	if savedState != auth.SetupStateInitialized {
-		// setup hasn't run yet - do not latch, this is a transient state
+		// setup must run first - do not latch
 		writeError(w, r, http.StatusPreconditionFailed, setupNotInitializedMsg)
 		return
 	}
@@ -5713,10 +5712,8 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 	if !missing {
-		// prefs already captured (or the feature is disabled) - refuse to overwrite.
-		// only latch when the feature is enabled, so toggling it on later is honored.
-		// reaching here with the feature enabled means the state was read definitively
-		// (prefs set, or a legacy install), so the latch never caches a transient error.
+		// prefs already captured, or the feature is disabled - refuse to overwrite.
+		// latch only on a definitive read (feature enabled), never on a disabled/error result.
 		if c.Config.GetBaseConfig().EmailSubscription.Enabled {
 			c.commPrefsSet.Store(true)
 		}
