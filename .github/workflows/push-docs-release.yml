@@ -62,11 +62,20 @@ jobs:
       - name: Generate cli.md
         run: go run cmd/lakectl/main.go docs > /tmp/cli.md
 
+      - name: Mint treeverse-ci-bot token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.TREEVERSE_CI_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.TREEVERSE_CI_BOT_PRIVATE_KEY }}
+          owner: treeverse
+          repositories: docs-next-lakeFS
+
       - name: Checkout docs-next-lakeFS
         uses: actions/checkout@v6
         with:
           repository: treeverse/docs-next-lakeFS
-          token: ${{ secrets.TREEVERSE_CI_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           path: docs-next
           ref: main
 
@@ -84,10 +93,14 @@ jobs:
 
       - name: Commit and push
         working-directory: docs-next
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
           set -eu
-          git config user.name  "treeverse-ci-bot"
-          git config user.email "ci-bot@treeverse.io"
+          bot_id=$(gh api "users/$BOT" --jq .id)
+          git config user.name  "$BOT"
+          git config user.email "$bot_id+$BOT@users.noreply.github.com"
           git add "reference-versions/oss/${{ steps.tag.outputs.minor }}/"
           git add "reference-versions/oss/LATEST"
           if git diff --cached --quiet; then
