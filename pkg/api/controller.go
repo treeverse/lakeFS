@@ -5530,10 +5530,13 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
 
+	// best-effort: on a read error, treat comm prefs as not missing. This is a
+	// read-only poll, so the next call re-reads once the store recovers.
+	missing, _ := c.commPrefsMissing(ctx, savedState)
 	response := apigen.SetupState{
 		State:            swag.String(string(savedState)),
 		LoginConfig:      newLoginConfig(c.Config.AuthConfig()),
-		CommPrefsMissing: swag.Bool(c.commPrefsMissing(ctx, savedState)),
+		CommPrefsMissing: swag.Bool(missing),
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -5541,10 +5544,13 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 
 // commPrefsMissing reports whether communication preferences still need to be
 // collected for this installation, mirroring the state surfaced by GetSetupState.
-func (c *Controller) commPrefsMissing(ctx context.Context, state auth.SetupStateName) bool {
+// It returns a non-nil error only when the state could not be determined (a
+// transient store failure), which callers that mutate state must not treat as
+// "already set".
+func (c *Controller) commPrefsMissing(ctx context.Context, state auth.SetupStateName) (bool, error) {
 	// if email subscription is disabled in the config, comm prefs are never collected.
 	if !c.Config.GetBaseConfig().EmailSubscription.Enabled {
-		return false
+		return false, nil
 	}
 
 	prefsSet, err := c.MetadataManager.IsCommPrefsSet(ctx)
@@ -5553,12 +5559,12 @@ func (c *Controller) commPrefsMissing(ctx context.Context, state auth.SetupState
 		// comprefs may not be found for two reasons:
 		// 1. The setup ran on an older version of lakeFS that didn't have commprefs. In this case, we treat it as set.
 		// 2. The setup ran on a newer version of lakeFS that has commprefs, but the setup didn't complete. In this case, we treat it as not set.
-		return state != auth.SetupStateInitialized
+		return state != auth.SetupStateInitialized, nil
 	case err != nil:
-		// failed to check if comm prefs are set, treating as set
-		return false
+		// could not determine state - surface to the caller instead of guessing
+		return false, err
 	default:
-		return !prefsSet
+		return !prefsSet, nil
 	}
 }
 
@@ -5699,9 +5705,18 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		writeError(w, r, http.StatusPreconditionFailed, setupNotInitializedMsg)
 		return
 	}
-	if !c.commPrefsMissing(ctx, savedState) {
+	missing, err := c.commPrefsMissing(ctx, savedState)
+	if err != nil {
+		// state is indeterminate - do not latch, let the caller retry
+		c.Logger.WithError(err).Error("Setup comm prefs failed to read state")
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if !missing {
 		// prefs already captured (or the feature is disabled) - refuse to overwrite.
 		// only latch when the feature is enabled, so toggling it on later is honored.
+		// reaching here with the feature enabled means the state was read definitively
+		// (prefs set, or a legacy install), so the latch never caches a transient error.
 		if c.Config.GetBaseConfig().EmailSubscription.Enabled {
 			c.commPrefsSet.Store(true)
 		}
