@@ -1673,6 +1673,12 @@ components:
           description: fnmatch pattern for the branch name, supporting * and ? wildcards
           example: "stable_*"
           minLength: 1
+        required_approvals:
+          type: integer
+          format: uint32
+          minimum: 0
+          default: 0
+          description: minimum number of distinct approvals (other than the pull request author) required to merge a pull request into a matching branch. 0 means approvals are not required.
       required:
         - pattern
 
@@ -2062,6 +2068,27 @@ components:
             closed_date:
               type: string
               format: date-time
+            required_approvals:
+              type: integer
+              format: uint32
+              description: minimum number of distinct approvals required to merge, resolved from the destination branch's protection rule (0 if none configured)
+            approvals:
+              type: array
+              description: current (non-stale) approvals - i.e. given after the latest push to the source branch
+              items:
+                $ref: "#/components/schemas/PullRequestApproval"
+
+    PullRequestApproval:
+      type: object
+      required:
+        - approver
+        - creation_date
+      properties:
+        approver:
+          type: string
+        creation_date:
+          type: string
+          format: date-time
 
     PullRequestsList:
       type: object
@@ -6497,6 +6524,62 @@ paths:
       responses:
         200:
           description: pull request updated successfully
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/pulls/{pull_request}/approvals:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: pull_request
+        required: true
+        description: pull request id
+        schema:
+          type: string
+    post:
+      tags:
+        - pulls
+        - experimental
+      operationId: createPullRequestApproval
+      summary: approve pull request - the caller cannot be the pull request's author
+      responses:
+        204:
+          description: pull request approved successfully
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - pulls
+        - experimental
+      operationId: deletePullRequestApproval
+      summary: remove the caller's approval from a pull request, if present
+      responses:
+        204:
+          description: pull request approval removed successfully
         400:
           $ref: "#/components/responses/ValidationError"
         401:

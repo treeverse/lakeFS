@@ -138,6 +138,48 @@ func TestIsBlocked(t *testing.T) {
 	}
 }
 
+func TestRequiredApprovals(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	tests := map[string]struct {
+		patternToRequiredApprovals map[string]uint32
+		branchID                   string
+		expected                   uint32
+	}{
+		"no_rules": {
+			branchID: "main",
+			expected: 0,
+		},
+		"single_match": {
+			patternToRequiredApprovals: map[string]uint32{"main*": 2},
+			branchID:                   "main",
+			expected:                   2,
+		},
+		"no_match": {
+			patternToRequiredApprovals: map[string]uint32{"stable_*": 2},
+			branchID:                   "main",
+			expected:                   0,
+		},
+		"overlapping_patterns_take_max": {
+			patternToRequiredApprovals: map[string]uint32{"main*": 1, "ma*": 3, "mai*": 2},
+			branchID:                   "main",
+			expected:                   3,
+		},
+	}
+	for name, tst := range tests {
+		t.Run(name, func(t *testing.T) {
+			bpm := prepareTest(t, ctx)
+			testutil.Must(t, bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
+				BranchPatternToRequiredApprovals: tst.patternToRequiredApprovals,
+			}, nil))
+
+			got, err := bpm.RequiredApprovals(ctx, repository, graveler.BranchID(tst.branchID))
+			testutil.Must(t, err)
+			require.Equal(t, tst.expected, got)
+		})
+	}
+}
+
 func prepareTest(t *testing.T, ctx context.Context) *branch.ProtectionManager {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)

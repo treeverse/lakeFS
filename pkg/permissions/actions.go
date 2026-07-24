@@ -74,6 +74,7 @@ const (
 	ReadPullRequestAction                     = "pr:ReadPullRequest"
 	WritePullRequestAction                    = "pr:WritePullRequest"
 	ListPullRequestsAction                    = "pr:ListPullRequests"
+	ApprovePullRequestAction                  = "pr:ApprovePullRequest"
 	CatalogListNamespacesAction               = "catalog:ListNamespaces"
 	CatalogGetNamespaceAction                 = "catalog:GetNamespace"
 	CatalogCreateNamespaceAction              = "catalog:CreateNamespace"

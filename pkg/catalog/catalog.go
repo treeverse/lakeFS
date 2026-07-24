@@ -2811,6 +2811,24 @@ func (c *Catalog) SetBranchProtectionRules(ctx context.Context, repositoryID str
 	return c.Store.SetBranchProtectionRules(ctx, repository, rules, lastKnownChecksum)
 }
 
+// IsBranchMergeBlocked returns whether direct merges into the given branch are blocked by a branch protection rule.
+func (c *Catalog) IsBranchMergeBlocked(ctx context.Context, repositoryID, branch string) (bool, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return false, err
+	}
+	return c.Store.IsBranchMergeBlocked(ctx, repository, graveler.BranchID(branch))
+}
+
+// RequiredApprovals returns the number of distinct pull request approvals required to merge into the given branch.
+func (c *Catalog) RequiredApprovals(ctx context.Context, repositoryID, branch string) (uint32, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return 0, err
+	}
+	return c.Store.RequiredApprovals(ctx, repository, graveler.BranchID(branch))
+}
+
 func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRunMetadata, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
@@ -3501,6 +3519,47 @@ func (c *Catalog) UpdatePullRequest(ctx context.Context, repositoryID string, pu
 		return err
 	}
 	return c.Store.UpdatePullRequest(ctx, repository, pullID, request)
+}
+
+// CreatePullRequestApproval records approver's approval of pullRequestID, keyed to the current tip of
+// the pull request's source branch (so a later push to source invalidates the approval).
+func (c *Catalog) CreatePullRequestApproval(ctx context.Context, repositoryID, pullRequestID, approver string) error {
+	pullID := graveler.PullRequestID(pullRequestID)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "pullRequestID", Value: pullID, Fn: graveler.ValidatePullRequestID},
+	}); err != nil {
+		return err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	pr, err := c.Store.GetPullRequest(ctx, repository, pullID)
+	if err != nil {
+		return err
+	}
+	sourceBranch, err := c.Store.GetBranch(ctx, repository, graveler.BranchID(pr.Source))
+	if err != nil {
+		return err
+	}
+	return c.Store.AddPullRequestApproval(ctx, repository, pullID, approver, string(sourceBranch.CommitID))
+}
+
+// DeletePullRequestApproval removes approver's approval from pullRequestID, if present.
+func (c *Catalog) DeletePullRequestApproval(ctx context.Context, repositoryID, pullRequestID, approver string) error {
+	pullID := graveler.PullRequestID(pullRequestID)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "pullRequestID", Value: pullID, Fn: graveler.ValidatePullRequestID},
+	}); err != nil {
+		return err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	return c.Store.RemovePullRequestApproval(ctx, repository, pullID, approver)
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {

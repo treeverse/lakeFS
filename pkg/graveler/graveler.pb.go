@@ -73,6 +73,7 @@ type BranchProtectionBlockedAction int32
 const (
 	BranchProtectionBlockedAction_STAGING_WRITE BranchProtectionBlockedAction = 0
 	BranchProtectionBlockedAction_COMMIT        BranchProtectionBlockedAction = 1
+	BranchProtectionBlockedAction_MERGE         BranchProtectionBlockedAction = 2
 )
 
 // Enum value maps for BranchProtectionBlockedAction.
@@ -80,10 +81,12 @@ var (
 	BranchProtectionBlockedAction_name = map[int32]string{
 		0: "STAGING_WRITE",
 		1: "COMMIT",
+		2: "MERGE",
 	}
 	BranchProtectionBlockedAction_value = map[string]int32{
 		"STAGING_WRITE": 0,
 		"COMMIT":        1,
+		"MERGE":         2,
 	}
 )
 
@@ -598,8 +601,11 @@ func (x *BranchProtectionBlockedActions) GetValue() []BranchProtectionBlockedAct
 type BranchProtectionRules struct {
 	state                         protoimpl.MessageState                     `protogen:"open.v1"`
 	BranchPatternToBlockedActions map[string]*BranchProtectionBlockedActions `protobuf:"bytes,1,rep,name=branch_pattern_to_blocked_actions,json=branchPatternToBlockedActions,proto3" json:"branch_pattern_to_blocked_actions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields                 protoimpl.UnknownFields
-	sizeCache                     protoimpl.SizeCache
+	// branch_pattern_to_required_approvals - minimum number of distinct approvals (other than the PR author)
+	// required to merge a pull request into a branch matching the pattern. 0 (or unset) means approvals are not required.
+	BranchPatternToRequiredApprovals map[string]uint32 `protobuf:"bytes,2,rep,name=branch_pattern_to_required_approvals,json=branchPatternToRequiredApprovals,proto3" json:"branch_pattern_to_required_approvals,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
 }
 
 func (x *BranchProtectionRules) Reset() {
@@ -635,6 +641,13 @@ func (*BranchProtectionRules) Descriptor() ([]byte, []int) {
 func (x *BranchProtectionRules) GetBranchPatternToBlockedActions() map[string]*BranchProtectionBlockedActions {
 	if x != nil {
 		return x.BranchPatternToBlockedActions
+	}
+	return nil
+}
+
+func (x *BranchProtectionRules) GetBranchPatternToRequiredApprovals() map[string]uint32 {
+	if x != nil {
+		return x.BranchPatternToRequiredApprovals
 	}
 	return nil
 }
@@ -894,7 +907,8 @@ type PullRequestData struct {
 	// commit_id relevant only for merged PRs
 	CommitId *string `protobuf:"bytes,9,opt,name=commit_id,json=commitId,proto3,oneof" json:"commit_id,omitempty"`
 	// closed_at relevant only for merged or closed PRs
-	ClosedAt      *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=closed_at,json=closedAt,proto3,oneof" json:"closed_at,omitempty"`
+	ClosedAt      *timestamppb.Timestamp     `protobuf:"bytes,10,opt,name=closed_at,json=closedAt,proto3,oneof" json:"closed_at,omitempty"`
+	Approvals     []*PullRequestApprovalData `protobuf:"bytes,11,rep,name=approvals,proto3" json:"approvals,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -999,6 +1013,74 @@ func (x *PullRequestData) GetClosedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *PullRequestData) GetApprovals() []*PullRequestApprovalData {
+	if x != nil {
+		return x.Approvals
+	}
+	return nil
+}
+
+type PullRequestApprovalData struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Approver  string                 `protobuf:"bytes,1,opt,name=approver,proto3" json:"approver,omitempty"`
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// source_commit_id - the source branch tip at approval time; an approval is stale (ignored) once the source advances past it
+	SourceCommitId string `protobuf:"bytes,3,opt,name=source_commit_id,json=sourceCommitId,proto3" json:"source_commit_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PullRequestApprovalData) Reset() {
+	*x = PullRequestApprovalData{}
+	mi := &file_graveler_graveler_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PullRequestApprovalData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PullRequestApprovalData) ProtoMessage() {}
+
+func (x *PullRequestApprovalData) ProtoReflect() protoreflect.Message {
+	mi := &file_graveler_graveler_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PullRequestApprovalData.ProtoReflect.Descriptor instead.
+func (*PullRequestApprovalData) Descriptor() ([]byte, []int) {
+	return file_graveler_graveler_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *PullRequestApprovalData) GetApprover() string {
+	if x != nil {
+		return x.Approver
+	}
+	return ""
+}
+
+func (x *PullRequestApprovalData) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *PullRequestApprovalData) GetSourceCommitId() string {
+	if x != nil {
+		return x.SourceCommitId
+	}
+	return ""
+}
+
 var File_graveler_graveler_proto protoreflect.FileDescriptor
 
 const file_graveler_graveler_proto_rawDesc = "" +
@@ -1047,12 +1129,16 @@ const file_graveler_graveler_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"s\n" +
 	"\x1eBranchProtectionBlockedActions\x12Q\n" +
-	"\x05value\x18\x01 \x03(\x0e2;.io.treeverse.lakefs.graveler.BranchProtectionBlockedActionR\x05value\"\xcb\x02\n" +
+	"\x05value\x18\x01 \x03(\x0e2;.io.treeverse.lakefs.graveler.BranchProtectionBlockedActionR\x05value\"\xcc\x04\n" +
 	"\x15BranchProtectionRules\x12\xa0\x01\n" +
-	"!branch_pattern_to_blocked_actions\x18\x01 \x03(\v2V.io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntryR\x1dbranchPatternToBlockedActions\x1a\x8e\x01\n" +
+	"!branch_pattern_to_blocked_actions\x18\x01 \x03(\v2V.io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntryR\x1dbranchPatternToBlockedActions\x12\xa9\x01\n" +
+	"$branch_pattern_to_required_approvals\x18\x02 \x03(\v2Y.io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToRequiredApprovalsEntryR branchPatternToRequiredApprovals\x1a\x8e\x01\n" +
 	"\"BranchPatternToBlockedActionsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12R\n" +
-	"\x05value\x18\x02 \x01(\v2<.io.treeverse.lakefs.graveler.BranchProtectionBlockedActionsR\x05value:\x028\x01\"S\n" +
+	"\x05value\x18\x02 \x01(\v2<.io.treeverse.lakefs.graveler.BranchProtectionBlockedActionsR\x05value:\x028\x01\x1aS\n" +
+	"%BranchPatternToRequiredApprovalsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\"S\n" +
 	"\x0fStagedEntryData\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\fR\x03key\x12\x1a\n" +
 	"\bidentity\x18\x02 \x01(\fR\bidentity\x12\x12\n" +
@@ -1072,7 +1158,7 @@ const file_graveler_graveler_proto_rawDesc = "" +
 	"\bmetadata\x18\x01 \x03(\v28.io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc5\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x04\n" +
 	"\x0fPullRequestData\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12G\n" +
 	"\x06status\x18\x02 \x01(\x0e2/.io.treeverse.lakefs.graveler.PullRequestStatusR\x06status\x129\n" +
@@ -1085,19 +1171,26 @@ const file_graveler_graveler_proto_rawDesc = "" +
 	"\x12destination_branch\x18\b \x01(\tR\x11destinationBranch\x12 \n" +
 	"\tcommit_id\x18\t \x01(\tH\x00R\bcommitId\x88\x01\x01\x12<\n" +
 	"\tclosed_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampH\x01R\bclosedAt\x88\x01\x01B\f\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampH\x01R\bclosedAt\x88\x01\x01\x12S\n" +
+	"\tapprovals\x18\v \x03(\v25.io.treeverse.lakefs.graveler.PullRequestApprovalDataR\tapprovalsB\f\n" +
 	"\n" +
 	"_commit_idB\f\n" +
 	"\n" +
-	"_closed_at*.\n" +
+	"_closed_at\"\x9a\x01\n" +
+	"\x17PullRequestApprovalData\x12\x1a\n" +
+	"\bapprover\x18\x01 \x01(\tR\bapprover\x129\n" +
+	"\n" +
+	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12(\n" +
+	"\x10source_commit_id\x18\x03 \x01(\tR\x0esourceCommitId*.\n" +
 	"\x0fRepositoryState\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x00\x12\x0f\n" +
-	"\vIN_DELETION\x10\x01*>\n" +
+	"\vIN_DELETION\x10\x01*I\n" +
 	"\x1dBranchProtectionBlockedAction\x12\x11\n" +
 	"\rSTAGING_WRITE\x10\x00\x12\n" +
 	"\n" +
-	"\x06COMMIT\x10\x01*5\n" +
+	"\x06COMMIT\x10\x01\x12\t\n" +
+	"\x05MERGE\x10\x02*5\n" +
 	"\x11PullRequestStatus\x12\b\n" +
 	"\x04OPEN\x10\x00\x12\n" +
 	"\n" +
@@ -1118,7 +1211,7 @@ func file_graveler_graveler_proto_rawDescGZIP() []byte {
 }
 
 var file_graveler_graveler_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_graveler_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_graveler_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_graveler_graveler_proto_goTypes = []any{
 	(RepositoryState)(0),                   // 0: io.treeverse.lakefs.graveler.RepositoryState
 	(BranchProtectionBlockedAction)(0),     // 1: io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
@@ -1135,32 +1228,37 @@ var file_graveler_graveler_proto_goTypes = []any{
 	(*ImportStatusData)(nil),               // 12: io.treeverse.lakefs.graveler.ImportStatusData
 	(*RepoMetadata)(nil),                   // 13: io.treeverse.lakefs.graveler.RepoMetadata
 	(*PullRequestData)(nil),                // 14: io.treeverse.lakefs.graveler.PullRequestData
-	nil,                                    // 15: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	nil,                                    // 16: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
-	nil,                                    // 17: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
-	nil,                                    // 18: io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
-	(*timestamppb.Timestamp)(nil),          // 19: google.protobuf.Timestamp
+	(*PullRequestApprovalData)(nil),        // 15: io.treeverse.lakefs.graveler.PullRequestApprovalData
+	nil,                                    // 16: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	nil,                                    // 17: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	nil,                                    // 18: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	nil,                                    // 19: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToRequiredApprovalsEntry
+	nil,                                    // 20: io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
+	(*timestamppb.Timestamp)(nil),          // 21: google.protobuf.Timestamp
 }
 var file_graveler_graveler_proto_depIdxs = []int32{
-	19, // 0: io.treeverse.lakefs.graveler.RepositoryData.creation_date:type_name -> google.protobuf.Timestamp
+	21, // 0: io.treeverse.lakefs.graveler.RepositoryData.creation_date:type_name -> google.protobuf.Timestamp
 	0,  // 1: io.treeverse.lakefs.graveler.RepositoryData.state:type_name -> io.treeverse.lakefs.graveler.RepositoryState
-	19, // 2: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
-	15, // 3: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	16, // 4: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	21, // 2: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
+	16, // 3: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	17, // 4: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
 	1,  // 5: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
-	17, // 6: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
-	19, // 7: io.treeverse.lakefs.graveler.ImportStatusData.updated_at:type_name -> google.protobuf.Timestamp
-	6,  // 8: io.treeverse.lakefs.graveler.ImportStatusData.commit:type_name -> io.treeverse.lakefs.graveler.CommitData
-	18, // 9: io.treeverse.lakefs.graveler.RepoMetadata.metadata:type_name -> io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
-	2,  // 10: io.treeverse.lakefs.graveler.PullRequestData.status:type_name -> io.treeverse.lakefs.graveler.PullRequestStatus
-	19, // 11: io.treeverse.lakefs.graveler.PullRequestData.created_at:type_name -> google.protobuf.Timestamp
-	19, // 12: io.treeverse.lakefs.graveler.PullRequestData.closed_at:type_name -> google.protobuf.Timestamp
-	8,  // 13: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	18, // 6: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	19, // 7: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_required_approvals:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToRequiredApprovalsEntry
+	21, // 8: io.treeverse.lakefs.graveler.ImportStatusData.updated_at:type_name -> google.protobuf.Timestamp
+	6,  // 9: io.treeverse.lakefs.graveler.ImportStatusData.commit:type_name -> io.treeverse.lakefs.graveler.CommitData
+	20, // 10: io.treeverse.lakefs.graveler.RepoMetadata.metadata:type_name -> io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
+	2,  // 11: io.treeverse.lakefs.graveler.PullRequestData.status:type_name -> io.treeverse.lakefs.graveler.PullRequestStatus
+	21, // 12: io.treeverse.lakefs.graveler.PullRequestData.created_at:type_name -> google.protobuf.Timestamp
+	21, // 13: io.treeverse.lakefs.graveler.PullRequestData.closed_at:type_name -> google.protobuf.Timestamp
+	15, // 14: io.treeverse.lakefs.graveler.PullRequestData.approvals:type_name -> io.treeverse.lakefs.graveler.PullRequestApprovalData
+	21, // 15: io.treeverse.lakefs.graveler.PullRequestApprovalData.created_at:type_name -> google.protobuf.Timestamp
+	8,  // 16: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_graveler_graveler_proto_init() }
@@ -1175,7 +1273,7 @@ func file_graveler_graveler_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_graveler_graveler_proto_rawDesc), len(file_graveler_graveler_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -2595,9 +2595,13 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 	}
 	resp := make([]*apigen.BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
 	for pattern := range rules.BranchPatternToBlockedActions {
-		resp = append(resp, &apigen.BranchProtectionRule{
+		rule := &apigen.BranchProtectionRule{
 			Pattern: pattern,
-		})
+		}
+		if required, ok := rules.BranchPatternToRequiredApprovals[pattern]; ok {
+			rule.RequiredApprovals = &required
+		}
+		resp = append(resp, rule)
 	}
 	w.Header().Set("ETag", swag.StringValue(eTag))
 	writeResponse(w, r, http.StatusOK, resp)
@@ -2616,14 +2620,23 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 	c.LogAction(ctx, "create_branch_protection_rule", r, repository, "", "")
 
 	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
-	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
+	// MERGE is included so that a merge into a protected branch can only happen via a pull request (which enforces required_approvals below).
+	blockedActions := []graveler.BranchProtectionBlockedAction{
+		graveler.BranchProtectionBlockedAction_STAGING_WRITE,
+		graveler.BranchProtectionBlockedAction_COMMIT,
+		graveler.BranchProtectionBlockedAction_MERGE,
+	}
 
 	rules := &graveler.BranchProtectionRules{
-		BranchPatternToBlockedActions: make(map[string]*graveler.BranchProtectionBlockedActions),
+		BranchPatternToBlockedActions:    make(map[string]*graveler.BranchProtectionBlockedActions),
+		BranchPatternToRequiredApprovals: make(map[string]uint32),
 	}
 	for _, r := range body {
 		rules.BranchPatternToBlockedActions[r.Pattern] = &graveler.BranchProtectionBlockedActions{
 			Value: blockedActions,
+		}
+		if r.RequiredApprovals != nil {
+			rules.BranchPatternToRequiredApprovals[r.Pattern] = *r.RequiredApprovals
 		}
 	}
 	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, params.IfMatch)
@@ -3100,6 +3113,9 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
 		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
+		errors.Is(err, graveler.ErrPullRequestNotOpen),
+		errors.Is(err, graveler.ErrPullRequestApprovalByAuthor),
+		errors.Is(err, graveler.ErrInsufficientApprovals),
 		errors.Is(err, catalog.ErrInvalidImportSource),
 		errors.Is(err, graveler.ErrCannotClone):
 		log.Debug("Bad request")
@@ -5330,6 +5346,16 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "merge_branches", r, repository, destinationBranch, sourceRef)
+
+	blocked, err := c.Catalog.IsBranchMergeBlocked(ctx, repository, destinationBranch)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if blocked {
+		writeError(w, r, http.StatusForbidden, "direct merges into this branch are blocked - merge via a pull request instead")
+		return
+	}
+
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "user not found")
@@ -5989,6 +6015,23 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+
+	requiredApprovals, err := c.Catalog.RequiredApprovals(ctx, repository, pr.Destination)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	// sourceCommitID is best-effort: if the source branch no longer exists, approvals are reported as empty/stale.
+	sourceCommitID, _ := c.Catalog.GetBranchReference(ctx, repository, pr.Source)
+	approvals := make([]apigen.PullRequestApproval, 0, len(pr.Approvals))
+	for _, a := range pr.Approvals {
+		if a.SourceCommitID == sourceCommitID {
+			approvals = append(approvals, apigen.PullRequestApproval{
+				Approver:     a.Approver,
+				CreationDate: a.CreationDate,
+			})
+		}
+	}
+
 	response := apigen.PullRequest{
 		PullRequestBasic: apigen.PullRequestBasic{
 			Description: swag.String(pr.Description),
@@ -6002,6 +6045,8 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 		MergedCommitId:    pr.MergedCommitID,
 		SourceBranch:      pr.Source,
 		ClosedDate:        pr.ClosedDate,
+		RequiredApprovals: &requiredApprovals,
+		Approvals:         &approvals,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -6023,6 +6068,54 @@ func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, b
 		Description: body.Description,
 		Status:      body.Status,
 	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CreatePullRequestApproval(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ApprovePullRequestAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_pull_request_approval", r, repository, "", "")
+
+	user, err := auth.GetUser(ctx)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	err = c.Catalog.CreatePullRequestApproval(ctx, repository, pullRequestID, user.Committer())
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) DeletePullRequestApproval(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ApprovePullRequestAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "delete_pull_request_approval", r, repository, "", "")
+
+	user, err := auth.GetUser(ctx)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	err = c.Catalog.DeletePullRequestApproval(ctx, repository, pullRequestID, user.Committer())
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -6062,6 +6155,29 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 		c.Logger.WithError(err).WithField("pr_status", pr.Status.String()).Error("pull request is not open")
 		writeError(w, r, http.StatusBadRequest, "bad pull request status")
 		return
+	}
+
+	requiredApprovals, err := c.Catalog.RequiredApprovals(ctx, repository, pr.Destination)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if requiredApprovals > 0 {
+		// approvals given before the latest push to the source branch are stale and don't count
+		sourceCommitID, err := c.Catalog.GetBranchReference(ctx, repository, pr.Source)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		var validApprovals uint32
+		for _, approval := range pr.Approvals {
+			if approval.SourceCommitID == sourceCommitID {
+				validApprovals++
+			}
+		}
+		if validApprovals < requiredApprovals {
+			err := fmt.Errorf("pull request requires %d approval(s), has %d valid: %w", requiredApprovals, validApprovals, graveler.ErrInsufficientApprovals)
+			c.handleAPIError(ctx, w, r, err)
+			return
+		}
 	}
 
 	user, err := auth.GetUser(ctx)
