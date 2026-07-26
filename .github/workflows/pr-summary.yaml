@@ -16,7 +16,7 @@ jobs:
         with:
           sparse-checkout: scripts/pr-summary.sh
           sparse-checkout-cone-mode: false
-          depth: 1
+          fetch-depth: 1
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
