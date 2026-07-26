@@ -61,13 +61,13 @@ jobs:
           errors: true
           payload: |
             {
-              "text": "Go version updated: ${{ steps.versions.outputs.previous }} → ${{ steps.versions.outputs.current }}",
+              "text": "lakeFS Community - Go version updated: ${{ steps.versions.outputs.previous }} → ${{ steps.versions.outputs.current }}",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": ":arrow_up: Go version updated",
+                    "text": ":arrow_up: lakeFS Community - Go version updated",
                     "emoji": true
                   }
                 },

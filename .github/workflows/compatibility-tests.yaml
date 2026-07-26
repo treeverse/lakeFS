@@ -373,13 +373,13 @@ jobs:
           errors: true
           payload: |
             {
-              "text": ":x: Compatibility tests failed on `${{ github.ref_name }}` (run #${{ github.run_number }})",
+              "text": ":x: lakeFS Community - Compatibility tests failed on `${{ github.ref_name }}` (run #${{ github.run_number }})",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": ":x: Compatibility tests failed",
+                    "text": ":x: lakeFS Community - Compatibility tests failed",
                     "emoji": true
                   }
                 },

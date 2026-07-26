@@ -149,13 +149,13 @@ jobs:
           errors: true
           payload: |
             {
-              "text": ":x: lakectl compatibility tests failed on `${{ github.ref_name }}` (run #${{ github.run_number }})",
+              "text": ":x: lakeFS Community - lakectl compatibility tests failed on `${{ github.ref_name }}` (run #${{ github.run_number }})",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": ":x: lakectl compatibility tests failed",
+                    "text": ":x: lakeFS Community - lakectl compatibility tests failed",
                     "emoji": true
                   }
                 },
