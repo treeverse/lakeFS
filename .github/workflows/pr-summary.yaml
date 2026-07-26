@@ -46,7 +46,7 @@ jobs:
           UNTIL=$(date -u +%Y-%m-%d)
           jq -n \
             --rawfile report pr-summary.txt \
-            --arg header "Weekly PR summary: $SINCE - $UNTIL" \
+            --arg header "lakeFS Community - Weekly PR summary ($SINCE - $UNTIL)" \
             --arg repo "$REPO" \
             --arg repo_url "$REPO_URL" \
             --arg run_url "$RUN_URL" '
