@@ -36,9 +36,9 @@ var branchProtectListCmd = &cobra.Command{
 		}
 		patterns := make([][]any, len(*resp.JSON200))
 		for i, rule := range *resp.JSON200 {
-			patterns[i] = []any{rule.Pattern}
+			patterns[i] = []any{rule.Pattern, swag.Uint32Value(rule.RequiredApprovals)}
 		}
-		PrintTable(patterns, []any{"Branch Name Pattern"}, &apigen.Pagination{
+		PrintTable(patterns, []any{"Branch Name Pattern", "Required Approvals"}, &apigen.Pagination{
 			HasMore: false,
 			Results: len(patterns),
 		}, len(patterns))
@@ -59,9 +59,13 @@ var branchProtectAddCmd = &cobra.Command{
 
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		rules := *resp.JSON200
-		rules = append(rules, apigen.BranchProtectionRule{
+		rule := apigen.BranchProtectionRule{
 			Pattern: args[1],
-		})
+		}
+		if required, _ := cmd.Flags().GetUint32("required-approvals"); required > 0 {
+			rule.RequiredApprovals = &required
+		}
+		rules = append(rules, rule)
 		params := &apigen.SetBranchProtectionRulesParams{}
 		etag := swag.String(resp.HTTPResponse.Header.Get("ETag"))
 		if etag != nil && *etag != "" {
@@ -104,6 +108,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
+	branchProtectAddCmd.Flags().Uint32("required-approvals", 0, "minimum number of distinct pull request approvals (other than the author) required to merge into a matching branch")
 	rootCmd.AddCommand(branchProtectCmd)
 	branchProtectCmd.AddCommand(branchProtectAddCmd)
 	branchProtectCmd.AddCommand(branchProtectListCmd)

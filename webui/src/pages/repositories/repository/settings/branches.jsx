@@ -20,8 +20,11 @@ const BranchProtectionRulesList = ({ rulesResponse, deleteButtonDisabled, onDele
                     rulesResponse['rules'].map((r) => {
                         return (
                             <ListGroup.Item key={r.pattern}>
-                                <div className="d-flex">
+                                <div className="d-flex align-items-center">
                                     <code>{r.pattern}</code>
+                                    <span className="ms-3 text-secondary">
+                                        {r.required_approvals ? `${r.required_approvals} approval(s) required` : 'no approvals required'}
+                                    </span>
                                     <Button
                                         disabled={deleteButtonDisabled}
                                         className="ms-auto"
@@ -132,6 +135,7 @@ const CreateRuleModal = ({ show, hideFn, onSuccess, repoID, currentRulesResponse
     const [error, setError] = useState(null);
     const [createButtonDisabled, setCreateButtonDisabled] = useState(true);
     const patternField = useRef(null);
+    const requiredApprovalsField = useRef(null);
 
     const createRule = (pattern) => {
         if (createButtonDisabled) {
@@ -141,7 +145,8 @@ const CreateRuleModal = ({ show, hideFn, onSuccess, repoID, currentRulesResponse
         setCreateButtonDisabled(true);
         let updatedRules = [...currentRulesResponse['rules']];
         let lastKnownChecksum = currentRulesResponse['checksum'];
-        updatedRules.push({ pattern });
+        const requiredApprovals = parseInt(requiredApprovalsField.current?.value, 10) || 0;
+        updatedRules.push({ pattern, required_approvals: requiredApprovals });
         branchProtectionRules
             .setRules(repoID, updatedRules, lastKnownChecksum)
             .then(onSuccess)
@@ -184,6 +189,14 @@ const CreateRuleModal = ({ show, hideFn, onSuccess, repoID, currentRulesResponse
                                     setCreateButtonDisabled(!patternField.current || !patternField.current.value)
                                 }
                             />
+                        </Col>
+                    </Form.Group>
+                    <Form.Group as={Row} controlId="requiredApprovals" className="mt-3">
+                        <Form.Label column sm={4}>
+                            Required approvals
+                        </Form.Label>
+                        <Col>
+                            <Form.Control sm={8} type="number" min={0} defaultValue={0} ref={requiredApprovalsField} />
                         </Col>
                     </Form.Group>
                 </Form>

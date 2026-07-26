@@ -813,6 +813,48 @@ class Pulls {
             }
         }
     }
+
+    async approve(repoId, pullId) {
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}/approvals`,
+            {
+                method: 'POST',
+            },
+        );
+        if (response.status !== 204) {
+            const baseMessage = 'Could not approve pull request';
+            switch (response.status) {
+                case 400:
+                case 401:
+                case 403:
+                case 404:
+                    throw new Error(`${baseMessage}: ${(await response.json()).message}`);
+                default:
+                    throw new Error(`${baseMessage} (status = ${response.status}).`);
+            }
+        }
+    }
+
+    async unapprove(repoId, pullId) {
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}/approvals`,
+            {
+                method: 'DELETE',
+            },
+        );
+        if (response.status !== 204) {
+            const baseMessage = 'Could not remove pull request approval';
+            switch (response.status) {
+                case 400:
+                case 401:
+                case 403:
+                case 404:
+                    throw new Error(`${baseMessage}: ${(await response.json()).message}`);
+                default:
+                    throw new Error(`${baseMessage} (status = ${response.status}).`);
+            }
+        }
+    }
 }
 
 // uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is

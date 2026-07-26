@@ -52,13 +52,11 @@ func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.
 		return false, err
 	}
 	for pattern, blockedActions := range rules.BranchPatternToBlockedActions {
-		matcher, err := m.matchers.GetOrSet(pattern, func() (v any, err error) {
-			return glob.Compile(pattern)
-		})
+		matched, err := m.matchBranch(pattern, branchID)
 		if err != nil {
 			return false, err
 		}
-		if !matcher.(glob.Glob).Match(string(branchID)) {
+		if !matched {
 			continue
 		}
 		if slices.Contains(blockedActions.GetValue(), action) {
@@ -66,4 +64,38 @@ func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.
 		}
 	}
 	return false, nil
+}
+
+// RequiredApprovals returns the highest required-approvals count configured across branch protection
+// rules whose pattern matches branchID (0 if none match).
+func (m *ProtectionManager) RequiredApprovals(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (uint32, error) {
+	rules := &graveler.BranchProtectionRules{}
+	err := m.settingManager.Get(ctx, repository, ProtectionSettingKey, rules)
+	if errors.Is(err, graveler.ErrNotFound) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	var required uint32
+	for pattern, count := range rules.BranchPatternToRequiredApprovals {
+		matched, err := m.matchBranch(pattern, branchID)
+		if err != nil {
+			return 0, err
+		}
+		if matched && count > required {
+			required = count
+		}
+	}
+	return required, nil
+}
+
+func (m *ProtectionManager) matchBranch(pattern string, branchID graveler.BranchID) (bool, error) {
+	matcher, err := m.matchers.GetOrSet(pattern, func() (v any, err error) {
+		return glob.Compile(pattern)
+	})
+	if err != nil {
+		return false, err
+	}
+	return matcher.(glob.Glob).Match(string(branchID)), nil
 }

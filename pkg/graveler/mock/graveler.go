@@ -704,6 +704,21 @@ func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), varargs...)
 }
 
+// IsBranchMergeBlocked mocks base method.
+func (m *MockVersionController) IsBranchMergeBlocked(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsBranchMergeBlocked", ctx, repository, branchID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsBranchMergeBlocked indicates an expected call of IsBranchMergeBlocked.
+func (mr *MockVersionControllerMockRecorder) IsBranchMergeBlocked(ctx, repository, branchID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBranchMergeBlocked", reflect.TypeOf((*MockVersionController)(nil).IsBranchMergeBlocked), ctx, repository, branchID)
+}
+
 // ListBranches mocks base method.
 func (m *MockVersionController) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord, opts ...graveler.ListOptionsFunc) (graveler.BranchIterator, error) {
 	m.ctrl.T.Helper()
@@ -802,6 +817,21 @@ func (m *MockVersionController) ParseRef(ref graveler.Ref) (graveler.RawRef, err
 func (mr *MockVersionControllerMockRecorder) ParseRef(ref interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseRef", reflect.TypeOf((*MockVersionController)(nil).ParseRef), ref)
+}
+
+// RequiredApprovals mocks base method.
+func (m *MockVersionController) RequiredApprovals(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (uint32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequiredApprovals", ctx, repository, branchID)
+	ret0, _ := ret[0].(uint32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RequiredApprovals indicates an expected call of RequiredApprovals.
+func (mr *MockVersionControllerMockRecorder) RequiredApprovals(ctx, repository, branchID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequiredApprovals", reflect.TypeOf((*MockVersionController)(nil).RequiredApprovals), ctx, repository, branchID)
 }
 
 // Reset mocks base method.
@@ -1302,6 +1332,20 @@ func (m *MockCollaborator) EXPECT() *MockCollaboratorMockRecorder {
 	return m.recorder
 }
 
+// AddPullRequestApproval mocks base method.
+func (m *MockCollaborator) AddPullRequestApproval(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, approver, sourceCommitID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPullRequestApproval", ctx, repository, pullRequestID, approver, sourceCommitID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPullRequestApproval indicates an expected call of AddPullRequestApproval.
+func (mr *MockCollaboratorMockRecorder) AddPullRequestApproval(ctx, repository, pullRequestID, approver, sourceCommitID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPullRequestApproval", reflect.TypeOf((*MockCollaborator)(nil).AddPullRequestApproval), ctx, repository, pullRequestID, approver, sourceCommitID)
+}
+
 // CreatePullRequest mocks base method.
 func (m *MockCollaborator) CreatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequest *graveler.PullRequestRecord) error {
 	m.ctrl.T.Helper()
@@ -1344,6 +1388,20 @@ func (m *MockCollaborator) ListPullRequests(ctx context.Context, repository *gra
 func (mr *MockCollaboratorMockRecorder) ListPullRequests(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPullRequests", reflect.TypeOf((*MockCollaborator)(nil).ListPullRequests), ctx, repository)
+}
+
+// RemovePullRequestApproval mocks base method.
+func (m *MockCollaborator) RemovePullRequestApproval(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, approver string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemovePullRequestApproval", ctx, repository, pullRequestID, approver)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemovePullRequestApproval indicates an expected call of RemovePullRequestApproval.
+func (mr *MockCollaboratorMockRecorder) RemovePullRequestApproval(ctx, repository, pullRequestID, approver interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemovePullRequestApproval", reflect.TypeOf((*MockCollaborator)(nil).RemovePullRequestApproval), ctx, repository, pullRequestID, approver)
 }
 
 // UpdatePullRequest mocks base method.
@@ -3352,6 +3410,21 @@ func (m *MockProtectedBranchesManager) IsBlocked(ctx context.Context, repository
 func (mr *MockProtectedBranchesManagerMockRecorder) IsBlocked(ctx, repository, branchID, action interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBlocked", reflect.TypeOf((*MockProtectedBranchesManager)(nil).IsBlocked), ctx, repository, branchID, action)
+}
+
+// RequiredApprovals mocks base method.
+func (m *MockProtectedBranchesManager) RequiredApprovals(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) (uint32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequiredApprovals", ctx, repository, branchID)
+	ret0, _ := ret[0].(uint32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RequiredApprovals indicates an expected call of RequiredApprovals.
+func (mr *MockProtectedBranchesManagerMockRecorder) RequiredApprovals(ctx, repository, branchID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequiredApprovals", reflect.TypeOf((*MockProtectedBranchesManager)(nil).RequiredApprovals), ctx, repository, branchID)
 }
 
 // SetRules mocks base method.

@@ -66,6 +66,9 @@ var (
 	ErrPullRequestExists            = fmt.Errorf("pull request already exists: %w", ErrNotUnique)
 	ErrInvalidPullRequestStatus     = fmt.Errorf("invalid pull request status: %w", ErrInvalid)
 	ErrInvalidPullRequestID         = fmt.Errorf("pull request id: %w", ErrInvalidValue)
+	ErrPullRequestNotOpen           = wrapError(ErrUserVisible, "pull request is not open")
+	ErrPullRequestApprovalByAuthor  = wrapError(ErrUserVisible, "pull request author cannot approve their own pull request")
+	ErrInsufficientApprovals        = wrapError(ErrUserVisible, "pull request does not have enough approvals")
 	ErrCannotClone                  = fmt.Errorf("cannot clone: %w", ErrInvalid)
 )
 

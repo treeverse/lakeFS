@@ -231,6 +231,7 @@ func PullRequestFromProto(pb *PullRequestData) *PullRequestRecord {
 			Source:         pb.SourceBranch,
 			Destination:    pb.DestinationBranch,
 			MergedCommitID: pb.CommitId,
+			Approvals:      pullRequestApprovalsFromProto(pb.Approvals),
 		},
 	}
 	if pb.ClosedAt != nil {
@@ -251,10 +252,41 @@ func ProtoFromPullRequest(pullID PullRequestID, pull *PullRequest) *PullRequestD
 		SourceBranch:      pull.Source,
 		DestinationBranch: pull.Destination,
 		CommitId:          pull.MergedCommitID,
+		Approvals:         protoFromPullRequestApprovals(pull.Approvals),
 	}
 	if pull.ClosedDate != nil {
 		prData.ClosedAt = timestamppb.New(*pull.ClosedDate)
 	}
 
 	return prData
+}
+
+func pullRequestApprovalsFromProto(pb []*PullRequestApprovalData) []PullRequestApproval {
+	if pb == nil {
+		return nil
+	}
+	approvals := make([]PullRequestApproval, len(pb))
+	for i, a := range pb {
+		approvals[i] = PullRequestApproval{
+			Approver:       a.Approver,
+			CreationDate:   a.CreatedAt.AsTime(),
+			SourceCommitID: a.SourceCommitId,
+		}
+	}
+	return approvals
+}
+
+func protoFromPullRequestApprovals(approvals []PullRequestApproval) []*PullRequestApprovalData {
+	if approvals == nil {
+		return nil
+	}
+	pb := make([]*PullRequestApprovalData, len(approvals))
+	for i, a := range approvals {
+		pb[i] = &PullRequestApprovalData{
+			Approver:       a.Approver,
+			CreatedAt:      timestamppb.New(a.CreationDate),
+			SourceCommitId: a.SourceCommitID,
+		}
+	}
+	return pb
 }
