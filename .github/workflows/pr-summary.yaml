@@ -8,6 +8,8 @@ on:
 jobs:
   pr-summary:
     runs-on: ubuntu-24.04
+    env:
+      DAYS: 7
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -20,19 +22,70 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Generate PR summary
-        id: summary
-        run: ./scripts/pr-summary.sh --last 7 --format slack
+        run: ./scripts/pr-summary.sh --last "$DAYS" --format slack --output pr-summary.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
+      # The report is free-form multi-line mrkdwn, so the payload is built with
+      # jq instead of interpolated into JSON, and split into <3000 char sections
+      # to stay under the Slack block text limit.
+      - name: Build Slack payload
+        id: payload
+        env:
+          REPO: ${{ github.repository }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ ! -s pr-summary.txt ]; then
+            echo "No summary generated - skipping Slack notification" >&2
+            echo "send=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SINCE=$(date -u -d "$DAYS days ago" +%Y-%m-%d)
+          UNTIL=$(date -u +%Y-%m-%d)
+          jq -n \
+            --rawfile report pr-summary.txt \
+            --arg header "Weekly PR summary: $SINCE - $UNTIL" \
+            --arg repo "$REPO" \
+            --arg repo_url "$REPO_URL" \
+            --arg run_url "$RUN_URL" '
+              # accumulate lines into chunks of at most $max characters
+              def chunks($max):
+                reduce (split("\n")[]) as $line ([];
+                  if length == 0 or (.[-1] | length) + ($line | length) + 1 > $max
+                  then . + [$line]
+                  else .[:-1] + [.[-1] + "\n" + $line]
+                  end);
+              {
+                text: $header,
+                blocks: (
+                  [{
+                    type: "header",
+                    text: { type: "plain_text", text: $header, emoji: true }
+                  }]
+                  + ($report | sub("\\s+$"; "") | chunks(2900)
+                     | map(select(test("\\S")))
+                     | map({
+                         type: "section",
+                         text: { type: "mrkdwn", text: . }
+                       }))
+                  + [{
+                    type: "context",
+                    elements: [{
+                      type: "mrkdwn",
+                      text: "<\($repo_url)|\($repo)> · <\($run_url)|workflow run>"
+                    }]
+                  }]
+                )
+              }' > slack-payload.json
+          echo "send=true" >> "$GITHUB_OUTPUT"
+
       - name: Send to Slack
-        uses: slackapi/slack-github-action@v3
+        if: steps.payload.outputs.send == 'true'
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
-          payload: |
-            {
-              "channel": "dev-internal",
-              "text": "${{ steps.summary.outputs.report }}"
-            }
+          errors: true
+          payload-file-path: slack-payload.json
