@@ -1149,6 +1149,7 @@ func newEntryFromCatalogEntry(entry DBEntry) *Entry {
 		ETag:         entry.Checksum,
 		Size:         entry.Size,
 		ContentType:  ContentTypeOrDefault(entry.ContentType),
+		Checksums:    entry.Checksums,
 	}
 	return ent
 }
@@ -3513,6 +3514,7 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntr
 		b.CreationDate(ent.LastModified.AsTime())
 		b.Size(ent.Size)
 		b.Checksum(ent.ETag)
+		b.Checksums(ent.Checksums)
 		b.Metadata(ent.Metadata)
 		b.Expired(false)
 		b.AddressType(addressTypeToCatalog(ent.AddressType))

@@ -358,7 +358,10 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.Obje
 	}, nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+	if err := block.VerifyNoChecksum(opts); err != nil {
+		return nil, err
+	}
 	if err := verifyObjectPointer(obj); err != nil {
 		return nil, err
 	}
@@ -394,7 +397,10 @@ func (a *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointe
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, _ *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+	if err := block.VerifyNoCompletionChecksum(multipartList); err != nil {
+		return nil, err
+	}
 	if err := verifyObjectPointer(obj); err != nil {
 		return nil, err
 	}

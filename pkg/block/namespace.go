@@ -51,8 +51,11 @@ type StorageNamespaceInfo struct {
 	PreSignSupport          bool
 	PreSignSupportUI        bool
 	PreSignSupportMultipart bool
-	ImportSupport           bool
-	ImportValidityRegex     string
+	// MultipartChecksumSupport is true when the adapter validates full-object
+	// checksums on multipart upload completion. Requires PreSignSupportMultipart.
+	MultipartChecksumSupport bool
+	ImportSupport            bool
+	ImportValidityRegex      string
 }
 
 type QualifiedKey interface {

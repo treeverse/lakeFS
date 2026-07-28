@@ -89,7 +89,10 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointe
 	}, nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+	if err := block.VerifyNoChecksum(opts); err != nil {
+		return nil, err
+	}
 	uid := uuid.New()
 	uploadID := hex.EncodeToString(uid[:])
 	return &block.CreateMultiPartUploadResponse{
@@ -118,7 +121,10 @@ func (a *Adapter) AbortMultiPartUpload(context.Context, block.ObjectPointer, str
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, string, *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+func (a *Adapter) CompleteMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+	if err := block.VerifyNoCompletionChecksum(multipartList); err != nil {
+		return nil, err
+	}
 	const dataSize = 1024
 	data := make([]byte, dataSize)
 	if _, err := rand.Read(data); err != nil {

@@ -22,6 +22,16 @@ pub struct CompletePresignMultipartUpload {
     /// Object media type
     #[serde(rename = "content_type", skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
+    #[serde(rename = "checksum_algorithm", skip_serializing_if = "Option::is_none")]
+    pub checksum_algorithm: Option<models::ChecksumAlgorithm>,
+    #[serde(rename = "checksum_type", skip_serializing_if = "Option::is_none")]
+    pub checksum_type: Option<models::ChecksumType>,
+    /// Base64-encoded big-endian full-object checksum of the entire object content, computed with checksum_algorithm (S3 encoding convention). Requires checksum_algorithm. lakeFS compares the storage-computed full-object checksum of the assembled object against this value and fails the completion on mismatch; a successful completion means the checksum was validated. 
+    #[serde(rename = "checksum", skip_serializing_if = "Option::is_none")]
+    pub checksum: Option<String>,
+    /// Expected total size in bytes of the assembled object, validated by the storage on completion. May be supplied with or without a checksum. 
+    #[serde(rename = "mpu_object_size", skip_serializing_if = "Option::is_none")]
+    pub mpu_object_size: Option<i64>,
 }
 
 impl CompletePresignMultipartUpload {
@@ -31,6 +41,10 @@ impl CompletePresignMultipartUpload {
             parts,
             user_metadata: None,
             content_type: None,
+            checksum_algorithm: None,
+            checksum_type: None,
+            checksum: None,
+            mpu_object_size: None,
         }
     }
 }

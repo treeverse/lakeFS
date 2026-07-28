@@ -23,6 +23,9 @@ message Entry {
   }
   AddressType address_type = 6;
   string content_type = 7;
+  // checksums are validated full-object checksums of the object content, keyed by
+  // checksum algorithm (e.g. CRC64NVME), base64-encoded
+  map<string, string> checksums = 8;
 }
 
 // Task is a generic task status message

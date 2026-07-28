@@ -95,10 +95,10 @@ Name | Type | Description  | Required | Notes
 
 ## create_presign_multipart_upload
 
-> models::PresignMultipartUpload create_presign_multipart_upload(repository, branch, path, parts)
+> models::PresignMultipartUpload create_presign_multipart_upload(repository, branch, path, parts, checksum_algorithm, checksum_type)
 Initiate a multipart upload
 
-Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage. 
 
 ### Parameters
 
@@ -109,6 +109,8 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **path** | **String** | relative to the branch | [required] |
 **parts** | Option<**i32**> | number of presigned URL parts required to upload |  |
+**checksum_algorithm** | Option<[**ChecksumAlgorithm**](.md)> | Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501.  |  |
+**checksum_type** | Option<[**ChecksumType**](.md)> | Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm.  |  |
 
 ### Return type
 

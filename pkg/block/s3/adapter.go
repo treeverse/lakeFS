@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -23,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -42,18 +44,29 @@ var (
 	ErrMissingETag = fmt.Errorf("%w: missing ETag", ErrS3)
 )
 
+// Adapter.checksumSupport values, learned by probing the backing store.
+const (
+	checksumSupportUnknown int32 = iota
+	checksumSupportYes
+	checksumSupportNo
+)
+
 type Adapter struct {
-	clients                      *ClientCache
-	respServer                   atomic.Pointer[string]
-	ServerSideEncryption         string
-	ServerSideEncryptionKmsKeyID string
-	preSignedExpiry              time.Duration
-	preSignedEndpoint            string
-	sessionExpiryWindow          time.Duration
-	disablePreSigned             bool
-	disablePreSignedUI           bool
-	disablePreSignedMultipart    bool
-	nowFactory                   func() time.Time
+	clients                           *ClientCache
+	respServer                        atomic.Pointer[string]
+	ServerSideEncryption              string
+	ServerSideEncryptionKmsKeyID      string
+	preSignedExpiry                   time.Duration
+	preSignedEndpoint                 string
+	sessionExpiryWindow               time.Duration
+	disablePreSigned                  bool
+	disablePreSignedUI                bool
+	disablePreSignedMultipart         bool
+	disablePreSignedMultipartChecksum bool
+	// checksumSupport caches whether the backing store attaches default full-object
+	// checksums; all buckets of an adapter share one backing store.
+	checksumSupport atomic.Int32
+	nowFactory      func() time.Time
 }
 
 func WithStatsCollector(s stats.Collector) func(a *Adapter) {
@@ -100,6 +113,14 @@ func WithDisablePreSignedMultipart(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
 			a.disablePreSignedMultipart = true
+		}
+	}
+}
+
+func WithDisablePreSignedMultipartChecksum(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSignedMultipartChecksum = true
 		}
 	}
 }
@@ -700,6 +721,19 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if opts.StorageClass != nil {
 		input.StorageClass = types.StorageClass(*opts.StorageClass)
 	}
+	if opts.HasChecksum() {
+		// Deliberately declare nothing to the store: a declared algorithm makes S3
+		// require checksum headers on every UploadPart, which presigned part PUTs do
+		// not carry. Validation compares the store-computed default checksum on
+		// completion instead — see verifyCompletionChecksum.
+		if opts.ChecksumAlgorithm != block.ChecksumAlgorithmCRC64NVME {
+			err = fmt.Errorf("checksum algorithm %q (only CRC64NVME): %w", opts.ChecksumAlgorithm, block.ErrOperationNotSupported)
+			return nil, err
+		}
+		if err = a.verifyDefaultChecksumSupport(ctx, bucket, key); err != nil {
+			return nil, err
+		}
+	}
 	if a.ServerSideEncryption != "" {
 		input.ServerSideEncryption = types.ServerSideEncryption(a.ServerSideEncryption)
 	}
@@ -746,6 +780,7 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 		"key":           obj.Identifier,
 	})
 	if err != nil {
+		err = asUploadNotFoundError(err)
 		lg.Error("Failed to abort multipart upload")
 		return err
 	}
@@ -765,6 +800,93 @@ func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUpl
 	return &types.CompletedMultipartUpload{Parts: parts}
 }
 
+var errNoDefaultChecksums = fmt.Errorf("backing store does not attach default full-object checksums: %w", block.ErrOperationNotSupported)
+
+// verifyDefaultChecksumSupport confirms the backing store attaches default
+// full-object CRC64NVME checksums to new objects, by writing a small probe object at
+// the upload's target key and reading its checksum back. Stores without them cannot
+// validate presigned part uploads — failing here beats failing after every part was
+// uploaded. The outcome is cached; transient probe errors are not.
+func (a *Adapter) verifyDefaultChecksumSupport(ctx context.Context, bucket, key string) error {
+	switch a.checksumSupport.Load() {
+	case checksumSupportYes:
+		return nil
+	case checksumSupportNo:
+		return errNoDefaultChecksums
+	}
+	client := a.clients.Get(ctx, bucket)
+	_, err := client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   bytes.NewReader(nil),
+	})
+	if err != nil {
+		return fmt.Errorf("checksum support probe: %w", err)
+	}
+	defer func() {
+		_, _ = client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	}()
+	head, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket:       aws.String(bucket),
+		Key:          aws.String(key),
+		ChecksumMode: types.ChecksumModeEnabled,
+	})
+	if err != nil {
+		return fmt.Errorf("checksum support probe: %w", err)
+	}
+	if aws.ToString(head.ChecksumCRC64NVME) == "" {
+		a.checksumSupport.Store(checksumSupportNo)
+		return errNoDefaultChecksums
+	}
+	a.checksumSupport.Store(checksumSupportYes)
+	return nil
+}
+
+// verifyCompletionChecksum validates a requested full-object checksum against the
+// store-computed checksum of the assembled object. The value is never sent to the
+// store: S3 accepts but does not validate checksums on completion of an upload that
+// declared no algorithm, so comparing the store's own value is the only path where
+// success proves validation.
+func verifyCompletionChecksum(resp *s3.CompleteMultipartUploadOutput, checksum *block.FullObjectChecksum) error {
+	if checksum.Value == "" {
+		return nil
+	}
+	echo := aws.ToString(resp.ChecksumCRC64NVME)
+	if echo == "" {
+		return fmt.Errorf("store did not compute a full-object checksum: %w", block.ErrOperationNotSupported)
+	}
+	if echo != checksum.Value {
+		return fmt.Errorf("expected full-object checksum %s, stored %s: %w", checksum.Value, echo, block.ErrChecksumMismatch)
+	}
+	return nil
+}
+
+// asUploadNotFoundError converts the store's NoSuchUpload error into
+// block.ErrDataNotFound, e.g. for aborting an upload that was already completed.
+func asUploadNotFoundError(err error) error {
+	var noSuchUpload *types.NoSuchUpload
+	var apiErr smithy.APIError
+	if errors.As(err, &noSuchUpload) || (errors.As(err, &apiErr) && apiErr.ErrorCode() == "NoSuchUpload") {
+		return fmt.Errorf("upload does not exist: %w", block.ErrDataNotFound)
+	}
+	return err
+}
+
+// asChecksumValidationError converts S3 checksum-validation failures into
+// block.ErrChecksumMismatch. Call only when the completion carried a checksum spec:
+// "InvalidRequest" is a generic code that S3 uses (among others) for MpuObjectSize
+// mismatches, and "BadDigest" for checksum value mismatches.
+func asChecksumValidationError(err error) error {
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.ErrorCode() {
+		case "BadDigest", "InvalidRequest":
+			return fmt.Errorf("%s: %w", apiErr.ErrorMessage(), block.ErrChecksumMismatch)
+		}
+	}
+	return err
+}
+
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", obj.StorageID, time.Now(), nil, &err)
@@ -778,6 +900,16 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		UploadId:        aws.String(uploadID),
 		MultipartUpload: convertFromBlockMultipartUploadCompletion(multipartList),
 	}
+	checksum := multipartList.Checksum
+	if checksum != nil {
+		if checksum.Value != "" && checksum.Algorithm != block.ChecksumAlgorithmCRC64NVME {
+			err = fmt.Errorf("checksum algorithm %q (only CRC64NVME): %w", checksum.Algorithm, block.ErrOperationNotSupported)
+			return nil, err
+		}
+		// The expected object size is enforced by stores that support it; the checksum
+		// value itself is deliberately NOT sent — see verifyCompletionChecksum.
+		input.MpuObjectSize = checksum.MpuObjectSize
+	}
 	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
@@ -787,6 +919,10 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.CompleteMultipartUpload(ctx, input)
 	if err != nil {
+		err = asUploadNotFoundError(err)
+		if checksum != nil {
+			err = asChecksumValidationError(err)
+		}
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
 		return nil, err
 	}
@@ -795,6 +931,21 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	headResp, err := client.HeadObject(ctx, headInput)
 	if err != nil {
 		return nil, err
+	}
+	if checksum != nil {
+		err = verifyCompletionChecksum(resp, checksum)
+		if err == nil && checksum.MpuObjectSize != nil && aws.ToInt64(headResp.ContentLength) != *checksum.MpuObjectSize {
+			// The completion response carries no object-size echo, so a store that
+			// ignored MpuObjectSize can only be caught by comparing the actual size.
+			err = fmt.Errorf("expected object size %d, stored %d: %w",
+				*checksum.MpuObjectSize, aws.ToInt64(headResp.ContentLength), block.ErrChecksumMismatch)
+		}
+		if err != nil {
+			// The store assembled the object before validation could run; delete it
+			// (best effort) so a failed validation leaves no unvalidated bytes behind.
+			_, _ = client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+			return nil, err
+		}
 	}
 
 	etag := strings.Trim(aws.ToString(resp.ETag), `"`)
@@ -919,6 +1070,10 @@ func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	}
 	if !a.disablePreSignedMultipart && info.PreSignSupport {
 		info.PreSignSupportMultipart = true
+		// Advertised until the store proves otherwise: a failed capability probe
+		// (verifyDefaultChecksumSupport) flips this to false for the process lifetime.
+		info.MultipartChecksumSupport = !a.disablePreSignedMultipartChecksum &&
+			a.checksumSupport.Load() != checksumSupportNo
 	}
 	return &info
 }

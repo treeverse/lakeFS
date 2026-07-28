@@ -3695,6 +3695,14 @@ func TestController_ConfigHandlers(t *testing.T) {
 		require.Equal(t, expectedExample, resp.JSON200.BlockstoreNamespaceExample)
 	})
 
+	t.Run("Get storage config multipart checksum flag", func(t *testing.T) {
+		resp, err := clt.GetStorageConfigWithResponse(ctx)
+		verifyResponseOK(t, resp, err)
+		// mem blockstore supports neither presign multipart nor checksum validation
+		require.NotNil(t, resp.JSON200.PreSignMultipartUploadChecksum)
+		require.False(t, swag.BoolValue(resp.JSON200.PreSignMultipartUploadChecksum))
+	})
+
 	t.Run("Get gc config", func(t *testing.T) {
 		expectedPeriod := int((24 * time.Hour).Seconds())
 		resp, err := clt.GetGarbageCollectionConfigWithResponse(ctx)
@@ -3703,6 +3711,41 @@ func TestController_ConfigHandlers(t *testing.T) {
 		if *period != expectedPeriod {
 			t.Errorf("expected to get %d, got %d", expectedPeriod, period)
 		}
+	})
+}
+
+func TestController_PresignMultipartUploadChecksum(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := t.Context()
+
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, "bucket/prefix"), "main", false)
+	require.NoError(t, err)
+
+	// the mem blockstore does not support presign multipart upload at all, so checksum
+	// requests must be refused up front rather than accepted and ignored
+	t.Run("create with checksum unsupported", func(t *testing.T) {
+		resp, err := clt.CreatePresignMultipartUploadWithResponse(ctx, repo, "main", &apigen.CreatePresignMultipartUploadParams{
+			Path:              "foo/bar",
+			ChecksumAlgorithm: apiutil.Ptr(apigen.ChecksumAlgorithm_CRC64NVME),
+			ChecksumType:      apiutil.Ptr(apigen.ChecksumType_FULL_OBJECT),
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode())
+	})
+
+	t.Run("complete with checksum unsupported", func(t *testing.T) {
+		resp, err := clt.CompletePresignMultipartUploadWithResponse(ctx, repo, "main", "upload-id",
+			&apigen.CompletePresignMultipartUploadParams{Path: "foo/bar"},
+			apigen.CompletePresignMultipartUploadJSONRequestBody{
+				PhysicalAddress:   onBlock(deps, "bucket/prefix/foo"),
+				Parts:             []apigen.UploadPart{{PartNumber: 1, Etag: "etag"}},
+				ChecksumAlgorithm: apiutil.Ptr(apigen.ChecksumAlgorithm_CRC64NVME),
+				Checksum:          apiutil.Ptr("badbadbadba="),
+				MpuObjectSize:     apiutil.Ptr(int64(100)),
+			})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode())
 	})
 }
 

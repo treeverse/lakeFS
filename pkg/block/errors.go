@@ -11,4 +11,5 @@ var (
 	ErrInvalidAddress        = errors.New("invalid address")
 	ErrInvalidNamespace      = errors.New("invalid namespace")
 	ErrWriteFailed           = errors.New("failed to write to storage")
+	ErrChecksumMismatch      = errors.New("checksum mismatch")
 )

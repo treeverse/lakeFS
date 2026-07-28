@@ -32,6 +32,8 @@ from typing import Optional
 
 from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload
 from lakefs_sdk.models.authentication_token import AuthenticationToken
+from lakefs_sdk.models.checksum_algorithm import ChecksumAlgorithm
+from lakefs_sdk.models.checksum_type import ChecksumType
 from lakefs_sdk.models.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
 from lakefs_sdk.models.external_principal import ExternalPrincipal
@@ -433,14 +435,14 @@ class ExperimentalApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def create_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, **kwargs) -> PresignMultipartUpload:  # noqa: E501
+    def create_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, checksum_algorithm : Annotated[Optional[ChecksumAlgorithm], Field(description="Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501. ")] = None, checksum_type : Annotated[Optional[ChecksumType], Field(description="Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm. ")] = None, **kwargs) -> PresignMultipartUpload:  # noqa: E501
         """Initiate a multipart upload  # noqa: E501
 
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).   # noqa: E501
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.create_presign_multipart_upload(repository, branch, path, parts, async_req=True)
+        >>> thread = api.create_presign_multipart_upload(repository, branch, path, parts, checksum_algorithm, checksum_type, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -451,6 +453,10 @@ class ExperimentalApi:
         :type path: str
         :param parts: number of presigned URL parts required to upload
         :type parts: int
+        :param checksum_algorithm: Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501. 
+        :type checksum_algorithm: ChecksumAlgorithm
+        :param checksum_type: Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm. 
+        :type checksum_type: ChecksumType
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request.
@@ -466,17 +472,17 @@ class ExperimentalApi:
         if '_preload_content' in kwargs:
             message = "Error! Please call the create_presign_multipart_upload_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.create_presign_multipart_upload_with_http_info(repository, branch, path, parts, **kwargs)  # noqa: E501
+        return self.create_presign_multipart_upload_with_http_info(repository, branch, path, parts, checksum_algorithm, checksum_type, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def create_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def create_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, checksum_algorithm : Annotated[Optional[ChecksumAlgorithm], Field(description="Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501. ")] = None, checksum_type : Annotated[Optional[ChecksumType], Field(description="Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm. ")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """Initiate a multipart upload  # noqa: E501
 
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).   # noqa: E501
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.create_presign_multipart_upload_with_http_info(repository, branch, path, parts, async_req=True)
+        >>> thread = api.create_presign_multipart_upload_with_http_info(repository, branch, path, parts, checksum_algorithm, checksum_type, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -487,6 +493,10 @@ class ExperimentalApi:
         :type path: str
         :param parts: number of presigned URL parts required to upload
         :type parts: int
+        :param checksum_algorithm: Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501. 
+        :type checksum_algorithm: ChecksumAlgorithm
+        :param checksum_type: Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm. 
+        :type checksum_type: ChecksumType
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -518,7 +528,9 @@ class ExperimentalApi:
             'repository',
             'branch',
             'path',
-            'parts'
+            'parts',
+            'checksum_algorithm',
+            'checksum_type'
         ]
         _all_params.extend(
             [
@@ -560,6 +572,12 @@ class ExperimentalApi:
 
         if _params.get('parts') is not None:  # noqa: E501
             _query_params.append(('parts', _params['parts']))
+
+        if _params.get('checksum_algorithm') is not None:  # noqa: E501
+            _query_params.append(('checksum_algorithm', _params['checksum_algorithm'].value))
+
+        if _params.get('checksum_type') is not None:  # noqa: E501
+            _query_params.append(('checksum_type', _params['checksum_type'].value))
 
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))

@@ -380,7 +380,10 @@ func isDirectoryWritable(pth string) bool {
 	return true
 }
 
-func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+	if err := block.VerifyNoChecksum(opts); err != nil {
+		return nil, err
+	}
 	if strings.Contains(obj.Identifier, "/") {
 		fullPath, err := l.extractParamsFromObj(obj)
 		if err != nil {
@@ -432,6 +435,9 @@ func (l *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointe
 }
 
 func (l *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+	if err := block.VerifyNoCompletionChecksum(multipartList); err != nil {
+		return nil, err
+	}
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}

@@ -313,8 +313,8 @@ pub async fn complete_presign_multipart_upload(configuration: &configuration::Co
     }
 }
 
-/// Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
-pub async fn create_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, parts: Option<i32>) -> Result<models::PresignMultipartUpload, Error<CreatePresignMultipartUploadError>> {
+/// Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage. 
+pub async fn create_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, parts: Option<i32>, checksum_algorithm: Option<models::ChecksumAlgorithm>, checksum_type: Option<models::ChecksumType>) -> Result<models::PresignMultipartUpload, Error<CreatePresignMultipartUploadError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -325,6 +325,12 @@ pub async fn create_presign_multipart_upload(configuration: &configuration::Conf
     local_var_req_builder = local_var_req_builder.query(&[("path", &path.to_string())]);
     if let Some(ref local_var_str) = parts {
         local_var_req_builder = local_var_req_builder.query(&[("parts", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = checksum_algorithm {
+        local_var_req_builder = local_var_req_builder.query(&[("checksum_algorithm", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = checksum_type {
+        local_var_req_builder = local_var_req_builder.query(&[("checksum_type", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());

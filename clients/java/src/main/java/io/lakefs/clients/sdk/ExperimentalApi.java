@@ -29,6 +29,8 @@ import java.io.IOException;
 
 import io.lakefs.clients.sdk.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
+import io.lakefs.clients.sdk.model.ChecksumAlgorithm;
+import io.lakefs.clients.sdk.model.ChecksumType;
 import io.lakefs.clients.sdk.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.ExternalLoginInformation;
@@ -532,7 +534,7 @@ public class ExperimentalApi {
     public APIcompletePresignMultipartUploadRequest completePresignMultipartUpload(String repository, String branch, String uploadId, String path) {
         return new APIcompletePresignMultipartUploadRequest(repository, branch, uploadId, path);
     }
-    private okhttp3.Call createPresignMultipartUploadCall(String repository, String branch, String path, Integer parts, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call createPresignMultipartUploadCall(String repository, String branch, String path, Integer parts, ChecksumAlgorithm checksumAlgorithm, ChecksumType checksumType, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -567,6 +569,14 @@ public class ExperimentalApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("parts", parts));
         }
 
+        if (checksumAlgorithm != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("checksum_algorithm", checksumAlgorithm));
+        }
+
+        if (checksumType != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("checksum_type", checksumType));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -587,7 +597,7 @@ public class ExperimentalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call createPresignMultipartUploadValidateBeforeCall(String repository, String branch, String path, Integer parts, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call createPresignMultipartUploadValidateBeforeCall(String repository, String branch, String path, Integer parts, ChecksumAlgorithm checksumAlgorithm, ChecksumType checksumType, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling createPresignMultipartUpload(Async)");
@@ -603,20 +613,20 @@ public class ExperimentalApi {
             throw new ApiException("Missing the required parameter 'path' when calling createPresignMultipartUpload(Async)");
         }
 
-        return createPresignMultipartUploadCall(repository, branch, path, parts, _callback);
+        return createPresignMultipartUploadCall(repository, branch, path, parts, checksumAlgorithm, checksumType, _callback);
 
     }
 
 
-    private ApiResponse<PresignMultipartUpload> createPresignMultipartUploadWithHttpInfo(String repository, String branch, String path, Integer parts) throws ApiException {
-        okhttp3.Call localVarCall = createPresignMultipartUploadValidateBeforeCall(repository, branch, path, parts, null);
+    private ApiResponse<PresignMultipartUpload> createPresignMultipartUploadWithHttpInfo(String repository, String branch, String path, Integer parts, ChecksumAlgorithm checksumAlgorithm, ChecksumType checksumType) throws ApiException {
+        okhttp3.Call localVarCall = createPresignMultipartUploadValidateBeforeCall(repository, branch, path, parts, checksumAlgorithm, checksumType, null);
         Type localVarReturnType = new TypeToken<PresignMultipartUpload>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call createPresignMultipartUploadAsync(String repository, String branch, String path, Integer parts, final ApiCallback<PresignMultipartUpload> _callback) throws ApiException {
+    private okhttp3.Call createPresignMultipartUploadAsync(String repository, String branch, String path, Integer parts, ChecksumAlgorithm checksumAlgorithm, ChecksumType checksumType, final ApiCallback<PresignMultipartUpload> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = createPresignMultipartUploadValidateBeforeCall(repository, branch, path, parts, _callback);
+        okhttp3.Call localVarCall = createPresignMultipartUploadValidateBeforeCall(repository, branch, path, parts, checksumAlgorithm, checksumType, _callback);
         Type localVarReturnType = new TypeToken<PresignMultipartUpload>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -627,6 +637,8 @@ public class ExperimentalApi {
         private final String branch;
         private final String path;
         private Integer parts;
+        private ChecksumAlgorithm checksumAlgorithm;
+        private ChecksumType checksumType;
 
         private APIcreatePresignMultipartUploadRequest(String repository, String branch, String path) {
             this.repository = repository;
@@ -641,6 +653,26 @@ public class ExperimentalApi {
          */
         public APIcreatePresignMultipartUploadRequest parts(Integer parts) {
             this.parts = parts;
+            return this;
+        }
+
+        /**
+         * Set checksumAlgorithm
+         * @param checksumAlgorithm Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501.  (optional)
+         * @return APIcreatePresignMultipartUploadRequest
+         */
+        public APIcreatePresignMultipartUploadRequest checksumAlgorithm(ChecksumAlgorithm checksumAlgorithm) {
+            this.checksumAlgorithm = checksumAlgorithm;
+            return this;
+        }
+
+        /**
+         * Set checksumType
+         * @param checksumType Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm.  (optional)
+         * @return APIcreatePresignMultipartUploadRequest
+         */
+        public APIcreatePresignMultipartUploadRequest checksumType(ChecksumType checksumType) {
+            this.checksumType = checksumType;
             return this;
         }
 
@@ -661,7 +693,7 @@ public class ExperimentalApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return createPresignMultipartUploadCall(repository, branch, path, parts, _callback);
+            return createPresignMultipartUploadCall(repository, branch, path, parts, checksumAlgorithm, checksumType, _callback);
         }
 
         /**
@@ -680,7 +712,7 @@ public class ExperimentalApi {
          </table>
          */
         public PresignMultipartUpload execute() throws ApiException {
-            ApiResponse<PresignMultipartUpload> localVarResp = createPresignMultipartUploadWithHttpInfo(repository, branch, path, parts);
+            ApiResponse<PresignMultipartUpload> localVarResp = createPresignMultipartUploadWithHttpInfo(repository, branch, path, parts, checksumAlgorithm, checksumType);
             return localVarResp.getData();
         }
 
@@ -700,7 +732,7 @@ public class ExperimentalApi {
          </table>
          */
         public ApiResponse<PresignMultipartUpload> executeWithHttpInfo() throws ApiException {
-            return createPresignMultipartUploadWithHttpInfo(repository, branch, path, parts);
+            return createPresignMultipartUploadWithHttpInfo(repository, branch, path, parts, checksumAlgorithm, checksumType);
         }
 
         /**
@@ -720,13 +752,13 @@ public class ExperimentalApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<PresignMultipartUpload> _callback) throws ApiException {
-            return createPresignMultipartUploadAsync(repository, branch, path, parts, _callback);
+            return createPresignMultipartUploadAsync(repository, branch, path, parts, checksumAlgorithm, checksumType, _callback);
         }
     }
 
     /**
      * Initiate a multipart upload
-     * Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+     * Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage. 
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)

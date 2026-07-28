@@ -30,6 +30,9 @@ pub struct StorageConfig {
     pub import_validity_regex: String,
     #[serde(rename = "pre_sign_multipart_upload", skip_serializing_if = "Option::is_none")]
     pub pre_sign_multipart_upload: Option<bool>,
+    /// Whether the blockstore supports full-object checksum validation for presign multipart uploads. Always false when pre_sign_multipart_upload is false. 
+    #[serde(rename = "pre_sign_multipart_upload_checksum", skip_serializing_if = "Option::is_none")]
+    pub pre_sign_multipart_upload_checksum: Option<bool>,
     #[serde(rename = "blockstore_id", skip_serializing_if = "Option::is_none")]
     pub blockstore_id: Option<String>,
     #[serde(rename = "blockstore_description", skip_serializing_if = "Option::is_none")]
@@ -48,6 +51,7 @@ impl StorageConfig {
             import_support,
             import_validity_regex,
             pre_sign_multipart_upload: None,
+            pre_sign_multipart_upload_checksum: None,
             blockstore_id: None,
             blockstore_description: None,
         }

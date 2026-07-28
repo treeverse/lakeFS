@@ -21,9 +21,11 @@ import json
 
 from typing import Dict, List, Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictStr, conlist
+    from pydantic.v1 import BaseModel, Field, StrictStr, conint, conlist
 except ImportError:
-    from pydantic import BaseModel, Field, StrictStr, conlist
+    from pydantic import BaseModel, Field, StrictStr, conint, conlist
+from lakefs_sdk.models.checksum_algorithm import ChecksumAlgorithm
+from lakefs_sdk.models.checksum_type import ChecksumType
 from lakefs_sdk.models.upload_part import UploadPart
 
 class CompletePresignMultipartUpload(BaseModel):
@@ -34,7 +36,11 @@ class CompletePresignMultipartUpload(BaseModel):
     parts: conlist(UploadPart) = Field(..., description="List of uploaded parts, should be ordered by ascending part number")
     user_metadata: Optional[Dict[str, StrictStr]] = None
     content_type: Optional[StrictStr] = Field(None, description="Object media type")
-    __properties = ["physical_address", "parts", "user_metadata", "content_type"]
+    checksum_algorithm: Optional[ChecksumAlgorithm] = None
+    checksum_type: Optional[ChecksumType] = None
+    checksum: Optional[StrictStr] = Field(None, description="Base64-encoded big-endian full-object checksum of the entire object content, computed with checksum_algorithm (S3 encoding convention). Requires checksum_algorithm. lakeFS compares the storage-computed full-object checksum of the assembled object against this value and fails the completion on mismatch; a successful completion means the checksum was validated. ")
+    mpu_object_size: Optional[conint(strict=True, ge=0)] = Field(None, description="Expected total size in bytes of the assembled object, validated by the storage on completion. May be supplied with or without a checksum. ")
+    __properties = ["physical_address", "parts", "user_metadata", "content_type", "checksum_algorithm", "checksum_type", "checksum", "mpu_object_size"]
 
     class Config:
         """Pydantic configuration"""
@@ -82,7 +88,11 @@ class CompletePresignMultipartUpload(BaseModel):
             "physical_address": obj.get("physical_address"),
             "parts": [UploadPart.from_dict(_item) for _item in obj.get("parts")] if obj.get("parts") is not None else None,
             "user_metadata": obj.get("user_metadata"),
-            "content_type": obj.get("content_type")
+            "content_type": obj.get("content_type"),
+            "checksum_algorithm": obj.get("checksum_algorithm"),
+            "checksum_type": obj.get("checksum_type"),
+            "checksum": obj.get("checksum"),
+            "mpu_object_size": obj.get("mpu_object_size")
         })
         return _obj
 

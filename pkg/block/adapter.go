@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,12 +19,47 @@ type MultipartPart struct {
 	Size         int64
 }
 
+// ChecksumAlgorithm is the algorithm used for full-object checksum validation of a
+// multipart upload, matching the S3 wire values. Only CRC64NVME is supported: it is
+// the only checksum stores compute for the full object by default, without per-part
+// checksum headers that presigned part uploads cannot carry.
+type ChecksumAlgorithm string
+
+// ChecksumType is the multipart checksum type, matching the S3 wire values. Only
+// full-object checksums are supported.
+type ChecksumType string
+
+const (
+	ChecksumAlgorithmCRC64NVME ChecksumAlgorithm = "CRC64NVME"
+
+	ChecksumTypeFullObject ChecksumType = "FULL_OBJECT"
+)
+
+// FullObjectChecksum requests full-object validation on multipart upload completion:
+// the adapter compares Value (and/or MpuObjectSize) against the assembled object and
+// fails the completion on mismatch.
+type FullObjectChecksum struct {
+	// Algorithm used to compute Value. Required when Value is set.
+	Algorithm ChecksumAlgorithm
+	// Type of the checksum. Only ChecksumTypeFullObject is supported.
+	Type ChecksumType
+	// Value is the base64-encoded big-endian checksum of the entire object content
+	// (S3 convention). Empty when only MpuObjectSize is validated.
+	Value string
+	// MpuObjectSize is the expected total size in bytes of the assembled object.
+	MpuObjectSize *int64
+}
+
 // MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
 // NOTE that S3 implementation and our S3 gateway accept and returns ETag value surrounded with double-quotes ("), while
 // the adapter implementations supply the raw value of the etag (without double quotes) and let the gateway manage the s3
 // protocol specifications.
 type MultipartUploadCompletion struct {
 	Part []MultipartPart
+	// Checksum, if non-nil, requests full-object checksum validation on completion.
+	// Adapters that cannot validate MUST fail rather than ignore it. xml:"-" keeps the
+	// S3 gateway, which unmarshals request XML into this struct, from populating it.
+	Checksum *FullObjectChecksum `xml:"-"`
 }
 
 // IdentifierType is the type the ObjectPointer Identifier
@@ -142,6 +178,35 @@ type ListMultipartUploadsResponse struct {
 // value is retained.
 type CreateMultiPartUploadOpts struct {
 	StorageClass *string // S3 storage class
+
+	// ChecksumAlgorithm, if set, requests full-object checksum validation for the
+	// upload. Adapters that cannot validate MUST fail rather than ignore it.
+	ChecksumAlgorithm ChecksumAlgorithm
+	// ChecksumType of the requested validation. Only ChecksumTypeFullObject is
+	// supported; adapters treat an empty value as full-object.
+	ChecksumType ChecksumType
+}
+
+// HasChecksum reports whether the options request checksum validation.
+func (o CreateMultiPartUploadOpts) HasChecksum() bool {
+	return o.ChecksumAlgorithm != "" || o.ChecksumType != ""
+}
+
+// VerifyNoChecksum fails with ErrOperationNotSupported when opts request checksum
+// validation, for adapters that cannot validate.
+func VerifyNoChecksum(opts CreateMultiPartUploadOpts) error {
+	if opts.HasChecksum() {
+		return fmt.Errorf("checksum validation not supported by this blockstore: %w", ErrOperationNotSupported)
+	}
+	return nil
+}
+
+// VerifyNoCompletionChecksum is VerifyNoChecksum for multipart completion requests.
+func VerifyNoCompletionChecksum(multipartList *MultipartUploadCompletion) error {
+	if multipartList != nil && multipartList.Checksum != nil {
+		return fmt.Errorf("checksum validation not supported by this blockstore: %w", ErrOperationNotSupported)
+	}
+	return nil
 }
 
 // ListPartsOpts contains optional arguments for the ListParts request.

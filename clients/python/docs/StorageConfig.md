@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **import_support** | **bool** |  | 
 **import_validity_regex** | **str** |  | 
 **pre_sign_multipart_upload** | **bool** |  | [optional] 
+**pre_sign_multipart_upload_checksum** | **bool** | Whether the blockstore supports full-object checksum validation for presign multipart uploads. Always false when pre_sign_multipart_upload is false.  | [optional] 
 **blockstore_id** | **str** |  | [optional] 
 **blockstore_description** | **str** |  | [optional] 
 

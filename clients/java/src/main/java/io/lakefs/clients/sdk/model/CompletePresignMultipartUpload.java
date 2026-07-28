@@ -19,6 +19,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.ChecksumAlgorithm;
+import io.lakefs.clients.sdk.model.ChecksumType;
 import io.lakefs.clients.sdk.model.UploadPart;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -71,6 +73,22 @@ public class CompletePresignMultipartUpload {
   public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
+
+  public static final String SERIALIZED_NAME_CHECKSUM_ALGORITHM = "checksum_algorithm";
+  @SerializedName(SERIALIZED_NAME_CHECKSUM_ALGORITHM)
+  private ChecksumAlgorithm checksumAlgorithm;
+
+  public static final String SERIALIZED_NAME_CHECKSUM_TYPE = "checksum_type";
+  @SerializedName(SERIALIZED_NAME_CHECKSUM_TYPE)
+  private ChecksumType checksumType;
+
+  public static final String SERIALIZED_NAME_CHECKSUM = "checksum";
+  @SerializedName(SERIALIZED_NAME_CHECKSUM)
+  private String checksum;
+
+  public static final String SERIALIZED_NAME_MPU_OBJECT_SIZE = "mpu_object_size";
+  @SerializedName(SERIALIZED_NAME_MPU_OBJECT_SIZE)
+  private Long mpuObjectSize;
 
   public CompletePresignMultipartUpload() {
   }
@@ -174,6 +192,91 @@ public class CompletePresignMultipartUpload {
     this.contentType = contentType;
   }
 
+
+  public CompletePresignMultipartUpload checksumAlgorithm(ChecksumAlgorithm checksumAlgorithm) {
+    
+    this.checksumAlgorithm = checksumAlgorithm;
+    return this;
+  }
+
+   /**
+   * Get checksumAlgorithm
+   * @return checksumAlgorithm
+  **/
+  @javax.annotation.Nullable
+  public ChecksumAlgorithm getChecksumAlgorithm() {
+    return checksumAlgorithm;
+  }
+
+
+  public void setChecksumAlgorithm(ChecksumAlgorithm checksumAlgorithm) {
+    this.checksumAlgorithm = checksumAlgorithm;
+  }
+
+
+  public CompletePresignMultipartUpload checksumType(ChecksumType checksumType) {
+    
+    this.checksumType = checksumType;
+    return this;
+  }
+
+   /**
+   * Get checksumType
+   * @return checksumType
+  **/
+  @javax.annotation.Nullable
+  public ChecksumType getChecksumType() {
+    return checksumType;
+  }
+
+
+  public void setChecksumType(ChecksumType checksumType) {
+    this.checksumType = checksumType;
+  }
+
+
+  public CompletePresignMultipartUpload checksum(String checksum) {
+    
+    this.checksum = checksum;
+    return this;
+  }
+
+   /**
+   * Base64-encoded big-endian full-object checksum of the entire object content, computed with checksum_algorithm (S3 encoding convention). Requires checksum_algorithm. lakeFS compares the storage-computed full-object checksum of the assembled object against this value and fails the completion on mismatch; a successful completion means the checksum was validated. 
+   * @return checksum
+  **/
+  @javax.annotation.Nullable
+  public String getChecksum() {
+    return checksum;
+  }
+
+
+  public void setChecksum(String checksum) {
+    this.checksum = checksum;
+  }
+
+
+  public CompletePresignMultipartUpload mpuObjectSize(Long mpuObjectSize) {
+    
+    this.mpuObjectSize = mpuObjectSize;
+    return this;
+  }
+
+   /**
+   * Expected total size in bytes of the assembled object, validated by the storage on completion. May be supplied with or without a checksum. 
+   * minimum: 0
+   * @return mpuObjectSize
+  **/
+  @javax.annotation.Nullable
+  public Long getMpuObjectSize() {
+    return mpuObjectSize;
+  }
+
+
+  public void setMpuObjectSize(Long mpuObjectSize) {
+    this.mpuObjectSize = mpuObjectSize;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -232,13 +335,17 @@ public class CompletePresignMultipartUpload {
     return Objects.equals(this.physicalAddress, completePresignMultipartUpload.physicalAddress) &&
         Objects.equals(this.parts, completePresignMultipartUpload.parts) &&
         Objects.equals(this.userMetadata, completePresignMultipartUpload.userMetadata) &&
-        Objects.equals(this.contentType, completePresignMultipartUpload.contentType)&&
+        Objects.equals(this.contentType, completePresignMultipartUpload.contentType) &&
+        Objects.equals(this.checksumAlgorithm, completePresignMultipartUpload.checksumAlgorithm) &&
+        Objects.equals(this.checksumType, completePresignMultipartUpload.checksumType) &&
+        Objects.equals(this.checksum, completePresignMultipartUpload.checksum) &&
+        Objects.equals(this.mpuObjectSize, completePresignMultipartUpload.mpuObjectSize)&&
         Objects.equals(this.additionalProperties, completePresignMultipartUpload.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, parts, userMetadata, contentType, additionalProperties);
+    return Objects.hash(physicalAddress, parts, userMetadata, contentType, checksumAlgorithm, checksumType, checksum, mpuObjectSize, additionalProperties);
   }
 
   @Override
@@ -249,6 +356,10 @@ public class CompletePresignMultipartUpload {
     sb.append("    parts: ").append(toIndentedString(parts)).append("\n");
     sb.append("    userMetadata: ").append(toIndentedString(userMetadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
+    sb.append("    checksumAlgorithm: ").append(toIndentedString(checksumAlgorithm)).append("\n");
+    sb.append("    checksumType: ").append(toIndentedString(checksumType)).append("\n");
+    sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
+    sb.append("    mpuObjectSize: ").append(toIndentedString(mpuObjectSize)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -276,6 +387,10 @@ public class CompletePresignMultipartUpload {
     openapiFields.add("parts");
     openapiFields.add("user_metadata");
     openapiFields.add("content_type");
+    openapiFields.add("checksum_algorithm");
+    openapiFields.add("checksum_type");
+    openapiFields.add("checksum");
+    openapiFields.add("mpu_object_size");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -318,6 +433,9 @@ public class CompletePresignMultipartUpload {
       };
       if ((jsonObj.get("content_type") != null && !jsonObj.get("content_type").isJsonNull()) && !jsonObj.get("content_type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `content_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("content_type").toString()));
+      }
+      if ((jsonObj.get("checksum") != null && !jsonObj.get("checksum").isJsonNull()) && !jsonObj.get("checksum").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `checksum` to be a primitive type in the JSON string but got `%s`", jsonObj.get("checksum").toString()));
       }
   }
 

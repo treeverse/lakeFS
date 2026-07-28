@@ -16,6 +16,8 @@ package io.lakefs.clients.sdk;
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
+import io.lakefs.clients.sdk.model.ChecksumAlgorithm;
+import io.lakefs.clients.sdk.model.ChecksumType;
 import io.lakefs.clients.sdk.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.ExternalLoginInformation;
@@ -95,7 +97,7 @@ public class ExperimentalApiTest {
     /**
      * Initiate a multipart upload
      *
-     * Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+     * Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage. 
      *
      * @throws ApiException if the Api call fails
      */
@@ -105,8 +107,12 @@ public class ExperimentalApiTest {
         String branch = null;
         String path = null;
         Integer parts = null;
+        ChecksumAlgorithm checksumAlgorithm = null;
+        ChecksumType checksumType = null;
         PresignMultipartUpload response = api.createPresignMultipartUpload(repository, branch, path)
                 .parts(parts)
+                .checksumAlgorithm(checksumAlgorithm)
+                .checksumType(checksumType)
                 .execute();
         // TODO: test validations
     }

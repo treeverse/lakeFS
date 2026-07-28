@@ -110,6 +110,14 @@ public class StorageConfigTest {
     }
 
     /**
+     * Test the property 'preSignMultipartUploadChecksum'
+     */
+    @Test
+    public void preSignMultipartUploadChecksumTest() {
+        // TODO: test preSignMultipartUploadChecksum
+    }
+
+    /**
      * Test the property 'blockstoreId'
      */
     @Test

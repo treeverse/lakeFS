@@ -554,7 +554,10 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+	if err := block.VerifyNoChecksum(opts); err != nil {
+		return nil, err
+	}
 	// Azure has no create multipart upload
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", obj.StorageID, time.Now(), nil, &err)
@@ -640,6 +643,9 @@ func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetada
 }
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+	if err := block.VerifyNoCompletionChecksum(multipartList); err != nil {
+		return nil, err
+	}
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", obj.StorageID, time.Now(), nil, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)

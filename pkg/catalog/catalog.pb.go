@@ -76,14 +76,17 @@ func (Entry_AddressType) EnumDescriptor() ([]byte, []int) {
 }
 
 type Entry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	LastModified  *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_modified,json=lastModified,proto3" json:"last_modified,omitempty"`
-	Size          int64                  `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
-	ETag          string                 `protobuf:"bytes,4,opt,name=e_tag,json=eTag,proto3" json:"e_tag,omitempty"`
-	Metadata      map[string]string      `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	AddressType   Entry_AddressType      `protobuf:"varint,6,opt,name=address_type,json=addressType,proto3,enum=catalog.Entry_AddressType" json:"address_type,omitempty"`
-	ContentType   string                 `protobuf:"bytes,7,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Address      string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	LastModified *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_modified,json=lastModified,proto3" json:"last_modified,omitempty"`
+	Size         int64                  `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	ETag         string                 `protobuf:"bytes,4,opt,name=e_tag,json=eTag,proto3" json:"e_tag,omitempty"`
+	Metadata     map[string]string      `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	AddressType  Entry_AddressType      `protobuf:"varint,6,opt,name=address_type,json=addressType,proto3,enum=catalog.Entry_AddressType" json:"address_type,omitempty"`
+	ContentType  string                 `protobuf:"bytes,7,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	// checksums are validated full-object checksums of the object content, keyed by
+	// checksum algorithm (e.g. CRC64NVME), base64-encoded
+	Checksums     map[string]string `protobuf:"bytes,8,rep,name=checksums,proto3" json:"checksums,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -165,6 +168,13 @@ func (x *Entry) GetContentType() string {
 		return x.ContentType
 	}
 	return ""
+}
+
+func (x *Entry) GetChecksums() map[string]string {
+	if x != nil {
+		return x.Checksums
+	}
+	return nil
 }
 
 // Task is a generic task status message
@@ -787,7 +797,7 @@ var File_catalog_catalog_proto protoreflect.FileDescriptor
 
 const file_catalog_catalog_proto_rawDesc = "" +
 	"\n" +
-	"\x15catalog/catalog.proto\x12\acatalog\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17graveler/graveler.proto\"\xa5\x03\n" +
+	"\x15catalog/catalog.proto\x12\acatalog\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17graveler/graveler.proto\"\xa0\x04\n" +
 	"\x05Entry\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12?\n" +
 	"\rlast_modified\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastModified\x12\x12\n" +
@@ -795,8 +805,12 @@ const file_catalog_catalog_proto_rawDesc = "" +
 	"\x05e_tag\x18\x04 \x01(\tR\x04eTag\x128\n" +
 	"\bmetadata\x18\x05 \x03(\v2\x1c.catalog.Entry.MetadataEntryR\bmetadata\x12=\n" +
 	"\faddress_type\x18\x06 \x01(\x0e2\x1a.catalog.Entry.AddressTypeR\vaddressType\x12!\n" +
-	"\fcontent_type\x18\a \x01(\tR\vcontentType\x1a;\n" +
+	"\fcontent_type\x18\a \x01(\tR\vcontentType\x12;\n" +
+	"\tchecksums\x18\b \x03(\v2\x1d.catalog.Entry.ChecksumsEntryR\tchecksums\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a<\n" +
+	"\x0eChecksumsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"?\n" +
 	"\vAddressType\x12\x18\n" +
@@ -857,7 +871,7 @@ func file_catalog_catalog_proto_rawDescGZIP() []byte {
 }
 
 var file_catalog_catalog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_catalog_catalog_proto_goTypes = []any{
 	(Entry_AddressType)(0),                      // 0: catalog.Entry.AddressType
 	(*Entry)(nil),                               // 1: catalog.Entry
@@ -873,30 +887,32 @@ var file_catalog_catalog_proto_goTypes = []any{
 	(*MergeAsyncStatusData)(nil),                // 11: catalog.MergeAsyncStatusData
 	(*TaskMsg)(nil),                             // 12: catalog.TaskMsg
 	nil,                                         // 13: catalog.Entry.MetadataEntry
-	(*timestamppb.Timestamp)(nil),               // 14: google.protobuf.Timestamp
-	(*graveler.CommitData)(nil),                 // 15: io.treeverse.lakefs.graveler.CommitData
+	nil,                                         // 14: catalog.Entry.ChecksumsEntry
+	(*timestamppb.Timestamp)(nil),               // 15: google.protobuf.Timestamp
+	(*graveler.CommitData)(nil),                 // 16: io.treeverse.lakefs.graveler.CommitData
 }
 var file_catalog_catalog_proto_depIdxs = []int32{
-	14, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
+	15, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
 	13, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
 	0,  // 2: catalog.Entry.address_type:type_name -> catalog.Entry.AddressType
-	14, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
-	14, // 4: catalog.InstanceHeartbeat.updated_at:type_name -> google.protobuf.Timestamp
-	2,  // 5: catalog.RepositoryDumpStatus.task:type_name -> catalog.Task
-	4,  // 6: catalog.RepositoryDumpStatus.info:type_name -> catalog.RepositoryDumpInfo
-	2,  // 7: catalog.RepositoryRestoreStatus.task:type_name -> catalog.Task
-	2,  // 8: catalog.GarbageCollectionPrepareStatus.task:type_name -> catalog.Task
-	7,  // 9: catalog.GarbageCollectionPrepareStatus.info:type_name -> catalog.GarbageCollectionPrepareCommitsInfo
-	2,  // 10: catalog.CommitAsyncStatusData.task:type_name -> catalog.Task
-	15, // 11: catalog.CommitAsyncStatusData.info:type_name -> io.treeverse.lakefs.graveler.CommitData
-	2,  // 12: catalog.MergeAsyncStatusData.task:type_name -> catalog.Task
-	10, // 13: catalog.MergeAsyncStatusData.info:type_name -> catalog.MergeData
-	2,  // 14: catalog.TaskMsg.task:type_name -> catalog.Task
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	14, // 3: catalog.Entry.checksums:type_name -> catalog.Entry.ChecksumsEntry
+	15, // 4: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
+	15, // 5: catalog.InstanceHeartbeat.updated_at:type_name -> google.protobuf.Timestamp
+	2,  // 6: catalog.RepositoryDumpStatus.task:type_name -> catalog.Task
+	4,  // 7: catalog.RepositoryDumpStatus.info:type_name -> catalog.RepositoryDumpInfo
+	2,  // 8: catalog.RepositoryRestoreStatus.task:type_name -> catalog.Task
+	2,  // 9: catalog.GarbageCollectionPrepareStatus.task:type_name -> catalog.Task
+	7,  // 10: catalog.GarbageCollectionPrepareStatus.info:type_name -> catalog.GarbageCollectionPrepareCommitsInfo
+	2,  // 11: catalog.CommitAsyncStatusData.task:type_name -> catalog.Task
+	16, // 12: catalog.CommitAsyncStatusData.info:type_name -> io.treeverse.lakefs.graveler.CommitData
+	2,  // 13: catalog.MergeAsyncStatusData.task:type_name -> catalog.Task
+	10, // 14: catalog.MergeAsyncStatusData.info:type_name -> catalog.MergeData
+	2,  // 15: catalog.TaskMsg.task:type_name -> catalog.Task
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_catalog_catalog_proto_init() }
@@ -910,7 +926,7 @@ func file_catalog_catalog_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_catalog_catalog_proto_rawDesc), len(file_catalog_catalog_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
