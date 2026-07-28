@@ -128,6 +128,7 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 		s3a.WithDisablePreSigned(params.DisablePreSigned),
 		s3a.WithDisablePreSignedUI(params.DisablePreSignedUI),
 		s3a.WithDisablePreSignedMultipart(params.DisablePreSignedMultipart),
+		s3a.WithDisablePreSignedMultipartChecksum(params.DisablePreSignedMultipartChecksum),
 	}
 	if params.ServerSideEncryption != "" {
 		opts = append(opts, s3a.WithServerSideEncryption(params.ServerSideEncryption))

@@ -25,14 +25,17 @@ func EntryToValue(entry *Entry) (*graveler.Value, error) {
 		return nil, err
 	}
 	// calculate entry identity
-	checksum := ident.NewAddressWriter().
+	aw := ident.NewAddressWriter().
 		MarshalInt64(entry.Size).
 		MarshalString(entry.ETag).
 		MarshalStringMap(entry.Metadata).
-		MarshalStringOpt(entry.ContentType). // optional in order to keep identity of old entries without content-type
-		Identity()
+		MarshalStringOpt(entry.ContentType) // optional in order to keep identity of old entries without content-type
+	if len(entry.Checksums) > 0 {
+		// optional in order to keep identity of entries without checksums
+		aw = aw.MarshalStringMap(entry.Checksums)
+	}
 	return &graveler.Value{
-		Identity: checksum,
+		Identity: aw.Identity(),
 		Data:     data,
 	}, nil
 }

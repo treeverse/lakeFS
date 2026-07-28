@@ -50,6 +50,9 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
 	viper.SetDefault(config.BlockstoreTypeKey, block.BlockstoreTypeS3)
+	// esti reads the blockstore type under the flat "blockstore_type" key; default it
+	// too, so local runs without ESTI_BLOCKSTORE_TYPE do not silently skip tests
+	viper.SetDefault("blockstore_type", block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
 	currDir, err := os.Getwd()
 	if err != nil {

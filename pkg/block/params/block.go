@@ -33,25 +33,26 @@ type S3Credentials struct {
 }
 
 type S3 struct {
-	Region                        string
-	Profile                       string
-	CredentialsFile               string
-	Credentials                   S3Credentials
-	MaxRetries                    int
-	Endpoint                      string
-	ForcePathStyle                bool
-	DiscoverBucketRegion          bool
-	SkipVerifyCertificateTestOnly bool
-	ServerSideEncryption          string
-	ServerSideEncryptionKmsKeyID  string
-	PreSignedExpiry               time.Duration
-	PreSignedEndpoint             string
-	DisablePreSigned              bool
-	DisablePreSignedUI            bool
-	DisablePreSignedMultipart     bool
-	ClientLogRetries              bool
-	ClientLogRequest              bool
-	WebIdentity                   *S3WebIdentity
+	Region                            string
+	Profile                           string
+	CredentialsFile                   string
+	Credentials                       S3Credentials
+	MaxRetries                        int
+	Endpoint                          string
+	ForcePathStyle                    bool
+	DiscoverBucketRegion              bool
+	SkipVerifyCertificateTestOnly     bool
+	ServerSideEncryption              string
+	ServerSideEncryptionKmsKeyID      string
+	PreSignedExpiry                   time.Duration
+	PreSignedEndpoint                 string
+	DisablePreSigned                  bool
+	DisablePreSignedUI                bool
+	DisablePreSignedMultipart         bool
+	DisablePreSignedMultipartChecksum bool
+	ClientLogRetries                  bool
+	ClientLogRequest                  bool
+	WebIdentity                       *S3WebIdentity
 }
 
 type GS struct {

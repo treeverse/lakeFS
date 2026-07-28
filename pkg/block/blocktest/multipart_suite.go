@@ -24,6 +24,40 @@ func AdapterMultipartTest(t *testing.T, adapter block.Adapter, storageNamespace,
 	t.Run("Adapter_AbortMultiPartUpload", func(t *testing.T) { testAdapterAbortMultipartUpload(t, adapter, storageNamespace) })
 	t.Run("Adapter_CopyPart", func(t *testing.T) { testAdapterCopyPart(t, adapter, storageNamespace) })
 	t.Run("Adapter_CopyPartRange", func(t *testing.T) { testAdapterCopyPartRange(t, adapter, storageNamespace) })
+	t.Run("Adapter_MultipartChecksumUnsupported", func(t *testing.T) { testAdapterMultipartChecksumUnsupported(t, adapter, storageNamespace) })
+}
+
+// testAdapterMultipartChecksumUnsupported verifies that adapters without full-object
+// checksum support reject checksum requests instead of silently ignoring them.
+func testAdapterMultipartChecksumUnsupported(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	if adapter.GetStorageNamespaceInfo("").MultipartChecksumSupport {
+		t.Skip("adapter supports multipart checksum validation")
+	}
+	obj := block.ObjectPointer{
+		StorageID:        "",
+		StorageNamespace: storageNamespace,
+		Identifier:       "checksum-unsupported",
+		IdentifierType:   block.IdentifierTypeRelative,
+	}
+
+	_, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{
+		ChecksumAlgorithm: block.ChecksumAlgorithmCRC64NVME,
+		ChecksumType:      block.ChecksumTypeFullObject,
+	})
+	require.ErrorIs(t, err, block.ErrOperationNotSupported)
+
+	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
+	require.NoError(t, err)
+	_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
+		Checksum: &block.FullObjectChecksum{
+			Algorithm: block.ChecksumAlgorithmCRC64NVME,
+			Type:      block.ChecksumTypeFullObject,
+			Value:     "AAAAAAAAAAA=",
+		},
+	})
+	require.ErrorIs(t, err, block.ErrOperationNotSupported)
+	_ = adapter.AbortMultiPartUpload(ctx, obj, resp.UploadID)
 }
 
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original

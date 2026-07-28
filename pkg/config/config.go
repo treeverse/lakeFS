@@ -210,13 +210,16 @@ type BlockstoreS3 struct {
 	ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
 	PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 	// Endpoint for pre-signed URLs, if set, will override the default pre-signed URL S3 endpoint (only for pre-sign URL generation)
-	PreSignedEndpoint         string                   `mapstructure:"pre_signed_endpoint"`
-	DisablePreSigned          bool                     `mapstructure:"disable_pre_signed"`
-	DisablePreSignedUI        bool                     `mapstructure:"disable_pre_signed_ui"`
-	DisablePreSignedMultipart bool                     `mapstructure:"disable_pre_signed_multipart"`
-	ClientLogRetries          bool                     `mapstructure:"client_log_retries"`
-	ClientLogRequest          bool                     `mapstructure:"client_log_request"`
-	WebIdentity               *BlockstoreS3WebIdentity `mapstructure:"web_identity"`
+	PreSignedEndpoint         string `mapstructure:"pre_signed_endpoint"`
+	DisablePreSigned          bool   `mapstructure:"disable_pre_signed"`
+	DisablePreSignedUI        bool   `mapstructure:"disable_pre_signed_ui"`
+	DisablePreSignedMultipart bool   `mapstructure:"disable_pre_signed_multipart"`
+	// DisablePreSignedMultipartChecksum disables full-object checksum validation for
+	// presign multipart uploads, for backing stores without default object checksums
+	DisablePreSignedMultipartChecksum bool                     `mapstructure:"disable_pre_signed_multipart_checksum"`
+	ClientLogRetries                  bool                     `mapstructure:"client_log_retries"`
+	ClientLogRequest                  bool                     `mapstructure:"client_log_request"`
+	WebIdentity                       *BlockstoreS3WebIdentity `mapstructure:"web_identity"`
 }
 
 type BlockstoreAzure struct {
@@ -294,25 +297,26 @@ func (b *Blockstore) BlockstoreS3Params() (blockparams.S3, error) {
 	}
 
 	return blockparams.S3{
-		Region:                        b.S3.Region,
-		Profile:                       b.S3.Profile,
-		CredentialsFile:               b.S3.CredentialsFile,
-		Credentials:                   creds,
-		MaxRetries:                    b.S3.MaxRetries,
-		Endpoint:                      b.S3.Endpoint,
-		ForcePathStyle:                b.S3.ForcePathStyle,
-		DiscoverBucketRegion:          b.S3.DiscoverBucketRegion,
-		SkipVerifyCertificateTestOnly: b.S3.SkipVerifyCertificateTestOnly,
-		ServerSideEncryption:          b.S3.ServerSideEncryption,
-		ServerSideEncryptionKmsKeyID:  b.S3.ServerSideEncryptionKmsKeyID,
-		PreSignedExpiry:               b.S3.PreSignedExpiry,
-		PreSignedEndpoint:             b.S3.PreSignedEndpoint,
-		DisablePreSigned:              b.S3.DisablePreSigned,
-		DisablePreSignedUI:            b.S3.DisablePreSignedUI,
-		DisablePreSignedMultipart:     b.S3.DisablePreSignedMultipart,
-		ClientLogRetries:              b.S3.ClientLogRetries,
-		ClientLogRequest:              b.S3.ClientLogRequest,
-		WebIdentity:                   webIdentity,
+		Region:                            b.S3.Region,
+		Profile:                           b.S3.Profile,
+		CredentialsFile:                   b.S3.CredentialsFile,
+		Credentials:                       creds,
+		MaxRetries:                        b.S3.MaxRetries,
+		Endpoint:                          b.S3.Endpoint,
+		ForcePathStyle:                    b.S3.ForcePathStyle,
+		DiscoverBucketRegion:              b.S3.DiscoverBucketRegion,
+		SkipVerifyCertificateTestOnly:     b.S3.SkipVerifyCertificateTestOnly,
+		ServerSideEncryption:              b.S3.ServerSideEncryption,
+		ServerSideEncryptionKmsKeyID:      b.S3.ServerSideEncryptionKmsKeyID,
+		PreSignedExpiry:                   b.S3.PreSignedExpiry,
+		PreSignedEndpoint:                 b.S3.PreSignedEndpoint,
+		DisablePreSigned:                  b.S3.DisablePreSigned,
+		DisablePreSignedUI:                b.S3.DisablePreSignedUI,
+		DisablePreSignedMultipart:         b.S3.DisablePreSignedMultipart,
+		DisablePreSignedMultipartChecksum: b.S3.DisablePreSignedMultipartChecksum,
+		ClientLogRetries:                  b.S3.ClientLogRetries,
+		ClientLogRequest:                  b.S3.ClientLogRequest,
+		WebIdentity:                       webIdentity,
 	}, nil
 }
 

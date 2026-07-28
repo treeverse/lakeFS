@@ -33,10 +33,13 @@ type DBEntry struct {
 	CreationDate    time.Time
 	Size            int64
 	Checksum        string
-	Metadata        Metadata
-	Expired         bool
-	AddressType     AddressType
-	ContentType     string
+	// Checksums are validated full-object checksums of the object content, keyed by
+	// checksum algorithm (e.g. CRC64NVME), base64-encoded
+	Checksums   map[string]string
+	Metadata    Metadata
+	Expired     bool
+	AddressType AddressType
+	ContentType string
 }
 
 type CommitLog struct {
@@ -174,6 +177,11 @@ func (b *DBEntryBuilder) Size(size int64) *DBEntryBuilder {
 
 func (b *DBEntryBuilder) Checksum(checksum string) *DBEntryBuilder {
 	b.dbEntry.Checksum = checksum
+	return b
+}
+
+func (b *DBEntryBuilder) Checksums(checksums map[string]string) *DBEntryBuilder {
+	b.dbEntry.Checksums = checksums
 	return b
 }
 

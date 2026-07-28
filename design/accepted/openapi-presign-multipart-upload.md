@@ -237,3 +237,73 @@ lakeFS will return presign multipart support only on S3 with presign support ena
 None of the returned URLs has to be used, it is fine to ask for more than are needed.
 In future we may add an _additional_ API call to URLs for uploading more parts.
 This will allow more "streaming" uses, for instance as parallels to how Hadoop S3A uses the S3 MPU API and how the AWS SDKs upload manager handle streaming.
+
+
+## Full-object checksum validation (added later)
+
+The presign multipart API optionally validates upload integrity end to end using
+[S3 full-object checksums](https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html):
+
+- `createPresignMultipartUpload` accepts optional `checksum_algorithm` (`CRC64NVME`)
+  and `checksum_type` (`FULL_OBJECT`) query parameters.
+- `completePresignMultipartUpload` accepts optional `checksum_algorithm`,
+  `checksum_type`, `checksum` (base64-encoded big-endian value, S3 convention) and
+  `mpu_object_size` body fields. lakeFS validates the assembled object against them
+  and the completion fails with `400` on mismatch — a successful completion always
+  means validation happened.
+- Clients discover support via the `pre_sign_multipart_upload_checksum` storage
+  config flag, following the `pre_sign_multipart_upload` pattern. Requests carrying
+  checksum fields on a deployment without support fail with `501`; block adapters
+  without validation support reject checksum requests with a clear error rather than
+  ignore them.
+
+### How validation works (and why)
+
+Parts are uploaded through unmodified presigned URLs, which cannot carry
+`x-amz-checksum-*` headers. That rules out declaring a checksum algorithm on
+`CreateMultipartUpload`: S3 requires that parts of such uploads carry checksum
+headers of the declared algorithm ("This checksum algorithm must be the same for all
+parts and it match the checksum value supplied in the `CreateMultipartUpload`
+request" — UploadPart API reference; verified empirically against MinIO
+RELEASE.2025-09-07 and LocalStack 4.9, which both reject bare part uploads under a
+declared algorithm).
+
+Passing the client's checksum to `CompleteMultipartUpload` of an undeclared upload is
+also unsound: AWS documents that such checksums are "currently accepted **but not
+validated** or stored with the object" — a success response would prove nothing.
+
+Instead, the S3 adapter relies on S3's default integrity protections: "if objects are
+uploaded without a checksum, S3 automatically attaches the recommended full object
+CRC-64/NVME (CRC64NVME) checksum algorithm to the object". The
+`CompleteMultipartUpload` response carries that store-computed full-object checksum,
+and the adapter **compares** it against the client-supplied value, failing the
+completion (before any lakeFS entry is created, and deleting the assembled object) on
+mismatch. `mpu_object_size` is forwarded to the store (enforced by stores that
+support it) and additionally cross-checked against the actual object size.
+
+S3-compatible stores without default integrity protections cannot validate this
+way. To fail fast instead of at the end of a long upload, the adapter
+probes the store on `CreateMultiPartUpload` when checksum validation is requested: it
+writes a small probe object at the target key and checks whether the store attached a
+default CRC64NVME checksum. Stores that do not are rejected with a clear error before
+the client uploads any part — a successful completion therefore always means the
+checksum was actually validated. The probe outcome is cached for the process
+lifetime (one PUT+HEAD+DELETE total, not per upload) and feeds discovery: once a
+store fails the probe, `pre_sign_multipart_upload_checksum` flips to `false` for the
+deployment, so clients checking the storage config after the first attempt see the
+real capability. Before any probe has run the flag reflects static configuration —
+the one window in which a client on an unsupported store sees `true` and learns the
+truth from the create call's error.
+
+This is also why only `CRC64NVME` is supported: it is the only algorithm stores
+compute by default for the full object. `CRC32`/`CRC32C` full-object and per-part
+`COMPOSITE` checksums require checksum headers signed into the presigned part URLs —
+a follow-up. Deployments whose backing store does not compute default checksums can
+disable the capability (and the discovery flag) with the
+`blockstore.s3.disable_pre_signed_multipart_checksum` configuration flag.
+
+A validated checksum is persisted with the object: the catalog entry stores it in a
+`checksums` map (algorithm → base64 value; the entry's `checksum` field remains the
+ETag for S3 gateway compatibility), and `ObjectStats` exposes it as an optional
+`checksums` field on completion and `statObject` responses — so clients can retrieve
+what was validated after the fact.

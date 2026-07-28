@@ -197,6 +197,70 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+// checksumSizeCRC64 is the decoded length of a base64-encoded CRC64NVME checksum value.
+const checksumSizeCRC64 = 8
+
+// validChecksumAlgorithm converts an API checksum algorithm to its block-layer value.
+func validChecksumAlgorithm(algorithm apigen.ChecksumAlgorithm) (block.ChecksumAlgorithm, bool) {
+	if a := block.ChecksumAlgorithm(algorithm); a == block.ChecksumAlgorithmCRC64NVME {
+		return a, true
+	}
+	return "", false
+}
+
+// validateChecksumValue returns a non-empty message when value is not a base64-encoded
+// checksum of the size algorithm produces.
+func validateChecksumValue(value string, algorithm block.ChecksumAlgorithm) string {
+	raw, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return "checksum must be base64-encoded"
+	}
+	if len(raw) != checksumSizeCRC64 {
+		return fmt.Sprintf("checksum of algorithm %s must encode %d bytes", algorithm, checksumSizeCRC64)
+	}
+	return ""
+}
+
+// fullObjectChecksumFromBody validates the optional checksum fields of a complete
+// presign multipart upload request and converts them to a block-layer checksum spec.
+// It returns a nil checksum when validation was not requested, and a non-empty message
+// when the fields are invalid.
+func fullObjectChecksumFromBody(body apigen.CompletePresignMultipartUploadJSONRequestBody) (*block.FullObjectChecksum, string) {
+	if body.ChecksumAlgorithm == nil && body.ChecksumType == nil && body.Checksum == nil && body.MpuObjectSize == nil {
+		return nil, ""
+	}
+	if body.ChecksumType != nil && *body.ChecksumType != apigen.ChecksumType_FULL_OBJECT {
+		return nil, "only FULL_OBJECT checksum_type is supported"
+	}
+	switch {
+	case body.Checksum != nil && body.ChecksumAlgorithm == nil:
+		return nil, "checksum requires checksum_algorithm"
+	case body.Checksum == nil && body.ChecksumAlgorithm != nil:
+		return nil, "checksum_algorithm requires checksum"
+	case body.Checksum == nil && body.ChecksumType != nil:
+		return nil, "checksum_type requires checksum and checksum_algorithm"
+	}
+	checksum := &block.FullObjectChecksum{Type: block.ChecksumTypeFullObject}
+	if body.Checksum != nil {
+		algorithm, ok := validChecksumAlgorithm(*body.ChecksumAlgorithm)
+		if !ok {
+			return nil, fmt.Sprintf("invalid checksum_algorithm %q", *body.ChecksumAlgorithm)
+		}
+		if msg := validateChecksumValue(*body.Checksum, algorithm); msg != "" {
+			return nil, msg
+		}
+		checksum.Algorithm = algorithm
+		checksum.Value = *body.Checksum
+	}
+	if body.MpuObjectSize != nil {
+		if *body.MpuObjectSize < 0 {
+			return nil, "mpu_object_size cannot be negative"
+		}
+		checksum.MpuObjectSize = body.MpuObjectSize
+	}
+	return checksum, ""
+}
+
 func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http.Request, repository string, branch string, params apigen.CreatePresignMultipartUploadParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -223,6 +287,30 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
 		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
 		return
+	}
+
+	// check if checksum validation is supported, when requested
+	opts := block.CreateMultiPartUploadOpts{}
+	if params.ChecksumAlgorithm != nil || params.ChecksumType != nil {
+		if !swag.BoolValue(storageConfig.PreSignMultipartUploadChecksum) {
+			writeError(w, r, http.StatusNotImplemented, "checksum validation is not supported by this blockstore")
+			return
+		}
+		if params.ChecksumAlgorithm == nil {
+			writeError(w, r, http.StatusBadRequest, "checksum_type requires checksum_algorithm")
+			return
+		}
+		if params.ChecksumType != nil && *params.ChecksumType != apigen.ChecksumType_FULL_OBJECT {
+			writeError(w, r, http.StatusBadRequest, "only FULL_OBJECT checksum_type is supported")
+			return
+		}
+		algorithm, ok := validChecksumAlgorithm(*params.ChecksumAlgorithm)
+		if !ok {
+			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid checksum_algorithm %q", *params.ChecksumAlgorithm))
+			return
+		}
+		opts.ChecksumAlgorithm = algorithm
+		opts.ChecksumType = block.ChecksumTypeFullObject
 	}
 
 	// check if the branch exists - it is still possible for a branch to be deleted later, but we don't want to
@@ -271,7 +359,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
-	}, nil, block.CreateMultiPartUploadOpts{})
+	}, nil, opts)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -556,6 +644,18 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// check if checksum validation is supported, when requested
+	checksumRequested := body.ChecksumAlgorithm != nil || body.ChecksumType != nil || body.Checksum != nil || body.MpuObjectSize != nil
+	if checksumRequested && !swag.BoolValue(storageConfig.PreSignMultipartUploadChecksum) {
+		writeError(w, r, http.StatusNotImplemented, "checksum validation is not supported by this blockstore")
+		return
+	}
+	fullObjectChecksum, invalidChecksumMsg := fullObjectChecksumFromBody(body)
+	if invalidChecksumMsg != "" {
+		writeError(w, r, http.StatusBadRequest, invalidChecksumMsg)
+		return
+	}
+
 	// validation checks
 	if uploadID == "" {
 		writeError(w, r, http.StatusBadRequest, "upload_id is required")
@@ -600,7 +700,8 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       physicalAddress,
 	}, uploadID, &block.MultipartUploadCompletion{
-		Part: multipartList,
+		Part:     multipartList,
+		Checksum: fullObjectChecksum,
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -626,6 +727,12 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
+	if fullObjectChecksum != nil && fullObjectChecksum.Value != "" {
+		// validated by the storage on completion; keep it retrievable from the catalog
+		entryBuilder.Checksums(map[string]string{
+			string(fullObjectChecksum.Algorithm): fullObjectChecksum.Value,
+		})
+	}
 	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
@@ -638,6 +745,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
+		Checksums:       objectChecksums(entry.Checksums),
 		ContentType:     swag.String(entry.ContentType),
 		Metadata:        &metadata,
 		Mtime:           entry.CreationDate.Unix(),
@@ -648,6 +756,15 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
+}
+
+// objectChecksums converts an entry's validated checksums for an ObjectStats
+// response, keeping the field absent when there are none.
+func objectChecksums(checksums map[string]string) *apigen.ObjectStats_Checksums {
+	if len(checksums) == 0 {
+		return nil
+	}
+	return &apigen.ObjectStats_Checksums{AdditionalProperties: checksums}
 }
 
 func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body apigen.PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
@@ -2169,6 +2286,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		ImportSupport:                    info.ImportSupport,
 		ImportValidityRegex:              info.ImportValidityRegex,
 		PreSignMultipartUpload:           swag.Bool(info.PreSignSupportMultipart),
+		PreSignMultipartUploadChecksum:   swag.Bool(info.MultipartChecksumSupport),
 	}, nil
 }
 
@@ -3095,6 +3213,7 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
+		errors.Is(err, block.ErrChecksumMismatch),
 		errors.Is(err, block.ErrWriteFailed),
 		errors.Is(err, auth.ErrInvalidRequest),
 		errors.Is(err, authentication.ErrInvalidRequest),
@@ -5218,6 +5337,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 
 	objStat := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
+		Checksums:       objectChecksums(entry.Checksums),
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
 		PathType:        entryTypeObject,

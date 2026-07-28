@@ -374,7 +374,10 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	return nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+	if err := block.VerifyNoChecksum(opts); err != nil {
+		return nil, err
+	}
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", obj.StorageID, time.Now(), nil, &err)
 	bucket, uploadID, err := a.extractParamsFromObj(obj)
@@ -527,6 +530,9 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 }
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+	if err := block.VerifyNoCompletionChecksum(multipartList); err != nil {
+		return nil, err
+	}
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", obj.StorageID, time.Now(), nil, &err)
 	bucketName, key, err := a.extractParamsFromObj(obj)
