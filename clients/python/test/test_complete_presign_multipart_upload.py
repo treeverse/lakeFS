@@ -46,7 +46,11 @@ class TestCompletePresignMultipartUpload(unittest.TestCase):
                 user_metadata = {
                     'key' : ''
                     },
-                content_type = ''
+                content_type = '',
+                checksum_algorithm = 'CRC64NVME',
+                checksum_type = 'FULL_OBJECT',
+                checksum = '',
+                mpu_object_size = 0
             )
         else:
             return CompletePresignMultipartUpload(

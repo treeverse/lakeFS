@@ -9,6 +9,10 @@ Name | Type | Description | Notes
 **parts** | [**List[UploadPart]**](UploadPart.md) | List of uploaded parts, should be ordered by ascending part number | 
 **user_metadata** | **Dict[str, str]** |  | [optional] 
 **content_type** | **str** | Object media type | [optional] 
+**checksum_algorithm** | [**ChecksumAlgorithm**](ChecksumAlgorithm.md) |  | [optional] 
+**checksum_type** | [**ChecksumType**](ChecksumType.md) |  | [optional] 
+**checksum** | **str** | Base64-encoded big-endian full-object checksum of the entire object content, computed with checksum_algorithm (S3 encoding convention). Requires checksum_algorithm. lakeFS compares the storage-computed full-object checksum of the assembled object against this value and fails the completion on mismatch; a successful completion means the checksum was validated.  | [optional] 
+**mpu_object_size** | **int** | Expected total size in bytes of the assembled object, validated by the storage on completion. May be supplied with or without a checksum.  | [optional] 
 
 ## Example
 

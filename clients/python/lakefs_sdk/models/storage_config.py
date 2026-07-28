@@ -38,9 +38,10 @@ class StorageConfig(BaseModel):
     import_support: StrictBool = Field(...)
     import_validity_regex: StrictStr = Field(...)
     pre_sign_multipart_upload: Optional[StrictBool] = None
+    pre_sign_multipart_upload_checksum: Optional[StrictBool] = Field(None, description="Whether the blockstore supports full-object checksum validation for presign multipart uploads. Always false when pre_sign_multipart_upload is false. ")
     blockstore_id: Optional[StrictStr] = None
     blockstore_description: Optional[StrictStr] = None
-    __properties = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex", "pre_sign_multipart_upload", "blockstore_id", "blockstore_description"]
+    __properties = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex", "pre_sign_multipart_upload", "pre_sign_multipart_upload_checksum", "blockstore_id", "blockstore_description"]
 
     class Config:
         """Pydantic configuration"""
@@ -87,6 +88,7 @@ class StorageConfig(BaseModel):
             "import_support": obj.get("import_support"),
             "import_validity_regex": obj.get("import_validity_regex"),
             "pre_sign_multipart_upload": obj.get("pre_sign_multipart_upload"),
+            "pre_sign_multipart_upload_checksum": obj.get("pre_sign_multipart_upload_checksum"),
             "blockstore_id": obj.get("blockstore_id"),
             "blockstore_description": obj.get("blockstore_description")
         })

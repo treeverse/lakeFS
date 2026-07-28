@@ -267,11 +267,11 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_presign_multipart_upload**
-> PresignMultipartUpload create_presign_multipart_upload(repository, branch, path, parts=parts)
+> PresignMultipartUpload create_presign_multipart_upload(repository, branch, path, parts=parts, checksum_algorithm=checksum_algorithm, checksum_type=checksum_type)
 
 Initiate a multipart upload
 
-Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage. 
 
 ### Example
 
@@ -285,6 +285,8 @@ Initiates a multipart upload and returns an upload ID with presigned URLs for ea
 import time
 import os
 import lakefs_sdk
+from lakefs_sdk.models.checksum_algorithm import ChecksumAlgorithm
+from lakefs_sdk.models.checksum_type import ChecksumType
 from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -337,10 +339,12 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
     parts = 56 # int | number of presigned URL parts required to upload (optional)
+    checksum_algorithm = lakefs_sdk.ChecksumAlgorithm() # ChecksumAlgorithm | Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501.  (optional)
+    checksum_type = lakefs_sdk.ChecksumType() # ChecksumType | Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm.  (optional)
 
     try:
         # Initiate a multipart upload
-        api_response = api_instance.create_presign_multipart_upload(repository, branch, path, parts=parts)
+        api_response = api_instance.create_presign_multipart_upload(repository, branch, path, parts=parts, checksum_algorithm=checksum_algorithm, checksum_type=checksum_type)
         print("The response of ExperimentalApi->create_presign_multipart_upload:\n")
         pprint(api_response)
     except Exception as e:
@@ -358,6 +362,8 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
  **parts** | **int**| number of presigned URL parts required to upload | [optional] 
+ **checksum_algorithm** | [**ChecksumAlgorithm**](.md)| Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501.  | [optional] 
+ **checksum_type** | [**ChecksumType**](.md)| Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm.  | [optional] 
 
 ### Return type
 

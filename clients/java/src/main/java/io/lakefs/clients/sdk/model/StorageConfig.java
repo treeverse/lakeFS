@@ -87,6 +87,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD)
   private Boolean preSignMultipartUpload;
 
+  public static final String SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD_CHECKSUM = "pre_sign_multipart_upload_checksum";
+  @SerializedName(SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD_CHECKSUM)
+  private Boolean preSignMultipartUploadChecksum;
+
   public static final String SERIALIZED_NAME_BLOCKSTORE_ID = "blockstore_id";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_ID)
   private String blockstoreId;
@@ -287,6 +291,27 @@ public class StorageConfig {
   }
 
 
+  public StorageConfig preSignMultipartUploadChecksum(Boolean preSignMultipartUploadChecksum) {
+    
+    this.preSignMultipartUploadChecksum = preSignMultipartUploadChecksum;
+    return this;
+  }
+
+   /**
+   * Whether the blockstore supports full-object checksum validation for presign multipart uploads. Always false when pre_sign_multipart_upload is false. 
+   * @return preSignMultipartUploadChecksum
+  **/
+  @javax.annotation.Nullable
+  public Boolean getPreSignMultipartUploadChecksum() {
+    return preSignMultipartUploadChecksum;
+  }
+
+
+  public void setPreSignMultipartUploadChecksum(Boolean preSignMultipartUploadChecksum) {
+    this.preSignMultipartUploadChecksum = preSignMultipartUploadChecksum;
+  }
+
+
   public StorageConfig blockstoreId(String blockstoreId) {
     
     this.blockstoreId = blockstoreId;
@@ -392,6 +417,7 @@ public class StorageConfig {
         Objects.equals(this.importSupport, storageConfig.importSupport) &&
         Objects.equals(this.importValidityRegex, storageConfig.importValidityRegex) &&
         Objects.equals(this.preSignMultipartUpload, storageConfig.preSignMultipartUpload) &&
+        Objects.equals(this.preSignMultipartUploadChecksum, storageConfig.preSignMultipartUploadChecksum) &&
         Objects.equals(this.blockstoreId, storageConfig.blockstoreId) &&
         Objects.equals(this.blockstoreDescription, storageConfig.blockstoreDescription)&&
         Objects.equals(this.additionalProperties, storageConfig.additionalProperties);
@@ -399,7 +425,7 @@ public class StorageConfig {
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, blockstoreId, blockstoreDescription, additionalProperties);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, preSignMultipartUploadChecksum, blockstoreId, blockstoreDescription, additionalProperties);
   }
 
   @Override
@@ -415,6 +441,7 @@ public class StorageConfig {
     sb.append("    importSupport: ").append(toIndentedString(importSupport)).append("\n");
     sb.append("    importValidityRegex: ").append(toIndentedString(importValidityRegex)).append("\n");
     sb.append("    preSignMultipartUpload: ").append(toIndentedString(preSignMultipartUpload)).append("\n");
+    sb.append("    preSignMultipartUploadChecksum: ").append(toIndentedString(preSignMultipartUploadChecksum)).append("\n");
     sb.append("    blockstoreId: ").append(toIndentedString(blockstoreId)).append("\n");
     sb.append("    blockstoreDescription: ").append(toIndentedString(blockstoreDescription)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -449,6 +476,7 @@ public class StorageConfig {
     openapiFields.add("import_support");
     openapiFields.add("import_validity_regex");
     openapiFields.add("pre_sign_multipart_upload");
+    openapiFields.add("pre_sign_multipart_upload_checksum");
     openapiFields.add("blockstore_id");
     openapiFields.add("blockstore_description");
 

@@ -38,7 +38,8 @@ class ObjectStats(BaseModel):
     mtime: StrictInt = Field(..., description="Unix Epoch in seconds")
     metadata: Optional[Dict[str, StrictStr]] = None
     content_type: Optional[StrictStr] = Field(None, description="Object media type")
-    __properties = ["path", "path_type", "physical_address", "physical_address_expiry", "checksum", "size_bytes", "mtime", "metadata", "content_type"]
+    checksums: Optional[Dict[str, StrictStr]] = Field(None, description="Validated full-object checksums of the object content, keyed by checksum algorithm (e.g. CRC64NVME), base64-encoded (S3 convention). Present only when the object was uploaded with checksum validation. ")
+    __properties = ["path", "path_type", "physical_address", "physical_address_expiry", "checksum", "size_bytes", "mtime", "metadata", "content_type", "checksums"]
 
     @validator('path_type')
     def path_type_validate_enum(cls, value):
@@ -91,7 +92,8 @@ class ObjectStats(BaseModel):
             "size_bytes": obj.get("size_bytes"),
             "mtime": obj.get("mtime"),
             "metadata": obj.get("metadata"),
-            "content_type": obj.get("content_type")
+            "content_type": obj.get("content_type"),
+            "checksums": obj.get("checksums")
         })
         return _obj
 

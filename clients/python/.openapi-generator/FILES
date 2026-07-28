@@ -16,6 +16,8 @@ docs/AuthenticationToken.md
 docs/BranchCreation.md
 docs/BranchProtectionRule.md
 docs/BranchesApi.md
+docs/ChecksumAlgorithm.md
+docs/ChecksumType.md
 docs/CherryPickCreation.md
 docs/CommPrefsInput.md
 docs/Commit.md
@@ -169,6 +171,8 @@ lakefs_sdk/models/auth_capabilities.py
 lakefs_sdk/models/authentication_token.py
 lakefs_sdk/models/branch_creation.py
 lakefs_sdk/models/branch_protection_rule.py
+lakefs_sdk/models/checksum_algorithm.py
+lakefs_sdk/models/checksum_type.py
 lakefs_sdk/models/cherry_pick_creation.py
 lakefs_sdk/models/comm_prefs_input.py
 lakefs_sdk/models/commit.py
@@ -294,6 +298,8 @@ test/test_authentication_token.py
 test/test_branch_creation.py
 test/test_branch_protection_rule.py
 test/test_branches_api.py
+test/test_checksum_algorithm.py
+test/test_checksum_type.py
 test/test_cherry_pick_creation.py
 test/test_comm_prefs_input.py
 test/test_commit.py

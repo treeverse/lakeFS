@@ -236,11 +236,11 @@ public class Example {
 
 <a id="createPresignMultipartUpload"></a>
 # **createPresignMultipartUpload**
-> PresignMultipartUpload createPresignMultipartUpload(repository, branch, path).parts(parts).execute();
+> PresignMultipartUpload createPresignMultipartUpload(repository, branch, path).parts(parts).checksumAlgorithm(checksumAlgorithm).checksumType(checksumType).execute();
 
 Initiate a multipart upload
 
-Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). When checksum_algorithm is set, the upload uses full-object checksum validation: parts are uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied on completion is validated by the underlying storage. 
 
 ### Example
 ```java
@@ -289,9 +289,13 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     Integer parts = 56; // Integer | number of presigned URL parts required to upload
+    ChecksumAlgorithm checksumAlgorithm = ChecksumAlgorithm.fromValue("CRC64NVME"); // ChecksumAlgorithm | Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501. 
+    ChecksumType checksumType = ChecksumType.fromValue("FULL_OBJECT"); // ChecksumType | Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm. 
     try {
       PresignMultipartUpload result = apiInstance.createPresignMultipartUpload(repository, branch, path)
             .parts(parts)
+            .checksumAlgorithm(checksumAlgorithm)
+            .checksumType(checksumType)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -313,6 +317,8 @@ public class Example {
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
 | **parts** | **Integer**| number of presigned URL parts required to upload | [optional] |
+| **checksumAlgorithm** | [**ChecksumAlgorithm**](.md)| Request full-object checksum validation using this algorithm. Supported only when the storage configuration reports pre_sign_multipart_upload_checksum; otherwise the request fails with 501.  | [optional] [enum: CRC64NVME] |
+| **checksumType** | [**ChecksumType**](.md)| Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT when checksum_algorithm is set. Must not be supplied without checksum_algorithm.  | [optional] [enum: FULL_OBJECT] |
 
 ### Return type
 

@@ -111,4 +111,12 @@ public class ObjectStatsTest {
         // TODO: test contentType
     }
 
+    /**
+     * Test the property 'checksums'
+     */
+    @Test
+    public void checksumsTest() {
+        // TODO: test checksums
+    }
+
 }

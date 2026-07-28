@@ -35,6 +35,9 @@ pub struct ObjectStats {
     /// Object media type
     #[serde(rename = "content_type", skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
+    /// Validated full-object checksums of the object content, keyed by checksum algorithm (e.g. CRC64NVME), base64-encoded (S3 convention). Present only when the object was uploaded with checksum validation. 
+    #[serde(rename = "checksums", skip_serializing_if = "Option::is_none")]
+    pub checksums: Option<std::collections::HashMap<String, String>>,
 }
 
 impl ObjectStats {
@@ -49,6 +52,7 @@ impl ObjectStats {
             mtime,
             metadata: None,
             content_type: None,
+            checksums: None,
         }
     }
 }

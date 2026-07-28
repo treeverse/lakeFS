@@ -16,6 +16,7 @@
 |**mtime** | **Long** | Unix Epoch in seconds |  |
 |**metadata** | **Map&lt;String, String&gt;** |  |  [optional] |
 |**contentType** | **String** | Object media type |  [optional] |
+|**checksums** | **Map&lt;String, String&gt;** | Validated full-object checksums of the object content, keyed by checksum algorithm (e.g. CRC64NVME), base64-encoded (S3 convention). Present only when the object was uploaded with checksum validation.  |  [optional] |
 
 
 

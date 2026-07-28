@@ -47,7 +47,10 @@ class TestObjectStats(unittest.TestCase):
                 metadata = {
                     'key' : ''
                     },
-                content_type = ''
+                content_type = '',
+                checksums = {
+                    'key' : ''
+                    }
             )
         else:
             return ObjectStats(

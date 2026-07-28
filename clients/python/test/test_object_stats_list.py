@@ -54,7 +54,10 @@ class TestObjectStatsList(unittest.TestCase):
                         metadata = {
                             'key' : ''
                             }, 
-                        content_type = '', )
+                        content_type = '', 
+                        checksums = {
+                            'key' : ''
+                            }, )
                     ]
             )
         else:
@@ -76,7 +79,10 @@ class TestObjectStatsList(unittest.TestCase):
                         metadata = {
                             'key' : ''
                             }, 
-                        content_type = '', )
+                        content_type = '', 
+                        checksums = {
+                            'key' : ''
+                            }, )
                     ],
         )
         """

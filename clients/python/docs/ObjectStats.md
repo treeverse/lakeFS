@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **mtime** | **int** | Unix Epoch in seconds | 
 **metadata** | **Dict[str, str]** |  | [optional] 
 **content_type** | **str** | Object media type | [optional] 
+**checksums** | **Dict[str, str]** | Validated full-object checksums of the object content, keyed by checksum algorithm (e.g. CRC64NVME), base64-encoded (S3 convention). Present only when the object was uploaded with checksum validation.  | [optional] 
 
 ## Example
 

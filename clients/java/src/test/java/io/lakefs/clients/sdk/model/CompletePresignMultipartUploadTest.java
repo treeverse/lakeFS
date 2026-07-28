@@ -18,6 +18,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.ChecksumAlgorithm;
+import io.lakefs.clients.sdk.model.ChecksumType;
 import io.lakefs.clients.sdk.model.UploadPart;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,6 +74,38 @@ public class CompletePresignMultipartUploadTest {
     @Test
     public void contentTypeTest() {
         // TODO: test contentType
+    }
+
+    /**
+     * Test the property 'checksumAlgorithm'
+     */
+    @Test
+    public void checksumAlgorithmTest() {
+        // TODO: test checksumAlgorithm
+    }
+
+    /**
+     * Test the property 'checksumType'
+     */
+    @Test
+    public void checksumTypeTest() {
+        // TODO: test checksumType
+    }
+
+    /**
+     * Test the property 'checksum'
+     */
+    @Test
+    public void checksumTest() {
+        // TODO: test checksum
+    }
+
+    /**
+     * Test the property 'mpuObjectSize'
+     */
+    @Test
+    public void mpuObjectSizeTest() {
+        // TODO: test mpuObjectSize
     }
 
 }

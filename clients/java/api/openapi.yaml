@@ -4910,6 +4910,9 @@ paths:
         Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional).
         Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation.
         For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
+        When checksum_algorithm is set, the upload uses full-object checksum validation: parts are
+        uploaded to the presigned URLs without checksum headers, and the full-object checksum supplied
+        on completion is validated by the underlying storage.
       operationId: createPresignMultipartUpload
       parameters:
       - explode: false
@@ -4941,6 +4944,27 @@ paths:
         required: false
         schema:
           type: integer
+        style: form
+      - description: |
+          Request full-object checksum validation using this algorithm.
+          Supported only when the storage configuration reports pre_sign_multipart_upload_checksum;
+          otherwise the request fails with 501.
+        explode: true
+        in: query
+        name: checksum_algorithm
+        required: false
+        schema:
+          $ref: '#/components/schemas/ChecksumAlgorithm'
+        style: form
+      - description: |
+          Checksum type for the upload. Only FULL_OBJECT is supported; defaults to FULL_OBJECT
+          when checksum_algorithm is set. Must not be supplied without checksum_algorithm.
+        explode: true
+        in: query
+        name: checksum_type
+        required: false
+        schema:
+          $ref: '#/components/schemas/ChecksumType'
         style: form
       responses:
         "201":
@@ -8619,6 +8643,8 @@ components:
     ObjectStats:
       example:
         physical_address: physical_address
+        checksums:
+          key: checksums
         path: path
         metadata:
           key: metadata
@@ -8672,6 +8698,14 @@ components:
         content_type:
           description: Object media type
           type: string
+        checksums:
+          additionalProperties:
+            type: string
+          description: |
+            Validated full-object checksums of the object content, keyed by checksum
+            algorithm (e.g. CRC64NVME), base64-encoded (S3 convention). Present only
+            when the object was uploaded with checksum validation.
+          type: object
       required:
       - checksum
       - mtime
@@ -8688,6 +8722,8 @@ components:
           results: 0
         results:
         - physical_address: physical_address
+          checksums:
+            key: checksums
           path: path
           metadata:
             key: metadata
@@ -8698,6 +8734,8 @@ components:
           path_type: common_prefix
           mtime: 1
         - physical_address: physical_address
+          checksums:
+            key: checksums
           path: path
           metadata:
             key: metadata
@@ -10080,6 +10118,7 @@ components:
       type: object
     StorageConfig:
       example:
+        pre_sign_multipart_upload_checksum: true
         blockstore_description: blockstore_description
         pre_sign_multipart_upload: true
         blockstore_namespace_example: blockstore_namespace_example
@@ -10110,6 +10149,11 @@ components:
           type: string
         pre_sign_multipart_upload:
           type: boolean
+        pre_sign_multipart_upload_checksum:
+          description: |
+            Whether the blockstore supports full-object checksum validation for presign
+            multipart uploads. Always false when pre_sign_multipart_upload is false.
+          type: boolean
         blockstore_id:
           type: string
         blockstore_description:
@@ -10130,7 +10174,8 @@ components:
     Config:
       example:
         storage_config_list:
-        - blockstore_description: blockstore_description
+        - pre_sign_multipart_upload_checksum: true
+          blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
@@ -10141,7 +10186,8 @@ components:
           import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
-        - blockstore_description: blockstore_description
+        - pre_sign_multipart_upload_checksum: true
+          blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
@@ -10153,6 +10199,7 @@ components:
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
         storage_config:
+          pre_sign_multipart_upload_checksum: true
           blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
           blockstore_namespace_example: blockstore_namespace_example
@@ -10819,6 +10866,25 @@ components:
       required:
       - events
       type: object
+    ChecksumAlgorithm:
+      description: |
+        Checksum algorithm for full-object integrity validation of a presign multipart upload.
+        Supported only when the storage configuration reports pre_sign_multipart_upload_checksum.
+        Only CRC64NVME is supported: parts are uploaded through unmodified presigned URLs, and the
+        storage computes a full-object CRC64NVME by default, which lakeFS compares against the
+        client-supplied value on completion. Other algorithms require per-part checksum headers
+        (composite mode) and are not supported.
+      enum:
+      - CRC64NVME
+      type: string
+    ChecksumType:
+      description: |
+        Checksum type for multipart upload integrity validation.
+        Only FULL_OBJECT is supported: the checksum covers the entire assembled object,
+        so individual parts do not require checksums. COMPOSITE is not supported.
+      enum:
+      - FULL_OBJECT
+      type: string
     PresignMultipartUpload:
       example:
         physical_address: physical_address
@@ -10902,14 +10968,18 @@ components:
     CompletePresignMultipartUpload:
       example:
         physical_address: physical_address
+        checksum_type: null
         user_metadata:
           key: user_metadata
         content_type: content_type
+        mpu_object_size: 0
+        checksum_algorithm: null
         parts:
         - part_number: 0
           etag: etag
         - part_number: 0
           etag: etag
+        checksum: checksum
       properties:
         physical_address:
           type: string
@@ -10926,6 +10996,25 @@ components:
         content_type:
           description: Object media type
           type: string
+        checksum_algorithm:
+          $ref: '#/components/schemas/ChecksumAlgorithm'
+        checksum_type:
+          $ref: '#/components/schemas/ChecksumType'
+        checksum:
+          description: |
+            Base64-encoded big-endian full-object checksum of the entire object content,
+            computed with checksum_algorithm (S3 encoding convention).
+            Requires checksum_algorithm. lakeFS compares the storage-computed full-object
+            checksum of the assembled object against this value and fails the completion
+            on mismatch; a successful completion means the checksum was validated.
+          type: string
+        mpu_object_size:
+          description: |
+            Expected total size in bytes of the assembled object, validated by the storage
+            on completion. May be supplied with or without a checksum.
+          format: int64
+          minimum: 0
+          type: integer
       required:
       - parts
       - physical_address

@@ -53,6 +53,7 @@ class TestConfig(unittest.TestCase):
                     import_support = True, 
                     import_validity_regex = '', 
                     pre_sign_multipart_upload = True, 
+                    pre_sign_multipart_upload_checksum = True, 
                     blockstore_id = '', 
                     blockstore_description = '', ),
                 storage_config_list = [
@@ -66,6 +67,7 @@ class TestConfig(unittest.TestCase):
                         import_support = True, 
                         import_validity_regex = '', 
                         pre_sign_multipart_upload = True, 
+                        pre_sign_multipart_upload_checksum = True, 
                         blockstore_id = '', 
                         blockstore_description = '', )
                     ],

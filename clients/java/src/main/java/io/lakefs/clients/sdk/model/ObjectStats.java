@@ -136,6 +136,10 @@ public class ObjectStats {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public static final String SERIALIZED_NAME_CHECKSUMS = "checksums";
+  @SerializedName(SERIALIZED_NAME_CHECKSUMS)
+  private Map<String, String> checksums = new HashMap<>();
+
   public ObjectStats() {
   }
 
@@ -335,6 +339,35 @@ public class ObjectStats {
     this.contentType = contentType;
   }
 
+
+  public ObjectStats checksums(Map<String, String> checksums) {
+    
+    this.checksums = checksums;
+    return this;
+  }
+
+  public ObjectStats putChecksumsItem(String key, String checksumsItem) {
+    if (this.checksums == null) {
+      this.checksums = new HashMap<>();
+    }
+    this.checksums.put(key, checksumsItem);
+    return this;
+  }
+
+   /**
+   * Validated full-object checksums of the object content, keyed by checksum algorithm (e.g. CRC64NVME), base64-encoded (S3 convention). Present only when the object was uploaded with checksum validation. 
+   * @return checksums
+  **/
+  @javax.annotation.Nullable
+  public Map<String, String> getChecksums() {
+    return checksums;
+  }
+
+
+  public void setChecksums(Map<String, String> checksums) {
+    this.checksums = checksums;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -398,13 +431,14 @@ public class ObjectStats {
         Objects.equals(this.sizeBytes, objectStats.sizeBytes) &&
         Objects.equals(this.mtime, objectStats.mtime) &&
         Objects.equals(this.metadata, objectStats.metadata) &&
-        Objects.equals(this.contentType, objectStats.contentType)&&
+        Objects.equals(this.contentType, objectStats.contentType) &&
+        Objects.equals(this.checksums, objectStats.checksums)&&
         Objects.equals(this.additionalProperties, objectStats.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(path, pathType, physicalAddress, physicalAddressExpiry, checksum, sizeBytes, mtime, metadata, contentType, additionalProperties);
+    return Objects.hash(path, pathType, physicalAddress, physicalAddressExpiry, checksum, sizeBytes, mtime, metadata, contentType, checksums, additionalProperties);
   }
 
   @Override
@@ -420,6 +454,7 @@ public class ObjectStats {
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
+    sb.append("    checksums: ").append(toIndentedString(checksums)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -452,6 +487,7 @@ public class ObjectStats {
     openapiFields.add("mtime");
     openapiFields.add("metadata");
     openapiFields.add("content_type");
+    openapiFields.add("checksums");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
