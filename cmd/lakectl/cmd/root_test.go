@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/go-openapi/swag"
@@ -346,7 +347,10 @@ func TestMaybeWarnEnterprise(t *testing.T) {
 
 	originalCfg := cfg
 	cfg = &Configuration{}
-	defer func() { cfg = originalCfg }()
+	defer func() {
+		cfg = originalCfg
+		resetAPIClientCache()
+	}()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -362,6 +366,9 @@ func TestMaybeWarnEnterprise(t *testing.T) {
 			}))
 			defer server.Close()
 			cfg.Server.EndpointURL = lakefsconfig.OnlyString(server.URL)
+			// getClient memoizes the API client; clear it so this subtest's
+			// endpoint takes effect.
+			resetAPIClientCache()
 
 			var buf bytes.Buffer
 			tt.cmd.SetContext(t.Context())
@@ -375,4 +382,11 @@ func TestMaybeWarnEnterprise(t *testing.T) {
 			require.Empty(t, strings.TrimSpace(buf.String()))
 		})
 	}
+}
+
+// resetAPIClientCache clears the memoized API client so a test can point
+// getClient at a different server endpoint.
+func resetAPIClientCache() {
+	apiClient = nil
+	apiClientOnce = sync.Once{}
 }

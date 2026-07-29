@@ -203,6 +203,9 @@ var (
 	tokenCache          *awsiam.JWTCache
 	tokenCacheOnce      sync.Once
 	ErrTokenUnavailable = fmt.Errorf("token is not available")
+
+	apiClient     *apigen.ClientWithResponses
+	apiClientOnce sync.Once
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -615,7 +618,19 @@ func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
 	return awsiam.NewIAMAuthParams(host, opts...), nil
 }
 
+// getClient returns the process-wide API client. All callers — including the
+// pre-run usage-stats report — share one client and therefore one underlying
+// HTTP connection pool: a lakectl invocation opens a single TCP+TLS connection
+// to the server instead of one per client construction, which matters when
+// lakectl is invoked at high frequency (e.g. once per file in a pipeline).
 func getClient() *apigen.ClientWithResponses {
+	apiClientOnce.Do(func() {
+		apiClient = newAPIClient()
+	})
+	return apiClient
+}
+
+func newAPIClient() *apigen.ClientWithResponses {
 	httpClient := getHTTPClient(lakectlRetryPolicy)
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
