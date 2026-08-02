@@ -35,6 +35,7 @@ type CommPrefs struct {
 	FirstName      string
 	LastName       string
 	CompanyName    string
+	Country        string
 	FeatureUpdates bool
 	BlockstoreType string
 }
@@ -100,6 +101,7 @@ type CommPrefsData struct {
 	FirstName      string `json:"firstName,omitempty"`
 	LastName       string `json:"lastName,omitempty"`
 	CompanyName    string `json:"companyName,omitempty"`
+	Country        string `json:"country,omitempty"`
 	FeatureUpdates bool   `json:"featureUpdates"`
 	BlockstoreType string `json:"blockstoreType"`
 }

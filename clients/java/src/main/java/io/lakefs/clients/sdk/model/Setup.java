@@ -76,6 +76,10 @@ public class Setup {
   @SerializedName(SERIALIZED_NAME_COMPANY_NAME)
   private String companyName;
 
+  public static final String SERIALIZED_NAME_COUNTRY = "country";
+  @SerializedName(SERIALIZED_NAME_COUNTRY)
+  private String country;
+
   public static final String SERIALIZED_NAME_FEATURE_UPDATES = "featureUpdates";
   @SerializedName(SERIALIZED_NAME_FEATURE_UPDATES)
   private Boolean featureUpdates;
@@ -214,6 +218,27 @@ public class Setup {
   }
 
 
+  public Setup country(String country) {
+    
+    this.country = country;
+    return this;
+  }
+
+   /**
+   * the provided country
+   * @return country
+  **/
+  @javax.annotation.Nullable
+  public String getCountry() {
+    return country;
+  }
+
+
+  public void setCountry(String country) {
+    this.country = country;
+  }
+
+
   public Setup featureUpdates(Boolean featureUpdates) {
     
     this.featureUpdates = featureUpdates;
@@ -320,6 +345,7 @@ public class Setup {
         Objects.equals(this.lastName, setup.lastName) &&
         Objects.equals(this.email, setup.email) &&
         Objects.equals(this.companyName, setup.companyName) &&
+        Objects.equals(this.country, setup.country) &&
         Objects.equals(this.featureUpdates, setup.featureUpdates) &&
         Objects.equals(this.securityUpdates, setup.securityUpdates)&&
         Objects.equals(this.additionalProperties, setup.additionalProperties);
@@ -327,7 +353,7 @@ public class Setup {
 
   @Override
   public int hashCode() {
-    return Objects.hash(username, key, firstName, lastName, email, companyName, featureUpdates, securityUpdates, additionalProperties);
+    return Objects.hash(username, key, firstName, lastName, email, companyName, country, featureUpdates, securityUpdates, additionalProperties);
   }
 
   @Override
@@ -340,6 +366,7 @@ public class Setup {
     sb.append("    lastName: ").append(toIndentedString(lastName)).append("\n");
     sb.append("    email: ").append(toIndentedString(email)).append("\n");
     sb.append("    companyName: ").append(toIndentedString(companyName)).append("\n");
+    sb.append("    country: ").append(toIndentedString(country)).append("\n");
     sb.append("    featureUpdates: ").append(toIndentedString(featureUpdates)).append("\n");
     sb.append("    securityUpdates: ").append(toIndentedString(securityUpdates)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -371,6 +398,7 @@ public class Setup {
     openapiFields.add("lastName");
     openapiFields.add("email");
     openapiFields.add("companyName");
+    openapiFields.add("country");
     openapiFields.add("featureUpdates");
     openapiFields.add("securityUpdates");
 
@@ -417,6 +445,9 @@ public class Setup {
       }
       if ((jsonObj.get("companyName") != null && !jsonObj.get("companyName").isJsonNull()) && !jsonObj.get("companyName").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `companyName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("companyName").toString()));
+      }
+      if ((jsonObj.get("country") != null && !jsonObj.get("country").isJsonNull()) && !jsonObj.get("country").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `country` to be a primitive type in the JSON string but got `%s`", jsonObj.get("country").toString()));
       }
   }
 

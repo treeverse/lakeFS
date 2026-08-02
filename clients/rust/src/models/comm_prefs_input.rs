@@ -24,6 +24,9 @@ pub struct CommPrefsInput {
     /// the provided company name
     #[serde(rename = "companyName", skip_serializing_if = "Option::is_none")]
     pub company_name: Option<String>,
+    /// the provided country
+    #[serde(rename = "country", skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
     /// user preference to receive feature updates
     #[serde(rename = "featureUpdates")]
     pub feature_updates: bool,
@@ -39,6 +42,7 @@ impl CommPrefsInput {
             last_name: None,
             email: None,
             company_name: None,
+            country: None,
             feature_updates,
             security_updates,
         }

@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **last_name** | Option<**String**> | the provided last name | [optional]
 **email** | Option<**String**> | the provided email | [optional]
 **company_name** | Option<**String**> | the provided company name | [optional]
+**country** | Option<**String**> | the provided country | [optional]
 **feature_updates** | Option<**bool**> | user preference to receive feature updates | [optional]
 **security_updates** | Option<**bool**> | Deprecated: no longer used | [optional]
 

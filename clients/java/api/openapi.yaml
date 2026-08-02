@@ -9628,6 +9628,7 @@ components:
       example:
         firstName: firstName
         lastName: lastName
+        country: country
         featureUpdates: true
         companyName: companyName
         key:
@@ -9654,6 +9655,9 @@ components:
         companyName:
           description: the provided company name
           type: string
+        country:
+          description: the provided country
+          type: string
         featureUpdates:
           description: user preference to receive feature updates
           type: boolean
@@ -9668,6 +9672,7 @@ components:
       example:
         firstName: firstName
         lastName: lastName
+        country: country
         featureUpdates: true
         companyName: companyName
         email: email
@@ -9684,6 +9689,9 @@ components:
           type: string
         companyName:
           description: the provided company name
+          type: string
+        country:
+          description: the provided country
           type: string
         featureUpdates:
           description: user preference to receive feature updates

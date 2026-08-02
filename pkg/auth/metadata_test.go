@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"runtime"
 	"strconv"
@@ -52,6 +53,46 @@ func TestInstrumentation(t *testing.T) {
 	// Add K8s env var
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", ""))
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationQuickstart, true, true)
+}
+
+func TestUpdateCommPrefs(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	kvStore := kvtest.GetStore(ctx, t)
+	mgr := auth.NewKVMetadataManager("test", "12345", "mem", kvStore)
+
+	readMetadata := func(key string) string {
+		val, err := kvStore.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(key)))
+		require.NoError(t, err)
+		return string(val.Value)
+	}
+
+	installationID, err := mgr.UpdateCommPrefs(ctx, &auth.CommPrefs{
+		UserEmail:      "test@acme.co",
+		FirstName:      "Test",
+		LastName:       "User",
+		CompanyName:    "Acme Inc.",
+		Country:        "United States",
+		FeatureUpdates: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "12345", installationID)
+
+	for key, expected := range map[string]string{
+		auth.EmailKeyName:       "test@acme.co",
+		auth.FirstNameKeyName:   "Test",
+		auth.LastNameKeyName:    "User",
+		auth.CompanyNameKeyName: "Acme Inc.",
+		auth.CountryKeyName:     "United States",
+	} {
+		require.Equal(t, base64.StdEncoding.EncodeToString([]byte(expected)), readMetadata(key), "metadata key %s", key)
+	}
+	require.Equal(t, "true", readMetadata(auth.FeatureUpdatesKeyName))
+	require.Equal(t, "true", readMetadata(auth.CommPrefsSetKeyName))
+
+	isSet, err := mgr.IsCommPrefsSet(ctx)
+	require.NoError(t, err)
+	require.True(t, isSet)
 }
 
 func TestMetadataFields(t *testing.T) {

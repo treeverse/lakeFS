@@ -5599,6 +5599,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 			FirstName:      swag.StringValue(body.FirstName),
 			LastName:       swag.StringValue(body.LastName),
 			CompanyName:    swag.StringValue(body.CompanyName),
+			Country:        swag.StringValue(body.Country),
 			FeatureUpdates: swag.BoolValue(body.FeatureUpdates),
 		}
 	}
@@ -5673,6 +5674,7 @@ func (c *Controller) collectCommPrefs(commPrefs *auth.CommPrefs, installationID 
 		FirstName:      commPrefs.FirstName,
 		LastName:       commPrefs.LastName,
 		CompanyName:    commPrefs.CompanyName,
+		Country:        commPrefs.Country,
 		InstallationID: installationID,
 		FeatureUpdates: commPrefs.FeatureUpdates,
 		BlockstoreType: c.BlockAdapter.BlockstoreType(),
@@ -5718,6 +5720,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		FirstName:      swag.StringValue(body.FirstName),
 		LastName:       swag.StringValue(body.LastName),
 		CompanyName:    swag.StringValue(body.CompanyName),
+		Country:        swag.StringValue(body.Country),
 		FeatureUpdates: body.FeatureUpdates,
 	}
 	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)

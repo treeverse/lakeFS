@@ -25,6 +25,7 @@ const (
 	FirstNameKeyName       = "encoded_user_first_name"
 	LastNameKeyName        = "encoded_user_last_name"
 	CompanyNameKeyName     = "encoded_user_company_name"
+	CountryKeyName         = "encoded_user_country"
 	FeatureUpdatesKeyName  = "feature_updates"
 
 	InstrumentationSamplesRepo = "SamplesRepo"
@@ -66,6 +67,7 @@ type CommPrefs struct {
 	FirstName      string
 	LastName       string
 	CompanyName    string
+	Country        string
 	FeatureUpdates bool
 	InstallationID string
 }
@@ -166,6 +168,7 @@ func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs *Comm
 			LastNameKeyName:       base64.StdEncoding.EncodeToString([]byte(commPrefs.LastName)),
 			EmailKeyName:          base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail)),
 			CompanyNameKeyName:    base64.StdEncoding.EncodeToString([]byte(commPrefs.CompanyName)),
+			CountryKeyName:        base64.StdEncoding.EncodeToString([]byte(commPrefs.Country)),
 			FeatureUpdatesKeyName: strconv.FormatBool(commPrefs.FeatureUpdates),
 			CommPrefsSetKeyName:   strconv.FormatBool(true),
 		}

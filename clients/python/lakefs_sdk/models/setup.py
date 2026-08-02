@@ -36,9 +36,10 @@ class Setup(BaseModel):
     last_name: Optional[StrictStr] = Field(None, alias="lastName", description="the provided last name")
     email: Optional[StrictStr] = Field(None, description="the provided email")
     company_name: Optional[StrictStr] = Field(None, alias="companyName", description="the provided company name")
+    country: Optional[StrictStr] = Field(None, description="the provided country")
     feature_updates: Optional[StrictBool] = Field(None, alias="featureUpdates", description="user preference to receive feature updates")
     security_updates: Optional[StrictBool] = Field(None, alias="securityUpdates", description="Deprecated: no longer used")
-    __properties = ["username", "key", "firstName", "lastName", "email", "companyName", "featureUpdates", "securityUpdates"]
+    __properties = ["username", "key", "firstName", "lastName", "email", "companyName", "country", "featureUpdates", "securityUpdates"]
 
     class Config:
         """Pydantic configuration"""
@@ -85,6 +86,7 @@ class Setup(BaseModel):
             "last_name": obj.get("lastName"),
             "email": obj.get("email"),
             "company_name": obj.get("companyName"),
+            "country": obj.get("country"),
             "feature_updates": obj.get("featureUpdates"),
             "security_updates": obj.get("securityUpdates")
         })

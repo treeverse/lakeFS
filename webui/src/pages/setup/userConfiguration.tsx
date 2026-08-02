@@ -6,6 +6,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import { AlertError } from '../../lib/components/controls';
+import { COUNTRIES } from './countries';
 
 interface UserConfigurationProps {
     onSubmit: (
@@ -15,6 +16,7 @@ interface UserConfigurationProps {
         email: string,
         companyName: string,
         checks: boolean,
+        country: string,
     ) => Promise<void>;
     setupError: Error;
     disabled: boolean;
@@ -35,13 +37,14 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
     const [lastName, setLastName] = useState<string>('');
     const [companyName, setCompanyName] = useState<string>('');
     const [checks, setChecks] = useState<boolean>(false);
+    const [country, setCountry] = useState<string>('');
 
     const submitHandler = useCallback(
         (e: FormEvent) => {
-            onSubmit(adminUser, firstName, lastName, userEmail, companyName, checks);
+            onSubmit(adminUser, firstName, lastName, userEmail, companyName, checks, country);
             e.preventDefault();
         },
-        [onSubmit, adminUser, firstName, lastName, userEmail, companyName, checks],
+        [onSubmit, adminUser, firstName, lastName, userEmail, companyName, checks, country],
     );
 
     const handleEmailChange = useCallback(
@@ -61,8 +64,19 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
     const handleChecksChange = useCallback(
         (e: ChangeEvent<HTMLInputElement>) => {
             setChecks(e.target.checked);
+            if (!e.target.checked) {
+                // the country selector is hidden when unsubscribed - don't submit a stale value
+                setCountry('');
+            }
         },
-        [setChecks],
+        [setChecks, setCountry],
+    );
+
+    const handleCountryChange = useCallback(
+        (e: ChangeEvent<HTMLSelectElement>) => {
+            setCountry(e.target.value);
+        },
+        [setCountry],
     );
 
     const handleFirstNameChange = useCallback(
@@ -189,6 +203,32 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                             </Form.Group>
                                         </Col>
                                     </Row>
+
+                                    {checks && (
+                                        <Row>
+                                            {/* half width - fits the longest country name without stretching the card */}
+                                            <Col md={6}>
+                                                <Form.Group controlId="user-country" className="mb-3">
+                                                    <Form.Label>
+                                                        Country <span className="required-field-label">*</span>
+                                                    </Form.Label>
+                                                    <Form.Select
+                                                        name="country"
+                                                        value={country}
+                                                        onChange={handleCountryChange}
+                                                        autoComplete="country-name"
+                                                    >
+                                                        <option value="">Select a country...</option>
+                                                        {COUNTRIES.map((countryName) => (
+                                                            <option key={countryName} value={countryName}>
+                                                                {countryName}
+                                                            </option>
+                                                        ))}
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
+                                    )}
                                 </>
                             )}
 

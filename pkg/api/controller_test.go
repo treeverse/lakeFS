@@ -3908,6 +3908,7 @@ func TestController_SetupThenCommPrefs(t *testing.T) {
 		FirstName:      swag.String("Test"),
 		LastName:       swag.String("User"),
 		CompanyName:    swag.String("Acme Inc."),
+		Country:        swag.String("United States"),
 		FeatureUpdates: true,
 	})
 	require.NoError(t, err)
@@ -3940,6 +3941,7 @@ func TestController_SetupCommPrefs(t *testing.T) {
 				Email:       &mockEmail,
 				LastName:    swag.String("User"),
 				CompanyName: swag.String("Acme Inc."),
+				Country:     swag.String("United States"),
 			},
 			expectedStatusCode: http.StatusOK,
 		},

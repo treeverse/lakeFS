@@ -1076,6 +1076,9 @@ components:
         companyName:
           description: the provided company name
           type: string
+        country:
+          description: the provided country
+          type: string
         featureUpdates:
           description: user preference to receive feature updates
           type: boolean
@@ -1100,6 +1103,9 @@ components:
           type: string
         companyName:
           description: the provided company name
+          type: string
+        country:
+          description: the provided country
           type: string
         featureUpdates:
           description: user preference to receive feature updates

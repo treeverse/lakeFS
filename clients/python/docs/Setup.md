@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **last_name** | **str** | the provided last name | [optional] 
 **email** | **str** | the provided email | [optional] 
 **company_name** | **str** | the provided company name | [optional] 
+**country** | **str** | the provided country | [optional] 
 **feature_updates** | **bool** | user preference to receive feature updates | [optional] 
 **security_updates** | **bool** | Deprecated: no longer used | [optional] 
 
