@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.85.0
+
+:new: What's new:
+
+- BI: The setup wizard now collects your country. (#10513, #10514)
+
 ## v1.84.1
 
 :bug: Bugs Fixed:
