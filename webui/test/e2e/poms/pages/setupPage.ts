@@ -34,13 +34,10 @@ export class SetupPage {
         await this.page.getByLabel("First name").fill(firstName);
         await this.page.getByLabel("Last name").fill(lastName);
         await this.page.getByLabel("Email").fill(email);
+        await this.page.getByLabel("Country").selectOption(country);
         await this.page.getByLabel("Company name").fill(companyName);
         if (receiveUpdatesChecked) {
             await this.page.getByLabel("I'd like to receive product and feature updates").check();
-            // the country selector only renders once the updates checkbox is checked
-            if (country) {
-                await this.page.getByLabel("Country").selectOption(country);
-            }
         }
         await this.page.getByRole("button", { name: "Setup" }).click();
     }

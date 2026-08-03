@@ -38,7 +38,7 @@ const SetupContents = () => {
                 setSetupError('Please enter your email address.');
                 return;
             }
-            if (commPrefsMissing && checked && !country) {
+            if (commPrefsMissing && !country) {
                 setSetupError('Please select your country.');
                 return;
             }

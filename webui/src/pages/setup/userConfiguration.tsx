@@ -64,12 +64,8 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
     const handleChecksChange = useCallback(
         (e: ChangeEvent<HTMLInputElement>) => {
             setChecks(e.target.checked);
-            if (!e.target.checked) {
-                // the country selector is hidden when unsubscribed - don't submit a stale value
-                setCountry('');
-            }
         },
-        [setChecks, setCountry],
+        [setChecks],
     );
 
     const handleCountryChange = useCallback(
@@ -176,6 +172,30 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                     </Row>
 
                                     <Row>
+                                        {/* half width - fits the longest country name without stretching the card */}
+                                        <Col md={6}>
+                                            <Form.Group controlId="user-country" className="mt-4">
+                                                <Form.Label>
+                                                    Country <span className="required-field-label">*</span>
+                                                </Form.Label>
+                                                <Form.Select
+                                                    name="country"
+                                                    value={country}
+                                                    onChange={handleCountryChange}
+                                                    autoComplete="country-name"
+                                                >
+                                                    <option value="">Select a country...</option>
+                                                    {COUNTRIES.map((countryName) => (
+                                                        <option key={countryName} value={countryName}>
+                                                            {countryName}
+                                                        </option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+
+                                    <Row>
                                         <Col>
                                             <Form.Group controlId="company-name" className="mt-4">
                                                 <Form.Label>Company name</Form.Label>
@@ -203,32 +223,6 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                             </Form.Group>
                                         </Col>
                                     </Row>
-
-                                    {checks && (
-                                        <Row>
-                                            {/* half width - fits the longest country name without stretching the card */}
-                                            <Col md={6}>
-                                                <Form.Group controlId="user-country" className="mb-3">
-                                                    <Form.Label>
-                                                        Country <span className="required-field-label">*</span>
-                                                    </Form.Label>
-                                                    <Form.Select
-                                                        name="country"
-                                                        value={country}
-                                                        onChange={handleCountryChange}
-                                                        autoComplete="country-name"
-                                                    >
-                                                        <option value="">Select a country...</option>
-                                                        {COUNTRIES.map((countryName) => (
-                                                            <option key={countryName} value={countryName}>
-                                                                {countryName}
-                                                            </option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                        </Row>
-                                    )}
                                 </>
                             )}
 
