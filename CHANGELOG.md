@@ -4,7 +4,7 @@
 
 :new: What's new:
 
-- BI: The setup wizard now collects your country. (#10513, #10514)
+- Adding a country field to the initial setup. (#10513, #10514)
 
 ## v1.84.1
 
