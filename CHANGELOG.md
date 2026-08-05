@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.86.0
+
+:bug: Bugs Fixed:
+
+- Fixed a vulnerability that could allow users that don't have the fs:ListRepositories permission to list repositories via the S3 gateway API ([GHSA-gf2q-q6wc-x7fm](https://github.com/treeverse/lakeFS/security/advisories/GHSA-gf2q-q6wc-x7fm))
+
 ## v1.85.0
 
 :new: What's new:
