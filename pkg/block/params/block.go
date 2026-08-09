@@ -60,6 +60,7 @@ type GS struct {
 	PreSignedExpiry                      time.Duration
 	DisablePreSigned                     bool
 	DisablePreSignedUI                   bool
+	DisablePreSignedMultipart            bool
 	ServerSideEncryptionCustomerSupplied []byte
 	ServerSideEncryptionKmsKeyID         string
 

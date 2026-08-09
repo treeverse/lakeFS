@@ -168,6 +168,7 @@ func BuildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...
 		gs.WithPreSignedExpiry(params.PreSignedExpiry),
 		gs.WithDisablePreSigned(params.DisablePreSigned),
 		gs.WithDisablePreSignedUI(params.DisablePreSignedUI),
+		gs.WithDisablePreSignedMultipart(params.DisablePreSignedMultipart),
 	}
 	switch {
 	case params.ServerSideEncryptionCustomerSupplied != nil:

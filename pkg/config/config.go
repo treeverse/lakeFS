@@ -241,6 +241,7 @@ type BlockstoreGS struct {
 	PreSignedExpiry                      time.Duration `mapstructure:"pre_signed_expiry"`
 	DisablePreSigned                     bool          `mapstructure:"disable_pre_signed"`
 	DisablePreSignedUI                   bool          `mapstructure:"disable_pre_signed_ui"`
+	DisablePreSignedMultipart            bool          `mapstructure:"disable_pre_signed_multipart"`
 	ServerSideEncryptionCustomerSupplied string        `mapstructure:"server_side_encryption_customer_supplied"`
 	ServerSideEncryptionKmsKeyID         string        `mapstructure:"server_side_encryption_kms_key_id"`
 
@@ -363,6 +364,7 @@ func (b *Blockstore) BlockstoreGSParams() (blockparams.GS, error) {
 		PreSignedExpiry:                      b.GS.PreSignedExpiry,
 		DisablePreSigned:                     b.GS.DisablePreSigned,
 		DisablePreSignedUI:                   b.GS.DisablePreSignedUI,
+		DisablePreSignedMultipart:            b.GS.DisablePreSignedMultipart,
 		ServerSideEncryptionCustomerSupplied: customerSuppliedKey,
 		ServerSideEncryptionKmsKeyID:         b.GS.ServerSideEncryptionKmsKeyID,
 		DataCredentialsFile:                  dataCredPath,
