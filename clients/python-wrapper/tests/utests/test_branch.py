@@ -113,6 +113,21 @@ def test_branch_delete(monkeypatch):
         branch.delete()
 
 
+def test_branch_delete_objects(monkeypatch):
+    branch = get_test_branch()
+    error = lakefs_sdk.ObjectError(status_code=http.HTTPStatus.NOT_FOUND.value, message="not found", path="b")
+    with monkeypatch.context():
+        def monkey_delete_objects(repo_name, branch_name, path_list, *_):
+            assert repo_name == branch.repo_id
+            assert branch_name == branch.id
+            assert path_list.paths == ["a", "b"]
+            return lakefs_sdk.ObjectErrorList(errors=[error])
+
+        monkeypatch.setattr(branch._client.sdk_client.objects_api, "delete_objects", monkey_delete_objects)
+        res = branch.delete_objects(["a", "b"])
+        assert res.errors == [error]
+
+
 def test_branch_revert(monkeypatch):
     branch = get_test_branch()
     ref_id = "ab1234"
