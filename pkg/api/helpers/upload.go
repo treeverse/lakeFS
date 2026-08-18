@@ -241,34 +241,45 @@ func (u *presignUpload) getPartUploadURL(ctx context.Context, mpu *apigen.Presig
 	return resp.JSON200.PresignedUrl, nil
 }
 
-const amzDateFormat = "20060102T150405Z"
+const signedDateFormat = "20060102T150405Z"
 const presignedURLExpirationBuffer = 15 * time.Second
 
-// presignedURLExpired checks whether an S3 presigned URL has expired by parsing
-// the X-Amz-Date and X-Amz-Expires query parameters. Returns true if the URL
-// is expired or if the parameters cannot be parsed (fail-safe: refresh the URL).
+// signedURLParamPrefixes are the query parameter prefixes used by the SigV4-style signing schemes we
+// pre-sign with: "X-Amz-" on S3 and "X-Goog-" on GCS. Both carry the same date and expiry parameters.
+var signedURLParamPrefixes = []string{"X-Amz-", "X-Goog-"}
+
+// presignedURLExpired checks whether a presigned URL has expired by parsing its signing date and
+// expiry query parameters. Returns true if the URL is expired or if the parameters cannot be parsed
+// (fail-safe: refresh the URL).
 func presignedURLExpired(rawURL string) bool {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return true
 	}
-	amzDate := u.Query().Get("X-Amz-Date")
-	amzExpires := u.Query().Get("X-Amz-Expires")
-	if amzDate == "" || amzExpires == "" {
+	query := u.Query()
+	var signedDate, expires string
+	for _, prefix := range signedURLParamPrefixes {
+		signedDate = query.Get(prefix + "Date")
+		expires = query.Get(prefix + "Expires")
+		if signedDate != "" && expires != "" {
+			break
+		}
+	}
+	if signedDate == "" || expires == "" {
 		return true
 	}
 
-	signedAt, err := time.Parse(amzDateFormat, amzDate)
+	signedAt, err := time.Parse(signedDateFormat, signedDate)
 	if err != nil {
 		return true
 	}
-	expiresSec, err := strconv.ParseInt(amzExpires, 10, 64)
+	expiresSec, err := strconv.ParseInt(expires, 10, 64)
 	if err != nil {
 		return true
 	}
 	expiresAt := signedAt.Add(time.Duration(expiresSec) * time.Second)
 	// Use a small buffer to avoid starting an upload with a URL that's about to expire.
-	// S3 validates the URL at request start, not at the end of the data transfer.
+	// The store validates the URL at request start, not at the end of the data transfer.
 	return time.Now().Add(presignedURLExpirationBuffer).After(expiresAt)
 }
 

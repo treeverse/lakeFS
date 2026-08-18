@@ -36,6 +36,7 @@ var (
 	ErrPartListMismatch    = errors.New("multipart part list mismatch")
 	ErrMissingTargetAttrs  = errors.New("missing target attributes")
 	ErrInvalidPartName     = errors.New("invalid part name")
+	ErrInvalidPartNumber   = errors.New("invalid part number")
 )
 
 type Adapter struct {
@@ -43,6 +44,7 @@ type Adapter struct {
 	preSignedExpiry                      time.Duration
 	disablePreSigned                     bool
 	disablePreSignedUI                   bool
+	disablePreSignedMultipart            bool
 	ServerSideEncryptionCustomerSupplied []byte
 	ServerSideEncryptionKmsKeyID         string
 	nowFactory                           func() time.Time
@@ -74,6 +76,14 @@ func WithDisablePreSignedUI(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
 			a.disablePreSignedUI = true
+		}
+	}
+}
+
+func WithDisablePreSignedMultipart(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSignedMultipart = true
 		}
 	}
 }
@@ -258,17 +268,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	if mode == block.PreSignModeWrite {
 		method = http.MethodPut
 	}
-	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  method,
-		Expires: a.newPreSignedTime(),
-	}
-
-	// Use explicit signing credentials if provided (for testing with fake-gcs-server)
-	if a.presignedGoogleAccessID != "" && len(a.presignedPrivateKey) > 0 {
-		opts.GoogleAccessID = a.presignedGoogleAccessID
-		opts.PrivateKey = a.presignedPrivateKey
-	}
+	opts := a.newSignedURLOptions(method)
 
 	// Add content-disposition if filename provided
 	if mode == block.PreSignModeRead && filename != "" {
@@ -288,6 +288,21 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", time.Time{}, err
 	}
 	return k, opts.Expires, nil
+}
+
+// newSignedURLOptions returns the V4 signing options used to pre-sign a request for the given HTTP method.
+func (a *Adapter) newSignedURLOptions(method string) *storage.SignedURLOptions {
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  method,
+		Expires: a.newPreSignedTime(),
+	}
+	// Use explicit signing credentials if provided (for testing with fake-gcs-server)
+	if a.presignedGoogleAccessID != "" && len(a.presignedPrivateKey) > 0 {
+		opts.GoogleAccessID = a.presignedGoogleAccessID
+		opts.PrivateKey = a.presignedPrivateKey
+	}
+	return opts
 }
 
 func isErrNotFound(err error) bool {
@@ -720,6 +735,11 @@ func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	if !(a.disablePreSignedUI || a.disablePreSigned) {
 		info.PreSignSupportUI = true
 	}
+	// pre-signed multipart uploads write parts directly to GCS, bypassing the customer-supplied key the
+	// adapter uses for the rest of the multipart flow - see GetPresignUploadPartURL.
+	if !a.disablePreSignedMultipart && info.PreSignSupport && a.ServerSideEncryptionCustomerSupplied == nil {
+		info.PreSignSupportMultipart = true
+	}
 	return &info
 }
 
@@ -779,8 +799,42 @@ func formatMultipartMarkerFilename(uploadID string) string {
 	return uploadID + markerSuffix
 }
 
-func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
-	return "", block.ErrOperationNotSupported
+// GetPresignUploadPartURL returns a pre-signed URL for uploading a single part of a multipart upload.
+// GCS has no native multipart upload API - lakeFS emulates it by writing each part as its own object and
+// composing them on complete. So a part upload is a plain PUT of the part's object, which we can pre-sign
+// the same way we pre-sign a regular write.
+func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+	if a.disablePreSigned || a.disablePreSignedMultipart {
+		return "", block.ErrOperationNotSupported
+	}
+	// A pre-signed upload writes the part without the customer-supplied key, while the parts are read back
+	// with it on compose - GCS requires the same key for all compose sources and destination.
+	if a.ServerSideEncryptionCustomerSupplied != nil {
+		return "", fmt.Errorf("%w: %w", block.ErrOperationNotSupported, errPreSignedURLWithCSEKNotSupportedError)
+	}
+	if partNumber < 1 || partNumber > MaxMultipartObjects {
+		return "", fmt.Errorf("%w: part number %d must be between 1 and %d", ErrInvalidPartNumber, partNumber, MaxMultipartObjects)
+	}
+
+	var err error
+	defer reportMetrics("GetPresignUploadPartURL", obj.StorageID, time.Now(), nil, &err)
+
+	bucket, _, err := a.extractParamsFromObj(obj)
+	if err != nil {
+		return "", err
+	}
+	// the part is stored under its own object name, the same one UploadPart writes to
+	objName := formatMultipartFilename(uploadID, partNumber)
+	opts := a.newSignedURLOptions(http.MethodPut)
+	signedURL, err := a.client.Bucket(bucket).SignedURL(objName, opts)
+	if err != nil {
+		a.log(ctx).WithError(err).WithFields(logging.Fields{
+			"upload_id":   uploadID,
+			"part_number": partNumber,
+		}).Error("error generating pre-signed upload part URL")
+		return "", err
+	}
+	return signedURL, nil
 }
 
 func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, uploadID string, opts block.ListPartsOpts) (*block.ListPartsResponse, error) {
