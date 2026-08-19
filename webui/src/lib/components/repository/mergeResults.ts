@@ -8,12 +8,14 @@ import { compareLexicographically } from '../../utils';
  * @param results - Array of object entries from the main listing
  * @param changesData - Changes data containing results array with change information
  * @param showChangesOnly - Whether to show only changes (if true, no merging needed)
+ * @param hasMore - Whether there are more pages of results after the current one
  * @returns Merged and sorted results with diff_type annotations
  */
 export function mergeResults(
     results: Entry[] | undefined | null,
     changesData: ChangesData | undefined | null,
     showChangesOnly = false,
+    hasMore = false,
 ): EntryWithDiff[] {
     if (showChangesOnly || !results || !changesData?.results) {
         // Ensure regular results are also sorted lexicographically
@@ -46,12 +48,25 @@ export function mergeResults(
         }
     });
 
-    // Add missing items only for removed entries or deleted prefixes
-    // Avoid adding items that come after the last result path (both are sorted lexicographically)
+    // Add missing items for removed entries, added entries, and prefixes
+    // When using committed-only ref (branch@) for objects.list, added entries are not in the list
+    // On paginated results, only add items within the current page range to avoid duplicates
     const lastResultPath = last(results)?.path;
+    const inPageRange = (path: string) => lastResultPath && path <= lastResultPath;
     const missingItems = changesData.results
-        .filter((change) => change.type === 'removed' || change.path_type === 'common_prefix')
-        .filter((change) => lastResultPath && change.path <= lastResultPath)
+        .filter(
+            (change) => change.type === 'removed' || change.type === 'added' || change.path_type === 'common_prefix',
+        )
+        .filter((change) => {
+            if (change.type === 'added') {
+                // Added entries never appear in committed results (branch@),
+                // so include them on the last page even if beyond lastResultPath
+                return inPageRange(change.path) || !hasMore;
+            }
+            // Removed/changed entries exist in committed results on some page,
+            // only show within the current page range
+            return inPageRange(change.path);
+        })
         .filter((change) => !results.find((result) => result.path === change.path));
 
     // Merge regular results with change info
