@@ -8,7 +8,7 @@ import asyncio
 from datetime import timedelta
 from typing import Optional, Dict, List
 
-import lakefs_sdk
+from lakefs._sdk import lakefs_sdk
 
 from lakefs.models import ImportStatus, _OBJECT, _COMMON_PREFIX
 from lakefs.client import Client, _BaseLakeFSObject

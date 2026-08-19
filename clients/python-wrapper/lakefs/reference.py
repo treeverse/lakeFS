@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Optional, Generator, Union
 
-import lakefs_sdk
+from lakefs._sdk import lakefs_sdk
 
 from lakefs.models import Commit, Change, CommonPrefix, ObjectInfo, _OBJECT
 from lakefs.client import Client, _BaseLakeFSObject

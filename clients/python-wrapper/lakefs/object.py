@@ -15,9 +15,7 @@ import urllib.parse
 from abc import abstractmethod
 from typing import Any, AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args
 
-import lakefs_sdk
-from lakefs_sdk import StagingMetadata
-
+from lakefs._sdk import lakefs_sdk
 from lakefs.client import Client, _BaseLakeFSObject, SINGLE_STORAGE_ID
 from lakefs.exceptions import (
     api_exception_handler,
@@ -611,12 +609,12 @@ class ObjectWriter(LakeFSIOBase):
 
         etag = ObjectWriter._extract_etag_from_response(resp.headers)
         size_bytes = self._pos
-        staging_metadata = StagingMetadata(staging=staging_location,
-                                           size_bytes=size_bytes,
-                                           checksum=etag,
-                                           user_metadata=self.metadata,
-                                           content_type=self.content_type,
-                                           mtime=None)
+        staging_metadata = lakefs_sdk.StagingMetadata(staging=staging_location,
+                                                      size_bytes=size_bytes,
+                                                      checksum=etag,
+                                                      user_metadata=self.metadata,
+                                                      content_type=self.content_type,
+                                                      mtime=None)
         if_none_match = "*" if self._mode.startswith("x") else None
         try:
             return self._client.sdk_client.staging_api.link_physical_address(self._obj.repo,

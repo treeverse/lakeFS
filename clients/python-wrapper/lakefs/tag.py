@@ -5,7 +5,7 @@ Module containing lakeFS tag implementation
 from __future__ import annotations
 from typing import Optional
 
-import lakefs_sdk
+from lakefs._sdk import lakefs_sdk
 
 from lakefs.client import Client
 from lakefs.exceptions import api_exception_handler, LakeFSException, ConflictException

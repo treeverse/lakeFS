@@ -12,9 +12,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-import lakefs_sdk
-from lakefs_sdk.client import LakeFSClient
-
+from lakefs._sdk import lakefs_sdk
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
@@ -87,14 +85,14 @@ class Client:
 
     """
 
-    _client: LakeFSClient
+    _client: lakefs_sdk.client.LakeFSClient
     _conf: ClientConfig
     _server_conf: Optional[ServerConfiguration] = None
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
-        self._client = LakeFSClient(self._conf, header_name='X-Lakefs-Client',
-                                    header_value='python-lakefs')
+        self._client = lakefs_sdk.client.LakeFSClient(self._conf, header_name='X-Lakefs-Client',
+                                                      header_value='python-lakefs')
         self._server_conf: Optional[ServerConfiguration] = None
         self._reset_token_time: Optional[datetime.datetime] = None
         self._session: Optional[boto3.Session] = None

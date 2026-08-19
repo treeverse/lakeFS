@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Optional, Generator
 
-import lakefs_sdk
+from lakefs._sdk import lakefs_sdk
 
 from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag

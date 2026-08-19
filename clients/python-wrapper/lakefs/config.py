@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional, Dict
 
 import yaml
-from lakefs_sdk import Configuration
+from lakefs._sdk import lakefs_sdk
 from lakefs.exceptions import NoAuthenticationFound, UnsupportedCredentialsProviderType, InvalidEnvVarFormat
 from lakefs.namedtuple import LenientNamedTuple
 
@@ -42,7 +42,7 @@ TOKEN_REQUEST_HEADERS_CONFIG = "token_request_headers"
 AWS_IAM_PROVIDER_TYPE = "aws_iam"
 SUPPORTED_IAM_PROVIDERS = [AWS_IAM_PROVIDER_TYPE]
 
-class ClientConfig(Configuration):
+class ClientConfig(lakefs_sdk.Configuration):
     """
     Configuration class for the SDK Client.
     Instantiation will try to get authentication methods using the following chain:

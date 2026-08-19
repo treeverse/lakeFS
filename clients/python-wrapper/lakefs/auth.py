@@ -10,9 +10,7 @@ import json
 from typing import Any, Optional, TYPE_CHECKING
 from urllib.parse import urlparse, parse_qs
 
-from lakefs_sdk import ExternalLoginInformation
-from lakefs_sdk.client import LakeFSClient
-
+from lakefs._sdk import lakefs_sdk
 from lakefs.config import ClientConfig
 from lakefs.exceptions import api_exception_handler
 
@@ -21,10 +19,11 @@ DEFAULT_AWS_REGION = "us-east-1"
 if TYPE_CHECKING:
     import boto3
 
-def access_token_from_aws_iam_role(sdk_client: LakeFSClient,
-                                   lakefs_host: str,
-                                   boto3_session: "boto3.Session",
-                                   aws_provider_auth_params: ClientConfig.AWSIAMProviderConfig) -> tuple[Any, datetime.datetime]:
+def access_token_from_aws_iam_role(
+        sdk_client: lakefs_sdk.client.LakeFSClient,
+        lakefs_host: str,
+        boto3_session: "boto3.Session",
+        aws_provider_auth_params: ClientConfig.AWSIAMProviderConfig) -> tuple[Any, datetime.datetime]:
     """
     Generate an access token for lakeFS authentication using AWS IAM role.
     :param sdk_client: LakeFSClient
@@ -39,7 +38,7 @@ def access_token_from_aws_iam_role(sdk_client: LakeFSClient,
 
     identity_token = _get_identity_token(boto3_session, lakefs_host, presign_expiry=presigned_ttl,
                                          additional_headers=token_req_headers)
-    external_login_information = ExternalLoginInformation(
+    external_login_information = lakefs_sdk.ExternalLoginInformation(
         token_expiration_duration=token_ttl_seconds,
         identityRequest={
             "identity_token": identity_token

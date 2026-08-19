@@ -7,8 +7,9 @@ from contextlib import contextmanager
 from typing import Optional, Callable
 import logging
 
-import lakefs_sdk.exceptions
 from urllib3 import HTTPResponse
+
+from lakefs._sdk import lakefs_sdk
 
 
 class LakeFSException(Exception):

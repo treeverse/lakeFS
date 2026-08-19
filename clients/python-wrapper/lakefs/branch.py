@@ -9,7 +9,7 @@ import warnings
 from contextlib import contextmanager
 from typing import Optional, Generator, Iterable, Iterator, Literal, Dict
 
-import lakefs_sdk
+from lakefs._sdk import lakefs_sdk
 from lakefs.client import Client
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject

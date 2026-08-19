@@ -19,7 +19,7 @@ import subprocess
 from collections import namedtuple
 from typing import Optional, NoReturn
 
-import lakefs_sdk
+from lakefs._sdk import lakefs_sdk
 
 
 BINARY_DOWNLOAD_URL = 'https://github.com/treeverse/lakeFS/releases/download/'
