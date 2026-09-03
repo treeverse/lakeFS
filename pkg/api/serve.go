@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -178,10 +179,26 @@ func OapiRequestValidatorWithOptions(swagger *openapi3.T, options *openapi3filte
 
 func validateRequest(r *http.Request, route *routers.Route, pathParams map[string]string, options *openapi3filter.Options) (int, error) {
 	// Extension - validation exclude body
-	if _, ok := route.Operation.Extensions[extensionValidationExcludeBody]; ok {
+	_, excludeBody := route.Operation.Extensions[extensionValidationExcludeBody]
+	// NYLIM build (kin-openapi 0.149.0): the validator buffers binary request bodies in
+	// memory (treeverse/lakeFS#9409, getkin/kin-openapi#1106), so never validate a
+	// raw-bytes body — the handlers stream it to the block store themselves.
+	if ct := strings.ToLower(r.Header.Get("Content-Type")); strings.HasPrefix(ct, "application/octet-stream") || strings.HasPrefix(ct, "multipart/form-data") {
+		excludeBody = true
+	}
+	if excludeBody {
 		o := *options
 		o.ExcludeRequestBody = true
 		options = &o
+		// kin-openapi >= 0.132 also reads the WHOLE body in ValidateSecurityRequirements
+		// so an AuthenticationFunc could re-read it (getkin/kin-openapi#1064) — that is
+		// the memory regression behind treeverse/lakeFS#9409. Our AuthenticationFunc is
+		// a no-op, so hand the validator a body-less copy; the handler keeps the original.
+		bodiless := r.Clone(r.Context())
+		bodiless.Body = http.NoBody
+		bodiless.GetBody = nil
+		bodiless.ContentLength = 0
+		r = bodiless
 	}
 
 	// Validate request
