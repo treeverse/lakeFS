@@ -50,9 +50,8 @@ func BuildConfig(cfgType string) (Config, error) {
 	return c, nil
 }
 
-// warnDeprecatedKeys logs every configured key whose value is no longer used.
-func (c *ConfigImpl) warnDeprecatedKeys() {
-	const enterpriseHint = " Single sign-on and role-based access control are available in lakeFS Enterprise."
+// DeprecatedKeys returns the configured keys whose values are no longer used.
+func (c *ConfigImpl) DeprecatedKeys() []string {
 	a := &c.Auth
 	deprecated := []struct {
 		set bool
@@ -91,12 +90,20 @@ func (c *ConfigImpl) warnDeprecatedKeys() {
 		{a.LogoutURLDeprecated != "", "auth.ui_config.logout_url"},
 		{a.UseLoginPlaceholdersDeprecated, "auth.ui_config.use_login_placeholders"},
 	}
+	var keys []string
 	for _, d := range deprecated {
-		if !d.set {
-			continue
+		if d.set {
+			keys = append(keys, d.key)
 		}
-		msg := d.key + " is deprecated. Value is no longer used."
-		if strings.HasPrefix(d.key, "auth.") {
+	}
+	return keys
+}
+
+func (c *ConfigImpl) warnDeprecatedKeys() {
+	const enterpriseHint = " Single sign-on and role-based access control are available in lakeFS Enterprise."
+	for _, key := range c.DeprecatedKeys() {
+		msg := key + " is deprecated. Value is no longer used."
+		if strings.HasPrefix(key, "auth.") {
 			msg += enterpriseHint
 		}
 		logging.ContextUnavailable().Warn(msg)

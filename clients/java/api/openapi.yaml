@@ -281,29 +281,6 @@ paths:
       - experimental
       x-content-type: application/json
       x-accepts: application/json
-  /auth/capabilities:
-    get:
-      operationId: getAuthCapabilities
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthCapabilities'
-          description: auth capabilities
-        "429":
-          description: too many requests
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
-      summary: list authentication capabilities supported
-      tags:
-      - internal
-      x-accepts: application/json
   /auth/users:
     get:
       operationId: listUsers
@@ -9358,104 +9335,28 @@ components:
       type: object
     UserCreation:
       example:
-        invite_user: true
         id: id
       properties:
         id:
           description: a unique identifier for the user.
           type: string
-        invite_user:
-          type: boolean
       required:
       - id
       type: object
     LoginConfig:
       example:
-        username_ui_placeholder: username_ui_placeholder
         login_failed_message: login_failed_message
-        logout_url: logout_url
-        login_url: login_url
-        RBAC: none
-        password_ui_placeholder: password_ui_placeholder
-        fallback_login_url: fallback_login_url
-        login_cookie_names:
-        - login_cookie_names
-        - login_cookie_names
-        fallback_login_label: fallback_login_label
-        login_url_method: none
       properties:
-        RBAC:
-          description: |
-            RBAC will remain enabled on GUI if "external".  That only works
-            with an external auth service.
-          enum:
-          - none
-          - simplified
-          - internal
-          - external
-          type: string
-        username_ui_placeholder:
-          description: |
-            Placeholder text to display in the username field of the login form.
-          type: string
-        password_ui_placeholder:
-          description: |
-            Placeholder text to display in the password field of the login form.
-          type: string
-        login_url:
-          description: Primary URL to use for login.
-          type: string
-        login_url_method:
-          description: |
-            Defines login behavior when login_url is set.
-            - none: For OSS users.
-            - redirect: Auto-redirect to login_url.
-            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
-            Ignored if login_url is not configured.
-          enum:
-          - none
-          - redirect
-          - select
-          type: string
         login_failed_message:
           description: |
             Message to display to users who fail to login; a full sentence that is rendered
             in HTML and may contain a link to a secondary login method
           type: string
-        fallback_login_url:
-          description: Secondary URL to offer users to use for login.
-          type: string
-        fallback_login_label:
-          description: Label to place on fallback_login_url.
-          type: string
-        login_cookie_names:
-          description: Cookie names used to store JWT
-          items:
-            type: string
-          type: array
-        logout_url:
-          description: URL to use for logging out.
-          type: string
-      required:
-      - login_cookie_names
-      - login_url
-      - logout_url
       type: object
     SetupState:
       example:
         login_config:
-          username_ui_placeholder: username_ui_placeholder
           login_failed_message: login_failed_message
-          logout_url: logout_url
-          login_url: login_url
-          RBAC: none
-          password_ui_placeholder: password_ui_placeholder
-          fallback_login_url: fallback_login_url
-          login_cookie_names:
-          - login_cookie_names
-          - login_cookie_names
-          fallback_login_label: fallback_login_label
-          login_url_method: none
         state: initialized
         comm_prefs_missing: true
       properties:
@@ -9673,16 +9574,6 @@ components:
       required:
       - pagination
       - results
-      type: object
-    AuthCapabilities:
-      example:
-        invite_user: true
-        forgot_password: true
-      properties:
-        invite_user:
-          type: boolean
-        forgot_password:
-          type: boolean
       type: object
     UserList:
       example:

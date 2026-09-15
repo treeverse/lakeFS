@@ -25,6 +25,14 @@ func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logge
 	if err != nil {
 		logger.WithError(err).Fatal("failed to get lakeFS init status")
 	}
+	// An installation that kept its users in an external authorization service was never
+	// set up locally; starting uninitialized would hand the setup endpoint to anyone.
+	if !initialized && baseAuthCfg.ExternalAuthorizationConfigured() {
+		logger.Fatal(`
+lakeFS is configured with an external authorization service (auth.api.endpoint) but has no administrator of its own.
+Run "lakefs superuser" to create the administrator, then remove the auth.api keys from the configuration.
+`)
+	}
 	if initialized {
 		username, err := apiService.Migrate(ctx)
 		switch {

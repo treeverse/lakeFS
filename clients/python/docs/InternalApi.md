@@ -9,7 +9,6 @@ Method | HTTP request | Description
 [**create_symlink_file**](InternalApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
 [**delete_repository_metadata**](InternalApi.md#delete_repository_metadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata
 [**dump_refs**](InternalApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
-[**get_auth_capabilities**](InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**get_garbage_collection_config**](InternalApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
 [**get_lake_fs_version**](InternalApi.md#get_lake_fs_version) | **GET** /config/version | 
 [**get_metadata_object**](InternalApi.md#get_metadata_object) | **GET** /repositories/{repository}/metadata/object/{type}/{object_id} | return a lakeFS metadata object by ID
@@ -519,72 +518,6 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
-**429** | too many requests |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **get_auth_capabilities**
-> AuthCapabilities get_auth_capabilities()
-
-list authentication capabilities supported
-
-### Example
-
-
-```python
-import time
-import os
-import lakefs_sdk
-from lakefs_sdk.models.auth_capabilities import AuthCapabilities
-from lakefs_sdk.rest import ApiException
-from pprint import pprint
-
-# Defining the host is optional and defaults to /api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_sdk.Configuration(
-    host = "/api/v1"
-)
-
-
-# Enter a context with an instance of the API client
-with lakefs_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = lakefs_sdk.InternalApi(api_client)
-
-    try:
-        # list authentication capabilities supported
-        api_response = api_instance.get_auth_capabilities()
-        print("The response of InternalApi->get_auth_capabilities:\n")
-        pprint(api_response)
-    except Exception as e:
-        print("Exception when calling InternalApi->get_auth_capabilities: %s\n" % e)
-```
-
-
-
-### Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-[**AuthCapabilities**](AuthCapabilities.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | auth capabilities |  -  |
 **429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

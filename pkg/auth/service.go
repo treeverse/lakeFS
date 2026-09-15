@@ -7,18 +7,11 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/auth/wildcard"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
-)
-
-const (
-	contextKeyConditionContext contextKey = "condition_context"
 )
 
 type AuthorizationRequest struct {
@@ -32,26 +25,9 @@ type AuthorizationResponse struct {
 	Error   error
 }
 
-type MissingPermissions struct {
-	// Denied is a list of actions the user was denied for the attempt.
-	Denied []string
-	// Unauthorized is a list of actions the user did not have for the attempt.
-	Unauthorized []string
-}
-
-// CheckResult - the final result for the authorization is accepted only if it's CheckAllow
-type CheckResult int
-
 const (
-	UserNotAllowed = "not allowed"
-	InvalidUserID  = ""
-	MaxPage        = 1000
-	// CheckAllow Permission allowed
-	CheckAllow CheckResult = iota
-	// CheckNeutral Permission neither allowed nor denied
-	CheckNeutral
-	// CheckDeny Permission denied
-	CheckDeny
+	InvalidUserID = ""
+	MaxPage       = 1000
 )
 
 type GatewayService interface {
@@ -123,115 +99,6 @@ type Service interface {
 	Authorizer
 
 	ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error
-}
-
-func (n *MissingPermissions) String() string {
-	if len(n.Denied) != 0 {
-		return fmt.Sprintf("denied permission to %s", strings.Join(n.Denied, ","))
-	}
-	if len(n.Unauthorized) != 0 {
-		return fmt.Sprintf("not allowed to %s", strings.Join(n.Unauthorized, ","))
-	}
-	return UserNotAllowed
-}
-
-func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy, permAudit *MissingPermissions) CheckResult {
-	// Create condition context for condition evaluation
-	conditionCtx := &ConditionContext{
-		Fields: make(map[string]string),
-	}
-	log := logging.FromContext(ctx)
-	if reqContext, ok := ctx.Value(contextKeyConditionContext).(*ConditionContext); ok {
-		conditionCtx = reqContext
-		if len(conditionCtx.Fields) > 0 {
-			log = log.WithField("fields", conditionCtx.Fields)
-		}
-	}
-
-	allowed := CheckNeutral
-	switch node.Type {
-	case permissions.NodeTypeNode:
-		hasPermission := false
-		// check whether the permission is allowed, denied or natural (not allowed and not denied)
-		for _, policy := range policies {
-			for _, stmt := range policy.Statement {
-				// Evaluate conditions first
-				if len(stmt.Condition) > 0 {
-					conditionPassed, err := EvaluateConditions(stmt.Condition, conditionCtx)
-					if err != nil {
-						log.WithError(err).Warn("Failed to evaluate conditions")
-						return CheckDeny
-					}
-					if !conditionPassed {
-						// Conditions didn't pass, skip this statement
-						continue
-					}
-				}
-
-				resources, err := ParsePolicyResourceAsList(stmt.Resource)
-				if err != nil {
-					log.Error(err)
-					return CheckDeny
-				}
-				for _, resource := range resources {
-					resource = interpolateUser(resource, username)
-					if !ArnMatch(resource, node.Permission.Resource) {
-						continue
-					}
-
-					for _, action := range stmt.Action {
-						if !wildcard.Match(action, node.Permission.Action) {
-							continue // not a matching action
-						}
-
-						if stmt.Effect == model.StatementEffectDeny {
-							// this is a "Deny" and it takes precedence
-							permAudit.Denied = append(permAudit.Denied, action)
-							return CheckDeny
-						}
-						hasPermission = true
-						allowed = CheckAllow
-					}
-				}
-			}
-		}
-		if !hasPermission {
-			permAudit.Unauthorized = append(permAudit.Unauthorized, node.Permission.Action)
-		}
-
-	case permissions.NodeTypeOr:
-		// returns:
-		// Allowed - at least one of the permissions is allowed and no one is denied.
-		// Denied - one of the permissions is Deny.
-		// Natural - otherwise.
-		for _, node := range node.Nodes {
-			result := CheckPermissions(ctx, node, username, policies, permAudit)
-			if result == CheckDeny {
-				return CheckDeny
-			}
-			if allowed != CheckAllow {
-				allowed = result
-			}
-		}
-
-	case permissions.NodeTypeAnd:
-		// returns:
-		// Allowed - all the permissions are allowed
-		// Denied - one of the permissions is Deny
-		// Natural - otherwise
-		for _, node := range node.Nodes {
-			result := CheckPermissions(ctx, node, username, policies, permAudit)
-			if result == CheckNeutral || result == CheckDeny {
-				return result
-			}
-		}
-		return CheckAllow
-
-	default:
-		log.Error("unknown permission node type")
-		return CheckDeny
-	}
-	return allowed
 }
 
 func interpolateUser(resource string, username string) string {

@@ -40,18 +40,7 @@ class TestSetupState(unittest.TestCase):
                 state = 'initialized',
                 comm_prefs_missing = True,
                 login_config = lakefs_sdk.models.login_config.LoginConfig(
-                    rbac = 'none', 
-                    username_ui_placeholder = '', 
-                    password_ui_placeholder = '', 
-                    login_url = '', 
-                    login_url_method = 'none', 
-                    login_failed_message = '', 
-                    fallback_login_url = '', 
-                    fallback_login_label = '', 
-                    login_cookie_names = [
-                        ''
-                        ], 
-                    logout_url = '', )
+                    login_failed_message = '', )
             )
         else:
             return SetupState(

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { WithLoginConfigContext } from '../lib/hooks/conf';
 
 // pages
 import RepositoriesPage from './repositories';
@@ -27,17 +26,9 @@ import { SettingsLayout } from './repositories/repository/settings/layout';
 import Layout from '../lib/components/layout';
 import CredentialsPage from './auth/credentials';
 import GroupsPage from './auth/groups';
-import GroupMembersPage from './auth/groups/group/members';
-import GroupPoliciesPage from './auth/groups/group/policies';
-import UsersIndexPage, { UsersPage } from './auth/users';
-import UserGroupsPage from './auth/users/user/groups';
-import UserPoliciesPage from './auth/users/user/policies';
-import UserEffectivePoliciesPage from './auth/users/user/effectivePolicies';
-import UserCredentialsPage from './auth/users/user/credentials';
+import UsersIndexPage from './auth/users';
 import PoliciesPage from './auth/policies';
-import PolicyPage from './auth/policies/policy';
 import LoginPage from './auth/login';
-import ActivateInvitedUserPage from './auth/users/createUserWithPassword';
 import Setup from './setup';
 import { AuthLayout } from '../lib/components/auth/layout';
 import RepositoryActionPage from './repositories/repository/actions/run';
@@ -62,91 +53,65 @@ export const IndexPage = () => {
         <Router>
             <AuthProvider>
                 <WithAppContext>
-                    <WithLoginConfigContext>
-                        <Routes>
-                            <Route element={<RequiresAuth />}>
-                                <Route index element={<Navigate to="/repositories" />} />
-                                <Route path="repositories" element={<Layout />}>
-                                    <Route index element={<RepositoriesPage />} />
-                                    <Route path=":repoId" element={<RepositoryPageLayout />}>
-                                        <Route path="objects" element={<RepositoryObjectsPage />} />
-                                        <Route path="object" element={<RepositoryObjectsViewPage />} />
-                                        <Route path="commits">
-                                            <Route index element={<RepositoryCommitsPage />} />
-                                            <Route path=":commitId" element={<RepositoryCommitPage />} />
-                                        </Route>
-                                        <Route path="branches">
-                                            <Route index element={<RepositoryBranchesPage />} />
-                                            <Route path=":branchId/revert" element={<RepositoryRevertPage />} />
-                                        </Route>
-                                        <Route path="tags" element={<RepositoryTagsPage />} />
-                                        <Route path="pulls">
-                                            <Route index element={<RepositoryPullsListPage />} />
-                                            <Route path="create" element={<RepositoryCreatePullPage />} />
-                                            <Route path=":pullId" element={<RepositoryPullDetailsPage />} />
-                                        </Route>
-                                        <Route path="compare/*" element={<RepositoryComparePage />} />
-                                        <Route path="actions">
-                                            <Route index element={<RepositoryActionsPage />} />
-                                            <Route path=":runId" element={<RepositoryActionPage />} />
-                                        </Route>
-                                        <Route path="settings" element={<SettingsLayout />}>
-                                            <Route index element={<Navigate to="general" />} />
-                                            <Route path="general" element={<RepositoryGeneralSettingsPage />} />
-                                            <Route path="retention" element={<RepositoryRetentionPage />} />
-                                            <Route path="branches" element={<RepositorySettingsBranchesPage />} />
-                                        </Route>
-                                        <Route index element={<Navigate to="objects" />} />
+                    <Routes>
+                        <Route element={<RequiresAuth />}>
+                            <Route index element={<Navigate to="/repositories" />} />
+                            <Route path="repositories" element={<Layout />}>
+                                <Route index element={<RepositoriesPage />} />
+                                <Route path=":repoId" element={<RepositoryPageLayout />}>
+                                    <Route path="objects" element={<RepositoryObjectsPage />} />
+                                    <Route path="object" element={<RepositoryObjectsViewPage />} />
+                                    <Route path="commits">
+                                        <Route index element={<RepositoryCommitsPage />} />
+                                        <Route path=":commitId" element={<RepositoryCommitPage />} />
                                     </Route>
-                                </Route>
-                                <Route path="datasets" element={<Layout />}>
-                                    <Route index element={<DatasetsPage />} />
-                                </Route>
-                                <Route path="auth" element={<Layout />}>
-                                    <Route index element={<Navigate to="credentials" replace />} />
-                                    <Route element={<AuthLayout />}>
-                                        <Route path="credentials" element={<CredentialsPage />} />
-                                        <Route path="users" element={<UsersIndexPage />}>
-                                            <Route index element={<UsersPage />} />
-                                            <Route path=":userId">
-                                                <Route index element={<Navigate to="groups" />} />
-                                                <Route path="groups" element={<UserGroupsPage />} />
-                                                <Route exact path="policies" element={<UserPoliciesPage />} />
-                                                <Route
-                                                    exact
-                                                    path="policies/effective"
-                                                    element={<UserEffectivePoliciesPage />}
-                                                />
-                                                <Route exact path="credentials" element={<UserCredentialsPage />} />
-                                            </Route>
-                                        </Route>
-                                        <Route path="groups">
-                                            <Route index element={<GroupsPage />} />
-                                            <Route path=":groupId">
-                                                <Route index element={<Navigate to="members" />} />
-                                                <Route path="members" element={<GroupMembersPage />} />
-                                                <Route path="policies" element={<GroupPoliciesPage />} />
-                                            </Route>
-                                        </Route>
-                                        <Route path="policies">
-                                            <Route index element={<PoliciesPage />} />
-                                            <Route path=":policyId" element={<PolicyPage />} />
-                                        </Route>
+                                    <Route path="branches">
+                                        <Route index element={<RepositoryBranchesPage />} />
+                                        <Route path=":branchId/revert" element={<RepositoryRevertPage />} />
                                     </Route>
+                                    <Route path="tags" element={<RepositoryTagsPage />} />
+                                    <Route path="pulls">
+                                        <Route index element={<RepositoryPullsListPage />} />
+                                        <Route path="create" element={<RepositoryCreatePullPage />} />
+                                        <Route path=":pullId" element={<RepositoryPullDetailsPage />} />
+                                    </Route>
+                                    <Route path="compare/*" element={<RepositoryComparePage />} />
+                                    <Route path="actions">
+                                        <Route index element={<RepositoryActionsPage />} />
+                                        <Route path=":runId" element={<RepositoryActionPage />} />
+                                    </Route>
+                                    <Route path="settings" element={<SettingsLayout />}>
+                                        <Route index element={<Navigate to="general" />} />
+                                        <Route path="general" element={<RepositoryGeneralSettingsPage />} />
+                                        <Route path="retention" element={<RepositoryRetentionPage />} />
+                                        <Route path="branches" element={<RepositorySettingsBranchesPage />} />
+                                    </Route>
+                                    <Route index element={<Navigate to="objects" />} />
                                 </Route>
-                                <Route path="api/v1/auth/get-token/release-token/*" element={<Redirect />} />
-                                <Route path="*" element={<Navigate to="/repositories" replace />} />
+                            </Route>
+                            <Route path="datasets" element={<Layout />}>
+                                <Route index element={<DatasetsPage />} />
                             </Route>
                             <Route path="auth" element={<Layout />}>
-                                <Route path="login" element={<LoginPage />} />
-                                <Route path="users/create" element={<ActivateInvitedUserPage />} />
+                                <Route index element={<Navigate to="credentials" replace />} />
+                                <Route element={<AuthLayout />}>
+                                    <Route path="credentials" element={<CredentialsPage />} />
+                                    <Route path="users" element={<UsersIndexPage />} />
+                                    <Route path="groups" element={<GroupsPage />} />
+                                    <Route path="policies" element={<PoliciesPage />} />
+                                </Route>
                             </Route>
-                            <Route path="/setup" element={<Layout />}>
-                                <Route index element={<Setup />} />
-                                <Route path="*" element={<Setup />} />
-                            </Route>
-                        </Routes>
-                    </WithLoginConfigContext>
+                            <Route path="api/v1/auth/get-token/release-token/*" element={<Redirect />} />
+                            <Route path="*" element={<Navigate to="/repositories" replace />} />
+                        </Route>
+                        <Route path="auth" element={<Layout />}>
+                            <Route path="login" element={<LoginPage />} />
+                        </Route>
+                        <Route path="/setup" element={<Layout />}>
+                            <Route index element={<Setup />} />
+                            <Route path="*" element={<Setup />} />
+                        </Route>
+                    </Routes>
                 </WithAppContext>
             </AuthProvider>
         </Router>

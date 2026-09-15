@@ -6,8 +6,6 @@ pub mod action_run;
 pub use self::action_run::ActionRun;
 pub mod action_run_list;
 pub use self::action_run_list::ActionRunList;
-pub mod auth_capabilities;
-pub use self::auth_capabilities::AuthCapabilities;
 pub mod authentication_token;
 pub use self::authentication_token::AuthenticationToken;
 pub mod branch_creation;

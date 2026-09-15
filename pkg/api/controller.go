@@ -688,12 +688,6 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 	})
 }
 
-func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
-		InviteUser: swag.Bool(false),
-	})
-}
-
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body apigen.DeleteObjectsJSONRequestBody, repository, branch string, params apigen.DeleteObjectsParams) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects", r, repository, branch, "")
@@ -1523,10 +1517,6 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body apigen.CreateUserJSONRequestBody) {
-	if swag.BoolValue(body.InviteUser) {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	username := body.Id
 
 	// Check that username is valid
@@ -5212,10 +5202,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 
 func newLoginConfig(c config.AuthConfig) *apigen.LoginConfig {
 	return &apigen.LoginConfig{
-		RBAC:               apiutil.Ptr("none"),
-		LoginUrlMethod:     apiutil.Ptr("none"),
 		LoginFailedMessage: apiutil.Ptr(c.GetAuthUIConfig().LoginFailedMessage),
-		LoginCookieNames:   []string{auth.InternalAuthSessionName},
 	}
 }
 

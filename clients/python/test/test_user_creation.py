@@ -37,8 +37,7 @@ class TestUserCreation(unittest.TestCase):
         model = UserCreation()  # noqa: E501
         if include_optional:
             return UserCreation(
-                id = '',
-                invite_user = True
+                id = ''
             )
         else:
             return UserCreation(

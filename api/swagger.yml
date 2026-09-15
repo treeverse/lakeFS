@@ -936,66 +936,17 @@ components:
         id:
           type: string
           description: a unique identifier for the user.
-        invite_user:
-          type: boolean
       required:
         - id
 
     LoginConfig:
       type: object
       properties:
-        RBAC:
-          description: |
-            RBAC will remain enabled on GUI if "external".  That only works
-            with an external auth service.
-          type: string
-          enum: [none, simplified, internal, external]
-        username_ui_placeholder:
-          description: |
-            Placeholder text to display in the username field of the login form.
-          type: string
-        password_ui_placeholder:
-          description: |
-            Placeholder text to display in the password field of the login form.
-          type: string
-        login_url:
-          description: Primary URL to use for login.
-          type: string
-        login_url_method:
-          type: string
-          description: |
-            Defines login behavior when login_url is set.
-            - none: For OSS users.
-            - redirect: Auto-redirect to login_url.
-            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
-            Ignored if login_url is not configured.
-          enum:
-            - none
-            - redirect
-            - select
         login_failed_message:
           description: |
             Message to display to users who fail to login; a full sentence that is rendered
             in HTML and may contain a link to a secondary login method
           type: string
-        fallback_login_url:
-          description: Secondary URL to offer users to use for login.
-          type: string
-        fallback_login_label:
-          description: Label to place on fallback_login_url.
-          type: string
-        login_cookie_names:
-          description: Cookie names used to store JWT
-          type: array
-          items:
-            type: string
-        logout_url:
-          description: URL to use for logging out.
-          type: string
-      required:
-        - login_url
-        - login_cookie_names
-        - logout_url
 
     SetupState:
       type: object
@@ -1160,14 +1111,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Group"
-
-    AuthCapabilities:
-      type: object
-      properties:
-        invite_user:
-          type: boolean
-        forgot_password:
-          type: boolean
 
     UserList:
       type: object
@@ -2258,26 +2201,6 @@ paths:
           $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
-        429:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /auth/capabilities:
-    get:
-      tags:
-        - internal
-      operationId: getAuthCapabilities
-      summary: list authentication capabilities supported
-      security: []
-      responses:
-        200:
-          description: auth capabilities
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthCapabilities"
-
         429:
           description: too many requests
         default:

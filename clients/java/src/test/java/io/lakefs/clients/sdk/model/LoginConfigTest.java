@@ -19,9 +19,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -40,83 +38,11 @@ public class LoginConfigTest {
     }
 
     /**
-     * Test the property 'RBAC'
-     */
-    @Test
-    public void RBACTest() {
-        // TODO: test RBAC
-    }
-
-    /**
-     * Test the property 'usernameUiPlaceholder'
-     */
-    @Test
-    public void usernameUiPlaceholderTest() {
-        // TODO: test usernameUiPlaceholder
-    }
-
-    /**
-     * Test the property 'passwordUiPlaceholder'
-     */
-    @Test
-    public void passwordUiPlaceholderTest() {
-        // TODO: test passwordUiPlaceholder
-    }
-
-    /**
-     * Test the property 'loginUrl'
-     */
-    @Test
-    public void loginUrlTest() {
-        // TODO: test loginUrl
-    }
-
-    /**
-     * Test the property 'loginUrlMethod'
-     */
-    @Test
-    public void loginUrlMethodTest() {
-        // TODO: test loginUrlMethod
-    }
-
-    /**
      * Test the property 'loginFailedMessage'
      */
     @Test
     public void loginFailedMessageTest() {
         // TODO: test loginFailedMessage
-    }
-
-    /**
-     * Test the property 'fallbackLoginUrl'
-     */
-    @Test
-    public void fallbackLoginUrlTest() {
-        // TODO: test fallbackLoginUrl
-    }
-
-    /**
-     * Test the property 'fallbackLoginLabel'
-     */
-    @Test
-    public void fallbackLoginLabelTest() {
-        // TODO: test fallbackLoginLabel
-    }
-
-    /**
-     * Test the property 'loginCookieNames'
-     */
-    @Test
-    public void loginCookieNamesTest() {
-        // TODO: test loginCookieNames
-    }
-
-    /**
-     * Test the property 'logoutUrl'
-     */
-    @Test
-    public void logoutUrlTest() {
-        // TODO: test logoutUrl
     }
 
 }

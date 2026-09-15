@@ -19,19 +19,18 @@ import re  # noqa: F401
 import json
 
 
-from typing import Optional
+
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
+    from pydantic.v1 import BaseModel, Field, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictStr
+    from pydantic import BaseModel, Field, StrictStr
 
 class UserCreation(BaseModel):
     """
     UserCreation
     """
     id: StrictStr = Field(..., description="a unique identifier for the user.")
-    invite_user: Optional[StrictBool] = None
-    __properties = ["id", "invite_user"]
+    __properties = ["id"]
 
     class Config:
         """Pydantic configuration"""
@@ -69,8 +68,7 @@ class UserCreation(BaseModel):
             return UserCreation.parse_obj(obj)
 
         _obj = UserCreation.parse_obj({
-            "id": obj.get("id"),
-            "invite_user": obj.get("invite_user")
+            "id": obj.get("id")
         })
         return _obj
 

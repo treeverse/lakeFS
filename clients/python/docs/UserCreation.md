@@ -6,7 +6,6 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | a unique identifier for the user. | 
-**invite_user** | **bool** |  | [optional] 
 
 ## Example
 

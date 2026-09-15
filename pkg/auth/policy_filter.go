@@ -57,7 +57,6 @@ func HasPermissionOnResource(resourceArn, username string, policies []*model.Pol
 
 // CheckPermission checks if a user has a specific action permission on a resource.
 // Returns true if allowed, false if denied or not permitted.
-// This evaluates policies similar to CheckPermissions but optimized for filtering.
 // conditionCtx is optional: when nil, statements with conditions are skipped.
 // When provided, conditions are evaluated against the context.
 func CheckPermission(resourceArn, username string, policies []*model.Policy, action string, conditionCtx *ConditionContext) bool {
