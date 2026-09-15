@@ -65,7 +65,9 @@ public abstract class S3FSTestBase extends FSTestBase {
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withSignerOverride("AWSS3V4SignerType");
-        s3Endpoint = String.format("http://s3.local.lakefs.io:%d", s3.getMappedPort(9000));
+        // An IP endpoint keeps the AWS SDK on path-style addressing, matching fs.s3a.path.style.access
+        // below, which Hadoop 2 ignores.
+        s3Endpoint = String.format("http://127.0.0.1:%d", s3.getMappedPort(9000));
 
         s3Client = new AmazonS3Client(creds, clientConfiguration);
 
