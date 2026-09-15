@@ -204,7 +204,7 @@ class ObjectsApi:
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "ObjectStats",
@@ -379,7 +379,7 @@ class ObjectsApi:
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -554,7 +554,7 @@ class ObjectsApi:
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "ObjectErrorList",
@@ -737,7 +737,7 @@ class ObjectsApi:
             ['application/octet-stream', 'application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "bytearray",
@@ -900,7 +900,7 @@ class ObjectsApi:
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "UnderlyingObjectProperties",
@@ -1062,7 +1062,7 @@ class ObjectsApi:
         # process the body parameter
         _body_params = None
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -1254,7 +1254,7 @@ class ObjectsApi:
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "ObjectStatsList",
@@ -1428,7 +1428,7 @@ class ObjectsApi:
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "ObjectStats",
@@ -1602,7 +1602,7 @@ class ObjectsApi:
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -1801,7 +1801,7 @@ class ObjectsApi:
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "ObjectStats",

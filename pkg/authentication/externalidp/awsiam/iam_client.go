@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,13 +12,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
 	IdentityTokenKey = "identity_token"
 )
+
+var ErrExternalLoginFailed = errors.New("external principal login failed")
 
 type ExternalPrincipalLoginClient struct {
 	Client *apigen.ClientWithResponses
@@ -44,7 +46,7 @@ func (c *ExternalPrincipalLoginClient) ExternalPrincipalLogin(ctx context.Contex
 	if resp.JSON200 != nil {
 		return resp.JSON200, nil
 	}
-	return nil, fmt.Errorf("%w (status: %d)", authentication.ErrExternalLoginFailed, resp.StatusCode())
+	return nil, fmt.Errorf("%w (status: %d)", ErrExternalLoginFailed, resp.StatusCode())
 }
 
 type SecurityProviderAWSIAMRole struct {

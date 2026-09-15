@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
-import Dropdown from 'react-bootstrap/Dropdown';
 
 import { useAPIWithPagination } from '../../../lib/hooks/api';
 import { auth } from '../../../lib/api';
@@ -26,91 +25,9 @@ import { useLoginConfigContext } from '../../../lib/hooks/conf';
 import { useAuthOutletContext } from '../../../lib/components/auth/layout';
 import { FeatureLockedEmptyState } from '../../../lib/components/auth/enterpriseUpgrade';
 
-interface PermissionTypes {
-    Read: string;
-    Write: string;
-    Super: string;
-    Admin: string;
-}
-
-type PermissionType = keyof PermissionTypes;
-
-const permissions: PermissionTypes = {
-    Read: 'Read repository data and metadata, and manage own credentials.',
-    Write: 'Read and write repository data and metadata, and manage own credentials.',
-    Super: 'Perform all operations on repository, and manage own credentials.',
-    Admin: 'Do anything.',
-};
-
-type ACLPermissionButtonProps = {
-    initialValue?: string;
-    onSelect?: (newPermission: string) => unknown;
-    variant?: string;
-};
-
-const ACLPermission: React.FC<ACLPermissionButtonProps> = ({ initialValue, onSelect, variant }) => {
-    const [value, setValue] = useState<string | undefined>(initialValue);
-    const [title, setTitle] = useState<string>('');
-    variant ||= 'secondary';
-
-    useEffect(() => {
-        if (!initialValue) {
-            setTitle('(unknown)');
-            return;
-        }
-
-        if (Object.keys(permissions).includes(initialValue)) {
-            setTitle(permissions[initialValue as PermissionType]);
-        } else {
-            setTitle('(unknown)');
-        }
-    }, [initialValue]);
-
-    return (
-        <Dropdown
-            onSelect={(p: PermissionType) => {
-                if (value !== p) {
-                    if (onSelect) {
-                        onSelect(p);
-                    }
-                    setValue(p);
-                    setTitle(permissions[p]);
-                }
-            }}
-        >
-            <Dropdown.Toggle variant={variant} title={title}>
-                {value}
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-                {Object.entries(permissions).map(([key, text]) => (
-                    <Dropdown.Item key={key} eventKey={key}>
-                        <div>
-                            <b>{key}</b>
-                            <br />
-                            {text}
-                        </div>
-                    </Dropdown.Item>
-                ))}
-            </Dropdown.Menu>
-        </Dropdown>
-    );
-};
-
-const getACLMaybe = async (groupId: string) => {
-    try {
-        return await auth.getACL(groupId);
-    } catch (e) {
-        if (e.message.toLowerCase().includes('no acl')) {
-            return null;
-        }
-        throw e;
-    }
-};
-
 const GroupsContainer = () => {
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
-    const [putACLError, setPutACLError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [refresh, setRefresh] = useState(false);
 
@@ -118,25 +35,15 @@ const GroupsContainer = () => {
     const prefix = router.query.prefix ? router.query.prefix : '';
     const after = router.query.after ? router.query.after : '';
 
-    const lc = useLoginConfigContext();
-    const simplified = lc.RBAC === 'simplified';
-
     const [searchPrefix, setSearchPrefix] = useDebouncedState(prefix, (search) =>
         router.push({ pathname: '/auth/groups', query: { prefix: search } }),
     );
 
-    const { results, loading, error, nextPage } = useAPIWithPagination(async () => {
-        const groups = await auth.listGroups(prefix, after);
-        const enrichedResults = await Promise.all(
-            groups?.results.map(async (group) => ({
-                ...group,
-                acl: simplified && (await getACLMaybe(group.id)),
-            })),
-        );
-        return { ...groups, results: enrichedResults };
+    const { results, loading, error, nextPage } = useAPIWithPagination(() => {
+        return auth.listGroups(prefix, after);
         // TODO: Review and remove this eslint-disable once dependencies are validated
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lc.RBAC, refresh, prefix, after]);
+    }, [refresh, prefix, after]);
 
     useEffect(() => {
         setSelected([]);
@@ -144,7 +51,7 @@ const GroupsContainer = () => {
 
     if (error) return <AlertError error={error} />;
     if (loading) return <Loading />;
-    const headers = simplified ? ['', 'Group Name', 'Permission', 'Created At'] : ['', 'Group Name', 'Created At'];
+    const headers = ['', 'Group Name', 'Created At'];
 
     return (
         <>
@@ -192,7 +99,6 @@ const GroupsContainer = () => {
             </div>
 
             {!!deleteError && <AlertError error={deleteError} />}
-            {!!putACLError && <AlertError error={putACLError} />}
 
             <EntityActionModal
                 show={showCreate}
@@ -231,24 +137,8 @@ const GroupsContainer = () => {
                         >
                             {group.name}
                         </Link>,
+                        <FormattedDate dateValue={group.creation_date} />,
                     ];
-                    simplified &&
-                        elements.push(
-                            group.acl ? (
-                                <ACLPermission
-                                    initialValue={group.acl.permission}
-                                    onSelect={(permission) =>
-                                        auth.putACL(group.id, { ...group.acl, permission }).then(
-                                            () => setPutACLError(null),
-                                            (e) => setPutACLError(e),
-                                        )
-                                    }
-                                />
-                            ) : (
-                                <></>
-                            ),
-                        );
-                    elements.push(<FormattedDate dateValue={group.creation_date} />);
 
                     return elements;
                 }}

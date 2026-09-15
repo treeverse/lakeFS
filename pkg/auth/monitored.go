@@ -24,13 +24,6 @@ func ObserveDuration(operation string, duration time.Duration, success bool) {
 	authDurationSecs.WithLabelValues(operation, status).Observe(duration.Seconds())
 }
 
-func NewMonitoredAuthServiceAndInviter(service ServiceAndInviter) *MonitoredServiceAndInviter {
-	return &MonitoredServiceAndInviter{
-		Wrapped: service,
-		Observe: ObserveDuration,
-	}
-}
-
 func NewMonitoredAuthService(service Service) *MonitoredService {
 	return &MonitoredService{
 		Wrapped: service,

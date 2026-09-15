@@ -591,28 +591,6 @@ func RequireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	}
 }
 
-func isBasicAuth(t testing.TB, ctx context.Context) bool {
-	t.Helper()
-	return getRBACState(t, ctx) == "none"
-}
-
-func isAdvancedAuth(t testing.TB, ctx context.Context) bool {
-	return slices.Contains([]string{"external", "internal"}, getRBACState(t, ctx))
-}
-
-func getRBACState(t testing.TB, ctx context.Context) string {
-	setupState := getServerConfig(t, ctx)
-	return swag.StringValue(setupState.LoginConfig.RBAC)
-}
-
-func getServerConfig(t testing.TB, ctx context.Context) *apigen.SetupState {
-	t.Helper()
-	resp, err := client.GetSetupStateWithResponse(ctx)
-	require.NoError(t, err)
-	require.NotNil(t, resp.JSON200)
-	return resp.JSON200
-}
-
 func GravelerIterator(data []byte) (*sstable.Iterator, error) {
 	// read file descriptor
 	reader, err := pebblesst.NewMemReader(data, pebblesst.ReaderOptions{})

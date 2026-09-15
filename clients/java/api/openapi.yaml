@@ -13,8 +13,6 @@ security:
 - jwt_token: []
 - basic_auth: []
 - cookie_auth: []
-- oidc_auth: []
-- saml_auth: []
 paths:
   /setup_comm_prefs:
     post:
@@ -2051,104 +2049,6 @@ paths:
       summary: attach policy to group
       tags:
       - auth
-      x-accepts: application/json
-  /auth/groups/{groupId}/acl:
-    get:
-      operationId: getGroupACL
-      parameters:
-      - explode: false
-        in: path
-        name: groupId
-        required: true
-        schema:
-          type: string
-        style: simple
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ACL'
-          description: ACL of group
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorNoACL'
-          description: "Group not found, or group found but has no ACL"
-        "429":
-          description: too many requests
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: get ACL of group
-      tags:
-      - auth
-      x-accepts: application/json
-    post:
-      operationId: setGroupACL
-      parameters:
-      - explode: false
-        in: path
-        name: groupId
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ACL'
-        required: true
-      responses:
-        "201":
-          description: ACL successfully changed
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        "429":
-          description: too many requests
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: set ACL of group
-      tags:
-      - auth
-      x-content-type: application/json
       x-accepts: application/json
   /repositories:
     get:
@@ -8225,24 +8125,6 @@ paths:
       tags:
       - internal
       x-accepts: application/json
-  /oidc/callback:
-    get:
-      operationId: oauthCallback
-      responses:
-        "302":
-          description: successfully got token
-        "401":
-          description: failed to exchange authorization code for token
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
-      tags:
-      - auth
-      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -8330,12 +8212,6 @@ components:
         type: boolean
       style: form
   responses:
-    NotFoundOrNoACL:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorNoACL'
-      description: "Group not found, or group found but has no ACL"
     Unauthorized:
       content:
         application/json:
@@ -9437,17 +9313,6 @@ components:
       required:
       - errors
       type: object
-    ErrorNoACL:
-      properties:
-        message:
-          description: short message explaining the error
-          type: string
-        no_acl:
-          description: true if the group exists but has no ACL
-          type: boolean
-      required:
-      - message
-      type: object
     User:
       example:
         friendly_name: friendly_name
@@ -10073,18 +9938,6 @@ components:
       required:
       - pagination
       - results
-      type: object
-    ACL:
-      example:
-        permission: permission
-      properties:
-        permission:
-          description: |
-            Permission level to give this ACL.  "Read", "Write", "Super" and
-            "Admin" are all supported.
-          type: string
-      required:
-      - permission
       type: object
     StorageConfig:
       example:
@@ -11179,13 +11032,5 @@ components:
     cookie_auth:
       in: cookie
       name: internal_auth_session
-      type: apiKey
-    oidc_auth:
-      in: cookie
-      name: oidc_auth_session
-      type: apiKey
-    saml_auth:
-      in: cookie
-      name: saml_auth_session
       type: apiKey
 

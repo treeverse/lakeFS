@@ -15,8 +15,6 @@ security:
   - jwt_token: []
   - basic_auth: []
   - cookie_auth: []
-  - oidc_auth: []
-  - saml_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -30,14 +28,6 @@ components:
       type: apiKey
       in: cookie
       name: internal_auth_session
-    oidc_auth:
-      type: apiKey
-      in: cookie
-      name: oidc_auth_session
-    saml_auth:
-      type: apiKey
-      in: cookie
-      name: saml_auth_session
 
   parameters:
     PaginationPrefix:
@@ -110,13 +100,6 @@ components:
       description: delete entry without tombstone when possible *EXPERIMENTAL*
 
   responses:
-    NotFoundOrNoACL:
-      description: Group not found, or group found but has no ACL
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorNoACL"
-
     Unauthorized:
       description: Unauthorized
       content:
@@ -914,18 +897,6 @@ components:
           items:
             $ref: "#/components/schemas/ObjectError"
 
-    ErrorNoACL:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          description: short message explaining the error
-          type: string
-        no_acl:
-          description: "true if the group exists but has no ACL"
-          type: boolean
-
     User:
       type: object
       required:
@@ -1339,17 +1310,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Policy"
-
-    ACL:
-      type: object
-      required:
-        - permission
-      properties:
-        permission:
-          type: string
-          description: |
-            Permission level to give this ACL.  "Read", "Write", "Super" and
-            "Admin" are all supported.
 
     StorageConfig:
       type: object
@@ -3183,62 +3143,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
-        429:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /auth/groups/{groupId}/acl:
-    parameters:
-      - in: path
-        name: groupId
-        required: true
-        schema:
-          type: string
-
-    post:
-      tags:
-        - auth
-      operationId: setGroupACL
-      summary: set ACL of group
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ACL"
-      responses:
-        201:
-          description: ACL successfully changed
-        400:
-          $ref: "#/components/responses/BadRequest"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        429:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
-
-    get:
-      tags:
-        - auth
-      operationId: getGroupACL
-      summary: get ACL of group
-      responses:
-        200:
-          description: ACL of group
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ACL"
-        400:
-          $ref: "#/components/responses/BadRequest"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFoundOrNoACL"
         429:
           description: too many requests
         default:
@@ -6692,16 +6596,3 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /oidc/callback:
-    get:
-      tags:
-        - auth
-      operationId: oauthCallback
-      security: []
-      responses:
-        302:
-          description: successfully got token
-        401:
-          description: failed to exchange authorization code for token
-        default:
-          $ref: "#/components/responses/ServerError"

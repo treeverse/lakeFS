@@ -48,7 +48,6 @@ from lakefs_sdk.exceptions import ApiAttributeError
 from lakefs_sdk.exceptions import ApiException
 
 # import models into sdk package
-from lakefs_sdk.models.acl import ACL
 from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload
 from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials
 from lakefs_sdk.models.action_run import ActionRun
@@ -76,7 +75,6 @@ from lakefs_sdk.models.diff import Diff
 from lakefs_sdk.models.diff_list import DiffList
 from lakefs_sdk.models.diff_object_stat import DiffObjectStat
 from lakefs_sdk.models.error import Error
-from lakefs_sdk.models.error_no_acl import ErrorNoACL
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
 from lakefs_sdk.models.external_principal import ExternalPrincipal
 from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation

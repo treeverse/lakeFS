@@ -10,7 +10,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -30,12 +29,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := LoadConfig()
-		authUIConfig := cfg.AuthConfig().GetAuthUIConfig()
 		baseConfig := cfg.GetBaseConfig()
-		if authUIConfig.RBAC == config.AuthRBACExternal {
-			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
-			os.Exit(1)
-		}
 
 		userName, err := cmd.Flags().GetString("user-name")
 		if err != nil {
@@ -67,7 +61,6 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 		defer kvStore.Close()
 
-		addToAdmins := !authUIConfig.IsAuthBasic()
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 		authService := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
@@ -79,7 +72,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 			},
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
-		}, addToAdmins)
+		})
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)

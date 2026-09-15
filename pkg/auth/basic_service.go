@@ -46,10 +46,6 @@ func NewBasicAuthService(store kv.Store, secretStore crypt.SecretStore, cacheCon
 	return res
 }
 
-func (s *BasicAuthService) IsAdvancedAuth() bool {
-	return false
-}
-
 // Migrate tries to perform migration of existing lakeFS server to basic auth
 func (s *BasicAuthService) Migrate(ctx context.Context) (string, error) {
 	_, err := s.getUser(ctx)
@@ -357,36 +353,8 @@ func (s *BasicAuthService) GetUserByID(_ context.Context, _ string) (*model.User
 	return nil, ErrNotImplemented
 }
 
-func (s *BasicAuthService) GetUserByExternalID(_ context.Context, _ string) (*model.User, error) {
-	return nil, ErrNotImplemented
-}
-
 func (s *BasicAuthService) GetUserByEmail(_ context.Context, _ string) (*model.User, error) {
 	return nil, ErrNotImplemented
-}
-
-func (s *BasicAuthService) UpdateUserFriendlyName(_ context.Context, _ string, _ string) error {
-	return ErrNotImplemented
-}
-
-func (s *BasicAuthService) IsExternalPrincipalsEnabled(_ context.Context) bool {
-	return false
-}
-
-func (s *BasicAuthService) CreateUserExternalPrincipal(_ context.Context, _, _ string) error {
-	return ErrNotImplemented
-}
-
-func (s *BasicAuthService) DeleteUserExternalPrincipal(_ context.Context, _, _ string) error {
-	return ErrNotImplemented
-}
-
-func (s *BasicAuthService) GetExternalPrincipal(_ context.Context, _ string) (*model.ExternalPrincipal, error) {
-	return nil, ErrNotImplemented
-}
-
-func (s *BasicAuthService) ListUserExternalPrincipals(_ context.Context, _ string, _ *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error) {
-	return nil, nil, ErrNotImplemented
 }
 
 func (s *BasicAuthService) CreateGroup(_ context.Context, _ *model.Group) (*model.Group, error) {

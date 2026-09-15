@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -106,11 +105,6 @@ var runCmd = &cobra.Command{
 
 		authService := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 
-		authenticationService, err := authentication.NewAuthenticationService(ctx, cfg, logger)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to create authentication service")
-		}
-
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
@@ -166,7 +160,7 @@ var runCmd = &cobra.Command{
 		// local database lock will make sure that only one instance will run the setup.
 		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
 			baseCfg.Installation.UserName != "" && baseCfg.Installation.AccessKeyID.SecureValue() != "" && baseCfg.Installation.SecretAccessKey.SecureValue() != "" {
-			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, baseCfg.Installation.UserName,
+			setupCreds, err := setupLakeFS(ctx, authMetadataManager, authService, baseCfg.Installation.UserName,
 				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue(), false)
 			if err != nil {
 				logger.WithError(err).WithField("admin", baseCfg.Installation.UserName).Fatal("Failed to initial setup environment")
@@ -191,10 +185,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		middlewareAuthenticator, err := authentication.BuildAuthenticatorChain(cfg, logger, authService)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to create authentication chain")
-		}
+		middlewareAuthenticator := auth.NewBuiltinAuthenticator(authService)
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
@@ -219,7 +210,6 @@ var runCmd = &cobra.Command{
 			c,
 			middlewareAuthenticator,
 			authService,
-			authenticationService,
 			blockStore,
 			authMetadataManager,
 			migrator,
@@ -243,15 +233,10 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
-		baseAuthCfg := cfg.AuthConfig().GetBaseAuthConfig()
-		oidcConfig := auth.OIDCConfig(baseAuthCfg.OIDC)
-		cookieAuthConfig := auth.CookieAuthConfig(baseAuthCfg.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,
 			authService,
-			&oidcConfig,
-			&cookieAuthConfig,
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
@@ -268,9 +253,7 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			s3FallbackURL,
 			baseCfg.Logging.AuditLogLevel,
-			baseCfg.Logging.TraceRequestHeaders,
 			baseCfg.Gateways.S3.VerifyUnsupported,
-			authService.IsAdvancedAuth(),
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 

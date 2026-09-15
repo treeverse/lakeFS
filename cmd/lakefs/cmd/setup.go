@@ -10,7 +10,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -25,7 +24,6 @@ var setupCmd = &cobra.Command{
 	Short:   "Setup a new lakeFS instance with initial credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := LoadConfig()
-		authConfig := cfg.AuthConfig()
 		baseConfig := cfg.GetBaseConfig()
 
 		ctx := cmd.Context()
@@ -40,11 +38,6 @@ var setupCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
-		}
-
-		if authConfig.GetAuthUIConfig().RBAC == config.AuthRBACExternal {
-			// nothing to do - users are managed elsewhere
-			return
 		}
 
 		userName, err := cmd.Flags().GetString("user-name")
@@ -82,7 +75,7 @@ var setupCmd = &cobra.Command{
 		authService = auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 
-		credentials, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, userName, accessKeyID, secretAccessKey, noCheck)
+		credentials, err := setupLakeFS(ctx, authMetadataManager, authService, userName, accessKeyID, secretAccessKey, noCheck)
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)
@@ -108,7 +101,7 @@ var setupCmd = &cobra.Command{
 	},
 }
 
-func setupLakeFS(ctx context.Context, cfg config.Config, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string, noSetupCheck bool) (*model.Credential, error) {
+func setupLakeFS(ctx context.Context, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string, noSetupCheck bool) (*model.Credential, error) {
 	var (
 		err            error
 		isCommPrefsSet = false
@@ -137,7 +130,7 @@ func setupLakeFS(ctx context.Context, cfg config.Config, metadataManager auth.Me
 	}
 
 	// populate initial data and create admin user
-	credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
+	credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, metadataManager, userName, &accessKeyID, &secretAccessKey)
 	if err != nil {
 		return nil, fmt.Errorf("create initial admin user: %w", err)
 	}

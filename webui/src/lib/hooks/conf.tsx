@@ -5,22 +5,10 @@ import { setup } from '../api';
 
 type LoginConfig = {
     RBAC: string | null;
-    FallbackLoginLabel: string | null;
-    FallbackLoginUrl: string | null;
-    LoginCookieNames: string[];
-    LoginFailedMessage: string | null;
-    LoginUrl: string;
-    LogoutUrl: string;
 };
 
 const initValue = {
     RBAC: null,
-    FallbackLoginLabel: null,
-    FallbackLoginUrl: null,
-    LoginCookieNames: [],
-    LoginFailedMessage: null,
-    LoginUrl: '',
-    LogoutUrl: '',
 };
 
 export const LoginConfigContext = createContext<LoginConfig>(initValue);

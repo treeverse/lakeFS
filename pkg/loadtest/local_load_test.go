@@ -15,7 +15,6 @@ import (
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -74,7 +73,7 @@ func TestLocalLoad(t *testing.T) {
 	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, actions.Config{Enabled: true}, "")
 	c.SetHooksHandler(actionsService)
 
-	credentials, err := setup.AddAdminUser(ctx, authService, superuser, false)
+	credentials, err := setup.AddAdminUser(ctx, authService, superuser)
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
@@ -85,13 +84,11 @@ func TestLocalLoad(t *testing.T) {
 		_ = c.Close()
 	})
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
-	authenticationService := authentication.NewDummyService()
 	handler := api.Serve(
 		cfg,
 		c,
 		authenticator,
 		authService,
-		authenticationService,
 		blockAdapter,
 		meta,
 		migrator,

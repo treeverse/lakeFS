@@ -1,7 +1,8 @@
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
 import {
     PeopleIcon,
     PersonIcon,
@@ -17,6 +18,7 @@ type OcticonComponent = React.FC<{ size?: number | string }>;
 
 const BOOK_DEMO_URL = 'https://lakefs.io/book-a-demo/';
 const ENTERPRISE_DOCS_URL = 'https://docs.lakefs.io/enterprise/';
+const ENTERPRISE_ALERT_DISMISSED_KEY = 'lakefs:ui:auth:dismissEnterpriseAlert';
 
 const ENTERPRISE_BULLETS: Array<{ title: string; description: string; icon: OcticonComponent }> = [
     {
@@ -302,5 +304,31 @@ export const FeatureLockedEmptyState: FC<FeatureLockedEmptyStateProps> = ({ feat
 
             <EnterpriseUpgradeModal feature={feature} show={showModal} onHide={() => setShowModal(false)} />
         </>
+    );
+};
+
+export const EnterpriseUpgradeAlert: FC = () => {
+    const [show, setShow] = useState(!window.localStorage.getItem(ENTERPRISE_ALERT_DISMISSED_KEY));
+    if (!show) return null;
+
+    return (
+        <Alert
+            variant="info"
+            dismissible
+            onClose={() => {
+                window.localStorage.setItem(ENTERPRISE_ALERT_DISMISSED_KEY, 'true');
+                setShow(false);
+            }}
+        >
+            <SparkleFillIcon size={14} /> Users, groups, policies and single sign-on are available in{' '}
+            <Alert.Link href={ENTERPRISE_DOCS_URL} target="_blank" rel="noopener noreferrer">
+                lakeFS Enterprise
+            </Alert.Link>
+            .{' '}
+            <Alert.Link href={BOOK_DEMO_URL} target="_blank" rel="noopener noreferrer">
+                Book a demo
+            </Alert.Link>{' '}
+            to unlock access control.
+        </Alert>
     );
 };

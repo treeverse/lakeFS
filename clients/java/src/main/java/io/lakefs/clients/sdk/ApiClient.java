@@ -102,8 +102,6 @@ public class ApiClient {
         authentications.put("basic_auth", new HttpBasicAuth());
         authentications.put("jwt_token", new HttpBearerAuth("bearer"));
         authentications.put("cookie_auth", new ApiKeyAuth("cookie", "internal_auth_session"));
-        authentications.put("oidc_auth", new ApiKeyAuth("cookie", "oidc_auth_session"));
-        authentications.put("saml_auth", new ApiKeyAuth("cookie", "saml_auth_session"));
         // Prevent the authentications from being modified.
         authentications = Collections.unmodifiableMap(authentications);
     }
@@ -122,8 +120,6 @@ public class ApiClient {
         authentications.put("basic_auth", new HttpBasicAuth());
         authentications.put("jwt_token", new HttpBearerAuth("bearer"));
         authentications.put("cookie_auth", new ApiKeyAuth("cookie", "internal_auth_session"));
-        authentications.put("oidc_auth", new ApiKeyAuth("cookie", "oidc_auth_session"));
-        authentications.put("saml_auth", new ApiKeyAuth("cookie", "saml_auth_session"));
         // Prevent the authentications from being modified.
         authentications = Collections.unmodifiableMap(authentications);
     }

@@ -1,5 +1,5 @@
 # On a published release (or manual dispatch with a version), pushes
-# cli.md, swagger.yml, and authorization.yml to `treeverse/docs-next-lakeFS`.
+# cli.md and swagger.yml to `treeverse/docs-next-lakeFS`.
 
 name: Push docs release
 
@@ -86,7 +86,6 @@ jobs:
           mkdir -p "$target"
           cp /tmp/cli.md             "$target/cli.md"
           cp api/swagger.yml         "$target/swagger.yml"
-          cp api/authorization.yml   "$target/authorization.yml"
           if [[ "${{ steps.flags.outputs.is_latest }}" == "true" ]]; then
             echo "${{ steps.tag.outputs.minor }}" > "docs-next/reference-versions/oss/LATEST"
           fi

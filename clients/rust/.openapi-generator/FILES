@@ -5,7 +5,6 @@ Cargo.toml
 README.md
 docs/AbortPresignMultipartUpload.md
 docs/AccessKeyCredentials.md
-docs/Acl.md
 docs/ActionRun.md
 docs/ActionRunList.md
 docs/ActionsApi.md
@@ -36,7 +35,6 @@ docs/Diff.md
 docs/DiffList.md
 docs/DiffObjectStat.md
 docs/Error.md
-docs/ErrorNoAcl.md
 docs/ExperimentalApi.md
 docs/ExternalApi.md
 docs/ExternalLoginInformation.md
@@ -157,7 +155,6 @@ src/apis/tags_api.rs
 src/lib.rs
 src/models/abort_presign_multipart_upload.rs
 src/models/access_key_credentials.rs
-src/models/acl.rs
 src/models/action_run.rs
 src/models/action_run_list.rs
 src/models/auth_capabilities.rs
@@ -183,7 +180,6 @@ src/models/diff.rs
 src/models/diff_list.rs
 src/models/diff_object_stat.rs
 src/models/error.rs
-src/models/error_no_acl.rs
 src/models/external_login_information.rs
 src/models/external_principal.rs
 src/models/external_principal_creation.rs

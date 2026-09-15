@@ -37,7 +37,7 @@ func TestAddAdminUser(t *testing.T) {
 		AccessKeyID:     "key",
 		SecretAccessKey: "secret",
 	}
-	_, err := setup.AddAdminUser(ctx, authService, superuser, false)
+	_, err := setup.AddAdminUser(ctx, authService, superuser)
 	if err != nil {
 		t.Fatal("failed to add admin user:", err)
 	}
@@ -51,7 +51,7 @@ func TestAddAdminUser(t *testing.T) {
 		AccessKeyID:     "key2",
 		SecretAccessKey: "secret2",
 	}
-	_, err = setup.AddAdminUser(ctx, authService, superuser2, false)
+	_, err = setup.AddAdminUser(ctx, authService, superuser2)
 	expectedErr := auth.ErrAlreadyExists
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("adding another admin. err:%v, expected:%v", err, expectedErr)
@@ -65,7 +65,7 @@ func TestAddAdminUser(t *testing.T) {
 
 	// setup admin user again without secret access key should fail
 	superuser.SecretAccessKey = ""
-	_, err = setup.AddAdminUser(ctx, authService, superuser, false)
+	_, err = setup.AddAdminUser(ctx, authService, superuser)
 	expectedErr = auth.ErrNotFound
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("adding admin without secret access. key err:%v, expected:%v", err, expectedErr)
@@ -73,7 +73,7 @@ func TestAddAdminUser(t *testing.T) {
 
 	// we should be able to re-add the admin user
 	superuser.SecretAccessKey = "new-secret"
-	_, err = setup.AddAdminUser(ctx, authService, superuser, false)
+	_, err = setup.AddAdminUser(ctx, authService, superuser)
 	if err != nil {
 		t.Fatal("failed to re-add admin user:", err)
 	}

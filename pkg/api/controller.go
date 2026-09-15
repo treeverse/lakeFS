@@ -11,7 +11,6 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"net/mail"
 	"net/url"
 	"path/filepath"
 	"reflect"
@@ -25,14 +24,12 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
-	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -54,9 +51,6 @@ const (
 	// DefaultPerPage is the default number of results returned for paginated queries to the API
 	DefaultPerPage int = 100
 
-	defaultSTSTTLSeconds = 3600
-	maxSTSTTLSeconds     = 3600 * 12
-
 	lakeFSPrefix = "symlinks"
 
 	actionStatusCompleted = "completed"
@@ -70,9 +64,6 @@ const (
 
 	pullRequestClosed = "CLOSED"
 	pullRequestOpen   = "OPEN"
-
-	usernamePlaceholder = "Username"
-	passwordPlaceholder = "Password"
 )
 
 // safeContentTypesForInline defines content types that are safe to display inline in browsers
@@ -117,7 +108,6 @@ type Controller struct {
 	Catalog         *catalog.Catalog
 	Authenticator   auth.Authenticator
 	Auth            auth.Service
-	Authentication  authentication.Service
 	BlockAdapter    block.Adapter
 	MetadataManager auth.MetadataManager
 	Migrator        Migrator
@@ -143,7 +133,6 @@ func NewController(
 	catalog *catalog.Catalog,
 	authenticator auth.Authenticator,
 	authService auth.Service,
-	authenticationService authentication.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
 	migrator Migrator,
@@ -160,7 +149,6 @@ func NewController(
 		Catalog:         catalog,
 		Authenticator:   authenticator,
 		Auth:            authService,
-		Authentication:  authenticationService,
 		BlockAdapter:    blockAdapter,
 		MetadataManager: metadataManager,
 		Migrator:        migrator,
@@ -701,9 +689,8 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	_, inviteSupported := c.Auth.(auth.EmailInviter)
 	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
-		InviteUser: &inviteSupported,
+		InviteUser: swag.Bool(false),
 	})
 }
 
@@ -817,76 +804,12 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Request, body apigen.ExternalPrincipalLoginJSONRequestBody) {
-	ctx := r.Context()
-	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
-	c.LogAction(ctx, "external_principal_login", r, "", "", "")
-	c.Logger.Debug("external principal login")
-	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
-	if c.handleAPIError(ctx, w, r, err) {
-		c.Logger.WithError(err).Error("external principal login failed")
-		return
-	}
-	c.Logger.WithField("external_principal_id", externalPrincipal.Id).Debug("external principal login success, trying to get external principal ID info")
-	externalPrincipalIDInfo, err := c.Auth.GetExternalPrincipal(ctx, externalPrincipal.Id)
-	if c.handleAPIError(ctx, w, r, err) {
-		c.Logger.WithField("external_principal_id", externalPrincipal.Id).WithError(err).Error("failed to get external principal ID info")
-		return
-	}
-	c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).Debug("got external principal ID info, generating a new JWT")
-	duration := c.Config.AuthConfig().GetBaseAuthConfig().LoginDuration
-	if swag.IntValue(body.TokenExpirationDuration) > 0 {
-		duration = time.Second * time.Duration(*body.TokenExpirationDuration)
-	}
-	if duration > c.Config.AuthConfig().GetBaseAuthConfig().LoginMaxDuration {
-		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.AuthConfig().GetBaseAuthConfig().LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
-		duration = c.Config.AuthConfig().GetBaseAuthConfig().LoginMaxDuration
-	}
-	loginTime := time.Now()
-	expires := loginTime.Add(duration)
-	secret := c.Auth.SecretStore().SharedSecret()
-	tokenString, err := auth.GenerateJWTLogin(secret, externalPrincipalIDInfo.UserID, loginTime, expires)
-	if err != nil {
-		c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).WithError(err).Error("failed to generate JWT")
-		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		return
-	}
-	response := apigen.AuthenticationToken{
-		Token:           tokenString,
-		TokenExpiration: swag.Int64(expires.Unix()),
-	}
-	writeResponse(w, r, http.StatusOK, response)
+func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Request, _ apigen.ExternalPrincipalLoginJSONRequestBody) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apigen.StsLoginJSONRequestBody) {
-	ctx := r.Context()
-	externalUserID, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	// validate a user exists with the external user id
-	user, err := c.Auth.GetUserByExternalID(ctx, externalUserID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	expiresInSec := defaultSTSTTLSeconds
-	if body.TtlSeconds != nil {
-		expiresInSec = min(maxSTSTTLSeconds, int(*body.TtlSeconds))
-	}
-	now := time.Now()
-	expiresAt := now.Add(time.Duration(expiresInSec) * time.Second)
-	token, err := auth.GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), user.Username, now, expiresAt)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	responseToken := apigen.AuthenticationToken{
-		Token:           token,
-		TokenExpiration: swag.Int64(expiresAt.Unix()),
-	}
-	writeResponse(w, r, http.StatusOK, responseToken)
+func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, _ apigen.StsLoginJSONRequestBody) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
@@ -1211,121 +1134,6 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
-	aclPolicyName := authacl.PolicyName(groupID)
-	if !c.authorize(w, r, permissions.Node{
-		Type: permissions.NodeTypeAnd,
-		Nodes: []permissions.Node{
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.ReadGroupAction,
-					Resource: permissions.GroupArn(groupID),
-				},
-			},
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.ReadPolicyAction,
-					Resource: permissions.PolicyArn(aclPolicyName),
-				},
-			},
-		},
-	}) {
-		return
-	}
-
-	ctx := r.Context()
-	c.LogAction(ctx, "get_group_acl", r, "", "", "")
-	policies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
-		Amount: 2, //nolint:mnd
-	})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	var groupACL model.ACL
-	switch len(policies) {
-	case 0: // Blank ACL is valid and allows nothing
-		break
-	case 1:
-		groupACL = policies[0].ACL
-		if len(groupACL.Permission) == 0 {
-			c.Logger.
-				WithContext(ctx).
-				WithField("policy", fmt.Sprintf("%+v", policies[0])).
-				WithField("acl", fmt.Sprintf("%+v", groupACL)).
-				WithField("group", groupID).
-				Warn("Policy attached to group has no ACL")
-			response := apigen.NotFoundOrNoACL{
-				Message: "Policy attached to group has no ACL",
-				NoAcl:   swag.Bool(true),
-			}
-			writeResponse(w, r, http.StatusNotFound, response)
-			return
-		}
-	default:
-		c.Logger.
-			WithContext(ctx).
-			WithField("num_policies", len(policies)).
-			WithField("group", groupID).
-			Warn("Wrong number of policies found")
-		response := apigen.NotFoundOrNoACL{
-			Message: "Multiple policies attached to group - no ACL",
-			NoAcl:   swag.Bool(true),
-		}
-		writeResponse(w, r, http.StatusNotFound, response)
-		return
-	}
-
-	response := apigen.ACL{
-		Permission: string(groupACL.Permission),
-	}
-
-	writeResponse(w, r, http.StatusOK, response)
-}
-
-func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body apigen.SetGroupACLJSONRequestBody, groupID string) {
-	aclPolicyName := authacl.PolicyName(groupID)
-	if !c.authorize(w, r, permissions.Node{
-		Type: permissions.NodeTypeAnd,
-		Nodes: []permissions.Node{
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.ReadGroupAction,
-					Resource: permissions.GroupArn(groupID),
-				},
-			},
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.AttachPolicyAction,
-					Resource: permissions.PolicyArn(aclPolicyName),
-				},
-			},
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.UpdatePolicyAction,
-					Resource: permissions.PolicyArn(aclPolicyName),
-				},
-			},
-		},
-	}) {
-		return
-	}
-
-	ctx := r.Context()
-	c.LogAction(ctx, "set_group_acl", r, "", "", "")
-
-	newACL := model.ACL{
-		Permission: model.ACLPermission(body.Permission),
-	}
-
-	err := authacl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), false)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	writeResponse(w, r, http.StatusCreated, nil)
-}
-
 func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params apigen.ListGroupMembersParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -1403,10 +1211,6 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params apigen.ListGroupPoliciesParams) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadGroupAction,
@@ -1494,10 +1298,6 @@ func apiStatementsToModelStatements(apiStatements []apigen.Statement) model.Stat
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -1516,10 +1316,6 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -1539,10 +1335,6 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params apigen.ListPoliciesParams) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListPoliciesAction,
@@ -1578,10 +1370,6 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body apigen.CreatePolicyJSONRequestBody) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreatePolicyAction,
@@ -1617,10 +1405,6 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeletePolicyAction,
@@ -1643,10 +1427,6 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadPolicyAction,
@@ -1671,10 +1451,6 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body apigen.UpdatePolicyJSONRequestBody, policyID string) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.UpdatePolicyAction,
@@ -1747,7 +1523,10 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body apigen.CreateUserJSONRequestBody) {
-	invite := swag.BoolValue(body.InviteUser)
+	if swag.BoolValue(body.InviteUser) {
+		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
+		return
+	}
 	username := body.Id
 
 	// Check that username is valid
@@ -1757,18 +1536,6 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
-	var parsedEmail *string
-	if invite {
-		// Check that email is valid
-		addr, err := mail.ParseAddress(username)
-		if err != nil {
-			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
-			writeError(w, r, http.StatusBadRequest, "Invalid email format")
-			return
-		}
-		username = strings.ToLower(addr.Address)
-		parsedEmail = &addr.Address
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
@@ -1779,26 +1546,11 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user", r, "", "", "")
-	if invite {
-		inviter, ok := c.Auth.(auth.EmailInviter)
-		if !ok {
-			writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-			return
-		}
-		err := inviter.InviteUser(ctx, *parsedEmail)
-		if c.handleAPIError(ctx, w, r, err) {
-			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("Failed creating user")
-			return
-		}
-		writeResponse(w, r, http.StatusCreated, apigen.User{Id: *parsedEmail})
-		return
-	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
 		Username:     username,
 		FriendlyName: nil,
 		Source:       "internal",
-		Email:        parsedEmail,
 	}
 
 	_, err := c.Auth.CreateUser(ctx, u)
@@ -1992,10 +1744,6 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserPoliciesParams) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadUserAction,
@@ -2037,10 +1785,6 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -2059,10 +1803,6 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -3072,12 +2812,6 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, graveler.ErrDeleteDefaultBranch):
 		cb(w, r, http.StatusForbidden, err)
 
-	case errors.Is(err, authentication.ErrSessionExpired):
-		cb(w, r, http.StatusForbidden, "session expired")
-
-	case errors.Is(err, authentication.ErrInvalidTokenFormat):
-		cb(w, r, http.StatusUnauthorized, "invalid token format")
-
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
 		errors.Is(err, graveler.ErrInvalidValue),
@@ -3097,7 +2831,6 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		errors.Is(err, block.ErrOperationNotSupported),
 		errors.Is(err, block.ErrWriteFailed),
 		errors.Is(err, auth.ErrInvalidRequest),
-		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
 		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
 		errors.Is(err, catalog.ErrInvalidImportSource),
@@ -3138,14 +2871,9 @@ func handleApiErrorCallback(log logging.Logger, w http.ResponseWriter, r *http.R
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 
-	case errors.Is(err, authentication.ErrNotImplemented),
-		errors.Is(err, auth.ErrNotImplemented),
+	case errors.Is(err, auth.ErrNotImplemented),
 		errors.Is(err, apiutil.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-
-	case errors.Is(err, authentication.ErrInsufficientPermissions):
-		log.Info("User verification failed - insufficient permissions")
-		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 
 	case errors.Is(err, actions.ErrActionFailed):
 		log.WithError(err).Debug("Precondition failed, aborted by action failure")
@@ -5483,22 +5211,12 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 }
 
 func newLoginConfig(c config.AuthConfig) *apigen.LoginConfig {
-	authUICfg := c.GetAuthUIConfig()
-	loginConfig := &apigen.LoginConfig{
-		RBAC:               apiutil.Ptr(authUICfg.RBAC),
-		LoginUrl:           authUICfg.LoginURL,
-		LoginUrlMethod:     apiutil.Ptr(c.GetLoginURLMethodConfigParam()),
-		LoginFailedMessage: apiutil.Ptr(authUICfg.LoginFailedMessage),
-		FallbackLoginUrl:   authUICfg.FallbackLoginURL,
-		FallbackLoginLabel: authUICfg.FallbackLoginLabel,
-		LoginCookieNames:   authUICfg.LoginCookieNames,
-		LogoutUrl:          authUICfg.LogoutURL,
+	return &apigen.LoginConfig{
+		RBAC:               apiutil.Ptr("none"),
+		LoginUrlMethod:     apiutil.Ptr("none"),
+		LoginFailedMessage: apiutil.Ptr(c.GetAuthUIConfig().LoginFailedMessage),
+		LoginCookieNames:   []string{auth.InternalAuthSessionName},
 	}
-	if c.UseUILoginPlaceholders() {
-		loginConfig.UsernameUiPlaceholder = swag.String(usernamePlaceholder)
-		loginConfig.PasswordUiPlaceholder = swag.String(passwordPlaceholder)
-	}
-	return loginConfig
 }
 
 const (
@@ -5509,17 +5227,6 @@ const (
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	// external auth reports as initialized to avoid triggering the setup wizard
-	if c.Config.AuthConfig().GetAuthUIConfig().RBAC == config.AuthRBACExternal {
-		response := apigen.SetupState{
-			State:            swag.String(string(auth.SetupStateInitialized)),
-			LoginConfig:      newLoginConfig(c.Config.AuthConfig()),
-			CommPrefsMissing: swag.Bool(false),
-		}
-		writeResponse(w, r, http.StatusOK, response)
-		return
-	}
 
 	savedState, err := c.MetadataManager.GetSetupState(ctx)
 	if err != nil {
@@ -5623,17 +5330,11 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	if c.Config.AuthConfig().GetAuthUIConfig().RBAC == config.AuthRBACExternal {
-		// nothing to do - users are managed elsewhere
-		writeResponse(w, r, http.StatusOK, apigen.CredentialsWithSecret{})
-		return
-	}
-
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
 	} else {
-		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -6400,129 +6101,18 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, _ apigen.CreateUserExternalPrincipalJSONRequestBody, userID string, params apigen.CreateUserExternalPrincipalParams) {
-	ctx := r.Context()
-	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateUserExternalPrincipalAction,
-			Resource: permissions.UserArn(userID),
-		},
-	}) {
-		return
-	}
-
-	c.LogAction(ctx, "create_user_external_principal", r, "", "", "")
-
-	err := c.Auth.CreateUserExternalPrincipal(ctx, userID, params.PrincipalId)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusCreated, nil)
+func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, _ apigen.CreateUserExternalPrincipalJSONRequestBody, _ string, _ apigen.CreateUserExternalPrincipalParams) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID string, params apigen.DeleteUserExternalPrincipalParams) {
-	ctx := r.Context()
-	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.DeleteUserExternalPrincipalAction,
-			Resource: permissions.UserArn(userID),
-		},
-	}) {
-		return
-	}
-	c.LogAction(ctx, "delete_user_external_principal", r, "", "", "")
-	err := c.Auth.DeleteUserExternalPrincipal(ctx, userID, params.PrincipalId)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
+func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, _ string, _ apigen.DeleteUserExternalPrincipalParams) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, params apigen.GetExternalPrincipalParams) {
-	ctx := r.Context()
-	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadExternalPrincipalAction,
-			Resource: permissions.ExternalPrincipalArn(params.PrincipalId),
-		},
-	}) {
-		return
-	}
-	c.LogAction(ctx, "get_external_principal", r, "", "", "")
-
-	principal, err := c.Auth.GetExternalPrincipal(ctx, params.PrincipalId)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	response := apigen.ExternalPrincipal{
-		Id:     principal.ID,
-		UserId: principal.UserID,
-	}
-	writeResponse(w, r, http.StatusOK, response)
+func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, _ apigen.GetExternalPrincipalParams) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
 
-func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
-	ctx := r.Context()
-	if c.isExternalPrincipalNotSupported(ctx) {
-		writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
-		return
-	}
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadUserAction,
-			Resource: permissions.UserArn(userID),
-		},
-	}) {
-		return
-	}
-
-	c.LogAction(ctx, "list_user_external_principals", r, "", "", "")
-
-	principals, paginator, err := c.Auth.ListUserExternalPrincipals(ctx, userID, &model.PaginationParams{
-		Prefix: paginationPrefix(params.Prefix),
-		Amount: paginationAmount(params.Amount),
-		After:  paginationAfter(params.After),
-	})
-
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	response := apigen.ExternalPrincipalList{
-		Results: make([]apigen.ExternalPrincipal, len(principals)),
-		Pagination: apigen.Pagination{
-			HasMore:    paginator.NextPageToken != "",
-			NextOffset: paginator.NextPageToken,
-			Results:    paginator.Amount,
-		},
-	}
-
-	for i, p := range principals {
-		response.Results[i] = apigen.ExternalPrincipal{
-			Id:     p.ID,
-			UserId: p.UserID,
-		}
-	}
-	writeResponse(w, r, http.StatusOK, response)
-}
-
-func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
-	// if IsAuthUISimplified true then it means the user not using RBAC model
-	return c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
-}
-
-func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
-	c.Authentication.OauthCallback(w, r, c.sessionStore)
+func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, _ string, _ apigen.ListUserExternalPrincipalsParams) {
+	writeError(w, r, http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }

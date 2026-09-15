@@ -15,7 +15,6 @@ type MonitoredService struct {
 	Observe func(operation string, duration time.Duration, success bool)
 }
 
-func (w *MonitoredService) IsAdvancedAuth() bool           { return w.Wrapped.IsAdvancedAuth() }
 func (w *MonitoredService) SecretStore() crypt.SecretStore { return w.Wrapped.SecretStore() }
 func (w *MonitoredService) Cache() Cache                   { return w.Wrapped.Cache() }
 func (w *MonitoredService) CreateUser(ctx context.Context, user *model.User) (string, error) {
@@ -50,14 +49,6 @@ func (w *MonitoredService) GetUser(ctx context.Context, username string) (*model
 	w.Observe(op, time.Since(start), r1 == nil)
 	return r0, r1
 }
-func (w *MonitoredService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	const op = "get_user_by_external_id"
-	start := time.Now()
-
-	r0, r1 := w.Wrapped.GetUserByExternalID(ctx, externalID)
-	w.Observe(op, time.Since(start), r1 == nil)
-	return r0, r1
-}
 func (w *MonitoredService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	const op = "get_user_by_email"
 	start := time.Now()
@@ -73,14 +64,6 @@ func (w *MonitoredService) ListUsers(ctx context.Context, params *model.Paginati
 	r0, r1, r2 := w.Wrapped.ListUsers(ctx, params)
 	w.Observe(op, time.Since(start), r2 == nil)
 	return r0, r1, r2
-}
-func (w *MonitoredService) UpdateUserFriendlyName(ctx context.Context, userID string, friendlyName string) error {
-	const op = "update_user_friendly_name"
-	start := time.Now()
-
-	r0 := w.Wrapped.UpdateUserFriendlyName(ctx, userID, friendlyName)
-	w.Observe(op, time.Since(start), r0 == nil)
-	return r0
 }
 func (w *MonitoredService) CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
 	const op = "create_group"
@@ -281,41 +264,6 @@ func (w *MonitoredService) ClaimTokenIDOnce(ctx context.Context, tokenID string,
 	r0 := w.Wrapped.ClaimTokenIDOnce(ctx, tokenID, expiresAt)
 	w.Observe(op, time.Since(start), r0 == nil)
 	return r0
-}
-func (w *MonitoredService) IsExternalPrincipalsEnabled(ctx context.Context) bool {
-	return w.Wrapped.IsExternalPrincipalsEnabled(ctx)
-}
-func (w *MonitoredService) CreateUserExternalPrincipal(ctx context.Context, userID string, principalID string) error {
-	const op = "create_user_external_principal"
-	start := time.Now()
-
-	r0 := w.Wrapped.CreateUserExternalPrincipal(ctx, userID, principalID)
-	w.Observe(op, time.Since(start), r0 == nil)
-	return r0
-}
-func (w *MonitoredService) DeleteUserExternalPrincipal(ctx context.Context, userID string, principalID string) error {
-	const op = "delete_user_external_principal"
-	start := time.Now()
-
-	r0 := w.Wrapped.DeleteUserExternalPrincipal(ctx, userID, principalID)
-	w.Observe(op, time.Since(start), r0 == nil)
-	return r0
-}
-func (w *MonitoredService) GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error) {
-	const op = "get_external_principal"
-	start := time.Now()
-
-	r0, r1 := w.Wrapped.GetExternalPrincipal(ctx, principalID)
-	w.Observe(op, time.Since(start), r1 == nil)
-	return r0, r1
-}
-func (w *MonitoredService) ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error) {
-	const op = "list_user_external_principals"
-	start := time.Now()
-
-	r0, r1, r2 := w.Wrapped.ListUserExternalPrincipals(ctx, userID, params)
-	w.Observe(op, time.Since(start), r2 == nil)
-	return r0, r1, r2
 }
 func (w *MonitoredService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	const op = "create_credentials"

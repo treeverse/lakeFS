@@ -36,13 +36,6 @@ const (
 	SingleBlockstoreID = ""
 )
 
-const (
-	AuthRBACNone       = "none"
-	AuthRBACSimplified = "simplified"
-	AuthRBACExternal   = "external"
-	AuthRBACInternal   = "internal"
-)
-
 type Logging struct {
 	Format        string   `mapstructure:"format"`
 	Level         string   `mapstructure:"level"`
@@ -50,8 +43,8 @@ type Logging struct {
 	FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
 	FilesKeep     int      `mapstructure:"files_keep"`
 	AuditLogLevel string   `mapstructure:"audit_log_level"`
-	// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
-	TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
+	// Deprecated: Value ignored
+	TraceRequestHeadersDeprecated bool `mapstructure:"trace_request_headers"`
 }
 
 // S3AuthInfo holds S3-style authentication.
@@ -438,10 +431,6 @@ type StorageConfig interface {
 type AuthConfig interface {
 	GetBaseAuthConfig() *BaseAuth
 	GetAuthUIConfig() *AuthUIConfig
-	GetLoginURLMethodConfigParam() string
-	// UseUILoginPlaceholders Added this function to the interface because its implementation requires parameters from both BaseAuth and
-	// AuthUIConfig, so neither struct alone could implement it.
-	UseUILoginPlaceholders() bool
 }
 
 type UIConfig interface {
@@ -680,81 +669,73 @@ type BaseAuth struct {
 	Encrypt struct {
 		SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 	} `mapstructure:"encrypt"`
-	API struct {
-		// Endpoint for authorization operations
+	// Deprecated: Value ignored
+	APIDeprecated struct {
 		Endpoint           string        `mapstructure:"endpoint"`
 		Token              SecureString  `mapstructure:"token"`
 		SupportsInvites    bool          `mapstructure:"supports_invites"`
 		HealthCheckTimeout time.Duration `mapstructure:"health_check_timeout"`
 		SkipHealthCheck    bool          `mapstructure:"skip_health_check"`
 	} `mapstructure:"api"`
-	AuthenticationAPI struct {
-		// Endpoint for authentication operations
-		Endpoint string `mapstructure:"endpoint"`
-		// ExternalPrincipalAuth configuration related external principals
-		ExternalPrincipalsEnabled bool `mapstructure:"external_principals_enabled"`
+	// Deprecated: Value ignored
+	AuthenticationAPIDeprecated struct {
+		Endpoint                  string `mapstructure:"endpoint"`
+		ExternalPrincipalsEnabled bool   `mapstructure:"external_principals_enabled"`
 	} `mapstructure:"authentication_api"`
-	RemoteAuthenticator struct {
-		// Enabled if set true will enable remote authentication
-		Enabled bool `mapstructure:"enabled"`
-		// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
-		Endpoint string `mapstructure:"endpoint"`
-		// DefaultUserGroup is the default group for the users authenticated by the remote service
-		DefaultUserGroup string `mapstructure:"default_user_group"`
-		// RequestTimeout timeout for remote authentication requests
-		RequestTimeout time.Duration `mapstructure:"request_timeout"`
+	// Deprecated: Value ignored
+	RemoteAuthenticatorDeprecated struct {
+		Enabled          bool          `mapstructure:"enabled"`
+		Endpoint         string        `mapstructure:"endpoint"`
+		DefaultUserGroup string        `mapstructure:"default_user_group"`
+		RequestTimeout   time.Duration `mapstructure:"request_timeout"`
 	} `mapstructure:"remote_authenticator"`
-	OIDC                   OIDC                   `mapstructure:"oidc"`
-	CookieAuthVerification CookieAuthVerification `mapstructure:"cookie_auth_verification"`
+	// Deprecated: Value ignored
+	OIDCDeprecated struct {
+		ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
+		DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
+		InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
+		FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
+		PersistFriendlyName    bool              `mapstructure:"persist_friendly_name"`
+	} `mapstructure:"oidc"`
+	// Deprecated: Value ignored
+	CookieAuthVerificationDeprecated struct {
+		ValidateIDTokenClaims   map[string]string `mapstructure:"validate_id_token_claims"`
+		DefaultInitialGroups    []string          `mapstructure:"default_initial_groups"`
+		InitialGroupsClaimName  string            `mapstructure:"initial_groups_claim_name"`
+		FriendlyNameClaimName   string            `mapstructure:"friendly_name_claim_name"`
+		ExternalUserIDClaimName string            `mapstructure:"external_user_id_claim_name"`
+		AuthSource              string            `mapstructure:"auth_source"`
+		PersistFriendlyName     bool              `mapstructure:"persist_friendly_name"`
+	} `mapstructure:"cookie_auth_verification"`
 	// LogoutRedirectURL is the URL on which to mount the
 	// server-side logout.
 	LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 	LoginDuration     time.Duration `mapstructure:"login_duration"`
-	LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
+	// Deprecated: Value ignored
+	LoginMaxDurationDeprecated time.Duration `mapstructure:"login_max_duration"`
 }
 
 type AuthUIConfig struct {
-	RBAC                 string   `mapstructure:"rbac"`
-	LoginURL             string   `mapstructure:"login_url"`
-	LoginFailedMessage   string   `mapstructure:"login_failed_message"`
-	FallbackLoginURL     *string  `mapstructure:"fallback_login_url"`
-	FallbackLoginLabel   *string  `mapstructure:"fallback_login_label"`
-	LoginCookieNames     []string `mapstructure:"login_cookie_names"`
-	LogoutURL            string   `mapstructure:"logout_url"`
-	UseLoginPlaceholders bool     `mapstructure:"use_login_placeholders"`
+	LoginFailedMessage string `mapstructure:"login_failed_message"`
+	// Deprecated: Value ignored
+	RBACDeprecated string `mapstructure:"rbac"`
+	// Deprecated: Value ignored
+	LoginURLDeprecated string `mapstructure:"login_url"`
+	// Deprecated: Value ignored
+	FallbackLoginURLDeprecated *string `mapstructure:"fallback_login_url"`
+	// Deprecated: Value ignored
+	FallbackLoginLabelDeprecated *string `mapstructure:"fallback_login_label"`
+	// Deprecated: Value ignored
+	LoginCookieNamesDeprecated []string `mapstructure:"login_cookie_names"`
+	// Deprecated: Value ignored
+	LogoutURLDeprecated string `mapstructure:"logout_url"`
+	// Deprecated: Value ignored
+	UseLoginPlaceholdersDeprecated bool `mapstructure:"use_login_placeholders"`
 }
 
 type Auth struct {
 	BaseAuth     `mapstructure:",squash"`
 	AuthUIConfig `mapstructure:"ui_config"`
-}
-
-type OIDC struct {
-	// configure how users are handled on the lakeFS side:
-	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
-	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
-	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
-	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
-	PersistFriendlyName    bool              `mapstructure:"persist_friendly_name"`
-}
-
-// CookieAuthVerification is related to auth based on a cookie set by an external service
-// TODO(isan) consolidate with OIDC
-type CookieAuthVerification struct {
-	// ValidateIDTokenClaims if set will validate the values (e.g., department: "R&D") exist in the token claims
-	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
-	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
-	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
-	// InitialGroupsClaimName comma separated list of groups to add to the user on the lakeFS side
-	InitialGroupsClaimName string `mapstructure:"initial_groups_claim_name"`
-	// FriendlyNameClaimName is the claim name to use as the user's friendly name in places like the UI
-	FriendlyNameClaimName string `mapstructure:"friendly_name_claim_name"`
-	// ExternalUserIDClaimName is the claim name to use as the user identifier with an IDP
-	ExternalUserIDClaimName string `mapstructure:"external_user_id_claim_name"`
-	// AuthSource tag each user with label of the IDP
-	AuthSource string `mapstructure:"auth_source"`
-	// PersistFriendlyName should we persist the friendly name in the KV store
-	PersistFriendlyName bool `mapstructure:"persist_friendly_name"`
 }
 
 func (a *Auth) GetBaseAuthConfig() *BaseAuth {
@@ -763,42 +744,6 @@ func (a *Auth) GetBaseAuthConfig() *BaseAuth {
 
 func (a *Auth) GetAuthUIConfig() *AuthUIConfig {
 	return &a.AuthUIConfig
-}
-
-func (a *Auth) GetLoginURLMethodConfigParam() string {
-	return "none"
-}
-
-// UseUILoginPlaceholders returns true if the UI should use placeholders for login
-// the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
-func (a *Auth) UseUILoginPlaceholders() bool {
-	return a.RemoteAuthenticator.Enabled || a.UseLoginPlaceholders
-}
-
-func (b *BaseAuth) IsAuthenticationTypeAPI() bool {
-	return b.AuthenticationAPI.Endpoint != ""
-}
-
-func (b *BaseAuth) IsAuthTypeAPI() bool {
-	return b.API.Endpoint != ""
-}
-
-func (b *BaseAuth) IsExternalPrincipalsEnabled() bool {
-	// IsAuthTypeAPI must be true since the local auth service doesn't support external principals
-	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
-	return b.AuthenticationAPI.ExternalPrincipalsEnabled
-}
-
-func (u *AuthUIConfig) IsAuthBasic() bool {
-	return u.RBAC == AuthRBACNone
-}
-
-func (u *AuthUIConfig) IsAuthUISimplified() bool {
-	return u.RBAC == AuthRBACSimplified
-}
-
-func (u *AuthUIConfig) IsAdvancedAuth() bool {
-	return u.RBAC == AuthRBACExternal || u.RBAC == AuthRBACInternal
 }
 
 type UI struct {

@@ -4,7 +4,6 @@ import { Link } from './nav';
 import DarkModeToggle from './darkModeToggle';
 import { Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import Container from 'react-bootstrap/Container';
-import { useLoginConfigContext } from '../hooks/conf';
 import { FeedPersonIcon } from '@primer/octicons-react';
 import { useConfigContext } from '../hooks/configProvider';
 import { auth } from '../api';
@@ -15,7 +14,6 @@ import { NewBadge } from './badges';
 const NavUserInfo = () => {
     const { user, status } = useAuth();
     const userLoading = status === AUTH_STATUS.PENDING;
-    const logoutUrl = useLoginConfigContext()?.logout_url || '/logout';
     const { config, error: versionError, loading: versionLoading } = useConfigContext();
     const versionConfig = config?.versionConfig || {};
 
@@ -54,7 +52,7 @@ const NavUserInfo = () => {
                     auth.clearCurrentUser();
                     window.sessionStorage.removeItem(LAKEFS_POST_LOGIN_NEXT);
                     window.history.replaceState(null, '', `${ROUTES.LOGIN}?redirected=true`);
-                    window.location.replace(logoutUrl);
+                    window.location.replace('/logout');
                 }}
             >
                 Logout

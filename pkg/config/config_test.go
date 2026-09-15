@@ -89,6 +89,10 @@ func TestConfig_NewFromFile(t *testing.T) {
 			_, err := newConfigFromFile("testdata/auth_fixture/no_auth.yaml")
 			require.Error(t, err)
 		})
+		t.Run("deprecated keys", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/deprecated_auth.yaml")
+			require.NoError(t, err)
+		})
 	})
 }
 

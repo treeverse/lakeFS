@@ -16,7 +16,6 @@ import {
     FormattedDate,
     Loading,
     RefreshButton,
-    Warning,
     useDebouncedState,
     SearchInput,
 } from '../../../lib/components/controls';
@@ -50,8 +49,6 @@ const PoliciesContainer = () => {
     useEffect(() => {
         setSelected([]);
     }, [after, refresh]);
-
-    const { RBAC: rbac } = useLoginConfigContext();
 
     if (error) return <AlertError error={error} />;
     if (loading) return <Loading />;
@@ -89,14 +86,6 @@ const PoliciesContainer = () => {
                     <RefreshButton onClick={() => setRefresh(!refresh)} />
                 </ActionGroup>
             </ActionsBar>
-            {rbac === 'simplified' && (
-                <Warning>
-                    <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated and will be replaced
-                    by ACL (Access Control Lists) in future releases. For more information on the transition from RBAC
-                    to ACL, please visit our{' '}
-                    <a href="https://docs.lakefs.io/posts/security_update/">documentation page</a>.
-                </Warning>
-            )}
             <div className="auth-learn-more">
                 A policy defines the permissions of a user or a group.{' '}
                 <a

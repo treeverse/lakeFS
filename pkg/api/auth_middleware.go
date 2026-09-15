@@ -28,7 +28,7 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
-func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *auth.OIDCConfig, cookieAuthConfig *auth.CookieAuthConfig) (func(next http.Handler) http.Handler, error) {
+func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service) (func(next http.Handler) http.Handler, error) {
 	swagger, err := apigen.GetSwagger()
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
+			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore)
 			if err != nil {
 				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
 				return
@@ -50,7 +50,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 	}, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *auth.OIDCConfig, cookieAuthConfig *auth.CookieAuthConfig) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -67,7 +67,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator au
 				writeAuthError(w, r, err, http.StatusBadRequest, err.Error())
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore)
 			if err != nil {
 				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
 				return
@@ -90,8 +90,6 @@ func checkSecurityRequirements(r *http.Request,
 	authenticator auth.Authenticator,
 	authService auth.Service,
 	sessionStore sessions.Store,
-	oidcConfig *auth.OIDCConfig,
-	cookieAuthConfig *auth.CookieAuthConfig,
 ) (*model.User, error) {
 	ctx := r.Context()
 	logger = logger.WithContext(ctx)
@@ -130,18 +128,6 @@ func checkSecurityRequirements(r *http.Request,
 					continue
 				}
 				user, err = auth.UserByToken(ctx, authService, token)
-			case "oidc_auth":
-				oidcSession, getErr := sessionStore.Get(r, auth.OIDCAuthSessionName)
-				if getErr != nil {
-					return nil, getErr
-				}
-				user, err = auth.UserFromOIDCSession(ctx, logger, authService, oidcSession, oidcConfig)
-			case "saml_auth":
-				samlSession, getErr := sessionStore.Get(r, auth.SAMLAuthSessionName)
-				if getErr != nil {
-					return nil, getErr
-				}
-				user, err = auth.UserFromSAMLSession(ctx, logger, authService, samlSession, cookieAuthConfig)
 			default:
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
 				return nil, auth.ErrAuthenticatingRequest

@@ -17,16 +17,15 @@ import (
 )
 
 const (
-	InstallationIDKeyName  = "installation_id"
-	SetupTimestampKeyName  = "setup_timestamp"
-	SetupAuthTypeKeyPrefix = "setup_auth_"
-	CommPrefsSetKeyName    = "comm_prefs_set"
-	EmailKeyName           = "encoded_user_email"
-	FirstNameKeyName       = "encoded_user_first_name"
-	LastNameKeyName        = "encoded_user_last_name"
-	CompanyNameKeyName     = "encoded_user_company_name"
-	CountryKeyName         = "encoded_user_country"
-	FeatureUpdatesKeyName  = "feature_updates"
+	InstallationIDKeyName = "installation_id"
+	SetupTimestampKeyName = "setup_timestamp"
+	CommPrefsSetKeyName   = "comm_prefs_set"
+	EmailKeyName          = "encoded_user_email"
+	FirstNameKeyName      = "encoded_user_first_name"
+	LastNameKeyName       = "encoded_user_last_name"
+	CompanyNameKeyName    = "encoded_user_company_name"
+	CountryKeyName        = "encoded_user_country"
+	FeatureUpdatesKeyName = "feature_updates"
 
 	InstrumentationSamplesRepo = "SamplesRepo"
 	InstrumentationQuickstart  = "Quickstart"
@@ -51,7 +50,7 @@ type MetadataManager interface {
 	GetSetupState(ctx context.Context) (SetupStateName, error)
 	UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefs) (string, error)
 	IsCommPrefsSet(ctx context.Context) (bool, error)
-	UpdateSetupTimestamp(ctx context.Context, setupTime time.Time, authType string) error
+	UpdateSetupTimestamp(ctx context.Context, setupTime time.Time) error
 	GetMetadata(context.Context) (map[string]string, error)
 }
 
@@ -147,12 +146,10 @@ func (m *KVMetadataManager) writeMetadata(ctx context.Context, items map[string]
 	return nil
 }
 
-func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, setupTime time.Time, authType string) error {
-	setupTimeStr := setupTime.UTC().Format(time.RFC3339)
+func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, setupTime time.Time) error {
 	items := map[string]string{
-		SetupTimestampKeyName: setupTimeStr,
+		SetupTimestampKeyName: setupTime.UTC().Format(time.RFC3339),
 	}
-	items[SetupAuthTypeKeyPrefix+authType] = setupTimeStr
 	return m.writeMetadata(ctx, items)
 }
 
