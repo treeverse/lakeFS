@@ -74,6 +74,21 @@ func (s *BasicAuthService) Migrate(ctx context.Context) (string, error) {
 	return "", err
 }
 
+// HasLegacyUsers reports whether the store holds users written before basic auth, which lakeFS
+// otherwise reads only while migrating them.
+func HasLegacyUsers(ctx context.Context, store kv.Store) (bool, error) {
+	var userData model.UserData
+	it, err := kv.NewPrimaryIterator(ctx, store, (&userData).ProtoReflect().Type(), model.PartitionKey, model.UserPath(""), kv.IteratorOptionsAfter([]byte("")))
+	if err != nil {
+		return false, fmt.Errorf("create iterator: %w", err)
+	}
+	defer it.Close()
+	if it.Next() {
+		return true, nil
+	}
+	return false, it.Err()
+}
+
 func (s *BasicAuthService) listUserForMigration(ctx context.Context) ([]*model.User, error) {
 	var credential model.UserData
 	usersKey := model.UserPath("")

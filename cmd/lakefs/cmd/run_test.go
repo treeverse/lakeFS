@@ -11,6 +11,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -26,18 +27,22 @@ func (s stubRepositoryLister) ListRepositories(context.Context, int, string, str
 func TestEnsureSetupComplete(t *testing.T) {
 	repos := []*catalog.Repository{{Name: "repo"}}
 	tests := []struct {
-		name          string
-		alreadySetUp  bool
-		repos         []*catalog.Repository
-		admin         bool
-		expectedErr   error
-		expectedSetUp bool
+		name                  string
+		alreadySetUp          bool
+		repos                 []*catalog.Repository
+		admin                 bool
+		legacyUser            bool
+		externalAuthorization bool
+		expectedErr           error
+		expectedSetUp         bool
 	}{
 		{name: "fresh installation"},
-		{name: "administrator without repositories", admin: true},
-		{name: "repositories without administrator", repos: repos, expectedErr: errNoAdminUser},
-		{name: "repositories with administrator", repos: repos, admin: true, expectedSetUp: true},
+		{name: "administrator without repositories", admin: true, expectedSetUp: true},
+		{name: "administrator with repositories", admin: true, repos: repos, expectedSetUp: true},
 		{name: "already set up", alreadySetUp: true, repos: repos, expectedSetUp: true},
+		{name: "repositories without administrator", repos: repos, expectedErr: errNoAdminUser},
+		{name: "users of an earlier version", legacyUser: true, expectedErr: errNoAdminUser},
+		{name: "external authorization service", externalAuthorization: true, expectedErr: errNoAdminUser},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,8 +58,13 @@ func TestEnsureSetupComplete(t *testing.T) {
 				_, err := authService.CreateUser(ctx, &model.User{Username: "admin"})
 				require.NoError(t, err)
 			}
+			if tt.legacyUser {
+				require.NoError(t, kv.SetMsg(ctx, store, model.PartitionKey, model.UserPath("legacy"),
+					model.ProtoFromUser(&model.User{Username: "legacy"})))
+			}
 
-			err := ensureSetupComplete(ctx, metadataManager, authService, stubRepositoryLister{repos: tt.repos})
+			err := ensureSetupComplete(ctx, metadataManager, authService, store,
+				stubRepositoryLister{repos: tt.repos}, tt.externalAuthorization)
 
 			require.ErrorIs(t, err, tt.expectedErr)
 			setUp, err := metadataManager.IsInitialized(ctx)

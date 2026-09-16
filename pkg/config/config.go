@@ -746,6 +746,12 @@ func (a *Auth) GetAuthUIConfig() *AuthUIConfig {
 	return &a.AuthUIConfig
 }
 
+// ExternalAuthorizationConfigured reports whether the configuration points at an external
+// authorization service, whose users live outside this installation's own store.
+func (b *BaseAuth) ExternalAuthorizationConfigured() bool {
+	return b.APIDeprecated.Endpoint != ""
+}
+
 type UI struct {
 	// Enabled - control serving of embedded UI
 	Enabled  bool        `mapstructure:"enabled"`

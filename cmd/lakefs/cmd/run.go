@@ -180,7 +180,8 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 			}
 		}
 
-		if err := ensureSetupComplete(ctx, authMetadataManager, authService, c); err != nil {
+		externalAuthorization := cfg.AuthConfig().GetBaseAuthConfig().ExternalAuthorizationConfigured()
+		if err := ensureSetupComplete(ctx, authMetadataManager, authService, kvStore, c, externalAuthorization); err != nil {
 			logger.WithError(err).Fatal("lakeFS cannot start")
 		}
 
@@ -342,12 +343,12 @@ type repositoryLister interface {
 	ListRepositories(ctx context.Context, limit int, prefix, searchString, after string, opts ...catalog.ListRepositoriesOptionsFunc) ([]*catalog.Repository, bool, error)
 }
 
-var errNoAdminUser = errors.New(`repositories exist but lakeFS has no administrator: run "lakefs superuser --user-name <name>" to create one`)
+var errNoAdminUser = errors.New(`this installation has been used before but lakeFS has no administrator of its own: run "lakefs superuser --user-name <name>" to create one`)
 
-// ensureSetupComplete marks an installation that already holds data as set up, and refuses to
-// serve one whose administrator is missing: while the store reports itself uninitialized, the
-// setup endpoint mints an administrator for whoever calls it first.
-func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManager, authService auth.Service, repositories repositoryLister) error {
+// ensureSetupComplete records the setup of an installation that already has an administrator, and
+// refuses to serve one that has been used but has none: while the store reports itself
+// uninitialized, the setup endpoint mints an administrator for whoever calls it first.
+func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManager, authService auth.Service, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) error {
 	initialized, err := metadataManager.IsInitialized(ctx)
 	if err != nil {
 		return fmt.Errorf("check lakeFS setup state: %w", err)
@@ -355,21 +356,40 @@ func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManag
 	if initialized {
 		return nil
 	}
-	repos, _, err := repositories.ListRepositories(ctx, 1, "", "", "")
-	if err != nil {
-		return fmt.Errorf("list repositories: %w", err)
-	}
-	if len(repos) == 0 {
-		return nil
-	}
 	users, _, err := authService.ListUsers(ctx, &model.PaginationParams{Amount: 1})
 	if err != nil {
 		return fmt.Errorf("list users: %w", err)
 	}
-	if len(users) == 0 {
+	if len(users) > 0 {
+		// The administrator is here and only the record of the setup is missing.
+		return metadataManager.UpdateSetupTimestamp(ctx, time.Now())
+	}
+	used, err := installationInUse(ctx, kvStore, repositories, externalAuthorization)
+	if err != nil {
+		return err
+	}
+	if used {
 		return errNoAdminUser
 	}
-	return metadataManager.UpdateSetupTimestamp(ctx, time.Now())
+	return nil
+}
+
+// installationInUse reports whether an installation that never recorded its setup has served
+// somebody all the same, by each trace such an installation leaves.
+func installationInUse(ctx context.Context, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) (bool, error) {
+	// Users of an external authorization service live outside this store, which leaves the
+	// configuration as their only trace here.
+	if externalAuthorization {
+		return true, nil
+	}
+	repos, _, err := repositories.ListRepositories(ctx, 1, "", "", "")
+	if err != nil {
+		return false, fmt.Errorf("list repositories: %w", err)
+	}
+	if len(repos) > 0 {
+		return true, nil
+	}
+	return auth.HasLegacyUsers(ctx, kvStore)
 }
 
 // checkRepos iterating on all repos and validates that their settings are correct.
