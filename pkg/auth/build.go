@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
@@ -11,7 +11,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *KVMetadataManager) Service {
+// NewAuthService returns the auth service, adopting the single stored user of an installation that
+// predates basic auth. The service is returned ready to use even when that adoption needs an
+// administrator picked by hand, which it reports as ErrMigrationNotPossible so that
+// "lakefs superuser" can still run.
+func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *KVMetadataManager) (Service, error) {
 	baseAuthCfg := cfg.AuthConfig().GetBaseAuthConfig()
 	secretStore := crypt.NewSecretStore([]byte(baseAuthCfg.Encrypt.SecretKey))
 	apiService := NewBasicAuthService(
@@ -20,34 +24,21 @@ func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logge
 		authparams.ServiceCache(baseAuthCfg.Cache),
 		logger.WithField("service", "auth_service"),
 	)
-	// Check if migration needed
+	service := NewMonitoredAuthService(apiService)
+
 	initialized, err := metadataManager.IsInitialized(ctx)
 	if err != nil {
-		logger.WithError(err).Fatal("failed to get lakeFS init status")
+		return service, fmt.Errorf("get lakeFS setup state: %w", err)
 	}
-	// An installation that kept its users in an external authorization service was never
-	// set up locally; starting uninitialized would hand the setup endpoint to anyone.
-	if !initialized && baseAuthCfg.ExternalAuthorizationConfigured() {
-		logger.Fatal(`
-lakeFS is configured with an external authorization service (auth.api.endpoint) but has no administrator of its own.
-Run "lakefs superuser" to create the administrator, then remove the auth.api keys from the configuration.
-`)
+	if !initialized {
+		return service, nil
 	}
-	if initialized {
-		username, err := apiService.Migrate(ctx)
-		switch {
-		case errors.Is(err, ErrMigrationNotPossible):
-			logger.WithError(err).Fatal(`
-cannot migrate existing user to basic auth mode!
-Please run "lakefs superuser -h" and follow the instructions on how to migrate an existing user
-`)
-		case err == nil:
-			if username != "" { // Print only in case of actual migration
-				logger.Infof("\nUser %s was migrated successfully!\n", username)
-			}
-		default:
-			logger.WithError(err).Fatal("basic auth migration failed")
-		}
+	username, err := apiService.Migrate(ctx)
+	if err != nil {
+		return service, err
 	}
-	return NewMonitoredAuthService(apiService)
+	if username != "" { // Print only in case of actual migration
+		logger.Infof("\nUser %s was migrated successfully!\n", username)
+	}
+	return service, nil
 }

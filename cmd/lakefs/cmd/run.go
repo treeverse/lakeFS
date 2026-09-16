@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -103,7 +104,16 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, installationID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		authService, err := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		switch {
+		case errors.Is(err, auth.ErrMigrationNotPossible):
+			logger.WithError(err).Fatal(`
+cannot migrate existing user to basic auth mode!
+Please run "lakefs superuser -h" and follow the instructions on how to migrate an existing user
+`)
+		case err != nil:
+			logger.WithError(err).Fatal("Failed to create auth service")
+		}
 
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
@@ -168,6 +178,10 @@ var runCmd = &cobra.Command{
 			if setupCreds != nil {
 				logger.WithField("admin", baseCfg.Installation.UserName).Info("Initial setup completed successfully")
 			}
+		}
+
+		if err := ensureSetupComplete(ctx, authMetadataManager, authService, c); err != nil {
+			logger.WithError(err).Fatal("lakeFS cannot start")
 		}
 
 		actionsService := actions.NewService(
@@ -321,6 +335,41 @@ var runCmd = &cobra.Command{
 		printWelcome(os.Stderr, buf.String())
 		gracefulShutdown(ctx, server)
 	},
+}
+
+// repositoryLister lists an installation's repositories.
+type repositoryLister interface {
+	ListRepositories(ctx context.Context, limit int, prefix, searchString, after string, opts ...catalog.ListRepositoriesOptionsFunc) ([]*catalog.Repository, bool, error)
+}
+
+var errNoAdminUser = errors.New(`repositories exist but lakeFS has no administrator: run "lakefs superuser --user-name <name>" to create one`)
+
+// ensureSetupComplete marks an installation that already holds data as set up, and refuses to
+// serve one whose administrator is missing: while the store reports itself uninitialized, the
+// setup endpoint mints an administrator for whoever calls it first.
+func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManager, authService auth.Service, repositories repositoryLister) error {
+	initialized, err := metadataManager.IsInitialized(ctx)
+	if err != nil {
+		return fmt.Errorf("check lakeFS setup state: %w", err)
+	}
+	if initialized {
+		return nil
+	}
+	repos, _, err := repositories.ListRepositories(ctx, 1, "", "", "")
+	if err != nil {
+		return fmt.Errorf("list repositories: %w", err)
+	}
+	if len(repos) == 0 {
+		return nil
+	}
+	users, _, err := authService.ListUsers(ctx, &model.PaginationParams{Amount: 1})
+	if err != nil {
+		return fmt.Errorf("list users: %w", err)
+	}
+	if len(users) == 0 {
+		return errNoAdminUser
+	}
+	return metadataManager.UpdateSetupTimestamp(ctx, time.Now())
 }
 
 // checkRepos iterating on all repos and validates that their settings are correct.

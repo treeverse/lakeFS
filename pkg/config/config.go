@@ -746,12 +746,6 @@ func (a *Auth) GetAuthUIConfig() *AuthUIConfig {
 	return &a.AuthUIConfig
 }
 
-// ExternalAuthorizationConfigured reports whether the configuration still points at an external
-// authorization service, which marks an installation whose users never lived in the lakeFS database.
-func (b *BaseAuth) ExternalAuthorizationConfigured() bool {
-	return b.APIDeprecated.Endpoint != ""
-}
-
 type UI struct {
 	// Enabled - control serving of embedded UI
 	Enabled  bool        `mapstructure:"enabled"`
