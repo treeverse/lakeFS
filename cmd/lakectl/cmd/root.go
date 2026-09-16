@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,11 +13,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
 	"github.com/go-viper/mapstructure/v2"
@@ -27,8 +23,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
-	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
-	"github.com/treeverse/lakefs/pkg/authentication/internalidp"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/git"
 	giterror "github.com/treeverse/lakefs/pkg/git/errors"
@@ -77,7 +71,8 @@ type Configuration struct {
 	Credentials struct {
 		AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
 		SecretAccessKey lakefsconfig.OnlyString `mapstructure:"secret_access_key"`
-		Provider        struct {
+		// ProviderDeprecated is accepted so that existing configuration files keep loading.
+		ProviderDeprecated struct {
 			Type   lakefsconfig.OnlyString `mapstructure:"type"`
 			AWSIAM struct {
 				TokenTTL                   time.Duration      `mapstructure:"token_ttl_seconds"`
@@ -189,20 +184,6 @@ const (
 	defaultBrowserLoginMaxAttempts      = 75
 	defaultBrowserLoginMaxRetryInterval = 1 * time.Second
 	defaultBrowserLoginMinRetryInterval = 50 * time.Millisecond
-)
-
-const (
-	CacheFileName  = "lakectl_token_cache.json"
-	LakectlDirName = ".lakectl"
-	CacheDirName   = "cache"
-)
-
-var (
-	cachedToken         *apigen.AuthenticationToken
-	tokenLoadOnce       sync.Once
-	tokenCache          *awsiam.JWTCache
-	tokenCacheOnce      sync.Once
-	ErrTokenUnavailable = fmt.Errorf("token is not available")
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -518,6 +499,36 @@ func preRunCmd(cmd *cobra.Command) {
 		))); err != nil {
 		DieFmt("error unmarshal configuration: %v", err)
 	}
+	warnDeprecatedKeys()
+}
+
+// deprecatedKeys returns the configuration keys that are set but no longer used.
+func deprecatedKeys() []string {
+	p := &cfg.Credentials.ProviderDeprecated
+	var keys []string
+	for _, d := range []struct {
+		set bool
+		key string
+	}{
+		{p.Type.String() != "", "credentials.provider.type"},
+		{p.AWSIAM.TokenTTL != 0, "credentials.provider.aws_iam.token_ttl_seconds"},
+		{p.AWSIAM.URLPresignTTL != 0, "credentials.provider.aws_iam.url_presign_ttl_seconds"},
+		{p.AWSIAM.RefreshInterval != 0, "credentials.provider.aws_iam.refresh_interval"},
+		{p.AWSIAM.TokenRequestHeaders != nil, "credentials.provider.aws_iam.token_request_headers"},
+		{p.AWSIAM.ClientLogPreSigningRequest, "credentials.provider.aws_iam.client_log_pre_signing_request"},
+	} {
+		if d.set {
+			keys = append(keys, d.key)
+		}
+	}
+	return keys
+}
+
+func warnDeprecatedKeys() {
+	for _, key := range deprecatedKeys() {
+		Warning(key + " is deprecated. Value is no longer used. AWS IAM authentication is available" +
+			" in lakeFS Enterprise, which ships its own lakectl.")
+	}
 }
 
 func sendStats(cmd *cobra.Command, cmdSuffix string) {
@@ -579,42 +590,6 @@ func getHTTPClientWithRetryConfig(checkRetry func(ctx context.Context, resp *htt
 	return NewRetryClient(retriesCfg, transport, checkRetry)
 }
 
-func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
-	var opts []awsiam.IAMAuthParamsOptions
-	providerType := cfg.Credentials.Provider.Type.String()
-	if providerType != awsiam.AWSIAMProviderType {
-		return nil, nil
-	}
-
-	TokenTTL := cfg.Credentials.Provider.AWSIAM.TokenTTL
-	URLPresignTTL := cfg.Credentials.Provider.AWSIAM.URLPresignTTL
-	RefreshInterval := cfg.Credentials.Provider.AWSIAM.RefreshInterval
-	serverEndpoint := cfg.Server.EndpointURL.String()
-	parsed, err := url.Parse(serverEndpoint)
-	if err != nil {
-		return nil, err
-	}
-	host := parsed.Host
-	// in case using something like localhost:8000
-	if strings.Contains(host, ":") {
-		host = strings.Split(host, ":")[0]
-	}
-
-	if headers := cfg.Credentials.Provider.AWSIAM.TokenRequestHeaders; headers != nil {
-		opts = append(opts, awsiam.WithTokenRequestHeaders(*headers))
-	}
-	if TokenTTL != 0 {
-		opts = append(opts, awsiam.WithTokenTTL(TokenTTL))
-	}
-	if URLPresignTTL != 0 {
-		opts = append(opts, awsiam.WithURLPresignTTL(URLPresignTTL))
-	}
-	if RefreshInterval != 0 {
-		opts = append(opts, awsiam.WithURLPresignTTL(RefreshInterval))
-	}
-	return awsiam.NewIAMAuthParams(host, opts...), nil
-}
-
 func getClient() *apigen.ClientWithResponses {
 	httpClient := getHTTPClient(lakectlRetryPolicy)
 	accessKeyID := cfg.Credentials.AccessKeyID
@@ -627,30 +602,17 @@ func getClient() *apigen.ClientWithResponses {
 	if err != nil {
 		DieErr(err)
 	}
-	awsIAMparams, err := newAWSIAMAuthProviderConfig()
-	if err != nil {
-		DieErr(err)
-	}
-
-	var opts []apigen.ClientOption
-	useJWTAuth := accessKeyID == "" && secretAccessKey == ""
-	if useJWTAuth {
-		opts = getClientOptions(awsIAMparams, serverEndpoint)
-	}
-
 	oss := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		append([]apigen.ClientOption{
-			apigen.WithHTTPClient(httpClient),
-			apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
-			apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-				// This UA string structure is agreed upon
-				// Please consider that when making changes
-				req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
-				return nil
-			}),
-		}, opts...)...,
+		apigen.WithHTTPClient(httpClient),
+		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
+		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			// This UA string structure is agreed upon
+			// Please consider that when making changes
+			req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
+			return nil
+		}),
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
@@ -687,101 +649,6 @@ func maybeWarnEnterprise(cmd *cobra.Command, out io.Writer) {
 	if vc != "" && vc != lakeFSOSSVersionContext {
 		_, _ = fmt.Fprintln(out, enterpriseWarningMessage)
 	}
-}
-
-func CreateTokenCacheCallback() awsiam.TokenCacheCallback {
-	return func(newToken *apigen.AuthenticationToken) {
-		cachedToken = newToken
-		if err := SaveTokenToCache(); err != nil {
-			logging.ContextUnavailable().Debugf("error saving token to cache: %v", err)
-		}
-	}
-}
-
-func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
-	token := getTokenOnce()
-
-	logger := logging.ContextUnavailable().WithField("component", "client_auth")
-
-	if awsIAMparams == nil {
-		if token == nil {
-			return nil
-		}
-		return []apigen.ClientOption{
-			internalidp.WithLoginTokenAuth(logger, internalidp.NewFixedLoginClient(token.Token)),
-		}
-	}
-
-	tokenCacheCallback := CreateTokenCacheCallback()
-
-	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
-	presignOpt := func(po *sts.PresignOptions) {
-		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
-			if awsLogSigning {
-				o.ClientLogMode = aws.LogSigning
-			}
-		})
-	}
-
-	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
-	if err != nil {
-		DieErr(err)
-	}
-	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
-
-	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
-		awsIAMparams,
-		logger,
-		loginClient,
-		token,
-		tokenCacheCallback,
-		presignOpt,
-	)
-	return []apigen.ClientOption{awsAuthProvider}
-}
-
-func getTokenOnce() *apigen.AuthenticationToken {
-	tokenLoadOnce.Do(func() {
-		cache := getTokenCacheOnce()
-		var err error
-		if cache != nil {
-			if token, err := cache.GetToken(); err == nil {
-				cachedToken = token
-				return
-			}
-			logging.ContextUnavailable().Debugf("Error loading token from cache: %v", err)
-		}
-	})
-	return cachedToken
-}
-
-func getTokenCacheOnce() *awsiam.JWTCache {
-	tokenCacheOnce.Do(func() {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			logging.ContextUnavailable().Debugf("Error getting user homedir: %v", err)
-		}
-		cache, err := awsiam.NewJWTCache(homeDir, LakectlDirName, CacheDirName, CacheFileName)
-		if err != nil {
-			logging.ContextUnavailable().Debugf("Error creating token cache: %v", err)
-			tokenCache = nil
-		} else {
-			tokenCache = cache
-		}
-	})
-	return tokenCache
-}
-
-func SaveTokenToCache() error {
-	cache := getTokenCacheOnce()
-	if cache == nil || cachedToken == nil {
-		return ErrTokenUnavailable
-	}
-	if err := cache.SaveToken(cachedToken); err != nil {
-		return err
-	}
-	tokenLoadOnce = sync.Once{}
-	return nil
 }
 
 // isUnknownCommandError checks if the error from ExecuteC is an unknown command error.
