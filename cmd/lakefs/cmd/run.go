@@ -105,13 +105,12 @@ var runCmd = &cobra.Command{
 		idGen := &actions.DecreasingIDGenerator{}
 
 		authService, err := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
-		switch {
-		case errors.Is(err, auth.ErrMigrationNotPossible):
+		if errors.Is(err, auth.ErrMigrationNotPossible) {
 			logger.WithError(err).Fatal(`
 cannot migrate existing user to basic auth mode!
 Please run "lakefs superuser -h" and follow the instructions on how to migrate an existing user
 `)
-		case err != nil:
+		} else if err != nil {
 			logger.WithError(err).Fatal("Failed to create auth service")
 		}
 
@@ -181,10 +180,10 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 		}
 
 		externalAuthorization := cfg.AuthConfig().GetBaseAuthConfig().ExternalAuthorizationConfigured()
-		switch err := ensureSetupComplete(ctx, authMetadataManager, authService, kvStore, c, externalAuthorization); {
-		case errors.Is(err, errNoAdminUser):
+		err = ensureSetupComplete(ctx, authMetadataManager, authService, kvStore, c, externalAuthorization)
+		if errors.Is(err, errNoAdminUser) {
 			logger.WithError(err).Fatal("lakeFS cannot start")
-		case err != nil:
+		} else if err != nil {
 			logger.WithError(err).Fatal("Failed to determine whether lakeFS is set up")
 		}
 
