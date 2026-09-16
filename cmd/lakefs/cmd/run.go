@@ -181,8 +181,11 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 		}
 
 		externalAuthorization := cfg.AuthConfig().GetBaseAuthConfig().ExternalAuthorizationConfigured()
-		if err := ensureSetupComplete(ctx, authMetadataManager, authService, kvStore, c, externalAuthorization); err != nil {
+		switch err := ensureSetupComplete(ctx, authMetadataManager, authService, kvStore, c, externalAuthorization); {
+		case errors.Is(err, errNoAdminUser):
 			logger.WithError(err).Fatal("lakeFS cannot start")
+		case err != nil:
+			logger.WithError(err).Fatal("Failed to determine whether lakeFS is set up")
 		}
 
 		actionsService := actions.NewService(
@@ -343,7 +346,7 @@ type repositoryLister interface {
 	ListRepositories(ctx context.Context, limit int, prefix, searchString, after string, opts ...catalog.ListRepositoriesOptionsFunc) ([]*catalog.Repository, bool, error)
 }
 
-var errNoAdminUser = errors.New(`this installation has been used before but lakeFS has no administrator of its own: run "lakefs superuser --user-name <name>" to create one`)
+var errNoAdminUser = errors.New(`this installation has been used before but lakeFS has no administrator of its own: run "lakefs superuser --user-name <name> --access-key-id <key>" to adopt a user it already holds, or leave out --access-key-id to issue fresh credentials`)
 
 // ensureSetupComplete records the setup of an installation that already has an administrator, and
 // refuses to serve one that has been used but has none: while the store reports itself
