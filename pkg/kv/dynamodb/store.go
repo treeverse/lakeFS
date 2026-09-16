@@ -244,7 +244,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	const operation = "GetItem"
 	if err != nil {
 		if s.isSlowDownErr(err) {
-			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(kv.ErrSlowDown).Error("get item")
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(err).Error("get item")
 			dynamoSlowdown.WithLabelValues(operation).Inc()
 			err = errors.Join(err, kv.ErrSlowDown)
 		}
@@ -333,7 +333,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 			return kv.ErrPredicateFailed
 		}
 		if s.isSlowDownErr(err) {
-			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(kv.ErrSlowDown).Error("put item")
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(err).Error("put item")
 			dynamoSlowdown.WithLabelValues(operation).Inc()
 			err = errors.Join(err, kv.ErrSlowDown)
 		}
@@ -361,7 +361,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	const operation = "DeleteItem"
 	if err != nil {
 		if s.isSlowDownErr(err) {
-			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(kv.ErrSlowDown).Error("delete item")
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(err).Error("delete item")
 			dynamoSlowdown.WithLabelValues(operation).Inc()
 			err = errors.Join(err, kv.ErrSlowDown)
 		}
@@ -397,7 +397,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	if it.err != nil {
 		err := it.err
 		if s.isSlowDownErr(it.err) {
-			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(kv.ErrSlowDown).Error("scan")
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).WithError(err).Error("scan")
 			dynamoSlowdown.WithLabelValues("Scan").Inc()
 			err = errors.Join(err, kv.ErrSlowDown)
 		}
@@ -417,7 +417,7 @@ func (s *Store) DropTable() error {
 		TableName: &s.params.TableName,
 	})
 	if s.isSlowDownErr(err) {
-		s.logger.WithField("table", s.params.TableName).WithContext(ctx).WithError(kv.ErrSlowDown).Error("drop table")
+		s.logger.WithField("table", s.params.TableName).WithContext(ctx).WithError(err).Error("drop table")
 		dynamoSlowdown.WithLabelValues("DeleteTable").Inc()
 		err = errors.Join(err, kv.ErrSlowDown)
 	}
@@ -531,7 +531,7 @@ func (e *EntriesIterator) runQuery(limit int) {
 	const operation = "Query"
 	if err != nil {
 		if e.store.isSlowDownErr(err) {
-			e.store.logger.WithField("partition_key", e.partitionKey).WithContext(e.scanCtx).WithError(kv.ErrSlowDown).Error("query")
+			e.store.logger.WithField("partition_key", e.partitionKey).WithContext(e.scanCtx).WithError(err).Error("query")
 			dynamoSlowdown.WithLabelValues("query").Inc()
 			err = errors.Join(err, kv.ErrSlowDown)
 		}
