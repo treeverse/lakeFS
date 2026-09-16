@@ -346,7 +346,7 @@ type repositoryLister interface {
 	ListRepositories(ctx context.Context, limit int, prefix, searchString, after string, opts ...catalog.ListRepositoriesOptionsFunc) ([]*catalog.Repository, bool, error)
 }
 
-var errNoAdminUser = errors.New(`this installation has been used before but lakeFS has no administrator of its own: run "lakefs superuser --user-name <name> --access-key-id <key>" to adopt a user it already holds, or leave out --access-key-id to issue fresh credentials`)
+var errNoAdminUser = errors.New("lakeFS has no administrator of its own")
 
 // ensureSetupComplete records the setup of an installation that already has an administrator, and
 // refuses to serve one that has been used but has none: while the store reports itself
@@ -367,32 +367,58 @@ func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManag
 		// The administrator is here and only the record of the setup is missing.
 		return metadataManager.UpdateSetupTimestamp(ctx, time.Now())
 	}
-	used, err := installationInUse(ctx, kvStore, repositories, externalAuthorization)
+	trace, err := installationInUse(ctx, kvStore, repositories, externalAuthorization)
 	if err != nil {
 		return err
 	}
-	if used {
-		return errNoAdminUser
+	switch trace {
+	case traceNone:
+		return nil
+	case traceExternalAuthorization:
+		// The users of that service were never in this store, so this may equally be a new
+		// installation carrying a stale key.
+		return fmt.Errorf(`%w, and auth.api.endpoint names an external authorization service: `+
+			`run "lakefs superuser --user-name <name>" to create one, `+
+			`or remove the auth.api keys if this installation is new`, errNoAdminUser)
+	default:
+		return fmt.Errorf(`%w, and %s: `+
+			`run "lakefs superuser --user-name <name>" to create one with fresh credentials, `+
+			`adding --access-key-id and --secret-access-key to keep a key pair your clients already use`,
+			errNoAdminUser, trace)
 	}
-	return nil
 }
 
-// installationInUse reports whether an installation that never recorded its setup has served
-// somebody all the same, by each trace such an installation leaves.
-func installationInUse(ctx context.Context, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) (bool, error) {
+// Traces an installation leaves once it has served somebody, named as the fatal message reads them.
+const (
+	traceNone                  = ""
+	traceRepositories          = "it holds repositories"
+	traceLegacyUsers           = "it holds users written by an earlier version"
+	traceExternalAuthorization = "external authorization"
+)
+
+// installationInUse reports the first trace showing that an installation which never recorded its
+// setup has served somebody all the same, or traceNone when it finds none.
+func installationInUse(ctx context.Context, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) (string, error) {
+	repos, _, err := repositories.ListRepositories(ctx, 1, "", "", "")
+	if err != nil {
+		return traceNone, fmt.Errorf("list repositories: %w", err)
+	}
+	if len(repos) > 0 {
+		return traceRepositories, nil
+	}
+	legacy, err := auth.HasLegacyUsers(ctx, kvStore)
+	if err != nil {
+		return traceNone, err
+	}
+	if legacy {
+		return traceLegacyUsers, nil
+	}
 	// Users of an external authorization service live outside this store, which leaves the
 	// configuration as their only trace here.
 	if externalAuthorization {
-		return true, nil
+		return traceExternalAuthorization, nil
 	}
-	repos, _, err := repositories.ListRepositories(ctx, 1, "", "", "")
-	if err != nil {
-		return false, fmt.Errorf("list repositories: %w", err)
-	}
-	if len(repos) > 0 {
-		return true, nil
-	}
-	return auth.HasLegacyUsers(ctx, kvStore)
+	return traceNone, nil
 }
 
 // checkRepos iterating on all repos and validates that their settings are correct.

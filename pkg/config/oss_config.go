@@ -103,6 +103,12 @@ func (c *ConfigImpl) warnDeprecatedKeys() {
 	const enterpriseHint = " Single sign-on and role-based access control are available in lakeFS Enterprise."
 	for _, key := range c.DeprecatedKeys() {
 		msg := key + " is deprecated. Value is no longer used."
+		if key == "auth.api.endpoint" {
+			// Startup still reads it to recognize an installation whose users lived elsewhere.
+			msg = key + " is deprecated. It no longer selects an authorization service, and is read" +
+				" only to recognize an installation whose users lived outside lakeFS, which cannot" +
+				" start without an administrator of its own."
+		}
 		if strings.HasPrefix(key, "auth.") {
 			msg += enterpriseHint
 		}
