@@ -63,7 +63,7 @@ func TestEnsureSetupComplete(t *testing.T) {
 					model.ProtoFromUser(&model.User{Username: "legacy"})))
 			}
 
-			err := ensureSetupComplete(ctx, metadataManager, authService, store,
+			err := ensureSetupComplete(ctx, metadataManager, store,
 				stubRepositoryLister{repos: tt.repos}, tt.externalAuthorization)
 
 			require.ErrorIs(t, err, tt.expectedErr)

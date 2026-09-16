@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -180,7 +179,7 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 		}
 
 		externalAuthorization := cfg.AuthConfig().GetBaseAuthConfig().ExternalAuthorizationConfigured()
-		err = ensureSetupComplete(ctx, authMetadataManager, authService, kvStore, c, externalAuthorization)
+		err = ensureSetupComplete(ctx, authMetadataManager, kvStore, c, externalAuthorization)
 		if errors.Is(err, errNoAdminUser) {
 			logger.WithError(err).Fatal("lakeFS cannot start")
 		} else if err != nil {
@@ -350,7 +349,7 @@ var errNoAdminUser = errors.New("lakeFS has no administrator of its own")
 // ensureSetupComplete records the setup of an installation that already has an administrator, and
 // refuses to serve one that has been used but has none: while the store reports itself
 // uninitialized, the setup endpoint mints an administrator for whoever calls it first.
-func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManager, authService auth.Service, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) error {
+func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManager, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) error {
 	initialized, err := metadataManager.IsInitialized(ctx)
 	if err != nil {
 		return fmt.Errorf("check lakeFS setup state: %w", err)
@@ -358,11 +357,11 @@ func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManag
 	if initialized {
 		return nil
 	}
-	users, _, err := authService.ListUsers(ctx, &model.PaginationParams{Amount: 1})
+	admin, err := auth.HasSuperAdmin(ctx, kvStore)
 	if err != nil {
-		return fmt.Errorf("list users: %w", err)
+		return err
 	}
-	if len(users) > 0 {
+	if admin {
 		// The administrator is here and only the record of the setup is missing.
 		return metadataManager.UpdateSetupTimestamp(ctx, time.Now())
 	}

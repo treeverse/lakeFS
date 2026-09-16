@@ -89,6 +89,19 @@ func HasLegacyUsers(ctx context.Context, store kv.Store) (bool, error) {
 	return false, it.Err()
 }
 
+// HasSuperAdmin reports whether the single administrator of this installation exists.
+func HasSuperAdmin(ctx context.Context, store kv.Store) (bool, error) {
+	var userData model.UserData
+	_, err := kv.GetMsg(ctx, store, BasicPartitionKey, model.UserPath(SuperAdminKey), &userData)
+	if errors.Is(err, kv.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("get administrator: %w", err)
+	}
+	return true, nil
+}
+
 func (s *BasicAuthService) listUserForMigration(ctx context.Context) ([]*model.User, error) {
 	var credential model.UserData
 	usersKey := model.UserPath("")
