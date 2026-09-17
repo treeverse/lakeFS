@@ -424,12 +424,12 @@ class Transaction:
         self._commit_metadata = commit_metadata
         self._source_branch = branch_id
         self._client = client
-        self._tx: Optional["_Transaction"] = None
-        self._tx_branch: Optional["Branch"] = None
+        self._tx: Optional[_Transaction] = None
+        self._tx_branch: Optional[Branch] = None
         self._cleanup_branch = delete_branch_on_error
         self._tag = tag
 
-    def __enter__(self):
+    def __enter__(self) -> _Transaction:
         self._tx = _Transaction(self._repo_id, self._source_branch, self._commit_message, self._commit_metadata,
                                 self._client, self._tag)
         self._tx_branch = Branch(self._repo_id, self._tx.id, self._client)
