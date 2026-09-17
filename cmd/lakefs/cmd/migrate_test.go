@@ -34,7 +34,6 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("initial_kv_version", func(t *testing.T) {
 		cfg := config.ConfigImpl{}
-		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		cfg.Auth.GetBaseAuthConfig().Encrypt.SecretKey = "test"
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.InitialMigrateVersion))
@@ -47,7 +46,6 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("from_acl_v1_force", func(t *testing.T) {
 		cfg := config.ConfigImpl{}
-		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion))
 		err := cmd.DoMigration(ctx, kvStore, cfg.GetBaseConfig(), true)
@@ -59,7 +57,6 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("from_acl_v2", func(t *testing.T) {
 		cfg := config.ConfigImpl{}
-		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		startVer := kv.ACLNoReposMigrateVersion
 		for !kv.IsLatestSchemaVersion(startVer) {
 			kvStore := kvtest.GetStore(ctx, t)
@@ -75,7 +72,6 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("latest_version", func(t *testing.T) {
 		cfg := config.ConfigImpl{}
-		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.NextSchemaVersion-1))
 		err := cmd.DoMigration(ctx, kvStore, cfg.GetBaseConfig(), false)
@@ -87,7 +83,6 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("next_version", func(t *testing.T) {
 		cfg := config.ConfigImpl{}
-		cfg.Auth.GetAuthUIConfig().RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.NextSchemaVersion))
 		err := cmd.DoMigration(ctx, kvStore, cfg.GetBaseConfig(), false)

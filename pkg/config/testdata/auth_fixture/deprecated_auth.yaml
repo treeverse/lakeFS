@@ -1,0 +1,59 @@
+---
+logging:
+  format: text
+  level: NONE
+  output: "-"
+  trace_request_headers: true
+
+database:
+  type: postgres
+  postgres:
+    connection_string: test:///dev/null
+
+blockstore:
+  type: local
+  local:
+    path: /tmp/d1
+
+auth:
+  encrypt:
+    secret_key: "test value"
+  api:
+    endpoint: http://localhost:8001/api/v1
+    token: some-token
+    supports_invites: true
+    health_check_timeout: 20s
+    skip_health_check: true
+  login_max_duration: 336h
+  authentication_api:
+    endpoint: http://localhost:8002/api/v1
+    external_principals_enabled: true
+  remote_authenticator:
+    enabled: true
+    endpoint: http://localhost:8003/auth
+    default_user_group: Viewers
+    request_timeout: 10s
+  oidc:
+    validate_id_token_claims:
+      department: R&D
+    default_initial_groups: ["Viewers"]
+    initial_groups_claim_name: groups
+    friendly_name_claim_name: name
+    persist_friendly_name: true
+  cookie_auth_verification:
+    validate_id_token_claims:
+      department: R&D
+    default_initial_groups: ["Viewers"]
+    initial_groups_claim_name: groups
+    friendly_name_claim_name: name
+    external_user_id_claim_name: sub
+    auth_source: saml
+    persist_friendly_name: true
+  ui_config:
+    rbac: simplified
+    login_url: https://idp.example.com/login
+    fallback_login_url: /auth/login
+    fallback_login_label: Login with lakeFS credentials
+    login_cookie_names: ["internal_auth_session"]
+    logout_url: https://idp.example.com/logout
+    use_login_placeholders: true

@@ -15,15 +15,12 @@ pub struct UserCreation {
     /// a unique identifier for the user.
     #[serde(rename = "id")]
     pub id: String,
-    #[serde(rename = "invite_user", skip_serializing_if = "Option::is_none")]
-    pub invite_user: Option<bool>,
 }
 
 impl UserCreation {
     pub fn new(id: String) -> UserCreation {
         UserCreation {
             id,
-            invite_user: None,
         }
     }
 }

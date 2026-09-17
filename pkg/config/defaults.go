@@ -16,11 +16,10 @@ const (
 	BlockstoreTypeKey         = "blockstore.type"
 	DefaultQuickstartUsername = "quickstart"
 	// quickstart creds, safe
-	DefaultQuickstartKeyID           = "AKIAIOSFOLQUICKSTART"                     //nolint:gosec
-	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
-	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second
-	DefaultAuthSecret                = "THIS_MUST_BE_CHANGED_IN_PRODUCTION"   // #nosec
-	DefaultSigningSecretKey          = "OVERRIDE_THIS_SIGNING_SECRET_DEFAULT" // #nosec
+	DefaultQuickstartKeyID     = "AKIAIOSFOLQUICKSTART"                     //nolint:gosec
+	DefaultQuickstartSecretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
+	DefaultAuthSecret          = "THIS_MUST_BE_CHANGED_IN_PRODUCTION"       // #nosec
+	DefaultSigningSecretKey    = "OVERRIDE_THIS_SIGNING_SECRET_DEFAULT"     // #nosec
 	// storage blockstore values
 	DefaultBlockstoreLocalPath                        = "~/lakefs/data/block" // #nosec
 	DefaultBlockstoreS3Region                         = "us-east-1"           // #nosec
@@ -71,19 +70,8 @@ func setBaseDefaults(cfgType string) {
 	viper.SetDefault("auth.logout_redirect_url", "/auth/login")
 
 	viper.SetDefault("auth.login_duration", 7*24*time.Hour)
-	viper.SetDefault("auth.login_max_duration", 14*24*time.Hour)
 
-	viper.SetDefault("auth.ui_config.rbac", "none")
 	viper.SetDefault("auth.ui_config.login_failed_message", "The credentials don't match.")
-	viper.SetDefault("auth.ui_config.login_cookie_names", "internal_auth_session")
-	viper.SetDefault("auth.ui_config.use_login_placeholders", false)
-
-	viper.SetDefault("auth.remote_authenticator.default_user_group", "Viewers")
-	viper.SetDefault("auth.remote_authenticator.request_timeout", 10*time.Second)
-
-	viper.SetDefault("auth.api.health_check_timeout", DefaultAuthAPIHealthCheckTimeout)
-	viper.SetDefault("auth.oidc.persist_friendly_name", false)
-	viper.SetDefault("auth.cookie_auth_verification.persist_friendly_name", false)
 
 	viper.SetDefault("committed.local_cache.size_bytes", 1*1024*1024*1024)
 	viper.SetDefault("committed.local_cache.dir", "~/lakefs/data/cache")

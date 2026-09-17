@@ -20,9 +20,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -53,253 +51,12 @@ import io.lakefs.clients.sdk.JSON;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LoginConfig {
-  /**
-   * RBAC will remain enabled on GUI if \&quot;external\&quot;.  That only works with an external auth service. 
-   */
-  @JsonAdapter(RBACEnum.Adapter.class)
-  public enum RBACEnum {
-    NONE("none"),
-    
-    SIMPLIFIED("simplified"),
-    
-    INTERNAL("internal"),
-    
-    EXTERNAL("external");
-
-    private String value;
-
-    RBACEnum(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static RBACEnum fromValue(String value) {
-      for (RBACEnum b : RBACEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<RBACEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final RBACEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public RBACEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return RBACEnum.fromValue(value);
-      }
-    }
-  }
-
-  public static final String SERIALIZED_NAME_R_B_A_C = "RBAC";
-  @SerializedName(SERIALIZED_NAME_R_B_A_C)
-  private RBACEnum RBAC;
-
-  public static final String SERIALIZED_NAME_USERNAME_UI_PLACEHOLDER = "username_ui_placeholder";
-  @SerializedName(SERIALIZED_NAME_USERNAME_UI_PLACEHOLDER)
-  private String usernameUiPlaceholder;
-
-  public static final String SERIALIZED_NAME_PASSWORD_UI_PLACEHOLDER = "password_ui_placeholder";
-  @SerializedName(SERIALIZED_NAME_PASSWORD_UI_PLACEHOLDER)
-  private String passwordUiPlaceholder;
-
-  public static final String SERIALIZED_NAME_LOGIN_URL = "login_url";
-  @SerializedName(SERIALIZED_NAME_LOGIN_URL)
-  private String loginUrl;
-
-  /**
-   * Defines login behavior when login_url is set. - none: For OSS users. - redirect: Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
-   */
-  @JsonAdapter(LoginUrlMethodEnum.Adapter.class)
-  public enum LoginUrlMethodEnum {
-    NONE("none"),
-    
-    REDIRECT("redirect"),
-    
-    SELECT("select");
-
-    private String value;
-
-    LoginUrlMethodEnum(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static LoginUrlMethodEnum fromValue(String value) {
-      for (LoginUrlMethodEnum b : LoginUrlMethodEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<LoginUrlMethodEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final LoginUrlMethodEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public LoginUrlMethodEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return LoginUrlMethodEnum.fromValue(value);
-      }
-    }
-  }
-
-  public static final String SERIALIZED_NAME_LOGIN_URL_METHOD = "login_url_method";
-  @SerializedName(SERIALIZED_NAME_LOGIN_URL_METHOD)
-  private LoginUrlMethodEnum loginUrlMethod;
-
   public static final String SERIALIZED_NAME_LOGIN_FAILED_MESSAGE = "login_failed_message";
   @SerializedName(SERIALIZED_NAME_LOGIN_FAILED_MESSAGE)
   private String loginFailedMessage;
 
-  public static final String SERIALIZED_NAME_FALLBACK_LOGIN_URL = "fallback_login_url";
-  @SerializedName(SERIALIZED_NAME_FALLBACK_LOGIN_URL)
-  private String fallbackLoginUrl;
-
-  public static final String SERIALIZED_NAME_FALLBACK_LOGIN_LABEL = "fallback_login_label";
-  @SerializedName(SERIALIZED_NAME_FALLBACK_LOGIN_LABEL)
-  private String fallbackLoginLabel;
-
-  public static final String SERIALIZED_NAME_LOGIN_COOKIE_NAMES = "login_cookie_names";
-  @SerializedName(SERIALIZED_NAME_LOGIN_COOKIE_NAMES)
-  private List<String> loginCookieNames = new ArrayList<>();
-
-  public static final String SERIALIZED_NAME_LOGOUT_URL = "logout_url";
-  @SerializedName(SERIALIZED_NAME_LOGOUT_URL)
-  private String logoutUrl;
-
   public LoginConfig() {
   }
-
-  public LoginConfig RBAC(RBACEnum RBAC) {
-    
-    this.RBAC = RBAC;
-    return this;
-  }
-
-   /**
-   * RBAC will remain enabled on GUI if \&quot;external\&quot;.  That only works with an external auth service. 
-   * @return RBAC
-  **/
-  @javax.annotation.Nullable
-  public RBACEnum getRBAC() {
-    return RBAC;
-  }
-
-
-  public void setRBAC(RBACEnum RBAC) {
-    this.RBAC = RBAC;
-  }
-
-
-  public LoginConfig usernameUiPlaceholder(String usernameUiPlaceholder) {
-    
-    this.usernameUiPlaceholder = usernameUiPlaceholder;
-    return this;
-  }
-
-   /**
-   * Placeholder text to display in the username field of the login form. 
-   * @return usernameUiPlaceholder
-  **/
-  @javax.annotation.Nullable
-  public String getUsernameUiPlaceholder() {
-    return usernameUiPlaceholder;
-  }
-
-
-  public void setUsernameUiPlaceholder(String usernameUiPlaceholder) {
-    this.usernameUiPlaceholder = usernameUiPlaceholder;
-  }
-
-
-  public LoginConfig passwordUiPlaceholder(String passwordUiPlaceholder) {
-    
-    this.passwordUiPlaceholder = passwordUiPlaceholder;
-    return this;
-  }
-
-   /**
-   * Placeholder text to display in the password field of the login form. 
-   * @return passwordUiPlaceholder
-  **/
-  @javax.annotation.Nullable
-  public String getPasswordUiPlaceholder() {
-    return passwordUiPlaceholder;
-  }
-
-
-  public void setPasswordUiPlaceholder(String passwordUiPlaceholder) {
-    this.passwordUiPlaceholder = passwordUiPlaceholder;
-  }
-
-
-  public LoginConfig loginUrl(String loginUrl) {
-    
-    this.loginUrl = loginUrl;
-    return this;
-  }
-
-   /**
-   * Primary URL to use for login.
-   * @return loginUrl
-  **/
-  @javax.annotation.Nonnull
-  public String getLoginUrl() {
-    return loginUrl;
-  }
-
-
-  public void setLoginUrl(String loginUrl) {
-    this.loginUrl = loginUrl;
-  }
-
-
-  public LoginConfig loginUrlMethod(LoginUrlMethodEnum loginUrlMethod) {
-    
-    this.loginUrlMethod = loginUrlMethod;
-    return this;
-  }
-
-   /**
-   * Defines login behavior when login_url is set. - none: For OSS users. - redirect: Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
-   * @return loginUrlMethod
-  **/
-  @javax.annotation.Nullable
-  public LoginUrlMethodEnum getLoginUrlMethod() {
-    return loginUrlMethod;
-  }
-
-
-  public void setLoginUrlMethod(LoginUrlMethodEnum loginUrlMethod) {
-    this.loginUrlMethod = loginUrlMethod;
-  }
-
 
   public LoginConfig loginFailedMessage(String loginFailedMessage) {
     
@@ -319,98 +76,6 @@ public class LoginConfig {
 
   public void setLoginFailedMessage(String loginFailedMessage) {
     this.loginFailedMessage = loginFailedMessage;
-  }
-
-
-  public LoginConfig fallbackLoginUrl(String fallbackLoginUrl) {
-    
-    this.fallbackLoginUrl = fallbackLoginUrl;
-    return this;
-  }
-
-   /**
-   * Secondary URL to offer users to use for login.
-   * @return fallbackLoginUrl
-  **/
-  @javax.annotation.Nullable
-  public String getFallbackLoginUrl() {
-    return fallbackLoginUrl;
-  }
-
-
-  public void setFallbackLoginUrl(String fallbackLoginUrl) {
-    this.fallbackLoginUrl = fallbackLoginUrl;
-  }
-
-
-  public LoginConfig fallbackLoginLabel(String fallbackLoginLabel) {
-    
-    this.fallbackLoginLabel = fallbackLoginLabel;
-    return this;
-  }
-
-   /**
-   * Label to place on fallback_login_url.
-   * @return fallbackLoginLabel
-  **/
-  @javax.annotation.Nullable
-  public String getFallbackLoginLabel() {
-    return fallbackLoginLabel;
-  }
-
-
-  public void setFallbackLoginLabel(String fallbackLoginLabel) {
-    this.fallbackLoginLabel = fallbackLoginLabel;
-  }
-
-
-  public LoginConfig loginCookieNames(List<String> loginCookieNames) {
-    
-    this.loginCookieNames = loginCookieNames;
-    return this;
-  }
-
-  public LoginConfig addLoginCookieNamesItem(String loginCookieNamesItem) {
-    if (this.loginCookieNames == null) {
-      this.loginCookieNames = new ArrayList<>();
-    }
-    this.loginCookieNames.add(loginCookieNamesItem);
-    return this;
-  }
-
-   /**
-   * Cookie names used to store JWT
-   * @return loginCookieNames
-  **/
-  @javax.annotation.Nonnull
-  public List<String> getLoginCookieNames() {
-    return loginCookieNames;
-  }
-
-
-  public void setLoginCookieNames(List<String> loginCookieNames) {
-    this.loginCookieNames = loginCookieNames;
-  }
-
-
-  public LoginConfig logoutUrl(String logoutUrl) {
-    
-    this.logoutUrl = logoutUrl;
-    return this;
-  }
-
-   /**
-   * URL to use for logging out.
-   * @return logoutUrl
-  **/
-  @javax.annotation.Nonnull
-  public String getLogoutUrl() {
-    return logoutUrl;
-  }
-
-
-  public void setLogoutUrl(String logoutUrl) {
-    this.logoutUrl = logoutUrl;
   }
 
   /**
@@ -468,38 +133,20 @@ public class LoginConfig {
       return false;
     }
     LoginConfig loginConfig = (LoginConfig) o;
-    return Objects.equals(this.RBAC, loginConfig.RBAC) &&
-        Objects.equals(this.usernameUiPlaceholder, loginConfig.usernameUiPlaceholder) &&
-        Objects.equals(this.passwordUiPlaceholder, loginConfig.passwordUiPlaceholder) &&
-        Objects.equals(this.loginUrl, loginConfig.loginUrl) &&
-        Objects.equals(this.loginUrlMethod, loginConfig.loginUrlMethod) &&
-        Objects.equals(this.loginFailedMessage, loginConfig.loginFailedMessage) &&
-        Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
-        Objects.equals(this.fallbackLoginLabel, loginConfig.fallbackLoginLabel) &&
-        Objects.equals(this.loginCookieNames, loginConfig.loginCookieNames) &&
-        Objects.equals(this.logoutUrl, loginConfig.logoutUrl)&&
+    return Objects.equals(this.loginFailedMessage, loginConfig.loginFailedMessage)&&
         Objects.equals(this.additionalProperties, loginConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginUrlMethod, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, additionalProperties);
+    return Objects.hash(loginFailedMessage, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class LoginConfig {\n");
-    sb.append("    RBAC: ").append(toIndentedString(RBAC)).append("\n");
-    sb.append("    usernameUiPlaceholder: ").append(toIndentedString(usernameUiPlaceholder)).append("\n");
-    sb.append("    passwordUiPlaceholder: ").append(toIndentedString(passwordUiPlaceholder)).append("\n");
-    sb.append("    loginUrl: ").append(toIndentedString(loginUrl)).append("\n");
-    sb.append("    loginUrlMethod: ").append(toIndentedString(loginUrlMethod)).append("\n");
     sb.append("    loginFailedMessage: ").append(toIndentedString(loginFailedMessage)).append("\n");
-    sb.append("    fallbackLoginUrl: ").append(toIndentedString(fallbackLoginUrl)).append("\n");
-    sb.append("    fallbackLoginLabel: ").append(toIndentedString(fallbackLoginLabel)).append("\n");
-    sb.append("    loginCookieNames: ").append(toIndentedString(loginCookieNames)).append("\n");
-    sb.append("    logoutUrl: ").append(toIndentedString(logoutUrl)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -523,22 +170,10 @@ public class LoginConfig {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
-    openapiFields.add("RBAC");
-    openapiFields.add("username_ui_placeholder");
-    openapiFields.add("password_ui_placeholder");
-    openapiFields.add("login_url");
-    openapiFields.add("login_url_method");
     openapiFields.add("login_failed_message");
-    openapiFields.add("fallback_login_url");
-    openapiFields.add("fallback_login_label");
-    openapiFields.add("login_cookie_names");
-    openapiFields.add("logout_url");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("login_url");
-    openapiRequiredFields.add("login_cookie_names");
-    openapiRequiredFields.add("logout_url");
   }
 
  /**
@@ -553,46 +188,9 @@ public class LoginConfig {
           throw new IllegalArgumentException(String.format("The required field(s) %s in LoginConfig is not found in the empty JSON string", LoginConfig.openapiRequiredFields.toString()));
         }
       }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : LoginConfig.openapiRequiredFields) {
-        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
-        }
-      }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("RBAC") != null && !jsonObj.get("RBAC").isJsonNull()) && !jsonObj.get("RBAC").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `RBAC` to be a primitive type in the JSON string but got `%s`", jsonObj.get("RBAC").toString()));
-      }
-      if ((jsonObj.get("username_ui_placeholder") != null && !jsonObj.get("username_ui_placeholder").isJsonNull()) && !jsonObj.get("username_ui_placeholder").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `username_ui_placeholder` to be a primitive type in the JSON string but got `%s`", jsonObj.get("username_ui_placeholder").toString()));
-      }
-      if ((jsonObj.get("password_ui_placeholder") != null && !jsonObj.get("password_ui_placeholder").isJsonNull()) && !jsonObj.get("password_ui_placeholder").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `password_ui_placeholder` to be a primitive type in the JSON string but got `%s`", jsonObj.get("password_ui_placeholder").toString()));
-      }
-      if (!jsonObj.get("login_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url").toString()));
-      }
-      if ((jsonObj.get("login_url_method") != null && !jsonObj.get("login_url_method").isJsonNull()) && !jsonObj.get("login_url_method").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `login_url_method` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url_method").toString()));
-      }
       if ((jsonObj.get("login_failed_message") != null && !jsonObj.get("login_failed_message").isJsonNull()) && !jsonObj.get("login_failed_message").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `login_failed_message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_failed_message").toString()));
-      }
-      if ((jsonObj.get("fallback_login_url") != null && !jsonObj.get("fallback_login_url").isJsonNull()) && !jsonObj.get("fallback_login_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `fallback_login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("fallback_login_url").toString()));
-      }
-      if ((jsonObj.get("fallback_login_label") != null && !jsonObj.get("fallback_login_label").isJsonNull()) && !jsonObj.get("fallback_login_label").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `fallback_login_label` to be a primitive type in the JSON string but got `%s`", jsonObj.get("fallback_login_label").toString()));
-      }
-      // ensure the required json array is present
-      if (jsonObj.get("login_cookie_names") == null) {
-        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
-      } else if (!jsonObj.get("login_cookie_names").isJsonArray()) {
-        throw new IllegalArgumentException(String.format("Expected the field `login_cookie_names` to be an array in the JSON string but got `%s`", jsonObj.get("login_cookie_names").toString()));
-      }
-      if (!jsonObj.get("logout_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `logout_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("logout_url").toString()));
       }
   }
 

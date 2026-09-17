@@ -64,7 +64,7 @@ type ServerContext struct {
 	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, verifyUnsupported bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -110,12 +110,7 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 			operations.OperationIDUnsupportedOperation: unsupportedOperationHandler(),
 		},
 	}
-	loggingMiddleware := httputil.LoggingMiddleware(
-		"X-Amz-Request-Id",
-		logging.Fields{"service_name": "s3_gateway"},
-		auditLogLevel,
-		traceRequestHeaders,
-		isAdvancedAuth)
+	loggingMiddleware := httputil.LoggingMiddleware("X-Amz-Request-Id", auditLogLevel)
 
 	h = loggingMiddleware(h)
 

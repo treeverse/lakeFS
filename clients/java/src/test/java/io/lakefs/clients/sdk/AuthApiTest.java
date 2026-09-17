@@ -14,14 +14,12 @@
 package io.lakefs.clients.sdk;
 
 import io.lakefs.clients.sdk.ApiException;
-import io.lakefs.clients.sdk.model.ACL;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import io.lakefs.clients.sdk.model.Credentials;
 import io.lakefs.clients.sdk.model.CredentialsList;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.CurrentUser;
 import io.lakefs.clients.sdk.model.Error;
-import io.lakefs.clients.sdk.model.ErrorNoACL;
 import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
@@ -339,19 +337,6 @@ public class AuthApiTest {
     }
 
     /**
-     * get ACL of group
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void getGroupACLTest() throws ApiException {
-        String groupId = null;
-        ACL response = api.getGroupACL(groupId)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
      * get policy
      *
      * @throws ApiException if the Api call fails
@@ -557,30 +542,6 @@ public class AuthApiTest {
         LoginInformation loginInformation = null;
         AuthenticationToken response = api.login()
                 .loginInformation(loginInformation)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void oauthCallbackTest() throws ApiException {
-        Error response = api.oauthCallback()
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * set ACL of group
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void setGroupACLTest() throws ApiException {
-        String groupId = null;
-        ACL ACL = null;
-        api.setGroupACL(groupId, ACL)
                 .execute();
         // TODO: test validations
     }

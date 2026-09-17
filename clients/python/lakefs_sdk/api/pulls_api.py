@@ -187,7 +187,7 @@ class PullsApi:
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "PullRequestCreationResponse",
@@ -339,7 +339,7 @@ class PullsApi:
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "PullRequest",
@@ -513,7 +513,7 @@ class PullsApi:
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "PullRequestsList",
@@ -663,7 +663,7 @@ class PullsApi:
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "MergeResult",
@@ -831,7 +831,7 @@ class PullsApi:
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 

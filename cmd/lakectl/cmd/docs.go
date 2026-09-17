@@ -63,11 +63,8 @@ will provide a link to download a preconfigured configuration file for you.
 
 * ` + "`credentials.access_key_id` `(string : required)`" + ` - Access-key ID used to authenticate against lakeFS.
 * ` + "`credentials.secret_access_key` `(string : required)`" + `  - Secret access key paired with the access key ID.
-* ` + "`credentials.provider.type` `(string : \"\"" + ")`" + ` - Enterprise only. Set to ` + "`aws_iam`" + ` to obtain temporary credentials from AWS IAM; empty for static credentials (default).
-  * ` + "`credentials.provider.aws_iam.token_ttl_seconds` `(duration : 6h)`" + ` - Lifetime of the generated lakeFS token.
-  * ` + "`credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration : 1m)`" + ` - TTL of pre-signed URLs created by lakectl.
-  * ` + "`credentials.provider.aws_iam.refresh_interval` `(duration : 5m)`" + ` - How often lakectl refreshes the IAM credentials.
-  * ` + "`credentials.provider.aws_iam.token_request_headers` `(map[string]string : {})`" + ` - Extra HTTP headers to include when requesting the token.
+* ` + "`credentials.provider.type` `(string : \"\"" + ")`" + ` - Deprecated. Accepted so that existing configuration files keep loading, and ignored. AWS IAM authentication is available in lakeFS Enterprise, which ships its own ` + "`lakectl`" + `.
+  * ` + "`credentials.provider.aws_iam.token_ttl_seconds`" + `, ` + "`credentials.provider.aws_iam.url_presign_ttl_seconds`" + `, ` + "`credentials.provider.aws_iam.refresh_interval`" + `, ` + "`credentials.provider.aws_iam.token_request_headers`" + ` - Deprecated with the key above.
 * ` + "`network.http2.enabled` `(bool : true)`" + ` - Enable HTTP/2 for the API client.
 * ` + "`server.endpoint_url` `(string : ` " + `http://127.0.0.1:8000` + " `)" + ` - Base URL of the lakeFS server.
 * ` + "`server.retries.enabled` `(bool : true)`" + ` - Whether lakectl tries more than once.

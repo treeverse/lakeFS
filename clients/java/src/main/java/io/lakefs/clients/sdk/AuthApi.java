@@ -27,14 +27,12 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 
 
-import io.lakefs.clients.sdk.model.ACL;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import io.lakefs.clients.sdk.model.Credentials;
 import io.lakefs.clients.sdk.model.CredentialsList;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.CurrentUser;
 import io.lakefs.clients.sdk.model.Error;
-import io.lakefs.clients.sdk.model.ErrorNoACL;
 import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
@@ -134,7 +132,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -316,7 +314,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -498,7 +496,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -679,7 +677,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -856,7 +854,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1036,7 +1034,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1213,7 +1211,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1398,7 +1396,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1596,7 +1594,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1777,7 +1775,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1951,7 +1949,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2132,7 +2130,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2305,7 +2303,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2482,7 +2480,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2664,7 +2662,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2846,7 +2844,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3213,7 +3211,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3397,7 +3395,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3544,7 +3542,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3721,7 +3719,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3857,183 +3855,6 @@ public class AuthApi {
     public APIgetGroupRequest getGroup(String groupId) {
         return new APIgetGroupRequest(groupId);
     }
-    private okhttp3.Call getGroupACLCall(String groupId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/auth/groups/{groupId}/acl"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call getGroupACLValidateBeforeCall(String groupId, final ApiCallback _callback) throws ApiException {
-        // verify the required parameter 'groupId' is set
-        if (groupId == null) {
-            throw new ApiException("Missing the required parameter 'groupId' when calling getGroupACL(Async)");
-        }
-
-        return getGroupACLCall(groupId, _callback);
-
-    }
-
-
-    private ApiResponse<ACL> getGroupACLWithHttpInfo(String groupId) throws ApiException {
-        okhttp3.Call localVarCall = getGroupACLValidateBeforeCall(groupId, null);
-        Type localVarReturnType = new TypeToken<ACL>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    private okhttp3.Call getGroupACLAsync(String groupId, final ApiCallback<ACL> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = getGroupACLValidateBeforeCall(groupId, _callback);
-        Type localVarReturnType = new TypeToken<ACL>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
-    }
-
-    public class APIgetGroupACLRequest {
-        private final String groupId;
-
-        private APIgetGroupACLRequest(String groupId) {
-            this.groupId = groupId;
-        }
-
-        /**
-         * Build call for getGroupACL
-         * @param _callback ApiCallback API callback
-         * @return Call to execute
-         * @throws ApiException If fail to serialize the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return getGroupACLCall(groupId, _callback);
-        }
-
-        /**
-         * Execute getGroupACL request
-         * @return ACL
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public ACL execute() throws ApiException {
-            ApiResponse<ACL> localVarResp = getGroupACLWithHttpInfo(groupId);
-            return localVarResp.getData();
-        }
-
-        /**
-         * Execute getGroupACL request with HTTP info returned
-         * @return ApiResponse&lt;ACL&gt;
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public ApiResponse<ACL> executeWithHttpInfo() throws ApiException {
-            return getGroupACLWithHttpInfo(groupId);
-        }
-
-        /**
-         * Execute getGroupACL request (asynchronously)
-         * @param _callback The callback to be executed when the API call finishes
-         * @return The request call
-         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call executeAsync(final ApiCallback<ACL> _callback) throws ApiException {
-            return getGroupACLAsync(groupId, _callback);
-        }
-    }
-
-    /**
-     * get ACL of group
-     * 
-     * @param groupId  (required)
-     * @return APIgetGroupACLRequest
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> ACL of group </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Group not found, or group found but has no ACL </td><td>  -  </td></tr>
-        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public APIgetGroupACLRequest getGroupACL(String groupId) {
-        return new APIgetGroupACLRequest(groupId);
-    }
     private okhttp3.Call getPolicyCall(String policyId, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -4075,7 +3896,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4252,7 +4073,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4441,7 +4262,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4658,7 +4479,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4879,7 +4700,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5087,7 +4908,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5296,7 +5117,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5518,7 +5339,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5740,7 +5561,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5966,7 +5787,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -6198,7 +6019,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -6529,341 +6350,6 @@ public class AuthApi {
     public APIloginRequest login() {
         return new APIloginRequest();
     }
-    private okhttp3.Call oauthCallbackCall(final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/oidc/callback";
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
-
-        String[] localVarAuthNames = new String[] {  };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call oauthCallbackValidateBeforeCall(final ApiCallback _callback) throws ApiException {
-        return oauthCallbackCall(_callback);
-
-    }
-
-
-    private ApiResponse<Error> oauthCallbackWithHttpInfo() throws ApiException {
-        okhttp3.Call localVarCall = oauthCallbackValidateBeforeCall(null);
-        Type localVarReturnType = new TypeToken<Error>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    private okhttp3.Call oauthCallbackAsync(final ApiCallback<Error> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = oauthCallbackValidateBeforeCall(_callback);
-        Type localVarReturnType = new TypeToken<Error>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
-    }
-
-    public class APIoauthCallbackRequest {
-
-        private APIoauthCallbackRequest() {
-        }
-
-        /**
-         * Build call for oauthCallback
-         * @param _callback ApiCallback API callback
-         * @return Call to execute
-         * @throws ApiException If fail to serialize the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return oauthCallbackCall(_callback);
-        }
-
-        /**
-         * Execute oauthCallback request
-         * @return Error
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public Error execute() throws ApiException {
-            ApiResponse<Error> localVarResp = oauthCallbackWithHttpInfo();
-            return localVarResp.getData();
-        }
-
-        /**
-         * Execute oauthCallback request with HTTP info returned
-         * @return ApiResponse&lt;Error&gt;
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public ApiResponse<Error> executeWithHttpInfo() throws ApiException {
-            return oauthCallbackWithHttpInfo();
-        }
-
-        /**
-         * Execute oauthCallback request (asynchronously)
-         * @param _callback The callback to be executed when the API call finishes
-         * @return The request call
-         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call executeAsync(final ApiCallback<Error> _callback) throws ApiException {
-            return oauthCallbackAsync(_callback);
-        }
-    }
-
-    /**
-     * 
-     * 
-     * @return APIoauthCallbackRequest
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 302 </td><td> successfully got token </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> failed to exchange authorization code for token </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public APIoauthCallbackRequest oauthCallback() {
-        return new APIoauthCallbackRequest();
-    }
-    private okhttp3.Call setGroupACLCall(String groupId, ACL ACL, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
-        Object localVarPostBody = ACL;
-
-        // create path and map variables
-        String localVarPath = "/auth/groups/{groupId}/acl"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            "application/json"
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call setGroupACLValidateBeforeCall(String groupId, ACL ACL, final ApiCallback _callback) throws ApiException {
-        // verify the required parameter 'groupId' is set
-        if (groupId == null) {
-            throw new ApiException("Missing the required parameter 'groupId' when calling setGroupACL(Async)");
-        }
-
-        // verify the required parameter 'ACL' is set
-        if (ACL == null) {
-            throw new ApiException("Missing the required parameter 'ACL' when calling setGroupACL(Async)");
-        }
-
-        return setGroupACLCall(groupId, ACL, _callback);
-
-    }
-
-
-    private ApiResponse<Void> setGroupACLWithHttpInfo(String groupId, ACL ACL) throws ApiException {
-        okhttp3.Call localVarCall = setGroupACLValidateBeforeCall(groupId, ACL, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    private okhttp3.Call setGroupACLAsync(String groupId, ACL ACL, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = setGroupACLValidateBeforeCall(groupId, ACL, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-
-    public class APIsetGroupACLRequest {
-        private final String groupId;
-        private final ACL ACL;
-
-        private APIsetGroupACLRequest(String groupId, ACL ACL) {
-            this.groupId = groupId;
-            this.ACL = ACL;
-        }
-
-        /**
-         * Build call for setGroupACL
-         * @param _callback ApiCallback API callback
-         * @return Call to execute
-         * @throws ApiException If fail to serialize the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return setGroupACLCall(groupId, ACL, _callback);
-        }
-
-        /**
-         * Execute setGroupACL request
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public void execute() throws ApiException {
-            setGroupACLWithHttpInfo(groupId, ACL);
-        }
-
-        /**
-         * Execute setGroupACL request with HTTP info returned
-         * @return ApiResponse&lt;Void&gt;
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return setGroupACLWithHttpInfo(groupId, ACL);
-        }
-
-        /**
-         * Execute setGroupACL request (asynchronously)
-         * @param _callback The callback to be executed when the API call finishes
-         * @return The request call
-         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
-            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return setGroupACLAsync(groupId, ACL, _callback);
-        }
-    }
-
-    /**
-     * set ACL of group
-     * 
-     * @param groupId  (required)
-     * @param ACL  (required)
-     * @return APIsetGroupACLRequest
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> ACL successfully changed </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public APIsetGroupACLRequest setGroupACL(String groupId, ACL ACL) {
-        return new APIsetGroupACLRequest(groupId, ACL);
-    }
     private okhttp3.Call updatePolicyCall(String policyId, Policy policy, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -6906,7 +6392,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 

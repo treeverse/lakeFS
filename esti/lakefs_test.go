@@ -23,28 +23,19 @@ func TestLakefsConfig(t *testing.T) {
 	runCmdAndVerifyContainsText(t, Lakefs()+" --config \""+configPath+"\" run", true, false, invalidKey, emptyVars)
 }
 
-func TestLakefsSuperuser_basic(t *testing.T) {
+// TestLakefsSuperuser verifies that no additional user can be added: setup creates the only supported user.
+func TestLakefsSuperuser(t *testing.T) {
 	RequirePostgresDB(t)
-	lakefsCmd := Lakefs()
-	outputString := "credentials:\n  access_key_id: <ACCESS_KEY_ID>\n  secret_access_key: <SECRET_ACCESS_KEY>\n"
-	username := t.Name()
-	expectFailure := false
-	ctx := t.Context()
-	if isBasicAuth(t, ctx) {
-		lakefsCmd = LakefsWithBasicAuth()
-		outputString = "already exists"
-		expectFailure = true
+	tests := []struct {
+		name     string
+		userName string
+	}{
+		{name: "new_user", userName: "TestLakefsSuperuser"},
+		{name: "existing_user", userName: AdminUsername},
 	}
-	runCmdAndVerifyContainsText(t, lakefsCmd+" superuser --user-name "+username, expectFailure, false, outputString, nil)
-}
-
-func TestLakefsSuperuser_alreadyExists(t *testing.T) {
-	RequirePostgresDB(t)
-	lakefsCmd := Lakefs()
-	ctx := t.Context()
-	if isBasicAuth(t, ctx) {
-		lakefsCmd = LakefsWithBasicAuth()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			RunCmdAndVerifyFailureContainsText(t, Lakefs()+" superuser --user-name "+tt.userName, false, "already exists", nil)
+		})
 	}
-	// On init - the AdminUsername is already created, and the expected error should be: "already exist" (also in basic auth mode)
-	RunCmdAndVerifyFailureContainsText(t, lakefsCmd+" superuser --user-name "+AdminUsername, false, "already exists", nil)
 }

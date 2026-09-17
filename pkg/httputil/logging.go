@@ -2,7 +2,6 @@ package httputil
 
 import (
 	"context"
-	"maps"
 	"net/http"
 	"strings"
 	"time"
@@ -70,23 +69,18 @@ func CopyRequestIDFromContext(srcCtx, dstCtx context.Context) context.Context {
 	return dstCtx
 }
 
-func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string, isAdvancedAuth bool) func(next http.Handler) http.Handler {
+func LoggingMiddleware(requestIDHeaderName string, middlewareLogLevel string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
-			client := GetRequestLakeFSClient(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
 				logging.PathFieldKey:   r.RequestURI,
 				logging.MethodFieldKey: r.Method,
 				logging.HostFieldKey:   r.Host,
-			}
-			if isAdvancedAuth {
-				requestFields[logging.RequestIDFieldKey] = reqID
-				maps.Copy(requestFields, fields)
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			writer.Header().Set(requestIDHeaderName, reqID)
@@ -96,11 +90,6 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				"took":        time.Since(startTime),
 				"status_code": writer.StatusCode,
 				"source_ip":   r.RemoteAddr,
-			}
-			if isAdvancedAuth {
-				loggingFields["sent_bytes"] = writer.ResponseSize
-				loggingFields["client"] = client
-				loggingFields[logging.LogAudit] = true
 			}
 
 			logLevel := strings.ToLower(middlewareLogLevel)
@@ -112,11 +101,4 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			}
 		})
 	}
-}
-
-func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, loggingMiddlewareLevel string, traceRequestHeaders bool, isAdvancedAuth bool) func(next http.Handler) http.Handler {
-	if strings.ToLower(loggingMiddlewareLevel) == "trace" {
-		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders, isAdvancedAuth)
-	}
-	return DefaultLoggingMiddleware(requestIDHeaderName, fields, loggingMiddlewareLevel, isAdvancedAuth)
 }

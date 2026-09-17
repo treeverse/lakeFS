@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -27,15 +27,11 @@ This command can be used to import an admin user when moving from lakeFS version
 with previously configured users to a lakeFS with basic auth version.
 To do that provide the user name as well as the access key ID to import.
 If the wrong user or credentials were chosen it is possible to delete the user and perform the action again.
+An installation that has never been set up counts as set up once this administrator exists.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := LoadConfig()
-		authUIConfig := cfg.AuthConfig().GetAuthUIConfig()
 		baseConfig := cfg.GetBaseConfig()
-		if authUIConfig.RBAC == config.AuthRBACExternal {
-			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
-			os.Exit(1)
-		}
 
 		userName, err := cmd.Flags().GetString("user-name")
 		if err != nil {
@@ -67,10 +63,13 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 		defer kvStore.Close()
 
-		addToAdmins := !authUIConfig.IsAuthBasic()
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
-		authService := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		authService, err := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		if err != nil && !errors.Is(err, auth.ErrMigrationNotPossible) {
+			fmt.Printf("Failed to create auth service: %s\n", err)
+			os.Exit(1)
+		}
 
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
@@ -79,10 +78,23 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 			},
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
-		}, addToAdmins)
+		})
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)
+		}
+
+		// This administrator completes setup for an installation that never ran it.
+		initialized, err := authMetadataManager.IsInitialized(ctx)
+		if err != nil {
+			fmt.Printf("Failed to check lakeFS setup state: %s\n", err)
+			os.Exit(1)
+		}
+		if !initialized {
+			if err := authMetadataManager.UpdateSetupTimestamp(ctx, time.Now()); err != nil {
+				fmt.Printf("Failed to update setup timestamp: %s\n", err)
+				os.Exit(1)
+			}
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)

@@ -16,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -27,8 +26,6 @@ import (
 )
 
 const (
-	LoggerServiceName = "rest_api"
-
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 	sessionMaxAge                  = 30 * 24 * 60 * 60 // 30 days in seconds, the gorilla/sessions v1.4.0 default (for backward compatibility)
 )
@@ -38,7 +35,6 @@ func Serve(
 	catalog *catalog.Catalog,
 	authenticator auth.Authenticator,
 	authService auth.Service,
-	authenticationService authentication.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
 	migrator Migrator,
@@ -57,29 +53,21 @@ func Serve(
 		panic(err)
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
-	// Configure cookie options to allow HTTP (for testing).
-	// gorilla/sessions v1.4.0 changed defaults to "Secure:true" and "SameSite:None" -which breaks OAuth callbacks over HTTP
+	// gorilla/sessions v1.4.0 defaults to "Secure:true" and "SameSite:None", which breaks sessions over plain HTTP.
 	sessionStore.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   sessionMaxAge,
 		HttpOnly: true,
-		Secure:   cfg.GetBaseConfig().TLS.Enabled, // Only set Secure flag when TLS is enabled
-		SameSite: http.SameSiteLaxMode,            // Lax allows OAuth callback redirects
+		Secure:   cfg.GetBaseConfig().TLS.Enabled,
+		SameSite: http.SameSiteLaxMode,
 	}
-	oidcConfig := auth.OIDCConfig(cfg.AuthConfig().GetBaseAuthConfig().OIDC)
-	cookieAuthConfig := auth.CookieAuthConfig(cfg.AuthConfig().GetBaseAuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
 			AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 		}),
-		httputil.LoggingMiddleware(
-			httputil.RequestIDHeaderName,
-			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
-			cfg.GetBaseConfig().Logging.AuditLogLevel,
-			cfg.GetBaseConfig().Logging.TraceRequestHeaders,
-			authService.IsAdvancedAuth()),
-		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
+		httputil.LoggingMiddleware(httputil.RequestIDHeaderName, cfg.GetBaseConfig().Logging.AuditLogLevel),
+		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore),
 		MetricsMiddleware(swagger, requestHistograms, requestCounter),
 	)
 	controller := NewController(
@@ -87,7 +75,6 @@ func Serve(
 		catalog,
 		authenticator,
 		authService,
-		authenticationService,
 		blockAdapter,
 		metadataManager,
 		migrator,
@@ -122,8 +109,6 @@ func Serve(
 		rootHandler = NewS3GatewayEndpointErrorHandler(gatewayDomains)
 	}
 	r.Mount("/", rootHandler)
-
-	authenticationService.RegisterAdditionalRoutes(r, sessionStore)
 
 	return r
 }

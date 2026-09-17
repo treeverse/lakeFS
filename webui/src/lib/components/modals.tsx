@@ -1,11 +1,10 @@
-import React, { FC, useMemo, useState, ReactNode, MouseEventHandler, useContext } from 'react';
+import React, { FC, useState, ReactNode, MouseEventHandler } from 'react';
 
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Tooltip from 'react-bootstrap/Tooltip';
 import { OverlayTrigger } from 'react-bootstrap';
 import { ButtonVariant } from 'react-bootstrap/esm/types';
-import { GetUserDisplayNameByIdContext } from '../../pages/auth/users';
 
 interface ConfirmationModalProps {
     show: boolean;
@@ -26,12 +25,6 @@ interface ConfirmationButtonProps {
     children: ReactNode;
 }
 
-// Extend the ConfirmationButtonProps, but omit the msg property,
-// so we can extend it for this use case
-interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProps, 'msg'> {
-    msg: ReactNode | ((userDisplayName: string) => ReactNode);
-    userId: string;
-}
 export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = 'danger' }) => {
     return (
         <Modal show={show} onHide={onHide}>
@@ -48,42 +41,6 @@ export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, ms
                 </Button>
             </Modal.Footer>
         </Modal>
-    );
-};
-
-export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProps> = ({
-    userId,
-    msg,
-    onConfirm,
-    variant,
-    modalVariant,
-    size,
-    disabled = false,
-    tooltip = null,
-    children,
-}) => {
-    const getUserDisplayNameById = useContext(GetUserDisplayNameByIdContext);
-    const userDisplayName = useMemo(() => getUserDisplayNameById(userId), [userId, getUserDisplayNameById]);
-
-    let msgNode: ReactNode;
-    if (typeof msg === 'function') {
-        msgNode = msg(userDisplayName);
-    } else {
-        msgNode = msg;
-    }
-
-    return (
-        <ConfirmationButton
-            msg={msgNode}
-            onConfirm={onConfirm}
-            variant={variant}
-            modalVariant={modalVariant}
-            size={size}
-            disabled={disabled}
-            tooltip={tooltip}
-        >
-            {children}
-        </ConfirmationButton>
     );
 };
 

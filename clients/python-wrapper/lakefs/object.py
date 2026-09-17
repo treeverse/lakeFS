@@ -556,7 +556,7 @@ class ObjectWriter(LakeFSIOBase):
         """
         Use raw upload API call to bypass validation of content parameter
         """
-        auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']
+        auth_settings = ['basic_auth', 'cookie_auth', 'jwt_token']
         headers = {
             "Accept": "application/json",
             "Content-Type": self.content_type if self.content_type is not None else "application/octet-stream"

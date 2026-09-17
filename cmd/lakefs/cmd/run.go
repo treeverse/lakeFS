@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -104,11 +103,14 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, installationID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
-
-		authenticationService, err := authentication.NewAuthenticationService(ctx, cfg, logger)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to create authentication service")
+		authService, err := auth.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		if errors.Is(err, auth.ErrMigrationNotPossible) {
+			logger.WithError(err).Fatal(`
+cannot migrate existing user to basic auth mode!
+Please run "lakefs superuser -h" and follow the instructions on how to migrate an existing user
+`)
+		} else if err != nil {
+			logger.WithError(err).Fatal("Failed to create auth service")
 		}
 
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
@@ -166,7 +168,7 @@ var runCmd = &cobra.Command{
 		// local database lock will make sure that only one instance will run the setup.
 		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
 			baseCfg.Installation.UserName != "" && baseCfg.Installation.AccessKeyID.SecureValue() != "" && baseCfg.Installation.SecretAccessKey.SecureValue() != "" {
-			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, baseCfg.Installation.UserName,
+			setupCreds, err := setupLakeFS(ctx, authMetadataManager, authService, baseCfg.Installation.UserName,
 				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue(), false)
 			if err != nil {
 				logger.WithError(err).WithField("admin", baseCfg.Installation.UserName).Fatal("Failed to initial setup environment")
@@ -174,6 +176,14 @@ var runCmd = &cobra.Command{
 			if setupCreds != nil {
 				logger.WithField("admin", baseCfg.Installation.UserName).Info("Initial setup completed successfully")
 			}
+		}
+
+		externalAuthorization := cfg.AuthConfig().GetBaseAuthConfig().ExternalAuthorizationConfigured()
+		err = ensureSetupComplete(ctx, authMetadataManager, kvStore, c, externalAuthorization)
+		if errors.Is(err, errNoAdminUser) {
+			logger.WithError(err).Fatal("lakeFS cannot start")
+		} else if err != nil {
+			logger.WithError(err).Fatal("Failed to determine whether lakeFS is set up")
 		}
 
 		actionsService := actions.NewService(
@@ -191,10 +201,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		middlewareAuthenticator, err := authentication.BuildAuthenticatorChain(cfg, logger, authService)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to create authentication chain")
-		}
+		middlewareAuthenticator := auth.NewBuiltinAuthenticator(authService)
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
@@ -219,7 +226,6 @@ var runCmd = &cobra.Command{
 			c,
 			middlewareAuthenticator,
 			authService,
-			authenticationService,
 			blockStore,
 			authMetadataManager,
 			migrator,
@@ -243,15 +249,10 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
-		baseAuthCfg := cfg.AuthConfig().GetBaseAuthConfig()
-		oidcConfig := auth.OIDCConfig(baseAuthCfg.OIDC)
-		cookieAuthConfig := auth.CookieAuthConfig(baseAuthCfg.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,
 			authService,
-			&oidcConfig,
-			&cookieAuthConfig,
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
@@ -268,9 +269,7 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			s3FallbackURL,
 			baseCfg.Logging.AuditLogLevel,
-			baseCfg.Logging.TraceRequestHeaders,
 			baseCfg.Gateways.S3.VerifyUnsupported,
-			authService.IsAdvancedAuth(),
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
@@ -338,6 +337,86 @@ var runCmd = &cobra.Command{
 		printWelcome(os.Stderr, buf.String())
 		gracefulShutdown(ctx, server)
 	},
+}
+
+// repositoryLister lists an installation's repositories.
+type repositoryLister interface {
+	ListRepositories(ctx context.Context, limit int, prefix, searchString, after string, opts ...catalog.ListRepositoriesOptionsFunc) ([]*catalog.Repository, bool, error)
+}
+
+var errNoAdminUser = errors.New("lakeFS has no administrator of its own")
+
+// ensureSetupComplete records the setup of an installation that already has an administrator, and
+// refuses to serve one that has been used but has none: while the store reports itself
+// uninitialized, the setup endpoint mints an administrator for whoever calls it first.
+func ensureSetupComplete(ctx context.Context, metadataManager auth.MetadataManager, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) error {
+	initialized, err := metadataManager.IsInitialized(ctx)
+	if err != nil {
+		return fmt.Errorf("check lakeFS setup state: %w", err)
+	}
+	if initialized {
+		return nil
+	}
+	admin, err := auth.HasSuperAdmin(ctx, kvStore)
+	if err != nil {
+		return err
+	}
+	if admin {
+		// The administrator is here and only the record of the setup is missing.
+		return metadataManager.UpdateSetupTimestamp(ctx, time.Now())
+	}
+	trace, err := installationInUse(ctx, kvStore, repositories, externalAuthorization)
+	if err != nil {
+		return err
+	}
+	switch trace {
+	case traceNone:
+		return nil
+	case traceExternalAuthorization:
+		// The users of that service were never in this store, so this may equally be a new
+		// installation carrying a stale key.
+		return fmt.Errorf(`%w, and auth.api.endpoint names an external authorization service: `+
+			`run "lakefs superuser --user-name <name>" to create one, `+
+			`or remove the auth.api keys if this installation is new`, errNoAdminUser)
+	default:
+		return fmt.Errorf(`%w, and %s: `+
+			`run "lakefs superuser --user-name <name>" to create one with fresh credentials, `+
+			`adding --access-key-id and --secret-access-key to keep a key pair your clients already use`,
+			errNoAdminUser, trace)
+	}
+}
+
+// Traces an installation leaves once it has served somebody, named as the fatal message reads them.
+const (
+	traceNone                  = ""
+	traceRepositories          = "it holds repositories"
+	traceLegacyUsers           = "it holds users written by an earlier version"
+	traceExternalAuthorization = "external authorization"
+)
+
+// installationInUse reports the first trace showing that an installation which never recorded its
+// setup has served somebody all the same, or traceNone when it finds none.
+func installationInUse(ctx context.Context, kvStore kv.Store, repositories repositoryLister, externalAuthorization bool) (string, error) {
+	repos, _, err := repositories.ListRepositories(ctx, 1, "", "", "")
+	if err != nil {
+		return traceNone, fmt.Errorf("list repositories: %w", err)
+	}
+	if len(repos) > 0 {
+		return traceRepositories, nil
+	}
+	legacy, err := auth.HasLegacyUsers(ctx, kvStore)
+	if err != nil {
+		return traceNone, err
+	}
+	if legacy {
+		return traceLegacyUsers, nil
+	}
+	// Users of an external authorization service live outside this store, which leaves the
+	// configuration as their only trace here.
+	if externalAuthorization {
+		return traceExternalAuthorization, nil
+	}
+	return traceNone, nil
 }
 
 // checkRepos iterating on all repos and validates that their settings are correct.

@@ -7,40 +7,18 @@ import Nav from 'react-bootstrap/Nav';
 import Card from 'react-bootstrap/Card';
 
 import { Link } from '../nav';
-import { useLoginConfigContext } from '../../hooks/conf';
-import Alert from 'react-bootstrap/Alert';
-import { InfoIcon } from '@primer/octicons-react';
+import { EnterpriseUpgradeAlert } from './enterpriseUpgrade';
 
 type AuthOutletContext = [(tab: string) => void];
 
-const rbacDismissedKey = 'lakefs:ui:acl:dismissRBACAlert';
 export const AuthLayout = () => {
-    const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState('credentials');
-    const { RBAC: rbac } = useLoginConfigContext();
 
     return (
         <Container fluid="xl">
             <Row className="mt-5">
                 <div>
-                    {rbac === 'simplified' && showRBACAlert && (
-                        <Alert
-                            variant="info"
-                            title="rbac CTA"
-                            dismissible
-                            onClose={() => {
-                                window.localStorage.setItem(rbacDismissedKey, 'true');
-                                setShowRBACAlert(false);
-                            }}
-                        >
-                            <InfoIcon /> Enhance Your Security with{' '}
-                            <Alert.Link href={'https://docs.lakefs.io/security/rbac/'}>
-                                Role-Based Access Control
-                            </Alert.Link>{' '}
-                            – Available on <Alert.Link href={'https://lakefs.cloud/register'}>lakeFS Cloud</Alert.Link>{' '}
-                            and <Alert.Link href={'https://docs.lakefs.io/enterprise/'}>lakeFS Enterprise</Alert.Link>!
-                        </Alert>
-                    )}
+                    <EnterpriseUpgradeAlert />
                 </div>
                 <Col md={{ span: 3 }}>
                     <Card>
@@ -68,11 +46,9 @@ export const AuthLayout = () => {
                                 <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'}>
                                     Groups
                                 </Link>
-                                {rbac !== 'simplified' && (
-                                    <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
-                                        Policies
-                                    </Link>
-                                )}
+                                <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
+                                    Policies
+                                </Link>
                             </Nav>
                         </Card.Body>
                     </Card>

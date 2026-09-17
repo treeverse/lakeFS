@@ -600,28 +600,16 @@ func TestLakectlAnnotate(t *testing.T) {
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
-	ctx := t.Context()
 	userName := "test_user"
 	vars := map[string]string{
 		"ID": userName,
 	}
-	isSupported := !isBasicAuth(t, ctx)
 
 	// Not Found
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, "user not found\n404 Not Found\n", vars)
 
-	// Check unique
-	if isSupported {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" auth users create --id "+userName, false, "lakectl_auth_users_create_success", vars)
-	}
+	// A single user is supported, and setup already created it
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n409 Conflict\n", vars)
-
-	// Cleanup
-	expected := "user not found\n404 Not Found\n"
-	if isSupported {
-		expected = "User deleted successfully\n"
-	}
-	runCmdAndVerifyResult(t, Lakectl()+" auth users delete --id "+userName, !isSupported, false, expected, vars)
 }
 
 // testing without user email for now, since it is a pain to config esti with a mail

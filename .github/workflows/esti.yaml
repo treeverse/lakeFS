@@ -60,14 +60,7 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**', './auth/**', './acl') }}
-
-      - name: Setup Go
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-        id: go
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**') }}
 
       - name: Setup NodeJS
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -81,8 +74,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           make -j3 gen-ui VERSION=${{ steps.version.outputs.tag }}
-          go build ./contrib/auth/acl/cmd/acl
-          tar -czf /tmp/generated.tar.gz ./webui/dist ./acl
+          tar -czf /tmp/generated.tar.gz ./webui/dist
 
         # must upload artifact in order to download generated later
       - name: Store generated code
@@ -837,30 +829,12 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v8
-        with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
-
-      # Run ACL server
-      - name: Run ACL server
-        env:
-          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
-          ACLSERVER_DATABASE_TYPE: local
-        run: ./acl run &
-
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose-dynamodb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -910,30 +884,12 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v8
-        with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
-
-      # Run ACL server
-      - name: Run ACL server
-        env:
-          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
-          ACLSERVER_DATABASE_TYPE: local
-        run: ./acl run &
-
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -982,23 +938,6 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v8
-        with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
-
-      # Run ACL server
-      - name: Run ACL server
-        env:
-          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
-          ACLSERVER_DATABASE_TYPE: local
-        run: ./acl run &
-
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -1006,7 +945,6 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
           ESTI_BLOCKSTORE_TYPE: gs
@@ -1037,23 +975,6 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v8
-        with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
-
-      # Run ACL server
-      - name: Run ACL server
-        env:
-          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
-          ACLSERVER_DATABASE_TYPE: local
-        run: ./acl run &
-
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -1061,7 +982,6 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: azure
           ESTI_AZURE_STORAGE_ACCOUNT: esti
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
@@ -1099,23 +1019,6 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v8
-        with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
-
-      # Run ACL server
-      - name: Run ACL server
-        env:
-          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
-          ACLSERVER_DATABASE_TYPE: local
-        run: ./acl run &
-
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -1123,7 +1026,6 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_DATABASE_TYPE: cosmosdb
           LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
           LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
@@ -1433,54 +1335,3 @@ jobs:
         with:
           paths: webui/test-results.xml
           output: "quickstart-test-results.md"
-
-  run-system-aws-s3-basic-auth:
-    name: Run latest lakeFS app on AWS S3 + Basic Auth
-    needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-24.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v6
-
-      - name: Generate uniquifying value
-        id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
-      - name: Test lakeFS with S3 tests + Basic Auth
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-file: esti/ops/docker-compose.yaml
-          compose-flags: "--quiet-pull --exit-code-from=esti"
-        env:
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
-
-      - name: Check files in S3 bucket
-        run: |
-          FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
-          [ $FILES_COUNT -gt 5 ]
-
-      - name: lakeFS Logs on s3 failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
-
-      - name: Export DB
-        if: ${{ always() }}
-        working-directory: esti/ops
-        run: |
-          if docker compose ps -q postgres; then
-            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
-          fi

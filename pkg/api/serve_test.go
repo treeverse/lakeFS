@@ -22,7 +22,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -108,8 +107,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
 	viper.Set("database.type", mem.DriverName)
-	// Add endpoint so that 'IsAdvancedAuth' will be in effect
-	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 
 	viper.Set("committed.local_cache.size_bytes", 24*1024*1024)
 	viper.Set("committed.sstable.memory.cache_size_bytes", 2*1024*1024)
@@ -167,14 +164,12 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 
-	authenticationService := authentication.NewDummyService()
 	logger := logging.FromContext(ctx)
 	handler := api.Serve(
 		cfg,
 		c,
 		authenticator,
 		authService,
-		authenticationService,
 		c.BlockAdapter,
 		meta,
 		migrator,

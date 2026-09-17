@@ -4,14 +4,12 @@ Gemfile
 Gemfile.lock
 README.md
 _config.yml
-docs/ACL.md
 docs/AbortPresignMultipartUpload.md
 docs/AccessKeyCredentials.md
 docs/ActionRun.md
 docs/ActionRunList.md
 docs/ActionsApi.md
 docs/AuthApi.md
-docs/AuthCapabilities.md
 docs/AuthenticationToken.md
 docs/BranchCreation.md
 docs/BranchProtectionRule.md
@@ -37,7 +35,6 @@ docs/Diff.md
 docs/DiffList.md
 docs/DiffObjectStat.md
 docs/Error.md
-docs/ErrorNoACL.md
 docs/ExperimentalApi.md
 docs/ExternalApi.md
 docs/ExternalLoginInformation.md
@@ -162,10 +159,8 @@ lakefs_sdk/exceptions.py
 lakefs_sdk/models/__init__.py
 lakefs_sdk/models/abort_presign_multipart_upload.py
 lakefs_sdk/models/access_key_credentials.py
-lakefs_sdk/models/acl.py
 lakefs_sdk/models/action_run.py
 lakefs_sdk/models/action_run_list.py
-lakefs_sdk/models/auth_capabilities.py
 lakefs_sdk/models/authentication_token.py
 lakefs_sdk/models/branch_creation.py
 lakefs_sdk/models/branch_protection_rule.py
@@ -188,7 +183,6 @@ lakefs_sdk/models/diff.py
 lakefs_sdk/models/diff_list.py
 lakefs_sdk/models/diff_object_stat.py
 lakefs_sdk/models/error.py
-lakefs_sdk/models/error_no_acl.py
 lakefs_sdk/models/external_login_information.py
 lakefs_sdk/models/external_principal.py
 lakefs_sdk/models/external_principal_creation.py
@@ -284,12 +278,10 @@ test-requirements.txt
 test/__init__.py
 test/test_abort_presign_multipart_upload.py
 test/test_access_key_credentials.py
-test/test_acl.py
 test/test_action_run.py
 test/test_action_run_list.py
 test/test_actions_api.py
 test/test_auth_api.py
-test/test_auth_capabilities.py
 test/test_authentication_token.py
 test/test_branch_creation.py
 test/test_branch_protection_rule.py
@@ -315,7 +307,6 @@ test/test_diff.py
 test/test_diff_list.py
 test/test_diff_object_stat.py
 test/test_error.py
-test/test_error_no_acl.py
 test/test_experimental_api.py
 test/test_external_api.py
 test/test_external_login_information.py

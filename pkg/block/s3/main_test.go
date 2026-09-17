@@ -42,8 +42,8 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "minio/minio",
-		Tag:        "RELEASE.2023-06-09T07-32-12Z",
+		Repository: "pgsty/silo",
+		Tag:        "RELEASE.2026-09-03T13-18-01Z",
 		Env: []string{
 			fmt.Sprintf("MINIO_ROOT_USER=%s", minioTestAccessKeyID),
 			fmt.Sprintf("MINIO_ROOT_PASSWORD=%s", minioTestSecretAccessKey),

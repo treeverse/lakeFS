@@ -170,8 +170,10 @@ public abstract class FSTestBase {
                      .withBody(gson.toJson(new Repository().id("repo")
                                            .creationDate(1234L)
                                            .defaultBranch("main")
-                                           // Not really needed, just put something that works.
-                                           .storageNamespace("s3a://FIX/ME?"))));
+                                           // A valid name for a bucket that does not exist: the
+                                           // filesystem handles a not-found lookup, while an invalid
+                                           // name raises a runtime exception it does not catch.
+                                           .storageNamespace("s3a://fix-me/unused"))));
 
         // Don't return 404s for unknown paths - they will be emitted for
         // many bad requests or mocks, and make our life difficult.  Instead

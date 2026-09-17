@@ -18,22 +18,8 @@ interface SetupResponse {
 }
 
 export interface LoginConfig {
-    username_ui_placeholder?: string;
-    password_ui_placeholder?: string;
-    login_url: string;
-    login_url_method?: 'none' | 'redirect' | 'select';
     login_failed_message?: string;
-    fallback_login_url?: string;
-    fallback_login_label?: string;
-    login_cookie_names: string[];
-    logout_url: string;
 }
-
-export const withNext = (url: string, next: string) => {
-    const u = new URL(url, window.location.origin);
-    u.searchParams.set('next', normalizeNext(next));
-    return u.toString();
-};
 
 export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     const st = location.state ?? {};
@@ -55,7 +41,7 @@ export const getLoginIntent = (location: ReturnType<typeof useLocation>) => {
     return { redirected, redirectedFromQuery, next, cleanUrl };
 };
 
-const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
+const LoginForm = ({ loginConfig }: { loginConfig?: LoginConfig }) => {
     const location = useLocation();
     const { refreshUser } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
@@ -64,9 +50,6 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
     const state = (location.state as NavigateState | null) ?? null;
     const qp = new URLSearchParams(location.search);
     const next = normalizeNext(state?.next ?? qp.get('next'));
-
-    const usernamePlaceholder = loginConfig.username_ui_placeholder || 'Access Key ID';
-    const passwordPlaceholder = loginConfig.password_ui_placeholder || 'Secret Access Key';
 
     return (
         <div className="d-flex align-items-center justify-content-center">
@@ -92,7 +75,7 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                             } catch (err) {
                                 if (err instanceof AuthenticationError) {
                                     // Invalid credentials (401)
-                                    const message = loginConfig.login_failed_message || "The credentials don't match.";
+                                    const message = loginConfig?.login_failed_message || "The credentials don't match.";
                                     setLoginError(message);
                                 } else if (err instanceof ServerError) {
                                     // Server errors (5xx)
@@ -115,7 +98,7 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                             <Form.Control
                                 name="username"
                                 type="text"
-                                placeholder={usernamePlaceholder}
+                                placeholder="Access Key ID"
                                 autoFocus
                                 className="bg-light"
                             />
@@ -125,7 +108,7 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                             <Form.Control
                                 name="password"
                                 type="password"
-                                placeholder={passwordPlaceholder}
+                                placeholder="Secret Access Key"
                                 className="bg-light"
                             />
                         </Form.Group>
@@ -136,27 +119,6 @@ const LoginForm = ({ loginConfig }: { loginConfig: LoginConfig }) => {
                             Login
                         </Button>
                     </Form>
-                    <div className={'mt-2 mb-1'}>
-                        {loginConfig.fallback_login_url ? (
-                            <Button
-                                variant="link"
-                                className="text-secondary mt-2"
-                                onClick={async () => {
-                                    window.sessionStorage.setItem(LAKEFS_POST_LOGIN_NEXT, next);
-                                    loginConfig.login_cookie_names?.forEach((cookie) => {
-                                        document.cookie = `${cookie}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
-                                    });
-                                    if (loginConfig.fallback_login_url) {
-                                        window.location.href = withNext(loginConfig.fallback_login_url, next);
-                                    }
-                                }}
-                            >
-                                {loginConfig.fallback_login_label || 'Try another way to login'}
-                            </Button>
-                        ) : (
-                            ''
-                        )}
-                    </div>
                 </Card.Body>
             </Card>
         </div>

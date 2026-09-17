@@ -164,18 +164,6 @@ export class BareRepositoryError extends Error {
 
 // actual actions:
 class Auth {
-    async getAuthCapabilities() {
-        const response = await apiRequest('/auth/capabilities', {
-            method: 'GET',
-        });
-        switch (response.status) {
-            case 200:
-                return await response.json();
-            default:
-                throw new Error('Unknown');
-        }
-    }
-
     async login(accessKeyId, secretAccessKey) {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {
             headers: new Headers(defaultAPIHeaders),
@@ -234,10 +222,10 @@ class Auth {
         return response.json();
     }
 
-    async createUser(userId, inviteUser = false) {
+    async createUser(userId) {
         const response = await apiRequest(`/auth/users`, {
             method: 'POST',
-            body: JSON.stringify({ id: userId, invite_user: inviteUser }),
+            body: JSON.stringify({ id: userId }),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -261,28 +249,6 @@ class Auth {
             throw new Error(`could not list group members: ${await extractError(response)}`);
         }
         return response.json();
-    }
-
-    async getACL(groupId) {
-        const response = await apiRequest(`/auth/groups/${groupId}/acl`);
-        if (response.status !== 200) {
-            throw new Error(`could not get ACL for group ${groupId}: ${await extractError(response)}`);
-        }
-        const ret = await response.json();
-        if (ret.repositories === null || ret.repositories === undefined) {
-            ret.repositories = [];
-        }
-        return ret;
-    }
-
-    async putACL(groupId, acl) {
-        const response = await apiRequest(`/auth/groups/${groupId}/acl`, {
-            method: 'POST',
-            body: JSON.stringify(acl),
-        });
-        if (response.status !== 201) {
-            throw new Error(`could not set ACL for group ${groupId}: ${await extractError(response)}`);
-        }
     }
 
     async addUserToGroup(userId, groupId) {

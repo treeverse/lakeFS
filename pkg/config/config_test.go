@@ -89,6 +89,44 @@ func TestConfig_NewFromFile(t *testing.T) {
 			_, err := newConfigFromFile("testdata/auth_fixture/no_auth.yaml")
 			require.Error(t, err)
 		})
+		t.Run("deprecated keys", func(t *testing.T) {
+			cfg, err := newConfigFromFile("testdata/auth_fixture/deprecated_auth.yaml")
+			require.NoError(t, err)
+			require.Equal(t, []string{
+				"logging.trace_request_headers",
+				"auth.api.endpoint",
+				"auth.api.token",
+				"auth.api.supports_invites",
+				"auth.api.health_check_timeout",
+				"auth.api.skip_health_check",
+				"auth.authentication_api.endpoint",
+				"auth.authentication_api.external_principals_enabled",
+				"auth.remote_authenticator.enabled",
+				"auth.remote_authenticator.endpoint",
+				"auth.remote_authenticator.default_user_group",
+				"auth.remote_authenticator.request_timeout",
+				"auth.oidc.validate_id_token_claims",
+				"auth.oidc.default_initial_groups",
+				"auth.oidc.initial_groups_claim_name",
+				"auth.oidc.friendly_name_claim_name",
+				"auth.oidc.persist_friendly_name",
+				"auth.cookie_auth_verification.validate_id_token_claims",
+				"auth.cookie_auth_verification.default_initial_groups",
+				"auth.cookie_auth_verification.initial_groups_claim_name",
+				"auth.cookie_auth_verification.friendly_name_claim_name",
+				"auth.cookie_auth_verification.external_user_id_claim_name",
+				"auth.cookie_auth_verification.auth_source",
+				"auth.cookie_auth_verification.persist_friendly_name",
+				"auth.login_max_duration",
+				"auth.ui_config.rbac",
+				"auth.ui_config.login_url",
+				"auth.ui_config.fallback_login_url",
+				"auth.ui_config.fallback_login_label",
+				"auth.ui_config.login_cookie_names",
+				"auth.ui_config.logout_url",
+				"auth.ui_config.use_login_placeholders",
+			}, cfg.(*config.ConfigImpl).DeprecatedKeys())
+		})
 	})
 }
 

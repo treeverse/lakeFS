@@ -37,26 +37,10 @@ class TestLoginConfig(unittest.TestCase):
         model = LoginConfig()  # noqa: E501
         if include_optional:
             return LoginConfig(
-                rbac = 'none',
-                username_ui_placeholder = '',
-                password_ui_placeholder = '',
-                login_url = '',
-                login_url_method = 'none',
-                login_failed_message = '',
-                fallback_login_url = '',
-                fallback_login_label = '',
-                login_cookie_names = [
-                    ''
-                    ],
-                logout_url = ''
+                login_failed_message = ''
             )
         else:
             return LoginConfig(
-                login_url = '',
-                login_cookie_names = [
-                    ''
-                    ],
-                logout_url = '',
         )
         """
 

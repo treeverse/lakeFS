@@ -25,7 +25,6 @@ Method | HTTP request | Description
 [**get_current_user**](AuthApi.md#get_current_user) | **GET** /user | get current user
 [**get_external_principal**](AuthApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**get_group**](AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
-[**get_group_acl**](AuthApi.md#get_group_acl) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 [**get_policy**](AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
 [**get_user**](AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
 [**list_group_members**](AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
@@ -38,8 +37,6 @@ Method | HTTP request | Description
 [**list_user_policies**](AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
-[**oauth_callback**](AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
-[**set_group_acl**](AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -52,8 +49,6 @@ add group membership
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -85,18 +80,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -133,7 +116,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -162,8 +145,6 @@ attach policy to group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -195,18 +176,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -243,7 +212,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -272,8 +241,6 @@ attach policy to user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -305,18 +272,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -353,7 +308,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -382,8 +337,6 @@ create credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -416,18 +369,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -464,7 +405,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -493,8 +434,6 @@ create group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -528,18 +467,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -576,7 +503,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -605,8 +532,6 @@ create policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -639,18 +564,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -687,7 +600,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -716,8 +629,6 @@ create user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -751,18 +662,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -799,7 +698,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -828,8 +727,6 @@ attach external principal to user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -862,18 +759,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -912,7 +797,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -942,8 +827,6 @@ delete credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -975,18 +858,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1023,7 +894,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1052,8 +923,6 @@ delete group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1085,18 +954,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1131,7 +988,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1160,8 +1017,6 @@ delete group membership
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1193,18 +1048,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1241,7 +1084,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1270,8 +1113,6 @@ delete policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1303,18 +1144,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1349,7 +1178,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1378,8 +1207,6 @@ delete user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1411,18 +1238,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1457,7 +1272,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1486,8 +1301,6 @@ delete external principal from user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1519,18 +1332,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1567,7 +1368,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1596,8 +1397,6 @@ detach policy from group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1629,18 +1428,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1677,7 +1464,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1706,8 +1493,6 @@ detach policy from user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1739,18 +1524,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1787,7 +1560,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -1891,8 +1664,6 @@ get credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -1925,18 +1696,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -1975,7 +1734,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2004,8 +1763,6 @@ get current user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2039,18 +1796,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
     access_token = os.environ["BEARER_TOKEN"]
@@ -2082,7 +1827,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2106,8 +1851,6 @@ describe external principal by id
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2140,18 +1883,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -2188,7 +1919,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2217,8 +1948,6 @@ get group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2251,18 +1980,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -2299,7 +2016,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2319,117 +2036,6 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_group_acl**
-> ACL get_group_acl(group_id)
-
-get ACL of group
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-* Bearer (JWT) Authentication (jwt_token):
-
-```python
-import time
-import os
-import lakefs_sdk
-from lakefs_sdk.models.acl import ACL
-from lakefs_sdk.rest import ApiException
-from pprint import pprint
-
-# Defining the host is optional and defaults to /api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_sdk.Configuration(
-    host = "/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_sdk.Configuration(
-    username = os.environ["USERNAME"],
-    password = os.environ["PASSWORD"]
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_sdk.Configuration(
-    access_token = os.environ["BEARER_TOKEN"]
-)
-
-# Enter a context with an instance of the API client
-with lakefs_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = lakefs_sdk.AuthApi(api_client)
-    group_id = 'group_id_example' # str | 
-
-    try:
-        # get ACL of group
-        api_response = api_instance.get_group_acl(group_id)
-        print("The response of AuthApi->get_group_acl:\n")
-        pprint(api_response)
-    except Exception as e:
-        print("Exception when calling AuthApi->get_group_acl: %s\n" % e)
-```
-
-
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  | 
-
-### Return type
-
-[**ACL**](ACL.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | ACL of group |  -  |
-**400** | Bad Request |  -  |
-**401** | Unauthorized |  -  |
-**404** | Group not found, or group found but has no ACL |  -  |
-**429** | too many requests |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
 # **get_policy**
 > Policy get_policy(policy_id)
 
@@ -2439,8 +2045,6 @@ get policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2473,18 +2077,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -2521,7 +2113,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2550,8 +2142,6 @@ get user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2584,18 +2174,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -2632,7 +2210,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2661,8 +2239,6 @@ list group members
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2695,18 +2271,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -2749,7 +2313,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2777,8 +2341,6 @@ list group policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2811,18 +2373,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -2865,7 +2415,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -2894,8 +2444,6 @@ list groups
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -2928,18 +2476,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -2980,7 +2516,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -3008,8 +2544,6 @@ list policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -3042,18 +2576,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -3094,7 +2616,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -3122,8 +2644,6 @@ list user credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -3156,18 +2676,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -3210,7 +2718,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -3239,8 +2747,6 @@ list user external policies attached to a user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -3273,18 +2779,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -3327,7 +2821,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -3356,8 +2850,6 @@ list user groups
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -3390,18 +2882,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -3444,7 +2924,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -3473,8 +2953,6 @@ list user policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -3507,18 +2985,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -3563,7 +3029,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -3592,8 +3058,6 @@ list users
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -3626,18 +3090,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -3678,7 +3130,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -3770,182 +3222,6 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **oauth_callback**
-> Error oauth_callback()
-
-
-
-### Example
-
-
-```python
-import time
-import os
-import lakefs_sdk
-from lakefs_sdk.models.error import Error
-from lakefs_sdk.rest import ApiException
-from pprint import pprint
-
-# Defining the host is optional and defaults to /api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_sdk.Configuration(
-    host = "/api/v1"
-)
-
-
-# Enter a context with an instance of the API client
-with lakefs_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = lakefs_sdk.AuthApi(api_client)
-
-    try:
-        api_response = api_instance.oauth_callback()
-        print("The response of AuthApi->oauth_callback:\n")
-        pprint(api_response)
-    except Exception as e:
-        print("Exception when calling AuthApi->oauth_callback: %s\n" % e)
-```
-
-
-
-### Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-[**Error**](Error.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**302** | successfully got token |  -  |
-**401** | failed to exchange authorization code for token |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **set_group_acl**
-> set_group_acl(group_id, acl)
-
-set ACL of group
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-* Bearer (JWT) Authentication (jwt_token):
-
-```python
-import time
-import os
-import lakefs_sdk
-from lakefs_sdk.models.acl import ACL
-from lakefs_sdk.rest import ApiException
-from pprint import pprint
-
-# Defining the host is optional and defaults to /api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_sdk.Configuration(
-    host = "/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_sdk.Configuration(
-    username = os.environ["USERNAME"],
-    password = os.environ["PASSWORD"]
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_sdk.Configuration(
-    access_token = os.environ["BEARER_TOKEN"]
-)
-
-# Enter a context with an instance of the API client
-with lakefs_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = lakefs_sdk.AuthApi(api_client)
-    group_id = 'group_id_example' # str | 
-    acl = lakefs_sdk.ACL() # ACL | 
-
-    try:
-        # set ACL of group
-        api_instance.set_group_acl(group_id, acl)
-    except Exception as e:
-        print("Exception when calling AuthApi->set_group_acl: %s\n" % e)
-```
-
-
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  | 
- **acl** | [**ACL**](ACL.md)|  | 
-
-### Return type
-
-void (empty response body)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**201** | ACL successfully changed |  -  |
-**400** | Bad Request |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**429** | too many requests |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
 # **update_policy**
 > Policy update_policy(policy_id, policy)
 
@@ -3955,8 +3231,6 @@ update policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
@@ -3989,18 +3263,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = os.environ["API_KEY"]
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_sdk.Configuration(
@@ -4039,7 +3301,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 

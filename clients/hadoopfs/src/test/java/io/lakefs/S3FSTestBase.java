@@ -40,11 +40,11 @@ public abstract class S3FSTestBase extends FSTestBase {
     protected String s3Endpoint;
     protected AmazonS3 s3Client;
 
-    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
+    private static final DockerImageName MINIO = DockerImageName.parse("pgsty/silo:RELEASE.2026-09-03T13-18-01Z");
 
     @Rule
     public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
-        withCommand("minio", "server", "/data").
+        withCommand("server", "/data").
         withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
         withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
         withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
@@ -65,7 +65,9 @@ public abstract class S3FSTestBase extends FSTestBase {
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withSignerOverride("AWSS3V4SignerType");
-        s3Endpoint = String.format("http://s3.local.lakefs.io:%d", s3.getMappedPort(9000));
+        // An IP endpoint keeps the AWS SDK on path-style addressing, matching fs.s3a.path.style.access
+        // below, which Hadoop 2 ignores.
+        s3Endpoint = String.format("http://127.0.0.1:%d", s3.getMappedPort(9000));
 
         s3Client = new AmazonS3Client(creds, clientConfiguration);
 

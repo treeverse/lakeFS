@@ -61,13 +61,6 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
-    def test_get_auth_capabilities(self) -> None:
-        """Test case for get_auth_capabilities
-
-        list authentication capabilities supported  # noqa: E501
-        """
-        pass
-
     def test_get_garbage_collection_config(self) -> None:
         """Test case for get_garbage_collection_config
 
