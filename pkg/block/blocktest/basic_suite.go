@@ -14,6 +14,7 @@ import (
 func AdapterBasicObjectTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })
+	t.Run("Adapter_CopyNotFound", func(t *testing.T) { testAdapterCopyNotFound(t, adapter, storageNamespace) })
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
 }
 
@@ -85,6 +86,24 @@ func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace strin
 	got, err := io.ReadAll(reader)
 	require.NoError(t, err)
 	require.Equal(t, contents, string(got))
+}
+
+func testAdapterCopyNotFound(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	src := block.ObjectPointer{
+		StorageID:        "",
+		StorageNamespace: storageNamespace,
+		Identifier:       "non-existent-source-object",
+		IdentifierType:   block.IdentifierTypeRelative,
+	}
+	dst := block.ObjectPointer{
+		StorageID:        "",
+		StorageNamespace: storageNamespace,
+		Identifier:       "dst-copy-target",
+		IdentifierType:   block.IdentifierTypeRelative,
+	}
+	err := adapter.Copy(ctx, src, dst)
+	require.ErrorIs(t, err, block.ErrDataNotFound)
 }
 
 // Parameterized test of the object Exists method of the Storage adapter

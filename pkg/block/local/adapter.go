@@ -185,12 +185,15 @@ func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 		return err
 	}
 	sourceFile, err := os.Open(filepath.Clean(source))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return block.ErrDataNotFound
+		}
+		return err
+	}
 	defer func() {
 		_ = sourceFile.Close()
 	}()
-	if err != nil {
-		return err
-	}
 	dest, err := l.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return err

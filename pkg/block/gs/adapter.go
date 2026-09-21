@@ -368,6 +368,9 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	srcHandle = srcHandle.withReadHandle(ctx, a)
 	copier := dstHandle.newCopier(a, srcHandle.ObjectHandle)
 	_, err = copier.Run(ctx)
+	if isErrNotFound(err) {
+		return block.ErrDataNotFound
+	}
 	if err != nil {
 		return fmt.Errorf("copy: %w", err)
 	}
