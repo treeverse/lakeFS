@@ -677,6 +677,9 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 		copyObjectInput.SSEKMSKeyId = aws.String(a.ServerSideEncryptionKmsKeyID)
 	}
 	_, err = a.clients.Get(ctx, destBucket).CopyObject(ctx, copyObjectInput)
+	if isErrNotFound(err) {
+		return block.ErrDataNotFound
+	}
 	if err != nil {
 		a.log(ctx).WithError(err).Error("failed to copy S3 object")
 	}
