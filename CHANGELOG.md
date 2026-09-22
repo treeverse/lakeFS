@@ -1,11 +1,13 @@
 # Changelog
 
 ## v1.87.0
-> Important note: This release changes lakeFS's license from Apache 2.0 to the Business Source License 1.1, and removes support for pluggable IAM and the ACL reference server. If your deployment relies on a custom IAM plugin or the ACL reference server, migrate to a supported alternative before upgrading.
+> Important note: This release changes lakeFS's license from Apache 2.0 to the Business Source License 1.1 (see the [announcement blog post](https://lakefs.io/blog/lakefs-business-source-license/)), and removes support for pluggable IAM and the ACL reference server. If your deployment relies on a custom IAM plugin or the ACL reference server, migrate to a supported alternative before upgrading.
 
 :new: What's new:
 
 - Changed lakeFS's license from Apache 2.0 to the Business Source License 1.1 (#10536)
+    - Read the [announcement blog post](https://lakefs.io/blog/lakefs-business-source-license/) for what the license permits, how it affects you, and answers to common questions
+    - Versions released before v1.87.0 remain licensed under Apache 2.0
 - RBAC: Removed support for pluggable IAM implementations and the ACL reference server (#10532)
     - Deployments using a custom IAM plugin or the ACL reference server must migrate before upgrading
 
