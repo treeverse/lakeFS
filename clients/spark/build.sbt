@@ -13,7 +13,7 @@ organizationName := "Treeverse Labs"
 organizationHomepage := Some(url("http://treeverse.io"))
 description := "Spark client for lakeFS object metadata."
 licenses := List(
-  "Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")
+  "BUSL-1.1" -> url("https://github.com/treeverse/lakeFS/blob/master/LICENSE")
 )
 homepage := Some(url("https://lakefs.io"))
 

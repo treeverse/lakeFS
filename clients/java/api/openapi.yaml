@@ -2,8 +2,8 @@ openapi: 3.0.0
 info:
   description: lakeFS HTTP API
   license:
-    name: Apache 2.0
-    url: https://www.apache.org/licenses/LICENSE-2.0.html
+    name: BUSL-1.1
+    url: https://github.com/treeverse/lakeFS/blob/master/LICENSE
   title: lakeFS API
   version: 1.0.0
 servers:

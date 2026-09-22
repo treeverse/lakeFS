@@ -19,5 +19,5 @@ ThisBuild / organization := "io.lakefs"
 ThisBuild / organizationName := "Treeverse Labs"
 ThisBuild / organizationHomepage := Some(url("http://lakefs.io"))
 ThisBuild / description := "S3A multipart upload test app for checking lakeFS"
-ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+ThisBuild / licenses := List("BUSL-1.1" -> new URL("https://github.com/treeverse/lakeFS/blob/master/LICENSE"))
 ThisBuild / homepage := Some(url("https://github.com/treeverse/lakeFS"))

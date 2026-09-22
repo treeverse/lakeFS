@@ -35,8 +35,8 @@ To export to S3:
 
     <licenses>
         <license>
-            <name>apache2</name>
-            <url>http://www.apache.org/licenses/</url>
+            <name>BUSL-1.1</name>
+            <url>https://github.com/treeverse/lakeFS/blob/master/LICENSE</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
