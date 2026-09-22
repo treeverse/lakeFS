@@ -7,7 +7,7 @@ import (
 )
 
 // MountNotImplementedServices registers placeholder routes that return HTTP 501 for
-// services not available in the open-source build.
+// services not available in the community build.
 func MountNotImplementedServices(router *chi.Mux) {
 	router.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 	router.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))

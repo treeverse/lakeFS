@@ -21,8 +21,8 @@
 
     <licenses>
         <license>
-            <name>apache2</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <name>BUSL-1.1</name>
+            <url>https://github.com/treeverse/lakeFS/blob/master/LICENSE</url>
             <distribution>repo</distribution>
         </license>
     </licenses>

@@ -3,7 +3,7 @@
 </p>
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
-		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
+		<img src="https://img.shields.io/badge/License-BUSL--1.1-blue.svg" alt="Business Source License 1.1" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions/workflows/test.yaml?query=branch%3Amaster">
 		<img src="https://github.com/treeverse/lakeFS/workflows/Test/badge.svg?branch=master" alt="Go tests status" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions/workflows/node.yaml?query=branch%3Amaster" >
@@ -18,7 +18,7 @@
 
 ## lakeFS is Data Version Control (Git for Data)
 
-lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
+lakeFS is a source-available tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
 
 With lakeFS you can build repeatable, atomic, and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
@@ -108,9 +108,14 @@ Stay up to date and get lakeFS support via:
 
 ## Licensing
 
-lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+Starting with version 1.87.0, lakeFS is licensed under the [Business Source License 1.1](LICENSE) (BUSL-1.1).
+The license permits free use, modification, and redistribution for non-production purposes, and free production use of the unmodified software for your organization's internal business purposes.
+Each version becomes available under the Apache License, Version 2.0 four years after its release.
+See the [license FAQ](https://lakefs.io/blog/lakefs-business-source-license) for guidance and examples, or contact [sales@lakefs.io](mailto:sales@lakefs.io) for alternative licensing arrangements.
 
-Treeverse considers that any sharing of source code with an AI agent, and any output an AI agent generates based on our source code, without the appropriate notices or attribution requirements, violates the terms of the Apache 2.0 license to which this source code is subject. 
+Versions of lakeFS released before 1.87.0 remain licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+
+Treeverse considers that any sharing of source code with an AI agent, and any output an AI agent generates based on our source code, without the appropriate notices or attribution requirements, violates the terms of the license to which this source code is subject. 
 We also do not consider AI provider guardrails as sufficient to prevent copyright infringement. Treeverse reserves all of its rights to pursue legal action against any party that inputs LakeFS code into an AI agent.
 
 ## Who Uses lakeFS?

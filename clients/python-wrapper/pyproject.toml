@@ -9,7 +9,7 @@ version = "0.16.0"
 keywords = ["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"]
 requires-python = ">=3.10"
 readme = "README.md"
-license = "Apache-2.0"
+license = "BUSL-1.1"
 authors = [
     { name = "Treeverse", email = "services@treeverse.io" },
 ]
