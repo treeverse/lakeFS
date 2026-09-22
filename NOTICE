@@ -8,14 +8,3 @@ Apache License, Version 2.0.
 
 Versions of lakeFS released before version 1.87.0 remain licensed under the
 Apache License, Version 2.0.
-
-------------------------------------------------------------------------------
-
-This product includes software developed by third parties under their own
-licenses, including:
-
-  * Portions derived from MinIO Cloud Storage, (C) 2015-2016 MinIO, Inc.,
-    licensed under the Apache License, Version 2.0
-    (pkg/gateway/sig, pkg/gateway/errors, pkg/auth/wildcard).
-
-Third-party components retain their original license headers and terms.
