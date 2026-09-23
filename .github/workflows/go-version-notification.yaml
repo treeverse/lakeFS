@@ -56,11 +56,12 @@ jobs:
         if: steps.versions.outputs.changed == 'true'
         uses: slackapi/slack-github-action@v4.0.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           errors: true
           payload: |
             {
+              "channel": "#dev-notifications",
               "text": "lakeFS Community - Go version updated: ${{ steps.versions.outputs.previous }} → ${{ steps.versions.outputs.current }}",
               "blocks": [
                 {

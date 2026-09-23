@@ -144,11 +144,12 @@ jobs:
       - name: slack-send
         uses: slackapi/slack-github-action@v4.0.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           errors: true
           payload: |
             {
+              "channel": "#dev-notifications",
               "text": ":x: lakeFS Community - lakectl compatibility tests failed on `${{ github.ref_name }}` (run #${{ github.run_number }})",
               "blocks": [
                 {

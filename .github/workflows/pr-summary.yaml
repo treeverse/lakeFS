@@ -58,6 +58,7 @@ jobs:
                   else .[:-1] + [.[-1] + "\n" + $line]
                   end);
               {
+                channel: "#dev-notifications",
                 text: $header,
                 blocks: (
                   [{
@@ -85,7 +86,7 @@ jobs:
         if: steps.payload.outputs.send == 'true'
         uses: slackapi/slack-github-action@v4.0.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           errors: true
           payload-file-path: slack-payload.json
