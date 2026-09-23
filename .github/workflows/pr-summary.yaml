@@ -31,16 +31,14 @@ jobs:
       # jq instead of interpolated into JSON, and split into <3000 char sections
       # to stay under the Slack block text limit.
       - name: Build Slack payload
-        id: payload
         env:
           REPO: ${{ github.repository }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          # pr-summary.sh writes nothing when no PRs were merged; post a default message
           if [ ! -s pr-summary.txt ]; then
-            echo "No summary generated - skipping Slack notification" >&2
-            echo "send=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "No PRs merged in the last $DAYS days." > pr-summary.txt
           fi
           SINCE=$(date -u -d "$DAYS days ago" +%Y-%m-%d)
           UNTIL=$(date -u +%Y-%m-%d)
@@ -80,10 +78,8 @@ jobs:
                   }]
                 )
               }' > slack-payload.json
-          echo "send=true" >> "$GITHUB_OUTPUT"
 
       - name: Send to Slack
-        if: steps.payload.outputs.send == 'true'
         uses: slackapi/slack-github-action@v4.0.0
         with:
           method: chat.postMessage
