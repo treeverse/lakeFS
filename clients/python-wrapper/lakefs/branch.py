@@ -64,7 +64,8 @@ class _BaseBranch(Reference):
                                      **kwargs):
             yield Change(**diff.dict())
 
-    def delete_objects(self, object_paths: str | StoredObject | Iterable[str | StoredObject]) -> None:
+    def delete_objects(self,
+                       object_paths: str | StoredObject | Iterable[str | StoredObject]) -> lakefs_sdk.ObjectErrorList:
         """
         Delete objects from lakeFS
 
@@ -85,7 +86,16 @@ class _BaseBranch(Reference):
             # delete objects which have "foo" in their name
             branch.delete_objects([o.path for o in objs if "foo" in o.path])
 
+        Objects which could not be deleted are reported in the returned list instead of raising an exception,
+        so the result must be inspected to detect partial failures:
+
+        .. code-block:: python
+
+            for error in branch.delete_objects(paths).errors:
+                print(f"failed deleting {error.path}: {error.message}")
+
         :param object_paths: a single path or an iterable of paths to delete
+        :return: The errors of the objects which failed to delete, empty if all objects were deleted
         :raise NotFoundException: if branch or repository do not exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors

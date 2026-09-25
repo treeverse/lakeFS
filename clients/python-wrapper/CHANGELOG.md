@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+:bug: Bugs fixed:
+
+- Annotate `Branch.delete_objects` as returning `ObjectErrorList` (#10480)
+
 ## v0.16.0
 
 :new: What's new:
