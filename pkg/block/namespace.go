@@ -114,6 +114,30 @@ func ValidateStorageType(uri *url.URL, expectedStorage StorageType) error {
 	return nil
 }
 
+// ValidateStorageNamespace validates both the storage scheme and the namespace shape
+// (e.g., non-empty bucket/container and valid host structure).
+func ValidateStorageNamespace(uri *url.URL, expectedStorage StorageType) error {
+	if err := ValidateStorageType(uri, expectedStorage); err != nil {
+		return err
+	}
+
+	switch expectedStorage {
+	case StorageTypeS3, StorageTypeGS:
+		if uri.Host == "" {
+			return fmt.Errorf("missing bucket in storage namespace: %w", ErrInvalidNamespace)
+		}
+	case StorageTypeAzure:
+		if uri.Host == "" {
+			return fmt.Errorf("missing host in azure storage namespace: %w", ErrInvalidNamespace)
+		}
+		trimmedPath := strings.Trim(uri.Path, "/")
+		if trimmedPath == "" {
+			return fmt.Errorf("missing container in azure storage namespace: %w", ErrInvalidNamespace)
+		}
+	}
+	return nil
+}
+
 func formatPathWithNamespace(namespacePath, keyPath string) string {
 	namespacePath = strings.Trim(namespacePath, "/")
 	if len(namespacePath) == 0 {
