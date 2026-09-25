@@ -1,4 +1,4 @@
-import React, { FC, useContext } from 'react';
+import React, { FC, useContext, useEffect, useState } from 'react';
 import Alert from 'react-bootstrap/Alert';
 import { humanSize } from '../../../../lib/components/repository/tree';
 import { useAPI } from '../../../../lib/hooks/api';
@@ -6,6 +6,7 @@ import { objects, qs } from '../../../../lib/api';
 import { AlertError, Loading } from '../../../../lib/components/controls';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { IpynbRenderer as NbRenderer } from 'react-ipynb-renderer';
+import UTIF from 'utif2';
 import { guessLanguage } from './index';
 import { RendererComponent, RendererComponentWithText, RendererComponentWithTextCallback } from './types';
 
@@ -95,6 +96,73 @@ export const ImageRenderer: FC<RendererComponent> = ({ repoId, refId, path, pres
                 )}/refs/${encodeURIComponent(refId)}/objects?${query}`}
                 alt={path}
             />
+        </p>
+    );
+};
+
+export const TiffRenderer: FC<RendererComponent> = ({ repoId, refId, path, presign }) => {
+    const query = qs({ path, presign });
+    const url = `/api/v1/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/objects?${query}`;
+
+    const [dataUrl, setDataUrl] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        setDataUrl(null);
+        setError(null);
+
+        (async () => {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error(`could not fetch object (HTTP ${res.status})`);
+                }
+                const buffer = await res.arrayBuffer();
+                // TIFF files may contain multiple pages/frames - we only preview the first one.
+                const ifds = UTIF.decode(buffer);
+                if (ifds.length === 0) {
+                    throw new Error('no image data found in TIFF file');
+                }
+                const firstPage = ifds[0];
+                UTIF.decodeImage(buffer, firstPage);
+                const rgba = UTIF.toRGBA8(firstPage);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = firstPage.width;
+                canvas.height = firstPage.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    throw new Error('could not create canvas context');
+                }
+                const imageData = ctx.createImageData(firstPage.width, firstPage.height);
+                imageData.data.set(rgba);
+                ctx.putImageData(imageData, 0, 0);
+
+                if (!cancelled) {
+                    setDataUrl(canvas.toDataURL());
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    setError(e instanceof Error ? e.message : String(e));
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [url]);
+
+    if (error) {
+        return <AlertError error={error} />;
+    }
+    if (!dataUrl) {
+        return <Loading />;
+    }
+    return (
+        <p className="image-container">
+            <img src={dataUrl} alt={path} />
         </p>
     );
 };
