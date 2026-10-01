@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.87.1
+## v1.88.0
 > Important note: Action hooks can no longer send requests to internal addresses (loopback, private, link-local) by default. Allow the internal hosts your hooks need with `actions.network.allowed_hosts`. Hook requests no longer use the `HTTP_PROXY`/`HTTPS_PROXY` environment variables.
 
 ### Security Fixes
