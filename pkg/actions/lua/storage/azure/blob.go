@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -23,13 +24,18 @@ type Client struct {
 	client *service.Client
 }
 
-func newBlobClient(ctx context.Context) lua.Function {
+func newBlobClient(ctx context.Context, transport http.RoundTripper) lua.Function {
 	return func(l *lua.State) int {
 		storageAccount := lua.CheckString(l, 1)
 		accessKey := lua.CheckString(l, 2)
+		var httpClient *http.Client
+		if transport != nil {
+			httpClient = &http.Client{Transport: transport}
+		}
 		azClient, err := azure.BuildAzureServiceClient(params.Azure{
 			StorageAccount:   storageAccount,
 			StorageAccessKey: accessKey,
+			HTTPClient:       httpClient,
 		})
 		if err != nil {
 			panic(err)

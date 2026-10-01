@@ -1,0 +1,15 @@
+---
+database:
+  type: local
+
+blockstore:
+  type: local
+
+auth:
+  encrypt:
+    secret_key: "required in config"
+
+actions:
+  network:
+    allowed_hosts:
+      - "[bad"

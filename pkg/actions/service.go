@@ -41,6 +41,9 @@ type Config struct {
 		Enabled bool
 		Prefix  string
 	}
+	Network struct {
+		AllowedHosts []string
+	}
 }
 
 // StoreService is an implementation of actions.Service that saves

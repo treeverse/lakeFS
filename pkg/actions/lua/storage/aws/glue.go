@@ -4,18 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
 	"github.com/aws/aws-sdk-go-v2/service/glue/types"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
-func newGlueClient(ctx context.Context) lua.Function {
+func newGlueClient(ctx context.Context, transport http.RoundTripper) lua.Function {
 	return func(l *lua.State) int {
 		accessKeyID := lua.CheckString(l, 1)
 		secretAccessKey := lua.CheckString(l, 2)
@@ -33,6 +32,7 @@ func newGlueClient(ctx context.Context) lua.Function {
 			Endpoint:        endpoint,
 			Region:          region,
 			ctx:             ctx,
+			transport:       transport,
 		}
 
 		l.NewTable()
@@ -53,6 +53,7 @@ type GlueClient struct {
 	Endpoint        string
 	Region          string
 	ctx             context.Context
+	transport       http.RoundTripper
 }
 
 var glueFunctions = map[string]func(client *GlueClient) lua.Function{
@@ -65,10 +66,7 @@ var glueFunctions = map[string]func(client *GlueClient) lua.Function{
 }
 
 func (c *GlueClient) client() *glue.Client {
-	cfg, err := config.LoadDefaultConfig(c.ctx,
-		config.WithRegion(c.Region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.SecretAccessKey, "")),
-	)
+	cfg, err := loadConfig(c.ctx, c.Region, c.AccessKeyID, c.SecretAccessKey, c.transport)
 	if err != nil {
 		panic(err)
 	}

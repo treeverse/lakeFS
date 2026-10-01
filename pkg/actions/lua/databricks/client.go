@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -117,14 +118,15 @@ func (client *Client) createSchema(catalogName, schemaName string, getIfExists b
 	return nil, fmt.Errorf("failed creating schema \"%s\": %w", schemaName, err)
 }
 
-func newDatabricksClient(l *lua.State) (*databricks.WorkspaceClient, error) {
+func newDatabricksClient(l *lua.State, transport http.RoundTripper) (*databricks.WorkspaceClient, error) {
 	host := lua.CheckString(l, 1)
 	token := lua.CheckString(l, 2)
 	return databricks.NewWorkspaceClient(
 		&databricks.Config{
-			Host:        host,
-			Token:       token,
-			Credentials: config.PatCredentials{},
+			Host:          host,
+			Token:         token,
+			Credentials:   config.PatCredentials{},
+			HTTPTransport: transport,
 		},
 	)
 }
@@ -194,9 +196,9 @@ func alreadyExists(e error) bool {
 	return strings.Contains(e.Error(), "already exists")
 }
 
-func newClient(ctx context.Context) lua.Function {
+func newClient(ctx context.Context, transport http.RoundTripper) lua.Function {
 	return func(l *lua.State) int {
-		workspaceClient, err := newDatabricksClient(l)
+		workspaceClient, err := newDatabricksClient(l, transport)
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")

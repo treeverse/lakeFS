@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -160,6 +161,13 @@ func TestConfig_DomainNamePrefix(t *testing.T) {
 	_, err := newConfigFromFile("testdata/domain_name_prefix.yaml")
 	if !errors.Is(err, config.ErrBadDomainNames) {
 		t.Errorf("got error %s not %s", err, config.ErrBadDomainNames)
+	}
+}
+
+func TestConfig_InvalidAllowedHosts(t *testing.T) {
+	_, err := newConfigFromFile("testdata/invalid_allowed_hosts.yaml")
+	if !errors.Is(err, httputil.ErrInvalidAllowedHost) {
+		t.Errorf("got error %v not %s", err, httputil.ErrInvalidAllowedHost)
 	}
 }
 

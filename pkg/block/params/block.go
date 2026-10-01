@@ -1,6 +1,7 @@
 package params
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -69,6 +70,8 @@ type GS struct {
 }
 
 type Azure struct {
+	// HTTPClient sends the client requests when set; nil uses the SDK default
+	HTTPClient         *http.Client
 	StorageAccount     string
 	StorageAccessKey   string
 	TryTimeout         time.Duration

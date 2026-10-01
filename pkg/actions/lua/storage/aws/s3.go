@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
@@ -20,7 +19,7 @@ import (
 
 var errDeleteObject = errors.New("delete object failed")
 
-func newS3Client(ctx context.Context) lua.Function {
+func newS3Client(ctx context.Context, transport http.RoundTripper) lua.Function {
 	return func(l *lua.State) int {
 		accessKeyID := lua.CheckString(l, 1)
 		secretAccessKey := lua.CheckString(l, 2)
@@ -39,6 +38,7 @@ func newS3Client(ctx context.Context) lua.Function {
 			Endpoint:        endpoint,
 			Region:          region,
 			ctx:             ctx,
+			transport:       transport,
 		}
 		l.NewTable()
 		functions := map[string]lua.Function{
@@ -63,13 +63,11 @@ type S3Client struct {
 	Endpoint        string
 	Region          string
 	ctx             context.Context
+	transport       http.RoundTripper
 }
 
 func (c *S3Client) client() *s3.Client {
-	cfg, err := config.LoadDefaultConfig(c.ctx,
-		config.WithRegion(c.Region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.SecretAccessKey, "")),
-	)
+	cfg, err := loadConfig(c.ctx, c.Region, c.AccessKeyID, c.SecretAccessKey, c.transport)
 	if err != nil {
 		panic(err)
 	}

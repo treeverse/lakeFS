@@ -31,6 +31,11 @@ import (
 
 func newLuaActionHook(t *testing.T, server *http.Server, address string, netHTTPEnabled bool, script string) actions.Hook {
 	t.Helper()
+	return newLuaActionHookWithAllowedHosts(t, server, address, netHTTPEnabled, []string{"127.0.0.1"}, script) // test servers listen on loopback
+}
+
+func newLuaActionHookWithAllowedHosts(t *testing.T, server *http.Server, address string, netHTTPEnabled bool, allowedHosts []string, script string) actions.Hook {
+	t.Helper()
 
 	mockStatsCollector := NewActionStatsMockCollector()
 
@@ -38,6 +43,7 @@ func newLuaActionHook(t *testing.T, server *http.Server, address string, netHTTP
 		Enabled: true,
 		Lua:     struct{ NetHTTPEnabled bool }{NetHTTPEnabled: netHTTPEnabled},
 	}
+	actionConfig.Network.AllowedHosts = allowedHosts
 
 	h, err := actions.NewLuaHook(
 		actions.ActionHook{

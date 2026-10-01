@@ -135,6 +135,9 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	}
 
 	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
+	if params.HTTPClient != nil {
+		options.Transport = params.HTTPClient
+	}
 	if params.StorageAccessKey != "" {
 		cred, err := service.NewSharedKeyCredential(params.StorageAccount, params.StorageAccessKey)
 		if err != nil {

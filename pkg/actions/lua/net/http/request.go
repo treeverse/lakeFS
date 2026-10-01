@@ -12,17 +12,16 @@ import (
 
 const defaultRequestTimeout = 30 * time.Second
 
-func Open(l *lua.State) {
+// Open registers the net/http library.  Requests are sent using transport, http.DefaultTransport when nil.
+func Open(l *lua.State, transport http.RoundTripper) {
 	open := func(l *lua.State) int {
-		lua.NewLibrary(l, httpLibrary)
+		lua.NewLibrary(l, []lua.RegistryFunction{
+			{Name: "request", Function: httpRequest(transport)},
+		})
 		return 1
 	}
 	lua.Require(l, "net/http", open, false)
 	l.Pop(1)
-}
-
-var httpLibrary = []lua.RegistryFunction{
-	{Name: "request", Function: httpRequest},
 }
 
 // httpRequest - perform http request
@@ -30,23 +29,26 @@ var httpLibrary = []lua.RegistryFunction{
 //	Accepts arguments (url, body) or table with url, method, body, headers. Value for url is required.
 //	The `method` is by default GET or POST in case body is set.
 //	Returns code, body, headers, status.
-func httpRequest(l *lua.State) int {
-	req := prepareRequest(l)
-	client := http.Client{
-		Timeout: defaultRequestTimeout,
-	}
-	resp, err := client.Do(req)
-	check(l, err)
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(resp.Body)
-	check(l, err)
+func httpRequest(transport http.RoundTripper) lua.Function {
+	return func(l *lua.State) int {
+		req := prepareRequest(l)
+		client := http.Client{
+			Timeout:   defaultRequestTimeout,
+			Transport: transport,
+		}
+		resp, err := client.Do(req)
+		check(l, err)
+		defer func() { _ = resp.Body.Close() }()
+		body, err := io.ReadAll(resp.Body)
+		check(l, err)
 
-	// push return
-	l.PushInteger(resp.StatusCode)
-	l.PushString(string(body))
-	pushResponseHeader(l, resp.Header)
-	l.PushString(resp.Status)
-	return 4
+		// push return
+		l.PushInteger(resp.StatusCode)
+		l.PushString(string(body))
+		pushResponseHeader(l, resp.Header)
+		l.PushString(resp.Status)
+		return 4
+	}
 }
 
 func prepareRequest(l *lua.State) *http.Request {

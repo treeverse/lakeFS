@@ -26,6 +26,9 @@ func (c *ConfigImpl) Validate() error {
 	if len(missingKeys) > 0 {
 		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
+	if err := c.validateActions(); err != nil {
+		return err
+	}
 	return ValidateBlockstore(&c.Blockstore)
 }
 

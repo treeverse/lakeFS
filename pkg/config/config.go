@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -460,6 +461,13 @@ type BaseConfig struct {
 			Enabled bool   `mapstructure:"enabled"`
 			Prefix  string `mapstructure:"prefix"`
 		} `mapstructure:"env"`
+		Network struct {
+			// AllowedHosts lists internal IP addresses, CIDR ranges or host name patterns that hooks
+			// may send HTTP requests to.  Public addresses are always allowed.  Prefer IP and CIDR
+			// entries: a host name entry trusts DNS, allowing whatever the name resolves to when
+			// connecting.  Hook requests do not use the HTTP_PROXY/HTTPS_PROXY environment variables.
+			AllowedHosts []string `mapstructure:"allowed_hosts"`
+		} `mapstructure:"network"`
 	} `mapstructure:"actions"`
 	Logging    Logging    `mapstructure:"logging"`
 	Database   Database   `mapstructure:"database"`
@@ -652,7 +660,17 @@ func (c *BaseConfig) Validate() error {
 	if len(missingKeys) > 0 {
 		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
+	if err := c.validateActions(); err != nil {
+		return err
+	}
 	return ValidateBlockstore(&c.Blockstore)
+}
+
+func (c *BaseConfig) validateActions() error {
+	if _, err := httputil.ParseAllowedHosts(c.Actions.Network.AllowedHosts); err != nil {
+		return fmt.Errorf("%w: actions.network.allowed_hosts: %w", ErrBadConfiguration, err)
+	}
+	return nil
 }
 
 const (

@@ -12,6 +12,7 @@ services:
       - LAKEFS_STATS_ENABLED=false
       - LAKEFS_USAGE_REPORT_ENABLED=false
       - LAKEFSACTION_VAR=this_is_actions_var
+      - LAKEFS_ACTIONS_NETWORK_ALLOWED_HOSTS=esti
 
   esti:
     image: "golang:1.26-alpine"

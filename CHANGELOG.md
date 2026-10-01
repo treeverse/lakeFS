@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+> Important note: Action hooks can no longer send requests to internal addresses (loopback, private, link-local) by default. Allow the internal hosts your hooks need with `actions.network.allowed_hosts`. Hook requests no longer use the `HTTP_PROXY`/`HTTPS_PROXY` environment variables.
+
+:bug: Bugs Fixed:
+
+- Fixed a vulnerability that allowed users who can write action files to make the lakeFS server send requests to internal addresses ([GHSA-223c-qwgx-wwcg](https://github.com/treeverse/lakeFS/security/advisories/GHSA-223c-qwgx-wwcg))
+
 ## v1.87.0
 > Important note: This release changes lakeFS's license from Apache 2.0 to the Business Source License 1.1, and removes support for pluggable IAM and the ACL reference server. If your deployment relies on a custom IAM plugin or the ACL reference server, migrate to a supported alternative before upgrading.
 

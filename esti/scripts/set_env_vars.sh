@@ -7,3 +7,4 @@ export ESTI_STORAGE_NAMESPACE=${ESTI_STORAGE_NAMESPACE:-"local://system-testing"
 
 # Lakefs env vars for test
 export LAKEFSACTION_VAR="this_is_actions_var"
+export LAKEFS_ACTIONS_NETWORK_ALLOWED_HOSTS="localhost"

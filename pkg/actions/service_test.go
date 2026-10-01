@@ -64,6 +64,7 @@ func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writ
 	cfg := actions.Config{Enabled: runHooks}
 	cfg.Lua.NetHTTPEnabled = true
 	cfg.Env.Enabled = true
+	cfg.Network.AllowedHosts = []string{"127.0.0.0/8"} // test webhook servers listen on loopback
 	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, cfg, "")
 }
 

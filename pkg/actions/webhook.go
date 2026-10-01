@@ -7,10 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
+	gohttputil "net/http/httputil"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
@@ -120,7 +121,7 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 
 	_, _ = fmt.Fprintf(buf, "Request Body:\n%s\n\n", eventData)
 
-	statusCode, err := doHTTPRequestWithLog(ctx, req, buf, w.Timeout)
+	statusCode, err := doHTTPRequestWithLog(ctx, w.Config, req, buf, w.Timeout)
 	if err != nil {
 		return err
 	}
@@ -133,22 +134,32 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 }
 
 // doHTTPRequestWithLog helper that uses 'doHTTPRequestResponseWithLog' without response parse
-func doHTTPRequestWithLog(ctx context.Context, req *http.Request, buf *bytes.Buffer, timeout time.Duration) (n int, err error) {
-	return doHTTPRequestResponseWithLog(ctx, req, nil, buf, timeout)
+func doHTTPRequestWithLog(ctx context.Context, cfg Config, req *http.Request, buf *bytes.Buffer, timeout time.Duration) (n int, err error) {
+	return doHTTPRequestResponseWithLog(ctx, cfg, req, nil, buf, timeout)
 }
 
-// doHTTPRequestResponseWithLog execute a http request with specified timeout. Output variable 'respJSON', if set, used to json decode the response.
+// doHTTPRequestResponseWithLog execute a http request with specified timeout, restricted to the hosts allowed by cfg.
+// Output variable 'respJSON', if set, used to json decode the response.
 // returns the response status code or -1 on error
-func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJSON any, buf *bytes.Buffer, timeout time.Duration) (int, error) {
+func doHTTPRequestResponseWithLog(ctx context.Context, cfg Config, req *http.Request, respJSON any, buf *bytes.Buffer, timeout time.Duration) (int, error) {
 	req = req.WithContext(ctx)
 
+	transport, err := newHookTransport(cfg)
+	if err != nil {
+		return -1, err
+	}
+	defer transport.CloseIdleConnections()
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout:   timeout,
+		Transport: transport,
 	}
 	start := time.Now()
 	resp, err := client.Do(req)
 	elapsed := time.Since(start)
 	_, _ = fmt.Fprintf(buf, "\nRequest duration: %s\n", elapsed)
+	if errors.Is(err, httputil.ErrHostNotAllowed) {
+		buf.WriteString("Destination is an internal address, see the actions.network.allowed_hosts configuration.\n")
+	}
 	if err != nil {
 		return -1, err
 	}
@@ -157,7 +168,7 @@ func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJS
 	}()
 
 	buf.WriteString("\nResponse:\n")
-	if dumpResp, err := httputil.DumpResponse(resp, true); err == nil {
+	if dumpResp, err := gohttputil.DumpResponse(resp, true); err == nil {
 		buf.Write(dumpResp)
 	} else {
 		_, _ = fmt.Fprintf(buf, "Failed dumping response: %s", err)
@@ -240,4 +251,13 @@ func extractHeaders(props map[string]any, envGetter EnvGetter) (map[string]Secur
 	}
 
 	return res, nil
+}
+
+// newHookTransport returns the transport for outbound hook requests, restricted to the hosts allowed by cfg.
+func newHookTransport(cfg Config) (*http.Transport, error) {
+	allowedHosts, err := httputil.ParseAllowedHosts(cfg.Network.AllowedHosts)
+	if err != nil {
+		return nil, err
+	}
+	return allowedHosts.Transport(), nil
 }

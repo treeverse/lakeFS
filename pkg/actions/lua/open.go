@@ -50,13 +50,13 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	parquet.Open(l)
 	path.Open(l)
 	hook.Open(l)
-	aws.Open(l, ctx)
-	gcloud.Open(l, ctx)
-	azure.Open(l, ctx)
+	aws.Open(l, ctx, cfg.HTTPTransport)
+	gcloud.Open(l, ctx, cfg.HTTPTransport)
+	azure.Open(l, ctx, cfg.HTTPTransport)
 	url.Open(l)
 	formats.Open(l, ctx, cfg.LakeFSAddr)
-	databricks.Open(l, ctx)
+	databricks.Open(l, ctx, cfg.HTTPTransport)
 	if cfg.NetHTTPEnabled {
-		http.Open(l)
+		http.Open(l, cfg.HTTPTransport)
 	}
 }

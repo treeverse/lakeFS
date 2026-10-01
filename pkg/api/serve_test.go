@@ -139,6 +139,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	// wire actions
 	actionsConfig := actions.Config{Enabled: true}
 	actionsConfig.Lua.NetHTTPEnabled = true
+	actionsConfig.Network.AllowedHosts = []string{"127.0.0.1"} // test webhook servers listen on loopback
 	actionsService := actions.NewService(
 		ctx,
 		actionsStore,

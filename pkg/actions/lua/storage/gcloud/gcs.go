@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -11,15 +12,19 @@ import (
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
 var ErrInvalidGCSURI = errors.New("invalid Google Cloud Storage URI")
 
-func Open(l *lua.State, ctx context.Context) {
+// Open registers the gcloud library.  Clients send requests, including token requests, using
+// transport, the SDK default when nil.
+func Open(l *lua.State, ctx context.Context, transport http.RoundTripper) {
 	open := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
-			{Name: "gs_client", Function: newGSClient(ctx)},
+			{Name: "gs_client", Function: newGSClient(ctx, transport)},
 		})
 		return 1
 	}
@@ -27,12 +32,13 @@ func Open(l *lua.State, ctx context.Context) {
 	l.Pop(1)
 }
 
-func newGSClient(ctx context.Context) lua.Function {
+func newGSClient(ctx context.Context, transport http.RoundTripper) lua.Function {
 	return func(l *lua.State) int {
 		json := lua.CheckString(l, 1)
 		c := &GSClient{
-			JSON: json,
-			ctx:  ctx,
+			JSON:      json,
+			ctx:       ctx,
+			transport: transport,
 		}
 		l.NewTable()
 		for name, goFn := range functions {
@@ -46,12 +52,23 @@ func newGSClient(ctx context.Context) lua.Function {
 }
 
 type GSClient struct {
-	JSON string
-	ctx  context.Context
+	JSON      string
+	ctx       context.Context
+	transport http.RoundTripper
 }
 
 func (c *GSClient) client() (*storage.Client, error) {
-	return storage.NewClient(c.ctx, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(c.JSON)))
+	if c.transport == nil {
+		return storage.NewClient(c.ctx, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(c.JSON)))
+	}
+	// option.WithHTTPClient replaces the SDK authentication, so authenticate here: the token
+	// request (to the credentials' token_uri) and the storage requests both use transport.
+	ctx := context.WithValue(c.ctx, oauth2.HTTPClient, &http.Client{Transport: c.transport})
+	creds, err := google.CredentialsFromJSONWithType(ctx, []byte(c.JSON), google.ServiceAccount, storage.ScopeFullControl)
+	if err != nil {
+		return nil, err
+	}
+	return storage.NewClient(c.ctx, option.WithHTTPClient(oauth2.NewClient(ctx, creds.TokenSource)))
 }
 
 var functions = map[string]func(client *GSClient) lua.Function{
