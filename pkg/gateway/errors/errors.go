@@ -3,6 +3,7 @@ package errors
 import (
 	"encoding/xml"
 	"net/http"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
@@ -34,15 +35,29 @@ type APIError struct {
 
 // APIErrorResponse - error response format
 type APIErrorResponse struct {
-	XMLName    xml.Name `xml:"Error" json:"-"`
-	Code       string
-	Message    string
-	Key        string `xml:"Key,omitempty" json:"Key,omitempty"`
-	BucketName string `xml:"BucketName,omitempty" json:"BucketName,omitempty"`
-	Resource   string
-	Region     string `xml:"Region,omitempty" json:"Region,omitempty"`
-	RequestID  string `xml:"RequestId" json:"RequestId"`
-	HostID     string `xml:"HostId" json:"HostId"`
+	XMLName          xml.Name `xml:"Error" json:"-"`
+	Code             string
+	Message          string
+	HeadersNotSigned string `xml:"HeadersNotSigned,omitempty" json:"HeadersNotSigned,omitempty"`
+	Key              string `xml:"Key,omitempty" json:"Key,omitempty"`
+	BucketName       string `xml:"BucketName,omitempty" json:"BucketName,omitempty"`
+	Resource         string
+	Region           string `xml:"Region,omitempty" json:"Region,omitempty"`
+	RequestID        string `xml:"RequestId" json:"RequestId"`
+	HostID           string `xml:"HostId" json:"HostId"`
+}
+
+// UnsignedHeadersError lists request headers that SigV4 requires to be signed but were not.
+type UnsignedHeadersError struct {
+	Headers []string
+}
+
+func (e *UnsignedHeadersError) Error() string {
+	return "unsigned headers " + strings.Join(e.Headers, ", ") + ": " + ErrUnsignedHeaders.Error()
+}
+
+func (e *UnsignedHeadersError) Unwrap() error {
+	return ErrUnsignedHeaders
 }
 
 // APIErrorCode type of error status.
@@ -589,7 +604,7 @@ var Codes = errorCodeMap{
 	ErrUnsignedHeaders: {
 		Code:           "AccessDenied",
 		Description:    "There were headers present in the request which were not signed",
-		HTTPStatusCode: http.StatusBadRequest,
+		HTTPStatusCode: http.StatusForbidden,
 	},
 	ErrInvalidQueryParams: {
 		Code:           "AuthorizationQueryParametersError",

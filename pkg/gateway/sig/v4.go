@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -196,6 +197,10 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 		AuthValue: auth,
 	}
 
+	if err := ctx.verifySignedHeaders(); err != nil {
+		return err
+	}
+
 	canonicalRequest := ctx.buildCanonicalRequest()
 	stringToSign, err := ctx.buildSignedString(canonicalRequest)
 	if err != nil {
@@ -235,6 +240,26 @@ type verificationCtx struct {
 	Request   *http.Request
 	Query     url.Values
 	AuthValue V4Auth
+}
+
+func (ctx *verificationCtx) verifySignedHeaders() error {
+	signed := ctx.AuthValue.SignedHeaders
+	var unsigned []string
+	if !slices.Contains(signed, "host") {
+		unsigned = append(unsigned, "host")
+	}
+	for header := range ctx.Request.Header {
+		header = strings.ToLower(header)
+		// The payload hash is covered by the canonical request's HashedPayload field.
+		if strings.HasPrefix(header, "x-amz-") && header != v4authHeaderPayload && !slices.Contains(signed, header) {
+			unsigned = append(unsigned, header)
+		}
+	}
+	if len(unsigned) == 0 {
+		return nil
+	}
+	slices.Sort(unsigned)
+	return &errors.UnsignedHeadersError{Headers: unsigned}
 }
 
 func (ctx *verificationCtx) queryEscape(str string) string {

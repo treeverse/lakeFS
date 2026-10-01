@@ -143,12 +143,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func getAPIErrOrDefault(err error, defaultAPIErr gatewayerrors.APIErrorCode) gatewayerrors.APIError {
-	apiError, ok := err.(gatewayerrors.APIErrorCode)
-	if ok {
+	if apiError, ok := errors.AsType[gatewayerrors.APIErrorCode](err); ok {
 		return apiError.ToAPIErr()
-	} else {
-		return defaultAPIErr.ToAPIErr()
 	}
+	return defaultAPIErr.ToAPIErr()
 }
 
 func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {

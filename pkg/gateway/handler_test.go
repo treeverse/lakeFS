@@ -104,6 +104,68 @@ func TestBucketSubResourceStatusUnchanged(t *testing.T) {
 	}
 }
 
+func signedRequest(t *testing.T, method, target string) *http.Request {
+	t.Helper()
+	req := httptest.NewRequest(method, target, nil)
+	req.Host = "host.domain.com"
+	creds := aws.Credentials{
+		AccessKeyID:     esti.DefaultAdminAccessKeyID,
+		SecretAccessKey: esti.DefaultAdminSecretAccessKey,
+	}
+	err := v4.NewSigner().SignHTTP(t.Context(), creds, req, "UNSIGNED-PAYLOAD", "s3", "us-east-1", time.Now())
+	require.NoError(t, err)
+	return req
+}
+
+func TestAuthRejectionListsUnsignedHeaders(t *testing.T) {
+	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
+		BareDomain:      "example.com",
+		AccessKeyID:     esti.DefaultAdminAccessKeyID,
+		SecretAccessKey: esti.DefaultAdminSecretAccessKey,
+		UserID:          "65867",
+		Region:          "MockRegion",
+	}, repoName)
+	target := "/" + repoName + "/main/file.txt"
+
+	testCases := []struct {
+		name string
+		req  func(t *testing.T) *http.Request
+	}{
+		{
+			name: "authorization header",
+			req: func(t *testing.T) *http.Request {
+				return signedRequest(t, http.MethodPut, target)
+			},
+		},
+		{
+			name: "presigned URL",
+			req: func(t *testing.T) *http.Request {
+				creds := aws.Credentials{AccessKeyID: esti.DefaultAdminAccessKeyID, SecretAccessKey: esti.DefaultAdminSecretAccessKey}
+				unsigned := httptest.NewRequest(http.MethodPut, "http://host.domain.com"+target+"?X-Amz-Expires=900", nil)
+				presignedURL, _, err := v4.NewSigner().PresignHTTP(t.Context(), creds, unsigned, "UNSIGNED-PAYLOAD", "s3", "us-east-1", time.Now())
+				require.NoError(t, err)
+				return httptest.NewRequest(http.MethodPut, presignedURL, nil)
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := tc.req(t)
+			req.Header.Set("X-Amz-Copy-Source", "/"+repoName+"/main/secret.txt")
+			rr := httptest.NewRecorder()
+			h.ServeHTTP(rr, req)
+			result := rr.Result()
+
+			require.Equal(t, http.StatusForbidden, result.StatusCode)
+			body, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+			require.Contains(t, string(body), "<Code>AccessDenied</Code>")
+			require.Contains(t, string(body), "<Message>There were headers present in the request which were not signed</Message>")
+			require.Contains(t, string(body), "<HeadersNotSigned>x-amz-copy-source</HeadersNotSigned>")
+		})
+	}
+}
+
 func TestContextCancellation(t *testing.T) {
 	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
 		BareDomain:      "example.com",

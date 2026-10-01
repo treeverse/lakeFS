@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
@@ -178,16 +179,21 @@ func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, origin
 	if errors.Is(originalError, kv.ErrSlowDown) {
 		err = gwerrors.ErrSlowDown.ToAPIErr()
 	}
+	var headersNotSigned string
+	if unsignedErr, ok := errors.AsType[*gwerrors.UnsignedHeadersError](originalError); ok {
+		headersNotSigned = strings.Join(unsignedErr.Headers, ", ")
+	}
 	req, rid := httputil.RequestID(req)
 	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
-		Code:       err.Code,
-		Message:    err.Description,
-		BucketName: "",
-		Key:        "",
-		Resource:   "",
-		Region:     o.Region,
-		RequestID:  rid,
-		HostID:     generateHostID(), // just for compatibility, meaningless in our case
+		Code:             err.Code,
+		Message:          err.Description,
+		HeadersNotSigned: headersNotSigned,
+		BucketName:       "",
+		Key:              "",
+		Resource:         "",
+		Region:           o.Region,
+		RequestID:        rid,
+		HostID:           generateHostID(), // just for compatibility, meaningless in our case
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
 		o.Log(req).WithError(writeErr).Error("encoding response failed")
