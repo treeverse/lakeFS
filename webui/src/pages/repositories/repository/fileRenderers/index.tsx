@@ -11,6 +11,7 @@ import {
     PDFRenderer,
     TextDownloader,
     TextRenderer,
+    TiffRenderer,
     UnsupportedFileType,
 } from './simple';
 
@@ -25,6 +26,7 @@ export const Renderers: { [fileType in FileType]: FC<RendererComponent> } = {
         <TextDownloader {...props} onReady={(text) => <IpynbRenderer {...props} text={text} />} />
     ),
     [FileType.IMAGE]: (props) => <ImageRenderer {...props} />,
+    [FileType.TIFF]: (props) => <TiffRenderer {...props} />,
     [FileType.PDF]: (props) => <PDFRenderer {...props} />,
     [FileType.TEXT]: (props) => (
         <TextDownloader {...props} onReady={(text) => <TextRenderer {...props} text={text} />} />
@@ -115,6 +117,9 @@ export function guessType(contentType?: string, fileExtension?: string): FileTyp
         case 'image/bmp':
         case 'image/webp':
             return FileType.IMAGE;
+        case 'image/tiff':
+        case 'image/tif':
+            return FileType.TIFF;
         case 'application/pdf':
         case 'application/x-pdf':
             return FileType.PDF;
@@ -137,6 +142,9 @@ export function guessType(contentType?: string, fileExtension?: string): FileTyp
         case 'bmp':
         case 'webp':
             return FileType.IMAGE;
+        case 'tiff':
+        case 'tif':
+            return FileType.TIFF;
         case 'pdf':
             return FileType.PDF;
         case 'txt':

@@ -21,6 +21,7 @@ export enum FileType {
     MARKDOWN,
     IPYNB,
     IMAGE,
+    TIFF,
     PDF,
     TEXT,
     UNSUPPORTED,
