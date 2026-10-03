@@ -2,6 +2,7 @@ package esti
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/go-openapi/swag"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -342,8 +342,15 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 	}
 }
 
+// skipPresignMultipart skips the test unless the server reports presign multipart support. Gating on
+// the reported capability rather than the blockstore type keeps this in step with the adapters that
+// support it (currently S3 and GS) and with deployments that disabled it.
 func skipPresignMultipart(t *testing.T) {
-	if viper.GetString(ViperBlockstoreType) != "s3" {
-		t.Skip("Skipping test - s3 only")
+	t.Helper()
+	resp, err := client.GetConfigWithResponse(context.Background())
+	require.NoError(t, err, "GetConfig should succeed")
+	require.NotNil(t, resp.JSON200, "GetConfig should return a config")
+	if resp.JSON200.StorageConfig == nil || !swag.BoolValue(resp.JSON200.StorageConfig.PreSignMultipartUpload) {
+		t.Skip("Skipping test - presign multipart upload is not supported by this blockstore")
 	}
 }
