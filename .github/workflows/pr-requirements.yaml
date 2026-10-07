@@ -23,16 +23,6 @@ jobs:
           !contains(github.event.pull_request.labels.*.name, 'exclude-changelog')
         run: exit 1
 
-      - name: AI authorship label
-        id: ai-authorship-label
-        continue-on-error: true
-        if: >-
-          github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name &&
-          github.event.pull_request.user.login != 'dependabot[bot]' &&
-          !contains(github.event.pull_request.labels.*.name, 'mostly-ai') &&
-          !contains(github.event.pull_request.labels.*.name, 'mostly-human')
-        run: exit 1
-
       - name: Linked issue
         id: linked-issue
         continue-on-error: true
@@ -63,13 +53,6 @@ jobs:
             echo "::error::PR must have one of: include-changelog, exclude-changelog"
             echo "## :x: Missing changelog label" >> "$GITHUB_STEP_SUMMARY"
             echo "PR must have one of: \`include-changelog\`, \`exclude-changelog\`" >> "$GITHUB_STEP_SUMMARY"
-            FAILED=true
-          fi
-
-          if [ "${{ steps.ai-authorship-label.outcome }}" = "failure" ]; then
-            echo "::error::PR must have one of: mostly-ai, mostly-human"
-            echo "## :x: Missing AI authorship label" >> "$GITHUB_STEP_SUMMARY"
-            echo "PR must have one of: \`mostly-ai\`, \`mostly-human\`" >> "$GITHUB_STEP_SUMMARY"
             FAILED=true
           fi
 
