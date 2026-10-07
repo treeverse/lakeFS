@@ -162,6 +162,39 @@ func TestLakectlPreSignUpload(t *testing.T) {
 	})
 }
 
+func TestLakectlFsUploadLarge(t *testing.T) {
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
+
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	// S3 rejects single-part uploads above 5GiB, so one byte more forces
+	// the multipart path (#9284). A sparse file keeps disk usage low.
+	const largeFileSize = 5<<30 + 1
+	f, err := os.CreateTemp("", "lakectl-large-upload-")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, os.Remove(f.Name()))
+	})
+	require.NoError(t, f.Truncate(largeFileSize))
+	require.NoError(t, f.Close())
+
+	t.Run("pre-sign", func(t *testing.T) {
+		vars["FILE_PATH"] = "large_file_presign"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s "+f.Name()+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" --pre-sign", false, "lakectl_fs_upload_large", vars)
+	})
+	t.Run("no pre-sign", func(t *testing.T) {
+		vars["FILE_PATH"] = "large_file"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s "+f.Name()+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload_large", vars)
+	})
+}
+
 func TestLakectlCommit(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
