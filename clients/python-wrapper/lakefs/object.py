@@ -10,6 +10,7 @@ import http
 import io
 import json
 import os
+import sys
 import tempfile
 import urllib.parse
 from abc import abstractmethod
@@ -32,6 +33,11 @@ from lakefs.exceptions import (
     InvalidRangeException,
 )
 from lakefs.models import ObjectInfo
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
@@ -156,7 +162,7 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     def __iter__(self) -> Iterator[AnyStr]:
         return self
 
-    def __enter__(self) -> LakeFSIOBase:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, typ, value, traceback) -> None:
