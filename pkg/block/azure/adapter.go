@@ -488,6 +488,11 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	if err == nil {
 		return nil
 	}
+	var respErr *azcore.ResponseError
+	if bloberror.HasCode(err, bloberror.CannotVerifyCopySource) &&
+		errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
+		return block.ErrDataNotFound
+	}
 	// Azure API (backend) returns ambiguous error code which requires us to parse the error message to understand what is the nature of the error
 	// See: https://github.com/Azure/azure-sdk-for-go/issues/19880
 	if !bloberror.HasCode(err, bloberror.CannotVerifyCopySource) ||

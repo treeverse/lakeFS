@@ -5313,6 +5313,12 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        410:
+          description: source object expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         429:
           description: too many requests
         default:

@@ -246,12 +246,14 @@ func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	dstStorageID := destinationObj.StorageID
 	sourceKey := getKey(sourceObj)
 	destinationKey := getKey(destinationObj)
-	if a.data[srcStorageID] != nil {
-		if a.data[dstStorageID] == nil {
-			a.data[dstStorageID] = make(map[string][]byte)
-		}
-		a.data[dstStorageID][destinationKey] = a.data[srcStorageID][sourceKey]
+	data, err := a.getNoLock(sourceObj)
+	if err != nil {
+		return err
 	}
+	if a.data[dstStorageID] == nil {
+		a.data[dstStorageID] = make(map[string][]byte)
+	}
+	a.data[dstStorageID][destinationKey] = data
 	if a.properties[srcStorageID] != nil {
 		if a.properties[dstStorageID] == nil {
 			a.properties[dstStorageID] = make(map[string]block.Properties)
