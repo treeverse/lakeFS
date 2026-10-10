@@ -480,9 +480,6 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 
 	sasKey, _, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead, "")
 	if err != nil {
-		if bloberror.HasCode(err, bloberror.BlobNotFound) || bloberror.HasCode(err, bloberror.ContainerNotFound) || errors.Is(err, block.ErrDataNotFound) {
-			return block.ErrDataNotFound
-		}
 		return err
 	}
 
@@ -491,7 +488,9 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	if err == nil {
 		return nil
 	}
-	if bloberror.HasCode(err, bloberror.BlobNotFound) || bloberror.HasCode(err, bloberror.ContainerNotFound) {
+	var respErr *azcore.ResponseError
+	if bloberror.HasCode(err, bloberror.CannotVerifyCopySource) &&
+		errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
 		return block.ErrDataNotFound
 	}
 	// Azure API (backend) returns ambiguous error code which requires us to parse the error message to understand what is the nature of the error

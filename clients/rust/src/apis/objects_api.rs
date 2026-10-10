@@ -23,6 +23,7 @@ pub enum CopyObjectError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
+    Status410(models::Error),
     Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
