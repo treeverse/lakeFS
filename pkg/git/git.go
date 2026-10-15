@@ -45,6 +45,9 @@ func git(dir string, args ...string) (string, int, error) {
 	}
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
+	// Errors are recognized by their English text (see internal.HandleOutput),
+	// so keep git from translating its messages to the user's locale.
+	cmd.Env = append(os.Environ(), "LC_ALL=C")
 	out, err := cmd.CombinedOutput()
 	rc := 0
 	if err != nil {
