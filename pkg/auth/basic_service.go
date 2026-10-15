@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/permissions"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -449,12 +450,31 @@ func (s *BasicAuthService) DetachPolicyFromUser(_ context.Context, _, _ string) 
 	return ErrNotImplemented
 }
 
-func (s *BasicAuthService) ListUserPolicies(_ context.Context, _ string, _ *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	return nil, nil, ErrNotImplemented
+var basicAuthFullAccessPolicy = &model.Policy{
+	CreatedAt: time.Now(),
+	Statement: model.Statements{
+		{
+			Effect:   model.StatementEffectAllow,
+			Action:   []string{permissions.All},
+			Resource: permissions.All,
+		},
+	},
 }
 
-func (s *BasicAuthService) ListEffectivePolicies(_ context.Context, _ string, _ *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	return nil, nil, ErrNotImplemented
+func (s *BasicAuthService) ListUserPolicies(ctx context.Context, username string, _ *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	_, err := s.GetUser(ctx, username)
+	if err != nil {
+		return nil, nil, err
+	}
+	return []*model.Policy{basicAuthFullAccessPolicy}, &model.Paginator{}, nil
+}
+
+func (s *BasicAuthService) ListEffectivePolicies(ctx context.Context, username string, _ *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	_, err := s.GetUser(ctx, username)
+	if err != nil {
+		return nil, nil, err
+	}
+	return []*model.Policy{basicAuthFullAccessPolicy}, &model.Paginator{}, nil
 }
 
 func (s *BasicAuthService) AttachPolicyToGroup(_ context.Context, _, _ string) error {
