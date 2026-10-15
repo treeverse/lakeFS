@@ -1,12 +1,17 @@
 package operations
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
@@ -194,5 +199,76 @@ func TestListObjectsRequiredPermissionsMalformedPrefix(t *testing.T) {
 				t.Errorf("prefix=%q: action = %q, want empty", prefix, got)
 			}
 		})
+	}
+}
+
+type refCatalogStub struct {
+	branches, tags    []string
+	branchErr, tagErr error
+}
+
+func refPage(names []string, prefix string, limit int, after string) ([]string, bool) {
+	page := []string{}
+	for _, name := range names {
+		if name > after && strings.HasPrefix(name, prefix) {
+			page = append(page, name)
+		}
+	}
+	return page[:min(len(page), limit)], len(page) > limit
+}
+
+func (c *refCatalogStub) ListBranches(_ context.Context, _, prefix string, limit int, after string, _ ...graveler.ListOptionsFunc) ([]*catalog.Branch, bool, error) {
+	page, more := refPage(c.branches, prefix, limit, after)
+	result := []*catalog.Branch{}
+	for _, name := range page {
+		result = append(result, &catalog.Branch{Name: name})
+	}
+	return result, more, c.branchErr
+}
+
+func (c *refCatalogStub) ListTags(_ context.Context, _, prefix string, limit int, after string) ([]*catalog.Tag, bool, error) {
+	page, more := refPage(c.tags, prefix, limit, after)
+	result := []*catalog.Tag{}
+	for _, name := range page {
+		result = append(result, &catalog.Tag{ID: name})
+	}
+	return result, more, c.tagErr
+}
+
+func TestListReferencesPagination(t *testing.T) {
+	for _, limit := range []int{1, 2, 3, 1000} {
+		for _, prefix := range []string{"", "v", "missing"} {
+			c := &refCatalogStub{branches: []string{"a", "dev", "main", "same"}, tags: []string{"a-1", "same", "v1", "v2"}}
+			want := []string{}
+			for _, name := range []string{"a", "a-1", "dev", "main", "same", "v1", "v2"} {
+				if strings.HasPrefix(name, prefix) {
+					want = append(want, name+"/")
+				}
+			}
+			got, after := []string{}, ""
+			for page := 0; ; page++ {
+				require.Less(t, page, 10, "pagination did not terminate")
+				dirs, next, more, err := (&ListObjects{}).listReferences(t.Context(), c, "repo", prefix, limit, after)
+				require.NoError(t, err)
+				require.LessOrEqual(t, len(dirs), limit)
+				for _, dir := range dirs {
+					got = append(got, dir.Prefix)
+				}
+				if !more {
+					break
+				}
+				require.Greater(t, next, after, "cursor must advance")
+				after = next
+			}
+			require.Equal(t, want, got, "limit=%d prefix=%q", limit, prefix)
+		}
+	}
+}
+
+func TestListReferencesErrors(t *testing.T) {
+	failure := errors.New("catalog unavailable")
+	for _, c := range []*refCatalogStub{{branchErr: failure}, {tagErr: failure}} {
+		_, _, _, err := (&ListObjects{}).listReferences(t.Context(), c, "repo", "", 2, "")
+		require.ErrorIs(t, err, failure)
 	}
 }
