@@ -8,6 +8,7 @@ import Card from 'react-bootstrap/Card';
 
 import { Link } from '../nav';
 import { EnterpriseUpgradeAlert } from './enterpriseUpgrade';
+import { PageTitle } from '../pageTitle';
 
 type AuthOutletContext = [(tab: string) => void];
 
@@ -16,6 +17,7 @@ export const AuthLayout = () => {
 
     return (
         <Container fluid="xl">
+            <PageTitle title="Administration" />
             <Row className="mt-5">
                 <div>
                     <EnterpriseUpgradeAlert />
