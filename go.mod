@@ -1,6 +1,6 @@
 module github.com/treeverse/lakefs
 
-go 1.26.4
+go 1.26.10
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
