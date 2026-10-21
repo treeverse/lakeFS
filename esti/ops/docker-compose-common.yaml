@@ -15,7 +15,7 @@ services:
       - LAKEFS_ACTIONS_NETWORK_ALLOWED_HOSTS=esti
 
   esti:
-    image: "golang:1.26-alpine"
+    image: "golang:1.26.10-alpine"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
