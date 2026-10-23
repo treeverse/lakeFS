@@ -1,6 +1,11 @@
 package io.treeverse.clients
 
-import io.treeverse.jpebble.{BlockParser, BlockReadableFile, Entry => PebbleEntry}
+import io.treeverse.jpebble.{
+  BadFileFormatException,
+  BlockParser,
+  BlockReadableFile,
+  Entry => PebbleEntry
+}
 import com.google.protobuf.CodedInputStream
 import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
@@ -85,7 +90,8 @@ object SSTableReader {
     logger.info(
       s"local ${localFile.getAbsolutePath} (metarange ${metaRangeURL}) copied, ${localFile.length()} bytes"
     )
-    val ret = new SSTableReader(localFile, RangeData.messageCompanion, own)
+    val ret =
+      new SSTableReader(localFile.getAbsolutePath, RangeData.messageCompanion, own, metaRangeURL)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
   }
@@ -99,7 +105,7 @@ object SSTableReader {
     logger.info(
       s"local ${localFile.getAbsolutePath} (range ${rangeURL}) copied, ${localFile.length()} bytes"
     )
-    val ret = new SSTableReader(localFile, Entry.messageCompanion, own)
+    val ret = new SSTableReader(localFile.getAbsolutePath, Entry.messageCompanion, own, rangeURL)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
   }
@@ -108,7 +114,8 @@ object SSTableReader {
 class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] private (
     val file: java.io.File,
     val companion: GeneratedMessageCompanion[Proto],
-    val own: Boolean = true
+    val own: Boolean = true,
+    sourcePath: Option[String] = None
 ) extends Closeable {
   private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
@@ -117,6 +124,13 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
 
   def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto], own: Boolean) =
     this(new java.io.File(sstableFilename), companion, own)
+
+  def this(
+      sstableFilename: String,
+      companion: GeneratedMessageCompanion[Proto],
+      own: Boolean,
+      sourcePath: String
+  ) = this(new java.io.File(sstableFilename), companion, own, Some(sourcePath))
 
   def close(): Unit = {
     fp.close()
@@ -134,14 +148,31 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
     }
   }
 
-  def getProperties: Map[String, Array[Byte]] = {
+  def getProperties: Map[String, Array[Byte]] = withFileContext {
     val bytes = reader.iterate(reader.length - BlockParser.footerLength, BlockParser.footerLength)
     val footer = BlockParser.readFooter(bytes)
     BlockParser.readProperties(reader, footer).map(kv => new String(kv._1.toArray) -> kv._2)
   }
 
   def newIterator(): Iterator[Item[Proto]] = {
-    val it = BlockParser.entryIterator(reader)
-    new SSTableIterator(it, this, companion)
+    val it = withFileContext {
+      new SSTableIterator(BlockParser.entryIterator(reader), this, companion)
+    }
+    // Data blocks are parsed lazily, after newIterator has returned to Spark.
+    new Iterator[Item[Proto]] {
+      override def hasNext: Boolean = withFileContext(it.hasNext)
+      override def next(): Item[Proto] = withFileContext(it.next())
+    }
+  }
+
+  private def withFileContext[T](read: => T): T = {
+    try read
+    catch {
+      case error: BadFileFormatException =>
+        throw new BadFileFormatException(
+          s"Bad file format in ${sourcePath.getOrElse(file.getPath)}: ${error.getMessage}",
+          error
+        )
+    }
   }
 }

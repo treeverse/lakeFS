@@ -167,7 +167,8 @@ object LakeFSContext {
         fs.copyToLocalFile(false, path, new Path(localFile.getAbsolutePath), true)
         val companion = Entry.messageCompanion
         // localFile owned by sstableReader which will delete it when closed.
-        val sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
+        val sstableReader =
+          new SSTableReader(localFile.getAbsolutePath, companion, true, path.toString)
         Option(TaskContext.get()).foreach(_.addTaskCompletionListener((tc: TaskContext) => {
           try {
             sstableReader.close()
