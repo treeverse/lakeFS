@@ -235,8 +235,8 @@
 
 /* Pull request comments enterprise teaser */
 .pull-comments-teaser-placeholder {
-    opacity: 0.35;
-    filter: blur(1px);
+    opacity: 0.25;
+    filter: blur(2px);
     pointer-events: none;
     user-select: none;
 }
@@ -285,10 +285,20 @@
     padding: 0 24px;
 }
 
+.pull-comments-teaser-icon {
+    color: var(--bs-secondary-color);
+    margin-bottom: 12px;
+}
+
 .pull-comments-teaser-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 600;
     line-height: 1.2;
+    color: var(--bs-emphasis-color);
+}
+
+.pull-comments-teaser-description {
+    max-width: 600px;
+    margin-top: 12px;
     color: var(--bs-secondary-color);
-    opacity: 0.7;
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import Card from 'react-bootstrap/Card';
-import { CommentDiscussionIcon } from '@primer/octicons-react';
+import { ArrowUpRightIcon, CommentDiscussionIcon } from '@primer/octicons-react';
 
 const placeholderComments = [
     { author: 'data-engineer', lines: [90, 60] },
@@ -29,14 +29,18 @@ export const PullCommentsEnterpriseTeaser = () => (
                 <div className="pull-comments-teaser-input" />
             </div>
             <div className="pull-comments-teaser-overlay">
-                <div className="pull-comments-teaser-title">Comments are available in lakeFS Enterprise</div>
+                <CommentDiscussionIcon size={32} className="pull-comments-teaser-icon" />
+                <div className="pull-comments-teaser-title">Collaborate on pull requests</div>
+                <div className="pull-comments-teaser-description">
+                    Discuss changes, share feedback, and collaborate with your team using comments in lakeFS Enterprise.
+                </div>
                 <a
                     href="https://lakefs.io/enterprise/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn btn-primary mt-3"
+                    className="btn btn-primary mt-3 d-inline-flex align-items-center gap-2"
                 >
-                    Upgrade to lakeFS Enterprise
+                    Explore lakeFS Enterprise <ArrowUpRightIcon />
                 </a>
             </div>
         </Card.Body>
