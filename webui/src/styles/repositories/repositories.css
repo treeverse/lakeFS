@@ -232,3 +232,63 @@
     margin-left: 8px;
     display: inline-block;
 }
+
+/* Pull request comments enterprise teaser */
+.pull-comments-teaser-placeholder {
+    opacity: 0.35;
+    filter: blur(1px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.pull-comments-teaser-comment {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.pull-comments-teaser-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: var(--bs-secondary-bg);
+}
+
+.pull-comments-teaser-author {
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    margin-bottom: 6px;
+}
+
+.pull-comments-teaser-line {
+    height: 10px;
+    border-radius: 5px;
+    margin-bottom: 6px;
+    background-color: var(--bs-secondary-bg);
+}
+
+.pull-comments-teaser-input {
+    height: 72px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+}
+
+.pull-comments-teaser-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 24px;
+}
+
+.pull-comments-teaser-title {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--bs-secondary-color);
+    opacity: 0.7;
+}
