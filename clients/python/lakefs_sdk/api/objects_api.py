@@ -212,6 +212,7 @@ class ObjectsApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
+            '410': "Error",
             '429': None,
         }
 
