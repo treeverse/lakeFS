@@ -488,9 +488,11 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	if err == nil {
 		return nil
 	}
+	// A missing source arrives as CannotVerifyCopySource carrying the source's 404, or as BlobNotFound from Azurite.
 	var respErr *azcore.ResponseError
-	if bloberror.HasCode(err, bloberror.CannotVerifyCopySource) &&
-		errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
+	if bloberror.HasCode(err, bloberror.BlobNotFound) ||
+		(bloberror.HasCode(err, bloberror.CannotVerifyCopySource) &&
+			errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound) {
 		return block.ErrDataNotFound
 	}
 	// Azure API (backend) returns ambiguous error code which requires us to parse the error message to understand what is the nature of the error

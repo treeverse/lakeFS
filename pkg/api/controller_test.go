@@ -5721,6 +5721,16 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		)
 		// Stage an object with absolute physical address (simulating an imported object)
 		absolutePhysicalAddress := onBlock(deps, "external-bucket/imported/data")
+		repoInfo, err := deps.catalog.GetRepository(ctx, repo)
+		require.NoError(t, err)
+		const content = "imported object content"
+		_, err = deps.blocks.Put(ctx, block.ObjectPointer{
+			StorageID:        repoInfo.StorageID,
+			StorageNamespace: repoInfo.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeFull,
+			Identifier:       absolutePhysicalAddress,
+		}, int64(len(content)), strings.NewReader(content), block.PutOpts{})
+		require.NoError(t, err)
 		stageResp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
 			Path: srcPath,
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
