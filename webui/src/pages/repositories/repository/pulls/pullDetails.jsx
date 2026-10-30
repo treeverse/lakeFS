@@ -15,6 +15,7 @@ import { pulls as pullsAPI } from '../../../../lib/api';
 import { useAPI } from '../../../../lib/hooks/api';
 import { Link } from '../../../../lib/components/nav';
 import CompareBranches from '../../../../lib/components/repository/compareBranches';
+import { PullCommentsEnterpriseTeaser } from '../../../../lib/components/repository/pullCommentsEnterpriseTeaser';
 import { PullStatus, RefTypeBranch } from '../../../../constants';
 import { DiffContext, WithDiffContext } from '../../../../lib/hooks/diffContext';
 import Alert from 'react-bootstrap/Alert';
@@ -129,6 +130,7 @@ const PullDetailsContent = ({ repo, pull }) => {
             {pull.status === PullStatus.merged && pull.merged_commit_id && (
                 <MergedCommitDetails repo={repo} pull={pull} />
             )}
+            <PullCommentsEnterpriseTeaser />
         </div>
     );
 };
