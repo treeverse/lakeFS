@@ -3,6 +3,7 @@ package block_test
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -262,3 +263,63 @@ func TestFormatQualifiedKey(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateStorageNamespace(t *testing.T) {
+	cases := []struct {
+		Name        string
+		URI         string
+		StorageType block.StorageType
+		ExpectedErr error
+	}{
+		{
+			Name:        "valid_s3",
+			URI:         "s3://my-bucket/prefix",
+			StorageType: block.StorageTypeS3,
+			ExpectedErr: nil,
+		},
+		{
+			Name:        "invalid_s3_missing_bucket",
+			URI:         "s3://",
+			StorageType: block.StorageTypeS3,
+			ExpectedErr: block.ErrInvalidNamespace,
+		},
+		{
+			Name:        "valid_azure",
+			URI:         "https://myaccount.blob.core.windows.net/mycontainer",
+			StorageType: block.StorageTypeAzure,
+			ExpectedErr: nil,
+		},
+		{
+			Name:        "invalid_azure_missing_container",
+			URI:         "https://myaccount.blob.core.windows.net/",
+			StorageType: block.StorageTypeAzure,
+			ExpectedErr: block.ErrInvalidNamespace,
+		},
+		{
+			Name:        "invalid_azure_wrong_scheme",
+			URI:         "s3://my-bucket/prefix",
+			StorageType: block.StorageTypeAzure,
+			ExpectedErr: block.ErrInvalidAddress,
+		},
+	}
+
+	for _, cas := range cases {
+		t.Run(cas.Name, func(t *testing.T) {
+			u, err := url.Parse(cas.URI)
+			if err != nil {
+				t.Fatalf("failed to parse test URI: %v", err)
+			}
+			err = block.ValidateStorageNamespace(u, cas.StorageType)
+			if cas.ExpectedErr == nil {
+				if err != nil {
+					t.Fatalf("expected nil error, got %v", err)
+				}
+			} else {
+				if !errors.Is(err, cas.ExpectedErr) {
+					t.Fatalf("expected error %v, got %v", cas.ExpectedErr, err)
+				}
+			}
+		})
+	}
+}
+
