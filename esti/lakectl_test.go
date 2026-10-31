@@ -2,11 +2,13 @@ package esti
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -164,6 +166,7 @@ func TestLakectlPreSignUpload(t *testing.T) {
 
 func TestLakectlFsUploadLarge(t *testing.T) {
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
+	ctx := t.Context()
 
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
@@ -185,13 +188,30 @@ func TestLakectlFsUploadLarge(t *testing.T) {
 	require.NoError(t, f.Truncate(largeFileSize))
 	require.NoError(t, f.Close())
 
+	uploadAndVerify := func(t *testing.T, objPath, extraArgs string) {
+		t.Helper()
+		RunCmdAndVerifyContainsText(t, Lakectl()+" fs upload -s "+f.Name()+" lakefs://"+repoName+"/"+mainBranch+"/"+objPath+extraArgs, false, fmt.Sprintf("Size: %d bytes", largeFileSize), vars)
+
+		statResp, err := client.StatObjectWithResponse(ctx, repoName, mainBranch, &apigen.StatObjectParams{Path: objPath})
+		require.NoError(t, err)
+		require.NotNil(t, statResp.JSON200, "stat %s: %s", objPath, statResp.Status())
+		require.Equal(t, int64(largeFileSize), swag.Int64Value(statResp.JSON200.SizeBytes))
+
+		// deleting the repository does not remove its data, so remove the large object from the storage
+		physicalAddress, err := url.Parse(statResp.JSON200.PhysicalAddress)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			adapter, err := NewAdapter(ctx, physicalAddress.Scheme)
+			require.NoError(t, err)
+			require.NoError(t, adapter.Delete(ctx, physicalAddress))
+		})
+	}
+
 	t.Run("pre-sign", func(t *testing.T) {
-		vars["FILE_PATH"] = "large_file_presign"
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s "+f.Name()+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" --pre-sign", false, "lakectl_fs_upload_large", vars)
+		uploadAndVerify(t, "large_file_presign", " --pre-sign")
 	})
 	t.Run("no pre-sign", func(t *testing.T) {
-		vars["FILE_PATH"] = "large_file"
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s "+f.Name()+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload_large", vars)
+		uploadAndVerify(t, "large_file", "")
 	})
 }
 
