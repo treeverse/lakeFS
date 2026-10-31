@@ -111,3 +111,67 @@ func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T)
 		})
 	}
 }
+
+func TestGarbageCollectionManager_SaveRulesGetRules(t *testing.T) {
+	t.Parallel()
+	const prefix = "test_prefix"
+	ns := graveler.StorageNamespace("mem://test-namespace/my-repo")
+	previous := &graveler.GarbageCollectionRules{
+		DefaultRetentionDays: 7,
+		BranchRetentionDays:  map[string]int32{"main": 3},
+	}
+
+	tests := []struct {
+		name    string
+		rules   *graveler.GarbageCollectionRules
+		want    *graveler.GarbageCollectionRules
+		wantErr error
+	}{
+		{
+			name:  "zero default without branches",
+			rules: &graveler.GarbageCollectionRules{},
+			want:  &graveler.GarbageCollectionRules{},
+		},
+		{
+			name:  "zero default with empty branch map",
+			rules: &graveler.GarbageCollectionRules{BranchRetentionDays: map[string]int32{}},
+			want:  &graveler.GarbageCollectionRules{},
+		},
+		{
+			name:  "zero default with branches",
+			rules: &graveler.GarbageCollectionRules{BranchRetentionDays: map[string]int32{"main": 3}},
+			want:  &graveler.GarbageCollectionRules{BranchRetentionDays: map[string]int32{"main": 3}},
+		},
+		{
+			name:  "nonzero default",
+			rules: &graveler.GarbageCollectionRules{DefaultRetentionDays: 14},
+			want:  &graveler.GarbageCollectionRules{DefaultRetentionDays: 14},
+		},
+		{
+			name:    "nil rules",
+			rules:   nil,
+			wantErr: graveler.ErrNotFound,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := t.Context()
+			gc := retention.NewGarbageCollectionManager(mem.New(ctx), &testutil.RefsFake{}, prefix)
+			require.NoError(t, gc.SaveRules(ctx, config.SingleBlockstoreID, ns, previous))
+
+			require.NoError(t, gc.SaveRules(ctx, config.SingleBlockstoreID, ns, tc.rules))
+			got, err := gc.GetRules(ctx, config.SingleBlockstoreID, ns)
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want.GetDefaultRetentionDays(), got.GetDefaultRetentionDays())
+			require.Equal(t, len(tc.want.GetBranchRetentionDays()), len(got.GetBranchRetentionDays()))
+			for branch, days := range tc.want.GetBranchRetentionDays() {
+				require.Equal(t, days, got.GetBranchRetentionDays()[branch], "branch %s", branch)
+			}
+		})
+	}
+}
