@@ -2,11 +2,13 @@ package esti
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -159,6 +161,57 @@ func TestLakectlPreSignUpload(t *testing.T) {
 	})
 	t.Run("upload from stdin", func(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, "cat files/ro_1k | "+Lakectl()+" fs upload -s - lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" --pre-sign", false, "lakectl_fs_upload", vars)
+	})
+}
+
+func TestLakectlFsUploadLarge(t *testing.T) {
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
+	ctx := t.Context()
+
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	// S3 rejects single-part uploads above 5GiB, so one byte more forces
+	// the multipart path (#9284). A sparse file keeps disk usage low.
+	const largeFileSize = 5<<30 + 1
+	f, err := os.CreateTemp("", "lakectl-large-upload-")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, os.Remove(f.Name()))
+	})
+	require.NoError(t, f.Truncate(largeFileSize))
+	require.NoError(t, f.Close())
+
+	uploadAndVerify := func(t *testing.T, objPath, extraArgs string) {
+		t.Helper()
+		RunCmdAndVerifyContainsText(t, Lakectl()+" fs upload -s "+f.Name()+" lakefs://"+repoName+"/"+mainBranch+"/"+objPath+extraArgs, false, fmt.Sprintf("Size: %d bytes", largeFileSize), vars)
+
+		statResp, err := client.StatObjectWithResponse(ctx, repoName, mainBranch, &apigen.StatObjectParams{Path: objPath})
+		require.NoError(t, err)
+		require.NotNil(t, statResp.JSON200, "stat %s: %s", objPath, statResp.Status())
+		require.Equal(t, int64(largeFileSize), swag.Int64Value(statResp.JSON200.SizeBytes))
+
+		// deleting the repository does not remove its data, so remove the large object from the storage
+		physicalAddress, err := url.Parse(statResp.JSON200.PhysicalAddress)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			adapter, err := NewAdapter(ctx, physicalAddress.Scheme)
+			require.NoError(t, err)
+			require.NoError(t, adapter.Delete(ctx, physicalAddress))
+		})
+	}
+
+	t.Run("pre-sign", func(t *testing.T) {
+		uploadAndVerify(t, "large_file_presign", " --pre-sign")
+	})
+	t.Run("no pre-sign", func(t *testing.T) {
+		uploadAndVerify(t, "large_file", "")
 	})
 }
 
