@@ -1,0 +1,28 @@
+# base: '_staging/ev' columns: [dt]
+partition: '_staging/ev/dt=2024-01-01/'
+path: _staging/ev/dt=2024-01-01/part-0.parquet
+partition: '_staging/ev/dt=2024-01-02/'
+path: _staging/ev/dt=2024-01-02/.part-1.parquet.crc
+path: _staging/ev/dt=2024-01-02/part-1.parquet
+# base: '_staging/ev/' columns: [dt]
+partition: '_staging/ev/dt=2024-01-01/'
+path: _staging/ev/dt=2024-01-01/part-0.parquet
+partition: '_staging/ev/dt=2024-01-02/'
+path: _staging/ev/dt=2024-01-02/.part-1.parquet.crc
+path: _staging/ev/dt=2024-01-02/part-1.parquet
+# base: '' columns: [dt]
+partition: 'dt=2024-01-01/'
+path: dt=2024-01-01/part-0.parquet
+# base: '_staging/raw' columns: []
+partition: ''
+path: _staging/raw
+path: _staging/raw/f1.csv
+path: _staging/raw/f2.csv
+# base: '_letters' columns: [a]
+partition: '_letters/a=_foo/'
+path: _letters/a=_foo/x.csv
+# base: '_letters' columns: [_a]
+partition: ''
+# base: '_staging/empty' columns: [dt]
+partition: ''
+# done

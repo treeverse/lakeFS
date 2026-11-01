@@ -301,6 +301,11 @@ func TestLuaRunTable(t *testing.T) {
 			Output: "testdata/lua/catalogexport_hive_partition_pager.output",
 		},
 		{
+			Name:   "catalogexport_hive_partition_pager_hidden_base",
+			Input:  "testdata/lua/catalogexport_hive_partition_pager_hidden_base.lua",
+			Output: "testdata/lua/catalogexport_hive_partition_pager_hidden_base.output",
+		},
+		{
 			Name:  "catalogexport_delta",
 			Input: "testdata/lua/catalogexport_delta.lua",
 		},
