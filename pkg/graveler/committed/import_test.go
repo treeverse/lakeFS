@@ -393,6 +393,185 @@ func Test_import(t *testing.T) {
 				},
 			}},
 		},
+		{
+			// #10572: once the source is exhausted, a dest range that straddles the prefix must be
+			// filtered record by record (WriteRecord), not copied whole (WriteRange).
+			name: "source exhausted before dest range straddling prefix",
+			sourceRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "p/f-p/f", MinKey: committed.Key("p/f"), MaxKey: committed.Key("p/f"), Count: 1, EstimatedSize: 512},
+					records: []testValueRecord{{"p/f", "pf"}},
+				},
+			}),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"a/1", "a1"}, {"a/2", "a2"}},
+				},
+				{
+					rng:     committed.Range{ID: "p/old/1-q", MinKey: committed.Key("p/old/1"), MaxKey: committed.Key("q"), Count: 3, EstimatedSize: 1536},
+					records: []testValueRecord{{"p/old/1", "pold1"}, {"p/old/2", "pold2"}, {"q", "q"}},
+				},
+			}),
+			storageID: config.SingleBlockstoreID,
+			prefixes:  []graveler.Prefix{"p/"},
+			expectedResult: []testRunResult{{
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024}},
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "p/f-p/f", MinKey: committed.Key("p/f"), MaxKey: committed.Key("p/f"), Count: 1, EstimatedSize: 512}},
+					{action: actionTypeWriteRecord, key: "q", identity: "q"},
+				},
+			}},
+		},
+		{
+			// #10572 issue shape: the bounded and right-straddling ranges are both reached after the
+			// source is exhausted; neither may be copied whole.
+			name: "small source before left-straddling, bounded and right-straddling dest ranges",
+			sourceRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "p/f-p/f", MinKey: committed.Key("p/f"), MaxKey: committed.Key("p/f"), Count: 1, EstimatedSize: 512},
+					records: []testValueRecord{{"p/f", "pf"}},
+				},
+			}),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "a-p/old/1", MinKey: committed.Key("a"), MaxKey: committed.Key("p/old/1"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"a", "a"}, {"p/old/1", "pold1"}},
+				},
+				{
+					rng:     committed.Range{ID: "p/old/2-p/old/3", MinKey: committed.Key("p/old/2"), MaxKey: committed.Key("p/old/3"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"p/old/2", "pold2"}, {"p/old/3", "pold3"}},
+				},
+				{
+					rng:     committed.Range{ID: "p/old/4-q", MinKey: committed.Key("p/old/4"), MaxKey: committed.Key("q"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"p/old/4", "pold4"}, {"q", "q"}},
+				},
+			}),
+			storageID: config.SingleBlockstoreID,
+			prefixes:  []graveler.Prefix{"p/"},
+			expectedResult: []testRunResult{{
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRecord, key: "a", identity: "a"},
+					{action: actionTypeWriteRecord, key: "p/f", identity: "pf"},
+					{action: actionTypeWriteRecord, key: "q", identity: "q"},
+				},
+			}},
+		},
+		{
+			// Re-import of an empty directory: every dest range goes through handleAll. Ranges outside
+			// the prefix are still copied whole; the straddling one is filtered.
+			name:        "empty source",
+			sourceRange: newTestMetaRange(nil),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"a/1", "a1"}, {"a/2", "a2"}},
+				},
+				{
+					rng:     committed.Range{ID: "b-q", MinKey: committed.Key("b"), MaxKey: committed.Key("q"), Count: 3, EstimatedSize: 1536},
+					records: []testValueRecord{{"b", "b"}, {"p/1", "p1"}, {"q", "q"}},
+				},
+				{
+					rng:     committed.Range{ID: "r-s", MinKey: committed.Key("r"), MaxKey: committed.Key("s"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"r", "r"}, {"s", "s"}},
+				},
+			}),
+			storageID: config.SingleBlockstoreID,
+			prefixes:  []graveler.Prefix{"p/"},
+			expectedResult: []testRunResult{{
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024}},
+					{action: actionTypeWriteRecord, key: "b", identity: "b"},
+					{action: actionTypeWriteRecord, key: "q", identity: "q"},
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "r-s", MinKey: committed.Key("r"), MaxKey: committed.Key("s"), Count: 2, EstimatedSize: 1024}},
+				},
+			}},
+		},
+		{
+			// Prefix equal to a range MaxKey ("c/") and to a range MinKey ("p/"); keys equal to the
+			// prefix string are removed too. The range between the prefixes is copied whole.
+			name:        "prefixes on range bounds with empty source",
+			sourceRange: newTestMetaRange(nil),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "a-c/", MinKey: committed.Key("a"), MaxKey: committed.Key("c/"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"a", "a"}, {"c/", "c"}},
+				},
+				{
+					rng:     committed.Range{ID: "d-e", MinKey: committed.Key("d"), MaxKey: committed.Key("e"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"d", "d"}, {"e", "e"}},
+				},
+				{
+					rng:     committed.Range{ID: "p/-q", MinKey: committed.Key("p/"), MaxKey: committed.Key("q"), Count: 3, EstimatedSize: 1536},
+					records: []testValueRecord{{"p/", "p"}, {"p/x", "px"}, {"q", "q"}},
+				},
+			}),
+			storageID: config.SingleBlockstoreID,
+			prefixes:  []graveler.Prefix{"c/", "p/"},
+			expectedResult: []testRunResult{{
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRecord, key: "a", identity: "a"},
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "d-e", MinKey: committed.Key("d"), MaxKey: committed.Key("e"), Count: 2, EstimatedSize: 1024}},
+					{action: actionTypeWriteRecord, key: "q", identity: "q"},
+				},
+			}},
+		},
+		{
+			// Whole-branch import: every dest range is bounded by "" and skipped; the source is copied whole.
+			name: "empty string prefix replaces whole branch",
+			sourceRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "p/f-p/f", MinKey: committed.Key("p/f"), MaxKey: committed.Key("p/f"), Count: 1, EstimatedSize: 512},
+					records: []testValueRecord{{"p/f", "pf"}},
+				},
+			}),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"a/1", "a1"}, {"a/2", "a2"}},
+				},
+				{
+					rng:     committed.Range{ID: "p/old/1-q", MinKey: committed.Key("p/old/1"), MaxKey: committed.Key("q"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"p/old/1", "pold1"}, {"q", "q"}},
+				},
+			}),
+			storageID: config.SingleBlockstoreID,
+			prefixes:  []graveler.Prefix{""},
+			expectedResult: []testRunResult{{
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "p/f-p/f", MinKey: committed.Key("p/f"), MaxKey: committed.Key("p/f"), Count: 1, EstimatedSize: 512}},
+				},
+			}},
+		},
+		{
+			// No prefixes: dest ranges left after the source is exhausted are still copied whole.
+			name: "no prefixes keeps whole-range copy after source exhausted",
+			sourceRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "p/f-p/f", MinKey: committed.Key("p/f"), MaxKey: committed.Key("p/f"), Count: 1, EstimatedSize: 512},
+					records: []testValueRecord{{"p/f", "pf"}},
+				},
+			}),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng:     committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"a/1", "a1"}, {"a/2", "a2"}},
+				},
+				{
+					rng:     committed.Range{ID: "p/old/1-q", MinKey: committed.Key("p/old/1"), MaxKey: committed.Key("q"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{{"p/old/1", "pold1"}, {"q", "q"}},
+				},
+			}),
+			storageID: config.SingleBlockstoreID,
+			prefixes:  nil,
+			expectedResult: []testRunResult{{
+				expectedActions: []writeAction{
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024}},
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "p/f-p/f", MinKey: committed.Key("p/f"), MaxKey: committed.Key("p/f"), Count: 1, EstimatedSize: 512}},
+					{action: actionTypeWriteRange, rng: committed.Range{ID: "p/old/1-q", MinKey: committed.Key("p/old/1"), MaxKey: committed.Key("q"), Count: 2, EstimatedSize: 1024}},
+				},
+			}},
+		},
 	}
 
 	for _, tst := range tests {
