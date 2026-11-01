@@ -16,6 +16,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -33,6 +34,10 @@ const (
 	// backing store.
 	writeCSVBufferSize = 256 * 1024
 )
+
+// defaultRetentionDaysFieldNumber is the protobuf field number of
+// GarbageCollectionRules.default_retention_days.
+var defaultRetentionDaysFieldNumber = (&graveler.GarbageCollectionRules{}).ProtoReflect().Descriptor().Fields().ByName("default_retention_days").Number()
 
 type GarbageCollectionManager struct {
 	blockAdapter                block.Adapter
@@ -159,10 +164,18 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageID grave
 	return &rules, nil
 }
 
+// SaveRules stores rules for the storage namespace.  Nil rules are stored
+// as an empty file, which GetRules reports as graveler.ErrNotFound.  Non-nil
+// rules, including all-zero rules, are always read back by GetRules.
 func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageID graveler.StorageID, storageNamespace graveler.StorageNamespace, rules *graveler.GarbageCollectionRules) error {
 	rulesBytes, err := proto.Marshal(rules)
 	if err != nil {
 		return err
+	}
+	if rules != nil && len(rulesBytes) == 0 {
+		// All-zero rules marshal to no bytes; encode the zero default explicitly
+		// so they are not stored as an empty file.
+		rulesBytes = protowire.AppendVarint(protowire.AppendTag(nil, defaultRetentionDaysFieldNumber, protowire.VarintType), 0)
 	}
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		StorageID:        string(storageID),
