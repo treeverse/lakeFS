@@ -261,7 +261,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		}
 	})
 	if traceErr != nil {
-		return nil, err
+		return nil, traceErr
 	}
 	log.WithFields(logging.Fields{
 		"num_starting_points": numStartingPoints,

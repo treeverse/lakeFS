@@ -438,3 +438,44 @@ func testToStringArray(commitIDs []graveler.CommitID) []string {
 	}
 	return res
 }
+
+// TestGetGarbageCollectionCommitsMissingParent verifies that a missing parent commit is
+// returned as an error, rather than as a nil error with a nil sequence.
+func TestGetGarbageCollectionCommitsMissingParent(t *testing.T) {
+	now := time.Now()
+	ctrl := gomock.NewController(t)
+	refManagerMock := mock.NewMockRefManager(ctrl)
+	ctx := t.Context()
+	repositoryRecord := &graveler.RepositoryRecord{RepositoryID: "test"}
+
+	// "head" refers to a parent that does not exist in this repository.
+	head := &graveler.CommitRecord{
+		CommitID: "head",
+		Commit: &graveler.Commit{
+			Parents:      []graveler.CommitID{"missing"},
+			CreationDate: now,
+			Version:      graveler.CurrentCommitVersion,
+			MetaRangeID:  "mr-head",
+		},
+	}
+	refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator([]*graveler.CommitRecord{head}), nil).MaxTimes(1)
+	refManagerMock.EXPECT().GetCommit(ctx, repositoryRecord, graveler.CommitID("missing")).Return(nil, graveler.ErrCommitNotFound)
+
+	branches := []*graveler.BranchRecord{{
+		BranchID: "main",
+		Branch:   &graveler.Branch{CommitID: "head"},
+	}}
+	rules := &graveler.GarbageCollectionRules{DefaultRetentionDays: 5}
+	gcCommitsSeq, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
+		testutil.NewFakeCommitIterator(nil),
+		testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetterAdapter{
+		RefManager: refManagerMock,
+		Repository: repositoryRecord,
+	}, rules, t.TempDir())
+	if !errors.Is(err, graveler.ErrCommitNotFound) {
+		t.Fatalf("expected error %v, got %v", graveler.ErrCommitNotFound, err)
+	}
+	if gcCommitsSeq != nil {
+		t.Error("expected nil commits sequence on error")
+	}
+}
