@@ -190,21 +190,26 @@ func TestLakectlFsUploadLarge(t *testing.T) {
 
 	uploadAndVerify := func(t *testing.T, objPath, extraArgs string) {
 		t.Helper()
+		// deleting the repository does not remove its data, so remove the large object from the storage
+		t.Cleanup(func() {
+			statResp, err := client.StatObjectWithResponse(ctx, repoName, mainBranch, &apigen.StatObjectParams{Path: objPath})
+			require.NoError(t, err)
+			if statResp.JSON200 == nil {
+				return
+			}
+			physicalAddress, err := url.Parse(statResp.JSON200.PhysicalAddress)
+			require.NoError(t, err)
+			adapter, err := NewAdapter(ctx, physicalAddress.Scheme)
+			require.NoError(t, err)
+			require.NoError(t, adapter.Delete(ctx, physicalAddress))
+		})
+
 		RunCmdAndVerifyContainsText(t, Lakectl()+" fs upload -s "+f.Name()+" lakefs://"+repoName+"/"+mainBranch+"/"+objPath+extraArgs, false, fmt.Sprintf("Size: %d bytes", largeFileSize), vars)
 
 		statResp, err := client.StatObjectWithResponse(ctx, repoName, mainBranch, &apigen.StatObjectParams{Path: objPath})
 		require.NoError(t, err)
 		require.NotNil(t, statResp.JSON200, "stat %s: %s", objPath, statResp.Status())
 		require.Equal(t, int64(largeFileSize), swag.Int64Value(statResp.JSON200.SizeBytes))
-
-		// deleting the repository does not remove its data, so remove the large object from the storage
-		physicalAddress, err := url.Parse(statResp.JSON200.PhysicalAddress)
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			adapter, err := NewAdapter(ctx, physicalAddress.Scheme)
-			require.NoError(t, err)
-			require.NoError(t, adapter.Delete(ctx, physicalAddress))
-		})
 	}
 
 	t.Run("pre-sign", func(t *testing.T) {
