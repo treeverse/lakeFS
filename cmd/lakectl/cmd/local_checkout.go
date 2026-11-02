@@ -74,7 +74,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		}
 		newRemote := remote.WithRef(resolvedRef.Ref)
 		newHead := resolveCommitOrDie(cmd.Context(), client, newRemote.Repository, newRemote.Ref)
-		if newHead != idx.AtHead {
+		if checkoutSwitchesRef(remote.Ref, idx.AtHead, resolvedRef.Ref, newHead) {
 			newBase := newRemote.WithRef(newHead)
 
 			// write new index
@@ -112,6 +112,14 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		Operation: "Checkout",
 		Tasks:     syncMgr.Summary(),
 	})
+}
+
+// checkoutSwitchesRef reports whether checking out requestedRef (which resolves
+// to newHead) must rewrite the local index. A different ref that points at the
+// same commit still needs an index update, otherwise the local directory stays
+// linked to the ref it was checked out from instead of the requested one.
+func checkoutSwitchesRef(currentRef, currentHead, requestedRef, newHead string) bool {
+	return requestedRef != currentRef || newHead != currentHead
 }
 
 //nolint:gochecknoinits
