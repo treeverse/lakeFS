@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net/url"
 	"slices"
 	"testing"
 
@@ -24,6 +25,30 @@ func AdapterMultipartTest(t *testing.T, adapter block.Adapter, storageNamespace,
 	t.Run("Adapter_AbortMultiPartUpload", func(t *testing.T) { testAdapterAbortMultipartUpload(t, adapter, storageNamespace) })
 	t.Run("Adapter_CopyPart", func(t *testing.T) { testAdapterCopyPart(t, adapter, storageNamespace) })
 	t.Run("Adapter_CopyPartRange", func(t *testing.T) { testAdapterCopyPartRange(t, adapter, storageNamespace) })
+	t.Run("Adapter_PresignUploadPartURL", func(t *testing.T) { testPresignUploadPartURL(t, adapter, storageNamespace) })
+}
+
+// An adapter advertising presign multipart support must actually hand out part URLs, and one that does
+// not must say so with ErrOperationNotSupported - the API gates the whole flow on that flag.
+func testPresignUploadPartURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	obj, _ := objPointers(storageNamespace)
+
+	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
+	require.NoError(t, err)
+	defer func() {
+		_ = adapter.AbortMultiPartUpload(ctx, obj, resp.UploadID)
+	}()
+
+	presignedURL, err := adapter.GetPresignUploadPartURL(ctx, obj, resp.UploadID, 1)
+	if !adapter.GetStorageNamespaceInfo("").PreSignSupportMultipart {
+		require.ErrorIs(t, err, block.ErrOperationNotSupported)
+		return
+	}
+	require.NoError(t, err)
+	require.NotEmpty(t, presignedURL)
+	_, err = url.Parse(presignedURL)
+	require.NoError(t, err)
 }
 
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
