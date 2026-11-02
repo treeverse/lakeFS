@@ -59,15 +59,29 @@ func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([
 		if err != nil {
 			return nil, fmt.Errorf("listing actions: %w", err)
 		}
-		for _, result := range res {
-			names = append(names, result.Path)
-		}
+		names = append(names, actionFileNames(res)...)
 		if !hasMore {
 			break
 		}
 		after = res[len(res)-1].Path
 	}
 	return names, nil
+}
+
+// actionFileNames returns the action files of a listing page.
+//
+// A nested directory under the actions prefix is listed as a common level, not as
+// a file, and loading it fails the whole run: every commit then reports
+// "get action file metadata ...: not found" (#10576).
+func actionFileNames(entries []*DBEntry) []string {
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.CommonLevel {
+			continue
+		}
+		names = append(names, entry.Path)
+	}
+	return names
 }
 
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
