@@ -3035,6 +3035,8 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 		// the cherry-pick related keys.
 		applyCommitOverrides(&commit, commitOverrides)
 
+		// copy the map: it may be the source commit's (cached and shared) or the caller's
+		commit.Metadata = maps.Clone(commit.Metadata)
 		if commit.Metadata == nil {
 			commit.Metadata = make(map[string]string)
 		}
