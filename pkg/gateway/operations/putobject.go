@@ -126,7 +126,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	}
 	replaceMetadata := shouldReplaceMetadata(req)
 
-	entry, err := o.Catalog.CopyEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, repository, branch, o.Path, replaceMetadata, metadata)
+	entry, err := o.Catalog.CopyEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, repository, branch, o.Path, replaceMetadata, metadata, req.Header.Get("Content-Type"))
 	if err != nil {
 		o.Log(req).WithError(err).Error("could create a copy")
 		if errors.Is(err, block.ErrDataNotFound) || errors.Is(err, graveler.ErrNotFound) {

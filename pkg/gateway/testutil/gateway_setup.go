@@ -44,9 +44,6 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 
 	multipartTracker := multipart.NewTracker(store)
 
-	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
-	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
-
 	cfg := &config.ConfigImpl{}
 	_, err = config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
@@ -61,6 +58,13 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
+
+	// The in-memory adapter keeps its data per instance, so share the catalog's adapter with the
+	// handler to let catalog operations (such as copy) read objects written through the gateway.
+	blockAdapter := c.BlockAdapter
+	if blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter); blockstoreType != "" && blockstoreType != block.BlockstoreTypeMem {
+		blockAdapter = testutil.NewBlockAdapterByType(t, blockstoreType)
+	}
 
 	storageNamespace := os.Getenv("USE_STORAGE_NAMESPACE")
 	if storageNamespace == "" {
