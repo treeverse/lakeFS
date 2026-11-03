@@ -43,25 +43,27 @@ const DUCKDB_STRING_CONSTANT = 2;
 const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
 
 // returns a mapping of `lakefs://..` URIs to their `s3://...` equivalent
-async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{ [name: string]: string }> {
+export async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{ [name: string]: string }> {
     const tokenized = await conn.bindings.tokenize(sql);
     const r = Math.random(); // random number to make sure the S3 gateway picks up the request
     let prev = 0;
     const fileMap: { [name: string]: string } = {};
+    const encodedSql = new TextEncoder().encode(sql);
+    const decoder = new TextDecoder();
     tokenized.offsets.forEach((offset, i) => {
-        let currentToken = sql.length;
+        let currentToken = encodedSql.length;
         if (i < tokenized.offsets.length - 1) {
             currentToken = tokenized.offsets[i + 1];
         }
-        const part = sql.substring(prev, currentToken);
+        const part = decoder.decode(encodedSql.subarray(prev, currentToken));
         prev = currentToken;
         if (tokenized.types[i] === DUCKDB_STRING_CONSTANT) {
             const matches = part.match(LAKEFS_URI_PATTERN);
             if (matches !== null) {
-                // Unescape SQL single quotes ('' -> ')
+                // Unescape SQL single quotes ('' -> ') then URL-encode the path for S3 protocol
                 const unescapedUri = matches[2].replace(/''/g, "'");
-                const path = matches[3].replace(/''/g, "'");
-                fileMap[unescapedUri] = `s3://${path}?r=${r}`;
+                const encodedPath = matches[3].replace(/''/g, "'").split('/').map(encodeURIComponent).join('/');
+                fileMap[unescapedUri] = `s3://${encodedPath}?r=${r}`;
             }
         }
     });
