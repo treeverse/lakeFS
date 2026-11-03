@@ -439,27 +439,28 @@ func testToStringArray(commitIDs []graveler.CommitID) []string {
 	return res
 }
 
-// TestGetGarbageCollectionCommitsMissingParent verifies that a missing parent commit is
-// returned as an error, rather than as a nil error with a nil sequence.
-func TestGetGarbageCollectionCommitsMissingParent(t *testing.T) {
+// TestGetGarbageCollectionCommitsParentFetchFails verifies that a failure to fetch a
+// parent commit (for example a KV error) is returned as an error, rather than as a nil
+// error with a nil sequence.
+func TestGetGarbageCollectionCommitsParentFetchFails(t *testing.T) {
 	now := time.Now()
 	ctrl := gomock.NewController(t)
 	refManagerMock := mock.NewMockRefManager(ctrl)
 	ctx := t.Context()
 	repositoryRecord := &graveler.RepositoryRecord{RepositoryID: "test"}
 
-	// "head" refers to a parent that does not exist in this repository.
+	// Fetching "head"'s parent fails with a KV error.
 	head := &graveler.CommitRecord{
 		CommitID: "head",
 		Commit: &graveler.Commit{
-			Parents:      []graveler.CommitID{"missing"},
+			Parents:      []graveler.CommitID{"parent"},
 			CreationDate: now,
 			Version:      graveler.CurrentCommitVersion,
 			MetaRangeID:  "mr-head",
 		},
 	}
 	refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator([]*graveler.CommitRecord{head}), nil).MaxTimes(1)
-	refManagerMock.EXPECT().GetCommit(ctx, repositoryRecord, graveler.CommitID("missing")).Return(nil, graveler.ErrCommitNotFound)
+	refManagerMock.EXPECT().GetCommit(ctx, repositoryRecord, graveler.CommitID("parent")).Return(nil, kv.ErrConnectFailed)
 
 	branches := []*graveler.BranchRecord{{
 		BranchID: "main",
@@ -472,8 +473,8 @@ func TestGetGarbageCollectionCommitsMissingParent(t *testing.T) {
 		RefManager: refManagerMock,
 		Repository: repositoryRecord,
 	}, rules, t.TempDir())
-	if !errors.Is(err, graveler.ErrCommitNotFound) {
-		t.Fatalf("expected error %v, got %v", graveler.ErrCommitNotFound, err)
+	if !errors.Is(err, kv.ErrConnectFailed) {
+		t.Fatalf("expected error %v, got %v", kv.ErrConnectFailed, err)
 	}
 	if gcCommitsSeq != nil {
 		t.Error("expected nil commits sequence on error")
