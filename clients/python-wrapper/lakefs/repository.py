@@ -11,8 +11,13 @@ import lakefs_sdk
 from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
-from lakefs.client import Client, _BaseLakeFSObject
-from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
+from lakefs.client import Client, _BaseLakeFSObject, SINGLE_STORAGE_ID
+from lakefs.exceptions import (
+    api_exception_handler,
+    io_exception_handler,
+    ConflictException,
+    LakeFSException,
+)
 from lakefs.reference import Reference, generate_listing
 
 
@@ -24,6 +29,7 @@ class Repository(_BaseLakeFSObject):
     """
     _id: str
     _properties: Optional[RepositoryProperties] = None
+    _storage_id: Optional[str] = None
 
     def __init__(self, repository_id: str, client: Optional[Client] = None) -> None:
         self._id = repository_id
@@ -67,6 +73,16 @@ class Repository(_BaseLakeFSObject):
             repo = self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
             self._properties = RepositoryProperties(**repo.dict())
         return self
+
+
+    @property
+    def storage_id(self) -> str:
+        if self._storage_id is None:
+            with api_exception_handler(io_exception_handler):
+                repo_data = self._client.sdk_client.repositories_api.get_repository(self.id)
+                self._storage_id = repo_data.storage_id if repo_data.storage_id else SINGLE_STORAGE_ID
+        return self._storage_id
+
 
     def delete(self, **kwargs) -> None:
         """

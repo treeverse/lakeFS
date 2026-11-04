@@ -13,25 +13,27 @@ import os
 import tempfile
 import urllib.parse
 from abc import abstractmethod
-from typing import Any, AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args
+from typing import Any, AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args, TYPE_CHECKING
+
+from lakefs._decorators import re_arg
 
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
 
-from lakefs.client import Client, _BaseLakeFSObject, SINGLE_STORAGE_ID
+from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import (
     api_exception_handler,
     handle_http_error,
+    io_exception_handler,
     LakeFSException,
     NotFoundException,
-    ObjectNotFoundException,
-    NotAuthorizedException,
-    ForbiddenException,
-    PermissionException,
     ObjectExistsException,
     InvalidRangeException,
 )
+from lakefs.getter import repository_for
 from lakefs.models import ObjectInfo
+if TYPE_CHECKING:
+    from lakefs.repository import Repository
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
@@ -310,9 +312,9 @@ class ObjectReader(LakeFSIOBase):
             return b''
 
         try:
-            with api_exception_handler(_io_exception_handler):
+            with api_exception_handler(io_exception_handler):
                 response = self._client.sdk_client.objects_api.get_object_with_http_info(
-                    self._obj.repo,
+                    self._obj.repo_id,
                     self._obj.ref,
                     self._obj.path,
                     range=read_range,
@@ -570,7 +572,7 @@ class ObjectWriter(LakeFSIOBase):
                 headers[_LAKEFS_METADATA_PREFIX + k] = v
 
         self._fd.seek(0)
-        resource_path = urllib.parse.quote(f"/repositories/{self._obj.repo}/branches/{self._obj.ref}/objects",
+        resource_path = urllib.parse.quote(f"/repositories/{self._obj.repo_id}/branches/{self._obj.ref}/objects",
                                            encoding="utf-8")
         query_params = urllib.parse.urlencode({"path": self._obj.path}, encoding="utf-8")
         url = self._client.config.host + resource_path + f"?{query_params}"
@@ -589,7 +591,7 @@ class ObjectWriter(LakeFSIOBase):
     def _upload_presign(self) -> lakefs_sdk.ObjectStats:
         # Extract staging-specific kwargs
         staging_kwargs = {k: v for k, v in self._kwargs.items() if k in ['_request_timeout', 'async_req']}
-        staging_location = self._client.sdk_client.staging_api.get_physical_address(self._obj.repo,
+        staging_location = self._client.sdk_client.staging_api.get_physical_address(self._obj.repo_id,
                                                                                     self._obj.ref,
                                                                                     self._obj.path,
                                                                                     True,
@@ -619,7 +621,7 @@ class ObjectWriter(LakeFSIOBase):
                                            mtime=None)
         if_none_match = "*" if self._mode.startswith("x") else None
         try:
-            return self._client.sdk_client.staging_api.link_physical_address(self._obj.repo,
+            return self._client.sdk_client.staging_api.link_physical_address(self._obj.repo_id,
                                                                              self._obj.ref,
                                                                              self._obj.path,
                                                                              staging_metadata=staging_metadata,
@@ -668,14 +670,14 @@ class StoredObject(_BaseLakeFSObject):
     """
     Class representing an object in lakeFS.
     """
-    _repo_id: str
+    _repo: Repository
     _ref_id: str
     _path: str
     _stats: Optional[ObjectInfo] = None
-    _storage_id: Optional[str] = None
 
-    def __init__(self, repository_id: str, reference_id: str, path: str, client: Optional[Client] = None):
-        self._repo_id = repository_id
+    @re_arg({"repository_id": "repo"})
+    def __init__(self, repo: Repository | str, reference_id: str, path: str, client: Optional[Client] = None):
+        self._repo = repository_for(repo, client)
         self._ref_id = reference_id
         self._path = path
         super().__init__(client)
@@ -684,14 +686,14 @@ class StoredObject(_BaseLakeFSObject):
         return self.path
 
     def __repr__(self):
-        return f'StoredObject(repository="{self.repo}", reference="{self.ref}", path="{self.path}")'
+        return f'StoredObject(repository="{self.repo_id}", reference="{self.ref}", path="{self.path}")'
 
     @property
-    def repo(self) -> str:
+    def repo_id(self) -> str:
         """
         Returns the object's repository id
         """
-        return self._repo_id
+        return self._repo.id
 
     @property
     def ref(self) -> str:
@@ -739,9 +741,9 @@ class StoredObject(_BaseLakeFSObject):
         """
         # don't cache pre-signed stats
         if self._stats is None or pre_sign:
-            with api_exception_handler(_io_exception_handler):
+            with api_exception_handler(io_exception_handler):
                 stat = self._client.sdk_client.objects_api.stat_object(
-                    self._repo_id, self._ref_id, self._path, presign=pre_sign, **kwargs)
+                    self.repo_id, self._ref_id, self._path, presign=pre_sign, **kwargs)
                 self._stats = ObjectInfo(**stat.dict())
         return self._stats
 
@@ -749,11 +751,7 @@ class StoredObject(_BaseLakeFSObject):
         """
         Return the storage ID associated with this object
         """
-        if self._storage_id is None:
-            with api_exception_handler(_io_exception_handler):
-                repo = self._client.sdk_client.repositories_api.get_repository(self._repo_id)
-                self._storage_id = repo.storage_id if repo.storage_id else SINGLE_STORAGE_ID
-        return self._storage_id
+        return self._repo.storage_id
 
     def exists(self, **kwargs) -> bool:
         """
@@ -765,10 +763,10 @@ class StoredObject(_BaseLakeFSObject):
         def exist_handler(e: LakeFSException):
             if isinstance(e, NotFoundException):
                 return None  # exists = False
-            return _io_exception_handler(e)
+            return io_exception_handler(e)
 
         with api_exception_handler(exist_handler):
-            self._client.sdk_client.objects_api.head_object(self._repo_id, self._ref_id, self._path, **kwargs)
+            self._client.sdk_client.objects_api.head_object(self.repo_id, self._ref_id, self._path, **kwargs)
             exists = True
 
         return exists
@@ -788,13 +786,13 @@ class StoredObject(_BaseLakeFSObject):
         with api_exception_handler():
             object_copy_creation = lakefs_sdk.ObjectCopyCreation(src_ref=self._ref_id, src_path=self._path,
                                                                   shallow=False)
-            self._client.sdk_client.objects_api.copy_object(repository=self._repo_id,
+            self._client.sdk_client.objects_api.copy_object(repository=self.repo_id,
                                                             branch=destination_branch_id,
                                                             dest_path=destination_path,
                                                             object_copy_creation=object_copy_creation,
                                                             **kwargs)
 
-        return WriteableObject(repository_id=self._repo_id, reference_id=destination_branch_id, path=destination_path,
+        return WriteableObject(repo=self._repo, reference_id=destination_branch_id, path=destination_path,
                                client=self._client)
 
 
@@ -805,12 +803,13 @@ class WriteableObject(StoredObject):
     This Object is instantiated and returned upon invoking writer() on Branch reference type.
     """
 
-    def __init__(self, repository_id: str, reference_id: str, path: str,
+    @re_arg({"repository_id": "repo"})
+    def __init__(self, repo: Repository | str, reference_id: str, path: str,
                  client: Optional[Client] = None) -> None:
-        super().__init__(repository_id, reference_id, path, client=client)
+        super().__init__(repo, reference_id, path, client=client)
 
     def __repr__(self):
-        return f'WriteableObject(repository="{self.repo}", reference="{self.ref}", path="{self.path}")'
+        return f'WriteableObject(repository="{self.repo_id}", reference="{self.ref}", path="{self.path}")'
 
     def upload(self,
                data: str | bytes,
@@ -855,8 +854,8 @@ class WriteableObject(StoredObject):
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
-        with api_exception_handler(_io_exception_handler):
-            self._client.sdk_client.objects_api.delete_object(self._repo_id, self._ref_id, self._path, **kwargs)
+        with api_exception_handler(io_exception_handler):
+            self._client.sdk_client.objects_api.delete_object(self.repo_id, self._ref_id, self._path, **kwargs)
             self._stats = None
 
     def writer(self,
@@ -896,11 +895,3 @@ class WriteableObject(StoredObject):
                             metadata=metadata,
                             client=self._client,
                             **kwargs)
-
-
-def _io_exception_handler(e: LakeFSException):
-    if isinstance(e, NotFoundException):
-        return ObjectNotFoundException(e.status_code, e.reason)
-    if isinstance(e, (NotAuthorizedException, ForbiddenException)):
-        return PermissionException(e.status_code, e.reason)
-    return e

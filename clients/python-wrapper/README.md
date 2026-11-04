@@ -34,11 +34,11 @@ from lakefs.client import Client
 
 # Using default client will attempt to authenticate with lakeFS server using configured credentials
 # If environment variables or .lakectl.yaml file exist 
-repo = lakefs.repository(repository_id="my-repo")
+repo = lakefs.repository(repo="my-repo")
 
 # Or explicitly initialize and provide a Client object 
 clt = Client(username="<lakefs_access_key_id>", password="<lakefs_secret_access_key>", host="<lakefs_endpoint>")
-repo = lakefs.Repository(repository_id="my-repo", client=clt)
+repo = lakefs.Repository(repo="my-repo", client=clt)
 
 # From this point, proceed using the package according to documentation
 main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch_id="main")

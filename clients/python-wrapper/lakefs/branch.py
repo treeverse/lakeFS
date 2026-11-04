@@ -7,14 +7,19 @@ from __future__ import annotations
 import uuid
 import warnings
 from contextlib import contextmanager
-from typing import Optional, Generator, Iterable, Iterator, Literal, Dict
+from typing import Optional, Generator, Iterable, Iterator, Literal, Dict, TYPE_CHECKING
+
+from lakefs._decorators import re_arg
 
 import lakefs_sdk
 from lakefs.client import Client
+from lakefs.getter import repository_for
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
 from lakefs.reference import Reference, ReferenceType, generate_listing
+if TYPE_CHECKING:
+    from lakefs.repository import Repository
 from lakefs.models import Change, Commit
 from lakefs.tag import Tag
 from lakefs.exceptions import (
@@ -43,7 +48,7 @@ class _BaseBranch(Reference):
         :param path: The object's path
         """
 
-        return WriteableObject(self.repo_id, self._id, path, client=self._client)
+        return WriteableObject(self._repo, self._id, path, client=self._client)
 
     def uncommitted(self, max_amount: Optional[int] = None, after: Optional[str] = None, prefix: Optional[str] = None,
                     **kwargs) -> Generator[Change]:
@@ -60,7 +65,7 @@ class _BaseBranch(Reference):
         """
 
         for diff in generate_listing(self._client.sdk_client.branches_api.diff_branch,
-                                     self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix,
+                                     self.repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix,
                                      **kwargs):
             yield Change(**diff.dict())
 
@@ -107,7 +112,7 @@ class _BaseBranch(Reference):
             object_paths = [o.path if isinstance(o, StoredObject) else o for o in object_paths]
         with api_exception_handler():
             return self._client.sdk_client.objects_api.delete_objects(
-                self._repo_id,
+                self.repo_id,
                 self._id,
                 lakefs_sdk.PathList(paths=object_paths)
             )
@@ -127,7 +132,7 @@ class _BaseBranch(Reference):
         """
 
         reset_creation = lakefs_sdk.ResetCreation(path=path, type=path_type)
-        return self._client.sdk_client.branches_api.reset_branch(self._repo_id, self.id, reset_creation, **kwargs)
+        return self._client.sdk_client.branches_api.reset_branch(self.repo_id, self.id, reset_creation, **kwargs)
 
 
 class Branch(_BaseBranch):
@@ -135,8 +140,9 @@ class Branch(_BaseBranch):
     Class representing a branch in lakeFS.
     """
 
-    def __init__(self, repository_id: str, branch_id: str, client: Optional[Client] = None):
-        super().__init__(repository_id, reference_id=branch_id, client=client)
+    @re_arg({"repository_id": "repo"})
+    def __init__(self, repo: Repository | str, branch_id: str, client: Optional[Client] = None):
+        super().__init__(repo, reference_id=branch_id, client=client)
 
     def get_commit(self):
         """
@@ -162,7 +168,7 @@ class Branch(_BaseBranch):
         cherry_pick_creation = lakefs_sdk.CherryPickCreation(ref=ref, parent_number=parent_number)
         with api_exception_handler():
             res = self._client.sdk_client.branches_api.cherry_pick(
-                self._repo_id, self._id, cherry_pick_creation, **kwargs)
+                self.repo_id, self._id, cherry_pick_creation, **kwargs)
             return Commit(**res.dict())
 
     def create(self, source_reference: ReferenceType, exist_ok: bool = False, **kwargs) -> Branch:
@@ -195,7 +201,7 @@ class Branch(_BaseBranch):
         reference_id = source_reference if isinstance(source_reference, str) else source_reference.id
         branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=reference_id, **kwargs)
         with api_exception_handler(handle_conflict):
-            self._client.sdk_client.branches_api.create_branch(self._repo_id, branch_creation)
+            self._client.sdk_client.branches_api.create_branch(self.repo_id, branch_creation)
         return self
 
     @property
@@ -209,8 +215,8 @@ class Branch(_BaseBranch):
         :raise ServerException: for any other errors
         """
         with api_exception_handler():
-            branch = self._client.sdk_client.branches_api.get_branch(self._repo_id, self._id)
-        return Reference(self._repo_id, branch.commit_id, self._client)
+            branch = self._client.sdk_client.branches_api.get_branch(self.repo_id, self._id)
+        return Reference(self._repo, branch.commit_id, self._client)
 
     def commit(self, message: str, metadata: Optional[dict] = None, **kwargs) -> Reference:
         """
@@ -228,8 +234,8 @@ class Branch(_BaseBranch):
         commits_creation = lakefs_sdk.CommitCreation(message=message, metadata=metadata, **kwargs)
 
         with api_exception_handler():
-            c = self._client.sdk_client.commits_api.commit(self._repo_id, self._id, commits_creation)
-        return Reference(self._repo_id, c.id, self._client)
+            c = self._client.sdk_client.commits_api.commit(self.repo_id, self._id, commits_creation)
+        return Reference(self._repo, c.id, self._client)
 
     def delete(self, **kwargs) -> None:
         """
@@ -242,7 +248,7 @@ class Branch(_BaseBranch):
         :raise ServerException: for any other errors
         """
         with api_exception_handler():
-            return self._client.sdk_client.branches_api.delete_branch(self._repo_id, self._id, **kwargs)
+            return self._client.sdk_client.branches_api.delete_branch(self.repo_id, self._id, **kwargs)
 
     def revert(self, reference: Optional[ReferenceType], parent_number: int = 0, *,
                reference_id: Optional[str] = None, **kwargs) -> Commit:
@@ -284,12 +290,12 @@ class Branch(_BaseBranch):
 
         with api_exception_handler():
             self._client.sdk_client.branches_api.revert_branch(
-                self._repo_id,
+                self.repo_id,
                 self._id,
                 lakefs_sdk.RevertCreation(ref=ref, parent_number=parent_number, allow_empty=False),
                 **kwargs
             )
-            commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
+            commit = self._client.sdk_client.commits_api.get_commit(self.repo_id, self._id)
             return Commit(**commit.dict())
 
     def import_data(self, commit_message: str = "", metadata: Optional[dict] = None) -> ImportManager:
@@ -301,7 +307,7 @@ class Branch(_BaseBranch):
             message is provided, uses the default server commit message for imports.
         :return: an ImportManager object
         """
-        return ImportManager(self._repo_id, self._id, commit_message, metadata, self._client)
+        return ImportManager(self.repo_id, self._id, commit_message, metadata, self._client)
 
     @contextmanager
     def transact(self, commit_message: str = "", commit_metadata: Optional[Dict] = None,
@@ -342,7 +348,7 @@ class Branch(_BaseBranch):
         :param tag: Optional tag name to create after the transaction is successfully completed
         :return: a Transaction object to perform the operations on
         """
-        with Transaction(self._repo_id, self._id, commit_message, commit_metadata, delete_branch_on_error,
+        with Transaction(self._repo, self._id, commit_message, commit_metadata, delete_branch_on_error,
                          self._client, tag) as tx:
             yield tx
 
@@ -352,7 +358,8 @@ class _Transaction(_BaseBranch):
     def _get_tx_name() -> str:
         return f"tx-{uuid.uuid4()}"  # Don't rely on source branch name as this might exceed valid branch length
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
+    @re_arg({"repository_id": "repo"})
+    def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = None, tag: Optional[str] = None):
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
@@ -360,8 +367,8 @@ class _Transaction(_BaseBranch):
         self._tag = tag
 
         tx_name = self._get_tx_name()
-        self._tx_branch = Branch(repository_id, tx_name, client).create(branch_id, hidden=True)
-        super().__init__(repository_id, tx_name, client)
+        self._tx_branch = Branch(repo, tx_name, client).create(branch_id, hidden=True)
+        super().__init__(repo, tx_name, client)
 
     @property
     def source_id(self) -> str:
@@ -424,24 +431,33 @@ class Transaction:
     operations on the branch which will later be merged back into the source branch.
     Currently, transaction is supported only as a context manager.
     """
+    _repo: Repository
+    _commit_message: str
+    _commit_metadata: Optional[Dict]
+    _source_branch: str
+    _tx: Optional[_Transaction]
+    _tx_branch: Optional[Branch]
+    _cleanup_branch: bool
+    _tag: Optional[str]
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
+    @re_arg({"repository_id": "repo"})
+    def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True,
-                 client: Optional[Client] = None, tag: Optional[str] = None):
-        self._repo_id = repository_id
+                 client: Optional[Client] = None, tag: Optional[str] = None) -> None:
+        self._repo = repository_for(repo, client)
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
         self._source_branch = branch_id
         self._client = client
-        self._tx: Optional["_Transaction"] = None
-        self._tx_branch: Optional["Branch"] = None
+        self._tx: Optional[_Transaction] = None
+        self._tx_branch: Optional[Branch] = None
         self._cleanup_branch = delete_branch_on_error
         self._tag = tag
 
     def __enter__(self):
-        self._tx = _Transaction(self._repo_id, self._source_branch, self._commit_message, self._commit_metadata,
+        self._tx = _Transaction(self._repo, self._source_branch, self._commit_message, self._commit_metadata,
                                 self._client, self._tag)
-        self._tx_branch = Branch(self._repo_id, self._tx.id, self._client)
+        self._tx_branch = Branch(self._repo, self._tx.id, self._client)
         return self._tx
 
     def __exit__(self, typ, value, traceback) -> Literal[False]:
@@ -463,6 +479,6 @@ class Transaction:
             raise TransactionException(f"Failed committing transaction {self._tx.id}: {e}") from e
 
         if self._tx.tag:
-            tag = Tag(self._repo_id, self._tx.tag, self._client)
+            tag = Tag(self._repo, self._tx.tag, self._client)
             tag.create(merge_commit_id)
         return False

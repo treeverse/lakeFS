@@ -4,13 +4,18 @@ Module containing lakeFS reference implementation
 
 from __future__ import annotations
 
-from typing import Optional, Generator, Union
+from typing import Optional, Generator, Union, TYPE_CHECKING
+
+from lakefs._decorators import re_arg
 
 import lakefs_sdk
 
 from lakefs.models import Commit, Change, CommonPrefix, ObjectInfo, _OBJECT
 from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import api_exception_handler
+from lakefs.getter import repository_for
+if TYPE_CHECKING:
+    from lakefs.repository import Repository
 from lakefs.object import StoredObject
 
 
@@ -18,14 +23,15 @@ class Reference(_BaseLakeFSObject):
     """
     Class representing a reference in lakeFS.
     """
-    _repo_id: str
+    _repo: Repository
     _id: str
     _commit: Optional[Commit] = None
 
-    def __init__(self, repository_id: str, reference_id: str, client: Optional[Client] = None) -> None:
+    @re_arg({"repository_id": "repo"})
+    def __init__(self, repo: Repository | str, reference_id: str, client: Optional[Client] = None) -> None:
         """Return a reference to a lakeFS commit.
 
-        :param repository_id: the repository holding the commit
+        :param repo: the repository holding the commit, or the id of that repository
         :param reference_id: a reference expression to the commit
 
         Any reference expression can be used as a reference_id, for example:
@@ -37,7 +43,7 @@ class Reference(_BaseLakeFSObject):
         See https://docs.lakefs.io/understand/model.html#ref-expressions for
         details.
         """
-        self._repo_id = repository_id
+        self._repo = repository_for(repo, client)
         self._id = reference_id
         super().__init__(client)
 
@@ -46,7 +52,7 @@ class Reference(_BaseLakeFSObject):
         """
         Return the repository id for this reference
         """
-        return self._repo_id
+        return self._repo.id
 
     @property
     def id(self) -> str:
@@ -76,7 +82,7 @@ class Reference(_BaseLakeFSObject):
         """
 
         for res in generate_listing(self._client.sdk_client.objects_api.list_objects,
-                                    repository=self._repo_id,
+                                    repository=self.repo_id,
                                     ref=self._id,
                                     max_amount=max_amount,
                                     after=after,
@@ -96,7 +102,7 @@ class Reference(_BaseLakeFSObject):
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        for res in generate_listing(self._client.sdk_client.refs_api.log_commits, self._repo_id, self._id,
+        for res in generate_listing(self._client.sdk_client.refs_api.log_commits, self.repo_id, self._id,
                                     max_amount=max_amount, **kwargs):
             yield Commit(**res.dict())
 
@@ -110,7 +116,7 @@ class Reference(_BaseLakeFSObject):
         """
         if self._commit is None:
             with api_exception_handler():
-                commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
+                commit = self._client.sdk_client.commits_api.get_commit(self.repo_id, self._id)
                 self._commit = Commit(**commit.dict())
         return self._commit
 
@@ -136,7 +142,7 @@ class Reference(_BaseLakeFSObject):
         """
         other_ref_id = other_ref if isinstance(other_ref, str) else other_ref.id
         for diff in generate_listing(self._client.sdk_client.refs_api.diff_refs,
-                                     repository=self._repo_id,
+                                     repository=self.repo_id,
                                      left_ref=self._id,
                                      right_ref=other_ref_id,
                                      after=after,
@@ -160,7 +166,7 @@ class Reference(_BaseLakeFSObject):
         branch_id = destination_branch if isinstance(destination_branch, str) else destination_branch.id
         with api_exception_handler():
             merge = lakefs_sdk.Merge(**kwargs)
-            res = self._client.sdk_client.refs_api.merge_into_branch(self._repo_id,
+            res = self._client.sdk_client.refs_api.merge_into_branch(self.repo_id,
                                                                      self._id,
                                                                      branch_id,
                                                                      merge=merge)
@@ -172,7 +178,7 @@ class Reference(_BaseLakeFSObject):
 
         :param path: The object's path
         """
-        return StoredObject(self._repo_id, self._id, path, self._client)
+        return StoredObject(self._repo, self._id, path, self._client)
 
     def __repr__(self):
         class_name = self.__class__.__name__
