@@ -689,6 +689,22 @@ class StoredObject(_BaseLakeFSObject):
         return f'StoredObject(repository="{self.repo_id}", reference="{self.ref}", path="{self.path}")'
 
     @property
+    def repository(self) -> Repository:
+        """
+        Returns the object's repository
+        """
+        return self._repo
+
+    @property
+    def repo(self) -> str:
+        """
+        Returns the object's repository id
+
+        Prefer repo_id.
+        """
+        return self.repo_id
+
+    @property
     def repo_id(self) -> str:
         """
         Returns the object's repository id

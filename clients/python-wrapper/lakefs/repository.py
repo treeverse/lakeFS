@@ -101,28 +101,28 @@ class Repository(_BaseLakeFSObject):
         Return a branch object using the current repository id and client
         :param branch_id: name of the branch
         """
-        return Branch(self._id, branch_id, self._client)
+        return Branch(self, branch_id, self._client)
 
     def commit(self, commit_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param commit_id: id of the commit reference
         """
-        return Reference(self._id, commit_id, self._client)
+        return Reference(self, commit_id, self._client)
 
     def ref(self, ref_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param ref_id: branch name, commit id or tag id
         """
-        return Reference(self._id, ref_id, self._client)
+        return Reference(self, ref_id, self._client)
 
     def tag(self, tag_id: str) -> Tag:
         """
         Return a tag object using the current repository id and client
         :param tag_id: name of the tag
         """
-        return Tag(self._id, tag_id, self._client)
+        return Tag(self, tag_id, self._client)
 
     def branches(self, max_amount: Optional[int] = None,
                  after: Optional[str] = None, prefix: Optional[str] = None, **kwargs) -> Generator[Branch]:
@@ -140,7 +140,7 @@ class Repository(_BaseLakeFSObject):
 
         for res in generate_listing(self._client.sdk_client.branches_api.list_branches, self._id,
                                     max_amount=max_amount, after=after, prefix=prefix, **kwargs):
-            yield Branch(self._id, res.id, client=self._client)
+            yield Branch(self, res.id, client=self._client)
 
     def tags(self, max_amount: Optional[int] = None,
              after: Optional[str] = None, prefix: Optional[str] = None, **kwargs) -> Generator[Tag]:
@@ -157,7 +157,7 @@ class Repository(_BaseLakeFSObject):
         """
         for res in generate_listing(self._client.sdk_client.tags_api.list_tags, self._id,
                                     max_amount=max_amount, after=after, prefix=prefix, **kwargs):
-            yield Tag(self._id, res.id, client=self._client)
+            yield Tag(self, res.id, client=self._client)
 
     @property
     def metadata(self) -> dict[str, str]:
