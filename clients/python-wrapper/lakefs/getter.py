@@ -24,4 +24,4 @@ def repository_for(repo: repository_mod.Repository | str, client: Optional[Clien
 
 def repository_id(repo: repository_mod.Repository | str) -> str:
     """Return the repository_id of repo, or itself if it is already a repository_id"""
-    return repo if isinstance(repo, str) else repo
+    return repo if isinstance(repo, str) else repo.id

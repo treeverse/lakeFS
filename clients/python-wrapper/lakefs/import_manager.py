@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, TYPE_CHECKING
 
 from lakefs._decorators import renamed_parameters
 
@@ -16,6 +16,9 @@ from lakefs.models import ImportStatus, _OBJECT, _COMMON_PREFIX
 from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import ImportManagerException, api_exception_handler
 from lakefs.getter import repository_id
+
+if TYPE_CHECKING:
+    from lakefs.repository import Repository
 
 
 class ImportManager(_BaseLakeFSObject):

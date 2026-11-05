@@ -4,10 +4,15 @@ Module for renaming kwargs
 Based on https://stackoverflow.com/a/74564394 but does not warn.
 """
 
+from collections.abc import Callable
 from functools import wraps
+from typing import ParamSpec, TypeVar, cast
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
-def renamed_parameters(**kwarg_map):
+def renamed_parameters(**kwarg_map) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     Decorator for renaming args
 
@@ -17,12 +22,12 @@ def renamed_parameters(**kwarg_map):
         def func(new1, new2):
           pass
     """
-    def decorator(func):
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)
-        def wrapped(*args, **kwargs):
+        def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
             new_kwargs = {}
             for k, v in kwargs.items():
                 new_kwargs[kwarg_map.get(k, k)] = v
-            return func(*args, **new_kwargs)
+            return cast(Callable[..., R], func)(*args, **new_kwargs)
         return wrapped
     return decorator
