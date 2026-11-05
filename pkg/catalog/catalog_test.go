@@ -37,9 +37,9 @@ func TestGetStartPos(t *testing.T) {
 	0		1		0		at prefix
 	0		1		1		at after (when iterating we'll skip the exact match anyway)
 	1		0		0		""
-	1		0		1		next common prefix after "after"
+	1		0		1		next common prefix after "after" if it ends with the delimiter, otherwise at after
 	1		1		0		at prefix
-	1		1		1		next common prefix after "after"
+	1		1		1		next common prefix after "after" if it ends with the delimiter, otherwise at after
 	*/
 	cases := []struct {
 		Name      string
@@ -57,6 +57,8 @@ func TestGetStartPos(t *testing.T) {
 		{"delimiter_and_prefix", "/", "a/", "", "a/"},
 		{"delimiter_prefix_and_after", "/", "a/", "a/b/", string(graveler.UpperBoundForPrefix([]byte("a/b/")))},
 		{"empty_directory", "/", "", "a/b//", string(graveler.UpperBoundForPrefix([]byte("a/b//")))},
+		{"delimiter_and_object_after", "/", "", "a/b", "a/b"},
+		{"delimiter_prefix_and_object_after", "/", "t/", "t/part-9", "t/part-9"},
 		{"after_before_prefix", "", "c", "a", "c"},
 		{"after_before_prefix_with_delim", "/", "c/", "a", "c/"},
 	}

@@ -2030,6 +2030,35 @@ func TestController_DiffRefsHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("diff with delimiter after an object", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		const newBranchName = "main2"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, "", onBlock(deps, "foo1"), "main", false)
+		testutil.Must(t, err)
+		_, err = deps.catalog.CreateBranch(ctx, repoName, newBranchName, "main")
+		testutil.Must(t, err)
+		for _, p := range []string{"d/f", "d/f/x", "d/f2"} {
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, p, strings.NewReader(p), repoName, newBranchName)
+			verifyResponseOK(t, uploadResp, err)
+		}
+		_, err = deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil, false)
+		testutil.Must(t, err)
+
+		resp, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{
+			Prefix:    apiutil.Ptr(apigen.PaginationPrefix("d/")),
+			Delimiter: apiutil.Ptr(apigen.PaginationDelimiter("/")),
+			After:     apiutil.Ptr(apigen.PaginationAfter("d/f")),
+		})
+		verifyResponseOK(t, resp, err)
+		var paths []string
+		for _, r := range resp.JSON200.Results {
+			paths = append(paths, r.Path)
+		}
+		if diff := deep.Equal(paths, []string{"d/f/", "d/f2"}); diff != nil {
+			t.Fatalf("unexpected diff paths: %s", diff)
+		}
+	})
+
 	t.Run("diff refs with object stats", func(t *testing.T) {
 		repoName := testUniqueRepoName()
 		const newBranchName = "main2"
