@@ -3,13 +3,17 @@ Module containing lakeFS tag implementation
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+from lakefs._decorators import renamed_parameters
 
 import lakefs_sdk
 
 from lakefs.client import Client
 from lakefs.exceptions import api_exception_handler, LakeFSException, ConflictException
 from lakefs.reference import Reference, ReferenceType
+if TYPE_CHECKING:
+    from lakefs.repository import Repository
 
 
 class Tag(Reference):
@@ -17,8 +21,9 @@ class Tag(Reference):
     Class representing a tag in lakeFS.
     """
 
-    def __init__(self, repository_id: str, tag_id: str, client: Optional[Client] = None):
-        super().__init__(repository_id, reference_id=tag_id, client=client)
+    @renamed_parameters(repository_id="repo")
+    def __init__(self, repo: Repository | str, tag_id: str, client: Optional[Client] = None):
+        super().__init__(repo, reference_id=tag_id, client=client)
 
     def create(self, source_ref: ReferenceType, exist_ok: Optional[bool] = False, **kwargs) -> Tag:
         """
@@ -41,7 +46,7 @@ class Tag(Reference):
             return None
 
         with api_exception_handler(handle_conflict):
-            self._client.sdk_client.tags_api.create_tag(self._repo_id, tag_creation, **kwargs)
+            self._client.sdk_client.tags_api.create_tag(self.repo_id, tag_creation, **kwargs)
 
         return self
 
@@ -55,5 +60,5 @@ class Tag(Reference):
         :raise ServerException: for any other errors
         """
         with api_exception_handler():
-            self._client.sdk_client.tags_api.delete_tag(self._repo_id, self.id, **kwargs)
+            self._client.sdk_client.tags_api.delete_tag(self.repo_id, self.id, **kwargs)
             self._commit = None

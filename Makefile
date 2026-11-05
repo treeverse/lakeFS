@@ -54,7 +54,7 @@ GIT_REF=$(shell git rev-parse --short HEAD --)
 REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
 
-.PHONY: all clean esti lint test gen help
+.PHONY: all clean esti lint *-lint test gen help
 all: build
 
 clean:
@@ -160,9 +160,9 @@ build-binaries:
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
-lint: ## Lint code
-	$(GOCMD) tool golangci-lint run ./... $(GOLANGCI_LINT_FLAGS)
-	cd $(UI_DIR) && npm run lint
+lint: go-lint webui-lint ## Lint code
+
+lint-full: python-wrapper-lint lint ## Lint all code (slower)
 
 esti: ## run esti (system testing)
 	$(GOTEST) -v ./esti --args --system-tests
@@ -259,8 +259,14 @@ checks-validator: lint validate-proto validate-ui-format \
 	validate-api \
 	validate-wrapper validate-wrapgen-testcode
 
+go-lint:
+	$(GOCMD) tool golangci-lint run ./... $(GOLANGCI_LINT_FLAGS)
+
 python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./lint.sh"
+
+webui-lint:
+	cd $(UI_DIR) && npm run lint
 
 python-wrapper-gen-docs:
 	@version=$$(python -m pip install -r clients/python-wrapper/requirements.txt && python clients/python-wrapper/_version.py)

@@ -194,3 +194,11 @@ def handle_http_error(resp: HTTPResponse) -> None:
         exc_class = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)
         lakefs_ex = exc_class(resp.status, resp.reason, resp.data, headers_dict)
         raise lakefs_ex
+
+
+def io_exception_handler(e: LakeFSException):
+    if isinstance(e, NotFoundException):
+        return ObjectNotFoundException(e.status_code, e.reason)
+    if isinstance(e, (NotAuthorizedException, ForbiddenException)):
+        return PermissionException(e.status_code, e.reason)
+    return e
