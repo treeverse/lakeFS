@@ -3494,8 +3494,14 @@ func TestGraveler_CherryPickHooks(t *testing.T) {
 			require.Equal(t, cherryPickBranchID, h.BranchID, "Hook branch ID mismatch")
 			require.Equal(t, cherryPickMessage, h.Commit.Message, "Hook commit message mismatch")
 			require.Equal(t, commitCommitter, h.Commit.Committer, "Hook commit committer mismatch")
-			diff := deep.Equal(h.Commit.Metadata, cherryPickMetadata)
+			expectedMetadata := graveler.Metadata{
+				"key1":                  "val1",
+				"cherry-pick-origin":    string(sourceCommitID),
+				"cherry-pick-committer": "",
+			}
+			diff := deep.Equal(h.Commit.Metadata, expectedMetadata)
 			require.Nil(t, diff, "Hook commit metadata diff:", diff)
+			require.Equal(t, graveler.Metadata{"key1": "val1"}, cherryPickMetadata, "Override metadata must not be modified")
 
 			// verify post-cherry-pick hook parameters if it was called
 			if postCommitCalled {
@@ -3503,4 +3509,40 @@ func TestGraveler_CherryPickHooks(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGraveler_CherryPickDoesNotModifySourceCommitMetadata(t *testing.T) {
+	t.Parallel()
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitID")
+	const sourceCommitID = graveler.CommitID("sourceCommitID")
+	const cherryPickBranchID = graveler.BranchID("cherryPickBranchID")
+	// the ref manager returns the same *Commit on every call, like the commit cache in production
+	sourceCommit := &graveler.Commit{
+		MetaRangeID: expectedRangeID,
+		Parents:     graveler.CommitParents{expectedCommitID},
+		Metadata:    graveler.Metadata{"k": "a"},
+	}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID, StagingToken: "st1"},
+		Commits: map[graveler.CommitID]*graveler.Commit{
+			expectedCommitID: {MetaRangeID: expectedRangeID},
+			sourceCommitID:   sourceCommit,
+		},
+		Refs: map[graveler.Ref]*graveler.ResolvedRef{
+			graveler.Ref(sourceCommitID): {
+				Type:         graveler.ReferenceTypeCommit,
+				BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: sourceCommitID}},
+			},
+		},
+	}
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+
+	_, err := g.CherryPick(t.Context(), repository, cherryPickBranchID, graveler.Ref(sourceCommitID), nil, "committer", nil)
+	require.NoError(t, err)
+
+	require.Equal(t, graveler.Metadata{"k": "a"}, sourceCommit.Metadata, "source commit metadata must not change")
 }

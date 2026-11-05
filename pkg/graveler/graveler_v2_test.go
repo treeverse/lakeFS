@@ -824,7 +824,10 @@ func TestGravelerCherryPick(t *testing.T) {
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr3ID, commit.MetaRangeID)
 			require.Equal(t, "", commit.Message)
-			require.Equal(t, commitOverrides.Metadata, commit.Metadata)
+			require.Equal(t, "overrideValue", commit.Metadata["overrideKey"])
+			require.Contains(t, commit.Metadata, "cherry-pick-origin")
+			require.Len(t, commit.Metadata, 3)
+			require.Equal(t, graveler.Metadata{"overrideKey": "overrideValue"}, commitOverrides.Metadata, "override metadata must not be modified")
 			return commit3ID, nil
 		}).Times(1)
 		parent := 1
