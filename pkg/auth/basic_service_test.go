@@ -278,3 +278,30 @@ func createOldCreds(t *testing.T, ctx context.Context, store kv.Store, s *auth.B
 	require.NoError(t, store.Set(ctx, []byte(model.PartitionKey), model.CredentialPath(username, creds.AccessKeyId), credsData))
 	return creds
 }
+func TestBasicAuthService_ListEffectivePolicies(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	s, _ := SetupService(t, secret)
+	username := "adminUser"
+
+	// User does not exist yet -> should return ErrNotFound
+	_, _, err := s.ListEffectivePolicies(ctx, username, nil)
+	require.ErrorIs(t, err, auth.ErrNotFound)
+
+	// Create user
+	_, err = s.CreateUser(ctx, &model.User{Username: username})
+	require.NoError(t, err)
+
+	// User exists -> should return full permissions policy
+	policies, _, err := s.ListEffectivePolicies(ctx, username, nil)
+	require.NoError(t, err)
+	require.Len(t, policies, 1)
+	require.True(t, auth.HasActionOnAnyResource(policies, "fs:ListRepositories"))
+	require.True(t, auth.CheckPermission("arn:lakefs:fs:::repository/my-repo", username, policies, "fs:ListRepositories", nil))
+
+	// ListUserPolicies should also return full permissions policy
+	userPolicies, _, err := s.ListUserPolicies(ctx, username, nil)
+	require.NoError(t, err)
+	require.Len(t, userPolicies, 1)
+	require.True(t, auth.HasActionOnAnyResource(userPolicies, "fs:ListRepositories"))
+}
