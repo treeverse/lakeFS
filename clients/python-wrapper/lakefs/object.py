@@ -15,7 +15,7 @@ import urllib.parse
 from abc import abstractmethod
 from typing import Any, AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args, TYPE_CHECKING
 
-from lakefs._decorators import re_arg
+from lakefs._decorators import renamed_parameters
 
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
@@ -675,7 +675,7 @@ class StoredObject(_BaseLakeFSObject):
     _path: str
     _stats: Optional[ObjectInfo] = None
 
-    @re_arg({"repository_id": "repo"})
+    @renamed_parameters(repository_id="repo")
     def __init__(self, repo: Repository | str, reference_id: str, path: str, client: Optional[Client] = None):
         self._repo = repository_for(repo, client)
         self._ref_id = reference_id
@@ -803,7 +803,7 @@ class WriteableObject(StoredObject):
     This Object is instantiated and returned upon invoking writer() on Branch reference type.
     """
 
-    @re_arg({"repository_id": "repo"})
+    @renamed_parameters(repository_id="repo")
     def __init__(self, repo: Repository | str, reference_id: str, path: str,
                  client: Optional[Client] = None) -> None:
         super().__init__(repo, reference_id, path, client=client)

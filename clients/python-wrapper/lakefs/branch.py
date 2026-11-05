@@ -9,7 +9,7 @@ import warnings
 from contextlib import contextmanager
 from typing import Optional, Generator, Iterable, Iterator, Literal, Dict, TYPE_CHECKING
 
-from lakefs._decorators import re_arg
+from lakefs._decorators import renamed_parameters
 
 import lakefs_sdk
 from lakefs.client import Client
@@ -140,7 +140,7 @@ class Branch(_BaseBranch):
     Class representing a branch in lakeFS.
     """
 
-    @re_arg({"repository_id": "repo"})
+    @renamed_parameters(repository_id="repo")
     def __init__(self, repo: Repository | str, branch_id: str, client: Optional[Client] = None):
         super().__init__(repo, reference_id=branch_id, client=client)
 
@@ -358,7 +358,7 @@ class _Transaction(_BaseBranch):
     def _get_tx_name() -> str:
         return f"tx-{uuid.uuid4()}"  # Don't rely on source branch name as this might exceed valid branch length
 
-    @re_arg({"repository_id": "repo"})
+    @renamed_parameters(repository_id="repo")
     def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = None, tag: Optional[str] = None):
         self._commit_message = commit_message
@@ -440,7 +440,7 @@ class Transaction:
     _cleanup_branch: bool
     _tag: Optional[str]
 
-    @re_arg({"repository_id": "repo"})
+    @renamed_parameters(repository_id="repo")
     def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True,
                  client: Optional[Client] = None, tag: Optional[str] = None) -> None:

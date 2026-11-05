@@ -5,6 +5,8 @@ Module containing lakeFS tag implementation
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+from lakefs._decorators import renamed_parameters
+
 import lakefs_sdk
 
 from lakefs.client import Client
@@ -19,6 +21,7 @@ class Tag(Reference):
     Class representing a tag in lakeFS.
     """
 
+    @renamed_parameters(repository_id="repo")
     def __init__(self, repo: Repository | str, tag_id: str, client: Optional[Client] = None):
         super().__init__(repo, reference_id=tag_id, client=client)
 

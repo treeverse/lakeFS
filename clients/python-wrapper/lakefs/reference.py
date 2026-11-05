@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Optional, Generator, Union, TYPE_CHECKING
 
-from lakefs._decorators import re_arg
+from lakefs._decorators import renamed_parameters
 
 import lakefs_sdk
 
@@ -27,7 +27,7 @@ class Reference(_BaseLakeFSObject):
     _id: str
     _commit: Optional[Commit] = None
 
-    @re_arg({"repository_id": "repo"})
+    @renamed_parameters(repository_id="repo")
     def __init__(self, repo: Repository | str, reference_id: str, client: Optional[Client] = None) -> None:
         """Return a reference to a lakeFS commit.
 
