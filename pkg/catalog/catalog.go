@@ -1562,6 +1562,10 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 			}
 
 			commitRecord := it.Value()
+			// stop_at is the last commit to check, whether or not it changes the paths
+			if commitRecord.CommitID.String() == params.StopAt {
+				done.Store(true)
+			}
 			// skip merge commits
 			if len(commitRecord.Parents) != NumberOfParentsOfNonMergeCommit {
 				continue
