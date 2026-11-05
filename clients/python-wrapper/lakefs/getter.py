@@ -21,3 +21,7 @@ from lakefs import repository as repository_mod # Rename: repository is also a f
 
 def repository_for(repo: repository_mod.Repository | str, client: Optional[Client]) -> repository_mod.Repository:
     return repository_mod.Repository(repo, client) if isinstance(repo, str) else repo
+
+def repository_id(repo: repository_mod.Repository | str) -> str:
+    """Return the repository_id of repo, or itself if it is already a repository_id"""
+    return repo if isinstance(repo, str) else repo

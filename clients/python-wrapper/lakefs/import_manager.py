@@ -8,11 +8,14 @@ import asyncio
 from datetime import timedelta
 from typing import Optional, Dict, List
 
+from lakefs._decorators import renamed_parameters
+
 import lakefs_sdk
 
 from lakefs.models import ImportStatus, _OBJECT, _COMMON_PREFIX
 from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import ImportManagerException, api_exception_handler
+from lakefs.getter import repository_id
 
 
 class ImportManager(_BaseLakeFSObject):
@@ -46,9 +49,11 @@ class ImportManager(_BaseLakeFSObject):
     commit_metadata: Optional[Dict]
     sources: List[lakefs_sdk.ImportLocation]
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
+    @renamed_parameters(repository_id="repo")
+    def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = None) -> None:
-        self._repo_id = repository_id
+        # Only need an ID so drop the Repository.
+        self._repo_id = repository_id(repo)
         self._branch_id = branch_id
         self.commit_message = commit_message
         self.commit_metadata = commit_metadata
