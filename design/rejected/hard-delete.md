@@ -163,7 +163,7 @@ are in `deleted` state, after a certain amount of time (TBD), this physical addr
 
 ### Key Update Order of Precedence
 
-1. `commited` state takes precedence over all (terminal state - overrides any other value) - uses **Set**
+1. `committed` state takes precedence over all (terminal state - overrides any other value) - uses **Set**
 2. `deleted` state can only be done on entries which are not `committed` and uses **SetIf**
 3. `staged` state can only be done on entries which are not `committed` and uses **SetIf** 
 
