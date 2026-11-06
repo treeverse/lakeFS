@@ -3062,7 +3062,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 // not delete the underlying object.
 // ErrCannotClone is returned if any of the clone conditions are not satisfied.
 func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string,
-	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
+	replaceSrcMetadata bool, metadata Metadata, contentType string, opts ...graveler.SetOptionsFunc,
 ) (*DBEntry, error) {
 	// validate clone conditions
 	if srcRepo.Name != destRepository {
@@ -3087,6 +3087,7 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef st
 
 	if replaceSrcMetadata {
 		dstEntry.Metadata = metadata
+		dstEntry.ContentType = contentType
 	}
 
 	dstEntry.Metadata[apiutil.CloneMetadataKey] = srcMetaValue
@@ -3099,9 +3100,9 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef st
 
 // CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address or clone the entry if possible.
 // if clone is possible, the entry will be cloned with the same physical address and metadata.
-// if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
-// if replaceSrcMetadata is false, the metadata will be copied from the source entry.
-func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+// if replaceSrcMetadata is true, the metadata and content type will be replaced with the provided metadata and content type.
+// if replaceSrcMetadata is false, the metadata and content type will be copied from the source entry.
+func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, contentType string, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
 	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
 	// fetch src entry if needed - optimization in case we already have the entry
 	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
@@ -3131,7 +3132,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	options := graveler.NewSetOptions(opts)
 	// Clone entry
 	if options.Shallow {
-		return c.cloneEntry(ctx, srcRepo, srcRef, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, opts...)
+		return c.cloneEntry(ctx, srcRepo, srcRef, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, contentType, opts...)
 	}
 
 	// copy data to a new physical address
@@ -3142,6 +3143,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 
 	if replaceSrcMetadata {
 		dstEntry.Metadata = metadata
+		dstEntry.ContentType = contentType
 	}
 
 	srcObject := block.ObjectPointer{
