@@ -18,7 +18,7 @@ The following two issues are currently not addressed by our S3 interface:
 
 1. Content-Type - The content-type header sent part of put object and multipart upload is not kept, we expect get object to return the same content type.
    Related issues: [Support Content-Type](https://github.com/treeverse/lakeFS/issues/2296) [Support Trino AVRO format](https://github.com/treeverse/lakeFS/issues/2429)
-1. User-defined metadata - when posting an object AWS enables additional metadata by passing x-amz-meta-* headers. Do do not process these headers and by passing them to our metadata on put/get, we will enable better integration S3 compatability and integration with tools like Rsync
+1. User-defined metadata - when posting an object AWS enables additional metadata by passing x-amz-meta-* headers. Do do not process these headers and by passing them to our metadata on put/get, we will enable better integration S3 compatibility and integration with tools like Rsync
    Related issues: [Store some per-file metadata](https://github.com/treeverse/lakeFS/issues/2486)
 
 
