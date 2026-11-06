@@ -102,7 +102,8 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(false, gravelerSplit.path, new Path(localFile.getAbsolutePath), true)
     // TODO(johnnyaug) should we cache this?
-    sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
+    sstableReader =
+      new SSTableReader(localFile.getAbsolutePath, companion, true, gravelerSplit.path.toString)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
       try {
@@ -114,10 +115,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
       } catch {
         case e: io.treeverse.jpebble.BadFileFormatException =>
           logger.error(s"Failed to read sstable, bad file format: ${gravelerSplit.path}", e)
-          throw new io.treeverse.jpebble.BadFileFormatException(
-            s"Bad file format in ${gravelerSplit.path}: ${e.getMessage}",
-            e
-          )
+          throw e
       }
     }
     rangeID = gravelerSplit.rangeID
