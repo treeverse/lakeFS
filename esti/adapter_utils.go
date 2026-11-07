@@ -35,6 +35,9 @@ type ClientAdapter interface {
 	// Download returns a Reader to download data from physicalAddress.  The Close method
 	// of that Reader can return errors!
 	Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error)
+
+	// Delete removes the object at physicalAddress from the backing store.
+	Delete(ctx context.Context, physicalAddress *url.URL) error
 }
 
 type AdapterFactory map[string]func(context.Context) (ClientAdapter, error)
@@ -109,4 +112,17 @@ func (s *s3Adapter) Download(ctx context.Context, physicalAddress *url.URL) (io.
 		return nil, err
 	}
 	return getObjectResponse.Body, nil
+}
+
+func (s *s3Adapter) Delete(ctx context.Context, physicalAddress *url.URL) error {
+	if physicalAddress.Scheme != s3Scheme {
+		return fmt.Errorf("%s: %w", s3Scheme, helpers.ErrUnsupportedProtocol)
+	}
+	bucket := physicalAddress.Hostname()
+	key := strings.TrimPrefix(physicalAddress.Path, "/")
+	_, err := s.svc.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	return err
 }
