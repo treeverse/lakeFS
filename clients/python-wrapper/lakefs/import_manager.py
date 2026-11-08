@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
-from typing import Optional, Dict, List, TYPE_CHECKING
+from typing import Optional, Dict, List, TYPE_CHECKING, overload
 
-from lakefs._decorators import renamed_parameters
+from typing_extensions import deprecated
+
+from lakefs._decorators import renamed_parameters_overloaded
 
 import lakefs_sdk
 
@@ -52,7 +54,16 @@ class ImportManager(_BaseLakeFSObject):
     commit_metadata: Optional[Dict]
     sources: List[lakefs_sdk.ImportLocation]
 
-    @renamed_parameters(repository_id="repo")
+    @overload
+    def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
+                 commit_metadata: Optional[Dict] = None, client: Optional[Client] = None) -> None: ...
+
+    @overload
+    @deprecated("repository_id is renamed to repo")
+    def __init__(self, *, repository_id: str, branch_id: str, commit_message: str = "",
+                 commit_metadata: Optional[Dict] = None, client: Optional[Client] = None) -> None: ...
+
+    @renamed_parameters_overloaded(repository_id="repo")
     def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = None) -> None:
         # Only need an ID so drop the Repository.

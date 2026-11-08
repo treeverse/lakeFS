@@ -3,9 +3,11 @@ Module containing lakeFS tag implementation
 """
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, overload
 
-from lakefs._decorators import renamed_parameters
+from typing_extensions import deprecated
+
+from lakefs._decorators import renamed_parameters_overloaded
 
 import lakefs_sdk
 
@@ -21,7 +23,14 @@ class Tag(Reference):
     Class representing a tag in lakeFS.
     """
 
-    @renamed_parameters(repository_id="repo")
+    @overload
+    def __init__(self, repo: Repository | str, tag_id: str, client: Optional[Client] = None) -> None: ...
+
+    @overload
+    @deprecated("repository_id is renamed to repo")
+    def __init__(self, *, repository_id: str, tag_id: str, client: Optional[Client] = None) -> None: ...
+
+    @renamed_parameters_overloaded(repository_id="repo")
     def __init__(self, repo: Repository | str, tag_id: str, client: Optional[Client] = None):
         super().__init__(repo, reference_id=tag_id, client=client)
 

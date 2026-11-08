@@ -7,9 +7,11 @@ from __future__ import annotations
 import uuid
 import warnings
 from contextlib import contextmanager
-from typing import Optional, Generator, Iterable, Iterator, Literal, Dict, TYPE_CHECKING
+from typing import Optional, Generator, Iterable, Iterator, Literal, Dict, TYPE_CHECKING, overload
 
-from lakefs._decorators import renamed_parameters
+from typing_extensions import deprecated
+
+from lakefs._decorators import renamed_parameters_overloaded
 
 import lakefs_sdk
 from lakefs.client import Client
@@ -140,7 +142,14 @@ class Branch(_BaseBranch):
     Class representing a branch in lakeFS.
     """
 
-    @renamed_parameters(repository_id="repo")
+    @overload
+    def __init__(self, repo: Repository | str, branch_id: str, client: Optional[Client] = None) -> None: ...
+
+    @overload
+    @deprecated("repository_id is renamed to repo")
+    def __init__(self, *, repository_id: str, branch_id: str, client: Optional[Client] = None) -> None: ...
+
+    @renamed_parameters_overloaded(repository_id="repo")
     def __init__(self, repo: Repository | str, branch_id: str, client: Optional[Client] = None):
         super().__init__(repo, reference_id=branch_id, client=client)
 
@@ -358,7 +367,18 @@ class _Transaction(_BaseBranch):
     def _get_tx_name() -> str:
         return f"tx-{uuid.uuid4()}"  # Don't rely on source branch name as this might exceed valid branch length
 
-    @renamed_parameters(repository_id="repo")
+    @overload
+    def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
+                 commit_metadata: Optional[Dict] = None, client: Optional[Client] = None,
+                 tag: Optional[str] = None) -> None: ...
+
+    @overload
+    @deprecated("repository_id is renamed to repo")
+    def __init__(self, *, repository_id: str, branch_id: str, commit_message: str = "",
+                 commit_metadata: Optional[Dict] = None, client: Optional[Client] = None,
+                 tag: Optional[str] = None) -> None: ...
+
+    @renamed_parameters_overloaded(repository_id="repo")
     def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = None, tag: Optional[str] = None):
         self._commit_message = commit_message
@@ -440,7 +460,18 @@ class Transaction:
     _cleanup_branch: bool
     _tag: Optional[str]
 
-    @renamed_parameters(repository_id="repo")
+    @overload
+    def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
+                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True,
+                 client: Optional[Client] = None, tag: Optional[str] = None) -> None: ...
+
+    @overload
+    @deprecated("repository_id is renamed to repo")
+    def __init__(self, *, repository_id: str, branch_id: str, commit_message: str = "",
+                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True,
+                 client: Optional[Client] = None, tag: Optional[str] = None) -> None: ...
+
+    @renamed_parameters_overloaded(repository_id="repo")
     def __init__(self, repo: Repository | str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True,
                  client: Optional[Client] = None, tag: Optional[str] = None) -> None:

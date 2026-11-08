@@ -4,9 +4,11 @@ Module containing lakeFS reference implementation
 
 from __future__ import annotations
 
-from typing import Optional, Generator, Union, TYPE_CHECKING
+from typing import Optional, Generator, Union, TYPE_CHECKING, overload
 
-from lakefs._decorators import renamed_parameters
+from typing_extensions import deprecated
+
+from lakefs._decorators import renamed_parameters_overloaded
 
 import lakefs_sdk
 
@@ -27,7 +29,14 @@ class Reference(_BaseLakeFSObject):
     _id: str
     _commit: Optional[Commit] = None
 
-    @renamed_parameters(repository_id="repo")
+    @overload
+    def __init__(self, repo: Repository | str, reference_id: str, client: Optional[Client] = None) -> None: ...
+
+    @overload
+    @deprecated("repository_id is renamed to repo")
+    def __init__(self, *, repository_id: str, reference_id: str, client: Optional[Client] = None) -> None: ...
+
+    @renamed_parameters_overloaded(repository_id="repo")
     def __init__(self, repo: Repository | str, reference_id: str, client: Optional[Client] = None) -> None:
         """Return a reference to a lakeFS commit.
 
