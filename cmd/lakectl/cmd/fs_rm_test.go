@@ -80,3 +80,22 @@ func TestFsRmRecursive_ObjectErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestRecursiveDeletePrefix(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		path string
+		want string
+	}{
+		{path: "", want: ""},
+		{path: "logs", want: "logs/"},
+		{path: "logs/", want: "logs/"},
+		{path: "a/b", want: "a/b/"},
+		{path: "a/b/", want: "a/b/"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			require.Equal(t, tt.want, recursiveDeletePrefix(tt.path))
+		})
+	}
+}

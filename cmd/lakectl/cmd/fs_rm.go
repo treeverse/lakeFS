@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/spf13/cobra"
@@ -59,7 +60,7 @@ var fsRmCmd = &cobra.Command{
 			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg)
 		}
 
-		prefix := *pathURI.Path
+		prefix := recursiveDeletePrefix(*pathURI.Path)
 		var paramsDelimiter apigen.PaginationDelimiter = ""
 		var from string
 		pfx := apigen.PaginationPrefix(prefix)
@@ -94,6 +95,17 @@ var fsRmCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+// recursiveDeletePrefix returns the listing prefix for a recursive delete.
+// The path is treated as a directory, so "logs" becomes "logs/" and does not
+// match siblings like "logs.txt" or "logs-archive/". An empty path (the
+// whole ref) is kept as is.
+func recursiveDeletePrefix(path string) string {
+	if path != "" && !strings.HasSuffix(path, uri.PathSeparator) {
+		return path + uri.PathSeparator
+	}
+	return path
 }
 
 func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, branch string, paths <-chan string, errors chan<- error, wg *sync.WaitGroup) {
