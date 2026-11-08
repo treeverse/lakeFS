@@ -31,8 +31,10 @@ jobs:
         id: version
 
       - name: Install secret key for signing
+        env:
+          OSSRH_GPG_SECRET_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
         run: |
-          cat <(echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}') | gpg --batch --import
+          echo -e "$OSSRH_GPG_SECRET_KEY" | gpg --batch --import
           gpg --list-secret-keys --keyid-format LONG
 
       - name: Set up Java and Maven Central Repository

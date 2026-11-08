@@ -85,7 +85,7 @@ object S3ClientBuilder extends S3ClientBuilder {
         logger.info("Using Hadoop AssumedRoleCredentialProvider as base.")
         new AssumedRoleCredentialProvider(new java.net.URI(s"s3a://$bucket"), hc)
       } else if (accessKey != null && secretKey != null) {
-        logger.info("Using access key ID {} {}", accessKey: Any, "secret key ******")
+        logger.info("Using static access key credentials from Hadoop configuration")
         new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
       } else {
         logger.info("Using DefaultAWSCredentialsProviderChain")

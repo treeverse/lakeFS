@@ -182,6 +182,28 @@ func RunSparkSubmit(t testing.TB, config *SparkSubmitConfig) error {
 	args = append(args, "/opt/metaclient/client.jar")
 	args = append(args, config.ProgramArgs...)
 	cmd := exec.Command("docker", args...)
-	logger.Infof("Running command: %s", cmd.String())
+	logger.Infof("Running command: %s", redactedCommandString(cmd))
 	return runCommand(config.LogSource, cmd)
+}
+
+// redactedCommandString renders cmd for logging with credential values in
+// key=value arguments (e.g. "--conf spark.hadoop.fs.s3a.secret.key=...") hidden.
+func redactedCommandString(cmd *exec.Cmd) string {
+	sensitive := []string{"secret", "access_key", "access.key", "account.key", "password", "token"}
+	args := make([]string, len(cmd.Args))
+	for i, arg := range cmd.Args {
+		args[i] = arg
+		name, _, found := strings.Cut(arg, "=")
+		if !found {
+			continue
+		}
+		lowerName := strings.ToLower(name)
+		for _, s := range sensitive {
+			if strings.Contains(lowerName, s) {
+				args[i] = name + "=<redacted>"
+				break
+			}
+		}
+	}
+	return strings.Join(args, " ")
 }
