@@ -196,7 +196,7 @@ public class PullRequest {
    * Get description
    * @return description
   **/
-  @javax.annotation.Nonnull
+  @javax.annotation.Nullable
   public String getDescription() {
     return description;
   }
@@ -478,7 +478,6 @@ public class PullRequest {
     openapiRequiredFields = new HashSet<String>();
     openapiRequiredFields.add("status");
     openapiRequiredFields.add("title");
-    openapiRequiredFields.add("description");
     openapiRequiredFields.add("id");
     openapiRequiredFields.add("creation_date");
     openapiRequiredFields.add("author");
@@ -512,7 +511,7 @@ public class PullRequest {
       if (!jsonObj.get("title").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `title` to be a primitive type in the JSON string but got `%s`", jsonObj.get("title").toString()));
       }
-      if (!jsonObj.get("description").isJsonPrimitive()) {
+      if ((jsonObj.get("description") != null && !jsonObj.get("description").isJsonNull()) && !jsonObj.get("description").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `description` to be a primitive type in the JSON string but got `%s`", jsonObj.get("description").toString()));
       }
       if (!jsonObj.get("id").isJsonPrimitive()) {

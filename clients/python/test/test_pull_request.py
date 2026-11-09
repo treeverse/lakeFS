@@ -52,7 +52,6 @@ class TestPullRequest(unittest.TestCase):
             return PullRequest(
                 status = 'open',
                 title = '',
-                description = '',
                 id = '',
                 creation_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 author = '',

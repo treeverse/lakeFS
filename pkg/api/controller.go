@@ -5608,7 +5608,8 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 	for _, p := range res {
 		pulls = append(pulls, apigen.PullRequest{
 			PullRequestBasic: apigen.PullRequestBasic{
-				Description: swag.String(p.Description),
+				// Explicitly not passing description so to maintain permissions requirements
+				Description: nil,
 				Status:      swag.String(p.Status),
 				Title:       swag.String(p.Title),
 			},
