@@ -177,7 +177,8 @@ func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrate
 			if err != nil {
 				return fmt.Errorf("base range GE: %w", err)
 			}
-			if baseRange == nil || baseRange.ID == iterRange.ID {
+			// a range that includes an import prefix is entered, so its records under the prefix are skipped
+			if (baseRange == nil || baseRange.ID == iterRange.ID) && m.validWritingRange(iter) {
 				if baseRange == nil {
 					if err := m.writeRange(iterRange); err != nil {
 						return err
