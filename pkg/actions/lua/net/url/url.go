@@ -19,6 +19,7 @@ func Open(l *lua.State) {
 var library = []lua.RegistryFunction{
 	{Name: "parse", Function: parse},
 	{Name: "query_unescape", Function: queryUnescape},
+	{Name: "path_unescape", Function: pathUnescape},
 	{Name: "path_escape", Function: pathEscape},
 	{Name: "build_url", Function: build},
 }
@@ -47,6 +48,17 @@ func queryUnescape(l *lua.State) int {
 		panic("unreachable")
 	}
 	l.PushString(qu)
+	return 1
+}
+
+func pathUnescape(l *lua.State) int {
+	escapedPath := lua.CheckString(l, 1)
+	pu, err := neturl.PathUnescape(escapedPath)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	l.PushString(pu)
 	return 1
 }
 
