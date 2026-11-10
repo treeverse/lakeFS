@@ -40,7 +40,15 @@ var (
 	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 	reLocalWarning    = regexp.MustCompile(`(?m)^Warning: Using "lakectl local" requires .*\n\n?`)
+	// reCredentialEnvAssignment matches inline env assignments of credentials in a shell command line
+	reCredentialEnvAssignment = regexp.MustCompile(`\b([A-Z0-9_]*(?:SECRET|TOKEN|PASSWORD)[A-Z0-9_]*|AWS_ACCESS_KEY_ID)=('[^']*'|"[^"]*"|\S*)`)
 )
+
+// redactCommand hides credential values passed as inline env assignments so
+// that the command line can be safely written to the test log.
+func redactCommand(command string) string {
+	return reCredentialEnvAssignment.ReplaceAllString(command, "$1=<redacted>")
+}
 
 func lakeBinaryLocation(name string) string {
 	binDir := viper.GetString("binaries_dir")
@@ -75,7 +83,7 @@ func LakectlWithPosixPerms() string {
 
 func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, error) {
 	t.Helper()
-	t.Logf("Run shell command '%s'", command)
+	t.Logf("Run shell command '%s'", redactCommand(command))
 	sh, err := exec.LookPath("sh")
 	if err != nil {
 		t.Fatalf("shell not found: %v", err)
@@ -234,9 +242,9 @@ func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map
 	t.Helper()
 	result, err := runShellCommand(t, cmd, isTerminal)
 	if expectFail {
-		require.Errorf(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
+		require.Errorf(t, err, "Expected error in '%s' command did not occur. Output: %s", redactCommand(cmd), string(result))
 	} else {
-		require.NoErrorf(t, err, "Failed to run '%s' command - %s", cmd, string(result))
+		require.NoErrorf(t, err, "Failed to run '%s' command - %s", redactCommand(cmd), string(result))
 	}
 	return sanitize(string(result), vars)
 }
@@ -245,11 +253,11 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 	t.Helper()
 	expanded, err := expandVariables(expected, vars)
 	if err != nil {
-		t.Fatalf("Failed to extract variables for: \"%s\": %s", cmd, err)
+		t.Fatalf("Failed to extract variables for: \"%s\": %s", redactCommand(cmd), err)
 	}
 	sanitizedResult := runCmd(t, cmd, expectFail, isTerminal, vars)
 
-	require.Equalf(t, expanded, sanitizedResult, "Unexpected output for %s command", cmd)
+	require.Equalf(t, expanded, sanitizedResult, "Unexpected output for %s command", redactCommand(cmd))
 }
 
 func normalizeProgramTimestamp(output string) string {
