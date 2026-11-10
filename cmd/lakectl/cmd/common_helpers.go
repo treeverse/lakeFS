@@ -335,6 +335,16 @@ func PrintTable(rows [][]any, headers []any, paginator *apigen.Pagination, amoun
 	Write(resourceListTemplate, ctx)
 }
 
+// ensureTrailingPathDelimiter makes a non-empty path end with PathDelimiter, so
+// it is used as a directory prefix: "logs" becomes "logs/" and no longer
+// matches siblings like "logs.txt". An empty path (the whole ref) is unchanged.
+func ensureTrailingPathDelimiter(p string) string {
+	if p == "" || strings.HasSuffix(p, PathDelimiter) {
+		return p
+	}
+	return p + PathDelimiter
+}
+
 func MustParseRepoURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {

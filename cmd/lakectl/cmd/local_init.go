@@ -41,7 +41,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 		case stat.JSON404 == nil:
 			dieOnResponseError(stat, err)
 		default: // Ensure we treat this path as a directory
-			*remote.Path += uri.PathSeparator
+			*remote.Path = ensureTrailingPathDelimiter(*remote.Path)
 		}
 	}
 
