@@ -59,7 +59,7 @@ var fsRmCmd = &cobra.Command{
 			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg)
 		}
 
-		prefix := *pathURI.Path
+		prefix := ensureTrailingPathDelimiter(*pathURI.Path)
 		var paramsDelimiter apigen.PaginationDelimiter = ""
 		var from string
 		pfx := apigen.PaginationPrefix(prefix)
