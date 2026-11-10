@@ -88,6 +88,9 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
+	if o.applyGetPreconditions(w, req, entry) {
+		return
+	}
 
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 	// range query
