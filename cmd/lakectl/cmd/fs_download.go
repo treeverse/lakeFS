@@ -74,7 +74,8 @@ var fsDownloadCmd = &cobra.Command{
 
 		ch := make(chan objectInfo, filesChanSize)
 		if remotePath != "" {
-			*remote.Path = ensureTrailingPathDelimiter(remotePath)
+			remotePath = ensureTrailingPathDelimiter(remotePath)
+			*remote.Path = remotePath
 		}
 		go func() {
 			defer close(ch)
