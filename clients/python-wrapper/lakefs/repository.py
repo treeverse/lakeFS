@@ -11,8 +11,13 @@ import lakefs_sdk
 from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
-from lakefs.client import Client, _BaseLakeFSObject
-from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
+from lakefs.client import Client, _BaseLakeFSObject, SINGLE_STORAGE_ID
+from lakefs.exceptions import (
+    api_exception_handler,
+    io_exception_handler,
+    ConflictException,
+    LakeFSException,
+)
 from lakefs.reference import Reference, generate_listing
 
 
@@ -24,6 +29,7 @@ class Repository(_BaseLakeFSObject):
     """
     _id: str
     _properties: Optional[RepositoryProperties] = None
+    _storage_id: Optional[str] = None
 
     def __init__(self, repository_id: str, client: Optional[Client] = None) -> None:
         self._id = repository_id
@@ -68,6 +74,16 @@ class Repository(_BaseLakeFSObject):
             self._properties = RepositoryProperties(**repo.dict())
         return self
 
+
+    @property
+    def storage_id(self) -> str:
+        if self._storage_id is None:
+            with api_exception_handler(io_exception_handler):
+                repo_data = self._client.sdk_client.repositories_api.get_repository(self.id)
+                self._storage_id = repo_data.storage_id if repo_data.storage_id else SINGLE_STORAGE_ID
+        return self._storage_id
+
+
     def delete(self, **kwargs) -> None:
         """
         Delete repository from lakeFS server
@@ -85,28 +101,28 @@ class Repository(_BaseLakeFSObject):
         Return a branch object using the current repository id and client
         :param branch_id: name of the branch
         """
-        return Branch(self._id, branch_id, self._client)
+        return Branch(self, branch_id, self._client)
 
     def commit(self, commit_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param commit_id: id of the commit reference
         """
-        return Reference(self._id, commit_id, self._client)
+        return Reference(self, commit_id, self._client)
 
     def ref(self, ref_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param ref_id: branch name, commit id or tag id
         """
-        return Reference(self._id, ref_id, self._client)
+        return Reference(self, ref_id, self._client)
 
     def tag(self, tag_id: str) -> Tag:
         """
         Return a tag object using the current repository id and client
         :param tag_id: name of the tag
         """
-        return Tag(self._id, tag_id, self._client)
+        return Tag(self, tag_id, self._client)
 
     def branches(self, max_amount: Optional[int] = None,
                  after: Optional[str] = None, prefix: Optional[str] = None, **kwargs) -> Generator[Branch]:
@@ -124,7 +140,7 @@ class Repository(_BaseLakeFSObject):
 
         for res in generate_listing(self._client.sdk_client.branches_api.list_branches, self._id,
                                     max_amount=max_amount, after=after, prefix=prefix, **kwargs):
-            yield Branch(self._id, res.id, client=self._client)
+            yield Branch(self, res.id, client=self._client)
 
     def tags(self, max_amount: Optional[int] = None,
              after: Optional[str] = None, prefix: Optional[str] = None, **kwargs) -> Generator[Tag]:
@@ -141,7 +157,7 @@ class Repository(_BaseLakeFSObject):
         """
         for res in generate_listing(self._client.sdk_client.tags_api.list_tags, self._id,
                                     max_amount=max_amount, after=after, prefix=prefix, **kwargs):
-            yield Tag(self._id, res.id, client=self._client)
+            yield Tag(self, res.id, client=self._client)
 
     @property
     def metadata(self) -> dict[str, str]:

@@ -36,12 +36,17 @@ from lakefs.client import Client
 # If environment variables or .lakectl.yaml file exist 
 repo = lakefs.repository(repository_id="my-repo")
 
+# (The positional argument is simpler!)
+repo = lakefs.repository("my-repo")
+
 # Or explicitly initialize and provide a Client object 
 clt = Client(username="<lakefs_access_key_id>", password="<lakefs_secret_access_key>", host="<lakefs_endpoint>")
 repo = lakefs.Repository(repository_id="my-repo", client=clt)
 
 # From this point, proceed using the package according to documentation
 main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch_id="main")
+
+# Prefer to use "repo" rather than pass in the same repository_id each time.
 ...
 ```
 
