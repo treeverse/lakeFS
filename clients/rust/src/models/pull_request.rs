@@ -16,8 +16,8 @@ pub struct PullRequest {
     pub status: Status,
     #[serde(rename = "title")]
     pub title: String,
-    #[serde(rename = "description")]
-    pub description: String,
+    #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     #[serde(rename = "id")]
     pub id: String,
     #[serde(rename = "creation_date")]
@@ -36,11 +36,11 @@ pub struct PullRequest {
 }
 
 impl PullRequest {
-    pub fn new(status: Status, title: String, description: String, id: String, creation_date: String, author: String, source_branch: String, destination_branch: String) -> PullRequest {
+    pub fn new(status: Status, title: String, id: String, creation_date: String, author: String, source_branch: String, destination_branch: String) -> PullRequest {
         PullRequest {
             status,
             title,
-            description,
+            description: None,
             id,
             creation_date,
             author,

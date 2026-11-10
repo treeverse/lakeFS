@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **status** | **str** |  | 
 **title** | **str** |  | 
-**description** | **str** |  | 
+**description** | **str** |  | [optional] 
 **id** | **str** |  | 
 **creation_date** | **datetime** |  | 
 **author** | **str** |  | 
