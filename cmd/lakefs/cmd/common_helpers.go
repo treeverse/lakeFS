@@ -4,20 +4,30 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
+// The messages below are rendered by pkg/cmdutils, the same output utility that
+// lakectl uses, so both binaries share one implementation.
+const (
+	errorMessageTemplate = "Error: {{.Message}}\n"
+	infoMessageTemplate  = "{{.Message|blue}}\n"
+	warnMessageTemplate  = "{{.Message|red}}\n"
+)
+
+type messageData struct {
+	Message string
+}
+
 func printMsgAndExit(params ...any) {
-	_, _ = fmt.Fprintln(os.Stderr, "Error:", fmt.Sprint(params...))
+	cmdutils.WriteTo(errorMessageTemplate, messageData{Message: fmt.Sprint(params...)}, os.Stderr)
 	os.Exit(1)
 }
 
 func printInfo(params ...any) {
-	colorMsg := text.FgHiBlue.Sprintf("Info: %s", fmt.Sprint(params...))
-	_, _ = fmt.Fprintln(os.Stderr, colorMsg)
+	cmdutils.WriteTo(infoMessageTemplate, messageData{Message: "Info: " + fmt.Sprint(params...)}, os.Stderr)
 }
 
 func printNonFatalError(params ...any) {
-	colorMsg := text.FgHiRed.Sprintf("Error: %s", fmt.Sprint(params...))
-	_, _ = fmt.Fprintln(os.Stderr, colorMsg)
+	cmdutils.WriteTo(warnMessageTemplate, messageData{Message: "Error: " + fmt.Sprint(params...)}, os.Stderr)
 }
