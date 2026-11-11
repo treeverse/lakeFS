@@ -1,0 +1,45 @@
+name: Post PR to #rfr
+
+# Asks the workflow of the same name in treeverse/dev to post this PR to the #rfr
+# Slack channel, or to update its message there.  That workflow reads the PR itself.
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, review_requested, review_request_removed]
+
+permissions: {}
+
+jobs:
+  trigger:
+    # Secrets are not available to PRs from forks.  Drafts and bot PRs are never
+    # posted.  The job is skipped until the app's client id is set.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft &&
+      github.event.pull_request.user.type != 'Bot' &&
+      vars.RFR_TRIGGER_CLIENT_ID != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # This app can only start workflows in treeverse/dev.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RFR_TRIGGER_CLIENT_ID }}
+          private-key: ${{ secrets.RFR_TRIGGER_PRIVATE_KEY }}
+          owner: treeverse
+          repositories: dev
+          permission-actions: write
+
+      - name: Start the workflow in treeverse/dev
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.event.repository.name }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+          REVIEWER: ${{ github.event.requested_reviewer.login }}
+        run: |
+          gh workflow run rfr-post.yaml --repo treeverse/dev \
+            -f repository="$REPOSITORY" -f number="$NUMBER" \
+            -f action="$ACTION" -f reviewer="$REVIEWER"
