@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,30 +8,23 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/pflag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/term"
 )
-
-var isTerminal = true
 
 const (
 	PathDelimiter = "/"
 )
 
 const (
-	LakectlInteractive     = "LAKECTL_INTERACTIVE"
-	DeathMessage           = "{{.Error|red}}\nError executing command.\n"
-	DeathMessageWithFields = "{{.Message|red}}\n{{.Status}}\n"
-	WarnMessage            = "{{.Prefix|yellow}} {{.Message}}\n\n"
+	LakectlInteractive = "LAKECTL_INTERACTIVE"
 )
 
 const (
@@ -54,10 +44,6 @@ const (
 	noMergesHeuristic = 3
 )
 
-const resourceListTemplate = `{{.Table | table -}}
-{{.Pagination | paginate }}
-`
-
 //nolint:gochecknoinits
 func init() {
 	// disable colors if we're not attached to interactive TTY.
@@ -73,158 +59,37 @@ func init() {
 	}
 }
 
+// The output functions below are thin wrappers around cmdutils, which holds the
+// shared implementation used by both lakectl and the lakefs server.  They keep
+// this package's existing signatures so that the commands do not need to change.
+
+// Table is a set of rows to render.
+type Table = cmdutils.Table
+
+// Pagination describes how to fetch the next page of a listing.
+type Pagination = cmdutils.Pagination
+
+// ColoredText is text with an array of colors applied to it.
+type ColoredText = cmdutils.ColoredText
+
+// APIError is implemented by errors that carry an API error payload.
+type APIError = cmdutils.APIError
+
 func DisableColors() {
-	text.DisableColors()
-	isTerminal = false
-}
-
-type Table struct {
-	Headers []any
-	Rows    [][]any
-}
-
-type Pagination struct {
-	Amount  int
-	HasNext bool
-	After   string
-}
-
-// ColoredText is text with an array of colors applied to it.  Without it go-pretty cannot
-// render combinations, e.g. bold-green.
-type ColoredText struct {
-	Colors text.Colors
-	Text   any // Usually just a string, but anything goes
-}
-
-func deref(a any) string {
-	r := reflect.ValueOf(a)
-	for {
-		next := reflect.Indirect(r)
-		if next == r {
-			break
-		}
-		r = next
-	}
-	i := r.Interface()
-	return fmt.Sprint(i)
-}
-
-// String converts c to a string with ANSI control codes.
-func (c ColoredText) String() string {
-	t := deref(c.Text)
-	return c.Colors.Sprint(t)
-}
-
-// Add returns c with color added to it.
-func (c ColoredText) Add(color text.Color) ColoredText {
-	return ColoredText{
-		Colors: append(c.Colors, color),
-		Text:   c.Text,
-	}
+	cmdutils.DisableColors()
 }
 
 // Colored returns text as ColoredText with no Color if it is not already ColoredText.
 func Colored(text any) ColoredText {
-	if c, ok := text.(ColoredText); ok {
-		return c
-	}
-	if t, ok := text.(fmt.Stringer); ok {
-		text = t.String()
-	}
-	return ColoredText{Colors: nil, Text: text}
+	return cmdutils.Colored(text)
 }
 
 func WriteTo(tpl string, data any, w io.Writer) {
-	templ := template.New("output")
-	templ.Funcs(template.FuncMap{
-		"red": func(arg any) ColoredText {
-			return Colored(arg).Add(text.FgHiRed)
-		},
-		"yellow": func(arg any) ColoredText {
-			return Colored(arg).Add(text.FgHiYellow)
-		},
-		"green": func(arg any) ColoredText {
-			return Colored(arg).Add(text.FgHiGreen)
-		},
-		"blue": func(arg any) ColoredText {
-			return Colored(arg).Add(text.FgHiBlue)
-		},
-		"bold": func(arg any) ColoredText {
-			return Colored(arg).Add(text.Bold)
-		},
-		"underline": func(arg any) ColoredText {
-			return Colored(arg).Add(text.Underline)
-		},
-		"date": func(ts int64) string {
-			return time.Unix(ts, 0).String()
-		},
-		"ljust": func(length int, s string) string {
-			return text.AlignLeft.Apply(s, length)
-		},
-		"json": func(v any) string {
-			encoded, err := json.MarshalIndent(v, "", "  ")
-			if err != nil {
-				panic(fmt.Sprintf("failed to encode JSON: %s", err.Error()))
-			}
-			return string(encoded)
-		},
-		"paginate": func(pag *Pagination) string {
-			if pag != nil && pag.Amount > 0 && pag.HasNext && isTerminal {
-				params := text.FgHiYellow.Sprintf("--amount %d --after \"%s\"", pag.Amount, pag.After)
-				return fmt.Sprintf("for more results run with %s\n", params)
-			}
-			return ""
-		},
-		"lower": strings.ToLower,
-		"human_bytes": func(b int64) string {
-			var unit int64 = 1000
-			if b < unit {
-				return fmt.Sprintf("%d B", b)
-			}
-			div, exp := unit, 0
-			for n := b / unit; n >= unit; n /= unit {
-				div *= unit
-				exp++
-			}
-			return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
-		},
-		"join": func(sep string, args []string) string {
-			return strings.Join(args, sep)
-		},
-		"table": func(tab *Table) string {
-			if isTerminal {
-				buf := new(bytes.Buffer)
-				t := table.NewWriter()
-				t.SetOutputMirror(buf)
-				t.AppendHeader(tab.Headers)
-				for _, row := range tab.Rows {
-					t.AppendRow(row)
-				}
-				t.Render()
-				return buf.String()
-			}
-			var b strings.Builder
-			for _, row := range tab.Rows {
-				for ic, cell := range row {
-					fmt.Fprint(&b, cell)
-					if ic < len(row)-1 {
-						b.WriteString("\t")
-					}
-				}
-				b.WriteString("\n")
-			}
-			return b.String()
-		},
-	})
-	t := template.Must(templ.Parse(tpl))
-	err := t.Execute(w, data)
-	if err != nil {
-		panic(err)
-	}
+	cmdutils.WriteTo(w, tpl, data)
 }
 
 func Write(tpl string, data any) {
-	WriteTo(tpl, data, os.Stdout)
+	cmdutils.Write(tpl, data)
 }
 
 func WriteIfVerbose(tpl string, data any) {
@@ -234,41 +99,23 @@ func WriteIfVerbose(tpl string, data any) {
 }
 
 func Warning(message string) {
-	WriteTo(WarnMessage, struct{ Prefix, Message string }{Prefix: "Warning:", Message: message}, os.Stderr)
+	cmdutils.Warning(message)
 }
 
 func Die(errMsg string, code int) {
-	WriteTo(DeathMessage, struct{ Error string }{Error: errMsg}, os.Stderr)
-	os.Exit(code)
+	cmdutils.Die(errMsg, code)
 }
 
 func DieFmt(msg string, args ...any) {
-	errMsg := fmt.Sprintf(msg, args...)
-	Die(errMsg, 1)
-}
-
-type APIError interface {
-	GetPayload() *apigen.Error
+	cmdutils.DieFmt(msg, args...)
 }
 
 func DieErr(err error) {
-	type ErrData struct {
-		Error string
-	}
-	var (
-		apiError         APIError
-		userVisibleError helpers.UserVisibleAPIError
-	)
-	apiError, _ = err.(APIError)
-	switch {
-	case errors.As(err, &userVisibleError):
-		WriteTo(DeathMessageWithFields, userVisibleError.APIFields, os.Stderr)
-	case apiError != nil:
-		WriteTo(DeathMessage, ErrData{Error: apiError.GetPayload().Message}, os.Stderr)
-	default:
-		WriteTo(DeathMessage, ErrData{Error: err.Error()}, os.Stderr)
-	}
-	os.Exit(1)
+	cmdutils.DieErr(err)
+}
+
+func PrintTable(rows [][]any, headers []any, paginator *apigen.Pagination, amount int) {
+	cmdutils.PrintTable(rows, headers, paginator, amount)
 }
 
 func RetrieveError(response any, err error) error {
@@ -312,27 +159,6 @@ func DieOnHTTPError(httpResponse *http.Response) {
 	if err != nil {
 		DieErr(err)
 	}
-}
-
-func PrintTable(rows [][]any, headers []any, paginator *apigen.Pagination, amount int) {
-	ctx := struct {
-		Table      *Table
-		Pagination *Pagination
-	}{
-		Table: &Table{
-			Headers: headers,
-			Rows:    rows,
-		},
-	}
-	if paginator.HasMore {
-		ctx.Pagination = &Pagination{
-			Amount:  amount,
-			HasNext: true,
-			After:   paginator.NextOffset,
-		}
-	}
-
-	Write(resourceListTemplate, ctx)
 }
 
 // ensureTrailingPathDelimiter makes a non-empty path end with PathDelimiter, so

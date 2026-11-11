@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/flare"
 )
@@ -43,14 +43,14 @@ var flareCmd = &cobra.Command{
 		envVarBlacklist := addAppEnvVarPrefix(config.GetSecureStringKeyPaths(cfg))
 		flr, err := flare.NewFlare(flare.WithEnvVarBlacklist(envVarBlacklist))
 		if err != nil {
-			printMsgAndExit("failed to create flare instance", err)
+			cmdutils.DieFmt("failed to create flare instance: %v", err)
 		}
 
 		flarePath := fmt.Sprintf(flareOutputDirTemplate, outputPath, now)
 		err = os.MkdirAll(flarePath, flare.DirPermissions)
 		if err != nil {
 			msg := fmt.Sprintf("failed to create flare directory at %s", flarePath)
-			printMsgAndExit(msg, err)
+			cmdutils.DieFmt("%s: %v", msg, err)
 		}
 		var ow flare.FlareOutputWriter = &flare.FileWriter{}
 		if packageContents {
@@ -62,37 +62,37 @@ var flareCmd = &cobra.Command{
 		defer func() {
 			e := ow.Close()
 			if e != nil {
-				printMsgAndExit("failed to write zip file", err)
+				cmdutils.DieFmt("failed to write zip file: %v", err)
 			}
 		}()
 		if err != nil {
-			printMsgAndExit("failed to create zip writer", err)
+			cmdutils.DieFmt("failed to create zip writer: %v", err)
 		}
-		printInfo("Processing config...")
+		cmdutils.InfoFmt("Processing config...")
 		err = flr.ProcessConfig(cfg, flarePath, flareConfigFileName, ow.GetFileWriter)
 		if err != nil {
-			printNonFatalError("failed to process config ", err)
+			cmdutils.NonFatalErrorFmt("failed to process config: %v", err)
 		}
-		printInfo("Done processing config")
+		cmdutils.InfoFmt("Done processing config")
 
 		if includeEnvVars {
-			printInfo("Processing env vars...")
+			cmdutils.InfoFmt("Processing env vars...")
 			err = flr.ProcessEnvVars(flarePath, envVarOutputFileName, ow.GetFileWriter)
 			if err != nil {
-				printNonFatalError("failed to process env vars ", err)
+				cmdutils.NonFatalErrorFmt("failed to process env vars: %v", err)
 			}
-			printInfo("Done processing env vars")
+			cmdutils.InfoFmt("Done processing env vars")
 		}
 	},
 }
 
 func warnOutputFlags(cmd *cobra.Command, args []string) {
 	if outputStdout && packageContents {
-		fmt.Fprint(os.Stderr, text.FgHiYellow.Sprint("Warning: Stdout output is set. Package contents flag will be ignored.\n"))
+		cmdutils.Warning("Stdout output is set. Package contents flag will be ignored.")
 	}
 
 	if outputStdout && (cmd.Flags().Changed("output") || cmd.Flags().Changed("env-var-filename") || cmd.Flags().Changed("zip-filename")) {
-		fmt.Fprint(os.Stderr, text.FgHiYellow.Sprint("Warning: Stdout output is set. File output related flags will be ignored.\n"))
+		cmdutils.Warning("Stdout output is set. File output related flags will be ignored.")
 	}
 }
 

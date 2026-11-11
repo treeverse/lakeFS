@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
@@ -167,38 +168,38 @@ and look for the instance_uid field.
 		output := os.Stdout
 		outputFilename, err := cmd.Flags().GetString("output")
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("output: %w", err))
+			cmdutils.DieErr(fmt.Errorf("output: %w", err))
 		}
 		if outputFilename != "" {
 			output, err = os.Create(outputFilename)
 			if err != nil {
-				printMsgAndExit(fmt.Errorf("open %s: %w", outputFilename, err))
+				cmdutils.DieErr(fmt.Errorf("open %s: %w", outputFilename, err))
 			}
 			defer output.Close()
 		}
 
 		cpuProfileFilename, err := cmd.Flags().GetString("cpuprofile")
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("cpuprofile: %w", err))
+			cmdutils.DieErr(fmt.Errorf("cpuprofile: %w", err))
 		}
 		var cpuProfileFile *os.File
 		if cpuProfileFilename != "" {
 			cpuProfileFile, err = os.Create(cpuProfileFilename)
 			if err != nil {
-				printMsgAndExit(fmt.Errorf("open %s: %w", cpuProfileFilename, err))
+				cmdutils.DieErr(fmt.Errorf("open %s: %w", cpuProfileFilename, err))
 			}
 			defer cpuProfileFile.Close()
 			// Will start profiling later.
 		}
 		memProfileFilename, err := cmd.Flags().GetString("memprofile")
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("memprofile: %w", err))
+			cmdutils.DieErr(fmt.Errorf("memprofile: %w", err))
 		}
 		var memProfileFile *os.File
 		if memProfileFilename != "" {
 			memProfileFile, err = os.Create(memProfileFilename)
 			if err != nil {
-				printMsgAndExit(fmt.Errorf("open %s: %w", memProfileFilename, err))
+				cmdutils.DieErr(fmt.Errorf("open %s: %w", memProfileFilename, err))
 			}
 			defer memProfileFile.Close()
 		}
@@ -218,13 +219,13 @@ and look for the instance_uid field.
 
 		rulesFile, err := os.Open(args[0])
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("open rules %s: %w", args[0], err))
+			cmdutils.DieErr(fmt.Errorf("open rules %s: %w", args[0], err))
 		}
 		var rules graveler.GarbageCollectionRules
 		dec := json.NewDecoder(rulesFile)
 		dec.DisallowUnknownFields()
 		if err := dec.Decode(&rules); err != nil {
-			printMsgAndExit(fmt.Errorf("read rules %s: %w", args[0], err))
+			cmdutils.DieErr(fmt.Errorf("read rules %s: %w", args[0], err))
 		}
 		rulesFile.Close()
 
@@ -232,23 +233,23 @@ and look for the instance_uid field.
 			Type: mem.DriverName,
 		})
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("create mem KV: %w", err))
+			cmdutils.DieErr(fmt.Errorf("create mem KV: %w", err))
 		}
 
 		partitionDumpFile, err := os.Open(args[1])
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("open partition dump %s: %w", args[1], err))
+			cmdutils.DieErr(fmt.Errorf("open partition dump %s: %w", args[1], err))
 		}
 		repositoryID, uid, err := ReadBranchesAndCommits(ctx, partitionDumpFile, store)
 		if err != nil && !errors.Is(err, io.EOF) {
-			printMsgAndExit(fmt.Errorf("read partition dump %s: %w", args[1], err))
+			cmdutils.DieErr(fmt.Errorf("read partition dump %s: %w", args[1], err))
 		}
 
 		fmt.Fprintf(os.Stderr, "repositoryID: %s\tUID: %s\n", repositoryID, uid)
 
 		if cpuProfileFile != nil {
 			if err = pprof.StartCPUProfile(cpuProfileFile); err != nil {
-				printMsgAndExit(fmt.Errorf("start CPU profile: %w", err))
+				cmdutils.DieErr(fmt.Errorf("start CPU profile: %w", err))
 			}
 			defer func() {
 				pprof.StopCPUProfile()
@@ -269,20 +270,20 @@ and look for the instance_uid field.
 		}
 		branchIterator, err := refManager.GCBranchIterator(ctx, repository)
 		if err != nil {
-			printMsgAndExit(err)
+			cmdutils.DieErr(err)
 		}
 		defer branchIterator.Close()
 		// get all commits that are not the first parent of any commit:
 		commitIterator, err := refManager.GCCommitIterator(ctx, repository)
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("create kv ordered commit iterator commits: %w", err))
+			cmdutils.DieErr(fmt.Errorf("create kv ordered commit iterator commits: %w", err))
 		}
 		defer commitIterator.Close()
 		startingPointIterator := retention.NewGCStartingPointIterator(commitIterator, branchIterator)
 		defer startingPointIterator.Close()
 		gcCommits, err := retention.GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, &rules, ".")
 		if err != nil {
-			printMsgAndExit(fmt.Errorf("find expired commits: %w", err))
+			cmdutils.DieErr(fmt.Errorf("find expired commits: %w", err))
 		}
 
 		for commitID, metaRangeID := range gcCommits {
@@ -292,7 +293,7 @@ and look for the instance_uid field.
 		if memProfileFile != nil {
 			// Alternative: "allocs".
 			if err = pprof.Lookup("heap").WriteTo(memProfileFile, 0); err != nil {
-				printMsgAndExit(fmt.Errorf("write mem profile: %w", err))
+				cmdutils.DieErr(fmt.Errorf("write mem profile: %w", err))
 			}
 			fmt.Fprintln(os.Stderr, "wrote memprofile")
 		}
