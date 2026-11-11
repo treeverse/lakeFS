@@ -59,7 +59,9 @@ const ConfigProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const { response, loading, error } = useAPI(
         () => config.getConfig(),
-        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // user isn't read by getConfig() itself, but it's kept as a dependency on
+        // purpose: config can differ per authenticated user, so we want to refetch
+        // it whenever the user changes (e.g. login/logout).
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [user],
     );

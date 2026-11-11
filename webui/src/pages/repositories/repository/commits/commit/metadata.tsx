@@ -34,11 +34,10 @@ export const MetadataUIButton = ({ metadata_key, metadata_value }) => {
     if (!m) {
         return null;
     }
+    const urlType = m[1];
     const click = useCallback(
-        () => gotoMetadata(m[1], metadata_value),
-        // TODO: Review and remove this eslint-disable once dependencies are validated
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [m[1], metadata_value],
+        () => gotoMetadata(urlType, metadata_value),
+        [urlType, metadata_value],
     );
     return (
         <tr key={metadata_key}>
