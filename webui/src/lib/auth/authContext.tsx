@@ -30,7 +30,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const navigate = useNavigate();
 
     const refreshUser = useCallback(async ({ useCache = true }: { useCache?: boolean } = {}) => {
-        if (!useCache && status !== AUTH_STATUS.AUTHENTICATED) setStatus(AUTH_STATUS.PENDING);
+        // Use the functional form so we don't need `status` in the closure, which
+        // would otherwise make refreshUser's identity change every time status does.
+        if (!useCache) {
+            setStatus((prev) => (prev === AUTH_STATUS.AUTHENTICATED ? prev : AUTH_STATUS.PENDING));
+        }
         try {
             const u = useCache ? await auth.getCurrentUserWithCache() : await auth.getCurrentUser();
             const ok = Boolean(u?.id);
@@ -40,8 +44,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(null);
             setStatus(AUTH_STATUS.UNAUTHENTICATED);
         }
-        // TODO: Review and remove this eslint-disable once dependencies are validated
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // When we get a 401, clear local auth and navigate to the login page.
@@ -63,9 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         void refreshUser({ useCache: false });
-        // TODO: Review and remove this eslint-disable once dependencies are validated
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [refreshUser]);
 
     useEffect(() => {
         const onPageShow = (e: PageTransitionEvent) => {
