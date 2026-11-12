@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 // showCommitCmd represents the show command
@@ -28,7 +29,7 @@ var showCommitCmd = &cobra.Command{
 		commit := resp.JSON200
 		commits := struct {
 			Commits         []*apigen.Commit
-			Pagination      *Pagination
+			Pagination      *cmdutils.Pagination
 			ShowMetaRangeID bool
 		}{
 			Commits:         []*apigen.Commit{commit},

@@ -5,6 +5,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
@@ -37,9 +38,9 @@ var localListCmd = &cobra.Command{
 			rows = append(rows, table.Row{d, remote, idx.AtHead})
 		}
 		data := struct {
-			IndicesListTable *Table
+			IndicesListTable *cmdutils.Table
 		}{
-			IndicesListTable: &Table{
+			IndicesListTable: &cmdutils.Table{
 				Headers: []any{
 					"Directory",
 					"Remote URI",

@@ -20,14 +20,6 @@ import (
 	"golang.org/x/term"
 )
 
-// Output rendering is shared with lakefs and lives in pkg/cmdutils. The aliases
-// and wrappers below keep the existing call sites in this package unchanged.
-type (
-	Table       = cmdutils.Table
-	Pagination  = cmdutils.Pagination
-	ColoredText = cmdutils.ColoredText
-)
-
 const (
 	PathDelimiter = "/"
 )
@@ -176,16 +168,16 @@ func DieOnHTTPError(httpResponse *http.Response) {
 
 func PrintTable(rows [][]any, headers []any, paginator *apigen.Pagination, amount int) {
 	ctx := struct {
-		Table      *Table
-		Pagination *Pagination
+		Table      *cmdutils.Table
+		Pagination *cmdutils.Pagination
 	}{
-		Table: &Table{
+		Table: &cmdutils.Table{
 			Headers: headers,
 			Rows:    rows,
 		},
 	}
 	if paginator.HasMore {
-		ctx.Pagination = &Pagination{
+		ctx.Pagination = &cmdutils.Pagination{
 			Amount:  amount,
 			HasNext: true,
 			After:   paginator.NextOffset,

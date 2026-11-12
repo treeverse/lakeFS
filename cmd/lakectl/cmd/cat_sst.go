@@ -9,6 +9,7 @@ import (
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
@@ -36,7 +37,7 @@ var catSstCmd = &cobra.Command{
 			DieFmt("could not determine sstable file type")
 		}
 
-		var table *Table
+		var table *cmdutils.Table
 		switch typ {
 		case committed.MetadataMetarangesType:
 			table, err = formatMetaRangeSSTable(iter, amount)
@@ -51,7 +52,7 @@ var catSstCmd = &cobra.Command{
 
 		// write to stdout
 		Write(sstCatTemplate, struct {
-			Table *Table
+			Table *cmdutils.Table
 		}{table})
 	},
 }
@@ -87,7 +88,7 @@ func getIterFromFile(filePath string) (committed.ValueIterator, map[string]strin
 	return sstable.NewIterator(iter, dummyDeref), reader.Properties.UserProperties, nil
 }
 
-func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*cmdutils.Table, error) {
 	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -115,13 +116,13 @@ func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, 
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &cmdutils.Table{
 		Headers: []any{"path", "identity", "size", "etag", "last_modified", "address", "metadata"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*cmdutils.Table, error) {
 	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -142,13 +143,13 @@ func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &cmdutils.Table{
 		Headers: []any{"branch ID", "commit ID"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*cmdutils.Table, error) {
 	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -169,13 +170,13 @@ func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &cmdutils.Table{
 		Headers: []any{"tag ID", "commit ID"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*cmdutils.Table, error) {
 	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -223,13 +224,13 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &cmdutils.Table{
 		Headers: []any{"commit ID", "committer", "message", "creation date", "metadata", "parents", "metarange ID", "version", "generation"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType string) (*Table, error) {
+func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType string) (*cmdutils.Table, error) {
 	switch entityType {
 	case graveler.EntityTypeBranch:
 		return formatBranchRangeSSTable(iter, amount)
@@ -242,7 +243,7 @@ func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType str
 	}
 }
 
-func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*cmdutils.Table, error) {
 	rows := make([][]any, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -268,7 +269,7 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &cmdutils.Table{
 		Headers: []any{"range_id", "min_key", "max_key", "count", "estimated_size"},
 		Rows:    rows,
 	}, nil
