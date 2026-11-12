@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 var tagListCmd = &cobra.Command{
@@ -38,17 +39,17 @@ var tagListCmd = &cobra.Command{
 		}
 
 		tmplArgs := struct {
-			TagTable   *Table
-			Pagination *Pagination
+			TagTable   *cmdutils.Table
+			Pagination *cmdutils.Pagination
 		}{
-			TagTable: &Table{
+			TagTable: &cmdutils.Table{
 				Headers: []any{"Tag", "Commit ID"},
 				Rows:    rows,
 			},
 		}
 		pagination := resp.JSON200.Pagination
 		if pagination.HasMore {
-			tmplArgs.Pagination = &Pagination{
+			tmplArgs.Pagination = &cmdutils.Pagination{
 				Amount:  amount,
 				HasNext: true,
 				After:   pagination.NextOffset,
