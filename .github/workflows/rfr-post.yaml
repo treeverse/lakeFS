@@ -11,23 +11,21 @@ permissions: {}
 
 jobs:
   trigger:
-    # Secrets are not available to PRs from forks.  Drafts and bot PRs are never
-    # posted.  The job is skipped until the app's client id is set.
+    # Secrets are not available to PRs from forks.  Drafts and bot PRs are never posted.
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       !github.event.pull_request.draft &&
-      github.event.pull_request.user.type != 'Bot' &&
-      vars.RFR_TRIGGER_CLIENT_ID != ''
+      github.event.pull_request.user.type != 'Bot'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # This app can only start workflows in treeverse/dev.
+      # The token can only start workflows in treeverse/dev.
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.RFR_TRIGGER_CLIENT_ID }}
-          private-key: ${{ secrets.RFR_TRIGGER_PRIVATE_KEY }}
+          client-id: ${{ vars.TREEVERSE_CI_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.TREEVERSE_CI_BOT_PRIVATE_KEY }}
           owner: treeverse
           repositories: dev
           permission-actions: write
