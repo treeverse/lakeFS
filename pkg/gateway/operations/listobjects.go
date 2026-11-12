@@ -1,9 +1,11 @@
 package operations
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -166,6 +168,43 @@ func (controller *ListObjects) serializeBranches(branches []*catalog.Branch) ([]
 	return dirs, lastKey
 }
 
+type referenceLister interface {
+	ListBranches(context.Context, string, string, int, string, ...graveler.ListOptionsFunc) ([]*catalog.Branch, bool, error)
+	ListTags(context.Context, string, string, int, string) ([]*catalog.Tag, bool, error)
+}
+
+// listReferences merges bounded metadata pages, without enumerating objects.
+// The cursor is the last emitted ref name, shared by both ordered iterators.
+func (controller *ListObjects) listReferences(ctx context.Context, c referenceLister, repo, prefix string, limit int, after string) ([]serde.CommonPrefixes, string, bool, error) {
+	if limit < 0 || limit > ListObjectMaxKeys {
+		limit = ListObjectMaxKeys
+	}
+	branches, moreBranches, err := c.ListBranches(ctx, repo, prefix, limit, after)
+	if err != nil {
+		return nil, "", false, err
+	}
+	tags, moreTags, err := c.ListTags(ctx, repo, prefix, limit, after)
+	if err != nil {
+		return nil, "", false, err
+	}
+	dirs, _ := controller.serializeBranches(branches)
+	for _, tag := range tags {
+		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef("", tag.ID)})
+	}
+	// Match the catalog's ref-name ordering, excluding the directory slash.
+	slices.SortFunc(dirs, func(a, b serde.CommonPrefixes) int {
+		return strings.Compare(strings.TrimSuffix(a.Prefix, "/"), strings.TrimSuffix(b.Prefix, "/"))
+	})
+	dirs = slices.CompactFunc(dirs, func(a, b serde.CommonPrefixes) bool { return a.Prefix == b.Prefix })
+	more := moreBranches || moreTags || len(dirs) > limit
+	dirs = dirs[:min(len(dirs), limit)]
+	last := ""
+	if len(dirs) > 0 {
+		last = strings.TrimSuffix(dirs[len(dirs)-1].Prefix, "/")
+	}
+	return dirs, last, more, nil
+}
+
 func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, o *RepoOperation, prefix path.ResolvedPath) {
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
 		logging.ListTypeFieldKey: "v2",
@@ -193,17 +232,16 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 
 	var from path.ResolvedPath
 	if !prefix.WithPath {
-		// list branches then.
+		// List branches and tags.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
-		o.Log(req).WithField("prefix", branchPrefix).Debug("listing branches with prefix")
-		branches, hasMore, err := o.Catalog.ListBranches(req.Context(), o.Repository.Name, branchPrefix, maxKeys, fromStr)
+		o.Log(req).WithField("prefix", branchPrefix).Debug("listing references with prefix")
+		dirs, lastKey, hasMore, err := controller.listReferences(req.Context(), o.Catalog, o.Repository.Name, branchPrefix, maxKeys, fromStr)
 		if err != nil {
-			o.Log(req).WithError(err).Error("could not list branches")
+			o.Log(req).WithError(err).Error("could not list references")
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
-		// return branch response
-		dirs, lastKey := controller.serializeBranches(branches)
+		// Return the reference listing response.
 		resp := serde.ListObjectsV2Output{
 			Name:           o.Repository.Name,
 			Prefix:         params.Get("prefix"),
@@ -302,16 +340,15 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 
 	var ref string
 	if !prefix.WithPath {
-		// list branches then.
-		branches, hasMore, err := o.Catalog.ListBranches(req.Context(), o.Repository.Name, prefix.Ref, maxKeys, params.Get("marker"))
+		// List branches and tags.
+		dirs, lastKey, hasMore, err := controller.listReferences(req.Context(), o.Catalog, o.Repository.Name, prefix.Ref, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
-			o.Log(req).WithError(err).Error("could not list branches")
+			o.Log(req).WithError(err).Error("could not list references")
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
-		// return branch response
-		dirs, lastKey := controller.serializeBranches(branches)
+		// Return the reference listing response.
 		resp := serde.ListBucketResult{
 			Name:           o.Repository.Name,
 			Prefix:         params.Get("prefix"),
