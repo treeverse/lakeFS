@@ -38,6 +38,6 @@ jobs:
           ACTION: ${{ github.event.action }}
           REVIEWER: ${{ github.event.requested_reviewer.login }}
         run: |
-          gh workflow run rfr-post.yaml --repo treeverse/dev \
+          gh workflow run rfr-post.yaml --repo treeverse/dev --ref main \
             -f repository="$REPOSITORY" -f number="$NUMBER" \
             -f action="$ACTION" -f reviewer="$REVIEWER"
