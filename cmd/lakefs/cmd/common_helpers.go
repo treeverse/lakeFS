@@ -10,7 +10,7 @@ import (
 const (
 	errorMessageTemplate = "Error: {{.Message}}\n"
 	infoMessageTemplate  = "Info: {{.Message|blue}}\n"
-	warnMessageTemplate  = "Error: {{.Message|red}}\n"
+	warnMessageTemplate  = "Warning: {{.Message}}\n"
 )
 
 type messageData struct {
