@@ -6,22 +6,26 @@ Repository in another client module you can
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from repository import Repository
-from getter import repository_for
+    from lakefs.repository import Repository
+from lakefs.getter import repository_for
 
-repo: Repository = repository_for('abc')
+repo: Repository = repository_for('abc', client)
 """
 
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from lakefs.client import Client
-# Import all of repository to break circular import.
-from lakefs import repository as repository_mod # Rename: repository is also a function.
+if TYPE_CHECKING:
+    from lakefs.repository import Repository
 
 
-def repository_for(repo: repository_mod.Repository | str, client: Optional[Client]) -> repository_mod.Repository:
-    return repository_mod.Repository(repo, client) if isinstance(repo, str) else repo
+def repository_for(repo: Repository | str, client: Optional[Client]) -> Repository:
+    """Return repo, or a Repository for it if it is a repository_id"""
+    # Import here to break circular import.  Do not import the module: after
+    # lakefs is loaded, lakefs.repository is the lakefs.repository() function.
+    from lakefs.repository import Repository  # pylint: disable=import-outside-toplevel,redefined-outer-name
+    return Repository(repo, client) if isinstance(repo, str) else repo
 
-def repository_id(repo: repository_mod.Repository | str) -> str:
+def repository_id(repo: Repository | str) -> str:
     """Return the repository_id of repo, or itself if it is already a repository_id"""
     return repo if isinstance(repo, str) else repo.id
