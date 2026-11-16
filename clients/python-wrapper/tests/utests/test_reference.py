@@ -13,7 +13,7 @@ def get_test_ref():
 
 def test_reference_creation():
     ref = get_test_ref()
-    assert ref._repo_id == "test_repo"
+    assert ref.repo_id == "test_repo"
     assert ref.id == "test_reference"
 
 

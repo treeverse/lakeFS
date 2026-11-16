@@ -238,8 +238,6 @@ def test_transaction_with_existing_tag(setup_repo):
     path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c"]
     test_branch = repo.branch("main")
 
-    repo: "lakefs.Repository"
-
     test_branch.object("initial_file").upload("initial content")
     initial_commit = test_branch.commit("initial commit")
     repo.tag("v1.0.0").create(initial_commit)

@@ -53,7 +53,7 @@ def readable_object_context(monkey, **kwargs):
         clt = get_test_client()
         monkey.setattr(clt, "storage_config_by_id", lambda *args: StorageTestConfig())
         read_obj = StoredObject(client=clt, **kwargs)
-        monkey.setattr(read_obj, "_storage_id", SINGLE_STORAGE_ID)
+        monkey.setattr(read_obj, "storage_id", lambda *args: SINGLE_STORAGE_ID)
         yield read_obj
 
 
@@ -65,7 +65,7 @@ def writeable_object_context(monkey, **kwargs):
         clt = get_test_client()
         monkey.setattr(clt, "storage_config_by_id", lambda *args: StorageTestConfig())
         obj = WriteableObject(client=clt, **kwargs)
-        monkey.setattr(obj, "_storage_id", SINGLE_STORAGE_ID)
+        monkey.setattr(obj, "storage_id", lambda *args: SINGLE_STORAGE_ID)
         yield obj
 
 

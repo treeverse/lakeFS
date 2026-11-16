@@ -2,6 +2,8 @@
 LenientNamedTuple Module
 """
 
+from inspect import get_annotations
+
 
 class LenientNamedTuple:
     """
@@ -13,7 +15,7 @@ class LenientNamedTuple:
     unknown: dict = {}
 
     def __init__(self, **kwargs):
-        fields = list(self.__class__.__dict__["__annotations__"].keys())
+        fields = list(get_annotations(self.__class__).keys())
         for k, v in kwargs.items():
             if k in fields:
                 setattr(self, k, v)
