@@ -17,30 +17,25 @@ def _rename_kwargs(kwarg_map: dict[str, str], func: Callable[P, R]) -> Callable[
     def wrapped(*args: Any, **kwargs: Any) -> R:
         new_kwargs = {}
         for k, v in kwargs.items():
-            new_kwargs[kwarg_map.get(k, k)] = v
+            new_k = kwarg_map.get(k, k)
+            if new_k in new_kwargs:
+                raise TypeError(f"{func.__qualname__}() got multiple values for argument '{new_k}'")
+            new_kwargs[new_k] = v
         return cast(Callable[..., R], func)(*args, **new_kwargs)
     return wrapped
 
 
-def renamed_parameters(**kwarg_map: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
+def renamed_parameters_overloaded(**kwarg_map: str) -> Callable[[Callable[P, R]], Callable[..., R]]:
     """
     Decorator for renaming args
 
-    To rename old1 -> new1 and old2 -> new2, decorate the function definition:
+    To rename old1 -> new1 and old2 -> new2, decorate the function definition.
 
-        @renamed_parameters(old1="new1", old2="new2")
-        def func(new1, new2):
-          pass
-
-    Old names keep working at runtime, but type checkers see only the new
-    signature, so they reject calls that use old names.
-
-    If old callers must type-check, declare both signatures with @overload,
-    mark the old one @deprecated, and decorate the implementation with
-    renamed_parameters_overloaded instead:
+    To type-check old callers, declare both signatures with @overload and
+    mark the old one @deprecated:
 
         @overload
-        def func(new1, new2): ...
+        def func(new1: A, new2: B): ...
         @overload
         @deprecated("old1, old2 renamed to new1, new2")
         def func(*, old1, old2): ...
@@ -57,20 +52,6 @@ def renamed_parameters(**kwarg_map: str) -> Callable[[Callable[P, R]], Callable[
     Type checkers report calls that match the deprecated overload only when
     asked to: mypy needs --enable-error-code=deprecated, pyright needs
     reportDeprecated (enabled in strict mode).
-    """
-    def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        return cast(Callable[P, R], _rename_kwargs(kwarg_map, func))
-    return decorator
-
-
-def renamed_parameters_overloaded(**kwarg_map: str) -> Callable[[Callable[P, R]], Callable[..., R]]:
-    """
-    renamed_parameters for implementations of @overload-ed functions.
-
-    Identical at runtime.  The decorated function accepts any arguments, so that
-    type checkers accept it as an implementation of the deprecated overloads that
-    use old names.  Callers are still checked against the overloads.  See
-    renamed_parameters for usage.
     """
     def decorator(func: Callable[P, R]) -> Callable[..., R]:
         return _rename_kwargs(kwarg_map, func)
