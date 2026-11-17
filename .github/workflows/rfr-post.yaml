@@ -1,7 +1,7 @@
-name: Post PR to #rfr
+name: 'Post PR to #rfr'
 
-# Asks the workflow of the same name in treeverse/dev to post this PR to the #rfr
-# Slack channel, or to update its message there.  That workflow reads the PR itself.
+# Asks the workflow of the same name in treeverse/dev to post this PR to the #rfr Slack
+# channel or update its message.  A failed post shows only in that workflow's runs.
 
 on:
   pull_request:
@@ -11,7 +11,8 @@ permissions: {}
 
 jobs:
   trigger:
-    # Secrets are not available to PRs from forks.  Drafts and bot PRs are never posted.
+    # PRs from forks are left out on purpose: they get no secrets, and this job holds
+    # a key.  Drafts and bot PRs are never posted.
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       !github.event.pull_request.draft &&
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # The token can only start workflows in treeverse/dev.
+      # The token is scoped to treeverse/dev, with the Actions permission only.
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
@@ -36,6 +37,7 @@ jobs:
           REPOSITORY: ${{ github.event.repository.name }}
           NUMBER: ${{ github.event.pull_request.number }}
           ACTION: ${{ github.event.action }}
+          # Empty when a team is requested.
           REVIEWER: ${{ github.event.requested_reviewer.login }}
         run: |
           gh workflow run rfr-post.yaml --repo treeverse/dev --ref main \
