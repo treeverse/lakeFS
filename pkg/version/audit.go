@@ -15,6 +15,10 @@ import (
 
 const (
 	auditCheckTimeout = 30 * time.Second
+
+	// MinAuditCheckInterval is the shortest interval StartPeriodicCheck
+	// waits between audit checks.
+	MinAuditCheckInterval = time.Hour
 )
 
 var (
@@ -138,10 +142,24 @@ func (a *AuditChecker) LastCheck() (*AuditResponse, error) {
 	return resp.AuditResponse, resp.Err
 }
 
+// effectiveAuditCheckInterval returns interval, or MinAuditCheckInterval if
+// interval is shorter.
+func effectiveAuditCheckInterval(interval time.Duration) time.Duration {
+	return max(interval, MinAuditCheckInterval)
+}
+
 // StartPeriodicCheck performs one check and continues every 'interval' in the background
-// check results will be found in the log and updated for 'LastCheck'
+// check results will be found in the log and updated for 'LastCheck'.
+// An interval shorter than MinAuditCheckInterval is raised to it and logged as a warning.
 // Return false if periodic check already ran
 func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Duration, log logging.Logger) bool {
+	if effective := effectiveAuditCheckInterval(interval); effective != interval {
+		log.WithFields(logging.Fields{
+			"configured_interval": interval,
+			"interval":            effective,
+		}).Warn("Audit check interval below minimum, using minimum")
+		interval = effective
+	}
 	ctx, a.cancel = context.WithCancel(ctx)
 	a.wg.Go(func() {
 		// check first and loop for checking every interval
