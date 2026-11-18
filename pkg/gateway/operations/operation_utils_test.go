@@ -167,8 +167,8 @@ func TestAmzMetaWriteHeaders(t *testing.T) {
 				"X-Amz-Meta-anotherkey": "anothervalue",
 			},
 			expectedHeaders: map[string]string{
-				"X-Amz-Meta-Validkey":   "validvalue",
-				"X-Amz-Meta-Anotherkey": "anothervalue",
+				"X-Amz-Meta-validkey":   "validvalue",
+				"X-Amz-Meta-anotherkey": "anothervalue",
 			},
 			expectedMissingMeta: "",
 		},
@@ -183,8 +183,8 @@ func TestAmzMetaWriteHeaders(t *testing.T) {
 			expectedHeaders: map[string]string{
 				"X-Amz-Meta-.":        "dotvalue",
 				"X-Amz-Meta-#":        "hashvalue",
-				"X-Amz-Meta-Test.key": "dotinkey",
-				"X-Amz-Meta-Test#key": "hashinkey",
+				"X-Amz-Meta-test.key": "dotinkey",
+				"X-Amz-Meta-test#key": "hashinkey",
 			},
 			expectedMissingMeta: "",
 		},
@@ -198,10 +198,20 @@ func TestAmzMetaWriteHeaders(t *testing.T) {
 				"X-Amz-Meta-validkey2":     "validvalue2",
 			},
 			expectedHeaders: map[string]string{
-				"X-Amz-Meta-Validkey":  "validvalue",
-				"X-Amz-Meta-Validkey2": "validvalue2",
+				"X-Amz-Meta-validkey":  "validvalue",
+				"X-Amz-Meta-validkey2": "validvalue2",
 			},
 			expectedMissingMeta: "3",
+		},
+		{
+			name: "keys stored before lowercasing go out lowercase",
+			metadata: catalog.Metadata{
+				"X-Amz-Meta-Foo": "bar",
+			},
+			expectedHeaders: map[string]string{
+				"X-Amz-Meta-foo": "bar",
+			},
+			expectedMissingMeta: "",
 		},
 		{
 			name: "all invalid metadata keys",
@@ -222,7 +232,7 @@ func TestAmzMetaWriteHeaders(t *testing.T) {
 				"X-Amz-Meta-invalid\x03": "shouldbeskipped",
 			},
 			expectedHeaders: map[string]string{
-				"X-Amz-Meta-Valid": "value", // Go canonicalizes header names
+				"X-Amz-Meta-valid": "value",
 			},
 			expectedMissingMeta: "1",
 		},
@@ -237,8 +247,8 @@ func TestAmzMetaWriteHeaders(t *testing.T) {
 
 			// Check expected headers are present
 			for expectedKey, expectedValue := range tt.expectedHeaders {
-				actualValue := headers.Get(expectedKey)
-				require.Equal(t, expectedValue, actualValue, "header %q value mismatch", expectedKey)
+				// Raw map lookup: the key must go out lowercase, as S3 sends it
+				require.Equal(t, []string{expectedValue}, headers[expectedKey], "header %q value mismatch", expectedKey)
 			}
 
 			// Check X-Amz-Missing-Meta header

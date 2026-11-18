@@ -106,7 +106,9 @@ func amzMetaWriteHeaders(w http.ResponseWriter, metadata catalog.Metadata) {
 	for k, v := range metadata {
 		if keyPart, ok := strings.CutPrefix(k, amzMetaHeaderPrefix); ok {
 			if isValidMetadataKey(keyPart) {
-				h.Set(k, mime.QEncoding.Encode("utf-8", v))
+				// Set the map entry directly: h.Set would canonicalize the key to
+				// X-Amz-Meta-Foo, and boto3 keeps that case in the Metadata dict.
+				h[amzMetaHeaderPrefix+strings.ToLower(keyPart)] = []string{mime.QEncoding.Encode("utf-8", v)}
 			} else {
 				missingCount++
 			}
