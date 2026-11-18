@@ -228,6 +228,7 @@ func TestParseURL(t *testing.T) {
 			ExpectedUrl: nil,
 		},
 	}
+
 	for _, tt := range cases {
 		t.Run(tt.Url, func(t *testing.T) {
 			parsed := git.ParseURL(tt.Url)
