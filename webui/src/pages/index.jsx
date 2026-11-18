@@ -35,6 +35,7 @@ import RepositoryActionPage from './repositories/repository/actions/run';
 import { WithAppContext } from '../lib/hooks/appContext';
 import { AuthProvider } from '../lib/auth/authContext';
 import RequiresAuth from '../lib/components/requiresAuth';
+import { PageTitle } from '../lib/components/pageTitle';
 
 // Component to handle browser redirection - to exit the React app.
 const Redirect = () => {
@@ -57,7 +58,15 @@ export const IndexPage = () => {
                         <Route element={<RequiresAuth />}>
                             <Route index element={<Navigate to="/repositories" />} />
                             <Route path="repositories" element={<Layout />}>
-                                <Route index element={<RepositoriesPage />} />
+                                <Route
+                                    index
+                                    element={
+                                        <>
+                                            <PageTitle title="Repositories" />
+                                            <RepositoriesPage />
+                                        </>
+                                    }
+                                />
                                 <Route path=":repoId" element={<RepositoryPageLayout />}>
                                     <Route path="objects" element={<RepositoryObjectsPage />} />
                                     <Route path="object" element={<RepositoryObjectsViewPage />} />
@@ -90,7 +99,15 @@ export const IndexPage = () => {
                                 </Route>
                             </Route>
                             <Route path="datasets" element={<Layout />}>
-                                <Route index element={<DatasetsPage />} />
+                                <Route
+                                    index
+                                    element={
+                                        <>
+                                            <PageTitle title="Datasets" />
+                                            <DatasetsPage />
+                                        </>
+                                    }
+                                />
                             </Route>
                             <Route path="auth" element={<Layout />}>
                                 <Route index element={<Navigate to="credentials" replace />} />
@@ -105,11 +122,35 @@ export const IndexPage = () => {
                             <Route path="*" element={<Navigate to="/repositories" replace />} />
                         </Route>
                         <Route path="auth" element={<Layout />}>
-                            <Route path="login" element={<LoginPage />} />
+                            <Route
+                                path="login"
+                                element={
+                                    <>
+                                        <PageTitle title="Login" />
+                                        <LoginPage />
+                                    </>
+                                }
+                            />
                         </Route>
                         <Route path="/setup" element={<Layout />}>
-                            <Route index element={<Setup />} />
-                            <Route path="*" element={<Setup />} />
+                            <Route
+                                index
+                                element={
+                                    <>
+                                        <PageTitle title="Setup" />
+                                        <Setup />
+                                    </>
+                                }
+                            />
+                            <Route
+                                path="*"
+                                element={
+                                    <>
+                                        <PageTitle title="Setup" />
+                                        <Setup />
+                                    </>
+                                }
+                            />
                         </Route>
                     </Routes>
                 </WithAppContext>
