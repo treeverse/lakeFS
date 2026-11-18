@@ -1082,12 +1082,12 @@ class Refs {
         return response.json();
     }
 
-    async merge(repoId, sourceBranch, destinationBranch, strategy = '', message = '', metadata = {}) {
+    async merge(repoId, sourceBranch, destinationBranch, strategy = '', message = '', metadata = {}, squashMerge = false) {
         const response = await apiRequest(
             `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`,
             {
                 method: 'POST',
-                body: JSON.stringify({ strategy, message, metadata }),
+                body: JSON.stringify({ strategy, message, metadata, squash_merge: squashMerge }),
             },
         );
 
