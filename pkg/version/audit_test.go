@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/sirupsen/logrus"
@@ -311,5 +312,27 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	}
 	if diff := deep.Equal(lastResponse.Alerts, responseAlerts); diff != nil {
 		t.Error("LastCheck() alerts diff found", diff)
+	}
+}
+
+func TestEffectiveAuditCheckInterval(t *testing.T) {
+	tests := []struct {
+		name     string
+		interval time.Duration
+		want     time.Duration
+	}{
+		{name: "zero", interval: 0, want: MinAuditCheckInterval},
+		{name: "negative", interval: -time.Hour, want: MinAuditCheckInterval},
+		{name: "unitless seconds read as nanoseconds", interval: 3600, want: MinAuditCheckInterval},
+		{name: "just below minimum", interval: MinAuditCheckInterval - time.Nanosecond, want: MinAuditCheckInterval},
+		{name: "minimum", interval: MinAuditCheckInterval, want: MinAuditCheckInterval},
+		{name: "default", interval: 24 * time.Hour, want: 24 * time.Hour},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := effectiveAuditCheckInterval(tt.interval); got != tt.want {
+				t.Errorf("effectiveAuditCheckInterval(%s) = %s, want %s", tt.interval, got, tt.want)
+			}
+		})
 	}
 }
