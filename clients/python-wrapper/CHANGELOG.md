@@ -2,9 +2,10 @@
 
 ## v0.17.0
 
-This release bumps a minor version number despite only fixing bugs: the name
-of several function args changed from `repository_id` to `repository`.  **Old
-calls will continue to work**, but their typing is now deprecated.
+This release bumps a minor version number but might break some of your
+Python CI flows: the name of several function args changed from
+`repository_id` to `repository`.  **Old calls will continue to work**, but
+their typing is now deprecated.
 
 :bug: Bugs fixed:
 
