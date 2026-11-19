@@ -10825,7 +10825,6 @@ components:
       allOf:
       - $ref: '#/components/schemas/PullRequestBasic'
       - required:
-        - description
         - status
         - title
       - properties:

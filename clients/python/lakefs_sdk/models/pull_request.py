@@ -31,7 +31,7 @@ class PullRequest(BaseModel):
     """
     status: StrictStr = Field(...)
     title: StrictStr = Field(...)
-    description: StrictStr = Field(...)
+    description: Optional[StrictStr] = None
     id: StrictStr = Field(...)
     creation_date: datetime = Field(...)
     author: StrictStr = Field(...)

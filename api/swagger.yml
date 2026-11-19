@@ -1945,7 +1945,6 @@ components:
         - required:
             - status
             - title
-            - description
         - type: object
           required:
             - id
