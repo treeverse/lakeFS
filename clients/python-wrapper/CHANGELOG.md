@@ -1,10 +1,23 @@
 # Changelog
 
-## Unreleased
+## v0.17.0
+
+This release bumps a minor version number despite only fixing bugs: the name
+of several function args changed from `repository_id` to `repository`.  **Old
+calls will continue to work**, but their typing is now deprecated.
 
 :bug: Bugs fixed:
 
 - Annotate `Branch.delete_objects` as returning `ObjectErrorList` (#10480)
+- Run a single GetRepository call per repository object.  Otherwise many
+  object calls need to perform this action (#10586).
+
+  This change renames the `repository_id` arg to `repository` in many
+  methods, and changes its type to allow passing a Repository object
+  explicitly as well as a plain string.  Deprecate the use of
+  `repository_id` as a keyword arg; you should use `repository` instead.
+  (In almost all cases this arg is passed as a position arg, so no changes
+  are normally required.)
 
 ## v0.16.0
 
