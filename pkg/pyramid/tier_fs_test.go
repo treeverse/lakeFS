@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -242,6 +243,46 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	wg.Wait()
 
 	require.Equal(t, int64(1), adapter.GetCount())
+}
+
+func TestConcurrentReadsSameFilenameDifferentNamespaces(t *testing.T) {
+	ctx := t.Context()
+	var baseDir string
+	fs, baseDir = createFSWithEviction(ctx, &mockEv{})
+	defer func() { _ = os.RemoveAll(baseDir) }()
+	tfs := fs.(*TierFS)
+
+	const filename = "same-content-hash"
+	content := []byte("hello world!")
+	namespaces := []string{uniqueNamespace(), uniqueNamespace()}
+	for _, ns := range namespaces {
+		obj := tfs.objPointer(config.SingleBlockstoreID, ns, filename)
+		_, err := adapter.Put(ctx, obj, int64(len(content)), bytes.NewReader(content), block.PutOpts{})
+		require.NoError(t, err)
+	}
+
+	// hold every download until both reads are inFlight
+	adapter.wait = make(chan struct{})
+	release := sync.OnceFunc(func() { close(adapter.wait) })
+	defer release()
+
+	results := make(chan error, len(namespaces))
+	for i, ns := range namespaces {
+		go func() {
+			f, err := fs.Open(ctx, config.SingleBlockstoreID, ns, filename)
+			if err == nil {
+				err = f.Close()
+			}
+			results <- err
+		}()
+		require.Eventually(t, func() bool { return adapter.GetCount() == int64(i+1) },
+			5*time.Second, time.Millisecond, "read from namespace %d did not start its own download", i)
+	}
+
+	release()
+	for range namespaces {
+		require.NoError(t, <-results)
+	}
 }
 
 func TestRemoveTempFileOnStoreError(t *testing.T) {
