@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 const commitsTemplate = `{{ range $val := .Commits }}
@@ -157,12 +158,12 @@ var logCmd = &cobra.Command{
 			logCommitsParams.After = apiutil.Ptr(apigen.PaginationAfter(pagination.NextOffset))
 			data := struct {
 				Commits         []apigen.Commit
-				Pagination      *Pagination
+				Pagination      *cmdutils.Pagination
 				ShowMetaRangeID bool
 			}{
 				Commits:         resp.JSON200.Results,
 				ShowMetaRangeID: showMetaRangeID,
-				Pagination: &Pagination{
+				Pagination: &cmdutils.Pagination{
 					Amount:  amount,
 					HasNext: pagination.HasMore,
 					After:   pagination.NextOffset,

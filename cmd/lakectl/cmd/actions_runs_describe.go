@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 const actionRunResultTemplate = `{{ . | table -}}`
@@ -64,14 +65,14 @@ var actionsRunsDescribeCmd = &cobra.Command{
 			pagination = runHooksRes.JSON200.Pagination
 			data := struct {
 				Hooks      []apigen.HookRun
-				HooksTable []*Table
+				HooksTable []*cmdutils.Table
 				HookLog    func(hookRunID string) (string, error)
-				Pagination *Pagination
+				Pagination *cmdutils.Pagination
 			}{
 				Hooks:      runHooksRes.JSON200.Results,
 				HooksTable: convertHookResultsTables(runHooksRes.JSON200.Results),
 				HookLog:    makeHookLog(ctx, client, u.Repository, runID),
-				Pagination: &Pagination{
+				Pagination: &cmdutils.Pagination{
 					Amount:  amount,
 					HasNext: pagination.HasMore,
 					After:   pagination.NextOffset,
@@ -100,14 +101,14 @@ func makeHookLog(ctx context.Context, client apigen.ClientWithResponsesInterface
 	}
 }
 
-func convertRunResultTable(r *apigen.ActionRun) *Table {
+func convertRunResultTable(r *apigen.ActionRun) *cmdutils.Table {
 	runID := text.FgYellow.Sprint(r.RunId)
 	statusColor := text.FgRed
 	if r.Status == "completed" {
 		statusColor = text.FgGreen
 	}
 	status := statusColor.Sprint(r.Status)
-	return &Table{
+	return &cmdutils.Table{
 		Headers: []any{"Run ID", "Event", "Branch", "Start Time", "End Time", "Commit ID", "Status"},
 		Rows: [][]any{
 			{runID, r.EventType, r.Branch, r.StartTime, r.EndTime, r.CommitId, status},
@@ -115,8 +116,8 @@ func convertRunResultTable(r *apigen.ActionRun) *Table {
 	}
 }
 
-func convertHookResultsTables(results []apigen.HookRun) []*Table {
-	tables := make([]*Table, len(results))
+func convertHookResultsTables(results []apigen.HookRun) []*cmdutils.Table {
+	tables := make([]*cmdutils.Table, len(results))
 	for i, r := range results {
 		hookRunID := text.FgYellow.Sprint(r.HookRunId)
 		statusColor := text.FgRed
@@ -129,7 +130,7 @@ func convertHookResultsTables(results []apigen.HookRun) []*Table {
 			statusColor = text.FgRed
 		}
 		status := statusColor.Sprint(r.Status)
-		tables[i] = &Table{
+		tables[i] = &cmdutils.Table{
 			Headers: []any{"Hook Run ID", "Hook ID", "Start Time", "End Time", "Action", "Status"},
 			Rows: [][]any{
 				{hookRunID, r.HookId, r.StartTime, r.EndTime, r.Action, status},

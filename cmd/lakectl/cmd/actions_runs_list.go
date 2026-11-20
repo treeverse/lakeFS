@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
@@ -68,10 +69,10 @@ var actionsRunsListCmd = &cobra.Command{
 
 		pagination := resp.JSON200.Pagination
 		data := struct {
-			ActionsRunsTable *Table
-			Pagination       *Pagination
+			ActionsRunsTable *cmdutils.Table
+			Pagination       *cmdutils.Pagination
 		}{
-			ActionsRunsTable: &Table{
+			ActionsRunsTable: &cmdutils.Table{
 				Headers: []any{
 					"Run ID",
 					"Event",
@@ -85,7 +86,7 @@ var actionsRunsListCmd = &cobra.Command{
 			},
 		}
 		if pagination.HasMore {
-			data.Pagination = &Pagination{
+			data.Pagination = &cmdutils.Pagination{
 				Amount:  amount,
 				HasNext: true,
 				After:   pagination.NextOffset,
