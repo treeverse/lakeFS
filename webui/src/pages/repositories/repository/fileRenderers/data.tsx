@@ -71,7 +71,9 @@ export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fil
         };
         // eslint-disable-next-line no-console
         runQuery(sql).catch(console.error);
-        // TODO: Review and remove this eslint-disable once dependencies are validated
+        // sql is read from the closure on purpose: the query should only re-run when
+        // the user hits Run/submit (shouldSubmit) or the file identity changes, not on
+        // every keystroke in the editor.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repoId, refId, path, shouldSubmit]);
 
