@@ -162,3 +162,21 @@ def test_reference_objects(monkeypatch):
                     item.checksum  # pylint: disable=pointless-statement
 
             assert item.path == f"path-{i}"
+
+
+def test_reference_merge_into(monkeypatch):
+    ref = get_test_ref()
+    destination = "main"
+    with monkeypatch.context():
+        def monkey_merge_into_branch(repo_name, source_ref, destination_branch, merge, **kwargs):
+            assert repo_name == ref.repo_id
+            assert source_ref == ref.id
+            assert destination_branch == destination
+            assert merge.message == "merge message"
+            assert merge.allow_empty
+            assert kwargs == {"_request_timeout": 5}
+            return lakefs_sdk.MergeResult(reference="merge-commit")
+
+        monkeypatch.setattr(ref._client.sdk_client.refs_api, "merge_into_branch", monkey_merge_into_branch)
+        res = ref.merge_into(destination, message="merge message", allow_empty=True, _request_timeout=5)
+        assert res == "merge-commit"

@@ -4,7 +4,7 @@ Module containing lakeFS reference implementation
 
 from __future__ import annotations
 
-from typing import Optional, Generator, Union, TYPE_CHECKING, overload
+from typing import Any, Optional, Generator, Union, TYPE_CHECKING, overload
 
 from typing_extensions import deprecated
 
@@ -166,19 +166,22 @@ class Reference(_BaseLakeFSObject):
         Merge this reference into destination branch
 
         :param destination_branch: The merge destination (either ID or branch object)
-        :param kwargs: Additional Keyword Arguments to send to the server
+        :param kwargs: Merge parameters (fields of ``lakefs_sdk.Merge`` such as ``message`` or ``allow_empty``),
+            and additional Keyword Arguments to send to the server (such as ``_request_timeout``)
         :return: The reference id of the merge commit
         :raise NotFoundException: if reference by this id does not exist, or branch doesn't exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
         branch_id = destination_branch if isinstance(destination_branch, str) else destination_branch.id
+        merge_kwargs, request_kwargs = split_body_kwargs(lakefs_sdk.Merge, kwargs)
         with api_exception_handler():
-            merge = lakefs_sdk.Merge(**kwargs)
+            merge = lakefs_sdk.Merge(**merge_kwargs)
             res = self._client.sdk_client.refs_api.merge_into_branch(self.repo_id,
                                                                      self._id,
                                                                      branch_id,
-                                                                     merge=merge)
+                                                                     merge=merge,
+                                                                     **request_kwargs)
             return res.reference
 
     def object(self, path: str) -> StoredObject:  # pylint: disable=C0103
@@ -212,11 +215,24 @@ def generate_listing(func, *args, max_amount: Optional[int] = None, **kwargs):
             kwargs["after"] = page.pagination.next_offset
             for res in page.results:
                 yield res
-
                 if max_amount is not None:
                     max_amount -= 1
                     if max_amount <= 0:
                         return
+
+
+def split_body_kwargs(model: Any, kwargs: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Split keyword arguments between a lakefs-sdk request body model and the API call that sends it
+
+    :param model: The lakefs-sdk request body model class
+    :param kwargs: The keyword arguments to split
+    :return: The arguments named by a field of the model (by name or alias), and all other arguments
+    """
+    names = set(model.__fields__) | {field.alias for field in model.__fields__.values()}
+    body = {k: v for k, v in kwargs.items() if k in names}
+    request = {k: v for k, v in kwargs.items() if k not in names}
+    return body, request
 
 
 ReferenceType = Union[str, Reference, Commit]

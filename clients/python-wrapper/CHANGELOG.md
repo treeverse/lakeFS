@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+:bug: Bugs fixed:
+
+- Send request options such as `_request_timeout` from `Branch.create`,
+  `Branch.commit` and `Reference.merge_into` to the server instead of
+  dropping them
+
 ## v0.17.0
 
 This release bumps a minor version number but might break some of your

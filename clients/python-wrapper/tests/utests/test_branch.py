@@ -30,14 +30,16 @@ def test_branch_create(monkeypatch):
     branch = get_test_branch()
     source = "main"
     with monkeypatch.context():
-        def monkey_create_branch(_self, repo_name, branch_creation, *_):
+        def monkey_create_branch(_self, repo_name, branch_creation, **kwargs):
             assert repo_name == branch.repo_id
             assert branch_creation.name == branch.id
             assert branch_creation.source == source
+            assert branch_creation.hidden
+            assert kwargs == {"_request_timeout": 5}
             return lakefs_sdk.BranchCreation(name=branch.id, source=source)
 
         monkeypatch.setattr(lakefs_sdk.BranchesApi, "create_branch", monkey_create_branch)
-        branch.create(source)
+        branch.create(source, hidden=True, _request_timeout=5)
 
 
 def test_branch_create_already_exists(monkeypatch):
@@ -82,12 +84,14 @@ def test_branch_commit(monkeypatch):
     commit_id = "1234"
     commit_message = "test message"
     with monkeypatch.context():
-        def monkey_commit(repo_name, branch_name, commits_creation, *_):
+        def monkey_commit(repo_name, branch_name, commits_creation, **kwargs):
             assert repo_name == branch.repo_id
             assert branch_name == branch.id
             assert commits_creation.message == commit_message
             assert commits_creation.metadata == md
             assert commits_creation.allow_empty
+            assert commits_creation.var_date == 123
+            assert kwargs == {"_request_timeout": 5}
             return lakefs_sdk.Commit(
                 id=commit_id,
                 parents=[""],
@@ -98,7 +102,7 @@ def test_branch_commit(monkeypatch):
             )
 
         monkeypatch.setattr(branch._client.sdk_client.commits_api, "commit", monkey_commit)
-        res = branch.commit(commit_message, metadata=md, allow_empty=True, ignored_field="test")
+        res = branch.commit(commit_message, metadata=md, allow_empty=True, date=123, _request_timeout=5)
         assert res.id == commit_id
 
 
