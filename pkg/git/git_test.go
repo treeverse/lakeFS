@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -72,6 +73,28 @@ func TestGetRepositoryPath(t *testing.T) {
 	gitPath, err = git.GetRepositoryPath(tmpSubdir)
 	require.NoError(t, err)
 	require.Equal(t, tmpdir, gitPath)
+}
+
+func TestGetRepositoryPathLocalizedGit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake git is a shell script")
+	}
+	// A git that answers in French unless messages are forced to the C locale
+	binDir := t.TempDir()
+	fakeGit := `#!/bin/sh
+if [ "$LC_ALL" = "C" ]; then
+  echo "fatal: not a git repository (or any of the parent directories): .git"
+else
+  echo "fatal: ni ceci ni aucun de ses répertoires parents n'est un dépôt git : .git"
+fi
+exit 128
+`
+	require.NoError(t, os.WriteFile(filepath.Join(binDir, "git"), []byte(fakeGit), 0o755))
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("LC_ALL", "fr_FR.UTF-8")
+
+	_, err := git.GetRepositoryPath(t.TempDir())
+	require.ErrorIs(t, err, giterror.ErrNotARepository)
 }
 
 func TestIgnore(t *testing.T) {
