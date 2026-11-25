@@ -21,9 +21,9 @@ import json
 
 from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, StrictStr, validator
+    from pydantic.v1 import BaseModel, Field, StrictStr, validator
 except ImportError:
-    from pydantic import BaseModel, StrictStr, validator
+    from pydantic import BaseModel, Field, StrictStr, validator
 
 class PullRequestBasic(BaseModel):
     """
@@ -31,7 +31,7 @@ class PullRequestBasic(BaseModel):
     """
     status: Optional[StrictStr] = None
     title: Optional[StrictStr] = None
-    description: Optional[StrictStr] = None
+    description: Optional[StrictStr] = Field(None, description="Absent when listing pull requests.")
     __properties = ["status", "title", "description"]
 
     @validator('status')

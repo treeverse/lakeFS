@@ -31,7 +31,7 @@ class PullRequest(BaseModel):
     """
     status: StrictStr = Field(...)
     title: StrictStr = Field(...)
-    description: Optional[StrictStr] = None
+    description: Optional[StrictStr] = Field(None, description="Absent when listing pull requests.")
     id: StrictStr = Field(...)
     creation_date: datetime = Field(...)
     author: StrictStr = Field(...)

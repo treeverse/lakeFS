@@ -193,7 +193,7 @@ public class PullRequest {
   }
 
    /**
-   * Get description
+   * Absent when listing pull requests.
    * @return description
   **/
   @javax.annotation.Nullable

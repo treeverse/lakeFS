@@ -7586,6 +7586,8 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/pulls:
     get:
+      description: |
+        Listed pull requests carry no description. Get a single pull request to read it.
       operationId: listPullRequests
       parameters:
       - explode: false
@@ -10819,6 +10821,7 @@ components:
         title:
           type: string
         description:
+          description: Absent when listing pull requests.
           type: string
       type: object
     PullRequest:

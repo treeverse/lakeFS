@@ -1670,6 +1670,7 @@ class ExperimentalApi:
     def list_pull_requests(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, status : Optional[StrictStr] = None, **kwargs) -> PullRequestsList:  # noqa: E501
         """list pull requests  # noqa: E501
 
+        Listed pull requests carry no description. Get a single pull request to read it.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -1707,6 +1708,7 @@ class ExperimentalApi:
     def list_pull_requests_with_http_info(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, status : Optional[StrictStr] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """list pull requests  # noqa: E501
 
+        Listed pull requests carry no description. Get a single pull request to read it.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 

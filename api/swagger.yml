@@ -1938,6 +1938,7 @@ components:
           type: string
         description:
           type: string
+          description: Absent when listing pull requests.
 
     PullRequest:
       allOf:
@@ -6222,6 +6223,8 @@ paths:
         - experimental
       operationId: listPullRequests
       summary: list pull requests
+      description: |
+        Listed pull requests carry no description. Get a single pull request to read it.
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"

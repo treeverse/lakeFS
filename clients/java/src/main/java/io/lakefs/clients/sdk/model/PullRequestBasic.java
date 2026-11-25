@@ -164,7 +164,7 @@ public class PullRequestBasic {
   }
 
    /**
-   * Get description
+   * Absent when listing pull requests.
    * @return description
   **/
   @javax.annotation.Nullable

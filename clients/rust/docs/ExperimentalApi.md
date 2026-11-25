@@ -337,6 +337,8 @@ Name | Type | Description  | Required | Notes
 > models::PullRequestsList list_pull_requests(repository, prefix, after, amount, status)
 list pull requests
 
+Listed pull requests carry no description. Get a single pull request to read it. 
+
 ### Parameters
 
 

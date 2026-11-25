@@ -680,7 +680,7 @@ public class PullsApi {
 
     /**
      * list pull requests
-     * 
+     * Listed pull requests carry no description. Get a single pull request to read it. 
      * @param repository  (required)
      * @return APIlistPullRequestsRequest
      * @http.response.details

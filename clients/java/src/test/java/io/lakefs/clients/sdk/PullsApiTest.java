@@ -68,6 +68,8 @@ public class PullsApiTest {
     /**
      * list pull requests
      *
+     * Listed pull requests carry no description. Get a single pull request to read it. 
+     *
      * @throws ApiException if the Api call fails
      */
     @Test
