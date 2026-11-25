@@ -8,7 +8,7 @@ import (
 
 var (
 	ReValidRef          = regexp.MustCompile(`^[^\s]+$`)
-	ReValidBranchID     = regexp.MustCompile(`^\w[-\w]*$`)
+	ReValidBranchID     = regexp.MustCompile(`^[^\s/]+$`)
 	ReValidRepositoryID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
