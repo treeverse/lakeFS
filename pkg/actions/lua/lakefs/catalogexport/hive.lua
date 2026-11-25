@@ -33,6 +33,11 @@ end
 -- Hive format partition iterator each result set is a collection of files under the same partition
 local function extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)
     local target_partition = ""
+    -- hidden ("_") segments are checked only below the table path, as Spark does
+    local base_prefix = base_path
+    if base_prefix ~= "" and not strings.has_suffix(base_prefix, "/") then
+        base_prefix = base_prefix .. "/"
+    end
     local pager = utils.lakefs_object_pager(client, repo_id, commit_id, "", base_path, "",
         page_size or DEFAULT_PAGE_SIZE)
     local page = pager()
@@ -50,7 +55,13 @@ local function extract_partition_pager(client, repo_id, commit_id, base_path, pa
             end
             local entry = page[1]
             local partition_key = extract_partitions_path(partition_cols, entry.path)
-            if not pathlib.is_hidden(entry.path) and partition_key ~= nil then
+            local rel_path = entry.path
+            if entry.path == base_path then
+                rel_path = ""
+            elseif strings.has_prefix(entry.path, base_prefix) then
+                rel_path = entry.path:sub(#base_prefix + 1)
+            end
+            if not pathlib.is_hidden(rel_path) and partition_key ~= nil then
                 -- first time: if not set, assign current object partition as the target_partition key
                 if target_partition == "" then
                     target_partition = partition_key
