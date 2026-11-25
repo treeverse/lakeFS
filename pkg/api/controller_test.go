@@ -6374,6 +6374,7 @@ func TestController_ListPullRequestsHandler(t *testing.T) {
 		for i, p := range resp.JSON200.Results {
 			require.Equal(t, expected[i].ID, p.Id)
 			require.Equal(t, expected[i].Title, swag.StringValue(p.Title))
+			require.Nil(t, p.Description)
 			require.Equal(t, userResp.JSON200.User.Id, p.Author)
 			require.Equal(t, expected[i].SourceBranch, p.SourceBranch)
 			require.Equal(t, expected[i].DestinationBranch, p.DestinationBranch)

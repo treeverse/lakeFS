@@ -1,5 +1,13 @@
 # Changelog
 
+## next
+
+:bug: Bugs Fixed:
+
+- Listing pull requests no longer crashes the Python, Java and Rust SDKs. The API spec marked a pull request's `description` as required, but the list endpoint never returns it. `description` is now optional, so the SDKs can decode the response. Get a single pull request to read its description. (#10603)
+
+  This changes the generated SDK types: `description` is optional in Python, nullable in Java, and `Option<String>` in Rust, where `PullRequest::new` no longer takes a description. Code written against the old types never worked against a real server, so no working client is affected.
+
 ## v1.88.0
 > Important note: Action hooks can no longer send requests to internal addresses (loopback, private, link-local) by default. Allow the internal hosts your hooks need with `actions.network.allowed_hosts`. Hook requests no longer use the `HTTP_PROXY`/`HTTPS_PROXY` environment variables.
 

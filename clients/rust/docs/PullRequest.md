@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **status** | **String** |  | 
 **title** | **String** |  | 
-**description** | **String** |  | 
+**description** | Option<**String**> | Absent when listing pull requests. | [optional]
 **id** | **String** |  | 
 **creation_date** | **String** |  | 
 **author** | **String** |  | 

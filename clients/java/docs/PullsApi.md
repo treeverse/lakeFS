@@ -187,6 +187,8 @@ public class Example {
 
 list pull requests
 
+Listed pull requests carry no description. Get a single pull request to read it. 
+
 ### Example
 ```java
 // Import classes:

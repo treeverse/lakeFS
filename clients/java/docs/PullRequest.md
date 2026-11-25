@@ -9,7 +9,7 @@
 |------------ | ------------- | ------------- | -------------|
 |**status** | [**StatusEnum**](#StatusEnum) |  |  |
 |**title** | **String** |  |  |
-|**description** | **String** |  |  |
+|**description** | **String** | Absent when listing pull requests. |  [optional] |
 |**id** | **String** |  |  |
 |**creationDate** | **OffsetDateTime** |  |  |
 |**author** | **String** |  |  |

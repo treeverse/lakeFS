@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **status** | **str** |  | [optional] 
 **title** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
+**description** | **str** | Absent when listing pull requests. | [optional] 
 
 ## Example
 

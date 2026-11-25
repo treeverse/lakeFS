@@ -16,6 +16,7 @@ pub struct PullRequestBasic {
     pub status: Option<Status>,
     #[serde(rename = "title", skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// Absent when listing pull requests.
     #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }

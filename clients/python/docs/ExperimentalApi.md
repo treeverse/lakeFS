@@ -1020,6 +1020,8 @@ void (empty response body)
 
 list pull requests
 
+Listed pull requests carry no description. Get a single pull request to read it. 
+
 ### Example
 
 * Basic Authentication (basic_auth):

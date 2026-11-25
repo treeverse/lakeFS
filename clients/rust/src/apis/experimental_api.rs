@@ -587,6 +587,7 @@ pub async fn hard_reset_branch(configuration: &configuration::Configuration, rep
     }
 }
 
+/// Listed pull requests carry no description. Get a single pull request to read it. 
 pub async fn list_pull_requests(configuration: &configuration::Configuration, repository: &str, prefix: Option<&str>, after: Option<&str>, amount: Option<i32>, status: Option<&str>) -> Result<models::PullRequestsList, Error<ListPullRequestsError>> {
     let local_var_configuration = configuration;
 
