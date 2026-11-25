@@ -162,7 +162,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     p = entry.cdc.path
                 end
                 if p ~= "" then
-                    local unescaped_path = url.query_unescape(p)
+                    local unescaped_path = url.path_unescape(p)
                     if not unescaped_path then
                         error("failed unescaping path: " .. p)
                     end

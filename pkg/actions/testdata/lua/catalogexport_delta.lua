@@ -13,6 +13,8 @@ local test_data = {
         }
     ]]
     table_to_objects = {},
+    -- Exact paths passed to stat_object: { "table1/col=a+b/file1.parquet" = true, ... }
+    stat_paths = {},
     --[[
         Used to validate the expected Delta Log content
         {
@@ -67,6 +69,7 @@ package.loaded.lakefs = {
         end
         -- mark the given parquet file path under a specific table as requested.
         test_data.table_to_objects[table_path_base][parsed_path["base_name"]] = true
+        test_data.stat_paths[path] = true
         return 200, json.marshal({
             physical_address = generate_physical_address(path) ,
         })
@@ -135,6 +138,22 @@ local function assert_lakefs_stats(table_names, content_paths)
     end
 end
 
+local function assert_stat_paths(table_names, relative_paths)
+    for _, table_name in ipairs(table_names) do
+        for _, p in ipairs(relative_paths) do
+            local full_path = table_name .. "/" .. p
+            if not test_data.stat_paths[full_path] then
+                local got = {}
+                for sp in pairs(test_data.stat_paths) do
+                    table.insert(got, sp)
+                end
+                table.sort(got)
+                error("missing lakeFS stat_object call for exact path: \"" .. full_path .. "\"\ngot:\n" .. table.concat(got, "\n") .. "\n")
+            end
+        end
+    end
+end
+
 local function assert_delta_log_content(delta_table_details, table_to_physical_content)
     for table_path, table_details in pairs(delta_table_details) do
         local table_loc = table_details["path"]
@@ -163,6 +182,8 @@ end
 
 -- Test data
 local data_paths = { "part-c000.snappy.parquet", "part-c001.snappy.parquet", "part-c002.snappy.parquet", "part-c003.snappy.parquet" }
+-- Exact paths, relative to the table, that must be stat'ed after decoding the partitioned log paths below.
+local stat_paths = { "col=a+b/part-c004.snappy.parquet", "col=a+b/part-c005.snappy.parquet", "test partition/part-c006.snappy.parquet" }
 local test_table_names = { "table1", "table2"}
 
 for _, table_name in ipairs(test_table_names) do
@@ -177,6 +198,10 @@ for _, table_name in ipairs(test_table_names) do
             "{\"metaData\":\"some metadata\"}",
             "{\"add\": {\"path\":\"part-c002.snappy.parquet\"}}",
             "{\"remove\": {\"path\":\"part-c003.snappy.parquet\"}}",
+            -- Delta log paths are URI path-encoded: "+" is literal, "%2B" is "+", "%20" is a space.
+            "{\"add\": {\"path\":\"col=a+b/part-c004.snappy.parquet\"}}",
+            "{\"add\": {\"path\":\"col=a%2Bb/part-c005.snappy.parquet\"}}",
+            "{\"add\": {\"path\":\"test%20partition/part-c006.snappy.parquet\"}}",
         }
     }
     test_data.table_expected_log[table_name] = {
@@ -190,6 +215,9 @@ for _, table_name in ipairs(test_table_names) do
             "{\"metaData\":\"some metadata\"}",
             "{\"add\":{\"path\":\"" .. generate_physical_address(table_name .. "/part-c002.snappy.parquet") .. "\"}}",
             "{\"remove\":{\"path\":\"" .. generate_physical_address(table_name .. "/part-c003.snappy.parquet") .. "\"}}",
+            "{\"add\":{\"path\":\"" .. generate_physical_address(table_name .. "/col=a+b/part-c004.snappy.parquet") .. "\"}}",
+            "{\"add\":{\"path\":\"" .. generate_physical_address(table_name .. "/col=a+b/part-c005.snappy.parquet") .. "\"}}",
+            "{\"add\":{\"path\":\"" .. generate_physical_address(table_name .. "/test%20partition/part-c006.snappy.parquet") .. "\"}}",
         }
     }
 end
@@ -206,6 +234,7 @@ local delta_table_details = delta_export.export_delta_log(
 
 -- Test results
 assert_lakefs_stats(test_table_names, data_paths)
+assert_stat_paths(test_table_names, stat_paths)
 assert_physical_address(delta_table_details, test_table_names)
 assert_delta_log_content(delta_table_details, test_data.table_expected_log)
 assert_metadata(delta_table_details, test_table_names)
