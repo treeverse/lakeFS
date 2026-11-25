@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"io"
+	"net/http"
 	"net/url"
 	"regexp"
 	"testing"
@@ -165,6 +166,161 @@ func TestMultipartUploadWithMD5(t *testing.T) {
 	readContent, err := io.ReadAll(reader)
 	require.NoError(t, err)
 	require.Equal(t, content, readContent)
+}
+
+// TestPresignMultipartUpload runs a full multipart upload where the parts are written straight to the
+// store using pre-signed URLs, the way a client using the presign multipart API would.
+func TestPresignMultipartUpload(t *testing.T) {
+	ctx := t.Context()
+	adapter := newAdapter(gs.WithPresignedCredentials(testGoogleAccessID, testPrivateKey))
+	defer func() {
+		require.NoError(t, adapter.Close())
+	}()
+
+	require.True(t, adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID).PreSignSupportMultipart)
+
+	obj := block.ObjectPointer{
+		StorageNamespace: "gs://" + bucketName,
+		Identifier:       "presign-multipart/test-object",
+		IdentifierType:   block.IdentifierTypeRelative,
+	}
+
+	createResp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
+	require.NoError(t, err)
+
+	parts := [][]byte{[]byte("first part of the object "), []byte("and the second part")}
+	var full []byte
+	for i, content := range parts {
+		presignedURL, err := adapter.GetPresignUploadPartURL(ctx, obj, createResp.UploadID, i+1)
+		require.NoError(t, err)
+
+		uploadPresignedPart(t, presignedURL, content)
+		full = append(full, content...)
+	}
+
+	// The parts must have landed on the objects the adapter tracks, with the ETags a client would send
+	// back on complete. fake-gcs-server does not return an ETag header on an XML API upload, so read the
+	// stored ETags rather than the ones the PUT responses would carry against real GCS.
+	listResp, err := adapter.ListParts(ctx, obj, createResp.UploadID, block.ListPartsOpts{})
+	require.NoError(t, err)
+	require.Len(t, listResp.Parts, len(parts))
+
+	multiParts := make([]block.MultipartPart, len(parts))
+	for i, content := range parts {
+		require.Equal(t, i+1, listResp.Parts[i].PartNumber)
+		require.Equal(t, calcETag(content), listResp.Parts[i].ETag)
+		multiParts[i] = block.MultipartPart{PartNumber: i + 1, ETag: listResp.Parts[i].ETag}
+	}
+
+	completeResp, err := adapter.CompleteMultiPartUpload(ctx, obj, createResp.UploadID, &block.MultipartUploadCompletion{
+		Part: multiParts,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, completeResp.ETag)
+
+	reader, err := adapter.Get(ctx, obj)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, reader.Close())
+	}()
+	readContent, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	require.Equal(t, full, readContent)
+}
+
+func TestGetPresignUploadPartURL(t *testing.T) {
+	ctx := t.Context()
+	obj := block.ObjectPointer{
+		StorageNamespace: "gs://" + bucketName,
+		Identifier:       "presign-part-url/test-object",
+		IdentifierType:   block.IdentifierTypeRelative,
+	}
+
+	t.Run("part_object_name", func(t *testing.T) {
+		adapter := newAdapter(gs.WithPresignedCredentials(testGoogleAccessID, testPrivateKey))
+		defer func() {
+			require.NoError(t, adapter.Close())
+		}()
+
+		presignedURL, err := adapter.GetPresignUploadPartURL(ctx, obj, "some/upload/id", 7)
+		require.NoError(t, err)
+
+		u, err := url.Parse(presignedURL)
+		require.NoError(t, err)
+		// the URL must target the same object UploadPart writes the part to
+		require.Equal(t, "/"+bucketName+"/some/upload/id.part_00007", u.Path)
+		require.Equal(t, "GOOG4-RSA-SHA256", u.Query().Get("X-Goog-Algorithm"))
+		require.NotEmpty(t, u.Query().Get("X-Goog-Signature"))
+	})
+
+	t.Run("invalid_part_number", func(t *testing.T) {
+		adapter := newAdapter(gs.WithPresignedCredentials(testGoogleAccessID, testPrivateKey))
+		defer func() {
+			require.NoError(t, adapter.Close())
+		}()
+
+		for _, partNumber := range []int{0, -1, gs.MaxMultipartObjects + 1} {
+			_, err := adapter.GetPresignUploadPartURL(ctx, obj, "some/upload/id", partNumber)
+			require.ErrorIs(t, err, gs.ErrInvalidPartNumber)
+		}
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		cases := []struct {
+			name string
+			opts []gs.AdapterOption
+		}{
+			{"pre_signed", []gs.AdapterOption{gs.WithDisablePreSigned(true)}},
+			{"pre_signed_multipart", []gs.AdapterOption{gs.WithDisablePreSignedMultipart(true)}},
+		}
+		for _, tt := range cases {
+			t.Run(tt.name, func(t *testing.T) {
+				adapter := newAdapter(tt.opts...)
+				defer func() {
+					require.NoError(t, adapter.Close())
+				}()
+
+				require.False(t, adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID).PreSignSupportMultipart)
+				_, err := adapter.GetPresignUploadPartURL(ctx, obj, "some/upload/id", 1)
+				require.ErrorIs(t, err, block.ErrOperationNotSupported)
+			})
+		}
+	})
+
+	t.Run("customer_supplied_encryption", func(t *testing.T) {
+		adapter := newAdapter(gs.WithServerSideEncryptionCustomerSupplied(make([]byte, 32))) //nolint:mnd
+		defer func() {
+			require.NoError(t, adapter.Close())
+		}()
+
+		require.False(t, adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID).PreSignSupportMultipart)
+		_, err := adapter.GetPresignUploadPartURL(ctx, obj, "some/upload/id", 1)
+		require.ErrorIs(t, err, block.ErrOperationNotSupported)
+	})
+}
+
+// uploadPresignedPart PUTs content to a pre-signed URL, the way a client holding one would.
+func uploadPresignedPart(t *testing.T, presignedURL string, content []byte) {
+	t.Helper()
+
+	u, err := url.Parse(presignedURL)
+	require.NoError(t, err)
+	// URLs are signed for the public GCS host - send the request to the emulator instead
+	u.Scheme = "http"
+	u.Host = emulatorEndpoint
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPut, u.String(), bytes.NewReader(content))
+	require.NoError(t, err)
+	req.ContentLength = int64(len(content))
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, string(body))
 }
 
 func calcETag(data []byte) string {

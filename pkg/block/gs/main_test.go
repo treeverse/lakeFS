@@ -18,7 +18,12 @@ import (
 
 const bucketName = "bucket1"
 
-var client *storage.Client
+var (
+	client *storage.Client
+	// emulatorEndpoint is the host:port the fake-gcs-server listens on. Pre-signed URLs are signed for
+	// the public GCS host, so tests that actually issue them need to point the request back here.
+	emulatorEndpoint string
+)
 
 func TestMain(m *testing.M) {
 	const (
@@ -31,6 +36,7 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 	// External port required for '-public-host' configuration in docker cmd
 	const endpoint = emulatorTestIP + ":" + emulatorTestPort
+	emulatorEndpoint = endpoint
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
