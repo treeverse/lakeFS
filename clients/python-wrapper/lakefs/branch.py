@@ -19,7 +19,7 @@ from lakefs.getter import repository_for
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
-from lakefs.reference import Reference, ReferenceType, generate_listing
+from lakefs.reference import Reference, ReferenceType, generate_listing, split_body_kwargs
 if TYPE_CHECKING:
     from lakefs.repository import Repository
 from lakefs.models import Change, Commit
@@ -195,6 +195,8 @@ class Branch(_BaseBranch):
         :param source_reference: The reference to create the branch from (reference ID, object or Commit object)
         :param exist_ok: If False will throw an exception if a branch by this name already exists. Otherwise,
             return the existing branch without creating a new one
+        :param kwargs: Branch creation parameters (fields of ``lakefs_sdk.BranchCreation`` such as ``hidden``),
+            and additional Keyword Arguments to send to the server (such as ``_request_timeout``)
         :return: The lakeFS SDK object representing the branch
         :raise NotFoundException: if repo, branch or source reference id does not exist
         :raise ConflictException: if branch already exists and exist_ok is False
@@ -208,9 +210,10 @@ class Branch(_BaseBranch):
             return e
 
         reference_id = source_reference if isinstance(source_reference, str) else source_reference.id
-        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=reference_id, **kwargs)
+        creation_kwargs, request_kwargs = split_body_kwargs(lakefs_sdk.BranchCreation, kwargs)
+        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=reference_id, **creation_kwargs)
         with api_exception_handler(handle_conflict):
-            self._client.sdk_client.branches_api.create_branch(self.repo_id, branch_creation)
+            self._client.sdk_client.branches_api.create_branch(self.repo_id, branch_creation, **request_kwargs)
         return self
 
     @property
@@ -233,17 +236,19 @@ class Branch(_BaseBranch):
 
         :param message: Commit message
         :param metadata: Metadata to attach to the commit
-        :param kwargs: Additional Keyword Arguments for commit creation
+        :param kwargs: Commit creation parameters (fields of ``lakefs_sdk.CommitCreation`` such as ``allow_empty``),
+            and additional Keyword Arguments to send to the server (such as ``_request_timeout``)
         :return: The new reference after the commit
         :raise NotFoundException: if branch by this id does not exist
         :raise ForbiddenException: if commit is not allowed on this branch
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        commits_creation = lakefs_sdk.CommitCreation(message=message, metadata=metadata, **kwargs)
+        creation_kwargs, request_kwargs = split_body_kwargs(lakefs_sdk.CommitCreation, kwargs)
+        commits_creation = lakefs_sdk.CommitCreation(message=message, metadata=metadata, **creation_kwargs)
 
         with api_exception_handler():
-            c = self._client.sdk_client.commits_api.commit(self.repo_id, self._id, commits_creation)
+            c = self._client.sdk_client.commits_api.commit(self.repo_id, self._id, commits_creation, **request_kwargs)
         return Reference(self._repo, c.id, self._client)
 
     def delete(self, **kwargs) -> None:
