@@ -42,6 +42,9 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 		return
 	}
+	if o.applyGetPreconditions(w, req, entry) {
+		return
+	}
 
 	// range query
 	var rng httputil.Range
