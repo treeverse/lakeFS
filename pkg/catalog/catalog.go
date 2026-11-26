@@ -1562,8 +1562,14 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 			}
 
 			commitRecord := it.Value()
+			// Commits after stop_at are older than it, so stop reading once it
+			// is reached, whether or not it changes one of the paths.
+			reachedStopAt := params.StopAt != "" && commitRecord.CommitID.String() == params.StopAt
 			// skip merge commits
 			if len(commitRecord.Parents) != NumberOfParentsOfNonMergeCommit {
+				if reachedStopAt {
+					break readLoop
+				}
 				continue
 			}
 
@@ -1582,6 +1588,9 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 				outCh <- job
 				return nil
 			})
+			if reachedStopAt {
+				break readLoop
+			}
 		}
 		// wait until workers are done or the first non-nil error was returned from a worker
 		if err := workerGroup.Wait(); err != nil {
