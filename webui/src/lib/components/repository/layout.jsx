@@ -5,11 +5,12 @@ import Breadcrumb from 'react-bootstrap/Breadcrumb';
 import Stack from 'react-bootstrap/Stack';
 
 import { useRefs } from '../../hooks/repo';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { RepositoryNavTabs } from './tabs';
 import { Link } from '../nav';
 import { RefContextProvider } from '../../hooks/repo';
 import { ReadOnlyBadge } from '../badges';
+import { RepositoryPageTitle } from '../pageTitle';
 
 const RepoNav = () => {
     const { repo, reference } = useRefs();
@@ -45,8 +46,10 @@ const RepoNav = () => {
 
 export const RepositoryPageLayout = ({ fluid = 'sm' }) => {
     const [activePage, setActivePage] = useState('objects');
+    const { repoId } = useParams();
     return (
         <RefContextProvider>
+            <RepositoryTitle repoId={repoId} />
             <div>
                 <RepoNav />
 
@@ -61,5 +64,16 @@ export const RepositoryPageLayout = ({ fluid = 'sm' }) => {
                 </Container>
             </div>
         </RefContextProvider>
+    );
+};
+
+const RepositoryTitle = ({ repoId }) => {
+    const { repo, reference } = useRefs();
+    return (
+        <RepositoryPageTitle
+            repo={repo?.id === repoId ? repo : null}
+            reference={repo?.id === repoId ? reference : null}
+            repoId={repoId}
+        />
     );
 };
