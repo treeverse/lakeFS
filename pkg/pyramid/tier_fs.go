@@ -375,7 +375,7 @@ func (tfs *TierFS) openOrDownload(ctx context.Context, fileRef localFileRef) (*o
 // ensureFileExists ensures the file exists locally, downloading from block storage if needed.
 // Uses Compute to deduplicate concurrent downloads of the same file.
 func (tfs *TierFS) ensureFileExists(ctx context.Context, fileRef localFileRef) error {
-	_, err := tfs.keyLock.Compute(fileRef.filename, func() (any, error) {
+	_, err := tfs.keyLock.Compute(fileRef.fullPath, func() (any, error) {
 		// Check if file was downloaded by another goroutine while we waited
 		if _, err := os.Stat(fileRef.fullPath); err == nil {
 			if tfs.logger.IsTracing() {
