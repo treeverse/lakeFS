@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
 
 const usageSummaryTemplate = `Usage report for installation ID: {{.InstallationID}}
@@ -34,10 +35,10 @@ var usageSummaryCmd = &cobra.Command{
 		summary := resp.JSON200
 		data := struct {
 			InstallationID string
-			Reports        *Table
+			Reports        *cmdutils.Table
 		}{
 			InstallationID: summary.InstallationId,
-			Reports: &Table{
+			Reports: &cmdutils.Table{
 				Headers: []any{
 					"Year",
 					"Month",
