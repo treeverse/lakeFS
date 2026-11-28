@@ -1985,7 +1985,12 @@ func GetStartPos(prefix, after, delimiter string) string {
 		// no delimiter, continue from after
 		return after
 	}
-	// there is a delimiter and after is not empty, start at the next common prefix after "after"
+	if !strings.HasSuffix(after, delimiter) {
+		// after is an object, not a common prefix. Other objects may start with it
+		// (after "t/part-9" comes "t/part-90"), so continue from after
+		return after
+	}
+	// after is a common prefix, start at the next one after it
 	return string(graveler.UpperBoundForPrefix([]byte(after)))
 }
 
