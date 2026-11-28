@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -194,4 +195,61 @@ func TestContextCancellation(t *testing.T) {
 
 	// Verify that the status code is 499 (Client Closed Request)
 	assert.Equal(t, httputil.HttpStatusClientClosedRequest, result.StatusCode, "Expected status code 499 for cancelled context")
+}
+
+func TestCopyObjectReplaceContentType(t *testing.T) {
+	t.Setenv("USE_STORAGE_NAMESPACE", "mem://"+repoName)
+	h, _ := testutil.GetBasicHandler(t, &testutil.FakeAuthService{
+		BareDomain:      "example.com",
+		AccessKeyID:     esti.DefaultAdminAccessKeyID,
+		SecretAccessKey: esti.DefaultAdminSecretAccessKey,
+		UserID:          "65867",
+		Region:          "MockRegion",
+	}, repoName)
+	const srcPath = "/" + repoName + "/main/data.json"
+
+	serve := func(t *testing.T, req *http.Request) *http.Response {
+		t.Helper()
+		creds := aws.Credentials{
+			AccessKeyID:     esti.DefaultAdminAccessKeyID,
+			SecretAccessKey: esti.DefaultAdminSecretAccessKey,
+		}
+		req.Host = "host.domain.com"
+		req.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
+		err := v4.NewSigner().SignHTTP(t.Context(), creds, req, "UNSIGNED-PAYLOAD", "s3", "us-east-1", time.Now())
+		require.NoError(t, err)
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		return rr.Result()
+	}
+
+	putReq := httptest.NewRequest(http.MethodPut, srcPath, strings.NewReader("{}"))
+	putReq.Header.Set("Content-Length", "2")
+	putReq.Header.Set("Content-Type", "text/plain")
+	putReq.Header.Set("X-Amz-Meta-K", "v")
+	require.Equal(t, http.StatusOK, serve(t, putReq).StatusCode)
+
+	testCases := []struct {
+		name                string
+		directive           string
+		expectedContentType string
+	}{
+		{name: "replace", directive: "REPLACE", expectedContentType: "application/json"},
+		{name: "copy", directive: "COPY", expectedContentType: "text/plain"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			destPath := "/" + repoName + "/main/copy-" + tc.name + ".json"
+			copyReq := httptest.NewRequest(http.MethodPut, destPath, nil)
+			copyReq.Header.Set("X-Amz-Copy-Source", srcPath)
+			copyReq.Header.Set("X-Amz-Metadata-Directive", tc.directive)
+			copyReq.Header.Set("Content-Type", "application/json")
+			copyReq.Header.Set("X-Amz-Meta-K", "w")
+			require.Equal(t, http.StatusOK, serve(t, copyReq).StatusCode)
+
+			headResult := serve(t, httptest.NewRequest(http.MethodHead, destPath, nil))
+			require.Equal(t, http.StatusOK, headResult.StatusCode)
+			require.Equal(t, tc.expectedContentType, headResult.Header.Get("Content-Type"))
+		})
+	}
 }
