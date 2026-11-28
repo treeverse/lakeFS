@@ -254,6 +254,93 @@ hooks:
 	}
 }
 
+func TestPostHooksUpdateCommitID(t *testing.T) {
+	ctx := t.Context()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	tests := []struct {
+		name      string
+		preEvent  graveler.EventType
+		postEvent graveler.EventType
+		postHook  func(actions.Service, context.Context, graveler.HookRecord) error
+	}{
+		{
+			name:      "cherry-pick",
+			preEvent:  graveler.EventTypePreCherryPick,
+			postEvent: graveler.EventTypePostCherryPick,
+			postHook: func(s actions.Service, ctx context.Context, r graveler.HookRecord) error {
+				return s.PostCherryPickHook(ctx, r)
+			},
+		},
+		{
+			name:      "revert",
+			preEvent:  graveler.EventTypePreRevert,
+			postEvent: graveler.EventTypePostRevert,
+			postHook: func(s actions.Service, ctx context.Context, r graveler.HookRecord) error {
+				return s.PostRevertHook(ctx, r)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actionContent := `name: ` + testActionName + `
+on:
+  ` + string(tt.preEvent) + `: {}
+hooks:
+  - id: ` + testWebhookID + `
+    type: webhook
+    properties:
+      url: "` + ts.URL + `/webhook"
+`
+			ctrl := gomock.NewController(t)
+			writer := mock.NewMockOutputWriter(ctrl)
+			writer.EXPECT().OutputWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			source := mock.NewMockSource(ctrl)
+			source.EXPECT().List(gomock.Any(), gomock.Any()).Return([]string{"act.yaml"}, nil).AnyTimes()
+			source.EXPECT().Load(gomock.Any(), gomock.Any(), "act.yaml").Return([]byte(actionContent), nil).AnyTimes()
+
+			mockStatsCollector := NewActionStatsMockCollector()
+			svc := GetKVService(t, ctx, source, writer, &mockStatsCollector, true)
+			defer svc.Stop()
+
+			repo := &graveler.RepositoryRecord{
+				RepositoryID: "repoID",
+				Repository:   &graveler.Repository{StorageNamespace: "storageNamespace"},
+			}
+			preRunID := svc.NewRunID()
+			err := svc.Run(ctx, graveler.HookRecord{
+				RunID:      preRunID,
+				EventType:  tt.preEvent,
+				Repository: repo,
+				BranchID:   "branchID",
+				SourceRef:  "sourceRef",
+			})
+			require.NoError(t, err)
+			res, err := svc.GetRunResult(ctx, repo.RepositoryID.String(), preRunID)
+			require.NoError(t, err)
+			require.Empty(t, res.CommitID)
+
+			err = tt.postHook(svc, ctx, graveler.HookRecord{
+				RunID:      svc.NewRunID(),
+				EventType:  tt.postEvent,
+				Repository: repo,
+				BranchID:   "branchID",
+				SourceRef:  "sourceRef",
+				CommitID:   "commit1",
+				PreRunID:   preRunID,
+			})
+			require.NoError(t, err)
+
+			res, err = svc.GetRunResult(ctx, repo.RepositoryID.String(), preRunID)
+			require.NoError(t, err)
+			require.Equal(t, "commit1", res.CommitID)
+		})
+	}
+}
+
 func TestDisableHooksRun(t *testing.T) {
 	ctx := t.Context()
 	testOutputWriter, ctrl, ts, record := setupTest(t)

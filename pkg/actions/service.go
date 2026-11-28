@@ -603,6 +603,12 @@ func (s *StoreService) PreCherryPickHook(ctx context.Context, record graveler.Ho
 }
 
 func (s *StoreService) PostCherryPickHook(ctx context.Context, record graveler.HookRecord) error {
+	// update pre-cherry-pick with commit ID if needed
+	err := s.UpdateCommitID(ctx, record.Repository, record.PreRunID, record.CommitID.String())
+	if err != nil {
+		return err
+	}
+
 	s.asyncRun(ctx, record)
 	return nil
 }
